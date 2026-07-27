@@ -12,9 +12,11 @@ import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
   SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
+  TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import {
   Empty,
@@ -44,11 +46,9 @@ type Payload = {
 
 const pct = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/** Same insets as Insiders — outer 16px to hover, inner 12px inside the pill. */
-const SUPERINVESTOR_ROW_PAD_CLASS = "px-4";
-
+/** Same 8px desktop inset as Companies screener. */
 const SUPERINVESTOR_GRID =
-  "grid min-w-[760px] w-full grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 px-3 lg:min-w-0";
+  "grid min-w-[760px] w-full grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 lg:min-w-0";
 
 function ActivityCell({ label }: { label: string | null }) {
   if (!label) return <span className="text-[#5C5D5F]">—</span>;
@@ -72,14 +72,14 @@ function SuperinvestorsTableHeader() {
         "md:border-b-0",
       )}
     >
-      <div className={SUPERINVESTOR_ROW_PAD_CLASS}>
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
         <div
           className={cn(
             SUPERINVESTOR_GRID,
             "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
           )}
         >
-          <div className="text-left">Manager / Fund</div>
+          <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Manager / Fund</div>
           <div className="text-right">% of portfolio</div>
           <div className="text-right">Recent activity</div>
           <div className="text-right">Shares</div>
@@ -97,7 +97,7 @@ function SuperinvestorsTableSkeleton({ rows = 3 }: { rows?: number }) {
       <SuperinvestorsTableHeader />
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className={SCREENER_TABLE_DATA_ROW_CLASS} aria-hidden>
-          <div className={SUPERINVESTOR_ROW_PAD_CLASS}>
+          <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
             <div
               className={cn(
                 SUPERINVESTOR_GRID,
@@ -105,7 +105,7 @@ function SuperinvestorsTableSkeleton({ rows = 3 }: { rows?: number }) {
                 SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
               )}
             >
-              <div className="flex min-w-0 items-center gap-3 pr-2">
+              <div className={cn("flex min-w-0 items-center gap-3 pr-2", TABLE_START_ALIGNED_PAD_CLASS)}>
                 <SkeletonBox className="h-10 w-10 shrink-0 rounded-full" />
                 <div className="min-w-0 flex-1 space-y-2">
                   <SkeletonBox className="h-4 w-[50%] rounded" />
@@ -142,7 +142,7 @@ function SuperinvestorRow({
 }) {
   return (
     <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
-      <div className={SUPERINVESTOR_ROW_PAD_CLASS}>
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
         <Link
           href={`/superinvestors/${encodeURIComponent(position.superinvestorSlug)}`}
           prefetch={false}
@@ -152,7 +152,7 @@ function SuperinvestorRow({
             SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
           )}
         >
-          <div className="flex min-w-0 items-center gap-3 pr-2">
+          <div className={cn("flex min-w-0 items-center gap-3 pr-2", TABLE_START_ALIGNED_PAD_CLASS)}>
             {position.avatarSrc ? (
               <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#EBEBEC] bg-[#F4F4F5] ring-1 ring-white">
                 <Image

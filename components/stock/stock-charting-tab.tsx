@@ -1,10 +1,21 @@
+"use client";
+
+import { useRef } from "react";
+import { useRouter } from "next/navigation";
+
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import {
   CHARTING_DROPDOWN_GROUPS,
+  CHARTING_MAX_COMPARE_TICKERS,
+  buildStandaloneChartPath,
+  parseChartingMetricsParam,
   readChartingMetricValue,
 } from "@/lib/market/stock-charting-metrics";
+import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
+import { useChartingRailPickerAnchors } from "@/components/charting/charting-company-rail-context";
+import type { CompanyPickerOpenControls } from "@/components/charting/company-picker";
 import { ChartingWorkspace } from "@/components/charting/charting-workspace";
 
 type Props = {
@@ -147,6 +158,11 @@ export function StockChartingTab({
   assetDisplayName,
   assetLogoUrl,
 }: Props) {
+  const router = useRouter();
+  const companyPickerControlsRef = useRef<CompanyPickerOpenControls | null>(null);
+  const { useRailPickers, companyAddAnchorRef } = useChartingRailPickerAnchors();
+  const metricsInUrl = parseChartingMetricsParam(metricParam);
+
   return (
     <ChartingWorkspace
       ticker={ticker}
@@ -166,6 +182,30 @@ export function StockChartingTab({
       enableScreenshotDownload
       assetDisplayName={assetDisplayName}
       assetLogoUrl={assetLogoUrl}
+      companyPickerControlsRef={companyPickerControlsRef}
+      fullPageCompanyAddSlot={
+        useRailPickers ? (
+          <ChartingCompanyAddDropdown
+            hideTrigger
+            anchorRef={companyAddAnchorRef}
+            menuPortal
+            menuAlign="trailing"
+            registerOpenControl={(controls) => {
+              companyPickerControlsRef.current = controls;
+              return () => {
+                if (companyPickerControlsRef.current === controls) {
+                  companyPickerControlsRef.current = null;
+                }
+              };
+            }}
+            onPickStock={(sym) => {
+              router.push(buildStandaloneChartPath("/charting", [ticker, sym], metricsInUrl));
+            }}
+            maxExtraCompanies={Math.max(0, CHARTING_MAX_COMPARE_TICKERS - 1)}
+            excludeSymbols={[ticker]}
+          />
+        ) : undefined
+      }
     />
   );
 }

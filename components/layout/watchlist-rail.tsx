@@ -18,6 +18,7 @@ import {
 } from "@/components/layout/watchlist-rail-layout-context";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { shellChromeToggleButtonClass } from "@/components/layout/shell-chrome-toggle-button";
+import { SHELL_DESKTOP_PANEL_BG_CLASS } from "@/components/design-system/card-surface-styles";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import { normalizeWatchlistStorageKey } from "@/lib/watchlist/normalize-storage-key";
@@ -378,8 +379,10 @@ function WatchlistRailScrollContent({
   );
 }
 
-const watchlistRailSurfaceClass =
-  "flex h-full min-h-0 flex-col overflow-hidden bg-[#FCFCFD] md:rounded-none";
+const watchlistRailSurfaceClass = cn(
+  "flex h-full min-h-0 flex-col overflow-hidden md:rounded-none",
+  SHELL_DESKTOP_PANEL_BG_CLASS,
+);
 
 function WatchlistRailFullPageLink() {
   return (
@@ -475,13 +478,15 @@ export function WatchlistRail() {
     <div
       suppressHydrationWarning
       className={cn(
-        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden bg-[#FCFCFD] md:flex md:border-l md:border-[#EBEBEC]",
+        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden md:flex md:border-l md:border-[#EBEBEC]",
+        SHELL_DESKTOP_PANEL_BG_CLASS,
         WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
       )}
       style={{ width: `${outerWidthPx}px` }}
       aria-label="Watchlist panel"
     >
       <div
+        suppressHydrationWarning
         className={watchlistRailSurfaceClass}
         style={{ width: expanded ? `${WATCHLIST_PANEL_WIDTH_PX}px` : "100%" }}
       >

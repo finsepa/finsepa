@@ -20,7 +20,7 @@ const incomeDataRowClass = "min-h-[60px]";
 const incomeRowDividerClass = "border-b border-[#E4E4E7]";
 
 const stickyLabelCellClass =
-  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] bg-white pl-2 pr-4 shadow-[1px_0_0_0_#E4E4E7] sm:pl-4";
+  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] bg-white pr-4 shadow-[1px_0_0_0_#E4E4E7] pl-3";
 
 const headerValueCellClass = "flex min-h-full min-w-0 items-center justify-end self-stretch bg-white";
 

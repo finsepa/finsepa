@@ -110,37 +110,37 @@ export function ChartingPage({
   }
 
   return (
-    <div className="min-w-0 space-y-6 px-4 py-4 sm:px-9 sm:py-6">
+    <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
       <ChartingEmptyToolbar
         metricParam={metricForUi}
         tickers={tickersForUi}
         allowedChartingTickers={allowedChartingTickers}
         onBeginChartSessionNavigation={onBeginChartSessionNavigation}
-      />
-
-      <section
-        aria-label={pendingChartWorkspace ? "Loading chart" : "Chart area"}
-        className="w-full"
-        aria-busy={pendingChartWorkspace}
       >
-        {pendingChartWorkspace ? (
-          <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-            <ChartLoadingIndicator className="min-h-0 flex-1" />
-          </div>
-        ) : (
-          <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-              </EmptyMedia>
-              <EmptyTitle>No Data to Display</EmptyTitle>
-              <EmptyDescription className="max-w-md">
-                Choose at least one company and one metric to generate your chart.
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        )}
-      </section>
+        <section
+          aria-label={pendingChartWorkspace ? "Loading chart" : "Chart area"}
+          className="w-full"
+          aria-busy={pendingChartWorkspace}
+        >
+          {pendingChartWorkspace ? (
+            <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+              <ChartLoadingIndicator className="min-h-0 flex-1" />
+            </div>
+          ) : (
+            <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+                </EmptyMedia>
+                <EmptyTitle>No Data to Display</EmptyTitle>
+                <EmptyDescription className="max-w-md">
+                  Choose at least one company and one metric to generate your chart.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+        </section>
+      </ChartingEmptyToolbar>
     </div>
   );
 }

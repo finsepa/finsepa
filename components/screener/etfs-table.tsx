@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
+import { TABLE_END_ALIGNED_PAD_CLASS } from "@/components/screener/screener-table-pad";
 import {
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -71,7 +72,10 @@ function ValueAndChangeCell({ value, change1D }: { value: number; change1D: numb
 const rowLinkGrid =
   "grid grid-cols-[28px_minmax(0,2fr)_1fr] gap-x-2 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
 
-const desktopNumericCellClass = "hidden min-w-0 w-full pr-3 text-right sm:block";
+const desktopNumericCellClass = cn(
+  "hidden min-w-0 w-full text-right sm:block",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
 
 const mobileRankCellClass =
   "text-center text-[14px] font-semibold leading-5 tabular-nums text-[#5C5D5F]";
@@ -111,7 +115,7 @@ export function EtfsTable({
               <div className={cn(rowLinkGrid, "min-h-[44px] w-full items-center")}>
                 <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
                 <div className="min-w-0 w-full text-left">ETF</div>
-                <div className="min-w-0 w-full pr-3 text-right">Price</div>
+                <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Price</div>
                 <div className={cn(desktopNumericCellClass, "truncate")}>1D %</div>
                 <div className={cn(desktopNumericCellClass, "truncate")}>1M %</div>
                 <div className={cn(desktopNumericCellClass, "truncate")}>YTD %</div>

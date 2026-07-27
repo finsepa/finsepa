@@ -40,6 +40,7 @@ import { parseMobileAssetTopbarRoute } from "@/lib/layout/mobile-asset-topbar-ro
 import { isScreenerRoute } from "@/lib/layout/is-screener-route";
 import { useMobileMarketsTopbarLayout } from "@/lib/layout/use-mobile-markets-topbar-layout";
 import { useMobileStockTopbarLayout } from "@/lib/layout/use-mobile-stock-topbar-layout";
+import { SHELL_DESKTOP_PANEL_BG_MD_CLASS } from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
 
 const usdTopbar = new Intl.NumberFormat("en-US", {
@@ -156,17 +157,22 @@ export function Topbar({
       pathnameMobileTitle
     : mobileTopbarTitle;
 
+  /** Route chrome for max-md / md height — kept as one string so `cn`/`twMerge` order stays stable. */
+  const headerRouteChromeClass = mobileAssetRoute
+    ? "max-md:min-h-[var(--mobile-topbar-height)] max-md:h-auto max-md:py-1.5 md:h-auto"
+    : mobileScreenerRoute
+      ? "max-md:h-[var(--mobile-markets-title-row-height)] max-md:min-h-[var(--mobile-markets-title-row-height)] max-md:items-end max-md:py-0 md:h-auto"
+      : "max-md:min-h-[var(--mobile-topbar-height)] max-md:h-auto max-md:py-2 md:h-14";
+
   return (
     <>
       <div className="flex w-full min-w-0 flex-col">
         <header
+          suppressHydrationWarning
           className={cn(
-            "flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:bg-transparent max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:h-auto md:gap-3 md:bg-[#FCFCFD] md:px-4 md:py-3",
-            mobileAssetRoute
-              ? "max-md:min-h-[var(--mobile-topbar-height)] max-md:h-auto max-md:py-1.5"
-              : mobileScreenerRoute
-                ? "max-md:h-[var(--mobile-markets-title-row-height)] max-md:min-h-[var(--mobile-markets-title-row-height)] max-md:items-end max-md:py-0"
-              : "max-md:min-h-[var(--mobile-topbar-height)] max-md:h-auto max-md:py-2 md:h-14",
+            "flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:bg-transparent max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:gap-3 md:px-4 md:py-3",
+            SHELL_DESKTOP_PANEL_BG_MD_CLASS,
+            headerRouteChromeClass,
           )}
         >
         {mobileAssetRoute ? (

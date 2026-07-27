@@ -41,7 +41,7 @@ import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types"
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { StockEarningsEstimatesChart, StockEarningsEstimatesPoint } from "@/lib/market/stock-earnings-types";
 
-/** Reported bars are blue; estimates are grey; forecast keeps the grey hatch. */
+/** Estimates bars are grey (hatched when forecast); actual bars are blue. */
 const ACTUAL_BAR = "#2563EB";
 const ESTIMATE_BAR = "#D4D4D8";
 const FORECAST_BAR = "#A1A1AA";
@@ -179,18 +179,6 @@ function EarningsPeriodBars({
       className="relative z-10 flex h-full min-h-0 items-end justify-center"
       style={{ gap: pair ? BAR_GAP_PX : 0, width: pair ? pairBarWidthPx * 2 + BAR_GAP_PX : barWidthPx }}
     >
-      {showActual ? (
-        <div
-          className="mt-auto shrink-0 rounded-t-[4px] rounded-b-none"
-          style={{
-            width: widthPx,
-            height: `${valueHeightPct(actual, maxV) * enterProgress}%`,
-            minHeight: 2,
-            backgroundColor: ACTUAL_BAR,
-          }}
-          aria-hidden
-        />
-      ) : null}
       {showEstimate ? (
         <div
           className="mt-auto shrink-0 overflow-hidden rounded-t-[4px] rounded-b-none"
@@ -199,6 +187,18 @@ function EarningsPeriodBars({
             height: `${valueHeightPct(estimate, maxV) * enterProgress}%`,
             minHeight: 2,
             ...(isForecast ? FORECAST_BAR_FILL : { backgroundColor: ESTIMATE_BAR }),
+          }}
+          aria-hidden
+        />
+      ) : null}
+      {showActual ? (
+        <div
+          className="mt-auto shrink-0 rounded-t-[4px] rounded-b-none"
+          style={{
+            width: widthPx,
+            height: `${valueHeightPct(actual, maxV) * enterProgress}%`,
+            minHeight: 2,
+            backgroundColor: ACTUAL_BAR,
           }}
           aria-hidden
         />
@@ -225,21 +225,21 @@ const METRIC_CONFIG: Record<
   {
     axisKind: "usd" | "eps";
     tooltipEstimate: string;
-    tooltipReported: string;
+    tooltipActual: string;
     ariaLabel: string;
   }
 > = {
   revenue: {
     axisKind: "usd",
     tooltipEstimate: "Est. Revenue",
-    tooltipReported: "Rep. Revenue",
-    ariaLabel: "Revenue estimates and reported",
+    tooltipActual: "Act. Revenue",
+    ariaLabel: "Revenue estimates and actuals",
   },
   eps: {
     axisKind: "eps",
     tooltipEstimate: "Est. EPS",
-    tooltipReported: "Rep. EPS",
-    ariaLabel: "EPS estimates and reported",
+    tooltipActual: "Act. EPS",
+    ariaLabel: "EPS estimates and actuals",
   },
 };
 
@@ -363,8 +363,8 @@ type Props = {
 };
 
 /**
- * Revenue / EPS estimate bar chart — grey reported + estimate bars, hatched forecast bars,
- * plus beat/miss markers above the reported bar.
+ * Revenue / EPS estimate bar chart — grey estimate + blue actual bars, hatched forecast bars,
+ * plus beat/miss markers above the actual bar.
  */
 export function EarningsEstimatesChart({ data, period, metric }: Props) {
   const plotAreaRef = useRef<HTMLDivElement>(null);
@@ -466,7 +466,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                   />
                 </div>
 
-                {/* Bars + beat/miss markers (anchored just above the reported bar). */}
+                {/* Bars + beat/miss markers (anchored just above the actual bar). */}
                 <div
                   key={`${period}-${metric}-${n}`}
                   className="absolute inset-x-0 top-[8%] bottom-[4%] min-h-0 w-full min-w-0 overflow-visible"
@@ -499,7 +499,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                   if (p.actual != null) {
                     tooltipLines.push({
                       tone: "neutral",
-                      text: `${metricConfig.tooltipReported}: ${formatChartingTableCell(metricConfig.axisKind, p.actual)}`,
+                      text: `${metricConfig.tooltipActual}: ${formatChartingTableCell(metricConfig.axisKind, p.actual)}`,
                     });
                   }
                   if (beatMiss && p.estimate != null && p.actual != null) {

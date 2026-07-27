@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { forwardRef, type RefObject } from "react";
 import { Plus } from "@/lib/icons";
 
@@ -11,24 +10,24 @@ import {
 import {
   companyRailListClass,
   companyRailRowClass,
-  companyRailScrollClass,
   companyRailTitleClass,
 } from "@/components/charting/charting-rail-row-styles";
-import {
-  useChartingCompanyRail,
-  useChartingCompanyRailDesktopShell,
-  isCompanyRailPage,
-} from "@/components/charting/charting-company-rail-context";
+import { useChartingCompanyRail } from "@/components/charting/charting-company-rail-context";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { SIDEBAR_OUTER_EXPANDED_PX } from "@/components/layout/sidebar-layout-context";
 import { shellChromeToggleButtonClass } from "@/components/layout/shell-chrome-toggle-button";
 import { cn } from "@/lib/utils";
 
-/** Same fill as shell `<main>` (`md:bg-[#FCFCFD]`). */
-const companyRailSurfaceClass =
-  "flex h-full min-h-0 flex-col overflow-hidden bg-[#FCFCFD] md:rounded-none";
+/** White card — same stroke / shadow as screener inset containers. */
+const companyRailCardClass =
+  "flex w-full flex-col overflow-hidden rounded-2xl border border-[#EBEBEC] bg-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]";
 
-const companyRailDividerClass = "mx-3 my-2 h-px shrink-0 bg-[#E4E4E7]";
+/** Fit-content body; 8px pad; scroll only when the list exceeds the viewport. */
+const companyRailBodyClass =
+  "flex max-h-[calc(100dvh-5rem)] flex-col overflow-y-auto overscroll-y-contain p-2";
+
+const companyRailDividerClass = "mx-3 my-2 h-px shrink-0 bg-[#EFEFEF]";
+
 const CompanyRailAddButton = forwardRef<
   HTMLButtonElement,
   {
@@ -38,7 +37,7 @@ const CompanyRailAddButton = forwardRef<
   }
 >(function CompanyRailAddButton({ label, disabled, onClick }, ref) {
   return (
-    <TopbarDelayedTooltip label={label} placement="right">
+    <TopbarDelayedTooltip label={label} placement="left">
       <button
         ref={ref}
         type="button"
@@ -85,16 +84,17 @@ function CompanyRailLabelRow({
   );
 }
 
-export function CompanyRail() {
-  const pathname = usePathname();
-  const isDesktop = useChartingCompanyRailDesktopShell();
+/**
+ * Company / Metric picker card — sits in the main panel’s right column on Charting & Comparison.
+ */
+export function CompanyRailCard({
+  className,
+  showMetrics = true,
+}: {
+  className?: string;
+  showMetrics?: boolean;
+}) {
   const { registration, metricAddAnchorRef, companyAddAnchorRef } = useChartingCompanyRail();
-
-  if (!isCompanyRailPage(pathname) || !isDesktop) {
-    return null;
-  }
-
-  const showMetrics = isCompanyRailPage(pathname);
 
   const metricDisabled = !registration || registration.metricAddDisabled;
   const companyDisabled = !registration || registration.companyAddDisabled;
@@ -102,23 +102,19 @@ export function CompanyRail() {
   const metrics = registration?.metrics ?? [];
 
   return (
-    <div
-      suppressHydrationWarning
-      className={cn(
-        "flex h-full min-h-0 shrink-0 self-stretch overflow-hidden border-r border-[#EBEBEC] bg-[#FCFCFD]",
-      )}
-      style={{ width: `${SIDEBAR_OUTER_EXPANDED_PX}px` }}
+    <aside
+      className={cn("w-full shrink-0", className)}
+      style={{ maxWidth: `${SIDEBAR_OUTER_EXPANDED_PX}px` }}
       aria-label="Company panel"
     >
-      <div className={companyRailSurfaceClass} style={{ width: `${SIDEBAR_OUTER_EXPANDED_PX}px` }}>
-        <div className={companyRailScrollClass}>
+      <div className={companyRailCardClass}>
+        <div className={companyRailBodyClass}>
           <CompanyRailLabelRow
             title="Company"
             addLabel="Add company"
             addDisabled={companyDisabled}
             onAdd={() => registration?.openCompanyPicker()}
             addButtonRef={companyAddAnchorRef}
-            className="pt-3"
           />
           {companies.length > 0 ? (
             <div className={companyRailListClass}>
@@ -165,6 +161,11 @@ export function CompanyRail() {
           ) : null}
         </div>
       </div>
-    </div>
+    </aside>
   );
+}
+
+/** @deprecated Shell left rail removed — use {@link CompanyRailCard} in the page layout. */
+export function CompanyRail() {
+  return null;
 }

@@ -28,6 +28,18 @@ import {
 } from "@/components/portfolio/delete-transaction-confirm-modal";
 import { TransactionRowActionsMenu } from "@/components/portfolio/transaction-row-actions-menu";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { toastTransactionDeleted } from "@/lib/portfolio/transaction-deleted-toast";
 import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
@@ -63,6 +75,7 @@ const txGridEditable = [
   "grid-cols-[minmax(0,1fr)_minmax(0,auto)]",
   // sm+: checkbox + data columns + row actions.
   "sm:grid-cols-[36px_minmax(200px,2.4fr)_minmax(88px,1fr)_minmax(108px,1.1fr)_minmax(80px,1fr)_minmax(96px,1.1fr)_minmax(64px,0.85fr)_minmax(96px,1.1fr)_minmax(128px,1.35fr)_40px]",
+  "sm:min-w-[960px]",
   txGridBase,
 ].join(" ");
 
@@ -70,14 +83,13 @@ const txGridEditable = [
 const txGridReadOnly = [
   "grid-cols-[minmax(0,1fr)_minmax(0,auto)]",
   "sm:grid-cols-[minmax(200px,2.4fr)_minmax(88px,1fr)_minmax(108px,1.1fr)_minmax(80px,1fr)_minmax(96px,1.1fr)_minmax(64px,0.85fr)_minmax(96px,1.1fr)_minmax(128px,1.35fr)]",
+  "sm:min-w-[960px]",
   txGridBase,
 ].join(" ");
 
 function transactionTableGrid(readOnly: boolean): string {
   return readOnly ? txGridReadOnly : txGridEditable;
 }
-
-const txRowPadding = "px-2 sm:px-4";
 
 const FILTERS = ["All", "Trades", "Income", "Expenses", "Cash"] as const;
 type TxFilter = (typeof FILTERS)[number];
@@ -450,185 +462,267 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
         </p>
       ) : (
         <div className="w-full min-w-0">
-          <div className="pb-4 sm:overflow-x-auto">
-            <div className="divide-y divide-[#E4E4E7] border-t border-[#E4E4E7] sm:min-w-[960px]">
+          <ScreenerTableScroll minWidthClassName="min-w-0 sm:min-w-[960px]">
+            <div className="bg-white">
               <div
                 className={cn(
-                  transactionTableGrid(selectedPortfolioReadOnly),
-                  "hidden min-h-[44px] bg-white py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:grid",
-                  txRowPadding,
+                  SCREENER_TABLE_HEADER_STICKY_CLASS,
+                  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+                  "hidden md:border-b-0 sm:block",
                 )}
               >
-                {!selectedPortfolioReadOnly ? (
-                  <div className="hidden items-center justify-center sm:flex">
-                    <TxBulkCheckbox
-                      inputRef={selectAllRef}
-                      checked={allPageSelected}
-                      indeterminate={somePageSelected}
-                      onChange={toggleSelectAllPage}
-                      ariaLabel="Select all transactions on this page"
-                    />
-                  </div>
-                ) : null}
-                <div className="hidden min-w-0 text-left align-middle pr-2 sm:block">Asset</div>
-                <div className="hidden text-right sm:block">Operation</div>
-                <div className="hidden text-right sm:block">
-                  <button
-                    type="button"
-                    onClick={() => setDateDesc((v) => !v)}
-                    className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
-                    aria-label={dateDesc ? "Sort date oldest first" : "Sort date newest first"}
-                  >
-                    Date
-                    {dateDesc ? (
-                      <ArrowDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
-                    ) : (
-                      <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                  <div
+                    className={cn(
+                      transactionTableGrid(selectedPortfolioReadOnly),
+                      "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
                     )}
-                  </button>
-                </div>
-                <div className="hidden text-right sm:block">Shares</div>
-                <div className="hidden text-right sm:block">Price</div>
-                <div className="hidden text-right sm:block">Fee</div>
-                <div className="hidden text-right sm:block">Summ</div>
-                <div className="hidden text-right sm:block">Total profit</div>
-                {!selectedPortfolioReadOnly ? (
-                  <div className="hidden text-right sm:block">
-                    <span className="sr-only">Actions</span>
+                  >
+                    {!selectedPortfolioReadOnly ? (
+                      <div
+                        className={cn(
+                          "hidden items-center justify-center sm:flex",
+                          TABLE_START_ALIGNED_PAD_CLASS,
+                        )}
+                      >
+                        <TxBulkCheckbox
+                          inputRef={selectAllRef}
+                          checked={allPageSelected}
+                          indeterminate={somePageSelected}
+                          onChange={toggleSelectAllPage}
+                          ariaLabel="Select all transactions on this page"
+                        />
+                      </div>
+                    ) : null}
+                    <div
+                      className={cn(
+                        "hidden min-w-0 text-left align-middle pr-2 sm:block",
+                        selectedPortfolioReadOnly && TABLE_START_ALIGNED_PAD_CLASS,
+                      )}
+                    >
+                      Asset
+                    </div>
+                    <div className={cn("hidden text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+                      Operation
+                    </div>
+                    <div className={cn("hidden text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+                      <button
+                        type="button"
+                        onClick={() => setDateDesc((v) => !v)}
+                        className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
+                        aria-label={dateDesc ? "Sort date oldest first" : "Sort date newest first"}
+                      >
+                        Date
+                        {dateDesc ? (
+                          <ArrowDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                        ) : (
+                          <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                        )}
+                      </button>
+                    </div>
+                    <div className={cn("hidden text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+                      Shares
+                    </div>
+                    <div className={cn("hidden text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+                      Price
+                    </div>
+                    <div className={cn("hidden text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+                      Fee
+                    </div>
+                    <div className={cn("hidden text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+                      Summ
+                    </div>
+                    <div className={cn("hidden text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+                      Total profit
+                    </div>
+                    {!selectedPortfolioReadOnly ? (
+                      <div className={cn("hidden text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+                        <span className="sr-only">Actions</span>
+                      </div>
+                    ) : null}
                   </div>
-                ) : null}
+                </div>
+                <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
               </div>
 
               {grouped.map((g) => (
                 <Fragment key={g.key}>
-                  <div className={cn("bg-[#FAFAFA] py-2", txRowPadding)}>
-                    <span className="text-[14px] font-semibold leading-5 text-[#5C5D5F]">{g.label}</span>
+                  <div className="bg-[#FAFAFA]">
+                    <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, "py-2.5")}>
+                      <span className="text-[14px] font-semibold leading-5 text-[#5C5D5F]">{g.label}</span>
+                    </div>
                   </div>
-                  {g.rows.map((t) => (
-                    <div
-                      key={t.id}
-                      className={cn(
-                        transactionTableGrid(selectedPortfolioReadOnly),
-                        "h-[60px] max-h-[60px] bg-white transition-colors duration-75 hover:bg-neutral-50",
-                        txRowPadding,
-                      )}
-                    >
-                      {!selectedPortfolioReadOnly ? (
-                        <div className="hidden items-center justify-center align-middle sm:flex">
-                          <TxBulkCheckbox
-                            checked={selectedIds.has(t.id)}
-                            onChange={() => toggleRowSelected(t.id)}
-                            ariaLabel={`Select transaction ${t.name}`}
-                          />
-                        </div>
-                      ) : null}
-                      <div className="min-w-0 text-left align-middle">
-                        <div className="flex min-w-0 items-center gap-3 pr-2 text-left">
-                          <CompanyLogo
-                            name={t.name}
-                            logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)}
-                            symbol={t.symbol}
-                          />
-                          <div className="min-w-0">
-                            {/* Mobile: primary label is Operation (not asset name). */}
-                            <div
-                              className={cn(
-                                "truncate text-[14px] font-semibold leading-5",
-                                "text-[#141414] sm:text-[#141414]",
-                                "sm:hidden",
-                                opColorClass(t.operation),
-                              )}
-                            >
-                              {t.operation}
-                            </div>
-                            <div className="hidden truncate text-[14px] font-semibold leading-5 text-[#141414] sm:block">
-                              {t.name}
-                            </div>
-                            <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
-                              {portfolioAssetSymbolCaption(t.symbol)}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {/* Mobile: right cell = date + amount */}
-                      <div className="text-right align-middle sm:hidden">
-                        <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414]">
-                          {format(parseISO(t.date), "MMM d, yyyy")}
-                        </div>
+                  {g.rows.map((t, rowIndex) => (
+                    <div key={t.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
                         <div
                           className={cn(
-                            "mt-0.5 text-[12px] font-medium leading-4 tabular-nums",
-                            sumColorClass(t.sum),
+                            transactionTableGrid(selectedPortfolioReadOnly),
+                            "min-h-[60px] text-[14px] font-normal leading-5",
+                            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                           )}
                         >
-                          {formatSignedUsd(t.sum)}
-                        </div>
-                      </div>
-
-                      <div
-                        className={cn(
-                          "hidden min-w-0 truncate px-1 text-right text-[14px] font-medium leading-5 align-middle sm:block",
-                          opColorClass(t.operation),
-                        )}
-                      >
-                        {t.operation}
-                      </div>
-                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle sm:block">
-                        {format(parseISO(t.date), "MMM d, yyyy")}
-                      </div>
-                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle sm:block">
-                        {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(
-                          splitAdjusted.get(t.id)?.shares ?? t.shares,
-                        )}
-                      </div>
-                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle sm:block">
-                        {formatPortfolioUsdPerUnit(splitAdjusted.get(t.id)?.price ?? t.price)}
-                      </div>
-                      <div className="hidden text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle sm:block">
-                        {t.fee > 0 ? usd.format(t.fee) : "—"}
-                      </div>
-                      <div
-                        className={cn(
-                          "hidden text-right text-[14px] font-medium leading-5 tabular-nums align-middle sm:block",
-                          sumColorClass(t.sum),
-                        )}
-                      >
-                        {formatSignedUsd(t.sum)}
-                      </div>
-                      <div className="hidden min-w-0 text-right text-[14px] font-medium leading-5 align-middle sm:block">
-                        {t.profitPct != null && t.profitUsd != null ? (
+                          {!selectedPortfolioReadOnly ? (
+                            <div
+                              className={cn(
+                                "hidden items-center justify-center align-middle sm:flex",
+                                TABLE_START_ALIGNED_PAD_CLASS,
+                              )}
+                            >
+                              <TxBulkCheckbox
+                                checked={selectedIds.has(t.id)}
+                                onChange={() => toggleRowSelected(t.id)}
+                                ariaLabel={`Select transaction ${t.name}`}
+                              />
+                            </div>
+                          ) : null}
                           <div
                             className={cn(
-                              "flex flex-col items-end tabular-nums",
-                              t.profitUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                              "min-w-0 text-left align-middle",
+                              selectedPortfolioReadOnly && TABLE_START_ALIGNED_PAD_CLASS,
+                              // Mobile: Asset is the first visible column.
+                              !selectedPortfolioReadOnly && "max-sm:pl-3 sm:pl-0",
                             )}
                           >
-                            <div className="text-[14px] font-medium leading-5">{formatSignedUsd(t.profitUsd)}</div>
-                            <div className="text-[12px] font-normal leading-4 opacity-90">
-                              {formatSignedPct(t.profitPct)}
+                            <div className="flex min-w-0 items-center gap-3 pr-2 text-left">
+                              <CompanyLogo
+                                name={t.name}
+                                logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)}
+                                symbol={t.symbol}
+                              />
+                              <div className="min-w-0">
+                                {/* Mobile: primary label is Operation (not asset name). */}
+                                <div
+                                  className={cn(
+                                    "truncate text-[14px] font-semibold leading-5 sm:hidden",
+                                    opColorClass(t.operation),
+                                  )}
+                                >
+                                  {t.operation}
+                                </div>
+                                <div className="hidden truncate text-[14px] font-semibold leading-5 text-[#141414] sm:block">
+                                  {t.name}
+                                </div>
+                                <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                                  {portfolioAssetSymbolCaption(t.symbol)}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        ) : (
-                          <span className="text-[14px] font-medium text-[#5C5D5F]">-</span>
-                        )}
-                      </div>
-                      {!selectedPortfolioReadOnly ? (
-                        <div className="hidden justify-end pr-1 align-middle sm:flex">
-                          <TransactionRowActionsMenu
-                            transaction={t}
-                            isOpen={openMenuId === t.id}
-                            onOpenChange={(open) => setOpenMenuId(open ? t.id : null)}
-                            onEdit={openEditTransaction}
-                            onRequestDelete={setDeleteCandidate}
-                          />
+                          {/* Mobile: right cell = date + amount */}
+                          <div className="text-right align-middle sm:hidden">
+                            <div className="font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
+                              {format(parseISO(t.date), "MMM d, yyyy")}
+                            </div>
+                            <div
+                              className={cn(
+                                "mt-0.5 text-[12px] font-medium leading-4 tabular-nums",
+                                sumColorClass(t.sum),
+                              )}
+                            >
+                              {formatSignedUsd(t.sum)}
+                            </div>
+                          </div>
+
+                          <div
+                            className={cn(
+                              "hidden min-w-0 truncate px-1 text-right text-[14px] font-medium leading-5 align-middle sm:block",
+                              TABLE_END_ALIGNED_PAD_CLASS,
+                              opColorClass(t.operation),
+                            )}
+                          >
+                            {t.operation}
+                          </div>
+                          <div
+                            className={cn(
+                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] align-middle sm:block",
+                              TABLE_END_ALIGNED_PAD_CLASS,
+                            )}
+                          >
+                            {format(parseISO(t.date), "MMM d, yyyy")}
+                          </div>
+                          <div
+                            className={cn(
+                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] align-middle sm:block",
+                              TABLE_END_ALIGNED_PAD_CLASS,
+                            )}
+                          >
+                            {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(
+                              splitAdjusted.get(t.id)?.shares ?? t.shares,
+                            )}
+                          </div>
+                          <div
+                            className={cn(
+                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] align-middle sm:block",
+                              TABLE_END_ALIGNED_PAD_CLASS,
+                            )}
+                          >
+                            {formatPortfolioUsdPerUnit(splitAdjusted.get(t.id)?.price ?? t.price)}
+                          </div>
+                          <div
+                            className={cn(
+                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] align-middle sm:block",
+                              TABLE_END_ALIGNED_PAD_CLASS,
+                            )}
+                          >
+                            {t.fee > 0 ? usd.format(t.fee) : "—"}
+                          </div>
+                          <div
+                            className={cn(
+                              "hidden text-right text-[14px] font-medium leading-5 tabular-nums align-middle sm:block",
+                              TABLE_END_ALIGNED_PAD_CLASS,
+                              sumColorClass(t.sum),
+                            )}
+                          >
+                            {formatSignedUsd(t.sum)}
+                          </div>
+                          <div
+                            className={cn(
+                              "hidden min-w-0 text-right text-[14px] font-medium leading-5 align-middle sm:block",
+                              TABLE_END_ALIGNED_PAD_CLASS,
+                            )}
+                          >
+                            {t.profitPct != null && t.profitUsd != null ? (
+                              <div
+                                className={cn(
+                                  "flex flex-col items-end tabular-nums",
+                                  t.profitUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                                )}
+                              >
+                                <div className="text-[14px] font-medium leading-5">
+                                  {formatSignedUsd(t.profitUsd)}
+                                </div>
+                                <div className="text-[12px] font-normal leading-4 opacity-90">
+                                  {formatSignedPct(t.profitPct)}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-[14px] font-medium text-[#5C5D5F]">-</span>
+                            )}
+                          </div>
+                          {!selectedPortfolioReadOnly ? (
+                            <div className="hidden justify-end align-middle sm:flex">
+                              <TransactionRowActionsMenu
+                                transaction={t}
+                                isOpen={openMenuId === t.id}
+                                onOpenChange={(open) => setOpenMenuId(open ? t.id : null)}
+                                onEdit={openEditTransaction}
+                                onRequestDelete={setDeleteCandidate}
+                              />
+                            </div>
+                          ) : null}
                         </div>
+                      </div>
+                      {rowIndex < g.rows.length - 1 ? (
+                        <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
                       ) : null}
                     </div>
                   ))}
                 </Fragment>
               ))}
             </div>
-          </div>
+          </ScreenerTableScroll>
           <TablePaginationBar page={safeTxPage} totalItems={flatSorted.length} onPageChange={setPage} />
         </div>
       )}

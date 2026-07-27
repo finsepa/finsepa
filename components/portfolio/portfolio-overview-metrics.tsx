@@ -99,7 +99,7 @@ function splitMetricsIntoColumns(metrics: PortfolioMetricRow[]): PortfolioMetric
 }
 
 /** Mobile matches asset Key Stats card — 16px radius, stacked shadow, inset padding. */
-const PORTFOLIO_METRICS_MOBILE_CARD_CLASS = "max-md:overflow-hidden max-md:p-4";
+const PORTFOLIO_METRICS_MOBILE_CARD_CLASS = "max-md:overflow-hidden";
 
 /** 4px dash / 4px gap divider — same as asset Key Stats Basic card. */
 const STAT_ROW_DASHED_DIVIDER_CLASS =
@@ -388,17 +388,23 @@ function StatRow({
   className,
   loading,
   showDivider,
+  isFirst,
+  isLast,
 }: {
   row: PortfolioMetricRow;
   muted: boolean;
   className?: string;
   loading?: boolean;
   showDivider?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-3 md:px-0 md:py-1.5",
+        "flex items-center justify-between gap-3 md:px-0",
+        // Keep 16px clear from card edge to first/last label (container `py-4`); middle rows keep 6px rhythm.
+        isFirst && isLast ? "py-0" : isFirst ? "pt-0 pb-1.5" : isLast ? "pt-1.5 pb-0" : "py-1.5",
         showDivider && STAT_ROW_DASHED_DIVIDER_CLASS,
         className,
       )}
@@ -505,7 +511,8 @@ export function PortfolioOverviewMetrics({
   return (
     <div
       className={cn(
-        "mb-6 max-md:mb-4 w-full min-w-0 md:overflow-visible md:p-4",
+        // 16px inset on all sides — matches stock Key Stats cards.
+        "mb-5 w-full min-w-0 p-4 md:overflow-visible max-md:mb-4",
         MOBILE_INSET_CARD_CLASS,
         PORTFOLIO_METRICS_MOBILE_CARD_CLASS,
       )}
@@ -546,6 +553,8 @@ export function PortfolioOverviewMetrics({
                 muted={row.muted}
                 loading={showMetricsSkeleton}
                 showDivider={rowIndex < column.length - 1}
+                isFirst={rowIndex === 0}
+                isLast={rowIndex === column.length - 1}
               />
             ))}
           </div>

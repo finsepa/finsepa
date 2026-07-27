@@ -14,9 +14,11 @@ import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
   SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
+  TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import {
   Empty,
@@ -30,17 +32,11 @@ import type { InsiderTransactionKind, InsiderTransactionRow } from "@/lib/market
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
 import { cn } from "@/lib/utils";
 
-/** Column layout aligned with `screener-table`: `gap-x-2`, fixed date + flexible rights.
- * `px-3` insets content inside the hover pill (Companies gets this from the star column + `pr-3`).
- * Do not change `screener-table` — that layout starts with the star icon.
+/** Column layout aligned with screener tables: `gap-x-2`, fixed date + flexible rights.
+ * Horizontal inset comes from {@link SCREENER_TABLE_ROW_HOVER_PAD_CLASS} (8px desktop).
  */
 const INSIDER_GRID =
-  "grid min-w-[900px] grid-cols-[148px_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.95fr)_minmax(0,1.05fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-x-2 px-3";
-
-/**
- * Outer inset to the hover surface — matches Financials / Reports (~16px from card edge).
- */
-const INSIDER_ROW_PAD_CLASS = "px-4";
+  "grid min-w-[900px] grid-cols-[148px_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,0.95fr)_minmax(0,1.05fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-x-2";
 
 const INSIDERS_CHART_RANGES = ["1Y", "5Y"] as const satisfies readonly StockChartRange[];
 
@@ -215,9 +211,9 @@ function InsidersTableSkeleton({ rows }: { rows: number }) {
           "md:border-b-0",
         )}
       >
-        <div className={INSIDER_ROW_PAD_CLASS}>
+        <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
           <div className={cn(INSIDER_GRID, "min-h-[44px] items-center py-0")}>
-            <div className="flex items-center justify-start gap-1">
+            <div className={cn("flex items-center justify-start gap-1", TABLE_START_ALIGNED_PAD_CLASS)}>
               <SkeletonBox className="h-3.5 w-10 rounded" />
             </div>
             {Array.from({ length: 6 }).map((_, i) => (
@@ -231,7 +227,7 @@ function InsidersTableSkeleton({ rows }: { rows: number }) {
       </div>
       {Array.from({ length: rows }).map((_, ri) => (
         <div key={ri} className={SCREENER_TABLE_DATA_ROW_CLASS}>
-          <div className={INSIDER_ROW_PAD_CLASS}>
+          <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
             <div
               className={cn(
                 INSIDER_GRID,
@@ -239,7 +235,7 @@ function InsidersTableSkeleton({ rows }: { rows: number }) {
                 SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
               )}
             >
-              <div className="flex justify-start">
+              <div className={cn("flex justify-start", TABLE_START_ALIGNED_PAD_CLASS)}>
                 <TextSkeleton wClass="w-24" />
               </div>
               <div className="flex min-w-0 justify-end">
@@ -293,7 +289,7 @@ function InsiderRow({
 
   return (
     <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
-      <div className={INSIDER_ROW_PAD_CLASS}>
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
         <div
           className={cn(
             INSIDER_GRID,
@@ -301,7 +297,9 @@ function InsiderRow({
             SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
           )}
         >
-          <div className="text-left tabular-nums text-[#141414]">{formatDisplayDate(row.transactionDate)}</div>
+          <div className={cn("text-left tabular-nums text-[#141414]", TABLE_START_ALIGNED_PAD_CLASS)}>
+            {formatDisplayDate(row.transactionDate)}
+          </div>
           <div className="min-w-0 truncate text-right text-[#141414]" title={row.ownerName}>
             {row.ownerName}
           </div>
@@ -475,14 +473,14 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
               "md:border-b-0",
             )}
           >
-            <div className={INSIDER_ROW_PAD_CLASS}>
+            <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
               <div
                 className={cn(
                   INSIDER_GRID,
                   "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
                 )}
               >
-                <div className="text-left">Date</div>
+                <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Date</div>
                 <div className="min-w-0 w-full text-right">Insider</div>
                 <div className="min-w-0 w-full text-right">Position</div>
                 <div className="min-w-0 w-full text-right">Transaction type</div>

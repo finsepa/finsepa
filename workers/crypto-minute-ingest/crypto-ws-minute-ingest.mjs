@@ -7,8 +7,8 @@
  *
  * - Subscribes to the EODHD crypto WS (`/ws/crypto`) for the configured pair(s).
  * - Coalesces one close per UTC minute bucket and upserts into `crypto_session_minute_bar`.
- * - Emits a heartbeat bucket every ~60s from the last seen price so the line stays continuous
- *   even during quiet trade minutes.
+ * - Emits a heartbeat bucket every ~60s from the last seen price while real trades are still
+ *   arriving (stops after a short stale window so a frozen lastPrice cannot flatten the 24h chart).
  * - Exposes /health for Railway.
  *
  * Under Supabase 522 / timeouts: exponential backoff before retry (no immediate re-flush storm).
@@ -140,16 +140,23 @@ function flushBackoffMs(attempt) {
 const pendingUpserts = new Map();
 /** @type {Map<string, number>} last price per base symbol (for heartbeat). */
 const lastPriceBySymbol = new Map();
+/** @type {Map<string, number>} last real trade unix-sec per base (heartbeat only while fresh). */
+const lastRealTradeSecBySymbol = new Map();
+/** Stop re-stamping the last price when no real WS trade has arrived for this long. */
+const HEARTBEAT_STALE_SEC = Number(process.env.CRYPTO_WS_HEARTBEAT_STALE_SEC ?? 3 * 60);
 let flushTimer = null;
 let flushInProgress = false;
 let consecutiveFlushFailures = 0;
 
-function queueMinuteClose(base, tradeSec, price) {
+function queueMinuteClose(base, tradeSec, price, { fromHeartbeat = false } = {}) {
   if (!base || !Number.isFinite(price) || price <= 0) return;
   lastPriceBySymbol.set(base, price);
+  if (!fromHeartbeat) {
+    lastRealTradeSecBySymbol.set(base, tradeSec);
+    health.lastTradeAt = new Date().toISOString();
+    health.lastPrice = price;
+  }
   setPendingMinuteClose(pendingUpserts, base, tradeSec, price, new Date().toISOString());
-  health.lastTradeAt = new Date().toISOString();
-  health.lastPrice = price;
   health.pendingUpserts = pendingUpserts.size;
   scheduleFlush();
 }
@@ -217,11 +224,14 @@ async function flushPendingUpserts() {
   }
 }
 
-/** Keep the line continuous during quiet minutes by re-stamping the last price each minute. */
+/** Keep the line continuous during quiet minutes by re-stamping the last price each minute.
+ * Skip when no real trade has arrived recently — otherwise a stuck lastPrice flattens the 24h chart. */
 function heartbeatTick() {
   const nowSec = Math.floor(Date.now() / 1000);
   for (const [base, price] of lastPriceBySymbol.entries()) {
-    queueMinuteClose(base, nowSec, price);
+    const lastTradeSec = lastRealTradeSecBySymbol.get(base);
+    if (lastTradeSec == null || nowSec - lastTradeSec > HEARTBEAT_STALE_SEC) continue;
+    queueMinuteClose(base, nowSec, price, { fromHeartbeat: true });
   }
 }
 
@@ -270,6 +280,8 @@ function connectWs() {
     log("websocket closed", code);
     health.authorized = false;
     health.subscribed = 0;
+    lastPriceBySymbol.clear();
+    lastRealTradeSecBySymbol.clear();
     setTimeout(connectWs, 5000);
   });
 

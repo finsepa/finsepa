@@ -8,6 +8,7 @@ import {
   Globe04,
   Grid01,
   NavigationPointer01,
+  PieChart01,
   Rows01,
   Users01,
   type AppIcon,
@@ -27,6 +28,15 @@ export type ProtectedNavItem = {
   activePathPrefix?: boolean;
   /** Additional path roots (exact or nested) that keep this item active — e.g. asset pages opened from Screener. */
   activePathPrefixes?: readonly string[];
+};
+
+/** Top of sidebar, above Agent (same destination as top-bar portfolio control). */
+export const protectedPortfolioItem: ProtectedNavItem = {
+  label: "My Portfolio",
+  icon: PieChart01,
+  href: "/portfolio",
+  available: true,
+  activePathPrefix: true,
 };
 
 /** Top of sidebar, above Markets (Linear-style primary entry). */

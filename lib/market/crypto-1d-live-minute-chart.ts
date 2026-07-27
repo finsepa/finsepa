@@ -10,6 +10,7 @@ import {
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { eodhdSymbolsForMeta } from "@/lib/market/crypto-meta";
 import { fetchCryptoMinuteBarsFromDb } from "@/lib/market/crypto-session-minute-bar-store";
+import { cryptoMinuteBarsHavePriceVariation } from "@/lib/market/crypto-ws-minute-bar-quality";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 
@@ -176,12 +177,15 @@ export async function loadCryptoLive1DMinuteChartPoints(
   const fromSec = minuteBucket(nowSec - DAY_SEC);
   const base = normalizeCryptoBaseSymbol(symbol) || symbol;
 
-  const [restBase, wsBars] = await Promise.all([
+  const [restBase, wsBarsRaw] = await Promise.all([
     getCryptoLive1DRestBaseCached(base),
     fetchCryptoMinuteBarsFromDb(symbol, fromSec),
   ]);
 
-  // REST base first, live WS bars overwrite overlapping minute buckets (WS is freshest).
+  // Heartbeat-only WS bars can freeze the entire window at one close — ignore them like stocks do.
+  const wsBars = cryptoMinuteBarsHavePriceVariation(wsBarsRaw) ? wsBarsRaw : [];
+
+  // REST base first; live WS bars overwrite overlapping minute buckets when they have real variation.
   const merged = mergeByBucket(restBase, wsBars).filter((p) => p.time >= fromSec);
 
   const series = buildBucketedSeries(merged, nowSec, OUTPUT_BUCKET_SEC);
@@ -193,7 +197,8 @@ export async function loadCryptoLive1DMinuteChartPoints(
     const iso = (sec: number | null) => (sec != null ? new Date(sec * 1000).toISOString() : null);
     console.info("[crypto-1d-ws]", base, {
       restBarCount: restBase.length,
-      wsBarCount: wsBars.length,
+      wsBarCount: wsBarsRaw.length,
+      wsOverlayUsed: wsBars.length > 0,
       mergedPointCount: merged.length,
       outputBucketSec: OUTPUT_BUCKET_SEC,
       pointCount: points.length,

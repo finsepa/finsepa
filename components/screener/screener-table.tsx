@@ -6,6 +6,7 @@ import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { WatchlistCollection } from "@/lib/watchlist/collections";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import { CompanyLogo } from "./company-logo";
+import { TABLE_END_ALIGNED_PAD_CLASS } from "@/components/screener/screener-table-pad";
 import {
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   SCREENER_TABLE_OUTER_BORDER_CLASS,
@@ -80,7 +81,7 @@ function PriceAndChangeCell({ price, change1D }: { price: number | null; change1
   const hasChange = change1D != null && Number.isFinite(change1D);
   const positive = (change1D ?? 0) >= 0;
   return (
-    <div className="min-w-0 w-full text-right">
+    <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
       <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
         {hasPrice ? `$${price!.toFixed(2)}` : "-"}
       </div>
@@ -132,11 +133,18 @@ export function screenerTableMinWidthPx(keyStatCount: number): number | undefine
 
 const mobileRankCellClass = "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-[#5C5D5F]";
 
-const desktopNumericCellFluidClass = "hidden min-w-0 w-full pr-3 text-right sm:block";
-const desktopNumericCellFixedClass =
-  "hidden w-full min-w-[4.5rem] max-w-[8rem] shrink-0 pr-3 text-right sm:block";
-const desktopKeyStatCellClass =
-  "hidden w-full min-w-[5.5rem] max-w-[8rem] shrink-0 truncate pr-3 text-right sm:block";
+const desktopNumericCellFluidClass = cn(
+  "hidden min-w-0 w-full text-right sm:block",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
+const desktopNumericCellFixedClass = cn(
+  "hidden w-full min-w-[4.5rem] max-w-[8rem] shrink-0 text-right sm:block",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
+const desktopKeyStatCellClass = cn(
+  "hidden w-full min-w-[5.5rem] max-w-[8rem] shrink-0 truncate text-right sm:block",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
 
 function screenerDesktopNumericCellClass(fluid: boolean): string {
   return fluid ? desktopNumericCellFluidClass : desktopNumericCellFixedClass;
@@ -320,7 +328,7 @@ export function ScreenerTable({
         >
           <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
           <div className="text-left">Company</div>
-          <div className={cn("min-w-0 w-full pr-3 text-right", !useFluidDesktopColumns && "sm:shrink-0 sm:max-w-[8rem] sm:min-w-[5.25rem]")}>
+          <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS, !useFluidDesktopColumns && "sm:shrink-0 sm:max-w-[8rem] sm:min-w-[5.25rem]")}>
             <span className="sm:hidden">Price</span>
             <span className="hidden sm:inline">Price</span>
             <span className="hidden text-[12px] font-medium leading-4 text-[#A1A1AA] sm:hidden">1D %</span>

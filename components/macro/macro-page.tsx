@@ -29,6 +29,7 @@ import {
   companyRailTitleClass,
 } from "@/components/charting/charting-rail-row-styles";
 import { SIDEBAR_OUTER_EXPANDED_PX } from "@/components/layout/sidebar-layout-context";
+import { SHELL_DESKTOP_PANEL_BG_CLASS } from "@/components/design-system/card-surface-styles";
 import {
   DEFAULT_MACRO_CHART_ID,
   groupMacroChartCards,
@@ -152,7 +153,10 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
   return (
     <div className="flex min-w-0 max-md:flex-col md:absolute md:inset-0 md:overflow-hidden">
       <aside
-        className="hidden min-h-0 shrink-0 flex-col overflow-hidden border-r border-[#E4E4E7] bg-[#FCFCFD] md:flex"
+        className={cn(
+          "hidden min-h-0 shrink-0 flex-col overflow-hidden border-r border-[#E4E4E7] md:flex",
+          SHELL_DESKTOP_PANEL_BG_CLASS,
+        )}
         style={{ width: SIDEBAR_OUTER_EXPANDED_PX }}
         aria-label="Macro charts"
       >

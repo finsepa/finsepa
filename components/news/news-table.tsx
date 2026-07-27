@@ -13,6 +13,7 @@ import {
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
+  TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
 
@@ -34,10 +35,15 @@ const NEWS_GRID =
 function NewsRowCells({ item }: { item: NewsItem }) {
   return (
     <>
-      <div className="hidden text-[13px] leading-5 text-[#5C5D5F] tabular-nums sm:block">
+      <div
+        className={cn(
+          "hidden text-[13px] leading-5 text-[#5C5D5F] tabular-nums sm:block",
+          TABLE_START_ALIGNED_PAD_CLASS,
+        )}
+      >
         {formatTime(item.publishedAt)}
       </div>
-      <div className="min-w-0 pr-3">
+      <div className={cn("min-w-0 pr-3", "max-sm:pl-3 sm:pl-0")}>
         <div className="text-[12px] leading-4 text-[#5C5D5F] tabular-nums sm:hidden">
           {formatTime(item.publishedAt)}
         </div>
@@ -85,8 +91,8 @@ export function NewsTable({ items }: { items: NewsItem[] }) {
               "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F] [&>div]:text-left",
             )}
           >
-            <div className="hidden sm:block">Time</div>
-            <div>Headline</div>
+            <div className={cn("hidden sm:block", TABLE_START_ALIGNED_PAD_CLASS)}>Time</div>
+            <div className={cn("max-sm:pl-3 sm:pl-0")}>Headline</div>
             <div>Asset</div>
             <div>Source</div>
           </div>

@@ -82,8 +82,6 @@ export function AgentChatHistoryHeader({
   const [renameIconPlaying, setRenameIconPlaying] = useState(false);
   const [deleteIconPlaying, setDeleteIconPlaying] = useState(false);
   const [saving, setSaving] = useState(false);
-  /** Avoid SSR/client mismatch for the empty-state history trigger. */
-  const [chromeReady, setChromeReady] = useState(false);
 
   const chevronBtnRef = useRef<HTMLButtonElement>(null);
   const historyPortalRef = useRef<HTMLDivElement>(null);
@@ -108,10 +106,6 @@ export function AgentChatHistoryHeader({
         } satisfies AgentThreadSummary)
       : null);
   const canManageActive = Boolean(activeThread);
-
-  useEffect(() => {
-    setChromeReady(true);
-  }, []);
 
   useEffect(() => {
     if (step === "rename" && modalThread) setRenameValue(modalThread.title || displayTitle);
@@ -255,32 +249,6 @@ export function AgentChatHistoryHeader({
             <Plus className="size-4" aria-hidden />
           </button>
         </header>
-      ) : chromeReady && threads.length > 0 ? (
-        <div className="pointer-events-none absolute left-4 top-3 z-20 sm:left-9">
-          <button
-            ref={chevronBtnRef}
-            type="button"
-            disabled={disabled}
-            aria-expanded={historyOpen}
-            aria-haspopup="menu"
-            aria-label="Chat history"
-            onClick={() => {
-              setHeaderMenuOpen(false);
-              setHistoryOpen((o) => !o);
-            }}
-            className={cn(
-              ghostIconBtnClass,
-              "pointer-events-auto",
-              historyOpen && "bg-[#F4F4F5] text-[#141414]",
-              disabled && "pointer-events-none opacity-60",
-            )}
-          >
-            <ChevronDown
-              className={cn("size-4 transition-transform", historyOpen && "rotate-180")}
-              aria-hidden
-            />
-          </button>
-        </div>
       ) : null}
 
       <TopbarDropdownPortal

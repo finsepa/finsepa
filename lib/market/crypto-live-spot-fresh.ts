@@ -7,7 +7,8 @@ import {
 } from "@/lib/market/crypto-meta";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { getCryptoPerformance } from "@/lib/market/crypto-performance";
-import { fetchLatestCryptoMinuteBarFromDb } from "@/lib/market/crypto-session-minute-bar-store";
+import { fetchCryptoMinuteBarsFromDb, fetchLatestCryptoMinuteBarFromDb } from "@/lib/market/crypto-session-minute-bar-store";
+import { cryptoMinuteBarsHavePriceVariation } from "@/lib/market/crypto-ws-minute-bar-quality";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
 import { fetchEodhdRealtimeSymbolsRaw } from "@/lib/market/eodhd-realtime";
 
@@ -22,6 +23,8 @@ export type CryptoLiveSpot = {
 
 /** WS bar is only trusted as "live" if its minute bucket is at most this old. */
 const WS_FRESHNESS_SEC = 5 * 60;
+/** Lookback used to reject heartbeat-frozen WS closes (same price every minute). */
+const WS_VARIATION_LOOKBACK_SEC = 60 * 60;
 
 function isPositive(n: unknown): n is number {
   return typeof n === "number" && Number.isFinite(n) && n > 0;
@@ -42,10 +45,14 @@ export async function getCryptoLiveSpotForHeader(routeSymbol: string): Promise<C
   const trimmed = routeSymbol.trim();
   const nowSec = Math.floor(Date.now() / 1000);
 
-  // 1) Live WS minute close (Supabase) — freshest when the ingest worker is up.
+  // 1) Live WS minute close (Supabase) — freshest when the ingest worker is up and prices move.
   const wsBar = await fetchLatestCryptoMinuteBarFromDb(trimmed);
   if (wsBar && isPositive(wsBar.close) && wsBar.bucket_unix >= nowSec - WS_FRESHNESS_SEC) {
-    return { price: wsBar.close, quotedAtSec: wsBar.bucket_unix, source: "ws" };
+    const recentWs = await fetchCryptoMinuteBarsFromDb(trimmed, nowSec - WS_VARIATION_LOOKBACK_SEC);
+    // Fewer than 2 bars: accept the tip (startup). Flat hour of heartbeats: fall through.
+    if (recentWs.length < 2 || cryptoMinuteBarsHavePriceVariation(recentWs)) {
+      return { price: wsBar.close, quotedAtSec: wsBar.bucket_unix, source: "ws" };
+    }
   }
 
   const meta = await resolveCryptoMetaForProvider(trimmed);

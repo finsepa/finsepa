@@ -5,6 +5,7 @@ import { LineChart } from "@/lib/icons";
 
 import { PortfolioHoldingsPerformanceChart } from "@/components/portfolio/portfolio-holdings-performance-chart";
 import { PortfolioReturnsDynamicsChart } from "@/components/portfolio/portfolio-returns-dynamics-chart";
+import { SegmentedControl } from "@/components/design-system/segmented-control";
 import {
   earliestBenchmarkCoverYmd,
   fetchSpyBenchmarkChartPoints,
@@ -99,28 +100,24 @@ function PerformanceChartSection({
     });
   }, [showPortfolio]);
 
-  const rangeSwitcher = (
-    <div
-      className="mt-3 flex w-full min-w-0 flex-nowrap justify-stretch gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5 sm:mt-0 sm:w-auto sm:flex-nowrap sm:justify-end"
-      role="group"
+  const rangeSwitcherDesktop = (
+    <SegmentedControl
+      options={PORTFOLIO_CHART_RANGE_LABELS}
+      value={range}
+      onChange={onRangeChange}
       aria-label={`${title} range`}
-    >
-      {PORTFOLIO_CHART_RANGE_LABELS.map((r) => (
-        <button
-          key={r.id}
-          type="button"
-          onClick={() => onRangeChange(r.id)}
-          className={cn(
-            "flex-1 rounded-[10px] px-2 py-1.5 text-center font-sans text-[14px] leading-5 tracking-normal sm:flex-none sm:px-4",
-            range === r.id ?
-              "bg-white font-medium text-[#141414] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-            : "font-normal text-[#5C5D5F]",
-          )}
-        >
-          {r.label}
-        </button>
-      ))}
-    </div>
+    />
+  );
+
+  const rangeSwitcherMobile = (
+    <SegmentedControl
+      options={PORTFOLIO_CHART_RANGE_LABELS}
+      value={range}
+      onChange={onRangeChange}
+      fullWidth
+      className="mt-3"
+      aria-label={`${title} range`}
+    />
   );
 
   const hasChart = canLoad && !loading && !error && points.length > 0;
@@ -146,7 +143,7 @@ function PerformanceChartSection({
     <section className="mb-10 w-full min-w-0">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414]">{title}</h2>
-        <div className="hidden sm:flex">{rangeSwitcher}</div>
+        <div className="hidden sm:flex">{rangeSwitcherDesktop}</div>
       </div>
 
       <div className="w-full min-w-0">
@@ -196,7 +193,7 @@ function PerformanceChartSection({
 
       {legend}
 
-      <div className="flex w-full justify-end sm:hidden">{rangeSwitcher}</div>
+      <div className="flex w-full sm:hidden">{rangeSwitcherMobile}</div>
     </section>
   );
 }

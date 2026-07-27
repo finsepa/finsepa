@@ -9,7 +9,7 @@ import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface
 import { Spinner } from "@/components/ui/spinner";
 import { deriveAgentThreadTitle } from "@/lib/agents/agent-thread-title";
 import type { AgentThreadSummary } from "@/lib/agents/agent-thread-types";
-import { ArrowDown, MessageCircle, Send, StopSolid } from "@/lib/icons";
+import { ArrowDown, History, Send, StopSolid, Trash2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -670,23 +670,43 @@ export function AgentChatPage() {
               </div>
 
               {recentThreads.length > 0 ? (
-                <div className="mx-auto mt-10 w-full max-w-[420px]">
+                <div className="mt-10 w-full">
                   <p className="mb-2 text-[13px] font-medium leading-5 text-[#A1A1AA]">Recents</p>
-                  <ul className="flex flex-col gap-0.5">
-                    {recentThreads.map((thread) => (
-                      <li key={thread.id}>
-                        <button
-                          type="button"
-                          onClick={() => void selectThread(thread.id)}
-                          className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm leading-5 text-[#52525B] transition-colors hover:bg-[#F4F4F5] hover:text-[#141414]"
-                        >
-                          <MessageCircle className="size-4 shrink-0 text-[#A1A1AA]" aria-hidden />
-                          <span className="min-w-0 flex-1 truncate">
-                            {thread.title.trim() || "New chat"}
-                          </span>
-                        </button>
-                      </li>
-                    ))}
+                  <ul className="flex w-full flex-col gap-0.5">
+                    {recentThreads.map((thread) => {
+                      const label = thread.title.trim() || "New chat";
+                      return (
+                        <li key={thread.id} className="group/recent w-full">
+                          <div className="flex w-full items-center gap-0.5 rounded-lg transition-colors hover:bg-[#F4F4F5]">
+                            <button
+                              type="button"
+                              onClick={() => void selectThread(thread.id)}
+                              className="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left text-sm leading-5 text-[#52525B] transition-colors hover:text-[#141414]"
+                            >
+                              <History className="size-4 shrink-0 text-[#A1A1AA]" aria-hidden />
+                              <span className="min-w-0 flex-1 truncate">{label}</span>
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Delete ${label}`}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                void deleteThread(thread.id);
+                              }}
+                              className={cn(
+                                "mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-[#A1A1AA]",
+                                "opacity-0 transition-opacity hover:bg-[#FEE2E2] hover:text-[#DC2626]",
+                                "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
+                                "group-hover/recent:opacity-100 max-sm:opacity-100",
+                              )}
+                            >
+                              <Trash2 className="size-4" strokeWidth={1.75} aria-hidden />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ) : null}

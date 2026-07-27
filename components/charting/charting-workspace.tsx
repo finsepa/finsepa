@@ -62,11 +62,12 @@ import {
 } from "@/components/charting/charting-time-range";
 import { ChartingDataTableSettingsMenu } from "@/components/charting/charting-data-table-settings-menu";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
+import { CompanyRailCard } from "@/components/layout/company-rail";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
-import { secondaryFillButtonClassName, secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { secondaryFillButtonClassName, secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption, whiteSurfaceChipDividerClass, whiteSurfaceChipLabelClass, whiteSurfaceChipRemoveClass, whiteSurfaceChipShellClass } from "@/components/design-system";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { ChartingMetricPickerMenu } from "@/components/charting/charting-metric-picker-menu";
@@ -1852,7 +1853,11 @@ export function ChartingWorkspace({
   const stockFullWidthFixedBars = histogramLayout === "stockFullWidthFixedBars";
   const isFullPageCharting = fullPageCompanyChipSlot != null;
   const { useRailPickers, metricAddAnchorRef } = useChartingRailPickerAnchors();
-  const useRailMetricPicker = isFullPageCharting && pathRoute === "/charting" && useRailPickers;
+  /** Standalone `/charting` or stock Charting tab (legend placement) — right Company/Metric card. */
+  const useRailMetricPicker =
+    useRailPickers &&
+    !screenshotPreviewMode &&
+    (isFullPageCharting || metricControlsPlacement === "legend");
   const animateBars = animateBarsOnAppear && !screenshotPreviewMode;
   const timeRangeTabOptions = useMemo(
     () => timeRangeTabOptionsFor(timeRangeOrder),
@@ -3425,7 +3430,9 @@ export function ChartingWorkspace({
       openCompanyPicker,
       metricAddDisabled: false,
       companyAddDisabled: selected.length === 0,
-      companies: useRailMetricPicker ? [{ ticker }] : undefined,
+      companies: useRailMetricPicker
+        ? [{ ticker, removeDisabled: metricControlsPlacement === "legend" }]
+        : undefined,
       metrics: useRailMetricPicker
         ? selected.map((id) => ({
             id,
@@ -3435,7 +3442,10 @@ export function ChartingWorkspace({
             showBarValues: isBarValuesVisible(id),
           }))
         : undefined,
-      onRemoveCompany: useRailMetricPicker ? removeCompanyFromRail : undefined,
+      onRemoveCompany:
+        useRailMetricPicker && metricControlsPlacement !== "legend"
+          ? removeCompanyFromRail
+          : undefined,
       onRemoveMetric: useRailMetricPicker
         ? (metricId: string) => removeMetric(metricId as ChartingMetricId)
         : undefined,
@@ -3443,7 +3453,7 @@ export function ChartingWorkspace({
         ? (metricId, next) => setBarValuesVisibleForMetric(metricId as ChartingMetricId, next)
         : undefined,
     },
-    isFullPageCharting && pathRoute === "/charting",
+    useRailMetricPicker,
   );
 
   const addMetricPicker = (
@@ -3502,8 +3512,96 @@ export function ChartingWorkspace({
   return (
     <>
       {!screenshotPreviewMode ? <DataFetchTopLoader active={loading} /> : null}
-      <div className={cn(screenshotPreviewMode ? "space-y-1" : "space-y-5")}>
+      <div
+        className={cn(
+          useRailMetricPicker && !screenshotPreviewMode ? "flex flex-col gap-5" : undefined,
+        )}
+      >
+      {useRailMetricPicker && !screenshotPreviewMode ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
+          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:flex-1">
+            {workspaceTitle}
+          </h2>
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
+            <div className="flex shrink-0 flex-nowrap items-center gap-2">
+              {chartType !== "line" ? (
+                <TabSwitcher
+                  size="sm"
+                  options={PERIOD_TAB_OPTIONS}
+                  value={periodMode}
+                  onChange={setPeriodMode}
+                  aria-label="Reporting period"
+                />
+              ) : null}
+              {useFundamentalsLineChart ? (
+                <FundamentalsChartSettingsMenu
+                  variant="line"
+                  options={lineDisplayOptions}
+                  onChange={setLineDisplayOptions}
+                />
+              ) : null}
+              <ChartingVisualSwitcher value={chartType} onChange={handleChartTypeChange} />
+            </div>
+            <div className="shrink-0">
+              <TabSwitcher
+                className="inline-flex w-max min-w-0 flex-nowrap"
+                size="sm"
+                options={timeRangeTabOptions}
+                value={timeRange}
+                onChange={(next) => {
+                  setTimeRange(next);
+                }}
+                aria-label="Time range"
+              />
+            </div>
+            {enableScreenshotDownload ? (
+              <button
+                type="button"
+                onClick={handleOpenDownload}
+                disabled={loading || empty || noMetricData || showStockTabMetricEmptyState}
+                className={cn(topbarSquircleIconClass, "disabled:cursor-not-allowed disabled:opacity-40")}
+                aria-label="Download chart"
+              >
+                <Download className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                if (metricControlsPlacement === "legend") {
+                  setSelected([]);
+                  return;
+                }
+                router.replace(buildStandaloneChartPath(pathRoute, [], []), { scroll: false });
+              }}
+              disabled={metricControlsPlacement === "legend" && selected.length === 0}
+              className={cn(topbarSquircleIconClass, "disabled:cursor-not-allowed disabled:opacity-40")}
+              aria-label="Clear companies and metrics"
+            >
+              <RefreshCw className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+            </button>
+          </div>
+        </div>
+      ) : null}
+      <div className={cn(useRailMetricPicker && "flex items-start gap-5")}>
+      <div
+        className={cn(
+          "min-w-0",
+          useRailMetricPicker && "flex-1",
+          screenshotPreviewMode
+            ? "space-y-1"
+            : useRailMetricPicker
+              ? undefined
+              : "space-y-5",
+        )}
+      >
       {!screenshotPreviewMode ? (
+      useRailMetricPicker ? (
+        <div className="sr-only">
+          {addMetricPicker}
+          {selected.length > 0 && fullPageCompanyAddSlot ? fullPageCompanyAddSlot : null}
+        </div>
+      ) : (
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
           <h2 className={cn("min-w-0 shrink-0 sm:flex-1", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
@@ -3567,27 +3665,25 @@ export function ChartingWorkspace({
           ) : null}
         </div>
 
-        {useRailMetricPicker ? (
-          <div className="sr-only">
-            {addMetricPicker}
-            {selected.length > 0 && fullPageCompanyAddSlot ? fullPageCompanyAddSlot : null}
-          </div>
-        ) : !metricControlsInLegend || fullPageCompanyChipSlot ? (
+        {!metricControlsInLegend || fullPageCompanyChipSlot ? (
           <div className="flex flex-wrap items-center gap-2">
             {!metricControlsInLegend
               ? selected.map((id) => (
                   <div
                     key={id}
-                    className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+                    className={cn("order-1", whiteSurfaceChipShellClass)}
                   >
-                    <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#141414]">
+                    <span className={cn(whiteSurfaceChipLabelClass, whiteSurfaceChipDividerClass)}>
                       <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
                     </span>
                     <button
                       type="button"
                       onClick={() => removeMetric(id)}
                       disabled={selected.length <= 1}
-                      className="flex w-9 shrink-0 items-center justify-center text-[#141414] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                      className={cn(
+                        whiteSurfaceChipRemoveClass,
+                        "disabled:pointer-events-none disabled:opacity-30",
+                      )}
                       aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
                     >
                       <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -3603,8 +3699,10 @@ export function ChartingWorkspace({
           </div>
         ) : null}
       </div>
+      )
       ) : null}
 
+      <div className={cn(useRailMetricPicker && !screenshotPreviewMode && "space-y-5")}>
       {showStockTabMetricEmptyState ? (
         <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
           <EmptyHeader>
@@ -4068,7 +4166,13 @@ export function ChartingWorkspace({
           ) : null}
         </>
       )}
+      </div>
     </div>
+      {useRailMetricPicker ? (
+        <CompanyRailCard className="hidden w-[240px] self-start md:block" />
+      ) : null}
+      </div>
+      </div>
       {enableScreenshotDownload && !screenshotPreviewMode ? (
         <ChartScreenshotDownloadModal
           open={downloadOpen}

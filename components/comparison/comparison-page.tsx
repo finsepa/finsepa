@@ -65,7 +65,7 @@ export function ComparisonPage({
 
   if (showWorkspace) {
     return (
-      <div className="relative min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
+      <div className="relative min-w-0">
         <Suspense fallback={null}>
           <AssetPageTopLoader />
         </Suspense>
@@ -79,22 +79,22 @@ export function ComparisonPage({
   }
 
   return (
-    <div className="min-w-0 space-y-6 px-4 py-4 sm:px-9 sm:py-6">
-      <ComparisonEmptyToolbar tickers={tickersForUi} allowedChartingTickers={allowedChartingTickers} />
-
-      <section aria-label="Comparison chart area" className="w-full">
-        <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-            </EmptyMedia>
-            <EmptyTitle>No Data to Display</EmptyTitle>
-            <EmptyDescription className="max-w-md">
-              Choose at least one company to generate your comparison.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      </section>
+    <div className="min-w-0">
+      <ComparisonEmptyToolbar tickers={tickersForUi} allowedChartingTickers={allowedChartingTickers}>
+        <section aria-label="Comparison chart area" className="w-full">
+          <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+              </EmptyMedia>
+              <EmptyTitle>No Data to Display</EmptyTitle>
+              <EmptyDescription className="max-w-md">
+                Choose at least one company to generate your comparison.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        </section>
+      </ComparisonEmptyToolbar>
     </div>
   );
 }

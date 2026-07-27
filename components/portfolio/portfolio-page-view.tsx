@@ -359,9 +359,9 @@ export function PortfolioPageView({
   return (
     <div className="relative flex min-h-full min-w-0 flex-col md:overflow-x-hidden">
       {showPortfoliosBreadcrumb ? <PortfoliosBreadcrumbs currentLabel={portfolioName} /> : null}
-      <div className="relative flex min-h-full min-w-0 flex-1 flex-col px-4 pb-4 pt-2 max-md:overflow-visible md:overflow-x-hidden sm:px-9 sm:py-6">
+      <div className="relative flex min-h-full min-w-0 flex-1 flex-col px-4 py-4 max-md:overflow-visible md:overflow-x-hidden sm:px-9 sm:py-6">
       <AssetPageTopLoader />
-      <div className="mb-6 hidden shrink-0 flex-col gap-2 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <div className="mb-5 hidden shrink-0 flex-col gap-2 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex min-w-0 flex-1 items-center">
           <div className="min-w-0 flex-col gap-1">
             {showPortfoliosBreadcrumb ? (
@@ -414,8 +414,8 @@ export function PortfolioPageView({
                 benchmarkInvestedUsd={benchmarkInvestedUsd}
               />
               <PortfolioOverviewMetrics holdings={holdings} transactions={transactions} />
-              <div className="max-md:pt-0 pt-6">
-                <div className="mb-4 hidden items-center justify-between gap-3 md:flex">
+              <div className="pt-0">
+                <div className="mb-5 hidden items-center justify-between gap-3 md:flex">
                   <SecondaryTabs
                     className="min-w-0 flex-1"
                     aria-label="Holdings view"

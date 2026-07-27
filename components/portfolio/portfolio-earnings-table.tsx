@@ -4,6 +4,18 @@ import { memo, useEffect, useMemo, useState } from "react";
 
 import { EarningsPreviewModal } from "@/components/earnings/earnings-preview-modal";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { SkeletonBox } from "@/components/markets/skeleton";
 import { EarningsCountdownBars } from "@/components/stock/earnings-countdown-bars";
 import {
@@ -33,7 +45,10 @@ const EM_DASH = "\u2014";
 
 /** Matches screener / holdings company column. */
 const HOLDING_COMPANY_NAME_CLASS =
-  "truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline";
+  "truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline group-hover/row:underline";
+
+const EARNINGS_GRID =
+  "grid min-w-[640px] grid-cols-[minmax(200px,2fr)_minmax(140px,1fr)_minmax(140px,1fr)] items-center gap-x-2";
 
 function holdingLookupKey(symbol: string): string {
   return symbol.trim().toUpperCase();
@@ -216,12 +231,7 @@ function PortfolioEarningsTableInner({
   }
 
   return (
-    <div
-      className={cn(
-        "w-full overflow-x-visible max-md:pb-4 sm:overflow-x-auto sm:border-t sm:border-[#E4E4E7] sm:pb-8",
-        className,
-      )}
-    >
+    <div className={cn("w-full max-md:pb-4 sm:pb-2", className)}>
       <div className="sm:hidden">
         <div>
           {sortedHoldings.map((h) => {
@@ -233,7 +243,7 @@ function PortfolioEarningsTableInner({
             return (
               <div
                 key={h.id}
-                className="group flex min-h-[56px] cursor-pointer items-center justify-between gap-3 border-b border-[#E4E4E7] px-4 py-[10px]"
+                className="group flex min-h-[56px] cursor-pointer items-center justify-between gap-3 border-b border-[#EFEFEF] px-4 py-[10px]"
                 onClick={() => openEarningsPreview(h)}
                 onKeyDown={(e) => {
                   if (e.key !== "Enter" && e.key !== " ") return;
@@ -265,58 +275,89 @@ function PortfolioEarningsTableInner({
         </div>
       </div>
 
-      <table className="hidden w-full min-w-[640px] border-separate border-spacing-0 sm:table">
-        <thead>
-          <tr className="min-h-[40px] bg-white text-[14px] font-medium leading-5 text-[#5C5D5F]">
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-left">Asset</th>
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-left">Days left</th>
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right">
-              Earnings date
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedHoldings.map((h) => {
-            const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
-            const caption = portfolioAssetSymbolCaption(h.symbol);
-            const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
-            const { earningsLabel, daysLeft, metaLoading } = rowMeta(h.symbol);
-            return (
-              <tr
-                key={h.id}
-                className="group relative h-[56px] max-h-[56px] cursor-pointer transition-colors duration-75 hover:bg-neutral-50"
-                onClick={() => openEarningsPreview(h)}
-                onKeyDown={(e) => {
-                  if (e.key !== "Enter" && e.key !== " ") return;
-                  e.preventDefault();
-                  openEarningsPreview(h);
-                }}
-                tabIndex={0}
-                role="button"
-                aria-label={`Open earnings for ${companyName}`}
-              >
-                <td className="border-b border-[#E4E4E7] px-4 py-[10px] align-middle">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
-                    <div className="min-w-0 text-left">
-                      <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                      <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{caption}</div>
+      <div className="hidden sm:block">
+        <ScreenerTableScroll className="sm:pb-6" minWidthClassName="min-w-[640px]">
+          <div className="bg-white">
+            <div
+              className={cn(
+                SCREENER_TABLE_HEADER_STICKY_CLASS,
+                SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+                "md:border-b-0",
+              )}
+            >
+              <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                <div
+                  className={cn(
+                    EARNINGS_GRID,
+                    "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                  )}
+                >
+                  <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Asset</div>
+                  <div className="text-left">Days left</div>
+                  <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
+                    Earnings date
+                  </div>
+                </div>
+              </div>
+              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+            </div>
+
+            {sortedHoldings.map((h, i) => {
+              const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
+              const caption = portfolioAssetSymbolCaption(h.symbol);
+              const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
+              const { earningsLabel, daysLeft, metaLoading } = rowMeta(h.symbol);
+              return (
+                <div key={h.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                  <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                    <div
+                      className={cn(
+                        EARNINGS_GRID,
+                        "min-h-[56px] cursor-pointer text-[14px] font-normal leading-5",
+                        SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                      )}
+                      onClick={() => openEarningsPreview(h)}
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter" && e.key !== " ") return;
+                        e.preventDefault();
+                        openEarningsPreview(h);
+                      }}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`Open earnings for ${companyName}`}
+                    >
+                      <div className={cn("flex min-w-0 items-center gap-3", TABLE_START_ALIGNED_PAD_CLASS)}>
+                        <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
+                        <div className="min-w-0 text-left">
+                          <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
+                          <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{caption}</div>
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <DaysLeftCell daysLeft={daysLeft} loading={metaLoading} />
+                      </div>
+                      <div
+                        className={cn(
+                          "min-w-0 w-full text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#141414]",
+                          TABLE_END_ALIGNED_PAD_CLASS,
+                        )}
+                      >
+                        {earningsLabel === "…" ?
+                          <SkeletonBox className="ml-auto h-4 w-24 rounded" />
+                        : earningsLabel}
+                      </div>
                     </div>
                   </div>
-                </td>
-                <td className="border-b border-[#E4E4E7] px-4 py-[10px] align-middle">
-                  <DaysLeftCell daysLeft={daysLeft} loading={metaLoading} />
-                </td>
-                <td className="border-b border-[#E4E4E7] px-4 py-[10px] text-right align-middle font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#141414]">
-                  {earningsLabel === "…" ?
-                    <SkeletonBox className="ml-auto h-4 w-24 rounded" />
-                  : earningsLabel}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  {i < sortedHoldings.length - 1 ? (
+                    <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </ScreenerTableScroll>
+      </div>
 
       <EarningsPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
     </div>

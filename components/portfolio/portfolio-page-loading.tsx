@@ -224,7 +224,7 @@ export function PortfolioPageLoadingShell({
           </div>
         </nav>
       ) : null}
-      <div className="relative flex min-h-full min-w-0 flex-1 flex-col px-4 pb-4 pt-2 max-md:overflow-visible md:overflow-x-hidden sm:px-9 sm:py-6">
+      <div className="relative flex min-h-full min-w-0 flex-1 flex-col px-4 py-4 max-md:overflow-visible md:overflow-x-hidden sm:px-9 sm:py-6">
       <PortfolioPageHeaderSkeleton showPortfoliosBreadcrumb={showPortfoliosBreadcrumb} />
       <PortfolioOverviewCardsSkeleton />
       <PortfolioPageTabsSkeleton publicView={publicView} />

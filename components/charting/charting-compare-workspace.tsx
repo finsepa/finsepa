@@ -45,9 +45,11 @@ import {
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
+import { CompanyRailCard } from "@/components/layout/company-rail";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
-import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption, whiteSurfaceChipDividerClass, whiteSurfaceChipLabelClass, whiteSurfaceChipRemoveClass, whiteSurfaceChipShellClass } from "@/components/design-system";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import {
   dropdownMenuRichItemClassName,
@@ -1643,13 +1645,16 @@ export function ChartingCompareWorkspace({
   return (
     <>
       <DataFetchTopLoader active={loading} />
-      <div className="space-y-4 pt-1">
-      <div className="flex flex-col gap-6">
+      <div
+        className={cn(
+          useRailMetricPicker ? "flex flex-col gap-5" : "space-y-4 pt-1",
+        )}
+      >
+      {useRailMetricPicker ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
           <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:flex-1">
             {workspaceTitle}
           </h2>
-          {/* Web: keep controls on one line with range switcher (no stretch). */}
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
             <div className="flex shrink-0 flex-nowrap items-center gap-2">
               <TabSwitcher
@@ -1673,30 +1678,37 @@ export function ChartingCompareWorkspace({
             <button
               type="button"
               onClick={() => router.replace(buildStandaloneChartPath(pathRoute, [], []), { scroll: false })}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#141414] transition-colors hover:bg-[#FAFAFA]"
+              className={topbarSquircleIconClass}
               aria-label="Clear companies and metrics"
             >
-              <RefreshCw className="h-4 w-4" strokeWidth={2} aria-hidden />
+              <RefreshCw className="h-5 w-5" strokeWidth={1.75} aria-hidden />
             </button>
           </div>
         </div>
-
-        {useRailMetricPicker ? (
-          <div className="sr-only">
-            <div ref={pickerWrapRef}>
-              {pickerOpen ? (
-                <TopbarDropdownPortal
-                  open={pickerOpen}
-                  anchorRef={metricAddAnchorRef}
-                  ref={pickerMenuPortalRef}
-                  align="auto"
-                  placement="below"
-                  className="w-[min(calc(100vw-2rem),300px)]"
-                  onRequestClose={() => {
-                    setPickerOpen(false);
-                    setPickerQuery("");
-                  }}
-                >
+      ) : null}
+      <div className={cn(useRailMetricPicker && "flex items-start gap-5")}>
+      <div
+        className={cn(
+          "min-w-0",
+          useRailMetricPicker ? "flex-1" : "space-y-4 pt-1",
+        )}
+      >
+      {useRailMetricPicker ? (
+        <div className="sr-only">
+          <div ref={pickerWrapRef}>
+            {pickerOpen ? (
+              <TopbarDropdownPortal
+                open={pickerOpen}
+                anchorRef={metricAddAnchorRef}
+                ref={pickerMenuPortalRef}
+                align="auto"
+                placement="below"
+                className="w-[min(calc(100vw-2rem),300px)]"
+                onRequestClose={() => {
+                  setPickerOpen(false);
+                  setPickerQuery("");
+                }}
+              >
                   <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">
                     <div className={dropdownMenuSearchHeaderClassName}>
                       <input
@@ -1762,21 +1774,59 @@ export function ChartingCompareWorkspace({
             ) : null}
           </div>
         ) : (
+        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
+          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:flex-1">
+            {workspaceTitle}
+          </h2>
+          <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
+            <div className="flex shrink-0 flex-nowrap items-center gap-2">
+              <TabSwitcher
+                size="sm"
+                options={PERIOD_TAB_OPTIONS}
+                value={periodMode}
+                onChange={setPeriodMode}
+                aria-label="Reporting period"
+              />
+              <ChartingVisualSwitcher value={chartType} onChange={setChartType} />
+            </div>
+            <div className="shrink-0">
+              <TabSwitcher
+                className="inline-flex w-max min-w-0 flex-nowrap"
+                options={timeRangeTabOptions}
+                value={timeRange}
+                onChange={setTimeRange}
+                aria-label="Time range"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => router.replace(buildStandaloneChartPath(pathRoute, [], []), { scroll: false })}
+              className={topbarSquircleIconClass}
+              aria-label="Clear companies and metrics"
+            >
+              <RefreshCw className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+            </button>
+          </div>
+        </div>
         <div className="pb-4">
           <div className="flex flex-wrap items-center gap-4">
             {selected.map((id) => (
               <div
                 key={id}
-                className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+                className={cn("order-1", whiteSurfaceChipShellClass)}
               >
-                <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#141414]">
+                <span className={cn(whiteSurfaceChipLabelClass, whiteSurfaceChipDividerClass)}>
                   <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => removeMetric(id)}
                   disabled={selected.length <= 1}
-                  className="flex w-9 shrink-0 items-center justify-center text-[#141414] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                  className={cn(
+                    whiteSurfaceChipRemoveClass,
+                    "disabled:pointer-events-none disabled:opacity-30",
+                  )}
                   aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
                 >
                   <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -1861,9 +1911,9 @@ export function ChartingCompareWorkspace({
               return (
                 <div
                   key={t}
-                  className="order-3 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+                  className={cn("order-3", whiteSurfaceChipShellClass)}
                 >
-                  <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#141414]">
+                  <span className={cn(whiteSurfaceChipLabelClass, whiteSurfaceChipDividerClass)}>
                     <span className="truncate">{t}</span>
                   </span>
                   {chipLoading ? (
@@ -1880,7 +1930,10 @@ export function ChartingCompareWorkspace({
                       type="button"
                       onClick={() => removeTicker(t)}
                       disabled={tickers.length <= 1}
-                      className="flex w-9 shrink-0 items-center justify-center text-[#141414] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                      className={cn(
+                        whiteSurfaceChipRemoveClass,
+                        "disabled:pointer-events-none disabled:opacity-30",
+                      )}
                       aria-label={`Remove ${t}`}
                     >
                       <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -1902,9 +1955,10 @@ export function ChartingCompareWorkspace({
             ) : null}
           </div>
         </div>
+        </div>
         )}
-      </div>
 
+      <div className={cn(useRailMetricPicker && "space-y-4")}>
       {loading ? (
         <ChartLoadingIndicator
           minHeightPx={chartHeight}
@@ -2153,7 +2207,13 @@ export function ChartingCompareWorkspace({
           )}
         </>
       )}
+      </div>
     </div>
+      {useRailMetricPicker ? (
+        <CompanyRailCard className="hidden w-[240px] self-start md:block" />
+      ) : null}
+      </div>
+      </div>
     </>
   );
 }

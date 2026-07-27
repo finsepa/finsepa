@@ -3,6 +3,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, Check, ChevronDown } from "@/lib/icons";
 
+import { SegmentedControl } from "@/components/design-system/segmented-control";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   dropdownMenuMobileSheetBodyClassName,
@@ -53,14 +54,6 @@ const CHART_TOTAL_HEIGHT_PX = 320;
 const CHART_PLOT_HEIGHT_PX = CHART_TOTAL_HEIGHT_PX - FUNDAMENTALS_CHART_AXIS_ROW_PX;
 const CHART_PLOT_BACKDROP_INSET_CLASS = "top-[8%] bottom-[4%]";
 const Y_AXIS_TICK_COUNT = 6;
-
-const CHART_SEGMENT_TRACK_CLASS =
-  "flex w-auto min-w-0 flex-nowrap gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5";
-const CHART_SEGMENT_BTN_CLASS =
-  "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal";
-const CHART_SEGMENT_ACTIVE_CLASS =
-  "bg-white font-medium text-[#141414] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]";
-const CHART_SEGMENT_INACTIVE_CLASS = "font-normal text-[#5C5D5F]";
 
 type CashChartRange = "all" | "ytd" | "1y" | "3y";
 type Granularity = "month" | "year";
@@ -252,38 +245,6 @@ function formatBarLabelUsd(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
   if (n >= 1000) return `$${Math.round(n / 1000)}K`;
   return `$${Math.round(n)}`;
-}
-
-function ChartSegmentToggle<T extends string>({
-  "aria-label": ariaLabel,
-  options,
-  value,
-  onChange,
-  className,
-}: {
-  "aria-label": string;
-  options: readonly { value: T; label: string }[];
-  value: T;
-  onChange: (next: T) => void;
-  className?: string;
-}) {
-  return (
-    <div className={cn(CHART_SEGMENT_TRACK_CLASS, className)} role="group" aria-label={ariaLabel}>
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={cn(
-            CHART_SEGMENT_BTN_CLASS,
-            value === opt.value ? CHART_SEGMENT_ACTIVE_CLASS : CHART_SEGMENT_INACTIVE_CLASS,
-          )}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; granularity: Granularity }) {
@@ -618,9 +579,9 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
         <h2 className="hidden text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:block">Cash</h2>
         <div className="flex w-full min-w-0 flex-nowrap items-center gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3 md:flex-nowrap">
           {/* Web: compact range toggle (matches portfolio overview / charting). */}
-          <ChartSegmentToggle
+          <SegmentedControl
             aria-label="Cash chart time range"
-            className="hidden sm:flex"
+            className="hidden sm:inline-flex"
             options={RANGE_TOGGLE_OPTIONS}
             value={range}
             onChange={setRange}
@@ -675,7 +636,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
             ) : null}
           </div>
 
-          <ChartSegmentToggle
+          <SegmentedControl
             aria-label="Cash chart grouping"
             className="min-w-0 flex-1 sm:flex-none"
             options={GRANULARITY_OPTIONS}

@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { RefreshCw, X, Plus } from "@/lib/icons";
+import { X, Plus } from "@/lib/icons";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
 import type { CompanyPickerOpenControls } from "@/components/charting/company-picker";
@@ -13,8 +13,15 @@ import {
   useRegisterChartingCompanyRail,
 } from "@/components/charting/charting-company-rail-context";
 import { ComparisonMetricPickerMenu } from "@/components/comparison/comparison-metric-picker-menu";
+import { ComparisonPageBar } from "@/components/comparison/comparison-page-bar";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
-import { secondaryFillButtonClassName } from "@/components/design-system";
+import {
+  secondaryFillButtonClassName,
+  whiteSurfaceChipDividerClass,
+  whiteSurfaceChipLabelClass,
+  whiteSurfaceChipRemoveClass,
+  whiteSurfaceChipShellClass,
+} from "@/components/design-system";
 import {
   buildComparisonPagePath,
   COMPARISON_DEFAULT_TABLE_METRIC_IDS,
@@ -31,6 +38,7 @@ import {
 } from "@/components/comparison/comparison-skeletons";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
@@ -38,6 +46,8 @@ import {
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
 import { findKeyStatValue, comparisonGrowthCellClassName } from "@/lib/comparison/comparison-key-stats";
@@ -51,6 +61,7 @@ import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data"
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { ComparisonCompanyLimitModal } from "@/components/comparison/comparison-company-limit-modal";
+import { CompanyRailCard } from "@/components/layout/company-rail";
 import {
   COMPARISON_MAX_COMPANIES,
   capComparisonTickers,
@@ -59,7 +70,6 @@ import {
   writeComparisonSessionTickers,
 } from "@/lib/comparison/comparison-session";
 import { parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
-import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 
 /** Client-only chart avoids SSR/client HTML drift (e.g. after HMR). */
 const ComparisonReturnChart = dynamic(
@@ -102,9 +112,7 @@ function formatPerfCell(v: number | null): string {
   return `${sign}${v.toFixed(2)}%`;
 }
 
-/** Matches Insiders / Superinvestors: outer 16px to hover, inner 12px inside the pill. */
-const COMPARISON_ROW_PAD_CLASS = "px-4";
-const COMPARISON_GRID_INSET_CLASS = "px-3";
+/** Matches screener companies: 8px row inset; first/last cells add 12px via start/end pad tokens. */
 
 /** Matches `screener-table` column rhythm: `gap-x-2`, horizontal rules via inset strokes. */
 function comparisonFundamentalGridColumns(metricCount: number): string {
@@ -114,6 +122,16 @@ function comparisonFundamentalGridColumns(metricCount: number): string {
 function comparisonPerformanceGridColumns(): string {
   return `minmax(220px,1.4fr) repeat(${RETURN_WINDOWS.length}, minmax(72px, 1fr))`;
 }
+
+const comparisonMetricHeaderClass = cn(
+  "min-w-0 w-full truncate text-right",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
+
+const comparisonMetricCellClass = cn(
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
 
 /** Pill bar + logo + name — aligned with charting compare “Data” column (`charting-compare-workspace`). */
 function ComparisonCompanyBlock({
@@ -128,7 +146,12 @@ function ComparisonCompanyBlock({
   seriesColor: string;
 }) {
   return (
-    <div className="flex min-w-0 items-center justify-start gap-2 pr-4 text-left">
+    <div
+      className={cn(
+        "flex min-w-0 items-center justify-start gap-2 pr-4 text-left",
+        TABLE_START_ALIGNED_PAD_CLASS,
+      )}
+    >
       <span
         className="h-4 w-1 shrink-0 self-center rounded-full"
         style={{ backgroundColor: seriesColor }}
@@ -162,7 +185,6 @@ type Props = {
   /** Stock peers tab: symbol cannot be removed; reset keeps this symbol only. */
   anchorTicker?: string;
   urlMode?: ComparisonWorkspaceUrlMode;
-  titleAs?: "h1" | "h2";
 };
 
 export function ComparisonWorkspace({
@@ -171,7 +193,6 @@ export function ComparisonWorkspace({
   allowedChartingTickers,
   anchorTicker,
   urlMode = "standalone",
-  titleAs = "h1",
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -378,7 +399,7 @@ export function ComparisonWorkspace({
 
   const companyPickerControlsRef = useRef<CompanyPickerOpenControls | null>(null);
   const { useRailPickers, companyAddAnchorRef, metricAddAnchorRef } = useChartingRailPickerAnchors();
-  const useCompanyRail = urlMode === "standalone" && useRailPickers;
+  const useCompanyRail = useRailPickers;
 
   const openCompanyPicker = useCallback(() => {
     companyPickerControlsRef.current?.open();
@@ -413,8 +434,6 @@ export function ComparisonWorkspace({
     },
     useCompanyRail,
   );
-
-  const TitleTag = titleAs;
 
   const rows = useMemo(() => {
     return displayTickers.map((t, idx) => {
@@ -462,36 +481,24 @@ export function ComparisonWorkspace({
   }, [metricPickerOpen, useCompanyRail]);
 
   return (
-    <div className="relative space-y-5">
-      <div className="flex min-w-0 items-center justify-between gap-5">
-        <TitleTag className={cn("min-w-0", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
-          Comparison
-        </TitleTag>
-        <button
-          type="button"
-          onClick={clearAllTickers}
-          disabled={anchor ? displayTickers.length <= 1 : displayTickers.length === 0}
-          className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-white text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
-            anchor
-              ? displayTickers.length <= 1
-                ? "cursor-not-allowed opacity-40"
-                : "hover:bg-neutral-50"
-              : displayTickers.length === 0
-                ? "cursor-not-allowed opacity-40"
-                : "hover:bg-neutral-50",
-          )}
-          aria-label={
-            anchor
-              ? "Reset comparison to this symbol only"
-              : "Remove all companies and reset comparison"
-          }
-          title={anchor ? "Reset comparison" : "Remove all companies"}
-        >
-          <RefreshCw className="h-4 w-4" strokeWidth={1.5} aria-hidden />
-        </button>
-      </div>
-
+    <div
+      className={cn(
+        "flex flex-col gap-5",
+        isStockTab ? undefined : "px-4 py-4 sm:px-9 sm:py-6",
+      )}
+    >
+      <ComparisonPageBar
+        title={isStockTab ? "Peers" : "Comparison"}
+        onReset={clearAllTickers}
+        resetDisabled={anchor ? displayTickers.length <= 1 : displayTickers.length === 0}
+        resetLabel={
+          anchor
+            ? "Reset comparison to this symbol only"
+            : "Remove all companies and reset comparison"
+        }
+      />
+      <div className="flex items-start gap-5">
+        <div className="relative min-w-0 flex-1">
       {useCompanyRail ? (
         <div className="sr-only">
           <ChartingCompanyAddDropdown
@@ -542,14 +549,11 @@ export function ComparisonWorkspace({
           {displayTickers.map((sym) => {
             const isAnchor = anchor != null && sym.toUpperCase() === anchor;
             return (
-              <div
-                key={sym}
-                className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-              >
+              <div key={sym} className={whiteSurfaceChipShellClass}>
                 <span
                   className={cn(
-                    "flex min-h-[36px] min-w-0 items-center px-4 py-2 text-[14px] font-medium leading-5 text-[#141414]",
-                    !isAnchor && "border-r border-[#E4E4E7]",
+                    whiteSurfaceChipLabelClass,
+                    !isAnchor && whiteSurfaceChipDividerClass,
                   )}
                 >
                   <span className="truncate tabular-nums">{sym}</span>
@@ -558,7 +562,7 @@ export function ComparisonWorkspace({
                   <button
                     type="button"
                     onClick={() => removeTicker(sym)}
-                    className="flex w-9 shrink-0 items-center justify-center text-[#141414] transition-colors hover:bg-[#FAFAFA]"
+                    className={whiteSurfaceChipRemoveClass}
                     aria-label={`Remove ${sym}`}
                   >
                     <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -581,18 +585,15 @@ export function ComparisonWorkspace({
           {selectedColumnIds.map((id) => {
             const label = getComparisonTableMetric(id)?.header ?? id;
             return (
-              <div
-                key={id}
-                className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-              >
-                <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#141414]">
+              <div key={id} className={whiteSurfaceChipShellClass}>
+                <span className={cn(whiteSurfaceChipLabelClass, whiteSurfaceChipDividerClass)}>
                   <span className="truncate">{label}</span>
                 </span>
                 {selectedColumnIds.length > 1 ? (
                   <button
                     type="button"
                     onClick={() => removeColumn(id)}
-                    className="flex w-9 shrink-0 items-center justify-center text-[#141414] transition-colors hover:bg-[#FAFAFA]"
+                    className={whiteSurfaceChipRemoveClass}
                     aria-label={`Remove ${label}`}
                   >
                     <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -641,6 +642,7 @@ export function ComparisonWorkspace({
 
       <ComparisonCompanyLimitModal open={limitModalOpen} onClose={() => setLimitModalOpen(false)} />
 
+      <div className="space-y-5">
       <div aria-busy={chartLoading}>
         <ScreenerTableScroll mobileScroll>
         <div
@@ -651,17 +653,14 @@ export function ComparisonWorkspace({
             "md:border-b-0",
           )}
         >
-          <div className={COMPARISON_ROW_PAD_CLASS}>
+          <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, "min-w-[900px]")}>
             <div
-              className={cn(
-                "grid min-h-[44px] min-w-[900px] items-center gap-x-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
-                COMPARISON_GRID_INSET_CLASS,
-              )}
+              className="grid min-h-[44px] w-full items-center gap-x-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]"
               style={{ gridTemplateColumns: fundamentalsGrid }}
             >
-              <div className="text-left">Company</div>
+              <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
               {selectedColumns.map((col) => (
-                <div key={col.id} className="min-w-0 w-full truncate text-right">
+                <div key={col.id} className={comparisonMetricHeaderClass}>
                   {col.header}
                 </div>
               ))}
@@ -680,14 +679,13 @@ export function ComparisonWorkspace({
             />
           ) : (
             <div key={r.t} className={SCREENER_TABLE_DATA_ROW_CLASS}>
-              <div className={COMPARISON_ROW_PAD_CLASS}>
+              <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, "min-w-[900px]")}>
                 <Link
                   href={`/stock/${encodeURIComponent(r.t)}`}
                   prefetch={false}
                   aria-label={`Open ${r.meta?.fullName?.trim() || r.t} (${r.t})`}
                   className={cn(
-                    "grid h-[60px] max-h-[60px] min-w-[900px] cursor-pointer items-center gap-x-2 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#141414]/15",
-                    COMPARISON_GRID_INSET_CLASS,
+                    "grid h-[60px] max-h-[60px] w-full cursor-pointer items-center gap-x-2 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#141414]/15",
                     SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                   )}
                   style={{ gridTemplateColumns: fundamentalsGrid }}
@@ -701,7 +699,10 @@ export function ComparisonWorkspace({
                   {r.fundamentals.map((cell, i) => (
                     <div
                       key={selectedColumns[i]!.id}
-                      className={comparisonGrowthCellClassName(selectedColumns[i]!.id, cell)}
+                      className={cn(
+                        comparisonGrowthCellClassName(selectedColumns[i]!.id, cell),
+                        TABLE_END_ALIGNED_PAD_CLASS,
+                      )}
                     >
                       {cell === "—" ? "-" : cell}
                     </div>
@@ -734,17 +735,14 @@ export function ComparisonWorkspace({
             "md:border-b-0",
           )}
         >
-          <div className={COMPARISON_ROW_PAD_CLASS}>
+          <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, "min-w-[720px]")}>
             <div
-              className={cn(
-                "grid min-h-[44px] min-w-[720px] items-center gap-x-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
-                COMPARISON_GRID_INSET_CLASS,
-              )}
+              className="grid min-h-[44px] w-full items-center gap-x-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]"
               style={{ gridTemplateColumns: performanceGrid }}
             >
-              <div className="text-left">Company</div>
+              <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
               {RETURN_WINDOWS.map((w) => (
-                <div key={w.key} className="min-w-0 w-full text-right">
+                <div key={w.key} className={comparisonMetricHeaderClass}>
                   {w.label}
                 </div>
               ))}
@@ -762,14 +760,13 @@ export function ComparisonWorkspace({
             />
           ) : (
             <div key={r.t} className={SCREENER_TABLE_DATA_ROW_CLASS}>
-              <div className={COMPARISON_ROW_PAD_CLASS}>
+              <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, "min-w-[720px]")}>
                 <Link
                   href={`/stock/${encodeURIComponent(r.t)}`}
                   prefetch={false}
                   aria-label={`Open ${r.meta?.fullName?.trim() || r.t} (${r.t})`}
                   className={cn(
-                    "grid h-[60px] max-h-[60px] min-w-[720px] cursor-pointer items-center gap-x-2 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#141414]/15",
-                    COMPARISON_GRID_INSET_CLASS,
+                    "grid h-[60px] max-h-[60px] w-full cursor-pointer items-center gap-x-2 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#141414]/15",
                     SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                   )}
                   style={{ gridTemplateColumns: performanceGrid }}
@@ -783,10 +780,7 @@ export function ComparisonWorkspace({
                   {r.returns.map((v, i) => (
                     <div
                       key={RETURN_WINDOWS[i]!.key}
-                      className={cn(
-                        "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums",
-                        perfCellClass(v),
-                      )}
+                      className={cn(comparisonMetricCellClass, perfCellClass(v))}
                     >
                       {formatPerfCell(v)}
                     </div>
@@ -800,6 +794,12 @@ export function ComparisonWorkspace({
           ),
         )}
       </ScreenerTableScroll>
+      </div>
+      </div>
+        </div>
+        {useCompanyRail ? (
+          <CompanyRailCard className="hidden w-[240px] self-start md:block" />
+        ) : null}
       </div>
     </div>
   );

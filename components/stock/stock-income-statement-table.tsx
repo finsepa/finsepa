@@ -14,6 +14,8 @@ import {
   SCREENER_TABLE_ROUNDED_HEADER_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import {
   EARNINGS_FORECAST_BADGE_CLASS,
@@ -122,21 +124,33 @@ function toneClass(tone: "neutral" | "positive" | "negative"): string {
   return "text-[#141414]";
 }
 
-const numCellClass =
-  "flex min-h-full min-w-0 w-full items-center justify-end self-stretch pr-3 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
+const numCellClass = cn(
+  "flex min-h-full min-w-0 w-full items-center justify-end self-stretch text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
 
-const headerYearClass =
-  "relative z-[1] min-w-0 w-full truncate bg-white pr-3 text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#5C5D5F]";
+const headerYearClass = cn(
+  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#5C5D5F]",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
 
-const headerPeriodEndClass =
-  "relative z-[1] min-w-0 w-full truncate bg-white pr-3 text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#5C5D5F]";
+const headerPeriodEndClass = cn(
+  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#5C5D5F]",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
 
-/** Sticky label column — stays put on horizontal scroll inside the financials scroller. */
-const stickyLabelHeadClass =
-  "sticky left-0 z-40 flex min-h-full min-w-0 items-center self-stretch bg-white pl-2 pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F] sm:pl-4";
+/** Sticky label column — stays put on horizontal scroll inside the financials scroller.
+ * 12px left inset via {@link TABLE_START_ALIGNED_PAD_CLASS}.
+ */
+const stickyLabelHeadClass = cn(
+  "sticky left-0 z-40 flex min-h-full min-w-0 items-center self-stretch bg-white pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+  TABLE_START_ALIGNED_PAD_CLASS,
+);
 
-const stickyLabelBodyClass =
-  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch bg-white pl-2 pr-4 text-left group-hover/row:bg-neutral-50 sm:pl-4";
+const stickyLabelBodyClass = cn(
+  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch bg-white pr-4 text-left group-hover/row:bg-neutral-50",
+  TABLE_START_ALIGNED_PAD_CLASS,
+);
 
 /** Vertical rule between sticky labels and year columns — Financials only. */
 const stickyLabelColumnRuleClass =

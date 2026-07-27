@@ -1,11 +1,16 @@
 import { SkeletonBox } from "@/components/markets/skeleton";
 import { SIDEBAR_OUTER_EXPANDED_PX } from "@/components/layout/sidebar-layout-context";
+import { SHELL_DESKTOP_PANEL_BG_CLASS } from "@/components/design-system/card-surface-styles";
+import { cn } from "@/lib/utils";
 
 export default function Loading() {
   return (
     <div className="flex min-w-0 max-md:flex-col md:absolute md:inset-0 md:overflow-hidden">
       <aside
-        className="hidden min-h-0 shrink-0 flex-col overflow-hidden border-r border-[#E4E4E7] bg-[#FCFCFD] md:flex"
+        className={cn(
+          "hidden min-h-0 shrink-0 flex-col overflow-hidden border-r border-[#E4E4E7] md:flex",
+          SHELL_DESKTOP_PANEL_BG_CLASS,
+        )}
         style={{ width: SIDEBAR_OUTER_EXPANDED_PX }}
         aria-hidden
       >

@@ -45,6 +45,7 @@ import { IndexCards } from "@/components/screener/index-cards";
 import { MarketTabs, type MarketTab } from "@/components/screener/market-tabs";
 import { useRegisterMarketsTabHost } from "@/components/screener/markets-tab-host-context";
 import { UsMarketsSessionLabel } from "@/components/screener/us-markets-session-label";
+import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
 import { ScreenerIndustriesTable } from "@/components/screener/screener-industries-table";
 import { ScreenerSectorsTable } from "@/components/screener/screener-sectors-table";
@@ -278,15 +279,15 @@ function StocksTabBody({
     panel = <StocksGainersLosersSkeleton rows={GAINERS_LOSERS_TOP_N} {...mobileTableChrome} />;
   } else if (gainersLosers) {
     panel = (
-      <div className={useMobileStocksSubTabCard ? "max-md:space-y-4 md:space-y-6" : "space-y-6"}>
+      <div className="flex flex-col">
         <div>
-          <div className="mb-3 hidden text-[14px] font-semibold leading-5 text-[#5C5D5F] md:block">
+          <div className="mb-5 hidden text-[14px] font-semibold leading-5 text-[#5C5D5F] md:block">
             Top gainers (1D %)
           </div>
           <ScreenerTable rows={gainersLosers.gainers} {...mobileTableChrome} />
         </div>
-        <div>
-          <div className="mb-3 hidden text-[14px] font-semibold leading-5 text-[#5C5D5F] md:block">
+        <div className={useMobileStocksSubTabCard ? "max-md:mt-4 md:mt-5" : "mt-5"}>
+          <div className="mb-5 hidden text-[14px] font-semibold leading-5 text-[#5C5D5F] md:block">
             Top losers (1D %)
           </div>
           <ScreenerTable rows={gainersLosers.losers} {...mobileTableChrome} />
@@ -1058,7 +1059,12 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
                 >
                   <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
                 </button>
-                <h2 className="truncate text-[18px] font-semibold leading-6 text-[#141414]">
+                <h2
+                  className={cn(
+                    STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+                    "min-w-0 truncate",
+                  )}
+                >
                   {isIndustriesDrill && stocksIndustryFilter
                     ? stocksIndustryFilter.industry
                     : stocksSectorFilter}

@@ -3,6 +3,18 @@
 import Link from "next/link";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
+import {
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+} from "@/components/screener/screener-table-scroll";
 import { PortfolioOwnerName } from "@/components/portfolios/portfolio-owner-name";
 import { UserAvatar } from "@/components/user/user-avatar";
 import type { PublicListingRow } from "@/components/portfolios/portfolios-directory-client";
@@ -11,12 +23,18 @@ import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { cn } from "@/lib/utils";
 
 const colLayout =
-  "grid-cols-[minmax(0,2fr)_minmax(5.5rem,1fr)_minmax(6.5rem,1fr)_minmax(5.5rem,1fr)_minmax(0,1.35fr)] gap-x-3";
+  "grid w-full min-w-0 grid-cols-[minmax(0,2fr)_minmax(5.5rem,1fr)_minmax(6.5rem,1fr)_minmax(5.5rem,1fr)_minmax(0,1.35fr)] gap-x-3";
 
-const rowLinkGrid =
-  "grid-cols-[minmax(0,2fr)_minmax(5.5rem,1fr)_minmax(6.5rem,1fr)_minmax(5.5rem,1fr)_minmax(0,1.35fr)] gap-x-3";
+const mobileColLayout = "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(4.75rem,auto)] gap-x-3";
 
-const mobileColLayout = "grid-cols-[minmax(0,1fr)_minmax(4.75rem,auto)] gap-x-3";
+const numericHeaderClass = cn("min-w-0 text-right", TABLE_END_ALIGNED_PAD_CLASS);
+
+const numericCellClass = cn(
+  "min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
+
+const startCellClass = cn("min-w-0 text-left", TABLE_START_ALIGNED_PAD_CLASS);
 
 function metricNum(m: Record<string, unknown>, key: string): number | null {
   const v = m[key];
@@ -78,131 +96,151 @@ function TopFiveHoldingsLogos({ symbols }: { symbols: string[] }) {
 
 export function PortfoliosDirectoryTable({ listings }: { listings: PublicListingRow[] }) {
   return (
-    <div className="min-w-0 -mx-4 sm:mx-0">
-      <div className="min-w-0 overflow-x-auto">
-        <div className="min-w-[720px] divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
-          <div className="bg-white">
-            <div
-              className={`grid ${mobileColLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:hidden`}
-            >
-              <div className="min-w-0 text-left">Investor</div>
-              <div className="min-w-0 text-right">ATH</div>
-            </div>
-            <div
-              className={`hidden ${colLayout} min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:grid`}
-            >
-              <div className="min-w-0 text-left">Investor</div>
-              <div className="min-w-0 text-right">Value</div>
-              <div className="min-w-0 text-right">No. of Holdings</div>
-              <div className="min-w-0 text-right">ATH</div>
-              <div className="min-w-0 text-right">Top 5 Holdings</div>
-            </div>
+    <ScreenerTableScroll>
+      <div
+        className={cn(
+          SCREENER_TABLE_HEADER_STICKY_CLASS,
+          SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+          SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+          "md:border-b-0",
+        )}
+      >
+        <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+          <div
+            className={cn(
+              mobileColLayout,
+              "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:hidden",
+            )}
+          >
+            <div className={startCellClass}>Investor</div>
+            <div className={numericHeaderClass}>ATH</div>
           </div>
+          <div
+            className={cn(
+              colLayout,
+              "hidden min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:grid",
+            )}
+          >
+            <div className={startCellClass}>Investor</div>
+            <div className={numericHeaderClass}>Value</div>
+            <div className={numericHeaderClass}>No. of Holdings</div>
+            <div className={numericHeaderClass}>ATH</div>
+            <div className={numericHeaderClass}>Top 5 Holdings</div>
+          </div>
+        </div>
+        <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+      </div>
 
-          {listings.map((listing) => {
-            const m = listing.metrics;
-            const value = metricNum(m, "valueUsd");
-            const ath = metricNum(m, "returnsAthPct") ?? metricNum(m, "totalProfitPct");
-            const holdingCount = metricNum(m, "holdingCount");
-            const ownerName = metricStr(m, "ownerDisplayName") ?? "Member";
-            const ownerAvatar = metricStr(m, "ownerAvatarUrl");
-            const topSyms = metricStringArray(m, "topSymbols").slice(0, 5);
+      {listings.map((listing, rowIdx) => {
+        const m = listing.metrics;
+        const value = metricNum(m, "valueUsd");
+        const ath = metricNum(m, "returnsAthPct") ?? metricNum(m, "totalProfitPct");
+        const holdingCount = metricNum(m, "holdingCount");
+        const ownerName = metricStr(m, "ownerDisplayName") ?? "Member";
+        const ownerAvatar = metricStr(m, "ownerAvatarUrl");
+        const topSyms = metricStringArray(m, "topSymbols").slice(0, 5);
+        const avatarSrc =
+          ownerAvatar && (ownerAvatar.startsWith("http") || ownerAvatar.startsWith("/")) ?
+            ownerAvatar
+          : null;
 
-            return (
+        return (
+          <div key={listing.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+            <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
               <div
-                key={listing.id}
-                className="group bg-white transition-colors duration-75 hover:bg-neutral-50"
+                className={cn(
+                  mobileColLayout,
+                  "items-center py-3 sm:hidden",
+                  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                )}
               >
-                <div className={`grid ${mobileColLayout} items-center px-4 py-3 sm:hidden`}>
-                  <Link
-                    href={`/portfolios/${listing.id}`}
-                    prefetch={false}
-                    className="flex min-w-0 items-center gap-3 text-[#141414] no-underline visited:text-[#141414]"
-                  >
-                    <UserAvatar
-                      imageSrc={
-                        ownerAvatar && (ownerAvatar.startsWith("http") || ownerAvatar.startsWith("/")) ?
-                          ownerAvatar
-                        : null
-                      }
-                      initials={initialsFromOwnerName(ownerName)}
-                      size="menu"
-                    />
-                    <div className="min-w-0">
-                      <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 group-hover:underline">
-                        {listing.name}
-                      </div>
-                      <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
-                        <PortfolioOwnerName name={ownerName} />
-                      </div>
-                      <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
-                        {value != null ? formatUsdCompact(value) : "—"}
-                        {holdingCount != null ? ` · ${Math.round(holdingCount)} holdings` : null}
-                      </div>
-                    </div>
-                  </Link>
-                  <div
-                    className={cn(
-                      "min-w-0 text-right text-[14px] font-medium leading-5 tabular-nums",
-                      athReturnClass(ath),
-                    )}
-                  >
-                    {fmtPct(ath)}
-                  </div>
-                </div>
-
                 <Link
                   href={`/portfolios/${listing.id}`}
                   prefetch={false}
-                  className={`hidden ${rowLinkGrid} h-[60px] max-h-[60px] items-center px-4 text-[#141414] no-underline visited:text-[#141414] sm:grid`}
-                  aria-label={`View portfolio ${listing.name} by ${ownerName}`}
+                  className={cn(
+                    "flex min-w-0 items-center gap-3 text-[#141414] no-underline visited:text-[#141414]",
+                    TABLE_START_ALIGNED_PAD_CLASS,
+                  )}
                 >
-                  <div className="flex min-w-0 items-center gap-3 text-left">
-                    <UserAvatar
-                      imageSrc={
-                        ownerAvatar && (ownerAvatar.startsWith("http") || ownerAvatar.startsWith("/")) ?
-                          ownerAvatar
-                        : null
-                      }
-                      initials={initialsFromOwnerName(ownerName)}
-                      size="menu"
-                    />
-                    <div className="min-w-0">
-                      <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 group-hover:underline">
-                        {listing.name}
-                      </div>
-                      <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
-                        <PortfolioOwnerName name={ownerName} />
-                      </div>
+                  <UserAvatar imageSrc={avatarSrc} initials={initialsFromOwnerName(ownerName)} size="menu" />
+                  <div className="min-w-0">
+                    <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 group-hover/row:underline">
+                      {listing.name}
+                    </div>
+                    <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                      <PortfolioOwnerName name={ownerName} />
+                    </div>
+                    <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
+                      {value != null ? formatUsdCompact(value) : "—"}
+                      {holdingCount != null ? ` · ${Math.round(holdingCount)} holdings` : null}
                     </div>
                   </div>
-
-                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
-                    {value != null ? formatUsdCompact(value) : "—"}
-                  </div>
-
-                  <div className="min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
-                    {holdingCount != null ? Math.round(holdingCount).toLocaleString("en-US") : "—"}
-                  </div>
-
-                  <div
-                    className={cn(
-                      "min-w-0 text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums",
-                      athReturnClass(ath),
-                    )}
-                  >
-                    {fmtPct(ath)}
-                  </div>
-
-                  <div className="flex min-h-0 min-w-0 max-h-[60px] items-center justify-end overflow-hidden">
-                    <TopFiveHoldingsLogos symbols={topSyms} />
-                  </div>
                 </Link>
+                <div
+                  className={cn(
+                    "min-w-0 text-right text-[14px] font-medium leading-5 tabular-nums",
+                    TABLE_END_ALIGNED_PAD_CLASS,
+                    athReturnClass(ath),
+                  )}
+                >
+                  {fmtPct(ath)}
+                </div>
               </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+
+              <Link
+                href={`/portfolios/${listing.id}`}
+                prefetch={false}
+                className={cn(
+                  colLayout,
+                  "hidden h-[60px] max-h-[60px] items-center text-[#141414] no-underline visited:text-[#141414] sm:grid",
+                  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                )}
+                aria-label={`View portfolio ${listing.name} by ${ownerName}`}
+              >
+                <div className={cn("flex min-w-0 items-center gap-3", TABLE_START_ALIGNED_PAD_CLASS)}>
+                  <UserAvatar imageSrc={avatarSrc} initials={initialsFromOwnerName(ownerName)} size="menu" />
+                  <div className="min-w-0">
+                    <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 group-hover/row:underline">
+                      {listing.name}
+                    </div>
+                    <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                      <PortfolioOwnerName name={ownerName} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className={numericCellClass}>{value != null ? formatUsdCompact(value) : "—"}</div>
+
+                <div className={numericCellClass}>
+                  {holdingCount != null ? Math.round(holdingCount).toLocaleString("en-US") : "—"}
+                </div>
+
+                <div
+                  className={cn(
+                    "min-w-0 text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums",
+                    TABLE_END_ALIGNED_PAD_CLASS,
+                    athReturnClass(ath),
+                  )}
+                >
+                  {fmtPct(ath)}
+                </div>
+
+                <div
+                  className={cn(
+                    "flex min-h-0 min-w-0 max-h-[60px] items-center justify-end overflow-hidden",
+                    TABLE_END_ALIGNED_PAD_CLASS,
+                  )}
+                >
+                  <TopFiveHoldingsLogos symbols={topSyms} />
+                </div>
+              </Link>
+            </div>
+            {rowIdx < listings.length - 1 ? (
+              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+            ) : null}
+          </div>
+        );
+      })}
+    </ScreenerTableScroll>
   );
 }

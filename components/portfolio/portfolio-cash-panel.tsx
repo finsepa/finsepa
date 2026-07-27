@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, Check, Filter, Search, Wallet } from "@/lib/icons";
 import { format, parseISO } from "date-fns";
 
@@ -8,6 +8,18 @@ import { CashInOutBarChartSection } from "@/components/portfolio/cash-in-out-bar
 import { DeleteTransactionConfirmModal } from "@/components/portfolio/delete-transaction-confirm-modal";
 import { TransactionRowActionsMenu } from "@/components/portfolio/transaction-row-actions-menu";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { toastTransactionDeleted } from "@/lib/portfolio/transaction-deleted-toast";
 import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
@@ -74,13 +86,39 @@ const cashBalanceGrid =
   "grid grid-cols-[minmax(0,1fr)_minmax(0,auto)] items-center gap-x-2";
 
 const cashTxGrid =
-  "grid grid-cols-[minmax(0,100px)_minmax(0,2fr)_88px_72px_96px_40px] items-center gap-x-2";
+  "grid min-w-[640px] grid-cols-[minmax(0,100px)_minmax(0,2fr)_88px_72px_96px_40px] items-center gap-x-2";
 
 function rowMatchesCashFilter(t: PortfolioTransaction, f: CashDirectionFilter): boolean {
   if (f === "all") return true;
   const u = t.operation.toLowerCase();
   if (f === "in") return u.includes("cash in") || u.includes("other income");
   return u.includes("cash out") || u.includes("other expense");
+}
+
+function CashTableHeader({
+  gridClass,
+  children,
+}: {
+  gridClass: string;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={cn(
+        SCREENER_TABLE_HEADER_STICKY_CLASS,
+        SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+        SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+        "md:border-b-0",
+      )}
+    >
+      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div className={cn(gridClass, "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]")}>
+          {children}
+        </div>
+      </div>
+      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+    </div>
+  );
 }
 
 /**
@@ -177,36 +215,45 @@ function PortfolioCashPanelInner() {
     <div>
       <CashInOutBarChartSection rows={cashLedgerRows} />
 
-      <div className="w-full min-w-0 overflow-x-auto pb-8">
-        <div className="divide-y divide-[#E4E4E7] border-t border-[#E4E4E7]">
-          <div
-            className={cn(
-              cashBalanceGrid,
-              "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
-            )}
-          >
-            <div className="min-w-0 text-left">Currency</div>
-            <div className="justify-self-end whitespace-nowrap text-right">Balance</div>
-          </div>
+      <div className="w-full min-w-0 pb-8">
+        <ScreenerTableScroll>
+          <div className="bg-white">
+            <CashTableHeader gridClass={cashBalanceGrid}>
+              <div className={cn("min-w-0 text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Currency</div>
+              <div className="justify-self-end whitespace-nowrap text-right">Balance</div>
+            </CashTableHeader>
 
-          <div className={cn(cashBalanceGrid, "h-[60px] max-h-[60px] bg-white px-1 transition-colors duration-75 hover:bg-neutral-50")}>
-            <div className="flex min-w-0 items-center gap-3 px-3 pr-4">
-              <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
-              <div className="min-w-0">
-                <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">US Dollar</div>
-                <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">USD</div>
+            <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+              <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                <div
+                  className={cn(
+                    cashBalanceGrid,
+                    "min-h-[60px]",
+                    SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                  )}
+                >
+                  <div className={cn("flex min-w-0 items-center gap-3", TABLE_START_ALIGNED_PAD_CLASS)}>
+                    <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
+                    <div className="min-w-0">
+                      <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
+                        US Dollar
+                      </div>
+                      <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">USD</div>
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      "justify-self-end text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums",
+                      balanceClassName(cashUsd),
+                    )}
+                  >
+                    {usd0.format(cashUsd)}
+                  </div>
+                </div>
               </div>
             </div>
-            <div
-              className={cn(
-                "px-3 text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums",
-                balanceClassName(cashUsd),
-              )}
-            >
-              {usd0.format(cashUsd)}
-            </div>
           </div>
-        </div>
+        </ScreenerTableScroll>
       </div>
 
       <section className="mt-8" aria-labelledby="cash-tx-heading">
@@ -297,76 +344,14 @@ function PortfolioCashPanelInner() {
           <div className="w-full min-w-0">
             {/* Mobile: remove standalone Operation column; show operation in the holding cell. */}
             <div className="sm:hidden">
-              <div className="divide-y divide-[#E4E4E7] border-t border-[#E4E4E7] bg-white">
-                <div className="flex min-h-[44px] items-center justify-between gap-3 px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]">
-                  <div className="min-w-0 text-left">Holding</div>
-                  <button
-                    type="button"
-                    onClick={() => setCashDateAsc((v) => !v)}
-                    className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
-                  >
-                    Date
-                    {cashDateAsc ? (
-                      <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
-                    ) : (
-                      <ArrowDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
-                    )}
-                  </button>
-                </div>
-
-                {pagedCashRows.map((t) => (
-                  <div key={t.id} className="flex min-w-0 items-center justify-between gap-3 px-4 py-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <CompanyLogo name={t.name} logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)} symbol={t.symbol} />
-                      <div className="min-w-0">
-                        <div
-                          className={cn(
-                            "truncate text-[14px] font-semibold leading-5",
-                            operationClassName(t.operation),
-                          )}
-                        >
-                          {t.operation}
-                        </div>
-                        <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
-                          {portfolioAssetSymbolCaption(t.symbol)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="min-w-0 shrink-0 text-right">
-                      <div className="font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414]">
-                        {format(parseISO(t.date), "MM/dd/yyyy")}
-                      </div>
-                      <div
-                        className={cn(
-                          "mt-0.5 text-[12px] font-medium leading-4 tabular-nums",
-                          cashSummClassName(t.operation, t.sum),
-                        )}
-                      >
-                        {formatSignedUsd(t.sum)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Desktop: keep the full grid table. */}
-            <div className="hidden overflow-x-auto pb-4 sm:block">
-              <div className="min-w-[640px] divide-y divide-[#E4E4E7] border-t border-[#E4E4E7]">
-                <div
-                  className={cn(
-                    cashTxGrid,
-                    "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
-                  )}
-                >
-                  <div className="min-w-0 w-full text-left">Operation</div>
-                  <div className="min-w-0 w-full text-left">Holding</div>
-                  <div className="min-w-0 w-full text-right">
+              <ScreenerTableScroll>
+                <div className="bg-white">
+                  <CashTableHeader gridClass="flex items-center justify-between gap-3">
+                    <div className={cn("min-w-0 text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Holding</div>
                     <button
                       type="button"
                       onClick={() => setCashDateAsc((v) => !v)}
-                      className="ml-auto inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
+                      className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
                     >
                       Date
                       {cashDateAsc ? (
@@ -375,73 +360,173 @@ function PortfolioCashPanelInner() {
                         <ArrowDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
                       )}
                     </button>
-                  </div>
-                  <div className="min-w-0 w-full text-right">Fee</div>
-                  <div className="min-w-0 w-full text-right">Summ</div>
-                  <div className="min-w-0 w-full text-right">
-                    <span className="sr-only">Actions</span>
-                  </div>
-                </div>
+                  </CashTableHeader>
 
-                {pagedCashRows.map((t) => (
-                  <div
-                    key={t.id}
-                    className={cn(
-                      cashTxGrid,
-                      "h-[60px] max-h-[60px] bg-white px-1 transition-colors duration-75 hover:bg-neutral-50",
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "min-w-0 w-full truncate px-3 text-left text-[14px] font-medium leading-5",
-                        operationClassName(t.operation),
-                      )}
-                    >
-                      {t.operation}
-                    </div>
-                    <div className="min-w-0 w-full text-left">
-                      <div className="flex min-w-0 items-center justify-start gap-3 pr-4">
-                        <CompanyLogo
-                          name={t.name}
-                          logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)}
-                          symbol={t.symbol}
-                        />
-                        <div className="min-w-0">
-                          <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">{t.name}</div>
-                          <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
-                            {portfolioAssetSymbolCaption(t.symbol)}
+                  {pagedCashRows.map((t, i) => (
+                    <div key={t.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                        <div
+                          className={cn(
+                            "flex min-h-[60px] min-w-0 items-center justify-between gap-3",
+                            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                          )}
+                        >
+                          <div className={cn("flex min-w-0 items-center gap-3", TABLE_START_ALIGNED_PAD_CLASS)}>
+                            <CompanyLogo
+                              name={t.name}
+                              logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)}
+                              symbol={t.symbol}
+                            />
+                            <div className="min-w-0">
+                              <div
+                                className={cn(
+                                  "truncate text-[14px] font-semibold leading-5",
+                                  operationClassName(t.operation),
+                                )}
+                              >
+                                {t.operation}
+                              </div>
+                              <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                                {portfolioAssetSymbolCaption(t.symbol)}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="min-w-0 shrink-0 text-right">
+                            <div className="font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
+                              {format(parseISO(t.date), "MM/dd/yyyy")}
+                            </div>
+                            <div
+                              className={cn(
+                                "mt-0.5 text-[12px] font-medium leading-4 tabular-nums",
+                                cashSummClassName(t.operation, t.sum),
+                              )}
+                            >
+                              {formatSignedUsd(t.sum)}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414]">
-                      {format(parseISO(t.date), "MM/dd/yyyy")}
-                    </div>
-                    <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414]">
-                      {t.fee > 0 ? usd0.format(t.fee) : usd0.format(0)}
-                    </div>
-                    <div
-                      className={cn(
-                        "min-w-0 w-full text-right text-[14px] font-medium leading-5 tabular-nums",
-                        cashSummClassName(t.operation, t.sum),
-                      )}
-                    >
-                      {formatSignedUsd(t.sum)}
-                    </div>
-                    <div className="flex w-full justify-end pr-1">
-                      {!selectedPortfolioReadOnly ? (
-                        <TransactionRowActionsMenu
-                          transaction={t}
-                          isOpen={openMenuId === t.id}
-                          onOpenChange={(open) => setOpenMenuId(open ? t.id : null)}
-                          onEdit={openEditTransaction}
-                          onRequestDelete={setDeleteCandidate}
-                        />
+                      {i < pagedCashRows.length - 1 ? (
+                        <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
                       ) : null}
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </ScreenerTableScroll>
+            </div>
+
+            {/* Desktop: keep the full grid table. */}
+            <div className="hidden sm:block">
+              <ScreenerTableScroll minWidthClassName="min-w-[640px]">
+                <div className="bg-white">
+                  <CashTableHeader gridClass={cashTxGrid}>
+                    <div className={cn("min-w-0 w-full text-left", TABLE_START_ALIGNED_PAD_CLASS)}>
+                      Operation
+                    </div>
+                    <div className="min-w-0 w-full text-left">Holding</div>
+                    <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
+                      <button
+                        type="button"
+                        onClick={() => setCashDateAsc((v) => !v)}
+                        className="ml-auto inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
+                      >
+                        Date
+                        {cashDateAsc ? (
+                          <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                        ) : (
+                          <ArrowDown className="h-3.5 w-3.5 opacity-70" aria-hidden />
+                        )}
+                      </button>
+                    </div>
+                    <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Fee</div>
+                    <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Summ</div>
+                    <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
+                      <span className="sr-only">Actions</span>
+                    </div>
+                  </CashTableHeader>
+
+                  {pagedCashRows.map((t, i) => (
+                    <div key={t.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                        <div
+                          className={cn(
+                            cashTxGrid,
+                            "min-h-[60px] text-[14px] font-normal leading-5",
+                            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "min-w-0 w-full truncate text-left font-medium",
+                              TABLE_START_ALIGNED_PAD_CLASS,
+                              operationClassName(t.operation),
+                            )}
+                          >
+                            {t.operation}
+                          </div>
+                          <div className="min-w-0 w-full text-left">
+                            <div className="flex min-w-0 items-center justify-start gap-3 pr-2">
+                              <CompanyLogo
+                                name={t.name}
+                                logoUrl={displayLogoUrlForPortfolioSymbol(t.symbol)}
+                                symbol={t.symbol}
+                              />
+                              <div className="min-w-0">
+                                <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
+                                  {t.name}
+                                </div>
+                                <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                                  {portfolioAssetSymbolCaption(t.symbol)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            className={cn(
+                              "min-w-0 w-full text-right font-['Inter'] tabular-nums text-[#141414]",
+                              TABLE_END_ALIGNED_PAD_CLASS,
+                            )}
+                          >
+                            {format(parseISO(t.date), "MM/dd/yyyy")}
+                          </div>
+                          <div
+                            className={cn(
+                              "min-w-0 w-full text-right font-['Inter'] tabular-nums text-[#141414]",
+                              TABLE_END_ALIGNED_PAD_CLASS,
+                            )}
+                          >
+                            {t.fee > 0 ? usd0.format(t.fee) : usd0.format(0)}
+                          </div>
+                          <div
+                            className={cn(
+                              "min-w-0 w-full text-right font-medium tabular-nums",
+                              TABLE_END_ALIGNED_PAD_CLASS,
+                              cashSummClassName(t.operation, t.sum),
+                            )}
+                          >
+                            {formatSignedUsd(t.sum)}
+                          </div>
+                          <div className="flex w-full justify-end">
+                            {!selectedPortfolioReadOnly ? (
+                              <TransactionRowActionsMenu
+                                transaction={t}
+                                isOpen={openMenuId === t.id}
+                                onOpenChange={(open) => setOpenMenuId(open ? t.id : null)}
+                                onEdit={openEditTransaction}
+                                onRequestDelete={setDeleteCandidate}
+                              />
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                      {i < pagedCashRows.length - 1 ? (
+                        <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </ScreenerTableScroll>
             </div>
             <TablePaginationBar
               page={safeCashPage}

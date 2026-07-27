@@ -5,6 +5,20 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { AllocationDonutChart } from "@/components/portfolio/allocation-donut-chart";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { PortfolioHoldingsEmptyState } from "@/components/portfolio/portfolio-holdings-empty-state";
+import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
+import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+} from "@/components/screener/screener-table-scroll";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import type { AllocationDonutRow } from "@/lib/portfolio/allocation-donut-rows";
 import {
@@ -168,6 +182,47 @@ type SortKey = "name" | "value" | "gain" | "allocation";
  */
 const SLICES_TABLE_GRID =
   "w-full min-w-0 grid grid-cols-[minmax(0,1.5fr)_minmax(112px,1fr)_minmax(112px,1fr)_minmax(88px,96px)] items-center gap-x-3 sm:gap-x-4";
+
+const slicesStartCellClass = cn("min-w-0 text-left", TABLE_START_ALIGNED_PAD_CLASS);
+const slicesEndCellClass = cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS);
+
+function SlicesSortHeader({
+  label,
+  sortKey,
+  activeKey,
+  dir,
+  onSort,
+  align = "end",
+}: {
+  label: string;
+  sortKey: SortKey;
+  activeKey: SortKey;
+  dir: "asc" | "desc";
+  onSort: (key: SortKey) => void;
+  align?: "start" | "end";
+}) {
+  const active = activeKey === sortKey;
+  return (
+    <div className={align === "end" ? slicesEndCellClass : slicesStartCellClass}>
+      <button
+        type="button"
+        className={cn(
+          "inline-flex items-center gap-1 rounded text-[14px] font-medium leading-5 text-[#5C5D5F] hover:text-[#141414]",
+          align === "end" && "w-full justify-end",
+        )}
+        onClick={() => onSort(sortKey)}
+        aria-label={`Sort by ${label}`}
+      >
+        {label}
+        {active ?
+          dir === "desc" ?
+            <ArrowDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        : null}
+      </button>
+    </div>
+  );
+}
 
 function compareSectorRows(a: SectorTableRow, b: SectorTableRow, key: SortKey, dir: number): number {
   const mul = dir;
@@ -492,7 +547,12 @@ function PortfolioSlicesViewInner({
   return (
     <div className="relative">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch lg:gap-4">
-        <div className="flex w-full shrink-0 flex-col items-center justify-center rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-5 sm:py-8 lg:max-w-[320px]">
+        <div
+          className={cn(
+            MOBILE_PANEL_CARD_CLASS,
+            "flex w-full shrink-0 flex-col items-center justify-center px-4 py-5 sm:py-8 lg:max-w-[320px]",
+          )}
+        >
           <div className="flex min-h-[240px] w-full flex-col items-center justify-center sm:min-h-[280px]">
             <AllocationDonutChart
               key={drilledBucket ? `drill:${drilledBucket.key}` : "sectors"}
@@ -536,300 +596,320 @@ function PortfolioSlicesViewInner({
           </div>
         </div>
 
-        <div className="min-w-0 flex-1 overflow-hidden rounded-[12px] border border-[#E4E4E7] bg-white">
-          <div className="-mx-1 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] sm:-mx-0">
-            <div className="w-full min-w-[640px]">
-              <div className="divide-y divide-[#E4E4E7] bg-white">
-                {effectiveDrillKey ?
-                  <>
-                    <div className="flex items-center gap-2 bg-white px-2 py-3 sm:px-4">
-                      <button
-                        type="button"
-                        onClick={() => setDrilledSliceKey(null)}
-                        aria-label="Back to all slices"
-                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-[#141414] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
-                      >
-                        <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
-                      </button>
-                      {drilledBucket ?
-                        <div className="min-w-0 truncate text-left font-['Inter'] text-[16px] font-semibold leading-6 tracking-normal text-[#141414]">
-                          {drilledBucket.label}
-                        </div>
-                      : null}
-                    </div>
-                    <div
-                      className={`${SLICES_TABLE_GRID} min-h-[40px] bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:px-4`}
+        <ScreenerTableScroll className="min-w-0 flex-1" minWidthClassName="min-w-[640px]">
+          {effectiveDrillKey ? (
+            <>
+              <div
+                className={cn(
+                  SCREENER_TABLE_HEADER_STICKY_CLASS,
+                  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+                  "md:border-b-0",
+                )}
+              >
+                <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                  <div
+                    className={cn(
+                      "flex items-center gap-2 py-3",
+                      TABLE_START_ALIGNED_PAD_CLASS,
+                      TABLE_END_ALIGNED_PAD_CLASS,
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setDrilledSliceKey(null)}
+                      aria-label="Back to all slices"
+                      className={cn(topbarSquircleIconClass, "h-8 w-8")}
                     >
-                      <div className="text-left">
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 rounded hover:text-[#141414]"
-                          onClick={() => onHoldingSort("name")}
-                        >
-                          Name
-                          {holdingSort.key === "name" ?
-                            holdingSort.dir === "desc" ?
-                              <ArrowDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          : null}
-                        </button>
+                      <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+                    </button>
+                    {drilledBucket ? (
+                      <div className="min-w-0 truncate text-left font-['Inter'] text-[16px] font-semibold leading-6 tracking-normal text-[#141414]">
+                        {drilledBucket.label}
                       </div>
-                      <div className="min-w-0 w-full text-right">
-                        <button
-                          type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
-                          onClick={() => onHoldingSort("value")}
-                        >
-                          Value / invested
-                          {holdingSort.key === "value" ?
-                            holdingSort.dir === "desc" ?
-                              <ArrowDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          : null}
-                        </button>
-                      </div>
-                      <div className="min-w-0 w-full text-right">
-                        <button
-                          type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
-                          onClick={() => onHoldingSort("gain")}
-                        >
-                          Gain
-                          {holdingSort.key === "gain" ?
-                            holdingSort.dir === "desc" ?
-                              <ArrowDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          : null}
-                        </button>
-                      </div>
-                      <div className="min-w-0 w-full text-right">
-                        <button
-                          type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
-                          onClick={() => onHoldingSort("allocation")}
-                        >
-                          Allocation
-                          {holdingSort.key === "allocation" ?
-                            holdingSort.dir === "desc" ?
-                              <ArrowDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          : null}
-                        </button>
-                      </div>
-                    </div>
-                    {sortedHoldingRows.length === 0 ?
-                      <div className="bg-white px-4 py-8 text-center text-[14px] leading-6 text-[#5C5D5F]">
-                        No positions in this slice.
-                      </div>
-                    : sortedHoldingRows.map((hRow) => (
-                        <div
-                          key={hRow.id}
-                          className={`${SLICES_TABLE_GRID} min-h-[56px] bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px] sm:px-4`}
-                        >
-                          <div className="min-w-0">
-                            <div className="flex min-w-0 items-center gap-3">
-                              <span
-                                className="h-8 w-1 shrink-0 self-center rounded-full"
-                                style={{ backgroundColor: hRow.color }}
-                                aria-hidden
+                    ) : null}
+                  </div>
+                </div>
+                <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                  <div
+                    className={cn(
+                      SLICES_TABLE_GRID,
+                      "min-h-[44px] py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                    )}
+                  >
+                    <SlicesSortHeader
+                      label="Name"
+                      sortKey="name"
+                      activeKey={holdingSort.key}
+                      dir={holdingSort.dir}
+                      onSort={onHoldingSort}
+                      align="start"
+                    />
+                    <SlicesSortHeader
+                      label="Value / invested"
+                      sortKey="value"
+                      activeKey={holdingSort.key}
+                      dir={holdingSort.dir}
+                      onSort={onHoldingSort}
+                    />
+                    <SlicesSortHeader
+                      label="Gain"
+                      sortKey="gain"
+                      activeKey={holdingSort.key}
+                      dir={holdingSort.dir}
+                      onSort={onHoldingSort}
+                    />
+                    <SlicesSortHeader
+                      label="Allocation"
+                      sortKey="allocation"
+                      activeKey={holdingSort.key}
+                      dir={holdingSort.dir}
+                      onSort={onHoldingSort}
+                    />
+                  </div>
+                </div>
+                <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+              </div>
+
+              {sortedHoldingRows.length === 0 ? (
+                <div className={cn("px-6 py-8 text-center text-[14px] leading-6 text-[#5C5D5F]")}>
+                  No positions in this slice.
+                </div>
+              ) : (
+                sortedHoldingRows.map((hRow, rowIdx) => (
+                  <div key={hRow.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                    <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                      <div
+                        className={cn(
+                          SLICES_TABLE_GRID,
+                          "min-h-[56px] sm:min-h-[60px]",
+                          SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                        )}
+                      >
+                        <div className={cn("min-w-0", TABLE_START_ALIGNED_PAD_CLASS)}>
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span
+                              className="h-8 w-1 shrink-0 self-center rounded-full"
+                              style={{ backgroundColor: hRow.color }}
+                              aria-hidden
+                            />
+                            <div className="h-8 w-8 shrink-0 overflow-hidden rounded-[10px] bg-white">
+                              <CompanyLogo
+                                name={hRow.name}
+                                logoUrl={displayLogoUrlForPortfolioSymbol(hRow.symbol)}
+                                symbol={hRow.symbol}
+                                size="md"
                               />
-                              <div className="h-8 w-8 shrink-0 overflow-hidden rounded-[10px] bg-white">
-                                <CompanyLogo
-                                  name={hRow.name}
-                                  logoUrl={displayLogoUrlForPortfolioSymbol(hRow.symbol)}
-                                  symbol={hRow.symbol}
-                                  size="md"
-                                />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
+                                {hRow.name}
                               </div>
-                              <div className="min-w-0">
-                                <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
-                                  {hRow.name}
-                                </div>
-                                <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{hRow.symbol}</div>
+                              <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                                {hRow.symbol}
                               </div>
                             </div>
                           </div>
-                          <div className="min-w-0 w-full text-right">
-                            <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
-                              {usd2.format(hRow.valueUsd)}
-                            </div>
-                            <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
-                              {usd2.format(hRow.investedUsd)} invested
-                            </div>
+                        </div>
+                        <div className={slicesEndCellClass}>
+                          <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+                            {usd2.format(hRow.valueUsd)}
                           </div>
-                          <div className="min-w-0 w-full text-right">
-                            {hRow.gainUsd === null ?
-                              <div className="w-full text-[14px] font-medium leading-5 text-[#5C5D5F]">{EM_DASH}</div>
-                            : <>
+                          <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                            {usd2.format(hRow.investedUsd)} invested
+                          </div>
+                        </div>
+                        <div className={slicesEndCellClass}>
+                          {hRow.gainUsd === null ? (
+                            <div className="w-full text-[14px] font-medium leading-5 text-[#5C5D5F]">
+                              {EM_DASH}
+                            </div>
+                          ) : (
+                            <>
+                              <div
+                                className={cn(
+                                  "font-['Inter'] text-[14px] font-medium leading-5 tabular-nums",
+                                  hRow.gainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                                )}
+                              >
+                                {formatSignedUsd2(hRow.gainUsd)}
+                              </div>
+                              {hRow.gainPct !== null ? (
                                 <div
                                   className={cn(
-                                    "font-['Inter'] text-[14px] font-medium leading-5 tabular-nums",
+                                    "text-[14px] font-medium leading-5 tabular-nums",
                                     hRow.gainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
                                   )}
                                 >
-                                  {formatSignedUsd2(hRow.gainUsd)}
+                                  {formatSignedPct1(hRow.gainPct)}
                                 </div>
-                                {hRow.gainPct !== null ?
-                                  <div
-                                    className={cn(
-                                      "text-[14px] font-medium leading-5 tabular-nums",
-                                      hRow.gainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                                    )}
-                                  >
-                                    {formatSignedPct1(hRow.gainPct)}
-                                  </div>
-                                : null}
-                              </>
-                            }
-                          </div>
-                          <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-[#141414]">
-                            {pct1.format(hRow.allocationPct)}%
-                          </div>
+                              ) : null}
+                            </>
+                          )}
                         </div>
-                      ))
-                    }
-                  </>
-                : <>
-                    <div
-                      className={`${SLICES_TABLE_GRID} min-h-[40px] bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:px-4`}
-                    >
-                      <div className="text-left">
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 rounded hover:text-[#141414]"
-                          onClick={() => onSort("name")}
+                        <div
+                          className={cn(
+                            "font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-[#141414]",
+                            slicesEndCellClass,
+                          )}
                         >
-                          Name
-                          {sort.key === "name" ?
-                            sort.dir === "desc" ?
-                              <ArrowDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          : null}
-                        </button>
-                      </div>
-                      <div className="min-w-0 w-full text-right">
-                        <button
-                          type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
-                          onClick={() => onSort("value")}
-                        >
-                          Value / invested
-                          {sort.key === "value" ?
-                            sort.dir === "desc" ?
-                              <ArrowDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          : null}
-                        </button>
-                      </div>
-                      <div className="min-w-0 w-full text-right">
-                        <button
-                          type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
-                          onClick={() => onSort("gain")}
-                        >
-                          Gain
-                          {sort.key === "gain" ?
-                            sort.dir === "desc" ?
-                              <ArrowDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          : null}
-                        </button>
-                      </div>
-                      <div className="min-w-0 w-full text-right">
-                        <button
-                          type="button"
-                          className="inline-flex w-full items-center justify-end gap-1 rounded hover:text-[#141414]"
-                          onClick={() => onSort("allocation")}
-                        >
-                          Allocation
-                          {sort.key === "allocation" ?
-                            sort.dir === "desc" ?
-                              <ArrowDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                            : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          : null}
-                        </button>
+                          {pct1.format(hRow.allocationPct)}%
+                        </div>
                       </div>
                     </div>
+                    {rowIdx < sortedHoldingRows.length - 1 ? (
+                      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                    ) : null}
+                  </div>
+                ))
+              )}
+            </>
+          ) : (
+            <>
+              <div
+                className={cn(
+                  SCREENER_TABLE_HEADER_STICKY_CLASS,
+                  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+                  "md:border-b-0",
+                )}
+              >
+                <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                  <div
+                    className={cn(
+                      SLICES_TABLE_GRID,
+                      "min-h-[44px] py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                    )}
+                  >
+                    <SlicesSortHeader
+                      label="Name"
+                      sortKey="name"
+                      activeKey={sort.key}
+                      dir={sort.dir}
+                      onSort={onSort}
+                      align="start"
+                    />
+                    <SlicesSortHeader
+                      label="Value / invested"
+                      sortKey="value"
+                      activeKey={sort.key}
+                      dir={sort.dir}
+                      onSort={onSort}
+                    />
+                    <SlicesSortHeader
+                      label="Gain"
+                      sortKey="gain"
+                      activeKey={sort.key}
+                      dir={sort.dir}
+                      onSort={onSort}
+                    />
+                    <SlicesSortHeader
+                      label="Allocation"
+                      sortKey="allocation"
+                      activeKey={sort.key}
+                      dir={sort.dir}
+                      onSort={onSort}
+                    />
+                  </div>
+                </div>
+                <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+              </div>
 
-                    {sortedRows.map((row) => {
-                      const Icon = sectorIconFor(row.kind, row.label);
-                      return (
-                        <button
-                          key={row.key}
-                          type="button"
-                          className={`${SLICES_TABLE_GRID} min-h-[56px] bg-white px-2 text-left transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px] sm:px-4`}
-                          aria-label={`View holdings in ${row.label}`}
-                          onClick={() => openSliceDrillDown(row.key)}
-                        >
-                          <div className="min-w-0">
-                            <div className="flex min-w-0 items-center gap-3">
-                              <span
-                                className="h-8 w-1 shrink-0 self-center rounded-full"
-                                style={{ backgroundColor: row.color }}
-                                aria-hidden
-                              />
-                              <span
-                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"
-                                style={{ backgroundColor: row.color }}
-                                aria-hidden
-                              >
-                                <Icon className="h-4 w-4 text-white" strokeWidth={2} aria-hidden />
-                              </span>
-                              <div className="min-w-0">
-                                <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
-                                  {row.label}
-                                </div>
-                                <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
-                                  {row.assetCount} {row.assetCount === 1 ? "asset" : "assets"}
-                                </div>
+              {sortedRows.map((row, rowIdx) => {
+                const Icon = sectorIconFor(row.kind, row.label);
+                return (
+                  <div key={row.key} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                    <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                      <button
+                        type="button"
+                        className={cn(
+                          SLICES_TABLE_GRID,
+                          "min-h-[56px] text-left sm:min-h-[60px]",
+                          SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                        )}
+                        aria-label={`View holdings in ${row.label}`}
+                        onClick={() => openSliceDrillDown(row.key)}
+                      >
+                        <div className={cn("min-w-0", TABLE_START_ALIGNED_PAD_CLASS)}>
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span
+                              className="h-8 w-1 shrink-0 self-center rounded-full"
+                              style={{ backgroundColor: row.color }}
+                              aria-hidden
+                            />
+                            <span
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]"
+                              style={{ backgroundColor: row.color }}
+                              aria-hidden
+                            >
+                              <Icon className="h-4 w-4 text-white" strokeWidth={2} aria-hidden />
+                            </span>
+                            <div className="min-w-0">
+                              <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
+                                {row.label}
+                              </div>
+                              <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                                {row.assetCount} {row.assetCount === 1 ? "asset" : "assets"}
                               </div>
                             </div>
                           </div>
-                          <div className="min-w-0 w-full text-right">
-                            <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
-                              {usd2.format(row.valueUsd)}
-                            </div>
-                            <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
-                              {usd2.format(row.investedUsd)} invested
-                            </div>
+                        </div>
+                        <div className={slicesEndCellClass}>
+                          <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+                            {usd2.format(row.valueUsd)}
                           </div>
-                          <div className="min-w-0 w-full text-right">
-                            {row.gainUsd === null ?
-                              <div className="w-full text-[14px] font-medium leading-5 text-[#5C5D5F]">{EM_DASH}</div>
-                            : <>
+                          <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                            {usd2.format(row.investedUsd)} invested
+                          </div>
+                        </div>
+                        <div className={slicesEndCellClass}>
+                          {row.gainUsd === null ? (
+                            <div className="w-full text-[14px] font-medium leading-5 text-[#5C5D5F]">
+                              {EM_DASH}
+                            </div>
+                          ) : (
+                            <>
+                              <div
+                                className={cn(
+                                  "font-['Inter'] text-[14px] font-medium leading-5 tabular-nums",
+                                  row.gainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                                )}
+                              >
+                                {formatSignedUsd2(row.gainUsd)}
+                              </div>
+                              {row.gainPct !== null ? (
                                 <div
                                   className={cn(
-                                    "font-['Inter'] text-[14px] font-medium leading-5 tabular-nums",
+                                    "text-[14px] font-medium leading-5 tabular-nums",
                                     row.gainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
                                   )}
                                 >
-                                  {formatSignedUsd2(row.gainUsd)}
+                                  {formatSignedPct1(row.gainPct)}
                                 </div>
-                                {row.gainPct !== null ?
-                                  <div
-                                    className={cn(
-                                      "text-[14px] font-medium leading-5 tabular-nums",
-                                      row.gainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
-                                    )}
-                                  >
-                                    {formatSignedPct1(row.gainPct)}
-                                  </div>
-                                : null}
-                              </>
-                            }
-                          </div>
-                          <div className="min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-[#141414]">
-                            {pct1.format(row.allocationPct)}%
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </>
-                }
-              </div>
-              </div>
-            </div>
-        </div>
+                              ) : null}
+                            </>
+                          )}
+                        </div>
+                        <div
+                          className={cn(
+                            "font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-[#141414]",
+                            slicesEndCellClass,
+                          )}
+                        >
+                          {pct1.format(row.allocationPct)}%
+                        </div>
+                      </button>
+                    </div>
+                    {rowIdx < sortedRows.length - 1 ? (
+                      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                    ) : null}
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </ScreenerTableScroll>
       </div>
     </div>
   );

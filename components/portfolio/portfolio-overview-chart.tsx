@@ -67,6 +67,10 @@ import {
 } from "@/components/ui/empty";
 import { netCashUsdUpTo, normalizeUsdForDisplay } from "@/lib/portfolio/overview-metrics";
 import { whiteSurfaceButtonBorderClass, whiteSurfaceButtonShadowClass } from "@/components/design-system";
+import {
+  SegmentedControl,
+  type SegmentedControlOption,
+} from "@/components/design-system/segmented-control";
 import { cn } from "@/lib/utils";
 import type {
   PortfolioChartRange,
@@ -646,19 +650,22 @@ function formatReturnPctAxis(n: number): string {
   return `${sign}${Math.abs(n).toFixed(2)}%`;
 }
 
-export const PORTFOLIO_CHART_RANGE_LABELS: { id: PortfolioChartRange; label: string }[] = [
-  { id: "1d", label: "1D" },
-  { id: "7d", label: "7D" },
-  { id: "1m", label: "1M" },
-  { id: "6m", label: "6M" },
-  { id: "ytd", label: "YTD" },
-  { id: "1y", label: "1Y" },
-  { id: "5y", label: "5Y" },
-  { id: "all", label: "ALL" },
+export const PORTFOLIO_CHART_RANGE_LABELS: readonly SegmentedControlOption<PortfolioChartRange>[] = [
+  { value: "1d", label: "1D" },
+  { value: "7d", label: "7D" },
+  { value: "1m", label: "1M" },
+  { value: "6m", label: "6M" },
+  { value: "ytd", label: "YTD" },
+  { value: "1y", label: "1Y" },
+  { value: "5y", label: "5Y" },
+  { value: "all", label: "ALL" },
 ];
 
 /** Mobile range strip omits YTD to fit the narrower control row. */
-const PORTFOLIO_CHART_MOBILE_RANGE_LABELS = PORTFOLIO_CHART_RANGE_LABELS.filter((r) => r.id !== "ytd");
+const PORTFOLIO_CHART_MOBILE_RANGE_LABELS = PORTFOLIO_CHART_RANGE_LABELS.filter((r) => r.value !== "ytd");
+
+const PORTFOLIO_CHART_METRIC_SEGMENTS: readonly SegmentedControlOption<PortfolioChartMetricMode>[] =
+  PORTFOLIO_CHART_METRIC_OPTIONS;
 
 const PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS = `w-auto ${whiteSurfaceButtonBorderClass} bg-white font-medium ${whiteSurfaceButtonShadowClass} hover:bg-[#FAFAFA]`;
 
@@ -1882,55 +1889,25 @@ function PortfolioOverviewChartInner({
   return (
     <section className="mb-6 w-full min-w-0 max-md:mb-4">
       {/* Web/desktop controls row. */}
-      <div className="relative z-20 mb-4 hidden w-full min-w-0 flex-wrap items-center justify-between gap-3 sm:flex">
+      <div className="relative z-20 mb-5 hidden w-full min-w-0 flex-wrap items-center justify-between gap-3 sm:flex">
         <div className="flex min-w-0 items-center gap-3">
-          <div
-            className="flex w-auto min-w-0 flex-nowrap gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
-            role="group"
+          <SegmentedControl
+            options={PORTFOLIO_CHART_METRIC_SEGMENTS}
+            value={metric}
+            onChange={setMetric}
             aria-label="Chart metric"
-          >
-            {PORTFOLIO_CHART_METRIC_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setMetric(opt.value)}
-                className={cn(
-                  "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal",
-                  metric === opt.value ?
-                    "bg-white font-medium text-[#141414] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                  : "font-normal text-[#5C5D5F]",
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          />
         </div>
 
         <div className="flex min-w-0 items-center justify-end gap-3">
           <PortfolioChartSettingsButton {...chartSettingsProps} />
 
-          <div
-            className="flex w-auto min-w-0 flex-nowrap justify-end gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
-            role="group"
+          <SegmentedControl
+            options={PORTFOLIO_CHART_RANGE_LABELS}
+            value={range}
+            onChange={setRange}
             aria-label="Chart range"
-          >
-            {PORTFOLIO_CHART_RANGE_LABELS.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setRange(r.id)}
-                className={cn(
-                  "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal",
-                  range === r.id ?
-                    "bg-white font-medium text-[#141414] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                  : "font-normal text-[#5C5D5F]",
-                )}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
+          />
         </div>
       </div>
 
@@ -1999,27 +1976,13 @@ function PortfolioOverviewChartInner({
       </div>
 
       <div className="relative z-20 mt-3 w-full sm:hidden">
-        <div
-          className="flex w-full min-w-0 flex-nowrap justify-stretch gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5"
-          role="group"
+        <SegmentedControl
+          options={PORTFOLIO_CHART_MOBILE_RANGE_LABELS}
+          value={range}
+          onChange={setRange}
+          fullWidth
           aria-label="Chart range"
-        >
-          {PORTFOLIO_CHART_MOBILE_RANGE_LABELS.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setRange(r.id)}
-              className={cn(
-                "flex-1 rounded-[10px] px-2 py-1.5 text-center font-sans text-[14px] leading-5 tracking-normal",
-                range === r.id ?
-                  "bg-white font-medium text-[#141414] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]"
-                : "font-normal text-[#5C5D5F]",
-              )}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
+        />
       </div>
     </section>
   );

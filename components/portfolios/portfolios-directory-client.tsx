@@ -25,7 +25,8 @@ import {
 import { PortfolioOwnerName } from "@/components/portfolios/portfolio-owner-name";
 import { PortfoliosDirectoryTable } from "@/components/portfolios/portfolios-directory-table";
 import { PUBLIC_LISTINGS_CHANGED_EVENT } from "@/lib/portfolio/sync-public-listing-client";
-import { whiteSurfaceButtonChromeClass } from "@/components/design-system";
+import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { cn } from "@/lib/utils";
 
 type PortfoliosDirectoryView = "cards" | "list";
@@ -121,7 +122,10 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
   return (
     <Link
       href={`/portfolios/${listing.id}`}
-      className="group mb-6 block rounded-[12px] border border-[#E4E4E7] bg-white p-[20px] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)] transition-colors hover:border-[#D4D4D8] hover:bg-[#FAFAFA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2"
+      className={cn(
+        MOBILE_PANEL_CARD_CLASS,
+        "group mb-5 block p-5 transition-colors hover:bg-[#FAFAFA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
+      )}
       aria-label={`View public portfolio ${listing.name} by ${ownerName}`}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -205,13 +209,7 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
         </div>
 
         <div className="flex shrink-0 justify-end md:justify-center">
-          <div
-            className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-[10px] text-[#141414] transition-colors group-hover:bg-[#F4F4F5]",
-              whiteSurfaceButtonChromeClass,
-            )}
-            aria-hidden
-          >
+          <div className={cn(topbarSquircleIconClass, "group-hover:bg-[#F4F4F5]")} aria-hidden>
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
           </div>
         </div>
@@ -326,7 +324,7 @@ export function PortfoliosDirectoryClient() {
           <h1 className="text-2xl font-semibold tracking-tight text-[#141414]">Portfolios</h1>
           <PortfoliosViewToggle view={view} onChange={setView} />
         </div>
-        <div className="rounded-xl border border-[#E4E4E7] bg-white px-6 py-12 text-center text-sm text-[#5C5D5F]">
+        <div className={cn(MOBILE_PANEL_CARD_CLASS, "px-6 py-12 text-center text-sm text-[#5C5D5F]")}>
           {error}
         </div>
       </div>

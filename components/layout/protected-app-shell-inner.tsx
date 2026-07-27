@@ -20,12 +20,14 @@ import {
 } from "@/components/layout/sidebar-layout-context";
 import { MobileAssetTopbarProvider } from "@/components/layout/mobile-asset-topbar-context";
 import { Topbar } from "@/components/layout/topbar";
-import { CompanyRail } from "@/components/layout/company-rail";
 import { WatchlistRail } from "@/components/layout/watchlist-rail";
 import { WatchlistRailLayoutProvider } from "@/components/layout/watchlist-rail-layout-context";
 import { ChartingCompanyRailProvider } from "@/components/charting/charting-company-rail-context";
 import { dropdownMenuFloatingScrollbarClassName } from "@/components/design-system/dropdown-menu-styles";
-import { MOBILE_PAGE_BACKGROUND_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_PAGE_BACKGROUND_CLASS,
+  SHELL_DESKTOP_PANEL_BG_MD_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { MOBILE_STOCK_TOPBAR_OFFSET_CLASS } from "@/lib/layout/use-mobile-stock-topbar-layout";
 import { useMobileTopbarScrollBlur } from "@/lib/layout/use-mobile-topbar-scroll-blur";
 import { cn } from "@/lib/utils";
@@ -123,7 +125,8 @@ function ProtectedAppChrome({
           <div
             suppressHydrationWarning
             className={cn(
-              "shell-desktop-panel__header mobile-topbar-shell z-30 min-w-0 w-full max-w-full shrink-0 max-md:bg-transparent max-md:shadow-none md:border-b md:border-[#EBEBEC] md:bg-[#FCFCFD]",
+              "shell-desktop-panel__header mobile-topbar-shell z-30 min-w-0 w-full max-w-full shrink-0 max-md:bg-transparent max-md:shadow-none md:border-b md:border-[#EBEBEC]",
+              SHELL_DESKTOP_PANEL_BG_MD_CLASS,
             )}
           >
             <div aria-hidden className="mobile-topbar-blur-fade md:hidden" />
@@ -145,15 +148,13 @@ function ProtectedAppChrome({
               mobileTopbarVariant === "stock" ? "max-md:pt-0" : "max-md:pt-[var(--mobile-topbar-offset)]",
             )}
           >
-            <Suspense fallback={null}>
-              <CompanyRail />
-            </Suspense>
             <main
               ref={mainRef}
               suppressHydrationWarning
               className={cn(
-                "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain md:bg-[#FCFCFD]",
-                // Scope mobile grey to max-md so it cannot override desktop `#FCFCFD`.
+                "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain",
+                SHELL_DESKTOP_PANEL_BG_MD_CLASS,
+                // Scope mobile grey to max-md so it cannot override desktop panel fill.
                 "max-md:bg-[#FAFAFA]",
                 dropdownMenuFloatingScrollbarClassName,
                 mobileTopbarVariant === "stock" && MOBILE_STOCK_TOPBAR_OFFSET_CLASS,

@@ -9,6 +9,18 @@ import { toast } from "sonner";
 
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+  ScreenerTableScroll,
+} from "@/components/screener/screener-table-scroll";
 import { HoldingRowActionsMenu } from "@/components/portfolio/holding-row-actions-menu";
 import { PortfolioHoldingTransactionsPanel } from "@/components/portfolio/portfolio-holding-transactions-panel";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
@@ -38,7 +50,13 @@ const EM_DASH = "\u2014";
 
 /** Matches screener company column (`screener-table.tsx`). */
 const HOLDING_COMPANY_NAME_CLASS =
-  "truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline";
+  "truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline group-hover/row:underline";
+
+/** Desktop holdings columns — expand + asset + numerics (+ actions). Fluid so card 8px inset isn’t clipped. */
+const HOLDINGS_GRID_BASE =
+  "grid w-full min-w-0 items-center gap-x-2 grid-cols-[40px_minmax(0,2.2fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,0.85fr)]";
+const HOLDINGS_GRID_WITH_ACTIONS =
+  "grid w-full min-w-0 items-center gap-x-2 grid-cols-[40px_minmax(0,2.2fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,0.85fr)_52px]";
 
 /** Expand/collapse control for inline transaction history. */
 function PortfolioHoldingExpandButton({
@@ -69,10 +87,6 @@ function PortfolioHoldingExpandButton({
       : <ChevronDown className="h-4 w-4" strokeWidth={2} aria-hidden />}
     </button>
   );
-}
-
-function holdingRowTdBorder(expanded: boolean) {
-  return expanded ? undefined : "border-b border-[#E4E4E7]";
 }
 
 function holdingToCompanyPick(h: PortfolioHolding): CompanyPick {
@@ -284,7 +298,7 @@ function HoldingsSortHeader({
 }) {
   const active = activeKey === sortKey;
   return (
-    <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#5C5D5F]">
+    <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
       <button
         type="button"
         className="inline-flex w-full items-center justify-end gap-1 rounded text-[14px] font-medium leading-5 text-[#5C5D5F] hover:text-[#141414]"
@@ -298,7 +312,7 @@ function HoldingsSortHeader({
           : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
         : null}
       </button>
-    </th>
+    </div>
   );
 }
 
@@ -345,7 +359,7 @@ function PortfolioHoldingsTableInner({
     );
   }, []);
 
-  const tableColSpan = selectedPortfolioReadOnly ? 7 : 8;
+  const holdingsGridClass = selectedPortfolioReadOnly ? HOLDINGS_GRID_BASE : HOLDINGS_GRID_WITH_ACTIONS;
 
   const confirmRemoveAsset = useCallback(() => {
     if (!selectedPortfolioId || !removeTarget) return;
@@ -412,12 +426,7 @@ function PortfolioHoldingsTableInner({
         onClose={() => setRemoveTarget(null)}
         onConfirmRemove={confirmRemoveAsset}
       />
-      <div
-        className={cn(
-          "w-full overflow-x-visible max-md:pb-4 sm:overflow-x-auto sm:border-t sm:border-[#E4E4E7] sm:pb-8",
-          className,
-        )}
-      >
+      <div className={cn("w-full max-md:pb-4 sm:pb-2", className)}>
       <div className="sm:hidden">
         <div>
           {sorted.map(({ holding: h, retUsd }) => {
@@ -501,250 +510,305 @@ function PortfolioHoldingsTableInner({
         </div>
       </div>
 
-      <table className="hidden w-full min-w-[960px] border-separate border-spacing-0 sm:table">
-        <thead>
-          <tr className="min-h-[40px] bg-white text-[14px] font-medium leading-5 text-[#5C5D5F]">
-            <th className="w-11 border-b border-[#E4E4E7] px-2 py-[10px] font-medium" aria-hidden />
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-left text-[14px] font-medium leading-5 text-[#5C5D5F]">
-              Asset
-            </th>
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#5C5D5F]">
-              Price
-            </th>
-            <HoldingsSortHeader
-              label="Holdings"
-              sortKey="holdings"
-              activeKey={sort.key}
-              dir={sort.dir}
-              onSort={onSort}
-            />
-            <th className="whitespace-nowrap border-b border-[#E4E4E7] px-4 py-[10px] text-right text-[14px] font-medium leading-5 text-[#5C5D5F]">
-              Avg. Buy Price
-            </th>
-            <HoldingsSortHeader
-              label="Profit/Loss"
-              sortKey="pnl"
-              activeKey={sort.key}
-              dir={sort.dir}
-              onSort={onSort}
-            />
-            <HoldingsSortHeader
-              label="Weight"
-              sortKey="weight"
-              activeKey={sort.key}
-              dir={sort.dir}
-              onSort={onSort}
-            />
-            {!selectedPortfolioReadOnly ? (
-              <th className="w-12 border-b border-[#E4E4E7] px-4 py-[10px] text-right" aria-label="Actions" />
-            ) : null}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map(({ holding: h, retUsd, weightPct }) => {
-            const cryptoKey = cryptoRouteBase(h.symbol);
-            const assetKind: "stock" | "crypto" =
-              isSupportedCryptoAssetSymbol(cryptoKey) ? "crypto" : "stock";
-            const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, cryptoKey, assetKind);
-            const unrealizedUsd = retUsd;
-            const totalUsd = unrealizedUsd + realizedUsd;
-            const totalPct = h.costBasis > 0 ? (totalUsd / h.costBasis) * 100 : 0;
-            const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: assetLinkTab });
-            const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
-            const caption = portfolioAssetSymbolCaption(h.symbol);
-            const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
-            const expanded = expandedHoldingId === h.id;
-            const assetInner = (
-              <>
-                <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
-                <div className="min-w-0 text-left">
-                  <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                  <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{caption}</div>
-                </div>
-              </>
-            );
-            return (
-            <Fragment key={h.id}>
-            <tr
-              className={cn(
-                "group relative h-[56px] max-h-[56px] transition-colors duration-75 hover:bg-neutral-50",
-                assetHref && !expanded && "cursor-pointer",
-              )}
-              onClick={
-                assetHref
-                  ? (e) => {
-                      if ((e.target as HTMLElement).closest("[data-holding-actions]")) return;
-                      if ((e.target as HTMLElement).closest("[data-holding-expand]")) return;
-                      if ((e.target as HTMLElement).closest("[data-holding-expanded-panel]")) return;
-                      router.push(assetHref);
-                    }
-                  : undefined
-              }
-              onKeyDown={
-                assetHref
-                  ? (e) => {
-                      if (e.key !== "Enter" && e.key !== " ") return;
-                      e.preventDefault();
-                      router.push(assetHref);
-                    }
-                  : undefined
-              }
-              tabIndex={assetHref && !expanded ? 0 : undefined}
-              role={assetHref && !expanded ? "link" : undefined}
-              aria-label={assetHref && !expanded ? `Open ${companyName}` : undefined}
-            >
-              <td
-                className={cn(
-                  "relative z-[2] w-11 px-2 py-0 align-middle",
-                  holdingRowTdBorder(expanded),
-                )}
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-center py-2">
-                  <PortfolioHoldingExpandButton
-                    expanded={expanded}
-                    onToggle={() => toggleExpandedHolding(h.id)}
-                  />
-                </div>
-              </td>
-              <td className={cn("relative z-[1] align-middle px-4 py-0", holdingRowTdBorder(expanded))}>
-                <div className="flex min-w-0 max-w-full items-center gap-3 py-2 pr-2">{assetInner}</div>
-              </td>
-              <td
-                className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]",
-                  holdingRowTdBorder(expanded),
-                )}
-              >
-                {formatPortfolioUsdPerUnit(h.marketPrice)}
-              </td>
-              <td
-                className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right",
-                  holdingRowTdBorder(expanded),
-                )}
-              >
-                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
-                  {usd0.format(h.currentValue)}
-                </div>
-                <div className="text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
-                  {formatSharesWithUnit(h.shares, h.symbol)}
-                </div>
-              </td>
-              <td
-                className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]",
-                  holdingRowTdBorder(expanded),
-                )}
-              >
-                {formatPortfolioUsdPerUnit(h.avgPrice)}
-              </td>
-              <td
-                className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right",
-                  holdingRowTdBorder(expanded),
-                )}
-              >
-                <PortfolioPnlBreakdownTooltip
-                  totalUsd={totalUsd}
-                  totalPct={totalPct}
-                  unrealizedUsd={unrealizedUsd}
-                  realizedUsd={realizedUsd}
-                />
-              </td>
-              <td
-                className={cn(
-                  "relative z-[1] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]",
-                  holdingRowTdBorder(expanded),
-                )}
-              >
-                {pct.format(weightPct)}%
-              </td>
-              {!selectedPortfolioReadOnly ? (
-                <td
-                  className={cn(
-                    "relative z-[2] align-middle px-4 py-[10px] text-right",
-                    holdingRowTdBorder(expanded),
-                  )}
-                  data-holding-actions
-                >
-                  <div className="relative flex justify-end">
-                    <HoldingRowActionsMenu
-                      holding={h}
-                      isOpen={openActionsHoldingId === h.id}
-                      onOpenChange={(open) => setOpenActionsHoldingId(open ? h.id : null)}
-                      onAddTransactions={(row) =>
-                        openNewTransactionWithPreset(holdingToCompanyPick(row))
-                      }
-                      onRemoveAsset={setRemoveTarget}
-                    />
-                  </div>
-                </td>
-              ) : null}
-            </tr>
-            {expanded ? (
-              <tr className="bg-white">
-                <td colSpan={tableColSpan} className="border-t-2 border-b-2 border-[#E4E4E7] p-0">
-                  <PortfolioHoldingTransactionsPanel
-                    holding={h}
-                    transactions={transactions}
-                    resolvedCompanyNames={resolvedCompanyNames}
-                  />
-                </td>
-              </tr>
-            ) : null}
-            </Fragment>
-            );
-          })}
 
-          <tr
-            className="group relative h-[60px] max-h-[60px] cursor-pointer bg-white transition-colors duration-75 hover:bg-neutral-50"
-            onClick={() => router.push("/portfolio?tab=cash")}
-            onKeyDown={(e) => {
-              if (e.key !== "Enter" && e.key !== " ") return;
-              e.preventDefault();
-              router.push("/portfolio?tab=cash");
-            }}
-            tabIndex={0}
-            role="link"
-            aria-label="Open cash"
-          >
-            <td className="relative z-[2] w-11 border-b border-[#E4E4E7] px-2 py-0 align-middle" aria-hidden />
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle px-4 py-0">
-              <div className="flex min-w-0 max-w-full items-center gap-3 py-2 pr-2">
-                <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
-                <div className="min-w-0 text-left">
-                  <div className={HOLDING_COMPANY_NAME_CLASS}>US Dollar</div>
-                  <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">USD</div>
+      <div className="hidden sm:block">
+        <ScreenerTableScroll className="sm:pb-6">
+          <div className="bg-white">
+            <div
+              className={cn(
+                SCREENER_TABLE_HEADER_STICKY_CLASS,
+                SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+                "md:border-b-0",
+              )}
+            >
+              <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                <div
+                  className={cn(
+                    holdingsGridClass,
+                    "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                  )}
+                >
+                  <div aria-hidden />
+                  <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Asset</div>
+                  <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Price</div>
+                  <HoldingsSortHeader
+                    label="Holdings"
+                    sortKey="holdings"
+                    activeKey={sort.key}
+                    dir={sort.dir}
+                    onSort={onSort}
+                  />
+                  <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
+                    Avg. Buy Price
+                  </div>
+                  <HoldingsSortHeader
+                    label="Profit/Loss"
+                    sortKey="pnl"
+                    activeKey={sort.key}
+                    dir={sort.dir}
+                    onSort={onSort}
+                  />
+                  <HoldingsSortHeader
+                    label="Weight"
+                    sortKey="weight"
+                    activeKey={sort.key}
+                    dir={sort.dir}
+                    onSort={onSort}
+                  />
+                  {!selectedPortfolioReadOnly ? (
+                    <div className={cn("w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)} aria-label="Actions" />
+                  ) : null}
                 </div>
               </div>
-            </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]">
-              {formatPortfolioUsdPerUnit(1)}
-            </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right">
-              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
-                {usd0.format(cashUsd)}
+              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+            </div>
+
+            {sorted.map(({ holding: h, retUsd, weightPct }) => {
+              const cryptoKey = cryptoRouteBase(h.symbol);
+              const assetKind: "stock" | "crypto" =
+                isSupportedCryptoAssetSymbol(cryptoKey) ? "crypto" : "stock";
+              const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, cryptoKey, assetKind);
+              const unrealizedUsd = retUsd;
+              const totalUsd = unrealizedUsd + realizedUsd;
+              const totalPct = h.costBasis > 0 ? (totalUsd / h.costBasis) * 100 : 0;
+              const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: assetLinkTab });
+              const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
+              const caption = portfolioAssetSymbolCaption(h.symbol);
+              const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
+              const expanded = expandedHoldingId === h.id;
+
+              return (
+                <Fragment key={h.id}>
+                  <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                    <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                      <div
+                        className={cn(
+                          holdingsGridClass,
+                          "min-h-[56px] text-[14px] font-normal leading-5",
+                          SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                          assetHref && !expanded && "cursor-pointer",
+                        )}
+                        onClick={
+                          assetHref
+                            ? (e) => {
+                                if ((e.target as HTMLElement).closest("[data-holding-actions]")) return;
+                                if ((e.target as HTMLElement).closest("[data-holding-expand]")) return;
+                                if ((e.target as HTMLElement).closest("[data-holding-expanded-panel]"))
+                                  return;
+                                router.push(assetHref);
+                              }
+                            : undefined
+                        }
+                        onKeyDown={
+                          assetHref
+                            ? (e) => {
+                                if (e.key !== "Enter" && e.key !== " ") return;
+                                e.preventDefault();
+                                router.push(assetHref);
+                              }
+                            : undefined
+                        }
+                        tabIndex={assetHref && !expanded ? 0 : undefined}
+                        role={assetHref && !expanded ? "link" : undefined}
+                        aria-label={assetHref && !expanded ? `Open ${companyName}` : undefined}
+                      >
+                        <div
+                          className="relative z-[2] flex items-center justify-center"
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
+                          <PortfolioHoldingExpandButton
+                            expanded={expanded}
+                            onToggle={() => toggleExpandedHolding(h.id)}
+                          />
+                        </div>
+                        <div
+                          className={cn(
+                            "relative z-[1] flex min-w-0 max-w-full items-center gap-3 pr-2",
+                            TABLE_START_ALIGNED_PAD_CLASS,
+                          )}
+                        >
+                          <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
+                          <div className="min-w-0 text-left">
+                            <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
+                            <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                              {caption}
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          className={cn(
+                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                            TABLE_END_ALIGNED_PAD_CLASS,
+                          )}
+                        >
+                          {formatPortfolioUsdPerUnit(h.marketPrice)}
+                        </div>
+                        <div
+                          className={cn(
+                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right",
+                            TABLE_END_ALIGNED_PAD_CLASS,
+                          )}
+                        >
+                          <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+                            {usd0.format(h.currentValue)}
+                          </div>
+                          <div className="text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
+                            {formatSharesWithUnit(h.shares, h.symbol)}
+                          </div>
+                        </div>
+                        <div
+                          className={cn(
+                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                            TABLE_END_ALIGNED_PAD_CLASS,
+                          )}
+                        >
+                          {formatPortfolioUsdPerUnit(h.avgPrice)}
+                        </div>
+                        <div
+                          className={cn(
+                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right",
+                            TABLE_END_ALIGNED_PAD_CLASS,
+                          )}
+                        >
+                          <PortfolioPnlBreakdownTooltip
+                            totalUsd={totalUsd}
+                            totalPct={totalPct}
+                            unrealizedUsd={unrealizedUsd}
+                            realizedUsd={realizedUsd}
+                          />
+                        </div>
+                        <div
+                          className={cn(
+                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                            TABLE_END_ALIGNED_PAD_CLASS,
+                          )}
+                        >
+                          {pct.format(weightPct)}%
+                        </div>
+                        {!selectedPortfolioReadOnly ? (
+                          <div
+                            className={cn("relative z-[2] flex justify-end", TABLE_END_ALIGNED_PAD_CLASS)}
+                            data-holding-actions
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <HoldingRowActionsMenu
+                              holding={h}
+                              isOpen={openActionsHoldingId === h.id}
+                              onOpenChange={(open) => setOpenActionsHoldingId(open ? h.id : null)}
+                              onAddTransactions={(row) =>
+                                openNewTransactionWithPreset(holdingToCompanyPick(row))
+                              }
+                              onRemoveAsset={setRemoveTarget}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                    {!expanded ? (
+                      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                    ) : null}
+                  </div>
+                  {expanded ? (
+                    <div className="border-y-2 border-solid border-[#EFEFEF] bg-white">
+                      <PortfolioHoldingTransactionsPanel
+                        holding={h}
+                        transactions={transactions}
+                        resolvedCompanyNames={resolvedCompanyNames}
+                      />
+                    </div>
+                  ) : null}
+                </Fragment>
+              );
+            })}
+
+            <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+              <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                <div
+                  className={cn(
+                    holdingsGridClass,
+                    "min-h-[56px] cursor-pointer text-[14px] font-normal leading-5",
+                    SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                  )}
+                  onClick={() => router.push("/portfolio?tab=cash")}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter" && e.key !== " ") return;
+                    e.preventDefault();
+                    router.push("/portfolio?tab=cash");
+                  }}
+                  tabIndex={0}
+                  role="link"
+                  aria-label="Open cash"
+                >
+                  <div aria-hidden />
+                  <div
+                    className={cn(
+                      "relative z-[1] flex min-w-0 max-w-full items-center gap-3 pr-2",
+                      TABLE_START_ALIGNED_PAD_CLASS,
+                    )}
+                  >
+                    <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
+                    <div className="min-w-0 text-left">
+                      <div className={HOLDING_COMPANY_NAME_CLASS}>US Dollar</div>
+                      <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">USD</div>
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                      TABLE_END_ALIGNED_PAD_CLASS,
+                    )}
+                  >
+                    {formatPortfolioUsdPerUnit(1)}
+                  </div>
+                  <div
+                    className={cn(
+                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right",
+                      TABLE_END_ALIGNED_PAD_CLASS,
+                    )}
+                  >
+                    <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+                      {usd0.format(cashUsd)}
+                    </div>
+                    <div className="text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
+                      {formatSharesDisplay(cashUsd)} USD
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                      TABLE_END_ALIGNED_PAD_CLASS,
+                    )}
+                  >
+                    {formatPortfolioUsdPerUnit(1)}
+                  </div>
+                  <div
+                    className={cn(
+                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right",
+                      TABLE_END_ALIGNED_PAD_CLASS,
+                    )}
+                  >
+                    <div className="text-[14px] font-medium tabular-nums text-[#5C5D5F]">{EM_DASH}</div>
+                    <div className="text-[12px] font-medium tabular-nums text-[#5C5D5F]">{EM_DASH}</div>
+                  </div>
+                  <div
+                    className={cn(
+                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                      TABLE_END_ALIGNED_PAD_CLASS,
+                    )}
+                  >
+                    {pct.format(cashWeightPct)}%
+                  </div>
+                  {!selectedPortfolioReadOnly ? (
+                    <div className={TABLE_END_ALIGNED_PAD_CLASS} aria-hidden />
+                  ) : null}
+                </div>
               </div>
-              <div className="text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
-                {formatSharesDisplay(cashUsd)} USD
-              </div>
-            </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]">
-              {formatPortfolioUsdPerUnit(1)}
-            </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right">
-              <div className="text-[14px] font-medium tabular-nums text-[#5C5D5F]">{EM_DASH}</div>
-              <div className="text-[12px] font-medium tabular-nums text-[#5C5D5F]">{EM_DASH}</div>
-            </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle whitespace-nowrap px-4 py-[10px] text-right font-['Inter'] text-[14px] leading-5 tabular-nums text-[#141414]">
-              {pct.format(cashWeightPct)}%
-            </td>
-            <td className="relative z-[1] border-b border-[#E4E4E7] align-middle px-4 py-[10px] text-right" aria-hidden />
-          </tr>
-        </tbody>
-      </table>
+            </div>
+          </div>
+        </ScreenerTableScroll>
+      </div>
       </div>
     </>
   );

@@ -3,6 +3,14 @@ import { cn } from "@/lib/utils";
 /** Grey page shell behind elevated cards (stock, screener, portfolio mobile). */
 export const MOBILE_PAGE_BACKGROUND_CLASS = "bg-[#FAFAFA]";
 
+/**
+ * Desktop chrome panel fill — top bar, main, company rail, watchlist rail.
+ * Keep in sync with `app/globals.css` `.shell-desktop-panel*` backgrounds.
+ */
+export const SHELL_DESKTOP_PANEL_BG = "#FCFCFD";
+export const SHELL_DESKTOP_PANEL_BG_CLASS = "bg-[#FCFCFD]";
+export const SHELL_DESKTOP_PANEL_BG_MD_CLASS = "md:bg-[#FCFCFD]";
+
 /** Figma mobile card chrome: borderless + stacked drop shadows (0/1/2 @ 7%, 0/1/4 @ 12%, #0A0A0A). */
 export const MOBILE_CARD_SURFACE_CLASS =
   "max-md:border-0 max-md:shadow-[0px_1px_2px_0px_rgba(10,10,10,0.07),0px_1px_4px_0px_rgba(10,10,10,0.12)]";

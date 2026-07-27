@@ -26,10 +26,16 @@ import { fetchStockEarningsTabPayloadClient, peekStockEarningsTabPayloadClient }
 import { StockEarningsTabLoading } from "@/components/stock/stock-earnings-tab-loading";
 import { EarningsCountdownBars } from "@/components/stock/earnings-countdown-bars";
 import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
   SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import { STOCK_TABLE_LABEL_COL_WIDTH } from "@/components/stock/stock-income-statement-table";
 import { parseEarningsReportYmd } from "@/lib/market/earnings-countdown";
@@ -229,41 +235,84 @@ function nearestVerticalScrollParent(start: HTMLElement | null): HTMLElement | n
   return null;
 }
 
-/** Reports table chrome — same inset stroke / padding as Stocks companies + Financials. */
-const reportsTableClass = "w-full min-w-0 table-fixed border-collapse bg-white text-[14px]";
+/** Reports table chrome — same inset stroke / hover pad as Stocks companies + Financials. */
+const REPORTS_GRID_CLASS = "grid min-w-[960px] items-center gap-x-2";
+const REPORTS_GRID_STYLE = {
+  gridTemplateColumns: `${STOCK_TABLE_LABEL_COL_WIDTH} repeat(5, minmax(4.5rem, 1fr)) 224px`,
+} as const;
 
-const reportsHeaderTh =
-  "min-h-[44px] py-2 align-middle font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]";
+const reportsHeaderLabelClass = cn(
+  "min-w-0 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+  TABLE_START_ALIGNED_PAD_CLASS,
+);
 
-const reportsHeaderThLabel = cn(reportsHeaderTh, "pl-2 pr-4 text-left sm:pl-4");
+const reportsHeaderNumClass = cn(
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
 
-const reportsHeaderThNum = cn(reportsHeaderTh, "pr-3 text-right");
+const reportsLabelCellClass = cn("min-w-0 text-left", TABLE_START_ALIGNED_PAD_CLASS);
 
-const reportsYearRowClass =
-  "min-h-[44px] border-b border-solid border-[#EFEFEF] bg-[#FAFAFA] font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]";
+const reportsNumCellClass = cn(
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
 
-const reportsDataRowClass =
-  "min-h-[60px] border-b border-solid border-[#EFEFEF] bg-white transition-colors duration-75 hover:bg-neutral-50";
+const reportsActionsCellClass = cn(
+  "relative z-[1] flex w-full justify-end",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
 
-const reportsLabelTd = "min-w-0 py-3 pl-2 pr-4 align-middle text-left sm:pl-4";
-
-const reportsNumTd =
-  "py-3 pr-3 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
-
-/** Wide enough for Slides + Filings buttons — content overflows over Rev. actual otherwise. */
-const reportsActionsTd = "w-[224px] min-w-[224px] py-3 pr-3 text-right align-middle";
-
-function ReportsColGroup() {
+function ReportsNumCell({ value }: { value: string | null | undefined }) {
+  const text = tableCell(value);
   return (
-    <colgroup>
-      <col style={{ width: STOCK_TABLE_LABEL_COL_WIDTH }} />
-      <col />
-      <col />
-      <col />
-      <col />
-      <col />
-      <col style={{ width: 224 }} />
-    </colgroup>
+    <div className={cn(reportsNumCellClass, text === "-" && "font-medium text-[#5C5D5F]")}>{text}</div>
+  );
+}
+
+function SurpriseCell({ value, pct }: { value: string | null; pct: number | null }) {
+  const innerBase = "min-w-0 w-full text-right tabular-nums text-[14px] leading-5";
+  if (!value || value === "—" || value === "-") {
+    return <div className={cn(innerBase, "font-medium text-[#5C5D5F]")}>-</div>;
+  }
+  const n = pct;
+  if (n == null || !Number.isFinite(n)) {
+    return <div className={innerBase}>{value}</div>;
+  }
+  const pos = n >= 0;
+  return (
+    <div className={cn(innerBase, "font-medium", pos ? "text-[#16A34A]" : "text-[#DC2626]")}>{value}</div>
+  );
+}
+
+function ReportsHeaderRow() {
+  return (
+    <div
+      className={cn(
+        SCREENER_TABLE_HEADER_STICKY_CLASS,
+        SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+        SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+        "md:border-b-0",
+      )}
+    >
+      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div
+          className={cn(REPORTS_GRID_CLASS, "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]")}
+          style={REPORTS_GRID_STYLE}
+        >
+          <div className={reportsHeaderLabelClass}>Report date</div>
+          <div className={reportsHeaderNumClass}>EPS est.</div>
+          <div className={reportsHeaderNumClass}>EPS actual</div>
+          <div className={reportsHeaderNumClass}>Surprise</div>
+          <div className={reportsHeaderNumClass}>Rev. est.</div>
+          <div className={reportsHeaderNumClass}>Rev. actual</div>
+          <div className={cn(reportsHeaderNumClass, "whitespace-nowrap")}>
+            <span className="sr-only">Document actions</span>
+          </div>
+        </div>
+      </div>
+      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+    </div>
   );
 }
 
@@ -295,32 +344,6 @@ function withEarningsYearBandRows(rows: StockEarningsHistoryRow[]): EarningsHist
     out.push({ kind: "row", row });
   }
   return out;
-}
-
-function ReportsNumCell({ value }: { value: string | null | undefined }) {
-  const text = tableCell(value);
-  return (
-    <td className={cn(reportsNumTd, text === "-" && "font-medium text-[#5C5D5F]")}>{text}</td>
-  );
-}
-
-function SurpriseCell({ value, pct }: { value: string | null; pct: number | null }) {
-  const innerBase = "min-w-0 w-full text-right tabular-nums text-[14px] leading-5";
-  if (!value || value === "—" || value === "-") {
-    return <div className={cn(innerBase, "font-medium text-[#5C5D5F]")}>-</div>;
-  }
-  const n = pct;
-  if (n == null || !Number.isFinite(n)) {
-    return <div className={innerBase}>{value}</div>;
-  }
-  const pos = n >= 0;
-  return (
-    <div
-      className={cn(innerBase, "font-medium", pos ? "text-[#16A34A]" : "text-[#DC2626]")}
-    >
-      {value}
-    </div>
-  );
 }
 
 function EstimatesHeaderSkeleton() {
@@ -372,67 +395,43 @@ function EstimatesChartSkeleton() {
 
 function TableSkeleton() {
   return (
-    <ScreenerTableScroll mobileScroll>
-      <table className={reportsTableClass}>
-        <ReportsColGroup />
-        <thead className={cn(SCREENER_TABLE_HEADER_STICKY_CLASS, SCREENER_TABLE_ROUNDED_HEADER_CLASS, "border-b-0")}>
-          <tr>
-            {[
-              reportsHeaderThLabel,
-              reportsHeaderThNum,
-              reportsHeaderThNum,
-              reportsHeaderThNum,
-              reportsHeaderThNum,
-              reportsHeaderThNum,
-              reportsHeaderThNum,
-            ].map((thClass, i) => (
-              <th key={i} scope="col" className={thClass}>
-                <SkeletonBox
-                  className={cn("h-4 rounded", i === 0 && "w-[72%]", i > 0 && i < 6 && "ml-auto w-[70%] max-w-20", i === 6 && "ml-auto w-20")}
-                />
-              </th>
-            ))}
-          </tr>
-          <tr aria-hidden>
-            <td colSpan={7} className="p-0">
-              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} />
-            </td>
-          </tr>
-        </thead>
-        <tbody>
-          {Array.from({ length: 4 }).map((_, r) => (
-            <tr key={r} className={cn(reportsDataRowClass, r === 3 && "border-b-0")}>
-              <td className={reportsLabelTd}>
-                <div className="flex min-w-0 flex-col gap-1.5">
-                  <SkeletonBox className="h-4 w-[55%] rounded" />
-                  <SkeletonBox className="h-3.5 w-[40%] rounded" />
+    <ScreenerTableScroll mobileScroll minWidthClassName="min-w-[960px]">
+      <div className="bg-white">
+        <ReportsHeaderRow />
+        {Array.from({ length: 4 }).map((_, r) => (
+          <div key={r} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+            <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+              <div
+                className={cn(
+                  REPORTS_GRID_CLASS,
+                  "min-h-[60px] text-[14px] font-normal leading-5",
+                  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                )}
+                style={REPORTS_GRID_STYLE}
+              >
+                <div className={reportsLabelCellClass}>
+                  <div className="flex min-w-0 flex-col gap-1.5">
+                    <SkeletonBox className="h-4 w-[55%] rounded" />
+                    <SkeletonBox className="h-3.5 w-[40%] rounded" />
+                  </div>
                 </div>
-              </td>
-              <td className={reportsNumTd}>
-                <SkeletonBox className="ml-auto block h-4 w-[65%] max-w-16 rounded" />
-              </td>
-              <td className={reportsNumTd}>
-                <SkeletonBox className="ml-auto block h-4 w-[65%] max-w-16 rounded" />
-              </td>
-              <td className={reportsNumTd}>
-                <SkeletonBox className="ml-auto block h-4 w-[50%] max-w-20 rounded" />
-              </td>
-              <td className={reportsNumTd}>
-                <SkeletonBox className="ml-auto block h-4 w-[65%] max-w-24 rounded" />
-              </td>
-              <td className={reportsNumTd}>
-                <SkeletonBox className="ml-auto block h-4 w-[65%] max-w-24 rounded" />
-              </td>
-              <td className={reportsActionsTd}>
-                <div className="inline-flex w-max max-w-full shrink-0 flex-nowrap justify-end gap-2">
-                  <SkeletonBox className="h-9 w-[5.5rem] shrink-0 rounded-[10px]" />
-                  <SkeletonBox className="h-9 w-[5.5rem] shrink-0 rounded-[10px]" />
+                {Array.from({ length: 5 }).map((__, c) => (
+                  <div key={c} className={reportsNumCellClass}>
+                    <SkeletonBox className="ml-auto block h-4 w-[65%] max-w-16 rounded" />
+                  </div>
+                ))}
+                <div className={reportsActionsCellClass}>
+                  <div className="inline-flex w-max max-w-full shrink-0 flex-nowrap justify-end gap-2">
+                    <SkeletonBox className="h-9 w-[5.5rem] shrink-0 rounded-[10px]" />
+                    <SkeletonBox className="h-9 w-[5.5rem] shrink-0 rounded-[10px]" />
+                  </div>
                 </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </div>
+            </div>
+            {r < 3 ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
+          </div>
+        ))}
+      </div>
     </ScreenerTableScroll>
   );
 }
@@ -489,7 +488,7 @@ export function StockEarningsTabContent({
   const [data, setData] = useState<StockEarningsTabPayload | null>(() => memoryPaint);
   const [reloadNonce, setReloadNonce] = useState(0);
   const [earningsHistoryVisible, setEarningsHistoryVisible] = useState(EARNINGS_HISTORY_PAGE_SIZE);
-  const earningsHistorySentinelRef = useRef<HTMLTableRowElement | null>(null);
+  const earningsHistorySentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!previewMode && !memoryPaint) setClientReady(true);
@@ -716,82 +715,73 @@ export function StockEarningsTabContent({
       {!loading && data && historyRows.length > 0 ? (
         <div className="min-w-0 space-y-5">
           <h3 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Reports</h3>
-          <ScreenerTableScroll mobileScroll>
-            <table className={reportsTableClass}>
-              <ReportsColGroup />
-              <thead className={cn(SCREENER_TABLE_HEADER_STICKY_CLASS, SCREENER_TABLE_ROUNDED_HEADER_CLASS, "border-b-0")}>
-                <tr>
-                  <th scope="col" className={reportsHeaderThLabel}>
-                    Report date
-                  </th>
-                  <th scope="col" className={reportsHeaderThNum}>
-                    EPS est.
-                  </th>
-                  <th scope="col" className={reportsHeaderThNum}>
-                    EPS actual
-                  </th>
-                  <th scope="col" className={reportsHeaderThNum}>
-                    Surprise
-                  </th>
-                  <th scope="col" className={reportsHeaderThNum}>
-                    Rev. est.
-                  </th>
-                  <th scope="col" className={reportsHeaderThNum}>
-                    Rev. actual
-                  </th>
-                  <th scope="col" className={cn(reportsHeaderThNum, "whitespace-nowrap")}>
-                    <span className="sr-only">Document actions</span>
-                  </th>
-                </tr>
-                <tr aria-hidden>
-                  <td colSpan={7} className="p-0">
-                    <div className={SCREENER_TABLE_STROKE_INSET_CLASS} />
-                  </td>
-                </tr>
-              </thead>
-              <tbody>
-                {earningsHistoryRendered.map((entry, idx) =>
-                  entry.kind === "year" ? (
-                    <tr key={`reports-year-${entry.year}-${idx}`} className={reportsYearRowClass}>
-                      <td colSpan={7} className="py-2 pl-2 sm:pl-4">
-                        {entry.year}
-                      </td>
-                    </tr>
-                  ) : (
-                    <tr
-                      key={`${entry.row.fiscalPeriodEndYmd ?? idx}-${entry.row.reportDateDisplay ?? idx}`}
-                      className={cn(reportsDataRowClass, idx === earningsHistoryRendered.length - 1 && "border-b-0")}
-                    >
-                      <td className={reportsLabelTd}>
-                        <div className="truncate font-semibold leading-5 text-[#141414]">
-                          {tableCell(entry.row.fiscalPeriodLabel)}
+          <ScreenerTableScroll mobileScroll minWidthClassName="min-w-[960px]">
+            <div className="bg-white">
+              <ReportsHeaderRow />
+              {earningsHistoryRendered.map((entry, idx) => {
+                const isLast = idx === earningsHistoryRendered.length - 1;
+                if (entry.kind === "year") {
+                  return (
+                    <div key={`reports-year-${entry.year}-${idx}`}>
+                      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                        <div className="rounded-[10px] bg-[#F4F4F5] px-3 py-2.5">
+                          <div className="font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]">
+                            {entry.year}
+                          </div>
                         </div>
-                        <div className="truncate font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]">
-                          {reportDayLineFromDisplay(entry.row.reportDateDisplay)}
+                      </div>
+                      {!isLast ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
+                    </div>
+                  );
+                }
+                return (
+                  <div
+                    key={`${entry.row.fiscalPeriodEndYmd ?? idx}-${entry.row.reportDateDisplay ?? idx}`}
+                    className={SCREENER_TABLE_DATA_ROW_CLASS}
+                  >
+                    <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                      <div
+                        className={cn(
+                          REPORTS_GRID_CLASS,
+                          "min-h-[60px] text-[14px] font-normal leading-5",
+                          SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                        )}
+                        style={REPORTS_GRID_STYLE}
+                      >
+                        <div className={reportsLabelCellClass}>
+                          <div className="truncate font-semibold leading-5 text-[#141414]">
+                            {tableCell(entry.row.fiscalPeriodLabel)}
+                          </div>
+                          <div className="truncate font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]">
+                            {reportDayLineFromDisplay(entry.row.reportDateDisplay)}
+                          </div>
                         </div>
-                      </td>
-                      <ReportsNumCell value={entry.row.epsEstimateDisplay} />
-                      <ReportsNumCell value={entry.row.epsActualDisplay} />
-                      <td className={reportsNumTd}>
-                        <SurpriseCell value={entry.row.surpriseDisplay} pct={entry.row.surprisePct} />
-                      </td>
-                      <ReportsNumCell value={entry.row.revenueEstimateDisplay} />
-                      <ReportsNumCell value={entry.row.revenueActualDisplay} />
-                      <td className={cn(reportsActionsTd, "relative z-[1]")}>
-                        <div className="inline-flex w-max max-w-full justify-end">
-                          <EarningsReportRowActions listingTicker={sym} row={entry.row} />
+                        <ReportsNumCell value={entry.row.epsEstimateDisplay} />
+                        <ReportsNumCell value={entry.row.epsActualDisplay} />
+                        <div className={reportsNumCellClass}>
+                          <SurpriseCell value={entry.row.surpriseDisplay} pct={entry.row.surprisePct} />
                         </div>
-                      </td>
-                    </tr>
-                  ),
-                )}
-                {earningsHistoryHasMore ? (
-                  <tr ref={earningsHistorySentinelRef} className="pointer-events-none h-1" aria-hidden>
-                    <td colSpan={7} className="h-1 p-0" />
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+                        <ReportsNumCell value={entry.row.revenueEstimateDisplay} />
+                        <ReportsNumCell value={entry.row.revenueActualDisplay} />
+                        <div className={reportsActionsCellClass}>
+                          <div className="inline-flex w-max max-w-full justify-end">
+                            <EarningsReportRowActions listingTicker={sym} row={entry.row} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    {!isLast ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
+                  </div>
+                );
+              })}
+              {earningsHistoryHasMore ? (
+                <div
+                  ref={earningsHistorySentinelRef}
+                  className="pointer-events-none h-1"
+                  aria-hidden
+                />
+              ) : null}
+            </div>
           </ScreenerTableScroll>
         </div>
       ) : null}

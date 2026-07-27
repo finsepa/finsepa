@@ -16,6 +16,7 @@ import {
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import {
@@ -74,7 +75,7 @@ function NewsRowSkeleton({ showDivider }: { showDivider: boolean }) {
   return (
     <div className={SCREENER_TABLE_DATA_ROW_CLASS} aria-hidden>
       <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
-        <div className={cn("space-y-2 py-3", SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS)}>
+        <div className={cn("space-y-2 py-3", TABLE_START_ALIGNED_PAD_CLASS, SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS)}>
           <div className="flex items-center gap-2">
             <SkeletonBox className="h-3 w-20" />
             <SkeletonBox className="h-3 w-24" />
@@ -469,7 +470,9 @@ function LatestNewsInner({
                       rel="noopener noreferrer"
                       className={cn(
                         "relative block py-3 no-underline",
-                        SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,                      )}
+                        TABLE_START_ALIGNED_PAD_CLASS,
+                        SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                      )}
                     >
                       <NewsListRowContent item={item} />
                     </a>

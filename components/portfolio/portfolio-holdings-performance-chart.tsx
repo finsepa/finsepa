@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ChartSpline } from "@/lib/icons";
 
+import { SegmentedControl } from "@/components/design-system/segmented-control";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
@@ -43,14 +44,6 @@ const X_AXIS_TICK_COUNT = 6;
 const TOOLTIP_OFFSET_PX = 12;
 const TOOLTIP_EST_W_PX = 240;
 const TOOLTIP_EST_H_PX = 112;
-
-const CHART_SEGMENT_TRACK_CLASS =
-  "flex w-auto min-w-0 flex-nowrap gap-0.5 rounded-[10px] bg-[#F4F4F5] p-0.5";
-const CHART_SEGMENT_BTN_CLASS =
-  "flex-none rounded-[10px] px-3 py-1.5 text-center font-sans text-[13px] leading-5 tracking-normal";
-const CHART_SEGMENT_ACTIVE_CLASS =
-  "bg-white font-medium text-[#141414] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.12),0px_1px_2px_0px_rgba(10,10,10,0.07)]";
-const CHART_SEGMENT_INACTIVE_CLASS = "font-normal text-[#5C5D5F]";
 
 type MetricMode = "usd" | "pct";
 
@@ -138,38 +131,6 @@ function tooltipNearPointer(clientX: number, clientY: number): { left: number; t
   left = Math.max(pad, Math.min(left, vw - pad - TOOLTIP_EST_W_PX));
   top = Math.max(pad, Math.min(top, vh - pad - TOOLTIP_EST_H_PX));
   return { left, top };
-}
-
-function ChartSegmentToggle<T extends string>({
-  "aria-label": ariaLabel,
-  options,
-  value,
-  onChange,
-  className,
-}: {
-  "aria-label": string;
-  options: readonly { value: T; label: string }[];
-  value: T;
-  onChange: (next: T) => void;
-  className?: string;
-}) {
-  return (
-    <div className={cn(CHART_SEGMENT_TRACK_CLASS, className)} role="group" aria-label={ariaLabel}>
-      {options.map((opt) => (
-        <button
-          key={opt.value}
-          type="button"
-          onClick={() => onChange(opt.value)}
-          className={cn(
-            CHART_SEGMENT_BTN_CLASS,
-            value === opt.value ? CHART_SEGMENT_ACTIVE_CLASS : CHART_SEGMENT_INACTIVE_CLASS,
-          )}
-        >
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 function HoldingsPerformanceBarChart({
@@ -507,7 +468,7 @@ function PortfolioHoldingsPerformanceChartInner({
             <ArrowUp className="h-3.5 w-3.5 opacity-70" aria-hidden />
           )}
         </button>
-        <ChartSegmentToggle
+        <SegmentedControl
           aria-label="Holdings performance metric"
           options={[
             { value: "usd", label: "Profit $" },

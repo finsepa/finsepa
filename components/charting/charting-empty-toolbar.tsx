@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, RefreshCw, X } from "@/lib/icons";
 
@@ -10,6 +10,7 @@ import {
   useRegisterChartingCompanyRail,
 } from "@/components/charting/charting-company-rail-context";
 import type { CompanyPickerOpenControls } from "@/components/charting/company-picker";
+import { CompanyRailCard } from "@/components/layout/company-rail";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import {
@@ -18,7 +19,8 @@ import {
   type ChartTimeRange,
 } from "@/components/charting/charting-time-range";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
-import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption, whiteSurfaceChipDividerClass, whiteSurfaceChipLabelClass, whiteSurfaceChipRemoveClass, whiteSurfaceChipShellClass } from "@/components/design-system";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import {
   dropdownMenuRichItemClassName,
   dropdownMenuSearchHeaderClassName,
@@ -78,6 +80,7 @@ type Props = {
   allowedChartingTickers: string[];
   /** Called synchronously before navigating to a full chart session so the page can show a chart skeleton. */
   onBeginChartSessionNavigation?: () => void;
+  children?: ReactNode;
 };
 
 /**
@@ -88,6 +91,7 @@ export function ChartingEmptyToolbar({
   tickers,
   allowedChartingTickers,
   onBeginChartSessionNavigation,
+  children,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -291,7 +295,7 @@ export function ChartingEmptyToolbar({
   );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
         <h1 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:flex-1">
           Charting
@@ -319,14 +323,21 @@ export function ChartingEmptyToolbar({
           <button
             type="button"
             disabled
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#141414] opacity-40"
+            className={cn(topbarSquircleIconClass, "disabled:cursor-not-allowed disabled:opacity-40")}
             aria-label="Refresh (add a company first)"
           >
-            <RefreshCw className="h-4 w-4" strokeWidth={2} aria-hidden />
+            <RefreshCw className="h-5 w-5" strokeWidth={1.75} aria-hidden />
           </button>
         </div>
       </div>
 
+      <div className="flex items-start gap-5">
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 flex-col",
+            useRailPickers ? undefined : "gap-5",
+          )}
+        >
       {useRailPickers ? (
         <div className="sr-only">
           <div className="relative" ref={pickerWrapRef}>
@@ -411,15 +422,15 @@ export function ChartingEmptyToolbar({
           {pendingMetrics.map((id) => (
             <div
               key={id}
-              className="order-1 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+              className={cn("order-1", whiteSurfaceChipShellClass)}
             >
-              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#141414]">
+              <span className={cn(whiteSurfaceChipLabelClass, whiteSurfaceChipDividerClass)}>
                 <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
               </span>
               <button
                 type="button"
                 onClick={() => removeMetric(id)}
-                className="flex w-9 shrink-0 items-center justify-center text-[#141414] transition-colors hover:bg-[#FAFAFA]"
+                className={whiteSurfaceChipRemoveClass}
                 aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
               >
                 <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -495,15 +506,15 @@ export function ChartingEmptyToolbar({
           {displayTickers.map((sym) => (
             <div
               key={sym}
-              className="order-3 inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white"
+              className={cn("order-3", whiteSurfaceChipShellClass)}
             >
-              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#141414]">
+              <span className={cn(whiteSurfaceChipLabelClass, whiteSurfaceChipDividerClass)}>
                 <span className="truncate">{sym}</span>
               </span>
               <button
                 type="button"
                 onClick={() => removeTicker(sym)}
-                className="flex w-9 shrink-0 items-center justify-center text-[#141414] transition-colors hover:bg-[#FAFAFA]"
+                className={whiteSurfaceChipRemoveClass}
                 aria-label={`Remove ${sym}`}
               >
                 <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -521,7 +532,13 @@ export function ChartingEmptyToolbar({
           </div>
         </div>
       </div>
-      )}
+          )}
+          {children}
+        </div>
+        {useRailPickers ? (
+          <CompanyRailCard className="hidden w-[240px] self-start md:block" />
+        ) : null}
+      </div>
     </div>
   );
 }

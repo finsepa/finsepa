@@ -5,6 +5,9 @@ export {
   MOBILE_INSET_CARD_CLASS,
   MOBILE_PAGE_BACKGROUND_CLASS,
   MOBILE_PANEL_CARD_CLASS,
+  SHELL_DESKTOP_PANEL_BG,
+  SHELL_DESKTOP_PANEL_BG_CLASS,
+  SHELL_DESKTOP_PANEL_BG_MD_CLASS,
 } from "./card-surface-styles";
 export {
   secondaryFillButtonClassName,
@@ -12,6 +15,10 @@ export {
   whiteSurfaceButtonBorderClass,
   whiteSurfaceButtonChromeClass,
   whiteSurfaceButtonShadowClass,
+  whiteSurfaceChipDividerClass,
+  whiteSurfaceChipLabelClass,
+  whiteSurfaceChipRemoveClass,
+  whiteSurfaceChipShellClass,
 } from "./secondary-button-styles";
 export { SegmentedControl, type SegmentedControlOption, type SegmentedControlSize } from "./segmented-control";
 export { TabSwitcher, type TabSwitcherOption } from "./tab-switcher";

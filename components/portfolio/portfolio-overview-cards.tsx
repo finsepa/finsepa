@@ -58,9 +58,9 @@ const PERIOD_OPTIONS: { id: OverviewProfitPeriod; label: string }[] = [
   { id: "y5", label: "5Y" },
 ];
 
-/** Matches {@link IndexCards} screener index tile chrome. */
+/** Matches elevated card chrome; 16px inset (denser than 20px multichart panels). */
 const OVERVIEW_METRIC_CARD_CLASS = cn(
-  "flex flex-col items-start gap-1 overflow-hidden px-3 py-3 sm:px-4 sm:py-4",
+  "flex flex-col items-start gap-1 overflow-hidden p-4",
   MOBILE_ELEVATED_CARD_CLASS,
 );
 
@@ -579,7 +579,7 @@ function PortfolioOverviewCardsInner({
   }, [showEmptyPortfolioMetrics, showDividendsSkeleton, dividendWeightedYield, dividendAnnualUsd]);
 
   return (
-    <div className="w-full min-w-0 max-md:mb-2 sm:mb-6">
+    <div className="w-full min-w-0 max-md:mb-2 sm:mb-5">
       {/* Mobile: compact summary (matches design reference). */}
       <div className="sm:hidden">
         <div className="w-full min-w-0">

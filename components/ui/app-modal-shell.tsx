@@ -14,8 +14,9 @@ export const APP_MODAL_SHELL_OUTER_CLASS = cn(
   APP_MODAL_SHELL_SHADOW_CLASS,
 );
 
+/** Matches `.shell-desktop-panel` stroke + shadow (`app/globals.css`). */
 export const APP_MODAL_SHELL_CARD_CLASS =
-  "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#EBEBEC] bg-[#FCFCFD] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]";
+  "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#EBEBEC] bg-[#FCFCFD] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
 
 export const APP_MODAL_TITLE_CLASS = "text-base font-semibold leading-7 text-[#141414]";
 

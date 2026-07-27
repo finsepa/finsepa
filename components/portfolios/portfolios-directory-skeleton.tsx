@@ -1,7 +1,23 @@
+import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { SkeletonBox } from "@/components/markets/skeleton";
+import {
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+} from "@/components/screener/screener-table-scroll";
+import { cn } from "@/lib/utils";
 
-const cardShell =
-  "mb-6 rounded-[12px] border border-[#E4E4E7] bg-white p-[20px] shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]";
+const cardShell = cn(MOBILE_PANEL_CARD_CLASS, "mb-5 p-5");
+
+const tableColLayout =
+  "grid w-full min-w-0 grid-cols-[minmax(0,2fr)_minmax(5.5rem,1fr)_minmax(6.5rem,1fr)_minmax(5.5rem,1fr)_minmax(0,1.35fr)] gap-x-3";
 
 /** Mirrors `PublicPortfolioBlock`: header (avatar + titles, returns), stats row + chevron, Top 5 icon stack. */
 export function PublicPortfolioCardSkeleton() {
@@ -51,7 +67,7 @@ export function PublicPortfolioCardSkeleton() {
         </div>
 
         <div className="flex shrink-0 justify-end md:justify-center">
-          <SkeletonBox className="h-8 w-8 rounded-[10px]" />
+          <SkeletonBox className="h-9 w-9 rounded-[10px]" />
         </div>
       </div>
     </div>
@@ -61,34 +77,73 @@ export function PublicPortfolioCardSkeleton() {
 /** Table rows while listings load or individual rows recompute metrics. */
 export function PortfoliosDirectoryTableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="min-w-0 -mx-4 sm:mx-0" role="status" aria-busy="true" aria-live="polite">
+    <div role="status" aria-busy="true" aria-live="polite">
       <span className="sr-only">Loading public portfolios…</span>
-      <div className="min-w-0 overflow-x-auto">
-        <div className="min-w-[720px] divide-y divide-[#E4E4E7] border-t border-b border-[#E4E4E7]">
-          <div className="hidden min-h-[44px] items-center px-4 sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(5.5rem,1fr)_minmax(6.5rem,1fr)_minmax(5.5rem,1fr)_minmax(0,1.35fr)] sm:gap-x-3">
-            {["Investor", "Value", "No. of Holdings", "ATH", "Top 5 Holdings"].map((label) => (
-              <SkeletonBox key={label} className="h-5 w-20 rounded" />
-            ))}
+      <ScreenerTableScroll>
+        <div
+          className={cn(
+            SCREENER_TABLE_HEADER_STICKY_CLASS,
+            SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+            SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+            "md:border-b-0",
+          )}
+        >
+          <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+            <div className={cn(tableColLayout, "hidden min-h-[44px] items-center py-0 sm:grid")}>
+              <SkeletonBox className={cn("h-5 w-20 rounded", TABLE_START_ALIGNED_PAD_CLASS)} />
+              <SkeletonBox className={cn("ml-auto h-5 w-14 rounded", TABLE_END_ALIGNED_PAD_CLASS)} />
+              <SkeletonBox className={cn("ml-auto h-5 w-20 rounded", TABLE_END_ALIGNED_PAD_CLASS)} />
+              <SkeletonBox className={cn("ml-auto h-5 w-12 rounded", TABLE_END_ALIGNED_PAD_CLASS)} />
+              <SkeletonBox className={cn("ml-auto h-5 w-24 rounded", TABLE_END_ALIGNED_PAD_CLASS)} />
+            </div>
           </div>
-          {Array.from({ length: rows }, (_, i) => (
-            <div key={i} className="flex h-[60px] items-center gap-3 px-4">
-              <SkeletonBox className="h-10 w-10 shrink-0 rounded-full" />
-              <div className="min-w-0 flex-1 space-y-2">
-                <SkeletonBox className="h-4 w-40 max-w-full rounded-md" />
-                <SkeletonBox className="h-3 w-24 rounded-md" />
+          <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+        </div>
+        {Array.from({ length: rows }, (_, i) => (
+          <div key={i} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+            <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+              <div
+                className={cn(
+                  tableColLayout,
+                  "hidden h-[60px] items-center sm:grid",
+                  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                )}
+              >
+                <div className={cn("flex min-w-0 items-center gap-3", TABLE_START_ALIGNED_PAD_CLASS)}>
+                  <SkeletonBox className="h-10 w-10 shrink-0 rounded-full" />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <SkeletonBox className="h-4 w-40 max-w-full rounded-md" />
+                    <SkeletonBox className="h-3 w-24 rounded-md" />
+                  </div>
+                </div>
+                <SkeletonBox className={cn("ml-auto h-4 w-16 rounded-md", TABLE_END_ALIGNED_PAD_CLASS)} />
+                <SkeletonBox className={cn("ml-auto h-4 w-12 rounded-md", TABLE_END_ALIGNED_PAD_CLASS)} />
+                <SkeletonBox className={cn("ml-auto h-4 w-14 rounded-md", TABLE_END_ALIGNED_PAD_CLASS)} />
+                <div className={cn("flex flex-row items-center justify-end", TABLE_END_ALIGNED_PAD_CLASS)}>
+                  {[0, 1, 2, 3, 4].map((j) => (
+                    <SkeletonBox key={j} className="-ml-1 h-7 w-7 shrink-0 rounded-full first:ml-0" />
+                  ))}
+                </div>
               </div>
-              <SkeletonBox className="hidden h-4 w-16 rounded-md sm:block" />
-              <SkeletonBox className="hidden h-4 w-12 rounded-md sm:block" />
-              <SkeletonBox className="hidden h-4 w-14 rounded-md sm:block" />
-              <div className="hidden flex-row items-center sm:flex">
-                {[0, 1, 2, 3, 4].map((j) => (
-                  <SkeletonBox key={j} className="-ml-1 h-7 w-7 shrink-0 rounded-full first:ml-0" />
-                ))}
+              <div
+                className={cn(
+                  "flex h-[60px] items-center gap-3 sm:hidden",
+                  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                  TABLE_START_ALIGNED_PAD_CLASS,
+                )}
+              >
+                <SkeletonBox className="h-10 w-10 shrink-0 rounded-full" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <SkeletonBox className="h-4 w-40 max-w-full rounded-md" />
+                  <SkeletonBox className="h-3 w-24 rounded-md" />
+                </div>
+                <SkeletonBox className={cn("h-4 w-14 rounded-md", TABLE_END_ALIGNED_PAD_CLASS)} />
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+            {i < rows - 1 ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
+          </div>
+        ))}
+      </ScreenerTableScroll>
     </div>
   );
 }

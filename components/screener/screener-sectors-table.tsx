@@ -13,6 +13,7 @@ import {
   SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_END_ALIGNED_PAD_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
@@ -27,14 +28,20 @@ function formatPctValue(value: number) {
 /** Matches {@link ScreenerTable} `ChangeCell` (missing value + color rules). */
 function PctCell({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
-    return <div className="min-w-0 w-full pr-3 text-right text-[14px] leading-5 font-medium text-[#5C5D5F]">-</div>;
+    return (
+      <div className={cn("min-w-0 w-full text-right text-[14px] leading-5 font-medium text-[#5C5D5F]", TABLE_END_ALIGNED_PAD_CLASS)}>
+        -
+      </div>
+    );
   }
   const positive = value >= 0;
   return (
     <div
-      className={`min-w-0 w-full pr-3 text-right tabular-nums text-[14px] leading-5 font-medium ${
-        positive ? "text-[#16A34A]" : "text-[#DC2626]"
-      }`}
+      className={cn(
+        "min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium",
+        TABLE_END_ALIGNED_PAD_CLASS,
+        positive ? "text-[#16A34A]" : "text-[#DC2626]",
+      )}
     >
       {formatPctValue(value)}
     </div>
@@ -86,9 +93,9 @@ export function ScreenerSectorsTable({
             >
               <div className="text-center">#</div>
               <div className="text-left">Sector</div>
-              <div className="min-w-0 w-full pr-3 text-right">1D %</div>
-              <div className="hidden min-w-0 w-full pr-3 text-right sm:block">YTD %</div>
-              <div className="hidden min-w-0 w-full pr-3 text-right sm:block">Market Cap</div>
+              <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>1D %</div>
+              <div className={cn("hidden min-w-0 w-full text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>YTD %</div>
+              <div className={cn("hidden min-w-0 w-full text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>Market Cap</div>
             </div>
           </div>
           <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
@@ -120,7 +127,12 @@ export function ScreenerSectorsTable({
                 <div className="hidden sm:contents">
                   <PctCell value={row.changeYTD} />
                 </div>
-                <div className="hidden min-w-0 w-full pr-3 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] sm:block">
+                <div
+                  className={cn(
+                    "hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] sm:block",
+                    TABLE_END_ALIGNED_PAD_CLASS,
+                  )}
+                >
                   {row.marketCapDisplay}
                 </div>
               </Link>

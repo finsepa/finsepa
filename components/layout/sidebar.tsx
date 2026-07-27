@@ -8,6 +8,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { DWELL_TOOLTIP_DELAY_MS } from "@/components/layout/topbar-delayed-tooltip";
 import {
   protectedAgentItem,
+  protectedPortfolioItem,
   protectedCalendarItems,
   protectedCommunityItems,
   protectedDataItems,
@@ -387,6 +388,7 @@ export function Sidebar() {
         )}
       >
         <div className={cn("space-y-0.5", collapsed && "flex flex-col items-center")}>
+          <SidebarRow item={protectedPortfolioItem} pathname={pathname} collapsed={collapsed} />
           <SidebarRow item={protectedAgentItem} pathname={pathname} collapsed={collapsed} />
         </div>
         <SidebarSection title="Markets" items={protectedMarketItems} pathname={pathname} collapsed={collapsed} />

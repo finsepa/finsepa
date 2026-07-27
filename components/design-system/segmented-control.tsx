@@ -2,7 +2,7 @@
 
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
-import { whiteSurfaceButtonShadowClass } from "@/components/design-system/secondary-button-styles";
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
 import { cn } from "@/lib/utils";
 
 const SEGMENT_MOTION_MS = 280;
@@ -13,7 +13,7 @@ const SEGMENT_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
  * @see https://www.figma.com/design/YSUI0cOq1fIhZsGu1VuIOK/Web-App-Design?node-id=374-24183
  *
  * Track and segments use **10px** corner radius (not fully rounded). Active segment: white fill,
- * same light shadow as white-surface buttons; label **Inter Medium 14px / 20px / #141414** (Figma).
+ * same border + light shadow as white-surface buttons; label **Inter Medium 14px / 20px / #141414** (Figma).
  * Inactive: zinc-500, regular weight.
  * Set {@link fullWidth} for a single joined row that spans the container (equal-width segments).
  */
@@ -28,7 +28,8 @@ export type SegmentedControlSize = "sm" | "md";
 const RADIUS = "rounded-[10px]";
 const TRACK_PAD = "p-0.5";
 
-const ACTIVE_SHADOW = whiteSurfaceButtonShadowClass;
+/** Active thumb — match outline / squircle button chrome (stroke + shadow). */
+const ACTIVE_THUMB_CHROME = whiteSurfaceButtonChromeClass;
 
 export function SegmentedControl<T extends string>({
   options,
@@ -125,9 +126,9 @@ export function SegmentedControl<T extends string>({
     >
       <span
         className={cn(
-          "pointer-events-none absolute z-0 bg-white motion-reduce:transition-none",
+          "pointer-events-none absolute z-0 motion-reduce:transition-none",
           RADIUS,
-          ACTIVE_SHADOW,
+          ACTIVE_THUMB_CHROME,
         )}
         style={{
           left: indicator.left,

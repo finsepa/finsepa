@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { X } from "@/lib/icons";
 
@@ -11,6 +11,15 @@ import {
   useRegisterChartingCompanyRail,
 } from "@/components/charting/charting-company-rail-context";
 import { ComparisonCompanyLimitModal } from "@/components/comparison/comparison-company-limit-modal";
+import { ComparisonPageBar } from "@/components/comparison/comparison-page-bar";
+import {
+  whiteSurfaceChipDividerClass,
+  whiteSurfaceChipLabelClass,
+  whiteSurfaceChipRemoveClass,
+  whiteSurfaceChipShellClass,
+} from "@/components/design-system";
+import { CompanyRailCard } from "@/components/layout/company-rail";
+import { cn } from "@/lib/utils";
 import {
   COMPARISON_MAX_COMPANIES,
   capComparisonTickers,
@@ -22,10 +31,11 @@ import { buildComparisonPath, parseChartingTickerList } from "@/lib/market/stock
 type Props = {
   tickers: string[];
   allowedChartingTickers: string[];
+  children?: ReactNode;
 };
 
 /** Comparison empty state — company picker only (no charting metric / period chrome). */
-export function ComparisonEmptyToolbar({ tickers, allowedChartingTickers }: Props) {
+export function ComparisonEmptyToolbar({ tickers, allowedChartingTickers, children }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -105,58 +115,70 @@ export function ComparisonEmptyToolbar({ tickers, allowedChartingTickers }: Prop
   );
 
   return (
-    <div className="flex flex-col gap-5">
-      <h1 className="text-2xl font-semibold leading-9 tracking-tight text-[#141414]">Comparison</h1>
+    <div className="flex flex-col gap-5 px-4 py-4 sm:px-9 sm:py-6">
+      <ComparisonPageBar showReset={false} />
 
-      {useRailPickers ? (
-        <div className="sr-only">
-          <ChartingCompanyAddDropdown
-            hideTrigger
-            anchorRef={companyAddAnchorRef}
-            menuPortal
-            menuAlign="trailing"
-            registerOpenControl={(controls) => {
-              companyPickerControlsRef.current = controls;
-              return () => {
-                if (companyPickerControlsRef.current === controls) {
-                  companyPickerControlsRef.current = null;
-                }
-              };
-            }}
-            onPickStock={tryAddTicker}
-            maxExtraCompanies={Math.max(0, COMPARISON_MAX_COMPANIES - displayTickers.length)}
-            excludeSymbols={displayTickers}
-            alwaysAllowOpen
-          />
-        </div>
-      ) : (
-        <div className="flex flex-wrap items-center gap-3">
-          {displayTickers.map((sym) => (
-            <div
-              key={sym}
-              className="inline-flex max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
-            >
-              <span className="flex min-h-[36px] min-w-0 items-center border-r border-[#E4E4E7] px-4 py-2 text-[14px] font-medium leading-5 text-[#141414]">
-                <span className="truncate">{sym}</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => removeTicker(sym)}
-                className="flex w-9 shrink-0 items-center justify-center text-[#141414] transition-colors hover:bg-[#FAFAFA]"
-                aria-label={`Remove ${sym}`}
-              >
-                <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
-              </button>
+      <div className="flex items-start gap-5">
+        <div
+          className={cn(
+            "flex min-w-0 flex-1 flex-col",
+            useRailPickers ? undefined : "gap-5",
+          )}
+        >
+          {useRailPickers ? (
+            <div className="sr-only">
+              <ChartingCompanyAddDropdown
+                hideTrigger
+                anchorRef={companyAddAnchorRef}
+                menuPortal
+                menuAlign="trailing"
+                registerOpenControl={(controls) => {
+                  companyPickerControlsRef.current = controls;
+                  return () => {
+                    if (companyPickerControlsRef.current === controls) {
+                      companyPickerControlsRef.current = null;
+                    }
+                  };
+                }}
+                onPickStock={tryAddTicker}
+                maxExtraCompanies={Math.max(0, COMPARISON_MAX_COMPANIES - displayTickers.length)}
+                excludeSymbols={displayTickers}
+                alwaysAllowOpen
+              />
             </div>
-          ))}
-          <ChartingCompanyAddDropdown
-            onPickStock={tryAddTicker}
-            maxExtraCompanies={Math.max(0, COMPARISON_MAX_COMPANIES - displayTickers.length)}
-            excludeSymbols={displayTickers}
-            alwaysAllowOpen
-          />
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              {displayTickers.map((sym) => (
+                <div key={sym} className={whiteSurfaceChipShellClass}>
+                  <span className={cn(whiteSurfaceChipLabelClass, whiteSurfaceChipDividerClass)}>
+                    <span className="truncate">{sym}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeTicker(sym)}
+                    className={whiteSurfaceChipRemoveClass}
+                    aria-label={`Remove ${sym}`}
+                  >
+                    <X className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+                  </button>
+                </div>
+              ))}
+              <ChartingCompanyAddDropdown
+                onPickStock={tryAddTicker}
+                maxExtraCompanies={Math.max(0, COMPARISON_MAX_COMPANIES - displayTickers.length)}
+                excludeSymbols={displayTickers}
+                alwaysAllowOpen
+              />
+            </div>
+          )}
+
+          {children}
         </div>
-      )}
+
+        {useRailPickers ? (
+          <CompanyRailCard showMetrics={false} className="hidden w-[240px] self-start md:block" />
+        ) : null}
+      </div>
 
       <ComparisonCompanyLimitModal open={limitModalOpen} onClose={() => setLimitModalOpen(false)} />
     </div>

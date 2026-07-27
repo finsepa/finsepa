@@ -34,7 +34,6 @@ function StockPeersTabInner({
         initialByTicker={initialByTicker}
         allowedChartingTickers={[]}
         urlMode="stock-tab"
-        titleAs="h2"
       />
     </div>
   );

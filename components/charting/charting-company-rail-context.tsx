@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -15,8 +15,10 @@ import {
 
 const DESKTOP_SHELL_MQ = "(min-width: 768px)";
 
-export function isCompanyRailPage(pathname: string): boolean {
-  return pathname === "/charting" || pathname === "/comparison";
+export function isCompanyRailPage(pathname: string, tab: string | null = null): boolean {
+  if (pathname === "/charting" || pathname === "/comparison") return true;
+  if (!pathname.startsWith("/stock/")) return false;
+  return tab === "charting" || tab === "peers";
 }
 
 export type ChartingRailCompanyRow = {
@@ -117,16 +119,18 @@ export function useChartingCompanyRail(): ChartingCompanyRailContextValue {
   return ctx;
 }
 
-/** Desktop `/charting` and `/comparison` — company picker anchors to the left rail + button. */
+/** Desktop Charting / Comparison / stock Charting & Peers tabs — company picker anchors to the rail + button. */
 export function useChartingRailPickerAnchors(): {
   useRailPickers: boolean;
   metricAddAnchorRef: RefObject<HTMLButtonElement | null>;
   companyAddAnchorRef: RefObject<HTMLButtonElement | null>;
 } {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isDesktop = useIsDesktopShell();
   const { metricAddAnchorRef, companyAddAnchorRef } = useChartingCompanyRail();
-  const useRailPickers = isDesktop && isCompanyRailPage(pathname);
+  const tab = searchParams.get("tab");
+  const useRailPickers = isDesktop && isCompanyRailPage(pathname, tab);
 
   return { useRailPickers, metricAddAnchorRef, companyAddAnchorRef };
 }

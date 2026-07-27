@@ -362,13 +362,13 @@ export function StocksGainersLosersSkeleton({
 }) {
   const tableChrome = { embeddedInMobileCard, hideMobileHeader };
   return (
-    <div className={cn(embeddedInMobileCard ? "max-md:space-y-4" : "space-y-6")}>
+    <div className="flex flex-col">
       <div>
-        <div className="mb-3 hidden h-5 w-36 rounded skeleton md:block" />
+        <div className="mb-5 hidden h-5 w-36 rounded skeleton md:block" />
         <StocksTableSkeleton rows={rows} {...tableChrome} />
       </div>
-      <div>
-        <div className="mb-3 hidden h-5 w-36 rounded skeleton md:block" />
+      <div className={cn(embeddedInMobileCard ? "max-md:mt-4 md:mt-5" : "mt-5")}>
+        <div className="mb-5 hidden h-5 w-36 rounded skeleton md:block" />
         <StocksTableSkeleton rows={rows} {...tableChrome} />
       </div>
     </div>

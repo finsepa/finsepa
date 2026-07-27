@@ -2,16 +2,16 @@
 
 import { SkeletonBox, LogoSkeleton } from "@/components/markets/skeleton";
 import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
 
 const RETURN_COL_COUNT = 5;
-
-const COMPARISON_ROW_PAD_CLASS = "px-4";
-const COMPARISON_GRID_INSET_CLASS = "px-3";
 
 function ComparisonTableRowSkeleton({
   gridTemplateColumns,
@@ -26,17 +26,20 @@ function ComparisonTableRowSkeleton({
 }) {
   return (
     <div className={SCREENER_TABLE_DATA_ROW_CLASS} aria-hidden>
-      <div className={COMPARISON_ROW_PAD_CLASS}>
+      <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, minWidthClass)}>
         <div
           className={cn(
-            "grid h-[60px] max-h-[60px] items-center gap-x-2",
-            minWidthClass,
-            COMPARISON_GRID_INSET_CLASS,
+            "grid h-[60px] max-h-[60px] w-full items-center gap-x-2",
             SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
           )}
           style={{ gridTemplateColumns }}
         >
-          <div className="flex min-w-0 items-center gap-3 pr-4">
+          <div
+            className={cn(
+              "flex min-w-0 items-center gap-3 pr-4",
+              TABLE_START_ALIGNED_PAD_CLASS,
+            )}
+          >
             <SkeletonBox className="h-4 w-1 shrink-0 rounded-full" />
             <LogoSkeleton sizeClass="h-8 w-8" />
             <div className="min-w-0 flex-1 space-y-1.5">
@@ -45,7 +48,7 @@ function ComparisonTableRowSkeleton({
             </div>
           </div>
           {cellSkeletonWidths.map((w, i) => (
-            <div key={i} className="flex min-w-0 justify-end">
+            <div key={i} className={cn("flex min-w-0 justify-end", TABLE_END_ALIGNED_PAD_CLASS)}>
               <SkeletonBox className={`h-4 rounded ${w}`} />
             </div>
           ))}

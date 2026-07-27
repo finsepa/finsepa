@@ -24,6 +24,8 @@ import {
   DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
@@ -98,9 +100,12 @@ export function ChartingCompareCompanyTable({
               )}
               style={grid.style}
             >
-              <div className="pl-3 text-left">{periodHeaderLabel}</div>
+              <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>{periodHeaderLabel}</div>
               {seriesDefs.map((series) => (
-                <div key={series.key} className="min-w-0 w-full truncate pr-3 text-right">
+                <div
+                  key={series.key}
+                  className={cn("min-w-0 w-full truncate text-right", TABLE_END_ALIGNED_PAD_CLASS)}
+                >
                   <div className="inline-flex max-w-full items-center justify-end gap-2">
                     <span
                       className="h-2 w-2 shrink-0 rounded-full"
@@ -129,7 +134,9 @@ export function ChartingCompareCompanyTable({
                 )}
                 style={grid.style}
               >
-                <div className="pl-3 text-left font-medium text-[#141414]">{label}</div>
+                <div className={cn("text-left font-medium text-[#141414]", TABLE_START_ALIGNED_PAD_CLASS)}>
+                  {label}
+                </div>
                 {seriesDefs.map((series) => {
                   const row = (orderedByTicker[series.ticker] ?? []).find(
                     (periodRow) =>
@@ -141,7 +148,8 @@ export function ChartingCompareCompanyTable({
                     <div
                       key={`${label}-${series.key}`}
                       className={cn(
-                        "min-w-0 w-full pr-3 text-right font-['Inter'] tabular-nums",
+                        "min-w-0 w-full text-right font-['Inter'] tabular-nums",
+                        TABLE_END_ALIGNED_PAD_CLASS,
                         chartingTableCellTone(series.metricId, v),
                       )}
                     >

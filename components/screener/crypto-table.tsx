@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 
 import { CompanyLogo } from "./company-logo";
+import { TABLE_END_ALIGNED_PAD_CLASS } from "@/components/screener/screener-table-pad";
 import {
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -88,7 +89,10 @@ function PriceAndChangeCell({
 const rowLinkGrid =
   "grid grid-cols-[22px_minmax(0,1fr)_minmax(4.5rem,5.5rem)] gap-x-1.5 sm:grid-cols-[48px_2fr_1fr_1fr_1fr_1fr_1fr] sm:gap-x-2";
 
-const desktopNumericCellClass = "hidden min-w-0 w-full pr-3 text-right sm:block";
+const desktopNumericCellClass = cn(
+  "hidden min-w-0 w-full text-right sm:block",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
 
 const mobileRankCellClass =
   "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-[#5C5D5F]";
@@ -127,7 +131,7 @@ export function CryptoTable({
               <div className={cn(rowLinkGrid, "min-h-[44px] w-full items-center")}>
                 <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
                 <div className="text-left">Coin</div>
-                <div className="min-w-0 w-full pr-3 text-right">Price</div>
+                <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Price</div>
                 <div className={cn(desktopNumericCellClass, "truncate")}>1D %</div>
                 <div className={cn(desktopNumericCellClass, "truncate")}>1M %</div>
                 <div className={cn(desktopNumericCellClass, "truncate")}>YTD %</div>

@@ -48,7 +48,7 @@ export function SecondaryTabs<T extends string>({
               aria-selected={active}
               onClick={() => onValueChange(item.id)}
               className={cn(
-                "shrink-0 whitespace-nowrap rounded-[10px] border border-solid px-[12px] py-2 text-[13px] font-medium leading-5 transition-[color,opacity,background-color,border-color] duration-100 sm:text-[14px]",
+                "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] border border-solid px-[12px] text-[13px] font-medium leading-5 transition-[color,opacity,background-color,border-color] duration-100 sm:text-[14px]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
                 active
                   ? "border-[#E8E8EB] bg-[#F1F1F2] text-[#141414] opacity-100"

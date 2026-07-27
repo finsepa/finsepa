@@ -134,7 +134,7 @@ export function StockDetailTabNav({
                 onClick={() => onTabChange(id)}
                 onPointerEnter={() => onTabIntent?.(id)}
                 onFocus={() => onTabIntent?.(id)}
-                className={`-mb-px shrink-0 cursor-pointer whitespace-nowrap border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#141414] transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
+                className={`-mb-px inline-flex h-9 shrink-0 cursor-pointer items-center whitespace-nowrap border-b-2 border-solid border-transparent text-left text-[14px] font-medium leading-5 text-[#141414] transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
                   isActive ? "font-semibold opacity-100" : "opacity-70"
                 }`}
               >

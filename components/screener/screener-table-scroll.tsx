@@ -48,15 +48,23 @@ export const SCREENER_TABLE_DATA_ROW_CLASS = cn(
 );
 
 /**
- * Companies screener: 8px desktop inset — watchlist star sits in the left gutter.
- * Prefer {@link DEFAULT_TABLE_ROW_HOVER_PAD_CLASS} for tables without a leading control.
+ * Desktop row inset from the card edge — **8px** (`md:px-2`), matching Companies screener.
+ * End-aligned metric cells may add another 12px ({@link TABLE_END_ALIGNED_PAD_CLASS}) → 20px total on the right.
+ * Non-screener tables also pad the first left cell with {@link TABLE_START_ALIGNED_PAD_CLASS} (12px).
+ * Mobile keeps 16px (`max-md:px-4`).
  */
 export const SCREENER_TABLE_ROW_HOVER_PAD_CLASS = "max-md:px-4 md:px-2";
 
 /**
- * Default data tables (news, charting, financials-style): 12px cell inset from the card edge.
+ * Alias of {@link SCREENER_TABLE_ROW_HOVER_PAD_CLASS} — same 8px desktop inset for all data tables
+ * (portfolio, charting, news, earnings reports, etc.).
  */
-export const DEFAULT_TABLE_ROW_HOVER_PAD_CLASS = "max-md:px-4 md:px-3";
+export const DEFAULT_TABLE_ROW_HOVER_PAD_CLASS = SCREENER_TABLE_ROW_HOVER_PAD_CLASS;
+
+export {
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+} from "@/components/screener/screener-table-pad";
 
 export const SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS =
   "md:rounded-[10px] md:transition-colors md:duration-75 md:group-hover/row:bg-neutral-50";
