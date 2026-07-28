@@ -1110,17 +1110,15 @@ export function prepareStock1DLiveSessionChartPoints(
 
 export type Stock1DLiveSessionLinePoint = { time: UTCTimestamp; value?: number };
 
-export type Stock1DLiveSessionBaselinePoint =
-  | { time: UTCTimestamp; value: number }
-  | { time: UTCTimestamp };
+export type Stock1DLiveSessionValuedPoint = { time: UTCTimestamp; value: number };
 
 /** Pad 9:30 open anchor only — future session slots live on the invisible span series. */
 export function padStock1DLiveSessionBaselineData(
-  data: { time: UTCTimestamp; value: number }[],
+  data: Stock1DLiveSessionValuedPoint[],
   sessionYmd: string,
   openValue: number,
   timeZone: string,
-): Stock1DLiveSessionBaselinePoint[] {
+): Stock1DLiveSessionValuedPoint[] {
   if (!data.length || !Number.isFinite(openValue)) return data;
   const open = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone) as UTCTimestamp;
   if (data[0]!.time <= open) return data;

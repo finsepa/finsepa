@@ -2810,10 +2810,14 @@ export function PriceChart({
     const valued = sessionChartPoints.filter(
       (p) => isFiniteNumber(p.time) && isFiniteNumber(p.value),
     );
+    const valuedLineData = valued.map((p) => ({
+      time: p.time as UTCTimestamp,
+      value: p.value,
+    }));
     const data =
       useLiveSessionChart && liveSessionMinuteRef.current
         ? stock1DLiveSessionLineDataWithGapBreaks(valued)
-        : valued.map((p) => ({ time: p.time as UTCTimestamp, value: p.value }));
+        : valuedLineData;
 
     const open =
       useLiveSessionChart && liveSessionYmd
@@ -2992,7 +2996,7 @@ export function PriceChart({
 
     const baselineData =
       useLiveSessionChart && liveSessionYmd && !liveSessionMinuteRef.current
-        ? padStock1DLiveSessionBaselineData(data, liveSessionYmd, open, timeZone)
+        ? padStock1DLiveSessionBaselineData(valuedLineData, liveSessionYmd, open, timeZone)
         : data;
 
     chart.timeScale().applyOptions({
@@ -3025,7 +3029,9 @@ export function PriceChart({
       bl.applyOptions({ price: open });
     }
 
-    const last = [...data].reverse().find((p) => "value" in p && isFiniteNumber(p.value));
+    const lastValued = [...data]
+      .reverse()
+      .find((p): p is { time: UTCTimestamp; value: number } => "value" in p && isFiniteNumber(p.value));
     if (useLiveSessionChart) {
       sessionOpenPriceRef.current = open;
       const chartLiveSpot =
@@ -3040,7 +3046,7 @@ export function PriceChart({
         single,
         open,
         chartLiveSpot,
-        last?.value,
+        lastValued?.value,
         hideMobileYAxisLabelsRef.current,
       );
     } else {
@@ -3074,10 +3080,10 @@ export function PriceChart({
       fitChartTimeScale(chart, plotW, data.length);
     }
 
-    if (last && !useLiveSessionChart) {
+    if (lastValued && !useLiveSessionChart) {
       const lastTemplates: SeriesMarker<UTCTimestamp>[] = [
         {
-          time: last.time,
+          time: lastValued.time,
           position: "inBar",
           shape: "circle",
           color: lastPointStroke,
