@@ -114,8 +114,8 @@ export async function fetchEodhdKeyStatsRevenueProfit(
     { label: "Net Income", value: netIncome != null ? formatUsdCompact(netIncome) : "—" },
     { label: "EBITDA", value: ebitda != null ? formatUsdCompact(ebitda) : "—" },
     { label: "EPS", value: eps != null ? formatUsdPrice(eps) : "—" },
-    /** Label `FCF` avoids clashing with Margins card row “Free Cash Flow” (FCF margin %). */
-    { label: "FCF", value: fcf != null ? formatUsdCompact(fcf) : "—" },
+    /** Dollar free cash flow — distinct from Margins “Free Cash Flow Margin”. */
+    { label: "Free Cash Flow", value: fcf != null ? formatUsdCompact(fcf) : "—" },
     { label: "CapEx", value: capex != null ? formatUsdCompact(capex) : "—" },
   ];
 

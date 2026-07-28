@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_EARNINGS_CALENDAR } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type EodhdRawEarningRow = {
   code?: string;
@@ -63,7 +64,7 @@ async function fetchEodhdEarningsCalendarUncached(fromYmd: string, toYmd: string
   try {
     if (!traceEodhdHttp("fetchEodhdEarningsCalendar", { from: fromYmd, to: toYmd })) return [];
     /** Wide ranges exceed Next.js 2MB data-cache — do not persist this response in the fetch cache. */
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetchEodhd(url, { cache: "no-store" });
     if (!res.ok) return [];
     const json = (await res.json()) as { earnings?: unknown };
     const rows = json?.earnings;
@@ -121,7 +122,7 @@ async function fetchEodhdEarningsCalendarForSymbolUncached(eodhdSymbol: string):
 
   try {
     if (!traceEodhdHttp("fetchEodhdEarningsCalendarForSymbol", { symbols: symbol })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_EARNINGS_CALENDAR } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_EARNINGS_CALENDAR } });
     if (!res.ok) return [];
     const json = (await res.json()) as { earnings?: unknown };
     const rows = json?.earnings;

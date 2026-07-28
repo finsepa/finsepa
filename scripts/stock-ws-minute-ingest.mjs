@@ -16,6 +16,7 @@ import {
   stockWsPinnedOnlyMode,
 } from "./lib/stock-ws-priority-universe.mjs";
 import { normalizeStockTicker, parseEodhdUsWsMessage } from "./lib/eodhd-ws-parse.mjs";
+import { createStockMinuteWriteController } from "./lib/stock-minute-ingest-write-core.mjs";
 
 // Railway/containers: prefer IPv4 for Supabase REST (avoids intermittent `fetch failed`).
 dns.setDefaultResultOrder("ipv4first");
@@ -47,28 +48,7 @@ const STATIC_TICKERS = (process.env.STOCK_WS_TICKERS ?? "")
 const DISPLAY_TZ = "America/New_York";
 const SCREENER_SNAPSHOT_KEYS = ["top500_market", "stocks_all_pages"];
 
-/** @type {{
- *   ok: boolean,
- *   authorized: boolean,
- *   authorizedQuote: boolean,
- *   subscribed: number,
- *   pendingUpserts: number,
- *   retryQueueSize: number,
- *   flushInProgress: boolean,
- *   flushStartedAt: string | null,
- *   lastSuccessfulUpsertAt: string | null,
- *   lastFailedUpsertAt: string | null,
- *   lastUpsertLatencyMs: number | null,
- *   writeStallSeconds: number,
- *   upsertSuccessCount: number,
- *   upsertAbortCount: number,
- *   retryCount: number,
- *   lastTradeAt: string | null,
- *   lastWsActivityAt: string | null,
- *   lastRestPollAt: string | null,
- *   session: string,
- *   startedAt: string,
- * }} */
+/** @type {Record<string, unknown>} */
 const health = {
   ok: true,
   authorized: false,
@@ -78,6 +58,9 @@ const health = {
   retryQueueSize: 0,
   flushInProgress: false,
   flushStartedAt: null,
+  currentWriteSource: null,
+  activeSupabaseUpserts: 0,
+  maxObservedConcurrentUpserts: 0,
   lastSuccessfulUpsertAt: null,
   lastFailedUpsertAt: null,
   lastUpsertLatencyMs: null,
@@ -85,6 +68,11 @@ const health = {
   upsertSuccessCount: 0,
   upsertAbortCount: 0,
   retryCount: 0,
+  consecutiveWriteFailures: 0,
+  currentBackoffMs: 0,
+  pendingDropCount: 0,
+  oldestPendingAgeMs: 0,
+  oldestRetryAgeMs: 0,
   lastTradeAt: null,
   lastWsActivityAt: null,
   lastRestPollAt: null,
@@ -92,10 +80,6 @@ const health = {
   startedAt: new Date().toISOString(),
 };
 
-/** @type {number | null} */
-let lastSuccessfulUpsertMs = null;
-/** Hot flush: one attempt, then hand off to retry queue (do not sleep under flush lock). */
-const HOT_FLUSH_MAX_ATTEMPTS = 1;
 const RETRY_TICK_MS = Number(process.env.STOCK_WS_RETRY_TICK_MS ?? 500);
 
 function log(...args) {
@@ -148,17 +132,58 @@ const supabaseWrite = createClient(SUPABASE_URL, SUPABASE_KEY, {
   global: { fetch: makeSupabaseFetch(SUPABASE_WRITE_TIMEOUT_MS) },
 });
 
-/** @type {Map<string, { ticker: string, session_ymd: string, bucket_unix: number, close: number, updated_at: string }>} */
-const pendingUpserts = new Map();
-/**
- * Failed writes awaiting backoff retry. Same ticker:bucket key; latest row always wins.
- * @type {Map<string, { row: { ticker: string, session_ymd: string, bucket_unix: number, close: number, updated_at: string }, attempt: number, nextAt: number }>}
- */
-const retryQueue = new Map();
-/** Keys with an in-flight upsert (hot or retry) — prevents concurrent writes for the same bar. */
-const inFlightKeys = new Set();
-let flushTimer = null;
-let retryTickTimer = null;
+const FLUSH_DEBOUNCE_MS = Number(process.env.STOCK_WS_FLUSH_DEBOUNCE_MS ?? 1_500);
+const FLUSH_URGENT_THRESHOLD = Number(process.env.STOCK_WS_FLUSH_URGENT_THRESHOLD ?? 40);
+const FLUSH_MAX_ROWS_PER_CYCLE = Number(process.env.STOCK_WS_FLUSH_MAX_ROWS ?? 100);
+const FLUSH_CHUNK_SIZE = Number(process.env.STOCK_WS_FLUSH_CHUNK_SIZE ?? 15);
+const FLUSH_PERIODIC_MS = Number(process.env.STOCK_WS_FLUSH_PERIODIC_MS ?? 3_000);
+const PENDING_UPSERTS_CAP = Number(process.env.STOCK_WS_PENDING_CAP ?? 600);
+
+let watchPollDeferred = false;
+
+const writeController = createStockMinuteWriteController({
+  chunkSize: FLUSH_CHUNK_SIZE,
+  maxRowsPerCycle: FLUSH_MAX_ROWS_PER_CYCLE,
+  pendingCap: PENDING_UPSERTS_CAP,
+  log: (...args) => log(...args),
+  upsertChunk: async (chunk) => {
+    const { error } = await supabaseWrite.from("stock_session_minute_bar").upsert(chunk, {
+      onConflict: "ticker,bucket_unix",
+    });
+    if (error) throw new Error(error.message);
+  },
+});
+
+writeController.setOnCycleIdle(() => {
+  if (watchPollDeferred) {
+    watchPollDeferred = false;
+    setImmediate(() => void syncSubscriptions());
+  }
+});
+
+function syncWriteHealthFields() {
+  const snap = writeController.snapshotHealth();
+  health.pendingUpserts = snap.pendingUpserts;
+  health.retryQueueSize = snap.retryQueueSize;
+  health.flushInProgress = snap.flushInProgress;
+  health.flushStartedAt = snap.flushStartedAt;
+  health.currentWriteSource = snap.currentWriteSource;
+  health.activeSupabaseUpserts = snap.activeSupabaseUpserts;
+  health.maxObservedConcurrentUpserts = snap.maxObservedConcurrentUpserts;
+  health.lastSuccessfulUpsertAt = snap.lastSuccessfulUpsertAt;
+  health.lastFailedUpsertAt = snap.lastFailedUpsertAt;
+  health.lastUpsertLatencyMs = snap.lastUpsertLatencyMs;
+  health.writeStallSeconds = snap.writeStallSeconds;
+  health.upsertSuccessCount = snap.upsertSuccessCount;
+  health.upsertAbortCount = snap.upsertAbortCount;
+  health.retryCount = snap.retryCount;
+  health.consecutiveWriteFailures = snap.consecutiveWriteFailures;
+  health.currentBackoffMs = snap.currentBackoffMs;
+  health.pendingDropCount = snap.pendingDropCount;
+  health.oldestPendingAgeMs = snap.oldestPendingAgeMs;
+  health.oldestRetryAgeMs = snap.oldestRetryAgeMs;
+}
+
 /** @type {Set<string>} */
 let subscribedSymbols = new Set();
 let tradeMsgCount = 0;
@@ -173,76 +198,6 @@ let tradesWs = null;
 let quoteWs = null;
 /** @type {Map<string, { sym: string, tradeSec: number, price: number }>} */
 const tradeCoalesce = new Map();
-const PENDING_UPSERTS_CAP = Number(process.env.STOCK_WS_PENDING_CAP ?? 600);
-
-function minuteBarKey(row) {
-  return `${row.ticker}:${row.bucket_unix}`;
-}
-
-/** Last-close-wins by updated_at (ISO strings are lexicographically comparable). */
-function pickLatestMinuteRow(a, b) {
-  if (!a) return b;
-  if (!b) return a;
-  return a.updated_at >= b.updated_at ? a : b;
-}
-
-function syncWriteHealthFields() {
-  health.pendingUpserts = pendingUpserts.size;
-  health.retryQueueSize = retryQueue.size;
-  health.flushInProgress = flushInProgress;
-  health.writeStallSeconds = computeWriteStallSeconds();
-}
-
-function computeWriteStallSeconds() {
-  if (pendingUpserts.size === 0 && retryQueue.size === 0) return 0;
-  const anchor = lastSuccessfulUpsertMs ?? Date.parse(health.startedAt);
-  if (!Number.isFinite(anchor)) return 0;
-  return Math.max(0, Math.floor((Date.now() - anchor) / 1000));
-}
-
-function recordUpsertSuccess(latencyMs) {
-  lastSuccessfulUpsertMs = Date.now();
-  health.lastSuccessfulUpsertAt = new Date(lastSuccessfulUpsertMs).toISOString();
-  health.lastUpsertLatencyMs = latencyMs;
-  health.upsertSuccessCount += 1;
-  health.writeStallSeconds = computeWriteStallSeconds();
-}
-
-function recordUpsertFailure(message, latencyMs) {
-  health.lastFailedUpsertAt = new Date().toISOString();
-  health.lastUpsertLatencyMs = latencyMs;
-  if (String(message ?? "").toLowerCase().includes("abort")) {
-    health.upsertAbortCount += 1;
-  }
-  health.writeStallSeconds = computeWriteStallSeconds();
-}
-
-function mergeRetryRowLatest(row) {
-  const key = minuteBarKey(row);
-  const existing = retryQueue.get(key);
-  if (!existing) return;
-  existing.row = pickLatestMinuteRow(existing.row, row);
-}
-
-function enqueueRetry(rows, errMsg) {
-  const now = Date.now();
-  for (const row of rows) {
-    const key = minuteBarKey(row);
-    const latest = pickLatestMinuteRow(
-      pickLatestMinuteRow(row, pendingUpserts.get(key)),
-      retryQueue.get(key)?.row,
-    );
-    const prevAttempt = retryQueue.get(key)?.attempt ?? -1;
-    const attempt = prevAttempt + 1;
-    retryQueue.set(key, {
-      row: latest,
-      attempt,
-      nextAt: now + flushBackoffMs(attempt, errMsg),
-    });
-  }
-  health.retryQueueSize = retryQueue.size;
-  scheduleRetryTick();
-}
 
 function usSessionYmdFromDate(date) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -323,18 +278,18 @@ function queueMinuteClose(ticker, tradeSec, price) {
   if (!sym) return;
   const sessionYmd = usSessionYmdFromDate(new Date(tradeSec * 1000));
   const bucketUnix = minuteBucketUnix(sessionYmd, tradeSec);
-  if (pendingUpserts.size >= PENDING_UPSERTS_CAP && !pendingUpserts.has(`${sym}:${bucketUnix}`)) {
-    void flushPendingUpserts();
-    if (pendingUpserts.size >= PENDING_UPSERTS_CAP) return;
-  }
-  pendingUpserts.set(`${sym}:${bucketUnix}`, {
+  const { accepted, dropped } = writeController.enqueuePending({
     ticker: sym,
     session_ymd: sessionYmd,
     bucket_unix: bucketUnix,
     close: price,
     updated_at: new Date().toISOString(),
   });
-  mergeRetryRowLatest(pendingUpserts.get(`${sym}:${bucketUnix}`));
+  if (dropped) {
+    // Cap pressure: request a drain; do not bypass the shared write gate.
+    writeController.requestHotFlush({ urgent: true, debounceMs: FLUSH_DEBOUNCE_MS });
+  }
+  if (!accepted && !dropped) return;
   health.lastTradeAt = new Date().toISOString();
   syncWriteHealthFields();
   scheduleFlush();
@@ -373,225 +328,22 @@ function drainTradeCoalesce() {
 }
 
 function scheduleFlush() {
-  if (flushInProgress) return;
-  if (pendingUpserts.size >= FLUSH_URGENT_THRESHOLD) {
-    if (flushTimer) {
-      clearTimeout(flushTimer);
-      flushTimer = null;
-    }
-    setImmediate(() => void flushPendingUpserts());
-    return;
-  }
-  if (flushTimer) return;
-  flushTimer = setTimeout(() => {
-    flushTimer = null;
-    setImmediate(() => void flushPendingUpserts());
-  }, FLUSH_DEBOUNCE_MS);
+  const pending = writeController.snapshotHealth().pendingUpserts;
+  writeController.requestHotFlush({
+    urgent: pending >= FLUSH_URGENT_THRESHOLD,
+    debounceMs: FLUSH_DEBOUNCE_MS,
+  });
+  syncWriteHealthFields();
 }
 
 function scheduleRetryTick() {
-  if (retryTickTimer) return;
-  retryTickTimer = setTimeout(() => {
-    retryTickTimer = null;
-    setImmediate(() => void processRetryQueue());
-  }, RETRY_TICK_MS);
-}
-
-let flushInProgress = false;
-let retryFlushInProgress = false;
-let watchPollDeferred = false;
-/** Softer defaults reduce PostgREST QPS when the origin is under load / returning 522. */
-const FLUSH_DEBOUNCE_MS = Number(process.env.STOCK_WS_FLUSH_DEBOUNCE_MS ?? 1_500);
-const FLUSH_URGENT_THRESHOLD = Number(process.env.STOCK_WS_FLUSH_URGENT_THRESHOLD ?? 40);
-const FLUSH_MAX_ROWS_PER_CYCLE = Number(process.env.STOCK_WS_FLUSH_MAX_ROWS ?? 100);
-const FLUSH_CHUNK_SIZE = Number(process.env.STOCK_WS_FLUSH_CHUNK_SIZE ?? 15);
-const FLUSH_MAX_ATTEMPTS = Number(process.env.STOCK_WS_FLUSH_MAX_ATTEMPTS ?? 5);
-const FLUSH_PERIODIC_MS = Number(process.env.STOCK_WS_FLUSH_PERIODIC_MS ?? 3_000);
-
-function isTransientUpsertFailure(message) {
-  const m = String(message ?? "").toLowerCase();
-  return (
-    m.includes("522") ||
-    m.includes("timeout") ||
-    m.includes("timed out") ||
-    m.includes("abort") ||
-    m.includes("fetch failed") ||
-    m.includes("econnreset") ||
-    m.includes("503") ||
-    m.includes("502") ||
-    m.includes("504")
-  );
-}
-
-function flushBackoffMs(attempt, message = "") {
-  const base = isTransientUpsertFailure(message)
-    ? Math.min(60_000, 1_000 * 2 ** attempt)
-    : Math.min(8_000, 400 * 2 ** attempt);
-  return base;
-}
-
-async function upsertMinuteBarChunk(chunk) {
-  const { error } = await supabaseWrite.from("stock_session_minute_bar").upsert(chunk, {
-    onConflict: "ticker,bucket_unix",
-  });
-  if (error) throw new Error(error.message);
-}
-
-/**
- * Hot path: at most HOT_FLUSH_MAX_ATTEMPTS per chunk, no in-lock sleep.
- * Transient failures go to retryQueue; flush lock is released by the caller immediately after.
- */
-async function saveMinuteBarRowsHot(rows) {
-  const chunkSize = Math.max(1, FLUSH_CHUNK_SIZE);
-
-  for (let i = 0; i < rows.length; i += chunkSize) {
-    const chunk = rows.slice(i, i + chunkSize);
-    const keys = chunk.map(minuteBarKey);
-    for (const key of keys) inFlightKeys.add(key);
-
-    let saved = false;
-    let lastMsg = "";
-    const started = Date.now();
-    for (let attempt = 0; attempt < HOT_FLUSH_MAX_ATTEMPTS && !saved; attempt++) {
-      try {
-        await upsertMinuteBarChunk(chunk);
-        saved = true;
-        recordUpsertSuccess(Date.now() - started);
-        for (const key of keys) retryQueue.delete(key);
-        log("upserted", chunk.length, "minute bars");
-      } catch (err) {
-        lastMsg = err instanceof Error ? err.message : String(err);
-        recordUpsertFailure(lastMsg, Date.now() - started);
-        log("upsert error", lastMsg, "rows", chunk.length, "attempt", attempt + 1);
-      }
-    }
-
-    if (!saved) {
-      if (isTransientUpsertFailure(lastMsg)) {
-        enqueueRetry(chunk, lastMsg);
-      } else {
-        for (const row of chunk) {
-          const key = minuteBarKey(row);
-          const existing = pendingUpserts.get(key);
-          pendingUpserts.set(key, pickLatestMinuteRow(existing, row));
-        }
-      }
-    }
-
-    for (const key of keys) inFlightKeys.delete(key);
-    await yieldEventLoop();
-  }
-}
-
-/**
- * Retry path: exponential backoff off the hot flush lock.
- * Skips keys present in pendingUpserts (hot owns latest) or currently inFlight.
- */
-async function processRetryQueue() {
-  if (retryFlushInProgress || retryQueue.size === 0) return;
-  retryFlushInProgress = true;
-  try {
-    const now = Date.now();
-    /** @type {{ ticker: string, session_ymd: string, bucket_unix: number, close: number, updated_at: string }[]} */
-    const dueRows = [];
-    for (const [key, entry] of retryQueue) {
-      if (entry.nextAt > now) continue;
-      if (pendingUpserts.has(key)) continue;
-      if (inFlightKeys.has(key)) continue;
-      const latest = pickLatestMinuteRow(entry.row, pendingUpserts.get(key));
-      entry.row = latest;
-      dueRows.push(latest);
-      if (dueRows.length >= FLUSH_MAX_ROWS_PER_CYCLE) break;
-    }
-
-    const chunkSize = Math.max(1, FLUSH_CHUNK_SIZE);
-    for (let i = 0; i < dueRows.length; i += chunkSize) {
-      const chunk = dueRows.slice(i, i + chunkSize);
-      const keys = chunk.map(minuteBarKey);
-      // Re-check ownership before write
-      const writable = [];
-      for (let j = 0; j < chunk.length; j++) {
-        const key = keys[j];
-        if (pendingUpserts.has(key) || inFlightKeys.has(key)) continue;
-        inFlightKeys.add(key);
-        writable.push(chunk[j]);
-      }
-      if (!writable.length) continue;
-
-      const writeKeys = writable.map(minuteBarKey);
-      const started = Date.now();
-      health.retryCount += 1;
-      try {
-        await upsertMinuteBarChunk(writable);
-        recordUpsertSuccess(Date.now() - started);
-        for (const key of writeKeys) retryQueue.delete(key);
-        log("upserted", writable.length, "minute bars (retry)");
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        recordUpsertFailure(msg, Date.now() - started);
-        log("upsert error", msg, "rows", writable.length, "retry");
-        const failNow = Date.now();
-        for (const row of writable) {
-          const key = minuteBarKey(row);
-          if (pendingUpserts.has(key)) {
-            // Hot has a newer owner — drop retry entry; hot will write.
-            retryQueue.delete(key);
-            continue;
-          }
-          const existing = retryQueue.get(key);
-          const attempt = (existing?.attempt ?? 0) + 1;
-          const latest = pickLatestMinuteRow(row, existing?.row);
-          retryQueue.set(key, {
-            row: latest,
-            attempt,
-            nextAt: failNow + flushBackoffMs(attempt, msg),
-          });
-        }
-      } finally {
-        for (const key of writeKeys) inFlightKeys.delete(key);
-      }
-      await yieldEventLoop();
-    }
-  } finally {
-    retryFlushInProgress = false;
-    syncWriteHealthFields();
-    if (retryQueue.size > 0) scheduleRetryTick();
-  }
-}
-
-function yieldEventLoop() {
-  return new Promise((resolve) => setImmediate(resolve));
+  writeController.requestRetryFlush();
+  syncWriteHealthFields();
 }
 
 async function flushPendingUpserts() {
-  if (!pendingUpserts.size || flushInProgress) return;
-  flushInProgress = true;
-  health.flushInProgress = true;
-  health.flushStartedAt = new Date().toISOString();
-
-  const rows = [];
-  for (const [key, row] of pendingUpserts) {
-    if (rows.length >= FLUSH_MAX_ROWS_PER_CYCLE) break;
-    if (inFlightKeys.has(key)) continue;
-    rows.push(row);
-    pendingUpserts.delete(key);
-  }
+  await writeController.flushNow();
   syncWriteHealthFields();
-
-  try {
-    if (rows.length > 0) await saveMinuteBarRowsHot(rows);
-  } finally {
-    flushInProgress = false;
-    health.flushInProgress = false;
-    health.flushStartedAt = null;
-    syncWriteHealthFields();
-    if (pendingUpserts.size > 0) scheduleFlush();
-    if (retryQueue.size > 0) scheduleRetryTick();
-    if (watchPollDeferred) {
-      watchPollDeferred = false;
-      setImmediate(() => void syncSubscriptions());
-    }
-  }
 }
 
 function chartWatchRequestedSinceIso() {
@@ -831,7 +583,7 @@ const startWatchPoll = () => {
 };
 
 async function syncSubscriptions() {
-  if (flushInProgress) {
+  if (writeController.snapshotHealth().flushInProgress) {
     watchPollDeferred = true;
     return;
   }
@@ -1050,6 +802,9 @@ setInterval(() => {
     retryQueueSize: health.retryQueueSize,
     flushInProgress: health.flushInProgress,
     flushStartedAt: health.flushStartedAt,
+    currentWriteSource: health.currentWriteSource,
+    activeSupabaseUpserts: health.activeSupabaseUpserts,
+    maxObservedConcurrentUpserts: health.maxObservedConcurrentUpserts,
     lastSuccessfulUpsertAt: health.lastSuccessfulUpsertAt,
     lastFailedUpsertAt: health.lastFailedUpsertAt,
     lastUpsertLatencyMs: health.lastUpsertLatencyMs,
@@ -1057,6 +812,11 @@ setInterval(() => {
     upsertSuccessCount: health.upsertSuccessCount,
     upsertAbortCount: health.upsertAbortCount,
     retryCount: health.retryCount,
+    consecutiveWriteFailures: health.consecutiveWriteFailures,
+    currentBackoffMs: health.currentBackoffMs,
+    pendingDropCount: health.pendingDropCount,
+    oldestPendingAgeMs: health.oldestPendingAgeMs,
+    oldestRetryAgeMs: health.oldestRetryAgeMs,
     tradeMsgCount,
     quoteMsgCount,
     restPollCount,
@@ -1071,9 +831,14 @@ setInterval(() => {
 }, REST_POLL_MS);
 
 setInterval(() => {
-  if (pendingUpserts.size > 0) scheduleFlush();
-  if (retryQueue.size > 0) scheduleRetryTick();
+  const snap = writeController.snapshotHealth();
+  if (snap.pendingUpserts > 0) scheduleFlush();
+  if (snap.retryQueueSize > 0) scheduleRetryTick();
 }, FLUSH_PERIODIC_MS);
+
+setInterval(() => {
+  if (writeController.snapshotHealth().retryQueueSize > 0) scheduleRetryTick();
+}, RETRY_TICK_MS);
 
 log("starting stock minute ingest (always-on)", {
   curatedMode: stockWsCuratedMode(),

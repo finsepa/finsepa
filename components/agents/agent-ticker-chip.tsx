@@ -34,6 +34,8 @@ export type AgentHoldingRef = {
   worthLabel: string | null;
   /** e.g. `6.9%` or null. */
   weightLabel: string | null;
+  /** e.g. `$3,682.68` unrealized P/L when the model includes it. */
+  pnlLabel: string | null;
 };
 
 const STOCK_RE = /^[A-Z][A-Z0-9.-]{0,11}$/;
@@ -66,6 +68,36 @@ const STOPWORDS = new Set([
 
 function stripMdInline(s: string): string {
   return s.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1").trim();
+}
+
+function formatAgentUsd(n: number, maxFractionDigits?: number): string {
+  const digits =
+    maxFractionDigits != null ? maxFractionDigits : Math.abs(n) >= 100 ? 0 : 2;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: digits,
+  }).format(n);
+}
+
+function parseAgentParenMeta(paren: string): { pnlLabel: string | null; weightLabel: string | null } {
+  let pnlLabel: string | null = null;
+  let weightLabel: string | null = null;
+
+  const pnl = paren.match(
+    /(?:unrealized\s+)?(?:profit|p\/?l|gain|loss)\s*:\s*\$?\s*([+-]?[\d,.]+)/i,
+  );
+  if (pnl?.[1]) {
+    const n = Number(pnl[1].replace(/,/g, ""));
+    if (Number.isFinite(n)) pnlLabel = formatAgentUsd(n, 2);
+  }
+
+  const weight = paren.match(/weight\s*:\s*([\d.]+)\s*%?/i);
+  if (weight?.[1] && Number.isFinite(Number(weight[1]))) {
+    weightLabel = `${Number(weight[1])}%`;
+  }
+
+  return { pnlLabel, weightLabel };
 }
 
 export function parseAgentTickerToken(raw: string): AgentTickerRef | null {
@@ -128,10 +160,23 @@ export function parseAgentTickerToken(raw: string): AgentTickerRef | null {
   };
 }
 
-/** `- AAPL: 8 shares` / `BTC: 0.116 shares · $11,800` / `… · 6.9%` */
+/**
+ * `- AAPL: 8 shares` / `BTC: 0.116 shares · $11,800` / `… · 6.9%`
+ * Also: `GOOGL: 25 shares · $8,164.00 (unrealized profit: $3,682.68, weight: 5.26%)`
+ */
 export function parseAgentHoldingLine(raw: string): AgentHoldingRef | null {
   let body = raw.trim().replace(/^[-*•]\s+/, "").trim();
   if (!body) return null;
+
+  let parenMeta: { pnlLabel: string | null; weightLabel: string | null } = {
+    pnlLabel: null,
+    weightLabel: null,
+  };
+  const parenMatch = body.match(/\(([^)]*)\)\s*$/);
+  if (parenMatch) {
+    parenMeta = parseAgentParenMeta(parenMatch[1] ?? "");
+    body = body.slice(0, parenMatch.index).trim();
+  }
 
   const m = body.match(
     /^(.+?)\s*[:：]\s*([\d,.]+)\s*(shares?|units?)?(?:\s*[·|,—–-]\s*(?:Worth:\s*)?\$\s*([\d,.]+))?(?:\s*[·|,—–-]\s*([\d.]+)\s*%)?\s*$/i,
@@ -147,18 +192,22 @@ export function parseAgentHoldingLine(raw: string): AgentHoldingRef | null {
   const worthRaw = m[4]?.replace(/,/g, "");
   let worthLabel: string | null = null;
   if (worthRaw && Number.isFinite(Number(worthRaw))) {
-    worthLabel = new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: Number(worthRaw) >= 100 ? 0 : 2,
-    }).format(Number(worthRaw));
+    worthLabel = formatAgentUsd(Number(worthRaw));
   }
 
   const weightRaw = m[5];
   const weightLabel =
-    weightRaw && Number.isFinite(Number(weightRaw)) ? `${Number(weightRaw)}%` : null;
+    weightRaw && Number.isFinite(Number(weightRaw))
+      ? `${Number(weightRaw)}%`
+      : parenMeta.weightLabel;
 
-  return { ticker, sharesLabel: qty, worthLabel, weightLabel };
+  return {
+    ticker,
+    sharesLabel: qty,
+    worthLabel,
+    weightLabel,
+    pnlLabel: parenMeta.pnlLabel,
+  };
 }
 
 /** `- AAPL: 6.9%` or `- AAPL: 6.9% · $10,653` */
@@ -233,17 +282,34 @@ export function AgentTickerChipRow({ tickers }: { tickers: AgentTickerRef[] }) {
   );
 }
 
-const HOLDINGS_GRID = "grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.7fr)_minmax(0,0.9fr)_minmax(0,0.7fr)] items-center gap-2";
+const HOLDINGS_GRID =
+  "grid grid-cols-[minmax(0,1.1fr)_minmax(0,0.6fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,0.65fr)] items-center gap-2";
+const HOLDINGS_GRID_NO_PNL =
+  "grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.7fr)_minmax(0,0.9fr)_minmax(0,0.7fr)] items-center gap-2";
 const HOLDINGS_GRID_NO_WEIGHT =
   "grid grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,1fr)] items-center gap-3";
+const HOLDINGS_GRID_PNL_NO_WEIGHT =
+  "grid grid-cols-[minmax(0,1.2fr)_minmax(0,0.7fr)_minmax(0,0.9fr)_minmax(0,0.9fr)] items-center gap-2";
 /** 12px horizontal + vertical cell padding. */
 const HOLDINGS_CELL_PAD_CLASS = "px-3 py-3";
+
+function pnlToneClass(pnlLabel: string | null): string {
+  if (!pnlLabel) return "text-[#5C5D5F]";
+  const n = Number(pnlLabel.replace(/[^0-9.-]/g, ""));
+  if (!Number.isFinite(n) || n === 0) return "text-[#141414]";
+  return n > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
+}
 
 /** Portfolio holdings — screener table container + row chrome. */
 export function AgentHoldingList({ holdings }: { holdings: AgentHoldingRef[] }) {
   if (holdings.length === 0) return null;
   const showWeight = holdings.some((h) => h.weightLabel);
-  const grid = showWeight ? HOLDINGS_GRID : HOLDINGS_GRID_NO_WEIGHT;
+  const showPnl = holdings.some((h) => h.pnlLabel);
+  const grid =
+    showPnl && showWeight ? HOLDINGS_GRID
+    : showPnl ? HOLDINGS_GRID_PNL_NO_WEIGHT
+    : showWeight ? HOLDINGS_GRID_NO_PNL
+    : HOLDINGS_GRID_NO_WEIGHT;
 
   return (
     <div
@@ -266,6 +332,7 @@ export function AgentHoldingList({ holdings }: { holdings: AgentHoldingRef[] }) 
             <div className="text-left">Ticker</div>
             <div className="text-right">Shares</div>
             <div className="text-right">Worth</div>
+            {showPnl ? <div className="text-right">Profit</div> : null}
             {showWeight ? <div className="text-right">Weight</div> : null}
           </div>
         </div>
@@ -305,6 +372,16 @@ export function AgentHoldingList({ holdings }: { holdings: AgentHoldingRef[] }) 
               >
                 {h.worthLabel ?? "—"}
               </span>
+              {showPnl ? (
+                <span
+                  className={cn(
+                    "text-right text-[14px] font-normal leading-5 tabular-nums",
+                    pnlToneClass(h.pnlLabel),
+                  )}
+                >
+                  {h.pnlLabel ?? "—"}
+                </span>
+              ) : null}
               {showWeight ? (
                 <span className="text-right text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
                   {h.weightLabel ?? "—"}

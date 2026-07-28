@@ -171,16 +171,8 @@ function serializeHolding(h: PortfolioHolding, totalMv: number) {
   };
 }
 
-export function buildAgentPortfolioSummary(args: {
-  workspace: AgentPortfolioWorkspace;
-  portfolioQuery?: string | null;
-  holdingsLimit?: number;
-}) {
-  const { state, updatedAt } = args.workspace;
-  const slice = resolveAgentPortfolioSlice(state, args.portfolioQuery);
-  const limit = Math.min(Math.max(args.holdingsLimit ?? 40, 1), 60);
-
-  const catalog = state.portfolios.map((p) => ({
+function portfolioCatalog(state: PersistedPortfolioState) {
+  return state.portfolios.map((p) => ({
     id: p.id,
     name: p.name,
     kind: p.kind ?? "standard",
@@ -195,6 +187,292 @@ export function buildAgentPortfolioSummary(args: {
           .length
       : (state.transactionsByPortfolioId[p.id] ?? []).length,
   }));
+}
+
+/** Catalog of portfolios only — no holdings payload. */
+export function buildAgentPortfolioList(args: { workspace: AgentPortfolioWorkspace }) {
+  const { state, updatedAt } = args.workspace;
+  const portfolios = portfolioCatalog(state);
+  const selected = resolvePortfolioEntry(state, null);
+
+  return {
+    ok: true as const,
+    updatedAt,
+    openInApp: "/portfolio" as const,
+    portfolioCount: portfolios.length,
+    selectedPortfolioId: selected?.id ?? state.selectedPortfolioId ?? null,
+    selectedPortfolioName: selected?.name ?? null,
+    portfolios,
+    note: "Portfolio catalog from saved workspace — no live prices.",
+  };
+}
+
+/**
+ * Concentration from saved marks — top weights, cash %, stock vs crypto, top-N share.
+ * Pure local math (no market APIs).
+ */
+export function buildAgentPortfolioConcentration(args: {
+  workspace: AgentPortfolioWorkspace;
+  portfolioQuery?: string | null;
+  topN?: number;
+}) {
+  const slice = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioQuery);
+  if (!slice) {
+    return { ok: false as const, error: "Portfolio not found.", openInApp: "/portfolio" as const };
+  }
+
+  const topN = Math.min(Math.max(args.topN ?? 5, 1), 20);
+  const cashUsd = normalizeUsdForDisplay(netCashUsd(slice.transactions));
+  const equityUsd = normalizeUsdForDisplay(equityMarketValue(slice.holdings));
+  const netWorth = equityUsd + cashUsd;
+  const allocationDenom = equityUsd + Math.max(0, cashUsd);
+
+  const cryptoHoldings = slice.holdings.filter((h) => holdingAssetKind(h.symbol) === "crypto");
+  const stockHoldings = slice.holdings.filter((h) => holdingAssetKind(h.symbol) === "stock");
+  const cryptoUsd = normalizeUsdForDisplay(equityMarketValue(cryptoHoldings));
+  const stockUsd = normalizeUsdForDisplay(equityMarketValue(stockHoldings));
+
+  const rows = [...slice.holdings]
+    .map((h) => serializeHolding(h, allocationDenom))
+    .filter((h) => h.weightPct != null && h.weightPct > 0)
+    .sort((a, b) => (b.weightPct ?? 0) - (a.weightPct ?? 0));
+
+  const topHoldings = rows.slice(0, topN);
+  const topWeightPct = roundPct(topHoldings.reduce((s, h) => s + (h.weightPct ?? 0), 0));
+  const cashWeightPct = allocationDenom > 0 ? roundPct((Math.max(0, cashUsd) / allocationDenom) * 100) : null;
+  const equityWeightPct =
+    allocationDenom > 0 ? roundPct((Math.max(0, equityUsd) / allocationDenom) * 100) : null;
+
+  // Herfindahl–Hirschman on equity+cash weights (0–10_000 scale), informational only.
+  const hhi = round2(
+    rows.reduce((s, h) => {
+      const w = h.weightPct ?? 0;
+      return s + w * w;
+    }, 0) + (cashWeightPct != null ? cashWeightPct * cashWeightPct : 0),
+  );
+
+  return {
+    ok: true as const,
+    openInApp: "/portfolio" as const,
+    portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
+    totals: {
+      netWorthUsd: round2(normalizeUsdForDisplay(netWorth)),
+      equityMarketValueUsd: round2(equityUsd),
+      cashUsd: round2(cashUsd),
+      cashWeightPct,
+      equityWeightPct,
+      stockValueUsd: round2(stockUsd),
+      cryptoValueUsd: round2(cryptoUsd),
+      stockWeightOfEquityPct: equityUsd > 0 ? roundPct((stockUsd / equityUsd) * 100) : null,
+      cryptoWeightOfEquityPct: equityUsd > 0 ? roundPct((cryptoUsd / equityUsd) * 100) : null,
+      holdingCount: slice.holdings.length,
+      topN,
+      topNWeightPct: topWeightPct,
+      concentrationHhi: hhi,
+    },
+    topHoldings,
+    note: MARKS_NOTE,
+  };
+}
+
+/**
+ * Compare holdings across two portfolios and/or check whether specific symbols are held.
+ * Workspace only — no live prices.
+ */
+export function buildAgentPortfolioHoldingsCompare(args: {
+  workspace: AgentPortfolioWorkspace;
+  portfolioA?: string | null;
+  portfolioB?: string | null;
+  symbols?: string[] | null;
+}) {
+  const sliceA = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioA);
+  if (!sliceA) {
+    return { ok: false as const, error: "Portfolio A not found.", openInApp: "/portfolio" as const };
+  }
+
+  const wantB = Boolean(args.portfolioB?.trim());
+  const sliceB = wantB ? resolveAgentPortfolioSlice(args.workspace.state, args.portfolioB) : null;
+  if (wantB && !sliceB) {
+    return { ok: false as const, error: "Portfolio B not found.", openInApp: "/portfolio" as const };
+  }
+
+  const setA = new Set(sliceA.holdings.map((h) => h.symbol.trim().toUpperCase()).filter(Boolean));
+  const setB = new Set(
+    (sliceB?.holdings ?? []).map((h) => h.symbol.trim().toUpperCase()).filter(Boolean),
+  );
+
+  const symbols = (args.symbols ?? [])
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean)
+    .slice(0, 40);
+
+  const symbolChecks =
+    symbols.length > 0
+      ? symbols.map((symbol) => ({
+          symbol,
+          inPortfolioA: setA.has(symbol),
+          inPortfolioB: sliceB ? setB.has(symbol) : null,
+        }))
+      : null;
+
+  let overlap: {
+    shared: string[];
+    onlyInA: string[];
+    onlyInB: string[];
+    sharedCount: number;
+  } | null = null;
+
+  if (sliceB) {
+    const shared = [...setA].filter((s) => setB.has(s)).sort();
+    const onlyInA = [...setA].filter((s) => !setB.has(s)).sort();
+    const onlyInB = [...setB].filter((s) => !setA.has(s)).sort();
+    overlap = {
+      shared,
+      onlyInA,
+      onlyInB,
+      sharedCount: shared.length,
+    };
+  }
+
+  return {
+    ok: true as const,
+    openInApp: "/portfolio" as const,
+    portfolioA: {
+      id: sliceA.portfolio.id,
+      name: sliceA.portfolio.name,
+      holdingCount: setA.size,
+      symbols: [...setA].sort(),
+    },
+    portfolioB: sliceB
+      ? {
+          id: sliceB.portfolio.id,
+          name: sliceB.portfolio.name,
+          holdingCount: setB.size,
+          symbols: [...setB].sort(),
+        }
+      : null,
+    overlap,
+    symbolChecks,
+    note: "Symbol lists from saved holdings only — no live prices or weights in this compare.",
+  };
+}
+
+/**
+ * Single holding by symbol from saved marks (shares, cost, worth, weight, unrealized).
+ */
+export function buildAgentPortfolioHolding(args: {
+  workspace: AgentPortfolioWorkspace;
+  portfolioQuery?: string | null;
+  symbol: string;
+}) {
+  const slice = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioQuery);
+  if (!slice) {
+    return { ok: false as const, error: "Portfolio not found.", openInApp: "/portfolio" as const };
+  }
+
+  const sym = args.symbol.trim().toUpperCase();
+  if (!sym) {
+    return { ok: false as const, error: "Symbol required.", openInApp: "/portfolio" as const };
+  }
+
+  const cashUsd = normalizeUsdForDisplay(netCashUsd(slice.transactions));
+  const equityUsd = normalizeUsdForDisplay(equityMarketValue(slice.holdings));
+  const allocationDenom = equityUsd + Math.max(0, cashUsd);
+
+  const holding =
+    slice.holdings.find((h) => h.symbol.trim().toUpperCase() === sym) ??
+    slice.holdings.find((h) => h.symbol.trim().toUpperCase().includes(sym)) ??
+    null;
+
+  if (!holding) {
+    const candidates = slice.holdings
+      .map((h) => h.symbol)
+      .filter((s) => s.toUpperCase().includes(sym.slice(0, 3)))
+      .slice(0, 8);
+    return {
+      ok: false as const,
+      error: `No holding matching "${sym}" in ${slice.portfolio.name}.`,
+      openInApp: "/portfolio" as const,
+      portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
+      suggestions: candidates,
+    };
+  }
+
+  const serialized = serializeHolding(holding, allocationDenom);
+  const tradeCount = slice.transactions.filter(
+    (t) => t.kind === "trade" && t.symbol.trim().toUpperCase() === holding.symbol.trim().toUpperCase(),
+  ).length;
+
+  return {
+    ok: true as const,
+    openInApp: "/portfolio" as const,
+    portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
+    holding: serialized,
+    tradeCount,
+    note: MARKS_NOTE,
+  };
+}
+
+/**
+ * Recent ledger activity digest — trades / cash / income / expenses counts + last N rows.
+ * Pure filter on saved transactions (no market APIs).
+ */
+export function buildAgentPortfolioActivityDigest(args: {
+  workspace: AgentPortfolioWorkspace;
+  portfolioQuery?: string | null;
+  limit?: number;
+}) {
+  const slice = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioQuery);
+  if (!slice) {
+    return { ok: false as const, error: "Portfolio not found.", openInApp: "/portfolio" as const };
+  }
+
+  const limit = Math.min(Math.max(args.limit ?? 20, 1), 50);
+  const txs = slice.transactions;
+  const byKind = {
+    trade: txs.filter((t) => t.kind === "trade").length,
+    cash: txs.filter((t) => t.kind === "cash").length,
+    income: txs.filter((t) => t.kind === "income").length,
+    expense: txs.filter((t) => t.kind === "expense").length,
+  };
+
+  const recent = txs.slice(0, limit).map((t) => ({
+    date: t.date,
+    kind: t.kind,
+    operation: t.operation,
+    symbol: t.symbol || null,
+    shares: Number.isFinite(t.shares) && t.shares !== 0 ? t.shares : null,
+    sumUsd: round2(t.sum),
+    note: t.note?.trim() || null,
+  }));
+
+  const latestDate = txs[0]?.date ?? null;
+  const oldestInWindow = recent[recent.length - 1]?.date ?? null;
+
+  return {
+    ok: true as const,
+    openInApp: "/portfolio" as const,
+    portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
+    totals: {
+      transactionCount: txs.length,
+      ...byKind,
+    },
+    window: { latestDate, oldestInRecent: oldestInWindow, recentCount: recent.length },
+    recent,
+    note: "From saved transaction ledger only — not a brokerage live sync.",
+  };
+}
+
+export function buildAgentPortfolioSummary(args: {
+  workspace: AgentPortfolioWorkspace;
+  portfolioQuery?: string | null;
+  holdingsLimit?: number;
+}) {
+  const { state, updatedAt } = args.workspace;
+  const slice = resolveAgentPortfolioSlice(state, args.portfolioQuery);
+  const limit = Math.min(Math.max(args.holdingsLimit ?? 40, 1), 60);
+
+  const catalog = portfolioCatalog(state);
 
   if (!slice) {
     return {

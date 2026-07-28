@@ -2313,51 +2313,42 @@ export function ChartingWorkspace({
 
   const removeMetric = useCallback(
     (id: ChartingMetricId) => {
-      type Deferred = { kind: "tickerOnly" } | { kind: "metrics"; metrics: ChartingMetricId[] };
-      let deferred: Deferred | null = null;
-      setSelected((prev) => {
-        const next = prev.filter((x) => x !== id);
-        if (stockTabStartsEmptyMetrics) return next;
-        if (!fullPageCompanyChipSlot) {
-          if (next.length === 0) return prev;
-          return next;
-        }
-        if (next.length === 0) {
-          deferred = { kind: "tickerOnly" };
-          return prev;
-        }
-        deferred = { kind: "metrics", metrics: next };
-        return next;
-      });
-      if (fullPageCompanyChipSlot && deferred) {
-        queueMicrotask(() => {
-          if (deferred!.kind === "tickerOnly") {
-            router.replace(buildStandaloneChartPath(pathRoute, [ticker], []));
-          } else {
-            router.replace(buildStandaloneChartPath(pathRoute, [ticker], deferred!.metrics));
-          }
-        });
+      const next = selected.filter((x) => x !== id);
+      if (stockTabStartsEmptyMetrics) {
+        setSelected(next);
+        return;
       }
+      if (!fullPageCompanyChipSlot) {
+        if (next.length === 0) return;
+        setSelected(next);
+        return;
+      }
+      if (next.length === 0) {
+        router.replace(buildStandaloneChartPath(pathRoute, [ticker], []));
+        return;
+      }
+      setSelected(next);
+      router.replace(buildStandaloneChartPath(pathRoute, [ticker], next));
     },
-    [fullPageCompanyChipSlot, pathRoute, router, stockTabStartsEmptyMetrics, ticker],
+    [fullPageCompanyChipSlot, pathRoute, router, selected, stockTabStartsEmptyMetrics, ticker],
   );
 
   const addMetric = useCallback(
     (id: ChartingMetricId) => {
-      let nextMetrics: ChartingMetricId[] | null = null;
-      setSelected((prev) => {
-        if (prev.includes(id)) return prev;
-        const next = [...prev, id];
-        if (fullPageCompanyChipSlot) nextMetrics = next;
-        return next;
-      });
-      if (fullPageCompanyChipSlot && nextMetrics) {
-        queueMicrotask(() => router.replace(buildStandaloneChartPath(pathRoute, [ticker], nextMetrics!)));
+      if (selected.includes(id)) {
+        setPickerOpen(false);
+        setPickerQuery("");
+        return;
+      }
+      const next = [...selected, id];
+      setSelected(next);
+      if (fullPageCompanyChipSlot) {
+        router.replace(buildStandaloneChartPath(pathRoute, [ticker], next));
       }
       setPickerOpen(false);
       setPickerQuery("");
     },
-    [fullPageCompanyChipSlot, pathRoute, router, ticker],
+    [fullPageCompanyChipSlot, pathRoute, router, selected, ticker],
   );
 
   const canPlot = useMemo(() => {
@@ -3438,7 +3429,6 @@ export function ChartingWorkspace({
             id,
             label: CHARTING_METRIC_LABEL[id],
             color: metricChipColorById.get(id) ?? "#2563EB",
-            removeDisabled: selected.length <= 1,
             showBarValues: isBarValuesVisible(id),
           }))
         : undefined,
@@ -3511,7 +3501,9 @@ export function ChartingWorkspace({
 
   return (
     <>
-      {!screenshotPreviewMode ? <DataFetchTopLoader active={loading} /> : null}
+      {!screenshotPreviewMode ? (
+        <DataFetchTopLoader active={loading && hasMetricSelection} />
+      ) : null}
       <div
         className={cn(
           useRailMetricPicker && !screenshotPreviewMode ? "flex flex-col gap-5" : undefined,
@@ -3714,7 +3706,8 @@ export function ChartingWorkspace({
               Choose revenue, net income, or another fundamental to display on the chart.
             </EmptyDescription>
           </EmptyHeader>
-          <EmptyContent>{addMetricPicker}</EmptyContent>
+          {/* Rail + button owns metric pick on desktop — avoid the legacy centered CTA flash. */}
+          {!useRailMetricPicker ? <EmptyContent>{addMetricPicker}</EmptyContent> : null}
         </Empty>
       ) : drawdownOnly ? (
         <StockDrawdownChartPanel ticker={ticker} height={chartHeight} />

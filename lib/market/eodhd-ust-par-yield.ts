@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 /** Same shape as {@link MacroPoint} — avoids import cycle with `eodhd-macro`. */
 export type UstYieldPoint = { time: string; value: number };
@@ -54,7 +55,7 @@ async function fetchUst10YGbondUncached(): Promise<UstYieldPoint[]> {
 
   try {
     if (!traceEodhdHttp("fetchUst10YGbondUncached", { symbol: "US10Y.GBOND" })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
     if (!Array.isArray(json)) return [];
@@ -108,7 +109,7 @@ async function fetchUstYieldYear20Y(apiToken: string, year: number): Promise<Ust
 
   try {
     if (!traceEodhdHttp("fetchUstYieldYear20Y", { year })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
     if (!res.ok) return [];
     const rows = parseYieldRows(await res.json());
     const out: UstYieldPoint[] = [];

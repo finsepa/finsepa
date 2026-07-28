@@ -192,7 +192,7 @@ const MARGINS_LABELS = [
   "EBITDA Margin",
   "Pre-Tax Margin",
   "Net Margin",
-  "Free Cash Flow",
+  "Free Cash Flow Margin",
 ];
 
 const GROWTH_LABELS = [
@@ -250,19 +250,19 @@ const REVENUE_PROFIT_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> 
   "Net Income": "net_income",
   EBITDA: "ebitda",
   EPS: "eps",
-  /** Dollar FCF — see `eodhd-key-stats-revenue-profit` (Margins card uses “Free Cash Flow” for margin %). */
-  FCF: "free_cash_flow",
+  /** Dollar Free Cash Flow — Margins card uses “Free Cash Flow Margin”. */
+  "Free Cash Flow": "free_cash_flow",
   CapEx: "capital_expenditures",
 };
 
-/** Key Stats "Margins" row labels → fundamentals chart metric (FCF row is margin %, not cash dollars). */
+/** Key Stats "Margins" row labels → fundamentals chart metric. */
 const MARGINS_LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   "Gross Margin": "gross_margin",
   "Operating Margin": "operating_margin",
   "EBITDA Margin": "ebitda_margin",
   "Pre-Tax Margin": "pre_tax_margin",
   "Net Margin": "net_margin",
-  "Free Cash Flow": "fcf_margin",
+  "Free Cash Flow Margin": "fcf_margin",
 };
 
 const BASIC_FALLBACK: Row[] = [
@@ -524,7 +524,7 @@ const RevenueProfitCard = memo(function RevenueProfitCard({
         { label: "Net Income", value: "—" },
         { label: "EBITDA", value: "—" },
         { label: "EPS", value: "—" },
-        { label: "FCF", value: "—" },
+        { label: "Free Cash Flow", value: "—" },
         { label: "CapEx", value: "—" },
       ] satisfies Row[],
     [],

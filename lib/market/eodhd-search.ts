@@ -4,6 +4,7 @@ import { REVALIDATE_SEARCH } from "@/lib/data/cache-policy";
 import { SEARCH_MIN_QUERY_LENGTH } from "@/lib/search/search-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type EodhdSearchRow = {
   Code?: string;
@@ -26,7 +27,7 @@ export async function fetchEodhdSearch(query: string, limit = 40): Promise<Eodhd
 
   try {
     if (!traceEodhdHttp("fetchEodhdSearch", { q: q.slice(0, 32), limit })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_SEARCH } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_SEARCH } });
     if (!res.ok) return [];
     const data = (await res.json()) as unknown;
     if (!Array.isArray(data)) return [];

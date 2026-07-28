@@ -57,7 +57,7 @@ const REVENUE_PROFIT_METRICS: ScreenerKeyStatMetricDef[] = [
   m("rp-net-income", "Net Income", "revenueProfit"),
   m("rp-ebitda", "EBITDA", "revenueProfit"),
   m("rp-eps", "EPS", "revenueProfit"),
-  m("rp-fcf", "FCF", "revenueProfit"),
+  m("rp-fcf", "Free Cash Flow", "revenueProfit"),
 ];
 
 const MARGINS_METRICS: ScreenerKeyStatMetricDef[] = [
@@ -66,7 +66,7 @@ const MARGINS_METRICS: ScreenerKeyStatMetricDef[] = [
   m("mg-ebitda", "EBITDA Margin", "margins"),
   m("mg-pre-tax", "Pre-Tax Margin", "margins"),
   m("mg-net", "Net Margin", "margins"),
-  m("mg-fcf", "Free Cash Flow", "margins"),
+  m("mg-fcf", "Free Cash Flow Margin", "margins"),
 ];
 
 const GROWTH_METRICS: ScreenerKeyStatMetricDef[] = [

@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_STATIC } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type EodhdExchangeSymbolRow = {
   Code?: string;
@@ -41,7 +42,7 @@ async function fetchEodhdExchangeSymbolListUncached(exchange = "US"): Promise<Eo
 
   try {
     if (!traceEodhdHttp("fetchEodhdExchangeSymbolListUncached", { exchange: ex })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_STATIC } });
     if (!res.ok) return [];
     const data = (await res.json()) as unknown;
     if (!Array.isArray(data)) return [];

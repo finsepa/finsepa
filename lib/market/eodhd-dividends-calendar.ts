@@ -6,6 +6,7 @@ import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -49,7 +50,7 @@ async function fetchEodhdDividendsCalendarUncached(
     if (!traceEodhdHttp("fetchEodhdDividendsCalendar", { symbol: sym, from: fromYmd, to: toYmd })) {
       return [];
     }
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_WARM } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_WARM } });
     if (!res.ok) return [];
     const json = (await res.json()) as { data?: unknown };
     const rows = json?.data;

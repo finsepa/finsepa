@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, RefreshCw, X } from "@/lib/icons";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
+import { ChartingMetricPickerMenu } from "@/components/charting/charting-metric-picker-menu";
 import {
   useChartingRailPickerAnchors,
   useRegisterChartingCompanyRail,
@@ -12,7 +13,6 @@ import {
 import type { CompanyPickerOpenControls } from "@/components/charting/company-picker";
 import { CompanyRailCard } from "@/components/layout/company-rail";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
-import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import {
   DEFAULT_CHART_TIME_RANGE,
   STANDALONE_CHARTING_TIME_RANGE_ORDER,
@@ -21,17 +21,10 @@ import {
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption, whiteSurfaceChipDividerClass, whiteSurfaceChipLabelClass, whiteSurfaceChipRemoveClass, whiteSurfaceChipShellClass } from "@/components/design-system";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
-import {
-  dropdownMenuRichItemClassName,
-  dropdownMenuSearchHeaderClassName,
-  dropdownMenuSearchInputClassName,
-  dropdownMenuSurfaceClassName,
-} from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
 import { filterChartingUrlTickersForSession } from "@/lib/charting/charting-allowed-tickers";
 import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 import {
-  CHARTING_DROPDOWN_GROUPS,
   CHARTING_MAX_COMPARE_TICKERS,
   CHARTING_METRIC_LABEL,
   type ChartingMetricId,
@@ -231,20 +224,6 @@ export function ChartingEmptyToolbar({
   pendingMetricsRef.current = pendingMetrics;
   displayTickersRef.current = displayTickers;
 
-  const qLower = pickerQuery.trim().toLowerCase();
-
-  const groupedAddable = useMemo(() => {
-    return CHARTING_DROPDOWN_GROUPS.map((g) => {
-      const ids = g.metricIds.filter(
-        (id) =>
-          !pendingMetrics.includes(id) && (!qLower || CHARTING_METRIC_LABEL[id].toLowerCase().includes(qLower)),
-      );
-      return { ...g, ids };
-    }).filter((g) => g.ids.length > 0);
-  }, [pendingMetrics, qLower]);
-
-  const totalAddable = useMemo(() => groupedAddable.reduce((n, g) => n + g.ids.length, 0), [groupedAddable]);
-
   const openMetricPicker = useCallback(() => {
     setPickerOpen(true);
   }, []);
@@ -348,52 +327,21 @@ export function ChartingEmptyToolbar({
               ref={pickerMenuPortalRef}
               align="auto"
               placement="below"
-              className="w-[min(calc(100vw-2rem),300px)]"
+              className="w-[min(calc(100vw-2rem),520px)]"
               onRequestClose={() => {
                 setPickerOpen(false);
                 setPickerQuery("");
               }}
             >
-              <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">
-                <div className={dropdownMenuSearchHeaderClassName}>
-                  <input
-                    ref={pickerInputRef}
-                    value={pickerQuery}
-                    onChange={(e) => setPickerQuery(e.target.value)}
-                    placeholder="Search metrics…"
-                    className={dropdownMenuSearchInputClassName}
-                    aria-label="Search metrics"
-                  />
-                </div>
-                <DropdownScrollArea className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
-                  {groupedAddable.map((group) => (
-                    <div key={group.id} className="pb-2 last:pb-0">
-                      <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                        {group.label}
-                      </div>
-                      <ul className="flex flex-col gap-1">
-                        {group.ids.map((mid) => (
-                          <li key={mid}>
-                            <button
-                              type="button"
-                              role="option"
-                              className={dropdownMenuRichItemClassName()}
-                              onClick={() => addMetric(mid)}
-                            >
-                              {CHARTING_METRIC_LABEL[mid]}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </DropdownScrollArea>
-                {totalAddable === 0 ? (
-                  <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">
-                    {qLower ? "No metrics match" : "All available metrics are selected"}
-                  </p>
-                ) : null}
-              </div>
+              <ChartingMetricPickerMenu
+                excludeMetricIds={pendingMetrics}
+                query={pickerQuery}
+                onQueryChange={setPickerQuery}
+                onPick={addMetric}
+                searchInputRef={pickerInputRef}
+                emptySearchMessage="No metrics match"
+                emptyDefaultMessage="All available metrics are selected"
+              />
             </TopbarDropdownPortal>
           ) : null}
           <ChartingCompanyAddDropdown
@@ -454,51 +402,16 @@ export function ChartingEmptyToolbar({
               Add Metric
             </button>
             {pickerOpen ? (
-              <div
-                className={cn(
-                  dropdownMenuSurfaceClassName(),
-                  "absolute left-0 top-full z-[210] mt-1 w-[min(calc(100vw-2rem),300px)] overflow-hidden",
-                )}
-                role="listbox"
-              >
-                <div className={dropdownMenuSearchHeaderClassName}>
-                  <input
-                    ref={pickerInputRef}
-                    value={pickerQuery}
-                    onChange={(e) => setPickerQuery(e.target.value)}
-                    placeholder="Search metrics…"
-                    className={dropdownMenuSearchInputClassName}
-                    aria-label="Search metrics"
-                  />
-                </div>
-                <DropdownScrollArea className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
-                  {groupedAddable.map((group) => (
-                    <div key={group.id} className="pb-2 last:pb-0">
-                      <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                        {group.label}
-                      </div>
-                      <ul className="flex flex-col gap-1">
-                        {group.ids.map((mid) => (
-                          <li key={mid}>
-                            <button
-                              type="button"
-                              role="option"
-                              className={dropdownMenuRichItemClassName()}
-                              onClick={() => addMetric(mid)}
-                            >
-                              {CHARTING_METRIC_LABEL[mid]}
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </DropdownScrollArea>
-                {totalAddable === 0 ? (
-                  <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">
-                    {qLower ? "No metrics match" : "All available metrics are selected"}
-                  </p>
-                ) : null}
+              <div className="absolute left-0 top-full z-[210] mt-1 w-[min(calc(100vw-2rem),520px)]">
+                <ChartingMetricPickerMenu
+                  excludeMetricIds={pendingMetrics}
+                  query={pickerQuery}
+                  onQueryChange={setPickerQuery}
+                  onPick={addMetric}
+                  searchInputRef={pickerInputRef}
+                  emptySearchMessage="No metrics match"
+                  emptyDefaultMessage="All available metrics are selected"
+                />
               </div>
             ) : null}
           </div>

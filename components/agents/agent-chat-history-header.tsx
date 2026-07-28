@@ -11,7 +11,6 @@ import {
 } from "@/components/design-system/dropdown-menu-styles";
 import { ClearableInput } from "@/components/layout/clearable-input";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
-import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import {
   AppModalFooter,
@@ -184,7 +183,7 @@ export function AgentChatHistoryHeader({
       {showBar ? (
         <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#EBEBEC] px-4 py-3 sm:px-9">
           <div className="flex min-w-0 max-w-[min(100%,28rem)] items-center gap-0.5">
-            <h1 className={cn(STOCK_OVERVIEW_SECTION_HEADING_CLASS, "min-w-0 truncate")}>
+            <h1 className="min-w-0 truncate text-[14px] font-medium leading-5 text-[#141414]">
               {displayTitle}
             </h1>
             <button

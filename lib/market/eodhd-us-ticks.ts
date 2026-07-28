@@ -3,6 +3,7 @@ import "server-only";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type EodhdUsTick = {
   /** Unix seconds */
@@ -108,7 +109,7 @@ export async function fetchEodhdUsTicks(
       if (!traceEodhdHttp("fetchEodhdUsTicks", { symbol: sym, from, to })) {
         return { ok: false, reason: "budget" };
       }
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await fetchEodhd(url, { cache: "no-store" });
       if (res.status === 404) return { ok: false, reason: "not_found" };
       if (!res.ok) continue;
 

@@ -6,6 +6,7 @@ import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 /**
  * Corporate actions: dividends and splits.
@@ -118,7 +119,7 @@ async function fetchEodhdDividendsHistoryUncached(
 
   try {
     if (!traceEodhdHttp("fetchEodhdDividendsHistory", { symbol: sym, ...range })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_WARM } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_WARM } });
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
     if (!Array.isArray(json)) return [];
@@ -159,7 +160,7 @@ async function fetchEodhdSplitsHistoryUncached(
 
   try {
     if (!traceEodhdHttp("fetchEodhdSplitsHistory", { symbol: sym, ...range })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_WARM } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_WARM } });
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
     if (!Array.isArray(json)) return [];

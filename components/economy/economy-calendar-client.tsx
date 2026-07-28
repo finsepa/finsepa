@@ -6,7 +6,18 @@ import { CalendarDays, ChevronLeft, ChevronRight, LayoutList, Settings2 } from "
 
 import { EconomyEventHistoryModal } from "@/components/economy/economy-event-history-modal";
 import { SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
-import { ScreenerTableScroll, SCREENER_TABLE_HEADER_STICKY_CLASS } from "@/components/screener/screener-table-scroll";
+import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+} from "@/components/screener/screener-table-scroll";
 import { FormListboxSelect, type ListboxOption } from "@/components/ui/form-listbox-select";
 import type { EconomyCalendarEvent, EconomyDayColumn, EconomyWeekPayload } from "@/lib/market/economy-calendar-types";
 import {
@@ -135,6 +146,20 @@ function eventHasData(e: EconomyCalendarEvent): boolean {
   return e.estimate != null || e.actual != null || e.previous != null;
 }
 
+/** Matches toolbar listboxes elsewhere (e.g. heatmap): do not set `px-*` here — label padding is inside the component. */
+const dropdownTriggerClass =
+  "border border-solid border-[#E4E4E7] bg-white shadow-[0px_1px_1px_0px_rgba(10,10,10,0.06)] hover:bg-[#FAFAFA]";
+
+/** Grid columns aligned with screener tables (`gap-x-2`, right-aligned numeric cols). */
+const ECONOMY_LIST_GRID =
+  "grid w-full min-w-0 grid-cols-[32px_76px_minmax(0,2fr)_1fr_1fr_1fr] items-center gap-x-2";
+
+/** Same numeric styling as screener value cells — 12px end inset. */
+const ECONOMY_NUMERIC_CELL = cn(
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
+
 function EconomyEventCard({
   event,
   offsetMinutes,
@@ -187,35 +212,90 @@ function EconomyListRow({
   event,
   offsetMinutes,
   onEventClick,
+  showDivider,
 }: {
   event: EconomyCalendarEvent;
   offsetMinutes: number;
   onEventClick: (e: EconomyCalendarEvent) => void;
+  showDivider: boolean;
 }) {
   const clickable = eventHasData(event);
   return (
     <div
-      className={cn(
-        listTableRowClass,
-        "group text-[14px] leading-5 text-[#141414]",
-        clickable && "cursor-pointer",
-      )}
+      className={cn(SCREENER_TABLE_DATA_ROW_CLASS, clickable && "cursor-pointer")}
       onClick={clickable ? () => onEventClick(event) : undefined}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
-      onKeyDown={clickable ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEventClick(event); } } : undefined}
+      onKeyDown={
+        clickable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onEventClick(event);
+              }
+            }
+          : undefined
+      }
     >
-      <div className="flex justify-center">
-        <ImportanceBarsRow importance={event.importance} />
+      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div
+          className={cn(
+            ECONOMY_LIST_GRID,
+            "min-h-[60px] text-[14px] leading-5 text-[#141414]",
+            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+          )}
+        >
+          <div className={cn("flex justify-center", TABLE_START_ALIGNED_PAD_CLASS)}>
+            <ImportanceBarsRow importance={event.importance} />
+          </div>
+          <span className="min-w-0 tabular-nums">{formatEconomyClockUtc(event.instantMs, offsetMinutes)}</span>
+          <span
+            className={cn(
+              "min-w-0 truncate font-semibold",
+              clickable && "underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline",
+            )}
+          >
+            {eventTitle(event)}
+          </span>
+          <div className={ECONOMY_NUMERIC_CELL}>{formatEconomyMetric(event.estimate)}</div>
+          <div className={ECONOMY_NUMERIC_CELL}>{formatEconomyMetric(event.actual)}</div>
+          <div className={ECONOMY_NUMERIC_CELL}>{formatEconomyMetric(event.previous)}</div>
+        </div>
       </div>
-      <span className="min-w-0 tabular-nums">{formatEconomyClockUtc(event.instantMs, offsetMinutes)}</span>
-      <span className={cn(
-        "min-w-0 truncate font-semibold",
-        clickable && "underline-offset-2 decoration-[#5C5D5F] group-hover:underline",
-      )}>{eventTitle(event)}</span>
-      <div className={listNumericCellClass}>{formatEconomyMetric(event.estimate)}</div>
-      <div className={listNumericCellClass}>{formatEconomyMetric(event.actual)}</div>
-      <div className={listNumericCellClass}>{formatEconomyMetric(event.previous)}</div>
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
+    </div>
+  );
+}
+
+function EconomyListDayHeader() {
+  return (
+    <div
+      className={cn(
+        SCREENER_TABLE_HEADER_STICKY_CLASS,
+        SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+        SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+        "md:border-b-0",
+      )}
+    >
+      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div
+          className={cn(
+            ECONOMY_LIST_GRID,
+            "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+          )}
+          role="row"
+          aria-label="Impact, time, event, forecast, actual, prior"
+        >
+          {/* In-flow placeholders: `sr-only` is position:absolute and skips grid tracks. */}
+          <div aria-hidden className={cn("min-w-0", TABLE_START_ALIGNED_PAD_CLASS)} />
+          <div aria-hidden className="min-w-0" />
+          <div className="min-w-0 text-left">Event</div>
+          <div className={cn(ECONOMY_NUMERIC_CELL, "font-medium text-[#5C5D5F]")}>Forecast</div>
+          <div className={cn(ECONOMY_NUMERIC_CELL, "font-medium text-[#5C5D5F]")}>Actual</div>
+          <div className={cn(ECONOMY_NUMERIC_CELL, "font-medium text-[#5C5D5F]")}>Prior</div>
+        </div>
+      </div>
+      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
     </div>
   );
 }
@@ -348,44 +428,49 @@ function EconomyWeekGridSkeleton({
 
 function EconomyWeekListSkeleton() {
   return (
-    <div className="flex min-w-0 flex-col space-y-0" aria-busy="true" aria-label="Loading economy calendar">
-      <div className="divide-y divide-[#E4E4E7] rounded-xl border border-[#E4E4E7] bg-white">
-        {Array.from({ length: 8 }, (_, i) => (
-          <div key={i} className={cn(listTableRowClass, "gap-y-2 py-3")}>
-            <SkeletonBox className="mx-auto h-8 w-7 rounded-md" />
-            <TextSkeleton wClass="w-14" hClass="h-3.5" />
-            <TextSkeleton wClass="w-full max-w-[200px]" hClass="h-3.5" />
-            <TextSkeleton wClass="w-full" hClass="h-3.5" />
-            <TextSkeleton wClass="w-full" hClass="h-3.5" />
-            <TextSkeleton wClass="w-full" hClass="h-3.5" />
-          </div>
-        ))}
-      </div>
+    <div className="flex min-w-0 flex-col space-y-5" aria-busy="true" aria-label="Loading economy calendar">
+      {Array.from({ length: 2 }, (_, dayIdx) => (
+        <section key={dayIdx} className="w-full min-w-0">
+          <SkeletonBox className="mb-5 h-7 w-56 rounded-md" />
+          <ScreenerTableScroll>
+            <div className="bg-white">
+              <EconomyListDayHeader />
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className={SCREENER_TABLE_DATA_ROW_CLASS} aria-hidden>
+                  <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                    <div
+                      className={cn(
+                        ECONOMY_LIST_GRID,
+                        "min-h-[60px]",
+                        SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                      )}
+                    >
+                      <div className={cn("flex justify-center", TABLE_START_ALIGNED_PAD_CLASS)}>
+                        <SkeletonBox className="h-8 w-7 rounded-md" />
+                      </div>
+                      <TextSkeleton wClass="w-14" hClass="h-3.5" />
+                      <TextSkeleton wClass="w-full max-w-[200px]" hClass="h-3.5" />
+                      <div className={cn("flex justify-end", TABLE_END_ALIGNED_PAD_CLASS)}>
+                        <TextSkeleton wClass="w-12" hClass="h-3.5" />
+                      </div>
+                      <div className={cn("flex justify-end", TABLE_END_ALIGNED_PAD_CLASS)}>
+                        <TextSkeleton wClass="w-12" hClass="h-3.5" />
+                      </div>
+                      <div className={cn("flex justify-end", TABLE_END_ALIGNED_PAD_CLASS)}>
+                        <TextSkeleton wClass="w-12" hClass="h-3.5" />
+                      </div>
+                    </div>
+                  </div>
+                  {i < 3 ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
+                </div>
+              ))}
+            </div>
+          </ScreenerTableScroll>
+        </section>
+      ))}
     </div>
   );
 }
-
-/** Matches toolbar listboxes elsewhere (e.g. heatmap): do not set `px-*` here — label padding is inside the component. */
-const dropdownTriggerClass =
-  "border border-solid border-[#E4E4E7] bg-white shadow-[0px_1px_1px_0px_rgba(10,10,10,0.06)] hover:bg-[#FAFAFA]";
-
-/** Grid columns aligned with screener tables (`gap-x-2`, right-aligned numeric cols). */
-const economyListColLayout =
-  "grid grid-cols-[32px_76px_minmax(0,2fr)_1fr_1fr_1fr] gap-x-2";
-
-const listTableHeaderClass = cn(
-  economyListColLayout,
-  "min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:px-4",
-);
-
-const listTableRowClass = cn(
-  economyListColLayout,
-  "min-h-[60px] items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:px-4",
-);
-
-/** Same numeric styling as screener value cells (e.g. M Cap / PE). */
-const listNumericCellClass =
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
 
 export function EconomyCalendarClient({
   data,
@@ -750,50 +835,47 @@ export function EconomyCalendarClient({
       ) : isWeekLoading ? (
         <EconomyWeekListSkeleton />
       ) : (
-        <div className="flex min-w-0 flex-col space-y-0">
+        <div className="flex min-w-0 flex-col space-y-5">
           {totalFilteredEvents === 0 ? (
-            <div className="rounded-xl border border-[#E4E4E7] bg-white px-4 py-12 text-center text-sm text-[#5C5D5F]">
+            <div className="rounded-2xl border border-[#EBEBEC] bg-white px-4 py-12 text-center text-sm text-[#5C5D5F] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]">
               No scheduled reports
             </div>
           ) : (
-            <ScreenerTableScroll>
-              <div className="divide-y divide-[#E4E4E7] bg-white">
-                {filteredDays.map((day) => (
-                  <section key={day.date} id={`economy-list-${day.date}`} className="divide-y divide-[#E4E4E7]">
-                    <div
-                      className={cn(
-                        "px-2 py-2 text-[14px] font-semibold leading-5 text-[#141414] sm:px-4 sm:py-3",
-                        day.date === todayKey && "border-b-2 border-[#DC2626]",
-                      )}
-                    >
-                      {formatEconomyLongDateUtc(day.date)}
-                    </div>
-
-                    <div
-                      className={cn(listTableHeaderClass, day.date === todayKey && "border-t-0")}
-                      role="row"
-                      aria-label="Impact, time, event, forecast, actual, prior"
-                    >
-                      {/* In-flow placeholders: `sr-only` is position:absolute and skips grid tracks, which broke alignment. */}
-                      <div aria-hidden className="min-w-0" />
-                      <div aria-hidden className="min-w-0" />
-                      <div className="min-w-0 text-left">Event</div>
-                      <div className={cn(listNumericCellClass, "font-medium text-[#5C5D5F]")}>Forecast</div>
-                      <div className={cn(listNumericCellClass, "font-medium text-[#5C5D5F]")}>Actual</div>
-                      <div className={cn(listNumericCellClass, "font-medium text-[#5C5D5F]")}>Prior</div>
-                    </div>
-
-                    {day.events.length === 0 ? (
-                      <div className="flex min-h-[60px] items-center justify-center px-2 py-6 text-[14px] leading-5 text-[#5C5D5F] sm:px-4">
-                        No scheduled reports
-                      </div>
-                    ) : (
-                      day.events.map((ev) => <EconomyListRow key={ev.id} event={ev} offsetMinutes={offsetMinutes} onEventClick={handleEventClick} />)
+            filteredDays.map((day) => {
+              const isToday = day.date === todayKey;
+              return (
+                <section key={day.date} id={`economy-list-${day.date}`} className="w-full min-w-0">
+                  <h3
+                    className={cn(
+                      "mb-5 text-xl font-semibold tracking-tight",
+                      isToday ? "text-[#DC2626]" : "text-[#141414]",
                     )}
-                  </section>
-                ))}
-              </div>
-            </ScreenerTableScroll>
+                  >
+                    {formatEconomyLongDateUtc(day.date)}
+                  </h3>
+                  <ScreenerTableScroll>
+                    <div className="bg-white">
+                      <EconomyListDayHeader />
+                      {day.events.length === 0 ? (
+                        <div className="flex min-h-[60px] items-center justify-center px-4 py-6 text-[14px] leading-5 text-[#5C5D5F]">
+                          No scheduled reports
+                        </div>
+                      ) : (
+                        day.events.map((ev, i) => (
+                          <EconomyListRow
+                            key={ev.id}
+                            event={ev}
+                            offsetMinutes={offsetMinutes}
+                            onEventClick={handleEventClick}
+                            showDivider={i < day.events.length - 1}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </ScreenerTableScroll>
+                </section>
+              );
+            })
           )}
         </div>
       )}

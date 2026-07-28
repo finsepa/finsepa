@@ -9,6 +9,7 @@ export type StockTargetPricePayload = {
   consensusTarget: number | null;
   wallStreetTarget: number | null;
   meanTarget: number | null;
+  medianTarget: number | null;
   highTarget: number | null;
   lowTarget: number | null;
   fairValue: number | null;

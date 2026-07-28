@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type CryptoFundamentalsMeta = {
   marketCapUsd: number | null;
@@ -223,7 +224,7 @@ async function fetchEodhdCryptoFundamentalsMetaHttp(eodhdCryptoSymbol: string): 
 
   try {
     if (!traceEodhdHttp("fetchEodhdCryptoFundamentalsMeta", { symbol: eodhdCryptoSymbol })) return null;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetchEodhd(url, { cache: "no-store" });
     if (!res.ok) return null;
     const root = (await res.json()) as Record<string, unknown> | null;
     if (!root || typeof root !== "object" || "error" in root) return null;

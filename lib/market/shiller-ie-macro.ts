@@ -7,6 +7,7 @@ import { REVALIDATE_STATIC_DAY, REVALIDATE_WARM } from "@/lib/data/cache-policy"
 import { getEodhdApiKey } from "@/lib/env/server";
 import { fetchBlsCpiURawSeriesCached } from "@/lib/market/bls-cpi-macro";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 /**
  * Long-horizon S&P 500 valuation and earnings series from Robert Shiller’s *Irrational Exuberance* dataset (`ie_data.xls`).
@@ -145,7 +146,7 @@ async function fetchSpxDailyBars(fromYmd: string, toYmd: string): Promise<SpxBar
   const url = `https://eodhd.com/api/eod/${encodeURIComponent(SPX_EODHD_SYMBOL)}?${params.toString()}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_WARM } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_WARM } });
     if (!res.ok) return [];
     const data = (await res.json()) as unknown;
     if (!Array.isArray(data)) return [];

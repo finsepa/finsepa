@@ -8,6 +8,7 @@ import {
   eodhdCalendarCodeFromTicker,
 } from "@/lib/notifications/ticker-notify-eligibility";
 import { EARNINGS_NOTIFY_LOOKBACK_DAYS } from "@/lib/notifications/earnings-release-detect";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 function earningsCalendarReportDateWindow(
   lookbackDays = EARNINGS_NOTIFY_LOOKBACK_DAYS,
@@ -90,7 +91,7 @@ export async function fetchEarningsCalendarBatch(
     if (!traceEodhdHttp("fetchEarningsCalendarBatch", { count: canonicalTickers.length })) {
       return { rows: [], requests: 0 };
     }
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetchEodhd(url, { cache: "no-store" });
     if (!res.ok) return { rows: [], requests: 1 };
     const json = (await res.json()) as { earnings?: unknown };
     const arr = json?.earnings;

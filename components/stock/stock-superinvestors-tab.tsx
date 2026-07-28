@@ -16,6 +16,7 @@ import {
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
   TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import {
@@ -83,7 +84,7 @@ function SuperinvestorsTableHeader() {
           <div className="text-right">% of portfolio</div>
           <div className="text-right">Recent activity</div>
           <div className="text-right">Shares</div>
-          <div className="text-right">Value</div>
+          <div className={cn("text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Value</div>
         </div>
       </div>
       <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
@@ -121,7 +122,7 @@ function SuperinvestorsTableSkeleton({ rows = 3 }: { rows?: number }) {
               <div className="flex justify-end">
                 <SkeletonBox className="h-4 w-20 rounded" />
               </div>
-              <div className="flex justify-end">
+              <div className={cn("flex justify-end", TABLE_END_ALIGNED_PAD_CLASS)}>
                 <SkeletonBox className="h-4 w-16 rounded" />
               </div>
             </div>
@@ -189,7 +190,12 @@ function SuperinvestorRow({
             {position.shares != null ? formatSharesCompact(position.shares) : "—"}
           </div>
 
-          <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#141414]">
+          <div
+            className={cn(
+              "text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#141414]",
+              TABLE_END_ALIGNED_PAD_CLASS,
+            )}
+          >
             {formatUsdCompactSigDigits(position.valueUsd, 4)}
           </div>
         </Link>

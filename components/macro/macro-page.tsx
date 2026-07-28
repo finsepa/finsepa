@@ -24,12 +24,9 @@ import {
   chartingRailRowClass,
   companyRailListClass,
   companyRailRowClass,
-  companyRailScrollClass,
-  companyRailSectionsClass,
   companyRailTitleClass,
 } from "@/components/charting/charting-rail-row-styles";
 import { SIDEBAR_OUTER_EXPANDED_PX } from "@/components/layout/sidebar-layout-context";
-import { SHELL_DESKTOP_PANEL_BG_CLASS } from "@/components/design-system/card-surface-styles";
 import {
   DEFAULT_MACRO_CHART_ID,
   groupMacroChartCards,
@@ -56,6 +53,16 @@ const BTC_ETF_RANGE_OPTIONS = BTC_ETF_FLOW_RANGE_IDS.map((id) => ({
 }));
 
 const MACRO_WORKSPACE_CHART_HEIGHT_PX = 420;
+
+/** Same white card chrome as Charting / Comparison {@link CompanyRailCard}. */
+const macroRailCardClass =
+  "flex w-full flex-col overflow-hidden rounded-2xl border border-[#EBEBEC] bg-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]";
+
+const macroRailBodyClass =
+  "flex max-h-[calc(100dvh-5rem)] flex-col overflow-y-auto overscroll-y-contain p-2";
+
+/** Matches Charting Company / Metric divider. */
+const macroRailDividerClass = "mx-3 my-2 h-px shrink-0 bg-[#EFEFEF]";
 
 export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) {
   const router = useRouter();
@@ -150,75 +157,63 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
 
   const changeDelta = windowedModel?.change?.abs ?? null;
 
-  return (
-    <div className="flex min-w-0 max-md:flex-col md:absolute md:inset-0 md:overflow-hidden">
-      <aside
-        className={cn(
-          "hidden min-h-0 shrink-0 flex-col overflow-hidden border-r border-[#E4E4E7] md:flex",
-          SHELL_DESKTOP_PANEL_BG_CLASS,
-        )}
-        style={{ width: SIDEBAR_OUTER_EXPANDED_PX }}
-        aria-label="Macro charts"
-      >
-        <div className={companyRailScrollClass}>
-          <div className={companyRailSectionsClass}>
-            {sections.map((section) => (
-              <div key={section.id}>
-                <div className={companyRailRowClass}>
-                  <span className={companyRailTitleClass}>
-                    <span className="truncate">{section.title}</span>
-                  </span>
-                </div>
-                <div className={companyRailListClass}>
-                  {section.items.map((item) => {
-                    const active = item.id === selectedId;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => selectChart(item.id)}
-                        aria-current={active ? "true" : undefined}
-                        className={cn(
-                          chartingRailRowClass,
-                          "w-full text-left",
-                          active && "bg-[#F4F4F5]",
-                        )}
-                      >
-                        <span className="min-w-0 flex-1 truncate">{item.title}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+  const chartList = (
+    <div className="flex flex-col">
+      {sections.map((section, index) => (
+        <div key={section.id}>
+          {index > 0 ? <div className={macroRailDividerClass} aria-hidden /> : null}
+          <div className={companyRailRowClass}>
+            <span className={companyRailTitleClass}>
+              <span className="truncate">{section.title}</span>
+            </span>
+          </div>
+          <div className={companyRailListClass}>
+            {section.items.map((item) => {
+              const active = item.id === selectedId;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => selectChart(item.id)}
+                  aria-current={active ? "true" : undefined}
+                  className={cn(chartingRailRowClass, "w-full text-left", active && "bg-[#F4F4F5]")}
+                >
+                  <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      </aside>
+      ))}
+    </div>
+  );
 
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain">
-        <div className="min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <h1 className="text-[20px] font-semibold leading-8 tracking-tight text-[#141414]">
-              {selected?.title ?? "Macro"}
-            </h1>
-            <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-              <TabSwitcher
-                size="sm"
-                options={rangeOptions}
-                value={rangeId}
-                onChange={setRangeId}
-                aria-label="Date range"
-              />
-              {selected?.id !== "crypto_fear_greed" ? (
-                <MultichartVisualSwitcher
-                  variant="icon"
-                  value={chartVisual}
-                  onChange={(next) => setChartVariant(next === "bar" ? "bar" : "area")}
-                />
-              ) : null}
-            </div>
-          </div>
+  return (
+    <div className="flex min-w-0 flex-col gap-5 px-4 py-4 sm:px-9 sm:py-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
+        <h1 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:flex-1">
+          Macro
+        </h1>
+        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
+          <TabSwitcher
+            size="sm"
+            options={rangeOptions}
+            value={rangeId}
+            onChange={setRangeId}
+            aria-label="Date range"
+          />
+          {selected?.id !== "crypto_fear_greed" ? (
+            <MultichartVisualSwitcher
+              variant="icon"
+              value={chartVisual}
+              onChange={(next) => setChartVariant(next === "bar" ? "bar" : "area")}
+            />
+          ) : null}
+        </div>
+      </div>
 
+      <div className="flex items-start gap-5">
+        <div className="min-w-0 flex-1 space-y-5">
           {sorted.length > 0 ? (
             <label className="flex flex-col gap-1.5 md:hidden">
               <span className="text-[12px] font-medium leading-4 text-[#5C5D5F]">Chart</span>
@@ -248,6 +243,9 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
           ) : selected && windowedModel ? (
             <div className="min-w-0">
               <div className="mb-4 min-w-0">
+                <h2 className="mb-2 text-xl font-semibold leading-7 tracking-tight text-[#141414]">
+                  {selected.title}
+                </h2>
                 {latestValue != null && Number.isFinite(latestValue) ? (
                   <div className="flex min-w-0 flex-col items-start gap-0.5">
                     <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -299,6 +297,18 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
             </div>
           ) : null}
         </div>
+
+        {sorted.length > 0 ? (
+          <aside
+            className="hidden w-[240px] shrink-0 self-start md:block"
+            style={{ maxWidth: `${SIDEBAR_OUTER_EXPANDED_PX}px` }}
+            aria-label="Macro charts"
+          >
+            <div className={macroRailCardClass}>
+              <div className={macroRailBodyClass}>{chartList}</div>
+            </div>
+          </aside>
+        ) : null}
       </div>
     </div>
   );

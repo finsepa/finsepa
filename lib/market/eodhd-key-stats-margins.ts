@@ -34,7 +34,7 @@ function firstNumFromSections(sections: (Record<string, unknown> | null | undefi
 export type KeyStatsMarginsRow = { label: string; value: string };
 
 /**
- * Margin / ratio fields. "Free Cash Flow" row is **FCF ÷ revenue** (margin %), same as charting derived metrics.
+ * Margin / ratio fields. "Free Cash Flow Margin" row is **FCF ÷ revenue** (margin %), same as charting derived metrics.
  */
 export async function fetchEodhdKeyStatsMargins(
   ticker: string,
@@ -163,7 +163,7 @@ export async function fetchEodhdKeyStatsMargins(
     { label: "EBITDA Margin", value: ebitda != null ? formatPercentMetric(ebitda) : "—" },
     { label: "Pre-Tax Margin", value: preTax != null ? formatPercentMetric(preTax) : "—" },
     { label: "Net Margin", value: net != null ? formatPercentMetric(net) : "—" },
-    { label: "Free Cash Flow", value: fcfMargin != null ? formatPercentMetric(fcfMargin) : "—" },
+    { label: "Free Cash Flow Margin", value: fcfMargin != null ? formatPercentMetric(fcfMargin) : "—" },
   ];
 
   return { rows };

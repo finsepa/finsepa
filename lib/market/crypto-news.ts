@@ -9,6 +9,7 @@ import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver"
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 import { extractImageUrlFromPlainText, pickBestImageUrl } from "@/lib/market/stock-news-images";
 import { fetchOgImageFromArticleUrl } from "@/lib/market/stock-news-og";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 const SUMMARY_MAX = 280;
 const MAX_TAGS = 5;
@@ -68,7 +69,7 @@ async function loadCryptoNewsUncached(
   let data: unknown;
   try {
     if (!traceEodhdHttp("loadCryptoNewsUncached", { symbol: meta.eodhdSymbol })) return [];
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetchEodhd(url, { cache: "no-store" });
     if (!res.ok) return [];
     data = await res.json();
   } catch {

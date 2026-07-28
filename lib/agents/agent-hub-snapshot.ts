@@ -5,6 +5,11 @@
 export {
   HUB_SNAPSHOT_KEY,
   newsHubSegment,
+  earningsWeekHubSegment,
+  economyWeekHubSegment,
+  macroHubSegment,
+  hubEarningsWeekKey,
+  hubEconomyWeekKey,
   type HubSnapshotKey,
 } from "@/lib/market/hub-snapshot-keys";
 export { readHubSnapshot } from "@/lib/market/hub-snapshot-store";

@@ -229,8 +229,8 @@ function DividendsScheduleTables({
     <>
       <div className="space-y-0 sm:hidden">
         {months.map((month) => (
-          <section key={month.monthKey} className="mb-10 last:mb-0">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
+          <section key={month.monthKey} className="mb-5 last:mb-0">
+            <div className="mb-5 flex flex-wrap items-center gap-3">
               <h3 className="text-xl font-semibold tracking-tight text-[#141414]">{month.label}</h3>
               {month.totalUsd > 0 ? (
                 <span className="rounded-md bg-[#DCFCE7] px-2 py-0.5 text-[13px] font-semibold tabular-nums leading-5 text-[#16A34A]">
@@ -251,10 +251,10 @@ function DividendsScheduleTables({
         ))}
       </div>
 
-      <div className="hidden space-y-10 sm:block">
+      <div className="hidden space-y-5 sm:block">
         {months.map((month) => (
           <section key={month.monthKey} className="w-full min-w-0">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="mb-5 flex flex-wrap items-center gap-3">
               <h3 className="text-xl font-semibold tracking-tight text-[#141414]">{month.label}</h3>
               {month.totalUsd > 0 ? (
                 <span className="rounded-md bg-[#DCFCE7] px-2 py-0.5 text-[13px] font-semibold tabular-nums leading-5 text-[#16A34A]">

@@ -157,7 +157,7 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
   if (!showChart) return null;
 
   return (
-    <section className="mb-10 w-full min-w-0 max-w-full overflow-x-hidden">
+    <section className="mb-5 w-full min-w-0 max-w-full overflow-x-hidden">
       <div className="relative flex w-full min-w-0 flex-col overflow-visible" style={{ height: CHART_HEIGHT_PX }}>
         <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
           <div ref={plotAreaRef} className="relative min-h-0 min-w-0 flex-1" onPointerLeave={clearHover}>

@@ -14,6 +14,7 @@ import { readHubSnapshot } from "@/lib/market/hub-snapshot-store";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getTop500Universe } from "@/lib/screener/top500-companies";
 import type { NewsItem, NewsTab } from "@/lib/news/news-types";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 const PAGE_SIZE = 25;
 const PER_SYMBOL_LIMIT = 6;
@@ -68,7 +69,7 @@ async function fetchEodhdNewsForSymbol(eodhdSymbol: string): Promise<Record<stri
 
   try {
     if (!traceEodhdHttp("fetchEodhdNewsForSymbol", { symbol: eodhdSymbol })) return [];
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetchEodhd(url, { cache: "no-store" });
     if (!res.ok) return [];
     const data = (await res.json()) as unknown;
     if (data && typeof data === "object" && "error" in data && (data as { error?: string }).error) return [];

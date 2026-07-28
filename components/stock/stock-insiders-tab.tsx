@@ -18,6 +18,7 @@ import {
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
   TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import {
@@ -297,7 +298,7 @@ function InsiderRow({
             SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
           )}
         >
-          <div className={cn("text-left tabular-nums text-[#141414]", TABLE_START_ALIGNED_PAD_CLASS)}>
+          <div className={cn("text-left font-medium tabular-nums text-[#141414]", TABLE_START_ALIGNED_PAD_CLASS)}>
             {formatDisplayDate(row.transactionDate)}
           </div>
           <div className="min-w-0 truncate text-right text-[#141414]" title={row.ownerName}>
@@ -316,7 +317,12 @@ function InsiderRow({
           <div className="min-w-0 w-full text-right font-['Inter'] font-normal tabular-nums text-[#141414]">
             {row.price != null && Number.isFinite(row.price) ? `$${row.price.toFixed(2)}` : "-"}
           </div>
-          <div className="min-w-0 w-full text-right font-['Inter'] font-normal tabular-nums text-[#141414]">
+          <div
+            className={cn(
+              "min-w-0 w-full text-right font-['Inter'] font-normal tabular-nums text-[#141414]",
+              TABLE_END_ALIGNED_PAD_CLASS,
+            )}
+          >
             {row.value != null && Number.isFinite(row.value) ? formatCompactUsd(row.value) : "-"}
           </div>
         </div>
@@ -486,7 +492,7 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
                 <div className="min-w-0 w-full text-right">Transaction type</div>
                 <div className="min-w-0 w-full text-right">Number of shares</div>
                 <div className="min-w-0 w-full text-right">Price</div>
-                <div className="min-w-0 w-full text-right">Value</div>
+                <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Value</div>
               </div>
             </div>
             <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />

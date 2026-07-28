@@ -8,6 +8,7 @@ import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import type { InsiderTransactionKind, InsiderTransactionRow } from "@/lib/market/insider-transactions-types";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type { InsiderTransactionKind, InsiderTransactionRow } from "@/lib/market/insider-transactions-types";
 
@@ -231,7 +232,7 @@ async function fetchEodhdInsiderTransactionsUncached(
 
   try {
     if (!traceEodhdHttp("fetchEodhdInsiderTransactions", { code, limit, from, to })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_WARM_LONG } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_WARM_LONG } });
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
     const rows = Array.isArray(json) ? json : (json as { data?: unknown })?.data;

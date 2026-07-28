@@ -711,7 +711,7 @@ function PortfolioHoldingsTableInner({
                     ) : null}
                   </div>
                   {expanded ? (
-                    <div className="border-y-2 border-solid border-[#EFEFEF] bg-white">
+                    <div className="min-w-0 max-w-full overflow-hidden border-y-2 border-solid border-[#EFEFEF] bg-white">
                       <PortfolioHoldingTransactionsPanel
                         holding={h}
                         transactions={transactions}

@@ -4,6 +4,7 @@ import { unstable_cache } from "next/cache";
 
 import {
   STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC,
+  STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC,
   stock1DLiveSessionMinuteBucketUnix,
 } from "@/lib/chart/stock-1d-live-session-chart";
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
@@ -169,46 +170,72 @@ export type Stock1DRestBase = {
   rest1hCount: number;
 };
 
+async function fetchStock1DRestBaseUncached(ticker: string, sessionYmd: string): Promise<Stock1DRestBase> {
+  const timeZone = STOCK_DISPLAY_TZ;
+  const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
+  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
+  const toSec = Math.min(Math.floor(Date.now() / 1000), closeSec);
+
+  const [oneMin, fiveMin] = await Promise.all([
+    fetchStockSessionRestIntradayBucketed(ticker, sessionYmd, openSec, closeSec, toSec, "1m", timeZone),
+    fetchStockSessionRestIntradayBucketed(ticker, sessionYmd, openSec, closeSec, toSec, "5m", timeZone),
+  ]);
+
+  // Base = 5m (reach); 1m overwrites its buckets for density (mergeWsMinuteBars: 2nd arg = base, 1st wins).
+  let points = mergeWsMinuteBarsWithIntradayBackfill(oneMin, fiveMin, sessionYmd);
+  let rest1hCount = 0;
+  if (!points.length) {
+    const oneHour = await fetchStockSessionRestIntradayBucketed(
+      ticker,
+      sessionYmd,
+      openSec,
+      closeSec,
+      toSec,
+      "1h",
+      timeZone,
+    );
+    rest1hCount = oneHour.length;
+    points = oneHour;
+  }
+
+  return { points, rest1mCount: oneMin.length, rest5mCount: fiveMin.length, rest1hCount };
+}
+
 /**
  * Unconditional REST base for the live 1D chart (allowlist: AAPL, NVDA, QQQ, SPY) — mirrors the
  * BTC pipeline. EODHD intraday lags for the forming session, so blend 5m (reach) + 1m (density,
  * wins on its buckets); fall back to 1h only when both are empty. Cached per (ticker, session) so
  * closed minutes are byte-stable across reloads while fresh WS bars (read uncached) supply the tail.
+ *
+ * Empty bases are NOT cached — otherwise a temporary EODHD miss poisons the hour and WS holes
+ * never get REST repair.
  */
-const getStock1DRestBaseCached = unstable_cache(
+const getStock1DRestBaseCachedNonEmpty = unstable_cache(
   async (ticker: string, sessionYmd: string): Promise<Stock1DRestBase> => {
-    const timeZone = STOCK_DISPLAY_TZ;
-    const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
-    const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
-    const toSec = Math.min(Math.floor(Date.now() / 1000), closeSec);
-
-    const [oneMin, fiveMin] = await Promise.all([
-      fetchStockSessionRestIntradayBucketed(ticker, sessionYmd, openSec, closeSec, toSec, "1m", timeZone),
-      fetchStockSessionRestIntradayBucketed(ticker, sessionYmd, openSec, closeSec, toSec, "5m", timeZone),
-    ]);
-
-    // Base = 5m (reach); 1m overwrites its buckets for density (mergeWsMinuteBars: 2nd arg = base, 1st wins).
-    let points = mergeWsMinuteBarsWithIntradayBackfill(oneMin, fiveMin, sessionYmd);
-    let rest1hCount = 0;
-    if (!points.length) {
-      const oneHour = await fetchStockSessionRestIntradayBucketed(
-        ticker,
-        sessionYmd,
-        openSec,
-        closeSec,
-        toSec,
-        "1h",
-        timeZone,
-      );
-      rest1hCount = oneHour.length;
-      points = oneHour;
+    const base = await fetchStock1DRestBaseUncached(ticker, sessionYmd);
+    if (!base.points.length) {
+      // Throw so Next Data Cache does not store an empty payload for REVALIDATE_HOT.
+      throw new Error("STOCK_1D_REST_BASE_EMPTY");
     }
-
-    return { points, rest1mCount: oneMin.length, rest5mCount: fiveMin.length, rest1hCount };
+    return base;
   },
-  ["stock-1d-rest-base-v1"],
+  ["stock-1d-rest-base-v2"],
   { revalidate: REVALIDATE_HOT },
 );
+
+async function getStock1DRestBaseCached(ticker: string, sessionYmd: string): Promise<Stock1DRestBase> {
+  try {
+    return await getStock1DRestBaseCachedNonEmpty(ticker, sessionYmd);
+  } catch (err) {
+    if (err instanceof Error && err.message === "STOCK_1D_REST_BASE_EMPTY") {
+      if (process.env.NODE_ENV === "development") {
+        console.info("[live-1d-ws] REST base empty (uncached)", { ticker, sessionYmd });
+      }
+      return { points: [], rest1mCount: 0, rest5mCount: 0, rest1hCount: 0 };
+    }
+    throw err;
+  }
+}
 
 /** REST fills missing buckets; WS rows overwrite on the same bucket_unix. */
 export function mergeWsMinuteBarsWithIntradayBackfill(
@@ -250,11 +277,11 @@ type Stock1DBucketedSeries = {
 };
 
 /**
- * Downsample merged 1m bars to 60s output buckets (latest close per bucket) and emit ONLY real
- * bars — no unbounded interior forward-fill. The series may be extended by at most one synthetic
- * point that duplicates the latest close into the current bucket, and only when the last real bar
- * is exactly the immediately preceding bucket. Mirrors the BTC `buildBucketedSeries` contract so a
- * stale WS store never produces 20–40 minute flat synthetic runs.
+ * Downsample merged 1m bars to 60s output buckets (latest close per bucket).
+ * Forward-fill only gaps ≤ {@link STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC} so 1–2 missing
+ * minutes stay dense; larger holes stay as gaps (chart whitespace breaks the line — never a
+ * multi-hour straight chord). At most one synthetic point into the current bucket when the last
+ * real bar is the immediately preceding minute.
  */
 function buildStock1DBucketedSeries(
   bars: readonly StockChartPoint[],
@@ -281,12 +308,22 @@ function buildStock1DBucketedSeries(
   }
 
   const buckets = Array.from(latestByBucket.keys()).sort((a, b) => a - b);
-  const points: StockChartPoint[] = buckets.map((t) => ({
-    time: t,
-    value: latestByBucket.get(t)!,
-    sessionDate: sessionYmd,
-    timeZone,
-  }));
+  const points: StockChartPoint[] = [];
+  for (let i = 0; i < buckets.length; i += 1) {
+    const t = buckets[i]!;
+    const value = latestByBucket.get(t)!;
+    if (i > 0) {
+      const prevT = buckets[i - 1]!;
+      const prevValue = latestByBucket.get(prevT)!;
+      const gap = t - prevT;
+      if (gap > bucketSec && gap <= STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC) {
+        for (let fillT = prevT + bucketSec; fillT < t; fillT += bucketSec) {
+          points.push({ time: fillT, value: prevValue, sessionDate: sessionYmd, timeZone });
+        }
+      }
+    }
+    points.push({ time: t, value, sessionDate: sessionYmd, timeZone });
+  }
 
   const realCount = points.length;
   let syntheticCount = 0;

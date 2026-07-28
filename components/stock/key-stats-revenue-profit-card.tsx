@@ -18,7 +18,7 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   "Net Income": "net_income",
   EBITDA: "ebitda",
   EPS: "eps",
-  FCF: "free_cash_flow",
+  "Free Cash Flow": "free_cash_flow",
   CapEx: "capital_expenditures",
 };
 
@@ -61,7 +61,7 @@ const PLACEHOLDER_ROWS: Row[] = [
   { label: "Net Income", value: "—" },
   { label: "EBITDA", value: "—" },
   { label: "EPS", value: "—" },
-  { label: "FCF", value: "—" },
+  { label: "Free Cash Flow", value: "—" },
   { label: "CapEx", value: "—" },
 ];
 

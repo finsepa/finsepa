@@ -746,6 +746,10 @@ export function liveSpotToMinuteBar(
 /**
  * Option B tail pin: adjust only the final minute bucket from the header live spot.
  * Server-normalized WS history is unchanged except the last point (replace or extend one bucket).
+ *
+ * Never span more than {@link STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC} from the last real bar —
+ * a longer gap means missing minute data; connecting to `now` draws a false straight chord.
+ * (The chart layer also breaks large gaps with whitespace; this keeps the pin itself honest.)
  */
 export function pinLiveWsMinuteChartTail(
   points: readonly StockChartPoint[],
@@ -768,6 +772,11 @@ export function pinLiveWsMinuteChartTail(
   const bucketTime = stock1DLiveSessionMinuteBucketUnix(sessionYmd, nowSec, timeZone);
   const last = points[points.length - 1]!;
   if (bucketTime < last.time) return [...points];
+
+  const gapSec = bucketTime - last.time;
+  if (gapSec > STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC) {
+    return [...points];
+  }
 
   const tail: StockChartPoint = {
     time: bucketTime,
@@ -896,6 +905,10 @@ export function pinLiveSessionChartPointsToSpot(
   const lastIdx = out.length - 1;
   const last = out[lastIdx]!;
   if (!pinned) {
+    const gapSec = bucketTime - last.time;
+    if (gapSec > STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC) {
+      return out.sort((a, b) => a.time - b.time);
+    }
     out.push({
       time: bucketTime,
       value: liveSpotUsd,
@@ -905,12 +918,15 @@ export function pinLiveSessionChartPointsToSpot(
   } else if (last.time === bucketTime) {
     out[lastIdx] = { ...last, value: liveSpotUsd };
   } else if (last.time < bucketTime) {
-    out.push({
-      time: bucketTime,
-      value: liveSpotUsd,
-      sessionDate: sessionYmd,
-      timeZone,
-    });
+    const gapSec = bucketTime - last.time;
+    if (gapSec <= STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC) {
+      out.push({
+        time: bucketTime,
+        value: liveSpotUsd,
+        sessionDate: sessionYmd,
+        timeZone,
+      });
+    }
   }
   return out.sort((a, b) => a.time - b.time);
 }
@@ -1125,6 +1141,33 @@ export function liveSessionSpanWhitespaceData(
   const out: Stock1DLiveSessionLinePoint[] = [];
   for (let t = openSec; t <= closeSec; t += interval) {
     out.push({ time: t as UTCTimestamp });
+  }
+  return out;
+}
+
+/**
+ * Map valued 1D session points to lightweight-charts line data, inserting whitespace after any
+ * gap larger than {@link STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC}. Without this, LineSeries
+ * draws a straight chord across missing WS/REST minutes (looks like a confident wrong path).
+ */
+export function stock1DLiveSessionLineDataWithGapBreaks(
+  points: readonly { time: number; value: number }[],
+  maxConnectGapSec: number = STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC,
+): Array<{ time: UTCTimestamp; value: number } | { time: UTCTimestamp }> {
+  const out: Array<{ time: UTCTimestamp; value: number } | { time: UTCTimestamp }> = [];
+  for (let i = 0; i < points.length; i += 1) {
+    const cur = points[i]!;
+    if (i > 0) {
+      const prev = points[i - 1]!;
+      const gap = cur.time - prev.time;
+      if (gap > maxConnectGapSec) {
+        const breakAt = prev.time + STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
+        if (breakAt < cur.time) {
+          out.push({ time: breakAt as UTCTimestamp });
+        }
+      }
+    }
+    out.push({ time: cur.time as UTCTimestamp, value: cur.value });
   }
   return out;
 }

@@ -3,6 +3,7 @@
 import type { NewsItem } from "@/lib/news/news-types";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { logoDevStockLogoUrl } from "@/lib/screener/company-logo-url";
+import { NewsSourceLogo } from "@/components/news/news-source-logo";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
   DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
@@ -68,7 +69,10 @@ function NewsRowCells({ item }: { item: NewsItem }) {
           </span>
         </div>
       </div>
-      <div className="text-[13px] leading-5 text-[#5C5D5F]">{item.source}</div>
+      <div className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 text-[#5C5D5F]">
+        {item.url ? <NewsSourceLogo articleUrl={item.url} /> : null}
+        <span className="truncate font-medium text-[#141414]">{item.source}</span>
+      </div>
     </>
   );
 }

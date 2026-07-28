@@ -1,44 +1,43 @@
 import { SkeletonBox } from "@/components/markets/skeleton";
 import { SIDEBAR_OUTER_EXPANDED_PX } from "@/components/layout/sidebar-layout-context";
-import { SHELL_DESKTOP_PANEL_BG_CLASS } from "@/components/design-system/card-surface-styles";
-import { cn } from "@/lib/utils";
 
 export default function Loading() {
   return (
-    <div className="flex min-w-0 max-md:flex-col md:absolute md:inset-0 md:overflow-hidden">
-      <aside
-        className={cn(
-          "hidden min-h-0 shrink-0 flex-col overflow-hidden border-r border-[#E4E4E7] md:flex",
-          SHELL_DESKTOP_PANEL_BG_CLASS,
-        )}
-        style={{ width: SIDEBAR_OUTER_EXPANDED_PX }}
-        aria-hidden
-      >
-        <div className="px-3 pt-3 pb-2">
-          <SkeletonBox className="h-4 w-16 rounded" />
+    <div className="flex min-w-0 flex-col gap-5 px-4 py-4 sm:px-9 sm:py-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
+        <SkeletonBox className="h-9 w-28 rounded-md sm:flex-1" />
+        <div className="flex flex-wrap gap-2 sm:justify-end">
+          <SkeletonBox className="h-9 w-[180px] rounded-[10px]" />
+          <SkeletonBox className="h-9 w-20 rounded-[10px]" />
         </div>
-        <div className="flex flex-col gap-1 px-2 pb-2">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <SkeletonBox key={i} className="h-9 w-full rounded-lg" />
-          ))}
-        </div>
-      </aside>
+      </div>
 
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-        <div className="min-w-0 space-y-5 px-4 py-4 sm:px-9 sm:py-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <SkeletonBox className="h-8 w-40 rounded-md" />
-            <div className="flex flex-wrap gap-2">
-              <SkeletonBox className="h-9 w-[180px] rounded-[10px]" />
-              <SkeletonBox className="h-9 w-20 rounded-[10px]" />
+      <div className="flex items-start gap-5">
+        <div className="min-w-0 flex-1">
+          <SkeletonBox className="mb-2 h-7 w-40 rounded" />
+          <SkeletonBox className="h-9 w-36 rounded" />
+          <SkeletonBox className="mt-1 h-4 w-48 rounded" />
+          <SkeletonBox className="mt-6 h-[420px] w-full rounded-md" />
+        </div>
+
+        <aside
+          className="hidden w-[240px] shrink-0 self-start md:block"
+          style={{ maxWidth: `${SIDEBAR_OUTER_EXPANDED_PX}px` }}
+          aria-hidden
+        >
+          <div className="overflow-hidden rounded-2xl border border-[#EBEBEC] bg-white p-2 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]">
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 3 }).map((_, section) => (
+                <div key={section} className="flex flex-col gap-0.5">
+                  <SkeletonBox className="mb-1 ml-3 h-5 w-16 rounded" />
+                  {Array.from({ length: 4 }).map((_, row) => (
+                    <SkeletonBox key={row} className="h-9 w-full rounded-lg" />
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
-          <div className="min-w-0">
-            <SkeletonBox className="h-9 w-36 rounded" />
-            <SkeletonBox className="mt-1 h-4 w-48 rounded" />
-            <SkeletonBox className="mt-6 h-[420px] w-full rounded-md" />
-          </div>
-        </div>
+        </aside>
       </div>
     </div>
   );

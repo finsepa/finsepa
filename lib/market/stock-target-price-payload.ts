@@ -30,6 +30,7 @@ const EMPTY: StockTargetPricePayload = {
   consensusTarget: null,
   wallStreetTarget: null,
   meanTarget: null,
+  medianTarget: null,
   highTarget: null,
   lowTarget: null,
   fairValue: null,
@@ -212,13 +213,14 @@ export function buildStockTargetPricePayload(root: Record<string, unknown> | nul
 
   const wallStreetTarget = num(ar?.WallStreetTargetPrice ?? hl?.WallStreetTargetPrice);
   const meanTarget = num(ar?.MeanTargetPrice ?? ar?.MeanPriceTarget);
+  const medianTarget = num(ar?.MedianTargetPrice ?? ar?.MedianPriceTarget);
   const genericTarget = num(ar?.TargetPrice ?? hl?.TargetPrice);
 
   const consensusTarget = firstTarget(
     wallStreetTarget,
     meanTarget,
     genericTarget,
-    num(ar?.MedianTargetPrice),
+    medianTarget,
     num(ar?.ConsensusTargetPrice),
   );
 
@@ -255,6 +257,7 @@ export function buildStockTargetPricePayload(root: Record<string, unknown> | nul
     consensusTarget,
     wallStreetTarget,
     meanTarget,
+    medianTarget,
     highTarget,
     lowTarget,
     fairValue,

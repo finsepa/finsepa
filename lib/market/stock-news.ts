@@ -10,6 +10,7 @@ import { extractImageUrlFromPlainText, pickBestImageUrl } from "@/lib/market/sto
 import { fetchOgImageFromArticleUrl } from "@/lib/market/stock-news-og";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 const SUMMARY_MAX = 280;
 const MAX_TAGS = 5;
@@ -76,7 +77,7 @@ export async function loadStockNewsPage(
   let data: unknown;
   try {
     if (!traceEodhdHttp("loadStockNewsPage", { symbol: s, offset: safeOffset, limit: safeLimit })) return [];
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetchEodhd(url, { cache: "no-store" });
     if (!res.ok) return [];
     data = await res.json();
   } catch {

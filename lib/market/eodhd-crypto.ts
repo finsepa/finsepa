@@ -11,6 +11,7 @@ import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { fetchEodhdCryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
 import type { EodhdDailyBar, EodhdOpenOnDateResult } from "@/lib/market/eodhd-eod";
 import { readCryptoMarketCapSnapshot, upsertCryptoMarketCapSnapshot } from "@/lib/market/crypto-market-cap-snapshot";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 /**
  * Last session on or before calendar {@link ymd} using crypto daily bars (close).
@@ -71,7 +72,7 @@ export async function fetchEodhdCryptoDailyBars(eodhdCryptoSymbol: string, from:
 
   try {
     if (!traceEodhdHttp("fetchEodhdCryptoDailyBars", { symbol: eodhdCryptoSymbol })) return null;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetchEodhd(url, { cache: "no-store" });
     if (!res.ok) return null;
     const data = (await res.json()) as unknown;
 

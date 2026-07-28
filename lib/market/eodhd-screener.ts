@@ -6,6 +6,7 @@ import { REVALIDATE_SCREENER_FILTERED, REVALIDATE_STATIC } from "@/lib/data/cach
 
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type EodhdScreenerRow = {
   code?: string;
@@ -153,7 +154,7 @@ async function fetchEodhdScreenerUncached(args: {
 
   try {
     if (!traceEodhdHttp("fetchEodhdScreenerUncached", { offset: args.offset, limit: args.limit })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_STATIC } });
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
     if (!json || typeof json !== "object") return [];
@@ -241,7 +242,7 @@ async function fetchEodhdScreenerCandidatesUncached(args: {
 
   try {
     if (!traceEodhdHttp("fetchEodhdScreenerCandidates", { limit: args.limit })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_SCREENER_FILTERED } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_SCREENER_FILTERED } });
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
     if (!json || typeof json !== "object") return [];
@@ -327,7 +328,7 @@ async function fetchEodhdScreenerPageEtfSector(limit: number, offset: number): P
 
   try {
     if (!traceEodhdHttp("fetchEodhdScreenerPageEtfSector", { offset, limit })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_STATIC } });
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
     if (!json || typeof json !== "object") return [];
@@ -374,7 +375,7 @@ async function fetchEodhdTopEtfsUncached(limit: number): Promise<EodhdTopUnivers
     const url = `https://eodhd.com/api/screener?${params.toString()}`;
     try {
       if (!traceEodhdHttp("fetchEodhdTopEtfsUncached", { offset, limit: pageLimit })) break;
-      const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC } });
+      const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_STATIC } });
       if (!res.ok) break;
       const json = (await res.json()) as unknown;
       if (!json || typeof json !== "object") break;

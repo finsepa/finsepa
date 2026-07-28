@@ -49,6 +49,7 @@ const FORECAST_BAR_FILL = earningsForecastBarFillStyle(FORECAST_BAR);
 
 const BEAT_COLOR = "#16A34A";
 const MISS_COLOR = "#DC2626";
+const MEET_COLOR = "#5C5D5F";
 
 const BAR_WIDTH_QUARTERLY_PX = 11;
 const BAR_WIDTH_ANNUAL_PX = 18;
@@ -73,13 +74,24 @@ function estimatesBarLayout(periodMode: FundamentalsSeriesMode): {
   };
 }
 
+type EarningsOutcome = "beat" | "miss" | "met";
+
+/**
+ * Compare using the same formatting as the tooltip so visually equal values
+ * (e.g. both `$634.34M`) count as Met even with tiny float differences.
+ */
 function earningsBeatMiss(
   estimate: number,
   actual: number,
-): "beat" | "miss" | null {
+  axisKind: ChartingMetricKind,
+): EarningsOutcome | null {
+  if (!Number.isFinite(estimate) || !Number.isFinite(actual)) return null;
+  const estLabel = formatChartingTableCell(axisKind, estimate);
+  const actLabel = formatChartingTableCell(axisKind, actual);
+  if (estLabel === actLabel || actual === estimate) return "met";
   if (actual > estimate) return "beat";
   if (actual < estimate) return "miss";
-  return null;
+  return "met";
 }
 
 function formatBeatMissDeltaAmount(delta: number, axisKind: ChartingMetricKind): string {
@@ -92,11 +104,12 @@ function formatBeatMissDeltaAmount(delta: number, axisKind: ChartingMetricKind):
 }
 
 function formatBeatMissLabel(
-  outcome: "beat" | "miss",
+  outcome: EarningsOutcome,
   estimate: number,
   actual: number,
   axisKind: ChartingMetricKind,
 ): string {
+  if (outcome === "met") return "Met";
   const prefix = outcome === "beat" ? "Beat" : "Miss";
   return `${prefix} (${formatBeatMissDeltaAmount(actual - estimate, axisKind)})`;
 }
@@ -112,7 +125,7 @@ function EarningsBeatMissIndicator({
   maxV,
   enterProgress,
 }: {
-  outcome: "beat" | "miss";
+  outcome: EarningsOutcome;
   value: number;
   maxV: number;
   enterProgress: number;
@@ -120,7 +133,8 @@ function EarningsBeatMissIndicator({
   const bottomPct = valueHeightPct(value, maxV) * enterProgress;
   if (bottomPct <= 0) return null;
 
-  const color = outcome === "beat" ? BEAT_COLOR : MISS_COLOR;
+  const color =
+    outcome === "beat" ? BEAT_COLOR : outcome === "miss" ? MISS_COLOR : MEET_COLOR;
   const gapAboveBarPx = 4;
 
   return (
@@ -135,7 +149,7 @@ function EarningsBeatMissIndicator({
         className="font-['Inter'] text-[13px] font-medium leading-none lowercase sm:text-[14px]"
         style={{ color }}
       >
-        {outcome === "beat" ? "beat" : "miss"}
+        {outcome === "beat" ? "beat" : outcome === "miss" ? "miss" : "met"}
       </span>
       <span
         className="mt-1 block size-0"
@@ -243,7 +257,7 @@ const METRIC_CONFIG: Record<
   },
 };
 
-type BarTooltipLineTone = "neutral" | "beat" | "miss";
+type BarTooltipLineTone = "neutral" | "beat" | "miss" | "met";
 
 type BarTooltipLine = {
   text: string;
@@ -256,6 +270,7 @@ function tooltipLineClass(tone: BarTooltipLineTone, isFirst: boolean): string {
     : "mt-0.5 max-w-[min(100vw-2rem,14rem)] truncate text-[12px] leading-4";
   if (tone === "beat") return `${base} font-semibold text-[#16A34A]`;
   if (tone === "miss") return `${base} font-semibold text-[#DC2626]`;
+  if (tone === "met") return `${base} font-semibold text-[#5C5D5F]`;
   return `${base} font-normal text-[#141414]`;
 }
 
@@ -480,7 +495,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     : 1;
                   const beatMiss =
                     !p.isForecast && p.estimate != null && p.actual != null
-                      ? earningsBeatMiss(p.estimate, p.actual)
+                      ? earningsBeatMiss(p.estimate, p.actual, metricConfig.axisKind)
                       : null;
                   const showActual = !p.isForecast && p.actual != null;
                   const showEstimate = p.estimate != null;

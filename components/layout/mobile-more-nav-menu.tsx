@@ -7,6 +7,7 @@ import {
   protectedNavItemIsActive,
   type ProtectedNavItem,
 } from "@/components/layout/protected-nav-config";
+import { requestAgentHomeIfAlreadyThere } from "@/lib/agents/agent-home-nav";
 import { cn } from "@/lib/utils";
 
 const soonBadgeClass =
@@ -48,7 +49,15 @@ function MoreNavRow({
 
   if (item.available) {
     return (
-      <Link prefetch={false} href={item.href} className={rowClass} onClick={() => onNavigate()}>
+      <Link
+        prefetch={false}
+        href={item.href}
+        className={rowClass}
+        onClick={(event) => {
+          requestAgentHomeIfAlreadyThere(event, pathname, item.href);
+          onNavigate();
+        }}
+      >
         <Icon className={iconClass} aria-hidden />
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
         {item.badge ? <span className={soonBadgeClass}>{item.badge}</span> : null}

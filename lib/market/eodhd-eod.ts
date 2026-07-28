@@ -7,6 +7,7 @@ import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
 import { readScreenerEodBarsSnapshot, upsertScreenerEodBarsSnapshot } from "@/lib/screener/screener-eod-bars-snapshot";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type EodhdDailyBar = {
   date: string;
@@ -63,7 +64,7 @@ export async function fetchEodhdOpenPriceOnOrBefore(
 
   try {
     if (!traceEodhdHttp("fetchEodhdOpenPriceOnOrBefore", { symbol: sym, from, to })) return null;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetchEodhd(url, { cache: "no-store" });
     if (!res.ok) return null;
     const data = (await res.json()) as unknown;
     if (!Array.isArray(data)) return null;
@@ -124,7 +125,7 @@ export async function fetchEodhdEodDaily(
 
   try {
     if (!traceEodhdHttp("fetchEodhdEodDaily", { symbol: sym })) return null;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetchEodhd(url, { cache: "no-store" });
     if (!res.ok) return null;
     const data = (await res.json()) as unknown;
     if (!Array.isArray(data)) return null;
@@ -175,7 +176,7 @@ export async function fetchEodhdEodDailyScreener(
 
   try {
     if (!traceEodhdHttp("fetchEodhdEodDailyScreener", { symbol: sym })) return null;
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_WARM } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_WARM } });
     if (!res.ok) return null;
     const data = (await res.json()) as unknown;
     if (!Array.isArray(data)) return null;

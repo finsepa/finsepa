@@ -215,12 +215,19 @@ function PortfolioCashPanelInner() {
     <div>
       <CashInOutBarChartSection rows={cashLedgerRows} />
 
-      <div className="w-full min-w-0 pb-8">
+      <div className="w-full min-w-0">
         <ScreenerTableScroll>
           <div className="bg-white">
             <CashTableHeader gridClass={cashBalanceGrid}>
               <div className={cn("min-w-0 text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Currency</div>
-              <div className="justify-self-end whitespace-nowrap text-right">Balance</div>
+              <div
+                className={cn(
+                  "justify-self-end whitespace-nowrap text-right",
+                  TABLE_END_ALIGNED_PAD_CLASS,
+                )}
+              >
+                Balance
+              </div>
             </CashTableHeader>
 
             <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
@@ -244,6 +251,7 @@ function PortfolioCashPanelInner() {
                   <div
                     className={cn(
                       "justify-self-end text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums",
+                      TABLE_END_ALIGNED_PAD_CLASS,
                       balanceClassName(cashUsd),
                     )}
                   >
@@ -256,8 +264,8 @@ function PortfolioCashPanelInner() {
         </ScreenerTableScroll>
       </div>
 
-      <section className="mt-8" aria-labelledby="cash-tx-heading">
-        <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <section className="mt-5" aria-labelledby="cash-tx-heading">
+        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <h3 id="cash-tx-heading" className="text-lg font-semibold leading-7 text-[#141414]">
             Cash Transactions
           </h3>
@@ -507,7 +515,7 @@ function PortfolioCashPanelInner() {
                           >
                             {formatSignedUsd(t.sum)}
                           </div>
-                          <div className="flex w-full justify-end">
+                          <div className={cn("flex w-full justify-end", TABLE_END_ALIGNED_PAD_CLASS)}>
                             {!selectedPortfolioReadOnly ? (
                               <TransactionRowActionsMenu
                                 transaction={t}

@@ -9,11 +9,27 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
   type RefObject,
 } from "react";
 
 const DESKTOP_SHELL_MQ = "(min-width: 768px)";
+
+function subscribeDesktopShell(onStoreChange: () => void): () => void {
+  const mq = window.matchMedia(DESKTOP_SHELL_MQ);
+  mq.addEventListener("change", onStoreChange);
+  return () => mq.removeEventListener("change", onStoreChange);
+}
+
+function getDesktopShellSnapshot(): boolean {
+  return window.matchMedia(DESKTOP_SHELL_MQ).matches;
+}
+
+/** SSR / pre-hydration — prefer desktop so Charting does not flash the mobile empty CTA. */
+function getDesktopShellServerSnapshot(): boolean {
+  return true;
+}
 
 export function isCompanyRailPage(pathname: string, tab: string | null = null): boolean {
   if (pathname === "/charting" || pathname === "/comparison") return true;
@@ -57,17 +73,11 @@ type ChartingCompanyRailContextValue = {
 const ChartingCompanyRailContext = createContext<ChartingCompanyRailContextValue | null>(null);
 
 function useIsDesktopShell(): boolean {
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia(DESKTOP_SHELL_MQ);
-    const update = () => setIsDesktop(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-
-  return isDesktop;
+  return useSyncExternalStore(
+    subscribeDesktopShell,
+    getDesktopShellSnapshot,
+    getDesktopShellServerSnapshot,
+  );
 }
 
 export function ChartingCompanyRailProvider({ children }: { children: ReactNode }) {

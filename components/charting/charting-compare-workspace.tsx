@@ -17,6 +17,7 @@ import {
 } from "lightweight-charts";
 
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
+import { ChartingMetricPickerMenu } from "@/components/charting/charting-metric-picker-menu";
 import {
   useChartingRailPickerAnchors,
   useRegisterChartingCompanyRail,
@@ -50,13 +51,6 @@ import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal
 import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
 import { secondaryFillButtonClassName, TabSwitcher, type TabSwitcherOption, whiteSurfaceChipDividerClass, whiteSurfaceChipLabelClass, whiteSurfaceChipRemoveClass, whiteSurfaceChipShellClass } from "@/components/design-system";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
-import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
-import {
-  dropdownMenuRichItemClassName,
-  dropdownMenuSearchHeaderClassName,
-  dropdownMenuSearchInputClassName,
-  dropdownMenuSurfaceClassName,
-} from "@/components/design-system/dropdown-menu-styles";
 import {
   buildChartingPercentYAxisTicks,
   buildFundamentalsYAxisTicks,
@@ -96,7 +90,6 @@ import {
 } from "@/lib/market/charting-period-display";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import {
-  CHARTING_DROPDOWN_GROUPS,
   CHARTING_MAX_COMPARE_TICKERS,
   CHARTING_METRIC_IDS,
   CHARTING_METRIC_KIND,
@@ -944,51 +937,28 @@ export function ChartingCompareWorkspace({
 
   const removeMetric = useCallback(
     (id: ChartingMetricId) => {
-      let next: ChartingMetricId[] | null = null;
-      setSelected((prev) => {
-        const n = prev.filter((x) => x !== id);
-        next = n;
-        return n;
-      });
-      if (next !== null) {
-        queueMicrotask(() => pushChartingUrl(tickers, next!));
-      }
+      const next = selected.filter((x) => x !== id);
+      setSelected(next);
+      pushChartingUrl(tickers, next);
     },
-    [tickers, pushChartingUrl],
+    [tickers, selected, pushChartingUrl],
   );
 
   const addMetric = useCallback(
     (id: ChartingMetricId) => {
-      let next: ChartingMetricId[] | null = null;
-      setSelected((prev) => {
-        if (prev.includes(id)) return prev;
-        const n = [...prev, id];
-        next = n;
-        return n;
-      });
-      if (next !== null) {
-        queueMicrotask(() => pushChartingUrl(tickers, next!));
+      if (selected.includes(id)) {
+        setPickerOpen(false);
+        setPickerQuery("");
+        return;
       }
+      const next = [...selected, id];
+      setSelected(next);
+      pushChartingUrl(tickers, next);
       setPickerOpen(false);
       setPickerQuery("");
     },
-    [tickers, pushChartingUrl],
+    [tickers, selected, pushChartingUrl],
   );
-
-  const qLower = pickerQuery.trim().toLowerCase();
-  const groupedAddable = useMemo(() => {
-    return CHARTING_DROPDOWN_GROUPS.map((g) => {
-      const ids = g.metricIds.filter(
-        (id) =>
-          !selected.includes(id) &&
-          availableInRange.includes(id) &&
-          (!qLower || CHARTING_METRIC_LABEL[id].toLowerCase().includes(qLower)),
-      );
-      return { ...g, ids };
-    }).filter((g) => g.ids.length > 0);
-  }, [selected, availableInRange, qLower]);
-
-  const totalAddable = useMemo(() => groupedAddable.reduce((n, g) => n + g.ids.length, 0), [groupedAddable]);
 
   useEffect(() => {
     if (!pickerOpen) return;
@@ -1615,7 +1585,6 @@ export function ChartingCompareWorkspace({
           id,
           label: CHARTING_METRIC_LABEL[id],
           color: fundamentalsBarSolidAtIndex(def?.colorIdx ?? 0),
-          removeDisabled: selected.length <= 1,
         };
       }),
     [selected, seriesDefs],
@@ -1703,54 +1672,24 @@ export function ChartingCompareWorkspace({
                 ref={pickerMenuPortalRef}
                 align="auto"
                 placement="below"
-                className="w-[min(calc(100vw-2rem),300px)]"
+                className="w-[min(calc(100vw-2rem),520px)]"
                 onRequestClose={() => {
                   setPickerOpen(false);
                   setPickerQuery("");
                 }}
               >
-                  <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">
-                    <div className={dropdownMenuSearchHeaderClassName}>
-                      <input
-                        ref={pickerInputRef}
-                        value={pickerQuery}
-                        onChange={(e) => setPickerQuery(e.target.value)}
-                        placeholder="Search metrics…"
-                        className={dropdownMenuSearchInputClassName}
-                        aria-label="Search metrics"
-                      />
-                    </div>
-                    <DropdownScrollArea className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
-                      {groupedAddable.map((group) => (
-                        <div key={group.id} className="pb-2 last:pb-0">
-                          <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                            {group.label}
-                          </div>
-                          <ul className="flex flex-col gap-1">
-                            {group.ids.map((mid) => (
-                              <li key={mid}>
-                                <button
-                                  type="button"
-                                  role="option"
-                                  className={dropdownMenuRichItemClassName()}
-                                  onClick={() => addMetric(mid)}
-                                >
-                                  {CHARTING_METRIC_LABEL[mid]}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </DropdownScrollArea>
-                    {totalAddable === 0 ? (
-                      <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">
-                        {qLower ? "No metrics match" : "No additional metrics for this range"}
-                      </p>
-                    ) : null}
-                  </div>
-                </TopbarDropdownPortal>
-              ) : null}
+                <ChartingMetricPickerMenu
+                  excludeMetricIds={selected}
+                  allowedMetricIds={availableInRange}
+                  query={pickerQuery}
+                  onQueryChange={setPickerQuery}
+                  onPick={addMetric}
+                  searchInputRef={pickerInputRef}
+                  emptySearchMessage="No metrics match"
+                  emptyDefaultMessage="No additional metrics for this range"
+                />
+              </TopbarDropdownPortal>
+            ) : null}
             </div>
             {selected.length > 0 ? (
               <ChartingCompanyAddDropdown
@@ -1856,52 +1795,22 @@ export function ChartingCompareWorkspace({
                   ref={pickerMenuPortalRef}
                   align="auto"
                   placement="auto"
-                  className="w-[min(calc(100vw-2rem),300px)]"
+                  className="w-[min(calc(100vw-2rem),520px)]"
                   onRequestClose={() => {
                     setPickerOpen(false);
                     setPickerQuery("");
                   }}
                 >
-                  <div className={cn(dropdownMenuSurfaceClassName(), "overflow-hidden")} role="listbox">
-                    <div className={dropdownMenuSearchHeaderClassName}>
-                      <input
-                        ref={pickerInputRef}
-                        value={pickerQuery}
-                        onChange={(e) => setPickerQuery(e.target.value)}
-                        placeholder="Search metrics…"
-                        className={dropdownMenuSearchInputClassName}
-                        aria-label="Search metrics"
-                      />
-                    </div>
-                    <DropdownScrollArea className="flex max-h-[min(400px,calc(100vh-12rem))] flex-col gap-1 overflow-y-auto px-1 py-2">
-                      {groupedAddable.map((group) => (
-                        <div key={group.id} className="pb-2 last:pb-0">
-                          <div className="px-3 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
-                            {group.label}
-                          </div>
-                          <ul className="flex flex-col gap-1">
-                            {group.ids.map((mid) => (
-                              <li key={mid}>
-                                <button
-                                  type="button"
-                                  role="option"
-                                  className={dropdownMenuRichItemClassName()}
-                                  onClick={() => addMetric(mid)}
-                                >
-                                  {CHARTING_METRIC_LABEL[mid]}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    </DropdownScrollArea>
-                    {totalAddable === 0 ? (
-                      <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">
-                        {qLower ? "No metrics match" : "No additional metrics for this range"}
-                      </p>
-                    ) : null}
-                  </div>
+                  <ChartingMetricPickerMenu
+                    excludeMetricIds={selected}
+                    allowedMetricIds={availableInRange}
+                    query={pickerQuery}
+                    onQueryChange={setPickerQuery}
+                    onPick={addMetric}
+                    searchInputRef={pickerInputRef}
+                    emptySearchMessage="No metrics match"
+                    emptyDefaultMessage="No additional metrics for this range"
+                  />
                 </TopbarDropdownPortal>
               ) : null}
             </div>

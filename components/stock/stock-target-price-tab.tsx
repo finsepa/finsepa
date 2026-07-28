@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { MOBILE_PANEL_CARD_CLASS, STOCK_OVERVIEW_SECTION_TITLE_CLASS } from "@/components/design-system/card-surface-styles";
-import { formatUsdPrice } from "@/lib/market/key-stats-basic-format";
+import { TargetPriceValuationSpectrum } from "@/components/stock/target-price-valuation-spectrum";
 import { normalizeAnalystLabel, toneForConsensusLabel } from "@/lib/market/analyst-consensus-tone";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockAnalystDistributionBucket, StockTargetPricePayload } from "@/lib/market/stock-target-price-types";
@@ -74,21 +74,6 @@ function majorityLabelFromBuckets(buckets: StockAnalystDistributionBucket[]): st
   return best ? labelFromAvgScore(best.score) : null;
 }
 
-function dashPrice(n: number | null): string {
-  return n != null && Number.isFinite(n) ? formatUsdPrice(n) : "—";
-}
-
-type UpsideVsLast = { kind: "ok"; pct: number; pctLabel: string } | { kind: "dash" };
-
-function upsideVsLastPrice(current: number | null, target: number | null): UpsideVsLast {
-  if (current == null || target == null || !Number.isFinite(current) || !Number.isFinite(target) || current === 0) {
-    return { kind: "dash" };
-  }
-  const pct = ((target - current) / current) * 100;
-  const sign = pct > 0 ? "+" : "";
-  return { kind: "ok", pct, pctLabel: `${sign}${pct.toFixed(2)}%` };
-}
-
 function AnalystConsensusGaugeCard({ buckets }: { buckets: StockAnalystDistributionBucket[] }) {
   const majorityLabel = useMemo(() => majorityLabelFromBuckets(buckets), [buckets]);
   const avgScore = useMemo(() => avgScoreFromBuckets(buckets), [buckets]);
@@ -100,10 +85,8 @@ function AnalystConsensusGaugeCard({ buckets }: { buckets: StockAnalystDistribut
   const tone = useMemo(() => toneForConsensusLabel(consensusLabel), [consensusLabel]);
 
   const gauge = useMemo(() => {
-    // Top-half semicircle sweep -90..90 (left→right), map 0..1 onto that sweep.
     const angle = -90 + consensusNorm * 180;
     const cx = 160;
-    // Keep the circle center below the viewBox so only the top half is visible (matches design).
     const cy = 188;
     const r = 152;
     const dot = polarToCartesian(cx, cy, r, angle);
@@ -138,7 +121,14 @@ function AnalystConsensusGaugeCard({ buckets }: { buckets: StockAnalystDistribut
             x="160"
             y="122"
             textAnchor="middle"
-            style={{ fill: tone.text, fontFamily: "Inter", fontSize: 24, fontWeight: 600, lineHeight: "36px", letterSpacing: "0px" }}
+            style={{
+              fill: tone.text,
+              fontFamily: "Inter",
+              fontSize: 24,
+              fontWeight: 600,
+              lineHeight: "36px",
+              letterSpacing: "0px",
+            }}
           >
             {consensusLabel}
           </text>
@@ -201,7 +191,11 @@ function normalizePayload(json: StockTargetPricePayload | null): StockTargetPric
           { label: "Sell", count: 0 },
           { label: "Strong sell", count: 0 },
         ];
-  return { ...json, analystDistribution };
+  return {
+    ...json,
+    medianTarget: json.medianTarget ?? null,
+    analystDistribution,
+  };
 }
 
 export function StockTargetPriceTab({
@@ -271,13 +265,13 @@ export function StockTargetPriceTab({
       targets.consensusTarget,
       targets.wallStreetTarget,
       targets.meanTarget,
+      targets.medianTarget,
       targets.highTarget,
       targets.lowTarget,
       targets.fairValue,
     ].some((v) => v != null && Number.isFinite(v));
 
   const hasAnyData = hasAnyTarget || hasDistribution;
-  const upsideVsLast = useMemo(() => upsideVsLastPrice(lastPrice, consensus), [lastPrice, consensus]);
 
   if (loading) {
     return (
@@ -292,7 +286,8 @@ export function StockTargetPriceTab({
     return (
       <div className="w-full min-w-0">
         <p className="w-full text-[14px] leading-6 text-[#5C5D5F]">
-          No analyst consensus, price target, or distribution data is available for this symbol from the current data provider.
+          No analyst consensus, price target, or distribution data is available for this symbol from the current data
+          provider.
         </p>
       </div>
     );
@@ -300,33 +295,12 @@ export function StockTargetPriceTab({
 
   return (
     <div className="w-full min-w-0 space-y-3">
-      {hasAnyTarget ? (
-        <div className={cn(MOBILE_PANEL_CARD_CLASS, "w-full min-w-0 p-4")}>
-          <p className={STOCK_OVERVIEW_SECTION_TITLE_CLASS}>Target price</p>
-          <p className="mt-1 text-[28px] font-semibold tabular-nums leading-8 tracking-tight text-[#141414]">
-            {dashPrice(consensus)}
-          </p>
-          <p className="mt-1 text-[13px] leading-5">
-            {upsideVsLast.kind === "dash" ? (
-              <span className="text-[#5C5D5F]">—</span>
-            ) : (
-              <>
-                <span
-                  className={
-                    upsideVsLast.pct > 0
-                      ? "font-medium text-[#16A34A]"
-                      : upsideVsLast.pct < 0
-                        ? "font-medium text-[#DC2626]"
-                        : "text-[#5C5D5F]"
-                  }
-                >
-                  {upsideVsLast.pctLabel}
-                </span>
-                <span className="text-[#5C5D5F]"> vs last price</span>
-              </>
-            )}
-          </p>
-        </div>
+      {hasAnyTarget || lastPrice != null ? (
+        <TargetPriceValuationSpectrum
+          currentPrice={lastPrice}
+          fairValue={targets?.fairValue ?? null}
+          fallbackTarget={consensus}
+        />
       ) : null}
 
       {hasDistribution ? (

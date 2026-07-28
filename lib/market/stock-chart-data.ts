@@ -1249,11 +1249,15 @@ export const getStockChartPoints = unstable_cache(
   { revalidate: REVALIDATE_HOT },
 );
 
-/** Immutable prior-session 1D charts — session date only changes after the close. */
+/**
+ * Immutable prior-session 1D charts.
+ * `completedSessionYmd` is part of the cache key so the first request after a new
+ * completed US regular session misses and fills a fresh entry (TTL still STATIC_DAY).
+ */
 const getStockChartPoints1DPriorSession = unstable_cache(
-  async (ticker: string, series: StockChartSeries) =>
+  async (ticker: string, series: StockChartSeries, _completedSessionYmd: string) =>
     loadStockChartPointsUncached(ticker, "1D", series),
-  ["stock-chart-1d-prior-session-v9-static-day"],
+  ["stock-chart-1d-prior-session-v10-session-ymd"],
   { revalidate: REVALIDATE_STATIC_DAY },
 );
 
@@ -1269,10 +1273,11 @@ export async function getStockChartPointsForApi(
 ): Promise<StockChartPoint[]> {
   const now = new Date();
   if (range === "1D") {
+    const completedSessionYmd = lastCompletedUsRegularSessionYmd(now);
     // Market cap / return never use the live WS pipeline — same prior-session path as MSFT.
     if (series !== "price") {
       logApi1DBranchDebug(ticker, now, "prior-session-cache");
-      return getStockChartPoints1DPriorSession(ticker, series);
+      return getStockChartPoints1DPriorSession(ticker, series, completedSessionYmd);
     }
     if (usesStock1DLiveWsMinutePipeline(ticker, now)) {
       requestStockMinuteBarWatch(ticker);
@@ -1286,7 +1291,7 @@ export async function getStockChartPointsForApi(
     // Non-live 1D (closed / pre-market): allowlist and non-allowlist share the immutable
     // prior-session cache so all four reference tickers select the same last completed session.
     logApi1DBranchDebug(ticker, now, "prior-session-cache");
-    return getStockChartPoints1DPriorSession(ticker, series);
+    return getStockChartPoints1DPriorSession(ticker, series, completedSessionYmd);
   }
   return getStockChartPoints(ticker, range, series);
 }

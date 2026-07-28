@@ -3,6 +3,7 @@ import "server-only";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type EodhdIntradayBar = {
   /** UNIX seconds */
@@ -76,8 +77,13 @@ export async function fetchEodhdIntraday(
 
   try {
     if (!traceEodhdHttp("fetchEodhdIntraday", { symbol: sym })) return null;
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return null;
+    const res = await fetchEodhd(url, { cache: "no-store" });
+    if (!res.ok) {
+      if (process.env.NODE_ENV === "development") {
+        console.info("[eodhd intraday] non-OK", { sym, interval, status: res.status });
+      }
+      return null;
+    }
     const data = (await res.json()) as unknown;
     const arr =
       Array.isArray(data)
@@ -87,11 +93,17 @@ export async function fetchEodhdIntraday(
             ? (data as { data?: unknown[] }).data
             : null
           : null;
-    if (!arr) return null;
+    if (!arr?.length) {
+      if (process.env.NODE_ENV === "development") {
+        console.info("[eodhd intraday] empty", { sym, interval });
+      }
+      return null;
+    }
 
-    if (process.env.NODE_ENV === "development" && arr.length > 0) {
+    if (process.env.NODE_ENV === "development") {
       console.info("[eodhd intraday] raw provider row sample", {
         sym,
+        interval,
         rowCount: arr.length,
         firstRow: arr[0],
       });

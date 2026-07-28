@@ -3,6 +3,7 @@ import "server-only";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type EodhdUsQuoteDelayedRow = {
   lastTradePrice?: number;
@@ -65,7 +66,7 @@ export async function fetchEodhdUsQuoteDelayed(ticker: string): Promise<EodhdUsQ
 
   try {
     if (!traceEodhdHttp("fetchEodhdUsQuoteDelayed", { symbol })) return null;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetchEodhd(url, { cache: "no-store" });
     if (!res.ok) return null;
     const json = (await res.json()) as { data?: Record<string, unknown> };
     const data = json?.data;

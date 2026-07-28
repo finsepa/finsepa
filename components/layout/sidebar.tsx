@@ -23,6 +23,7 @@ import {
   SIDEBAR_WIDTH_MOTION_CLASS,
   useSidebarLayout,
 } from "@/components/layout/sidebar-layout-context";
+import { requestAgentHomeIfAlreadyThere } from "@/lib/agents/agent-home-nav";
 import { cn } from "@/lib/utils";
 
 const soonBadgeClass =
@@ -182,7 +183,13 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
 
   const content =
     item.available ? (
-      <Link prefetch={false} href={item.href} className={rowClass} suppressHydrationWarning>
+      <Link
+        prefetch={false}
+        href={item.href}
+        className={rowClass}
+        suppressHydrationWarning
+        onClick={(event) => requestAgentHomeIfAlreadyThere(event, pathname, item.href)}
+      >
         <Icon className={iconClass} suppressHydrationWarning />
         <span className={labelWrapClass} suppressHydrationWarning>
           <span className="min-w-0 flex-1 truncate">{item.label}</span>

@@ -236,9 +236,9 @@ function nearestVerticalScrollParent(start: HTMLElement | null): HTMLElement | n
 }
 
 /** Reports table chrome — same inset stroke / hover pad as Stocks companies + Financials. */
-const REPORTS_GRID_CLASS = "grid min-w-[960px] items-center gap-x-2";
+const REPORTS_GRID_CLASS = "grid min-w-[640px] items-center gap-x-2";
 const REPORTS_GRID_STYLE = {
-  gridTemplateColumns: `${STOCK_TABLE_LABEL_COL_WIDTH} repeat(5, minmax(4.5rem, 1fr)) 224px`,
+  gridTemplateColumns: `${STOCK_TABLE_LABEL_COL_WIDTH} repeat(2, minmax(9.5rem, 1.4fr)) 224px`,
 } as const;
 
 const reportsHeaderLabelClass = cn(
@@ -263,25 +263,108 @@ const reportsActionsCellClass = cn(
   TABLE_END_ALIGNED_PAD_CLASS,
 );
 
-function ReportsNumCell({ value }: { value: string | null | undefined }) {
-  const text = tableCell(value);
-  return (
-    <div className={cn(reportsNumCellClass, text === "-" && "font-medium text-[#5C5D5F]")}>{text}</div>
-  );
+function surprisePctFromEstimateActual(est: number | null, act: number | null): number | null {
+  if (est == null || act == null || !Number.isFinite(est) || !Number.isFinite(act) || est === 0) {
+    return null;
+  }
+  return ((act - est) / Math.abs(est)) * 100;
 }
 
-function SurpriseCell({ value, pct }: { value: string | null; pct: number | null }) {
-  const innerBase = "min-w-0 w-full text-right tabular-nums text-[14px] leading-5";
-  if (!value || value === "—" || value === "-") {
-    return <div className={cn(innerBase, "font-medium text-[#5C5D5F]")}>-</div>;
-  }
-  const n = pct;
-  if (n == null || !Number.isFinite(n)) {
-    return <div className={innerBase}>{value}</div>;
-  }
-  const pos = n >= 0;
+function formatSurprisePctDisplay(pct: number): string {
+  if (Math.abs(pct) < 1e-9) return "0.00%";
+  return `${pct > 0 ? "+" : ""}${pct.toFixed(1)}%`;
+}
+
+/** Estimate / actual on top; Beat|Miss|Met +% below (same pattern for EPS and Revenue). */
+function ReportsEstimateActualCell({
+  estimateDisplay,
+  actualDisplay,
+  estimateRaw,
+  actualRaw,
+  surprisePct,
+  surpriseDisplay,
+}: {
+  estimateDisplay: string | null | undefined;
+  actualDisplay: string | null | undefined;
+  estimateRaw: number | null;
+  actualRaw: number | null;
+  surprisePct?: number | null;
+  surpriseDisplay?: string | null;
+}) {
+  const est = tableCell(estimateDisplay);
+  const act = tableCell(actualDisplay);
+  const hasBoth = est !== "-" && act !== "-";
+  const pct =
+    surprisePct != null && Number.isFinite(surprisePct)
+      ? surprisePct
+      : surprisePctFromEstimateActual(estimateRaw, actualRaw);
+
+  const outcome: "beat" | "miss" | "met" | null = (() => {
+    if (!hasBoth) return null;
+    if (est === act) return "met";
+    if (pct != null) {
+      if (Math.abs(pct) < 1e-9) return "met";
+      return pct > 0 ? "beat" : "miss";
+    }
+    if (estimateRaw != null && actualRaw != null) {
+      if (estimateRaw === actualRaw) return "met";
+      return actualRaw > estimateRaw ? "beat" : "miss";
+    }
+    return null;
+  })();
+
+  const pctDisplay =
+    pct != null
+      ? formatSurprisePctDisplay(pct)
+      : outcome === "met"
+        ? "0.00%"
+        : surpriseDisplay && surpriseDisplay !== "—"
+          ? surpriseDisplay
+          : null;
+
+  const outcomeLabel =
+    outcome === "beat" ? "Beat" : outcome === "miss" ? "Miss" : outcome === "met" ? "Met" : null;
+  const outcomeTone =
+    outcome === "beat"
+      ? "text-[#16A34A]"
+      : outcome === "miss"
+        ? "text-[#DC2626]"
+        : outcome === "met"
+          ? "text-[#5C5D5F]"
+          : null;
+
   return (
-    <div className={cn(innerBase, "font-medium", pos ? "text-[#16A34A]" : "text-[#DC2626]")}>{value}</div>
+    <div className={cn(reportsNumCellClass, "flex flex-col items-end justify-center gap-0.5")}>
+      {est === "-" && act === "-" ? (
+        <div className="text-[14px] font-medium leading-5 text-[#5C5D5F]">-</div>
+      ) : (
+        <>
+          <div className="text-[14px] leading-5 tabular-nums text-[#141414]">
+            {est} / {act}
+          </div>
+          {outcomeLabel && pctDisplay ? (
+            <div className={cn("text-[14px] font-medium leading-5 tabular-nums", outcomeTone)}>
+              {outcomeLabel} {pctDisplay}
+            </div>
+          ) : outcomeLabel ? (
+            <div className={cn("text-[14px] font-medium leading-5", outcomeTone)}>{outcomeLabel}</div>
+          ) : pctDisplay ? (
+            <div
+              className={cn(
+                "text-[14px] font-medium leading-5 tabular-nums",
+                pct != null && pct > 0
+                  ? "text-[#16A34A]"
+                  : pct != null && pct < 0
+                    ? "text-[#DC2626]"
+                    : "text-[#5C5D5F]",
+              )}
+            >
+              {pctDisplay}
+            </div>
+          ) : null}
+        </>
+      )}
+    </div>
   );
 }
 
@@ -300,12 +383,9 @@ function ReportsHeaderRow() {
           className={cn(REPORTS_GRID_CLASS, "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]")}
           style={REPORTS_GRID_STYLE}
         >
-          <div className={reportsHeaderLabelClass}>Report date</div>
-          <div className={reportsHeaderNumClass}>EPS est.</div>
-          <div className={reportsHeaderNumClass}>EPS actual</div>
-          <div className={reportsHeaderNumClass}>Surprise</div>
-          <div className={reportsHeaderNumClass}>Rev. est.</div>
-          <div className={reportsHeaderNumClass}>Rev. actual</div>
+          <div className={reportsHeaderLabelClass}>Date</div>
+          <div className={reportsHeaderNumClass}>EPS</div>
+          <div className={reportsHeaderNumClass}>Revenue</div>
           <div className={cn(reportsHeaderNumClass, "whitespace-nowrap")}>
             <span className="sr-only">Document actions</span>
           </div>
@@ -395,7 +475,7 @@ function EstimatesChartSkeleton() {
 
 function TableSkeleton() {
   return (
-    <ScreenerTableScroll mobileScroll minWidthClassName="min-w-[960px]">
+    <ScreenerTableScroll mobileScroll minWidthClassName="min-w-[640px]">
       <div className="bg-white">
         <ReportsHeaderRow />
         {Array.from({ length: 4 }).map((_, r) => (
@@ -415,7 +495,7 @@ function TableSkeleton() {
                     <SkeletonBox className="h-3.5 w-[40%] rounded" />
                   </div>
                 </div>
-                {Array.from({ length: 5 }).map((__, c) => (
+                {Array.from({ length: 2 }).map((__, c) => (
                   <div key={c} className={reportsNumCellClass}>
                     <SkeletonBox className="ml-auto block h-4 w-[65%] max-w-16 rounded" />
                   </div>
@@ -715,7 +795,7 @@ export function StockEarningsTabContent({
       {!loading && data && historyRows.length > 0 ? (
         <div className="min-w-0 space-y-5">
           <h3 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Reports</h3>
-          <ScreenerTableScroll mobileScroll minWidthClassName="min-w-[960px]">
+          <ScreenerTableScroll mobileScroll minWidthClassName="min-w-[640px]">
             <div className="bg-white">
               <ReportsHeaderRow />
               {earningsHistoryRendered.map((entry, idx) => {
@@ -756,13 +836,20 @@ export function StockEarningsTabContent({
                             {reportDayLineFromDisplay(entry.row.reportDateDisplay)}
                           </div>
                         </div>
-                        <ReportsNumCell value={entry.row.epsEstimateDisplay} />
-                        <ReportsNumCell value={entry.row.epsActualDisplay} />
-                        <div className={reportsNumCellClass}>
-                          <SurpriseCell value={entry.row.surpriseDisplay} pct={entry.row.surprisePct} />
-                        </div>
-                        <ReportsNumCell value={entry.row.revenueEstimateDisplay} />
-                        <ReportsNumCell value={entry.row.revenueActualDisplay} />
+                        <ReportsEstimateActualCell
+                          estimateDisplay={entry.row.epsEstimateDisplay}
+                          actualDisplay={entry.row.epsActualDisplay}
+                          estimateRaw={entry.row.epsEstimateRaw}
+                          actualRaw={entry.row.epsActualRaw}
+                          surprisePct={entry.row.surprisePct}
+                          surpriseDisplay={entry.row.surpriseDisplay}
+                        />
+                        <ReportsEstimateActualCell
+                          estimateDisplay={entry.row.revenueEstimateDisplay}
+                          actualDisplay={entry.row.revenueActualDisplay}
+                          estimateRaw={entry.row.revenueEstimateUsd}
+                          actualRaw={entry.row.revenueActualUsd}
+                        />
                         <div className={reportsActionsCellClass}>
                           <div className="inline-flex w-max max-w-full justify-end">
                             <EarningsReportRowActions listingTicker={sym} row={entry.row} />

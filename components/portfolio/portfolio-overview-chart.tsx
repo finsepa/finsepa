@@ -1157,6 +1157,8 @@ export function PortfolioValueHistoryChartPane({
     x: number;
     y: number;
     valueLabel: string;
+    /** Color the metric value green/red when signed (Return, Profit, Drawdowns). */
+    valueTone: "pos" | "neg" | "neutral";
   } | null>(null);
   const [periodAxisLabels, setPeriodAxisLabels] = useState<OverviewAxisLabel[]>([]);
   const periodAxisLabelsRef = useRef<OverviewAxisLabel[]>([]);
@@ -1432,6 +1434,14 @@ export function PortfolioValueHistoryChartPane({
         : metric === "profit" ?
           `${raw >= 0 ? "+" : "−"}${TOOLTIP_USD.format(Math.abs(raw))}`
         : TOOLTIP_USD.format(raw);
+      const valueTone =
+        isPercentMetric(metric) || metric === "profit" ?
+          raw > 0 ?
+            "pos"
+          : raw < 0 ?
+            "neg"
+          : "neutral"
+        : "neutral";
 
       const tw = 168;
       const th = 40;
@@ -1449,6 +1459,7 @@ export function PortfolioValueHistoryChartPane({
         x,
         y,
         valueLabel,
+        valueTone,
       });
     };
 
@@ -1710,7 +1721,18 @@ export function PortfolioValueHistoryChartPane({
             role="status"
           >
             <p className="text-xs font-semibold tabular-nums text-[#141414]">
-              {metricTitle}: {tooltip.valueLabel}
+              {metricTitle}:{" "}
+              <span
+                className={
+                  tooltip.valueTone === "pos" ?
+                    "text-[#16A34A]"
+                  : tooltip.valueTone === "neg" ?
+                    "text-[#DC2626]"
+                  : "text-[#141414]"
+                }
+              >
+                {tooltip.valueLabel}
+              </span>
             </p>
           </div>
         ) : null}

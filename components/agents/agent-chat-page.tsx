@@ -9,7 +9,8 @@ import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface
 import { Spinner } from "@/components/ui/spinner";
 import { deriveAgentThreadTitle } from "@/lib/agents/agent-thread-title";
 import type { AgentThreadSummary } from "@/lib/agents/agent-thread-types";
-import { ArrowDown, History, Send, StopSolid, Trash2 } from "@/lib/icons";
+import { AGENT_HOME_NAV_EVENT } from "@/lib/agents/agent-home-nav";
+import { ArrowDown, ArrowUp, History, StopSolid, Trash2 } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -35,19 +36,37 @@ function newId() {
 
 function ThinkingLabel() {
   const [step, setStep] = useState(0);
+  const [elapsedSec, setElapsedSec] = useState(0);
 
   useEffect(() => {
-    const id = window.setInterval(() => {
+    const dotsId = window.setInterval(() => {
       setStep((s) => (s + 1) % 4);
     }, 400);
-    return () => window.clearInterval(id);
+    const startedAt = Date.now();
+    const clockId = window.setInterval(() => {
+      setElapsedSec(Math.floor((Date.now() - startedAt) / 1000));
+    }, 250);
+    return () => {
+      window.clearInterval(dotsId);
+      window.clearInterval(clockId);
+    };
   }, []);
 
   return (
-    <span className="inline-flex text-[16px] font-normal leading-6 text-[#141414]" aria-live="polite">
-      Thinking
-      <span className="inline-block w-[1.25em] text-left" aria-hidden>
-        {".".repeat(step)}
+    <span
+      className="inline-flex items-center gap-2 text-[16px] font-normal leading-6 text-[#5C5D5F]"
+      aria-live="polite"
+      aria-label={`Thinking, ${elapsedSec} seconds`}
+    >
+      <Spinner className="size-4 shrink-0 text-[#71717A]" aria-hidden />
+      <span className="inline-flex">
+        Thinking
+        <span className="inline-block w-[1.25em] text-left" aria-hidden>
+          {".".repeat(step)}
+        </span>
+      </span>
+      <span className="tabular-nums" aria-hidden>
+        {elapsedSec}s
       </span>
     </span>
   );
@@ -61,6 +80,7 @@ export function AgentChatPage() {
   const [pinUserMessageId, setPinUserMessageId] = useState<string | null>(null);
   const [queue, setQueue] = useState<QueuedRequest[]>([]);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [showTopFade, setShowTopFade] = useState(false);
 
   const [threads, setThreads] = useState<AgentThreadSummary[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(true);
@@ -77,6 +97,8 @@ export function AgentChatPage() {
   const loadingThreadRef = useRef(false);
   const messagesRef = useRef<ChatMessage[]>([]);
   const queueRef = useRef<QueuedRequest[]>([]);
+  /** After opening a thread from history/recents, jump to the latest message. */
+  const scrollToEndAfterLoadRef = useRef(false);
   const threadTitleRef = useRef(threadTitle);
   const inputRef = useRef(input);
 
@@ -158,14 +180,30 @@ export function AgentChatPage() {
     scroller.scrollTop += elRect.top - scrollerRect.top;
   }, [pinUserMessageId, messages.length]);
 
-  /** Show “Latest” when the newest message is scrolled out of view. */
+  /** Opened thread from Recents / history — always land on the latest messages. */
+  useLayoutEffect(() => {
+    if (loadingThread || !scrollToEndAfterLoadRef.current) return;
+    scrollToEndAfterLoadRef.current = false;
+    const scroller = scrollRef.current;
+    if (!scroller) return;
+    if (spacerRef.current) spacerRef.current.style.minHeight = "0px";
+    scroller.scrollTop = scroller.scrollHeight;
+    requestAnimationFrame(() => {
+      scroller.scrollTop = scroller.scrollHeight;
+    });
+  }, [loadingThread, messages.length, threadId]);
+
+  /** Bottom “Latest” when the newest message is out of view; top fade when scrolled down. */
   useEffect(() => {
     const scroller = scrollRef.current;
     if (!scroller) return;
 
-    function updateJumpVisibility() {
+    function updateScrollChrome() {
       const root = scrollRef.current;
       if (!root) return;
+
+      setShowTopFade(root.scrollTop > 8);
+
       const nodes = root.querySelectorAll<HTMLElement>("[data-message-id]");
       const last = nodes[nodes.length - 1];
       if (!last) {
@@ -179,12 +217,12 @@ export function AgentChatPage() {
       setShowJumpToLatest(!visible);
     }
 
-    updateJumpVisibility();
-    scroller.addEventListener("scroll", updateJumpVisibility, { passive: true });
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateJumpVisibility) : null;
+    updateScrollChrome();
+    scroller.addEventListener("scroll", updateScrollChrome, { passive: true });
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateScrollChrome) : null;
     ro?.observe(scroller);
     return () => {
-      scroller.removeEventListener("scroll", updateJumpVisibility);
+      scroller.removeEventListener("scroll", updateScrollChrome);
       ro?.disconnect();
     };
   }, [messages.length, loadingThread, pinUserMessageId]);
@@ -227,6 +265,17 @@ export function AgentChatPage() {
     loadingThreadRef.current = false;
     setLoadingThread(false);
   }
+
+  const resetToNewChatRef = useRef(resetToNewChat);
+  resetToNewChatRef.current = resetToNewChat;
+
+  useEffect(() => {
+    function onAgentHome() {
+      resetToNewChatRef.current();
+    }
+    window.addEventListener(AGENT_HOME_NAV_EVENT, onAgentHome);
+    return () => window.removeEventListener(AGENT_HOME_NAV_EVENT, onAgentHome);
+  }, []);
 
   async function createAgentThread(): Promise<string | null> {
     try {
@@ -273,6 +322,8 @@ export function AgentChatPage() {
     setPinUserMessageId(null);
     setInput("");
     clearQueue();
+    if (spacerRef.current) spacerRef.current.style.minHeight = "0px";
+    scrollToEndAfterLoadRef.current = true;
     setLoadingThread(true);
     setThreadId(id);
     threadIdRef.current = id;
@@ -591,7 +642,7 @@ export function AgentChatPage() {
                   className="inline-flex size-9 items-center justify-center rounded-full bg-[#141414] text-white"
                   aria-label="Stack request"
                 >
-                  <Send className="size-4" />
+                  <ArrowUp className="size-4" strokeWidth={2.5} />
                 </button>
               ) : null}
               <button
@@ -610,7 +661,7 @@ export function AgentChatPage() {
               className="inline-flex size-9 items-center justify-center rounded-full bg-[#141414] text-white disabled:opacity-40"
               aria-label="Send"
             >
-              <Send className="size-4" />
+              <ArrowUp className="size-4" strokeWidth={2.5} />
             </button>
           )}
         </div>
@@ -714,50 +765,59 @@ export function AgentChatPage() {
           </div>
         ) : (
           <>
-            <div
-              ref={scrollRef}
-              className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain"
-            >
-              <div className="mx-auto flex min-h-full w-full max-w-[820px] flex-col gap-4 px-4 py-6 pb-8 sm:px-6">
-                {loadingThread ? (
-                  <div className="flex flex-1 items-center justify-center">
-                    <Spinner className="size-5 text-[#71717A]" />
-                  </div>
-                ) : (
-                  <>
-                    {messages.map((m) => (
-                      <div
-                        key={m.id}
-                        data-message-id={m.id}
-                        className={cn(
-                          "flex",
-                          m.role === "user" ? "justify-end" : "justify-start",
-                          m.id === pinUserMessageId && "pt-6",
-                        )}
-                      >
+            <div className="relative min-h-0 flex-1">
+              <div
+                className={cn(
+                  "pointer-events-none absolute inset-x-0 top-0 z-10 h-10 bg-gradient-to-b from-[#FCFCFD] to-transparent transition-opacity duration-150",
+                  showTopFade ? "opacity-100" : "opacity-0",
+                )}
+                aria-hidden
+              />
+              <div
+                ref={scrollRef}
+                className="h-full min-h-0 overflow-y-auto overscroll-y-contain"
+              >
+                <div className="mx-auto flex min-h-full w-full max-w-[820px] flex-col gap-4 px-4 py-6 pb-8 sm:px-6">
+                  {loadingThread ? (
+                    <div className="flex flex-1 items-center justify-center">
+                      <Spinner className="size-5 text-[#71717A]" />
+                    </div>
+                  ) : (
+                    <>
+                      {messages.map((m) => (
                         <div
+                          key={m.id}
+                          data-message-id={m.id}
                           className={cn(
-                            "max-w-[85%]",
-                            m.role === "user"
-                              ? "inline-flex min-h-10 items-center whitespace-pre-wrap rounded-lg bg-[#F1F1F2] px-3 py-2 text-[16px] font-normal leading-5 text-[#141414]"
-                              : null,
+                            "flex",
+                            m.role === "user" ? "justify-end" : "justify-start",
+                            m.id === pinUserMessageId && "pt-6",
                           )}
                         >
-                          {m.role === "user" ? (
-                            m.content
-                          ) : m.content ? (
-                            <AgentMessageContent content={m.content} />
-                          ) : busy ? (
-                            <ThinkingLabel />
-                          ) : (
-                            ""
-                          )}
+                          <div
+                            className={cn(
+                              "max-w-[85%]",
+                              m.role === "user"
+                                ? "inline-flex min-h-10 items-center whitespace-pre-wrap rounded-lg bg-[#F1F1F2] px-3 py-2 text-[16px] font-normal leading-5 text-[#141414]"
+                                : null,
+                            )}
+                          >
+                            {m.role === "user" ? (
+                              m.content
+                            ) : m.content ? (
+                              <AgentMessageContent content={m.content} />
+                            ) : busy ? (
+                              <ThinkingLabel />
+                            ) : (
+                              ""
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    <div ref={spacerRef} aria-hidden className="shrink-0" />
-                  </>
-                )}
+                      ))}
+                      <div ref={spacerRef} aria-hidden className="shrink-0" />
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 

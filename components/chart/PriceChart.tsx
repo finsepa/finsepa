@@ -93,6 +93,7 @@ import {
   resolveSessionOpenAnchorValue,
   resolveStock1DLiveSessionYmd,
   shouldUseStock1DLiveSessionChart,
+  stock1DLiveSessionLineDataWithGapBreaks,
   stock1DUsesLiveSessionClock,
   stock1DLiveSessionPlotLeftPx,
   STOCK_1D_LIVE_CHART_POLL_MS,
@@ -2806,9 +2807,13 @@ export function PriceChart({
         })
       : null;
     const sessionChartPoints = chartPoints;
-    const data = sessionChartPoints
-      .filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value))
-      .map((p) => ({ time: p.time as UTCTimestamp, value: p.value }));
+    const valued = sessionChartPoints.filter(
+      (p) => isFiniteNumber(p.time) && isFiniteNumber(p.value),
+    );
+    const data =
+      useLiveSessionChart && liveSessionMinuteRef.current
+        ? stock1DLiveSessionLineDataWithGapBreaks(valued)
+        : valued.map((p) => ({ time: p.time as UTCTimestamp, value: p.value }));
 
     const open =
       useLiveSessionChart && liveSessionYmd
@@ -3020,7 +3025,7 @@ export function PriceChart({
       bl.applyOptions({ price: open });
     }
 
-    const last = [...data].reverse().find((p) => isFiniteNumber(p.value));
+    const last = [...data].reverse().find((p) => "value" in p && isFiniteNumber(p.value));
     if (useLiveSessionChart) {
       sessionOpenPriceRef.current = open;
       const chartLiveSpot =

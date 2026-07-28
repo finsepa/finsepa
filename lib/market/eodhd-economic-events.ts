@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_EARNINGS_CALENDAR } from "@/lib/data/cache-policy";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type EodhdRawEconomicEventRow = {
   type?: string;
@@ -91,7 +92,7 @@ async function fetchEodhdEconomicEventsPageUncached(
 
   try {
     if (!traceEodhdHttp("fetchEodhdEconomicEventsPage", { from: fromYmd, to: toYmd, country, offset })) return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_EARNINGS_CALENDAR } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_EARNINGS_CALENDAR } });
     if (!res.ok) return [];
     const json: unknown = await res.json();
     const rows = extractRows(json);

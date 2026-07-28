@@ -13,6 +13,19 @@ import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { isCryptoOverviewSymbol } from "@/lib/crypto/crypto-picker-universe";
 import { STOCK_OVERVIEW_COMPARE_LINE_COLORS } from "@/components/stock/stock-compare-return-chart";
+import {
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+} from "@/components/screener/screener-table-scroll";
+
 function formatPerformancePct(value: number): string {
   const isPositive = value >= 0;
   const sign = isPositive ? "+" : "−";
@@ -40,61 +53,49 @@ const MINI_TABLE_PERF_COLUMNS: readonly {
   { header: "ALL", field: "all", showOnMobile: false },
 ];
 
-/** Mobile overview strip: 5D, 1M, 6M, YTD, 5Y — equal fifths when the company column is hidden. */
-const MOBILE_OVERVIEW_PERF_COL_CLASS = "max-md:w-1/5";
+/** Company + 8 period columns — 8px desktop inset from {@link SCREENER_TABLE_ROW_HOVER_PAD_CLASS}. */
+const MINI_GRID_WITH_COMPANY = cn(
+  "grid w-full items-center gap-x-2",
+  "max-md:min-w-[560px] max-md:grid-cols-[minmax(140px,1.4fr)_repeat(5,minmax(0,1fr))]",
+  "md:min-w-[760px] md:grid-cols-[minmax(180px,1.8fr)_repeat(8,minmax(56px,0.75fr))] lg:min-w-0",
+);
 
-function perfColClass(showOnMobile: boolean, hideCompanyColumn = false) {
-  return cn(
-    "px-3 py-2.5 max-md:min-w-0 max-md:px-2",
-    hideCompanyColumn ? "text-center" : "text-right",
-    showOnMobile
-      ? cn(
-          "table-cell",
-          hideCompanyColumn ? MOBILE_OVERVIEW_PERF_COL_CLASS : "max-md:min-w-[3.25rem] max-md:w-[16%]",
-        )
-      : "hidden md:table-cell",
-    "md:min-w-[60px]",
-  );
+/** Period-only strip (no compare companies). */
+const MINI_GRID_PERIODS_ONLY = cn(
+  "grid w-full items-center gap-x-2",
+  "grid-cols-5 md:grid-cols-8",
+);
+
+function perfVisibilityClass(showOnMobile: boolean) {
+  return showOnMobile ? "min-w-0" : "hidden md:block";
 }
 
-function perfCellClass(showOnMobile: boolean, hideCompanyColumn = false) {
-  return cn(
-    "px-3 py-3 text-[14px] leading-5 tabular-nums max-md:min-w-0 max-md:px-2",
-    hideCompanyColumn ? "text-center" : "text-right",
-    showOnMobile
-      ? cn(
-          "table-cell",
-          hideCompanyColumn ? MOBILE_OVERVIEW_PERF_COL_CLASS : "max-md:min-w-[3.25rem] max-md:w-[16%]",
-        )
-      : "hidden md:table-cell",
-    "md:min-w-[60px]",
-  );
-}
-
-function PerfCellMaybe({
+function PerfValue({
   value,
   showOnMobile,
-  hideCompanyColumn = false,
+  hideCompanyColumn,
+  isLast,
 }: {
   value: number | null;
   showOnMobile: boolean;
-  hideCompanyColumn?: boolean;
+  hideCompanyColumn: boolean;
+  isLast: boolean;
 }) {
+  const base = cn(
+    "w-full text-[14px] leading-5 tabular-nums",
+    hideCompanyColumn ? "text-center" : "text-right",
+    perfVisibilityClass(showOnMobile),
+    isLast && TABLE_END_ALIGNED_PAD_CLASS,
+  );
+
   if (value == null || !Number.isFinite(value)) {
-    return (
-      <td className={cn(perfCellClass(showOnMobile, hideCompanyColumn), "text-[#5C5D5F]")}>—</td>
-    );
+    return <div className={cn(base, "text-[#5C5D5F]")}>—</div>;
   }
   const isPositive = value >= 0;
   return (
-    <td
-      className={cn(
-        perfCellClass(showOnMobile, hideCompanyColumn),
-        isPositive ? "text-[#16A34A]" : "text-[#DC2626]",
-      )}
-    >
+    <div className={cn(base, isPositive ? "text-[#16A34A]" : "text-[#DC2626]")}>
       {formatPerformancePct(value)}
-    </td>
+    </div>
   );
 }
 
@@ -125,27 +126,78 @@ function resolveCompareDisplayName(
   return symbol;
 }
 
+function CompanyCell({
+  displayName,
+  symbol,
+  logoUrl,
+  metaLoading,
+  borderColor,
+  onRemove,
+}: {
+  displayName: string;
+  symbol: string;
+  logoUrl: string;
+  metaLoading: boolean;
+  borderColor: string;
+  onRemove?: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "grid min-w-0 items-center gap-x-3 pl-2 text-left",
+        TABLE_START_ALIGNED_PAD_CLASS,
+        onRemove ? "grid-cols-[auto_minmax(0,1fr)_auto]" : "grid-cols-[auto_minmax(0,1fr)]",
+      )}
+      style={{ borderLeftWidth: 3, borderLeftStyle: "solid", borderLeftColor: borderColor }}
+    >
+      {metaLoading ? (
+        <div className="h-8 w-8 shrink-0 animate-pulse rounded-lg border border-[#E4E4E7] bg-[#F4F4F5]" aria-hidden />
+      ) : (
+        <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={symbol} />
+      )}
+      <div className="min-w-0 overflow-hidden">
+        <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]" title={displayName}>
+          {displayName}
+        </div>
+        <div className="truncate text-[12px] leading-4 text-[#5C5D5F]" title={symbol}>
+          {isCryptoOverviewSymbol(symbol) ? eodhdCryptoSpotTickerDisplay(symbol) : symbol}
+        </div>
+      </div>
+      {onRemove ? (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#5C5D5F] transition-colors hover:bg-[#F4F4F5] hover:text-[#141414]"
+          aria-label={`Remove ${symbol} from comparison`}
+        >
+          <X className="h-4 w-4" strokeWidth={2} />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function OverviewCompareRow({
   pick,
   borderColor,
   onRemove,
+  showDivider,
 }: {
   pick: CompanyPick;
   borderColor: string;
   onRemove: () => void;
+  showDivider: boolean;
 }) {
   const compareSym = pick.symbol.trim().toUpperCase();
   const nameHint = pick.name?.trim() || compareSym;
   const [compareMeta, setCompareMeta] = useState<Pick<StockDetailHeaderMeta, "fullName" | "logoUrl"> | null>(null);
   const [compareMetaLoading, setCompareMetaLoading] = useState(false);
   const [comparePerf, setComparePerf] = useState<StockPerformance | null>(null);
-  const [comparePerfLoading, setComparePerfLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const isCrypto = isCryptoOverviewSymbol(compareSym);
     setCompareMetaLoading(!isCrypto);
-    setComparePerfLoading(true);
     void (async () => {
       try {
         const perfUrl = isCrypto
@@ -177,10 +229,7 @@ function OverviewCompareRow({
           setComparePerf(null);
         }
       } finally {
-        if (!cancelled) {
-          setCompareMetaLoading(false);
-          setComparePerfLoading(false);
-        }
+        if (!cancelled) setCompareMetaLoading(false);
       }
     })();
     return () => {
@@ -188,51 +237,79 @@ function OverviewCompareRow({
     };
   }, [compareSym, nameHint]);
 
-  const compareRow = comparePerf;
   const compareDisplayName = resolveCompareDisplayName(compareMeta, nameHint, compareSym);
   const compareLogoUrl = compareMeta?.logoUrl?.trim() ? compareMeta.logoUrl : "";
 
   return (
-    <tr className="border-b border-[#E4E4E7]">
-      <td className="max-w-0 px-3 py-3 text-left align-middle">
+    <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
         <div
-          className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 pl-2 text-left"
-          style={{ borderLeftWidth: 3, borderLeftStyle: "solid", borderLeftColor: borderColor }}
-        >
-          {compareMetaLoading ? (
-            <div className="h-8 w-8 shrink-0 rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] animate-pulse" aria-hidden />
-          ) : (
-            <CompanyLogo name={compareDisplayName} logoUrl={compareLogoUrl} symbol={compareSym} />
+          className={cn(
+            MINI_GRID_WITH_COMPANY,
+            "min-h-[60px]",
+            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
           )}
-          <div className="min-w-0 overflow-hidden">
-            <div
-              className="truncate text-[14px] font-semibold leading-5 text-[#141414]"
-              title={compareDisplayName}
-            >
-              {compareDisplayName}
-            </div>
-            <div className="truncate text-[12px] leading-4 text-[#5C5D5F]" title={compareSym}>
-              {isCryptoOverviewSymbol(compareSym) ? eodhdCryptoSpotTickerDisplay(compareSym) : compareSym}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onRemove}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#5C5D5F] transition-colors hover:bg-[#F4F4F5] hover:text-[#141414]"
-            aria-label={`Remove ${compareSym} from comparison`}
-          >
-            <X className="h-4 w-4" strokeWidth={2} />
-          </button>
+        >
+          <CompanyCell
+            displayName={compareDisplayName}
+            symbol={compareSym}
+            logoUrl={compareLogoUrl}
+            metaLoading={compareMetaLoading}
+            borderColor={borderColor}
+            onRemove={onRemove}
+          />
+          {MINI_TABLE_PERF_COLUMNS.map((col, i) => (
+            <PerfValue
+              key={col.header}
+              showOnMobile={col.showOnMobile}
+              hideCompanyColumn={false}
+              isLast={i === MINI_TABLE_PERF_COLUMNS.length - 1}
+              value={comparePerf?.[col.field] ?? null}
+            />
+          ))}
         </div>
-      </td>
-      {MINI_TABLE_PERF_COLUMNS.map((col) => (
-        <PerfCellMaybe
-          key={col.header}
-          showOnMobile={col.showOnMobile}
-          value={compareRow?.[col.field] ?? null}
-        />
-      ))}
-    </tr>
+      </div>
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
+    </div>
+  );
+}
+
+function MiniTableHeader({ hasCompare }: { hasCompare: boolean }) {
+  return (
+    <div
+      className={cn(
+        SCREENER_TABLE_HEADER_STICKY_CLASS,
+        SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+        SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+        "md:border-b-0",
+      )}
+    >
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div
+          className={cn(
+            hasCompare ? MINI_GRID_WITH_COMPANY : MINI_GRID_PERIODS_ONLY,
+            "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+          )}
+        >
+          {hasCompare ? (
+            <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
+          ) : null}
+          {MINI_TABLE_PERF_COLUMNS.map((col, i) => (
+            <div
+              key={col.header}
+              className={cn(
+                hasCompare ? "text-right" : "text-center",
+                perfVisibilityClass(col.showOnMobile),
+                i === MINI_TABLE_PERF_COLUMNS.length - 1 && TABLE_END_ALIGNED_PAD_CLASS,
+              )}
+            >
+              {col.header}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+    </div>
   );
 }
 
@@ -285,104 +362,75 @@ export function MiniTable({
           ? `/api/crypto/${encodeURIComponent(sym)}/performance`
           : `/api/stocks/${encodeURIComponent(sym)}/performance`;
         const res = await fetch(perfPath);
-         if (!res.ok) {
-           if (!mounted) return;
-           setPerf(null);
-           setLoading(false);
-           return;
-         }
-         const json = (await res.json()) as StockPerformance;
-         if (!mounted) return;
-         setPerf(json);
-         setLoading(false);
-       } catch {
-         if (!mounted) return;
-         setPerf(null);
-         setLoading(false);
-       }
-     }
-     void load();
+        if (!res.ok) {
+          if (!mounted) return;
+          setPerf(null);
+          setLoading(false);
+          return;
+        }
+        const json = (await res.json()) as StockPerformance;
+        if (!mounted) return;
+        setPerf(json);
+        setLoading(false);
+      } catch {
+        if (!mounted) return;
+        setPerf(null);
+        setLoading(false);
+      }
+    }
+    void load();
     return () => {
       mounted = false;
     };
   }, [sym, initialPerformance, cryptoPrimary]);
 
   const row = useMemo(() => perf, [perf]);
+  const totalRows = 1 + comparePicks.length;
 
   return (
-    <div
-      className={cn(
-        "overflow-x-auto max-md:overscroll-x-contain",
-        hideCompanyColumn &&
-          "overflow-hidden rounded-xl border border-[#E4E4E7] bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
-      )}
-    >
-      <table className="w-full table-fixed border-collapse">
-        <thead>
-          <tr
+    <ScreenerTableScroll mobileScroll={hasCompare}>
+      <MiniTableHeader hasCompare={hasCompare} />
+      <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+        <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+          <div
             className={cn(
-              "bg-white",
-              hideCompanyColumn ? "border-b border-[#E4E4E7]" : "border-t border-b border-[#E4E4E7]",
+              hasCompare ? MINI_GRID_WITH_COMPANY : MINI_GRID_PERIODS_ONLY,
+              "min-h-[60px]",
+              SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+              loading && "opacity-70",
             )}
           >
             {hasCompare ? (
-              <th className="min-w-0 px-3 py-2.5 text-left text-[14px] font-medium text-[#5C5D5F] max-md:min-w-[9.5rem] max-md:w-[52%] md:min-w-[200px]">
-                Company
-              </th>
+              <CompanyCell
+                displayName={displayName}
+                symbol={sym}
+                logoUrl={logoUrl}
+                metaLoading={primaryMetaLoading}
+                borderColor="#2563EB"
+              />
             ) : null}
-            {MINI_TABLE_PERF_COLUMNS.map((col) => (
-              <th
-                key={col.header}
-                className={cn(perfColClass(col.showOnMobile, hideCompanyColumn), "text-[14px] font-medium text-[#5C5D5F]")}
-              >
-                {col.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr className={cn(!hideCompanyColumn && "border-b border-[#E4E4E7]")}>
-            {hasCompare ? (
-              <td className="max-w-0 px-3 py-3 text-left align-middle max-md:min-w-[9.5rem]">
-                <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 border-l-[3px] border-l-[#2563EB] pl-2 text-left">
-                {primaryMetaLoading ? (
-                  <div className="h-8 w-8 shrink-0 rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] animate-pulse" aria-hidden />
-                ) : (
-                  <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym} />
-                )}
-                <div className="min-w-0 overflow-hidden">
-                  <div
-                    className="truncate text-[14px] font-semibold leading-5 text-[#141414]"
-                    title={displayName}
-                  >
-                    {displayName}
-                  </div>
-                  <div className="truncate text-[12px] leading-4 text-[#5C5D5F]" title={sym}>
-                    {cryptoPrimary ? eodhdCryptoSpotTickerDisplay(sym) : sym}
-                  </div>
-                </div>
-                </div>
-              </td>
-            ) : null}
-            {MINI_TABLE_PERF_COLUMNS.map((col) => (
-              <PerfCellMaybe
+            {MINI_TABLE_PERF_COLUMNS.map((col, i) => (
+              <PerfValue
                 key={col.header}
                 showOnMobile={col.showOnMobile}
                 hideCompanyColumn={hideCompanyColumn}
+                isLast={i === MINI_TABLE_PERF_COLUMNS.length - 1}
                 value={row?.[col.field] ?? null}
               />
             ))}
-          </tr>
-          {comparePicks.map((pick, i) => (
-            <OverviewCompareRow
-              key={pick.symbol.toUpperCase()}
-              pick={pick}
-              borderColor={STOCK_OVERVIEW_COMPARE_LINE_COLORS[i % STOCK_OVERVIEW_COMPARE_LINE_COLORS.length]!}
-              onRemove={() => onRemoveCompare?.(pick.symbol)}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </div>
+        </div>
+        {totalRows > 1 ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
+      </div>
+      {comparePicks.map((pick, i) => (
+        <OverviewCompareRow
+          key={pick.symbol.toUpperCase()}
+          pick={pick}
+          borderColor={STOCK_OVERVIEW_COMPARE_LINE_COLORS[i % STOCK_OVERVIEW_COMPARE_LINE_COLORS.length]!}
+          onRemove={() => onRemoveCompare?.(pick.symbol)}
+          showDivider={i < comparePicks.length - 1}
+        />
+      ))}
+    </ScreenerTableScroll>
   );
 }

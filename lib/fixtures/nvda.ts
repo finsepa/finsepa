@@ -152,7 +152,7 @@ export function getNvdaKeyStatsBundle(): StockKeyStatsBundle {
       { label: "Net Income", value: "—" },
       { label: "EBITDA", value: "—" },
       { label: "EPS", value: "—" },
-      { label: "FCF", value: "—" },
+      { label: "Free Cash Flow", value: "—" },
       { label: "CapEx", value: "—" },
     ],
     margins: [
@@ -161,7 +161,7 @@ export function getNvdaKeyStatsBundle(): StockKeyStatsBundle {
       { label: "EBITDA Margin", value: "—" },
       { label: "Pre-Tax Margin", value: "—" },
       { label: "Net Margin", value: "—" },
-      { label: "Free Cash Flow", value: "—" },
+      { label: "Free Cash Flow Margin", value: "—" },
     ],
     growth: [
       { label: "Quarterly Revenue (YoY)", value: "—" },

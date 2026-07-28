@@ -57,7 +57,7 @@ const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
   "Pre-Tax Margin": "pre_tax_margin",
   "Net Margin": "net_margin",
   "Profit Margin": "profit_margin",
-  // Key Stats "Margins" → "Free Cash Flow" maps to `fcf_margin` in buildAllowedMetricsFromKeyStats.
+  "Free Cash Flow Margin": "fcf_margin",
 
   "Quarterly Revenue (YoY)": "revenue_yoy",
   "Revenue Growth": "revenue_yoy",
@@ -117,16 +117,13 @@ function buildAllowedMetrics(
       { id: "risk", rows: bundle.risk },
     ] as const;
 
-    for (const { id: sectionId, rows } of sections) {
+    for (const { rows } of sections) {
       if (!rows) continue;
       for (const r of rows) {
         const label = r.label?.trim();
         const value = r.value?.trim();
         if (!label || !value || value === "—") continue;
-        const mid =
-          sectionId === "margins" && label === "Free Cash Flow"
-            ? ("fcf_margin" satisfies ChartingMetricId)
-            : LABEL_TO_METRIC[label];
+        const mid = LABEL_TO_METRIC[label];
         if (mid) out.add(mid);
       }
     }

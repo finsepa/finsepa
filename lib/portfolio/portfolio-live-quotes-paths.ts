@@ -24,6 +24,8 @@ const DEFER_LIVE_QUOTE_REFRESH_PREFIXES = [
   "/comparison",
   "/economy",
   "/stock",
+  /** Agent uses saved marks only — don't fan out live-price while chatting. */
+  "/agents",
 ] as const;
 
 function pathnameDefersLiveQuotes(pathname: string): boolean {

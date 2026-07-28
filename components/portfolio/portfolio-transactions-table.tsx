@@ -549,7 +549,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
               {grouped.map((g) => (
                 <Fragment key={g.key}>
                   <div className="bg-[#FAFAFA]">
-                    <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, "py-2.5")}>
+                    <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, "py-2.5 md:pl-5")}>
                       <span className="text-[14px] font-semibold leading-5 text-[#5C5D5F]">{g.label}</span>
                     </div>
                   </div>

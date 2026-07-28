@@ -5,6 +5,7 @@ import { cache } from "react";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type EodhdRealtimePayload = {
   code?: string;
@@ -40,7 +41,7 @@ async function fetchEodhdUsRealtimeHttp(symbol: string): Promise<EodhdRealtimePa
 
   try {
     if (!traceEodhdHttp("fetchEodhdUsRealtime", { symbol })) return null;
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetchEodhd(url, { cache: "no-store" });
     if (!res.ok) return null;
     const data = (await res.json()) as EodhdRealtimePayload & { error?: string };
     if (data && typeof data === "object" && "error" in data && data.error) return null;
@@ -109,7 +110,7 @@ export async function fetchEodhdRealtimeSymbolsRaw(symbols: string[]): Promise<M
 
     try {
       if (!traceEodhdHttp("fetchEodhdRealtimeSymbolsRaw", { symbolsInRequest: chunk.length })) continue;
-      const res = await fetch(url, { cache: "no-store" });
+      const res = await fetchEodhd(url, { cache: "no-store" });
       if (!res.ok) continue;
       const json = (await res.json()) as unknown;
       const batchMap = parseRealtimeMultiJson(json);

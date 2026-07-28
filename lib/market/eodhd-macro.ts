@@ -16,6 +16,7 @@ import { fetchShillerIeMacroSeriesCached, type ShillerIeMacroMetric } from "@/li
 import { fetchFedFundsTargetSeriesCached } from "@/lib/market/eodhd-fed-funds-macro";
 import { fetchUstParYieldTenorCached } from "@/lib/market/eodhd-ust-par-yield";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
+import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type MacroPoint = { time: string; value: number };
 
@@ -193,7 +194,7 @@ async function fetchMacroIndicatorUncached(args: {
   try {
     if (!traceEodhdHttp("fetchMacroIndicatorUncached", { country: args.country, indicator: args.indicator }))
       return [];
-    const res = await fetch(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
+    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_STATIC_DAY } });
     if (!res.ok) return [];
     const json = (await res.json()) as unknown;
     if (!Array.isArray(json)) return [];

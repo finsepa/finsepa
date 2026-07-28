@@ -574,7 +574,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
   );
 
   return (
-    <div className="mb-6">
+    <div className="mb-5">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="hidden text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:block">Cash</h2>
         <div className="flex w-full min-w-0 flex-nowrap items-center gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3 md:flex-nowrap">
