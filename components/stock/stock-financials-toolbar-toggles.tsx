@@ -2,12 +2,11 @@
 
 import {
   SegmentedControl,
-  type SegmentedControlOption,
   whiteSurfaceButtonBorderClass,
   whiteSurfaceButtonShadowClass,
 } from "@/components/design-system";
 import { FinancialsColumnOrderToggle } from "@/components/stock/financials-column-order-toggle";
-import { FormListboxSelect } from "@/components/ui/form-listbox-select";
+import { FormListboxSelect, type ListboxOption } from "@/components/ui/form-listbox-select";
 import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import {
   FINANCIALS_STATEMENT_OPTIONS,
@@ -19,12 +18,12 @@ import {
   type FinancialsTableTimeRange,
 } from "@/lib/market/stock-financials-time-range";
 
-export const FINANCIALS_PERIOD_OPTIONS: readonly SegmentedControlOption<FundamentalsSeriesMode>[] = [
+export const FINANCIALS_PERIOD_OPTIONS: readonly ListboxOption<FundamentalsSeriesMode>[] = [
   { value: "annual", label: "Annual" },
   { value: "quarterly", label: "Quarterly" },
 ];
 
-export const FINANCIALS_TIME_RANGE_OPTIONS: readonly SegmentedControlOption<FinancialsTableTimeRange>[] =
+export const FINANCIALS_TIME_RANGE_OPTIONS: readonly ListboxOption<FinancialsTableTimeRange>[] =
   FINANCIALS_TABLE_TIME_RANGE_ORDER.map((value) => ({
     value,
     label: FINANCIALS_TABLE_TIME_RANGE_LABELS[value],

@@ -1,13 +1,11 @@
 "use client";
 
-import {
-  SegmentedControl,
-  type SegmentedControlOption,
-} from "@/components/design-system";
+import type { ListboxOption } from "@/components/ui/form-listbox-select";
+import { SegmentedControl } from "@/components/design-system";
 
 export type FinancialsStatementView = "income" | "balance" | "cashflow" | "ratios";
 
-export const FINANCIALS_STATEMENT_OPTIONS: readonly SegmentedControlOption<FinancialsStatementView>[] = [
+export const FINANCIALS_STATEMENT_OPTIONS: readonly ListboxOption<FinancialsStatementView>[] = [
   { value: "income", label: "Income" },
   { value: "balance", label: "Balance Sheet" },
   { value: "cashflow", label: "Cash Flow" },
