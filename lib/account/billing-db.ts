@@ -208,7 +208,7 @@ export async function ensureStripeCustomerForCheckout(args: {
       const customer = await args.stripe.customers.retrieve(existing);
       if (!customer.deleted) return customer.id;
     } catch {
-      /* stale id ù create below */
+      /* stale id - create below */
     }
   }
 
@@ -292,7 +292,7 @@ export async function cancelOtherLiveSubscriptionsForUser(args: {
     });
     for (const customer of found.data) customerIds.add(customer.id);
   } catch {
-    /* Search API unavailable in some accounts ù DB + email fallback below */
+    /* Search API unavailable in some accounts - DB + email fallback below */
   }
 
   const email = typeof args.email === "string" ? args.email.trim().toLowerCase() : "";
