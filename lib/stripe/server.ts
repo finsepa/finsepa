@@ -75,6 +75,8 @@ function getDefaultStripeAccount(): StripeAccountConfig | null {
     key: pickProcessEnv("STRIPE_PRIMARY_ACCOUNT_KEY") ?? "primary",
     secretKey,
     webhookSecret: pickProcessEnv("STRIPE_WEBHOOK_SECRET"),
+    // Payment Links: env overrides preferred; hardcoded URLs keep Upgrade working when env is unset
+    // (historical prod path — same buy.stripe.com links the app shipped with).
     monthlyPaymentLink:
       pickProcessEnv("STRIPE_PAYMENT_LINK_MONTHLY") ?? "https://buy.stripe.com/eVqaEX3nf0kQ7iyduP5AQ0i",
     annualPaymentLink:

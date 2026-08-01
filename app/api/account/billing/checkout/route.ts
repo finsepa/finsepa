@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
+import { ensureStripeCustomerForCheckout } from "@/lib/account/billing-db";
 import type { StripeBillingCycle } from "@/lib/stripe/server";
 import {
   getStripeAccountConfig,
@@ -68,7 +69,24 @@ export async function POST(req: Request) {
   const priceId = getStripeSubscriptionPriceId(cycle, account.key);
   const stripe = getStripeClient(account.key);
 
+  // Prefer Checkout Sessions when price IDs are configured — surface real errors instead of
+  // silently falling through to Payment Links (wrong account / misconfigured price).
   if (priceId && stripe) {
+    // Reuse one Stripe Customer so concurrent Upgrade clicks share a customer id
+    // (webhook can cancel sibling live subscriptions on that customer).
+    try {
+      const ensured = await ensureStripeCustomerForCheckout({
+        stripe,
+        stripeAccountKey: account.key,
+        userId: user.id,
+        email: user.email,
+        existingCustomerId: stripeCustomerId,
+      });
+      if (ensured) stripeCustomerId = ensured;
+    } catch (error) {
+      console.error("[billing] ensureStripeCustomerForCheckout failed", error);
+    }
+
     const { successUrl, cancelUrl } = getStripeBillingCheckoutUrls(account);
     const baseSession = {
       mode: "subscription" as const,
@@ -88,11 +106,22 @@ export async function POST(req: Request) {
         ? { ...baseSession, customer_email: user.email }
         : baseSession;
 
+    // Same user+cycle within a short window returns the same Session (blocks double-click
+    // creating two paid subscriptions). Bucketed so abandoned checkouts can retry after ~2m.
+    const idempotencyBucket = Math.floor(Date.now() / 120_000);
+    const idempotencyKey = `finsepa-checkout:${user.id}:${cycle}:${idempotencyBucket}`;
+
     try {
-      const session = await stripe.checkout.sessions.create(withCustomer);
+      const session = await stripe.checkout.sessions.create(withCustomer, {
+        idempotencyKey,
+      });
       if (session.url) {
         return NextResponse.json({ url: session.url });
       }
+      return NextResponse.json(
+        { error: "Stripe Checkout did not return a session URL. Try again." },
+        { status: 502 },
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
       const invalidStoredCustomer =
@@ -100,25 +129,38 @@ export async function POST(req: Request) {
         (message.includes("No such customer") || /resource_missing/i.test(message));
       if (invalidStoredCustomer && user.email) {
         try {
-          const session = await stripe.checkout.sessions.create({
-            ...baseSession,
-            customer_email: user.email,
-          });
+          const session = await stripe.checkout.sessions.create(
+            {
+              ...baseSession,
+              customer_email: user.email,
+            },
+            { idempotencyKey: `${idempotencyKey}:email-fallback` },
+          );
           if (session.url) {
             return NextResponse.json({ url: session.url });
           }
-        } catch {
-          // fall through to payment link
+        } catch (retryError) {
+          const retryMessage =
+            retryError instanceof Error ? retryError.message : "Could not start Checkout.";
+          return NextResponse.json({ error: retryMessage }, { status: 502 });
         }
       }
-      // fall through to payment link
+      return NextResponse.json(
+        { error: message.trim() || "Could not start Stripe Checkout. Try again." },
+        { status: 502 },
+      );
     }
   }
 
+  // Payment Links only when price IDs are not configured (legacy / env fallback).
+  // Sibling cancel on checkout.session.completed is the safety net for double-pay races.
   const baseLink = getStripePaymentLink(cycle, account.key);
   if (!baseLink) {
     return NextResponse.json(
-      { error: "Stripe payment link is not configured for this plan." },
+      {
+        error:
+          "Stripe is not fully configured. Set STRIPE_PRICE_ID_MONTHLY / STRIPE_PRICE_ID_ANNUAL (Checkout) or payment link env vars.",
+      },
       { status: 500 },
     );
   }

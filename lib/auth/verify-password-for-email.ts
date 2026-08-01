@@ -22,7 +22,7 @@ function getPool(): Pool | null {
 
 export type VerifyPasswordForEmailResult =
   | { ok: true; userId: string; email: string }
-  | { ok: false; reason: "wrong_password" | "google_only" | "unavailable" };
+  | { ok: false; reason: "wrong_password" | "google_only" | "unavailable" | "email_unconfirmed" };
 
 export async function verifyPasswordForEmail(
   email: string,
@@ -35,8 +35,13 @@ export async function verifyPasswordForEmail(
   }
 
   try {
-    const { rows } = await db.query<{ id: string; email: string | null; encrypted_password: string | null }>(
-      `select id, email, encrypted_password
+    const { rows } = await db.query<{
+      id: string;
+      email: string | null;
+      encrypted_password: string | null;
+      email_confirmed_at: string | null;
+    }>(
+      `select id, email, encrypted_password, email_confirmed_at
        from auth.users
        where lower(email) = $1 and deleted_at is null
        limit 1`,
@@ -51,6 +56,10 @@ export async function verifyPasswordForEmail(
 
     const matches = await compare(password, hash);
     if (!matches) return { ok: false, reason: "wrong_password" };
+
+    if (!row.email_confirmed_at) {
+      return { ok: false, reason: "email_unconfirmed" };
+    }
 
     return { ok: true, userId: row.id, email: row.email ?? normalizedEmail };
   } catch {

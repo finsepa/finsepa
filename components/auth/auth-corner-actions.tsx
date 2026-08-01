@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const HELP_EMAIL = "hi@finsepa.com";
 
-/** 40px circle + 20px icon — auth entry pages only (login / signup / forgot password). */
+/** 40px circle + 20px icon — auth entry / paywall pages (login, signup, activate). */
 const AUTH_CORNER_BUTTON_CLASS = cn(
   "inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
   whiteSurfaceButtonChromeClass,

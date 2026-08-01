@@ -40,8 +40,9 @@ export async function getSubscriptionGateContext(
   }
 
   const platformEnd = effectivePlatformTrialEndsAtIso(row);
+  // No billing row / no resolvable trial end → paywall (never grant free forever).
   if (!platformEnd) {
-    return { needsPaywall: false, topbarTrialDaysLeft: null, isPro: false };
+    return { needsPaywall: true, topbarTrialDaysLeft: null, isPro: false };
   }
 
   if (isPlatformTrialPast(platformEnd)) {

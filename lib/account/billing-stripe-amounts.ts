@@ -60,14 +60,7 @@ export async function resolveNextRecurringChargeUsd(args: {
   fallbackUsd?: number;
 }): Promise<number | null> {
   try {
-    const upcoming = await (
-      args.stripe.invoices as unknown as {
-        retrieveUpcoming: (params: {
-          customer: string;
-          subscription: string;
-        }) => Promise<{ amount_due?: number; total?: number }>;
-      }
-    ).retrieveUpcoming({
+    const upcoming = await args.stripe.invoices.createPreview({
       customer: args.customerId,
       subscription: args.subscriptionId,
     });
@@ -93,4 +86,22 @@ export async function resolveNextRecurringChargeUsd(args: {
   }
 
   return null;
+}
+
+/** Period end (unix seconds) from an invoice preview, when present. */
+export async function previewSubscriptionPeriodEndSeconds(args: {
+  stripe: Stripe;
+  customerId: string;
+  subscriptionId: string;
+}): Promise<number | null> {
+  try {
+    const upcoming = await args.stripe.invoices.createPreview({
+      customer: args.customerId,
+      subscription: args.subscriptionId,
+    });
+    const endSeconds = upcoming.lines?.data?.[0]?.period?.end;
+    return typeof endSeconds === "number" ? endSeconds : null;
+  } catch {
+    return null;
+  }
 }

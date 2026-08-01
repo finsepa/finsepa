@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
 import { AuthBrandMark } from "@/components/auth/auth-brand-mark";
+import { AuthCornerActions } from "@/components/auth/auth-corner-actions";
 import { loginSignedOutUrl } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
@@ -22,7 +23,7 @@ export function ActivateSubscriptionClient() {
   }
 
   return (
-    <main className="flex min-h-[var(--app-vh)] flex-col bg-[#F7F7F7]">
+    <main className="flex min-h-[var(--app-vh)] flex-col bg-nav">
       <div className="flex flex-1 flex-col items-center justify-center p-4">
         <div className="flex w-full max-w-[420px] flex-col items-center rounded-[12px] bg-surface p-8 shadow-[0_2px_10px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
           <AuthBrandMark />
@@ -35,7 +36,7 @@ export function ActivateSubscriptionClient() {
           <button
             type="button"
             onClick={() => setUpgradeOpen(true)}
-            className="mt-8 h-11 w-full rounded-[10px] bg-fg text-sm font-semibold text-surface transition-colors hover:bg-[#18181B]"
+            className="mt-8 h-11 w-full rounded-[10px] bg-fg text-sm font-semibold text-surface transition-colors hover:bg-[#18181B] dark:hover:bg-fg/90"
           >
             Upgrade to Pro
           </button>
@@ -53,16 +54,7 @@ export function ActivateSubscriptionClient() {
         </p>
       </div>
 
-      <p className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 text-center text-sm leading-6 text-fg-muted">
-        Need help? Contact us{" "}
-        <a
-          href="mailto:hi@finsepa.com"
-          className="font-medium text-fg underline decoration-fg-muted underline-offset-4 transition-colors hover:decoration-fg"
-        >
-          hi@finsepa.com
-        </a>
-      </p>
-
+      <AuthCornerActions />
       <BillingUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </main>
   );

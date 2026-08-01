@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
-import { syncPaidInvoicesFromStripeForUser } from "@/lib/account/billing-db";
 import { platformTrialEndsMetaLabel } from "@/lib/account/billing";
-import { resolveNextRecurringChargeUsd } from "@/lib/account/billing-stripe-amounts";
+import { patchBillingSubscriptionFromStripeReconcile } from "@/lib/account/billing-db";
+import {
+  previewSubscriptionPeriodEndSeconds,
+  resolveNextRecurringChargeUsd,
+} from "@/lib/account/billing-stripe-amounts";
 import {
   effectivePlatformTrialEndsAtIso,
   isPlatformTrialPast,
@@ -85,6 +88,8 @@ export async function GET() {
   }
 
   try {
+    // Read invoices from DB only — Stripe invoice sync + Loops renewals are webhook-owned
+    // so opening Account → Billing never triggers renewal emails or multi-page Stripe lists.
     const [{ data: subscription }, firstInvoices] = await Promise.all([
       supabase.from("billing_subscriptions").select("*").eq("user_id", user.id).maybeSingle<BillingSubscriptionRow>(),
       supabase
@@ -96,22 +101,7 @@ export async function GET() {
         .returns<BillingInvoiceRow[]>(),
     ]);
 
-    let invoices = firstInvoices.data;
-    if (subscription?.stripe_customer_id) {
-      await syncPaidInvoicesFromStripeForUser({
-        userId: user.id,
-        stripeAccountKey: subscription.stripe_account_key,
-        stripeCustomerId: subscription.stripe_customer_id,
-      });
-      const { data: refreshed } = await supabase
-        .from("billing_invoices")
-        .select("id, paid_at, amount_usd, description")
-        .eq("user_id", user.id)
-        .order("paid_at", { ascending: false })
-        .limit(100)
-        .returns<BillingInvoiceRow[]>();
-      invoices = refreshed ?? invoices;
-    }
+    const invoices = firstInvoices.data;
 
     const planCodeRaw = subscription?.plan_code ?? "";
     const isStripeProPlan = planCodeRaw.startsWith("pro_") || planCodeRaw === "pro";
@@ -164,19 +154,13 @@ export async function GET() {
               (stripeStatus === "active" || stripeStatus === "trialing"));
 
           // Best-effort: keep DB aligned for other server paths that still read the row directly.
-          try {
-            await supabase
-              .from("billing_subscriptions")
-              .update({
-                status: stripeStatus,
-                cancel_at_period_end: stripeCancelAtPeriodEnd,
-                ...(stripeCurrentPeriodEndIso ? { current_period_end: stripeCurrentPeriodEndIso } : {}),
-              })
-              .eq("user_id", user.id)
-              .throwOnError();
-          } catch {
-            // ignore
-          }
+          // User JWT cannot UPDATE billing_subscriptions (RLS SELECT-only) — use admin.
+          void patchBillingSubscriptionFromStripeReconcile({
+            userId: user.id,
+            status: stripeStatus,
+            cancelAtPeriodEnd: stripeCancelAtPeriodEnd,
+            currentPeriodEnd: stripeCurrentPeriodEndIso,
+          });
         } catch {
           // ignore — fall back to DB fields
         }
@@ -203,14 +187,12 @@ export async function GET() {
       const stripe = getStripeClient(subscription.stripe_account_key);
       if (stripe) {
         try {
-          // First choice: upcoming invoice has explicit line period end.
-          const upcoming = await (stripe.invoices as unknown as { retrieveUpcoming: (args: any) => Promise<any> })
-            .retrieveUpcoming({
-              customer: subscription.stripe_customer_id,
-              subscription: subscription.stripe_subscription_id,
-            });
-          const endSeconds =
-            typeof upcoming?.lines?.data?.[0]?.period?.end === "number" ? upcoming.lines.data[0].period.end : null;
+          // First choice: upcoming invoice preview has explicit line period end.
+          const endSeconds = await previewSubscriptionPeriodEndSeconds({
+            stripe,
+            customerId: subscription.stripe_customer_id,
+            subscriptionId: subscription.stripe_subscription_id,
+          });
           if (typeof endSeconds === "number") {
             recurringDueDate = new Date(endSeconds * 1000).toISOString();
           }
@@ -245,15 +227,10 @@ export async function GET() {
 
         // Cache it for future loads (ignore failures).
         if (recurringDueDate) {
-          try {
-            await supabase
-              .from("billing_subscriptions")
-              .update({ current_period_end: recurringDueDate })
-              .eq("user_id", user.id)
-              .throwOnError();
-          } catch {
-            // ignore
-          }
+          void patchBillingSubscriptionFromStripeReconcile({
+            userId: user.id,
+            currentPeriodEnd: recurringDueDate,
+          });
         }
       }
     }
@@ -327,15 +304,10 @@ export async function GET() {
         if (resolved != null) {
           recurringAmountUsd = resolved;
           if (resolved !== (subscription.recurring_amount_usd ?? 0)) {
-            try {
-              await supabase
-                .from("billing_subscriptions")
-                .update({ recurring_amount_usd: resolved })
-                .eq("user_id", user.id)
-                .throwOnError();
-            } catch {
-              /* ignore */
-            }
+            void patchBillingSubscriptionFromStripeReconcile({
+              userId: user.id,
+              recurringAmountUsd: resolved,
+            });
           }
         }
       }

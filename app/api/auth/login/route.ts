@@ -180,6 +180,15 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    if (verified.reason === "email_unconfirmed") {
+      return NextResponse.json(
+        {
+          error: "email_unconfirmed",
+          message: "Confirm your email before signing in. Check your inbox for the link.",
+        },
+        { status: 403 },
+      );
+    }
     if (verified.reason === "wrong_password") {
       return NextResponse.json(
         { error: "invalid_credentials", message: "Invalid email or password." },

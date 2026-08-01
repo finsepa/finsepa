@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import {
+  cancelOtherLiveSubscriptionsForUser,
+  claimProWelcomeEmailSend,
+  clearProWelcomeEmailClaim,
   findUserIdByStripeCustomer,
+  getBillingSubscriptionIdentity,
   getBillingSubscriptionStripeIdsForUser,
-  hasProWelcomeEmailBeenSent,
-  markProWelcomeEmailSent,
   recordWebhookEvent,
   resolvePlanCode,
   resolveStripeInvoiceRecipientEmail,
@@ -110,21 +112,41 @@ export async function POST(req: Request) {
         if (session.mode === "subscription" && typeof session.subscription === "string") {
           const newSubscriptionId = session.subscription;
 
-          const prior = await getBillingSubscriptionStripeIdsForUser(userId);
+          // Read prior Stripe ids before upsert so we can cancel siblings across customers
+          // created by a concurrent double-checkout race.
+          const [prior, priorIdentity] = await Promise.all([
+            getBillingSubscriptionStripeIdsForUser(userId),
+            getBillingSubscriptionIdentity(userId),
+          ]);
+          const priorCustomerId = priorIdentity.stripeCustomerId;
+
+          const sessionEmail =
+            typeof session.customer_details?.email === "string"
+              ? session.customer_details.email.trim()
+              : null;
+
+          await cancelOtherLiveSubscriptionsForUser({
+            stripe,
+            stripeAccountKey: account.key,
+            userId,
+            keepSubscriptionId: newSubscriptionId,
+            seedCustomerIds: [customerId, priorCustomerId],
+            email: sessionEmail,
+          });
+
+          // Also cancel a prior DB-tracked subscription id if list/search missed it
+          // (e.g. different account key) — best-effort only.
           if (
             prior?.stripe_subscription_id &&
             prior.stripe_subscription_id !== newSubscriptionId
           ) {
             try {
-              const oldSub = await stripe.subscriptions.retrieve(prior.stripe_subscription_id, {
-                expand: ["items.data.price"],
-              });
+              const oldSub = await stripe.subscriptions.retrieve(prior.stripe_subscription_id);
               if (oldSub.status === "active" || oldSub.status === "trialing") {
-                await stripe.subscriptions.cancel(newSubscriptionId);
-                break;
+                await stripe.subscriptions.cancel(prior.stripe_subscription_id);
               }
             } catch {
-              // prior subscription no longer exists in Stripe — allow the new one
+              /* already canceled / other account */
             }
           }
 
@@ -147,7 +169,7 @@ export async function POST(req: Request) {
             paidOk &&
             planCode.startsWith("pro") &&
             (subscription.status === "active" || subscription.status === "trialing") &&
-            !(await hasProWelcomeEmailBeenSent(userId))
+            (await claimProWelcomeEmailSend(userId))
           ) {
             const to =
               (typeof session.customer_details?.email === "string"
@@ -155,12 +177,12 @@ export async function POST(req: Request) {
                 : "") || (await resolveUserEmailById(userId));
             if (to) {
               const sent = await sendLoopsProActivatedEmail({ apiKey: loopsKey, to });
-              if (sent.ok) {
-                await markProWelcomeEmailSent(userId);
-              } else {
+              if (!sent.ok) {
+                await clearProWelcomeEmailClaim(userId);
                 console.error("[stripe webhook] Loops Pro activated email failed:", sent.message);
               }
             } else {
+              await clearProWelcomeEmailClaim(userId);
               console.error(
                 "[stripe webhook] Pro activated email skipped: no recipient email for user",
                 userId,
@@ -244,11 +266,10 @@ export async function POST(req: Request) {
             });
             if (to) {
               if (billingReason === "subscription_create") {
-                if (!(await hasProWelcomeEmailBeenSent(userId))) {
+                if (await claimProWelcomeEmailSend(userId)) {
                   const sent = await sendLoopsProActivatedEmail({ apiKey: loopsKey, to });
-                  if (sent.ok) {
-                    await markProWelcomeEmailSent(userId);
-                  } else {
+                  if (!sent.ok) {
+                    await clearProWelcomeEmailClaim(userId);
                     console.error("[stripe webhook] Loops Pro activated email failed:", sent.message);
                   }
                 }

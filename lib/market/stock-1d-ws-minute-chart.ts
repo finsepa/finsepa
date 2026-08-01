@@ -18,7 +18,7 @@ import { fetchStockSessionMinuteBarsFromDb, touchStockSessionMinuteBarWatch } fr
 import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 
-/** Allowlist tickers that always emit the `[live-1d-ws]` audit log (not just in dev). */
+/** Allowlist tickers that emit the `[live-1d-ws]` audit log in development only. */
 const STOCK_1D_LIVE_DEBUG_TICKERS = new Set(["AAPL", "NVDA", "QQQ", "SPY"]);
 
 export type LiveWsMinuteBarCoverage = {
@@ -408,7 +408,7 @@ export async function loadStock1DLiveWsMinuteChartPoints(
   const series = buildStock1DBucketedSeries(windowed, sessionYmd, endSec, timeZone);
   const { points, realCount, syntheticCount } = series;
 
-  if (process.env.NODE_ENV === "development" || STOCK_1D_LIVE_DEBUG_TICKERS.has(sym)) {
+  if (process.env.NODE_ENV === "development" && STOCK_1D_LIVE_DEBUG_TICKERS.has(sym)) {
     const iso = (sec: number | null | undefined) =>
       sec != null ? new Date(sec * 1000).toISOString() : null;
     console.info("[live-1d-ws]", sym, {

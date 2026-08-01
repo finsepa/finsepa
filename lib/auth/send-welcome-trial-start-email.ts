@@ -2,6 +2,10 @@ import "server-only";
 
 import type { User } from "@supabase/supabase-js";
 
+import {
+  claimWelcomeTrialEmailSend,
+  clearWelcomeTrialEmailClaim,
+} from "@/lib/account/billing-db";
 import { displayFirstNameFromUser } from "@/lib/auth/display-name";
 import { resolveAuthAppOriginForServer } from "@/lib/auth/app-origin";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
@@ -58,6 +62,11 @@ export async function sendWelcomeTrialStartEmailIfNeeded(
     return { sent: false, reason: "admin_unavailable" };
   }
 
+  // Claim before send so callback + onboarding + protected shell cannot double-send.
+  if (!(await claimWelcomeTrialEmailSend(user.id))) {
+    return { sent: false, reason: "already_sent" };
+  }
+
   const email = user.email!.trim().toLowerCase();
   const origin = resolveAuthAppOriginForServer(requestOrigin) || requestOrigin.replace(/\/$/, "");
   const platformLink = `${origin}${PATH_APP_ENTRY}`;
@@ -94,18 +103,24 @@ export async function sendWelcomeTrialStartEmailIfNeeded(
   });
 
   if (!sendResult.ok) {
+    await clearWelcomeTrialEmailClaim(user.id);
     return { sent: false, reason: "send_failed", message: sendResult.message };
   }
 
   const sentAt = new Date().toISOString();
   const existingMeta = (user.user_metadata ?? {}) as Record<string, unknown>;
-  await admin.auth.admin.updateUserById(user.id, {
-    user_metadata: {
-      ...existingMeta,
-      [WELCOME_TRIAL_START_SENT_META]: sentAt,
-      [GOOGLE_WELCOME_EMAIL_SENT_META]: sentAt,
-    },
-  });
+  try {
+    await admin.auth.admin.updateUserById(user.id, {
+      user_metadata: {
+        ...existingMeta,
+        [WELCOME_TRIAL_START_SENT_META]: sentAt,
+        [GOOGLE_WELCOME_EMAIL_SENT_META]: sentAt,
+      },
+    });
+  } catch (error) {
+    // DB claim already prevents duplicates; metadata is a legacy/fast-path hint.
+    console.error("[welcome-trial-start] failed to persist user_metadata sent flag", error);
+  }
 
   return { sent: true };
 }

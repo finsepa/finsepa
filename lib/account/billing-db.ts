@@ -9,7 +9,6 @@ import {
   platformTrialDaysRemaining as computePlatformTrialDaysRemaining,
 } from "@/lib/account/platform-trial";
 import { subscriptionUnitAmountUsdAfterDiscounts } from "@/lib/account/billing-stripe-amounts";
-import { getLoopsApiKey } from "@/lib/env/loops";
 import { sendLoopsProRenewedEmail } from "@/lib/loops/send-pro-renewed";
 import { getStripeClient } from "@/lib/stripe/server";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -115,7 +114,7 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
     billingResumeAt: null,
     subscriptionMeta:
       accessState === "trial_expired"
-        ? "Free trial ended — subscribe to continue"
+        ? "Free trial ended - subscribe to continue"
         : accessState === "trial"
           ? platformTrialEndsMetaLabel(platformTrialEndsAtIso) ??
             subscriptionMeta(subscription.status, subscription.cancel_at_period_end, false)
@@ -140,7 +139,11 @@ export async function recordWebhookEvent(args: {
   payload: unknown;
 }): Promise<boolean> {
   const admin = getSupabaseAdminClient();
-  if (!admin) return false;
+  if (!admin) {
+    // Must not return false ? webhook treats false as duplicate and answers 200,
+    // which stops Stripe retries while subscriptions never sync.
+    throw new Error("Supabase admin client is not configured for Stripe webhooks.");
+  }
   const { error } = await admin.from("billing_webhook_events").insert({
     stripe_account_key: args.stripeAccountKey,
     stripe_event_id: args.stripeEventId,
@@ -185,6 +188,147 @@ export async function upsertBillingCustomer(args: {
     },
     { onConflict: "user_id,stripe_account_key" },
   );
+}
+
+/**
+ * Resolve or create a Stripe Customer for Checkout Sessions so concurrent upgrades
+ * share one customer (sibling-sub cancel in the webhook can then find duplicates).
+ */
+export async function ensureStripeCustomerForCheckout(args: {
+  stripe: Stripe;
+  stripeAccountKey: string;
+  userId: string;
+  email?: string | null;
+  existingCustomerId?: string | null;
+}): Promise<string | null> {
+  const existing =
+    typeof args.existingCustomerId === "string" ? args.existingCustomerId.trim() : "";
+  if (existing) {
+    try {
+      const customer = await args.stripe.customers.retrieve(existing);
+      if (!customer.deleted) return customer.id;
+    } catch {
+      /* stale id � create below */
+    }
+  }
+
+  const admin = getSupabaseAdminClient();
+  if (admin) {
+    const { data: row } = await admin
+      .from("billing_customers")
+      .select("stripe_customer_id")
+      .eq("user_id", args.userId)
+      .eq("stripe_account_key", args.stripeAccountKey)
+      .maybeSingle<{ stripe_customer_id: string }>();
+    const fromDb = row?.stripe_customer_id?.trim();
+    if (fromDb) {
+      try {
+        const customer = await args.stripe.customers.retrieve(fromDb);
+        if (!customer.deleted) return customer.id;
+      } catch {
+        /* recreate */
+      }
+    }
+  }
+
+  const email = typeof args.email === "string" ? args.email.trim() : "";
+  if (!email) return null;
+
+  const customer = await args.stripe.customers.create({
+    email,
+    metadata: { finsepa_user_id: args.userId },
+  });
+  await upsertBillingCustomer({
+    userId: args.userId,
+    stripeAccountKey: args.stripeAccountKey,
+    stripeCustomerId: customer.id,
+    email,
+  });
+  return customer.id;
+}
+
+/**
+ * Cancel every other live subscription for this Finsepa user so a double-checkout
+ * race cannot leave two Stripe subscriptions billing after webhooks land.
+ */
+export async function cancelOtherLiveSubscriptionsForUser(args: {
+  stripe: Stripe;
+  stripeAccountKey: string;
+  userId: string;
+  keepSubscriptionId: string;
+  seedCustomerIds?: Array<string | null | undefined>;
+  email?: string | null;
+}): Promise<void> {
+  const customerIds = new Set<string>();
+  for (const id of args.seedCustomerIds ?? []) {
+    if (typeof id === "string" && id.trim()) customerIds.add(id.trim());
+  }
+
+  const admin = getSupabaseAdminClient();
+  if (admin) {
+    const [{ data: custRows }, { data: subRow }] = await Promise.all([
+      admin
+        .from("billing_customers")
+        .select("stripe_customer_id")
+        .eq("user_id", args.userId)
+        .eq("stripe_account_key", args.stripeAccountKey)
+        .returns<{ stripe_customer_id: string }[]>(),
+      admin
+        .from("billing_subscriptions")
+        .select("stripe_customer_id,stripe_subscription_id")
+        .eq("user_id", args.userId)
+        .maybeSingle<{ stripe_customer_id: string | null; stripe_subscription_id: string | null }>(),
+    ]);
+    for (const row of custRows ?? []) {
+      if (row.stripe_customer_id) customerIds.add(row.stripe_customer_id);
+    }
+    if (subRow?.stripe_customer_id) customerIds.add(subRow.stripe_customer_id);
+  }
+
+  try {
+    const found = await args.stripe.customers.search({
+      query: `metadata['finsepa_user_id']:'${args.userId}'`,
+      limit: 25,
+    });
+    for (const customer of found.data) customerIds.add(customer.id);
+  } catch {
+    /* Search API unavailable in some accounts � DB + email fallback below */
+  }
+
+  const email = typeof args.email === "string" ? args.email.trim().toLowerCase() : "";
+  if (email) {
+    try {
+      const listed = await args.stripe.customers.list({ email, limit: 25 });
+      for (const customer of listed.data) {
+        const metaUser = customer.metadata?.finsepa_user_id;
+        if (metaUser && metaUser !== args.userId) continue;
+        customerIds.add(customer.id);
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  for (const customerId of customerIds) {
+    try {
+      const page = await args.stripe.subscriptions.list({
+        customer: customerId,
+        status: "all",
+        limit: 100,
+      });
+      for (const sub of page.data) {
+        if (sub.id === args.keepSubscriptionId) continue;
+        if (sub.status !== "active" && sub.status !== "trialing") continue;
+        try {
+          await args.stripe.subscriptions.cancel(sub.id);
+        } catch (error) {
+          console.error("[billing] failed to cancel sibling subscription", sub.id, error);
+        }
+      }
+    } catch (error) {
+      console.error("[billing] failed to list subscriptions for customer", customerId, error);
+    }
+  }
 }
 
 export function resolvePlanCode(subscription: Stripe.Subscription): string {
@@ -241,10 +385,10 @@ export async function resolveUserEmailById(userId: string): Promise<string | nul
   return e || null;
 }
 
-/** True if we already recorded sending the Loops “Pro activated” welcome email. */
 export async function hasProWelcomeEmailBeenSent(userId: string): Promise<boolean> {
   const admin = getSupabaseAdminClient();
-  if (!admin) return true;
+  // Missing admin must not pretend the email was sent (that permanently skips it).
+  if (!admin) return false;
   const { data } = await admin
     .from("billing_subscriptions")
     .select("pro_welcome_email_sent_at")
@@ -253,16 +397,105 @@ export async function hasProWelcomeEmailBeenSent(userId: string): Promise<boolea
   return !!data?.pro_welcome_email_sent_at;
 }
 
-export async function markProWelcomeEmailSent(userId: string): Promise<void> {
+/**
+ * Atomically claim the Pro activated email slot (like renewal claim).
+ * Returns true only for the first caller; clear with {@link clearProWelcomeEmailClaim} if Loops fails.
+ */
+export async function claimProWelcomeEmailSend(userId: string): Promise<boolean> {
   const admin = getSupabaseAdminClient();
-  if (!admin) return;
-  await admin
+  if (!admin) return false;
+  const { data: claimedRows, error } = await admin
     .from("billing_subscriptions")
     .update({
       pro_welcome_email_sent_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
+    .eq("user_id", userId)
+    .is("pro_welcome_email_sent_at", null)
+    .select("user_id");
+  if (error || !claimedRows?.length) return false;
+  return true;
+}
+
+export async function clearProWelcomeEmailClaim(userId: string): Promise<void> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return;
+  await admin
+    .from("billing_subscriptions")
+    .update({
+      pro_welcome_email_sent_at: null,
+      updated_at: new Date().toISOString(),
+    })
     .eq("user_id", userId);
+}
+
+/**
+ * Atomically claim the Welcome Trial Start email slot across concurrent triggers
+ * (auth callback, onboarding bootstrap, protected shell).
+ */
+export async function claimWelcomeTrialEmailSend(userId: string): Promise<boolean> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return false;
+
+  // Ensure a billing row exists so the claim UPDATE can match (OAuth / race before trigger).
+  const trialEnds = new Date(Date.now() + 7 * 86_400_000).toISOString();
+  await admin.from("billing_subscriptions").upsert(
+    {
+      user_id: userId,
+      plan_code: "trial",
+      status: "trial",
+      platform_trial_ends_at: trialEnds,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id", ignoreDuplicates: true },
+  );
+
+  const { data: claimedRows, error } = await admin
+    .from("billing_subscriptions")
+    .update({
+      welcome_trial_email_sent_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .is("welcome_trial_email_sent_at", null)
+    .select("user_id");
+  if (error || !claimedRows?.length) return false;
+  return true;
+}
+
+export async function clearWelcomeTrialEmailClaim(userId: string): Promise<void> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return;
+  await admin
+    .from("billing_subscriptions")
+    .update({
+      welcome_trial_email_sent_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId);
+}
+
+/** @deprecated Prefer {@link claimProWelcomeEmailSend}. */
+export async function markProWelcomeEmailSent(userId: string): Promise<void> {
+  await claimProWelcomeEmailSend(userId);
+}
+
+/** Best-effort admin write for fields reconciled from Stripe (summary UI). */
+export async function patchBillingSubscriptionFromStripeReconcile(args: {
+  userId: string;
+  status?: string;
+  cancelAtPeriodEnd?: boolean;
+  currentPeriodEnd?: string | null;
+  recurringAmountUsd?: number;
+}): Promise<void> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return;
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (typeof args.status === "string") patch.status = args.status;
+  if (typeof args.cancelAtPeriodEnd === "boolean") patch.cancel_at_period_end = args.cancelAtPeriodEnd;
+  if (args.currentPeriodEnd !== undefined) patch.current_period_end = args.currentPeriodEnd;
+  if (typeof args.recurringAmountUsd === "number") patch.recurring_amount_usd = args.recurringAmountUsd;
+  await admin.from("billing_subscriptions").update(patch).eq("user_id", args.userId);
 }
 
 export async function upsertBillingSubscription(args: {
@@ -350,6 +583,8 @@ export async function setSubscriptionTrial(args: { userId: string }) {
       stripe_subscription_id: null,
       stripe_price_id: null,
       platform_trial_ends_at: platformEnds,
+      // Allow Pro activated email again on a later purchase after cancel.
+      pro_welcome_email_sent_at: null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" },
@@ -415,7 +650,7 @@ async function resolvePlanCodeFromInvoiceSubscription(
 }
 
 /**
- * Loops “Pro renewed” once per invoice (`billing_reason` = subscription_cycle).
+ * Loops "Pro renewed" once per invoice (`billing_reason` = subscription_cycle).
  * Claims `loops_renewal_email_sent_at` before sending; clears it if Loops fails (Stripe/webhook retry).
  */
 export async function trySendLoopsProRenewalEmailForPaidInvoice(args: {
@@ -465,8 +700,8 @@ export async function trySendLoopsProRenewalEmailForPaidInvoice(args: {
 }
 
 /**
- * Pull paid invoices from Stripe into `billing_invoices` (covers missed webhooks or local dev).
- * Requires service role + Stripe secret for the account key.
+ * Pull paid invoices from Stripe into `billing_invoices` (missed webhooks / backfill).
+ * Does not send Loops emails - renewals stay webhook-only.
  */
 export async function syncPaidInvoicesFromStripeForUser(args: {
   userId: string;
@@ -494,7 +729,6 @@ export async function syncPaidInvoicesFromStripeForUser(args: {
         starting_after: startingAfter,
         expand: ["data.lines.data.price"],
       });
-      const loopsKey = getLoopsApiKey();
       for (const invoice of page.data) {
         await upsertPaidInvoice({
           userId: args.userId,
@@ -502,23 +736,6 @@ export async function syncPaidInvoicesFromStripeForUser(args: {
           invoice,
           description: stripeInvoiceUiDescription(invoice),
         });
-        if (loopsKey && invoice.billing_reason === "subscription_cycle") {
-          const to = await resolveStripeInvoiceRecipientEmail({
-            stripe,
-            invoice,
-            userId: args.userId,
-          });
-          if (to) {
-            await trySendLoopsProRenewalEmailForPaidInvoice({
-              userId: args.userId,
-              stripeAccountKey,
-              stripe,
-              invoice,
-              loopsApiKey: loopsKey,
-              to,
-            });
-          }
-        }
       }
       if (!page.has_more) break;
       const last = page.data[page.data.length - 1];

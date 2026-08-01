@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { supabaseAuthCookieOptions } from "@/lib/supabase/auth-cookie-options";
+import { supabaseAuthCookieOptions, withDurableAuthCookieOptions } from "@/lib/supabase/auth-cookie-options";
 import { supabaseAuthTimedFetch } from "@/lib/supabase/auth-fetch-timeout";
 
 export async function getSupabaseServerClient() {
@@ -24,7 +24,7 @@ export async function getSupabaseServerClient() {
       setAll(cookiesToSet) {
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
+            cookieStore.set(name, value, withDurableAuthCookieOptions(options));
           });
         } catch {
           /* ignore when called from a Server Component that cannot mutate cookies */

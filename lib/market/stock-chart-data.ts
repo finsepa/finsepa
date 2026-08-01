@@ -806,7 +806,7 @@ function logClosed1DChartDebug(args: {
   points: readonly StockChartPoint[];
 }): void {
   const sym = args.ticker.trim().toUpperCase();
-  if (!CLOSED_1D_DEBUG_TICKERS.has(sym)) return;
+  if (process.env.NODE_ENV !== "development" || !CLOSED_1D_DEBUG_TICKERS.has(sym)) return;
   const first = args.points[0]?.time ?? null;
   const last = args.points.at(-1)?.time ?? null;
   const iso = (t: number | null) =>
