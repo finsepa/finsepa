@@ -71,6 +71,18 @@
   --fs-stroke-muted: #e8e8eb;
   --fs-up: #16a34a;
   --fs-down: #dc2626;
+  /**
+   * Heatmap performance buckets (−3…+3) + tile grid stroke.
+   * Light matches Figma scale; dark overrides under `.dark` only.
+   */
+  --fs-heatmap-3: #56bc71;
+  --fs-heatmap-2: #429457;
+  --fs-heatmap-1: #36714d;
+  --fs-heatmap-0: #3e434b;
+  --fs-heatmap-n1: #843741;
+  --fs-heatmap-n2: #ae353e;
+  --fs-heatmap-n3: #dd434b;
+  --fs-heatmap-tile-stroke: #ffffff;
   --fs-accent: #364aff;
   --fs-accent-hover: #2b3fe6;
   --fs-accent-soft: #dbeafe;
@@ -325,6 +337,18 @@
   --fs-stroke-muted: #222222; /* button border — match card stroke on dark */
   --fs-up: #35d96c;
   --fs-down: #ff3349;
+  /**
+   * Heatmap dark — charcoal near-flat tiles, vivid extremes (ref: Finviz-style dark).
+   * Does not alter light `--fs-heatmap-*` values.
+   */
+  --fs-heatmap-3: #00c853;
+  --fs-heatmap-2: #009e48;
+  --fs-heatmap-1: #1e2c24;
+  --fs-heatmap-0: #2a2a2c;
+  --fs-heatmap-n1: #2e1e21;
+  --fs-heatmap-n2: #c62828;
+  --fs-heatmap-n3: #e53935;
+  --fs-heatmap-tile-stroke: #000000;
   --fs-accent: #364aff;
   --fs-accent-hover: #2b3fe6;
   --fs-accent-soft: #0f1e29;

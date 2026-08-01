@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   AuthDivider,
   AuthPrimaryButton,
@@ -43,6 +43,11 @@ const LOGIN_FETCH_TIMEOUT_MS = 25_000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LEN = 8;
 
+function safeNextPath(raw: string | null | undefined): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return PATH_APP_ENTRY;
+  return raw;
+}
+
 export function LoginClient({ resetSuccess, authNext }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -50,13 +55,38 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
   const [passwordLoginSuccess, setPasswordLoginSuccess] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [resumingSession, setResumingSession] = useState(true);
 
-  const busy = googleLoading || passwordLoading;
+  const busy = googleLoading || passwordLoading || resumingSession;
   const formLocked = busy || passwordLoginSuccess;
   const emailNorm = email.trim().toLowerCase();
   const emailReady = emailNorm.length > 0 && EMAIL_RE.test(emailNorm);
   const passwordReady = password.length >= MIN_PASSWORD_LEN;
   const formCanSubmit = emailReady && passwordReady;
+
+  // If auth cookies survived a tab close but middleware briefly failed, resume without re-login.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (session) {
+          window.location.replace(safeNextPath(authNext));
+          return;
+        }
+      } catch {
+        /* show login form */
+      }
+      if (!cancelled) setResumingSession(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authNext]);
 
   const preCardBanner = useMemo(() => {
     if (errorMessage) {
@@ -127,6 +157,7 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: emailValue, password: passwordValue, next: authNext }),
         signal: controller.signal,
+        credentials: "same-origin",
       });
 
       const data = (await res.json().catch(() => ({}))) as {
@@ -163,6 +194,14 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
     } finally {
       window.clearTimeout(timeoutId);
     }
+  }
+
+  if (resumingSession) {
+    return (
+      <div className="flex justify-center py-6" role="status" aria-label="Checking session">
+        <SpinnerLabel>Signing you in…</SpinnerLabel>
+      </div>
+    );
   }
 
   return (

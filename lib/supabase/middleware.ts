@@ -2,6 +2,11 @@ import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 
+import {
+  supabaseAuthCookieOptions,
+  withDurableAuthCookieOptions,
+} from "@/lib/supabase/auth-cookie-options";
+
 export function createSupabaseMiddlewareClient(request: NextRequest): {
   supabase: SupabaseClient | null;
   response: NextResponse;
@@ -16,6 +21,7 @@ export function createSupabaseMiddlewareClient(request: NextRequest): {
   }
 
   const supabase = createServerClient(url, key, {
+    cookieOptions: supabaseAuthCookieOptions,
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -24,7 +30,7 @@ export function createSupabaseMiddlewareClient(request: NextRequest): {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) => {
-          supabaseResponse.cookies.set(name, value, options);
+          supabaseResponse.cookies.set(name, value, withDurableAuthCookieOptions(options));
         });
       },
     },

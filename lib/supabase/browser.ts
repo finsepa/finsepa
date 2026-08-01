@@ -2,6 +2,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { supabaseAuthTimedFetch, SUPABASE_AUTH_BROWSER_FETCH_TIMEOUT_MS } from "@/lib/supabase/auth-fetch-timeout";
+import { supabaseAuthCookieOptions } from "@/lib/supabase/auth-cookie-options";
 
 let injected: { url: string; anonKey: string } | null = null;
 
@@ -59,8 +60,11 @@ export function getSupabaseBrowserClient(): SupabaseClient {
   }
 
   browserClient = createBrowserClient(url, key, {
+    cookieOptions: supabaseAuthCookieOptions,
     auth: {
       detectSessionInUrl: false,
+      persistSession: true,
+      autoRefreshToken: true,
     },
     global: {
       fetch: supabaseSafeFetch,

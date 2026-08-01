@@ -11,17 +11,18 @@ import {
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { HeatmapLeaf, HeatmapMarket } from "@/lib/heatmap/heatmap-types";
-import { heatmapCellBackground, heatmapCellTextClass } from "@/lib/heatmap/heatmap-colors";
+import {
+  HEATMAP_TILE_STROKE,
+  heatmapCellBackground,
+  heatmapCellTextClass,
+} from "@/lib/heatmap/heatmap-colors";
 import { heatmapLeavesForTreemapLayout } from "@/lib/heatmap/heatmap-treemap-weight";
 import { HeatmapHoverTooltip } from "@/components/heatmap/heatmap-hover-tooltip";
 import { cn } from "@/lib/utils";
 
-/** Outer heatmap shell — 4px inset, muted surface fill, 16px radius. */
-const HEATMAP_SHELL_CLASS = "rounded-2xl bg-surface-muted p-1";
-
 /** Gap between sector cards (treemap padding + visible gutter). */
-const SECTOR_GAP = 4;
-/** Corner radius for each sector card. */
+const SECTOR_GAP = 12;
+/** Corner radius for each sector card — matches earnings / table cards (`rounded-2xl`). */
 const SECTOR_RADIUS = 16;
 /** Figma sector title bar height */
 const HEADER_H = 24;
@@ -35,7 +36,8 @@ const INDUSTRY_LABEL_CHAR_PX = 5.5;
 const PAD = 4;
 /** Corner radius for every company tile. */
 const TILE_CORNER_RADIUS = 8;
-const SECTOR_BORDER = "var(--fs-stroke)";
+/** Same stroke as earnings / screener table cards. */
+const SECTOR_BORDER = "var(--fs-stroke-subtle)";
 const SECTOR_SHADOW_FILTER_ID = "heatmap-sector-shadow";
 
 function leafIndustryGroupKey(L: HeatmapLeaf): string {
@@ -504,9 +506,18 @@ function assetHref(market: HeatmapMarket, ticker: string): string {
 }
 
 function HeatmapSectorShadowFilter() {
+  // Match earnings / table card: `0px 1px 2px rgba(--fs-shadow-rgb, --fs-shadow-a-04)`.
   return (
-    <filter id={SECTOR_SHADOW_FILTER_ID} x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#0A0A0A" floodOpacity="0.06" />
+    <filter id={SECTOR_SHADOW_FILTER_ID} x="-40%" y="-40%" width="180%" height="180%" colorInterpolationFilters="sRGB">
+      <feDropShadow
+        dx="0"
+        dy="1"
+        stdDeviation="1"
+        style={{
+          floodColor: "rgb(var(--fs-shadow-rgb))",
+          floodOpacity: "var(--fs-shadow-a-04)",
+        }}
+      />
     </filter>
   );
 }
@@ -682,7 +693,7 @@ function renderTile(
         rx={tileCornerRadius(w, h)}
         ry={tileCornerRadius(w, h)}
         fill={bg}
-        stroke="white"
+        stroke={HEATMAP_TILE_STROKE}
         strokeWidth={1}
       />
       {showTickerAndPct ? (
@@ -865,11 +876,10 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
       />
       {size.w < 520 ? (
         <div className="w-full">
-          <div className={cn(HEATMAP_SHELL_CLASS, "overflow-hidden")}>
-            <div
-              ref={sliderRef}
-              className="flex w-full snap-x snap-mandatory overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              style={{ height: size.h }}
+          <div
+            ref={sliderRef}
+            className="flex w-full snap-x snap-mandatory overflow-x-auto [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            style={{ height: size.h }}
             onScroll={() => {
               const el = sliderRef.current;
               if (!el) return;
@@ -882,11 +892,10 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
                 <svg
                   width={size.w}
                   height={size.h}
-                  className="max-w-full"
+                  className="max-w-full overflow-visible"
                   role="img"
                   aria-label={`Market cap treemap: ${sec.name}`}
                 >
-                  <rect width={size.w} height={size.h} fill="var(--fs-surface-muted)" />
                   <defs>
                     <HeatmapSectorShadowFilter />
                   </defs>
@@ -901,7 +910,6 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
                 </svg>
               </div>
             ))}
-            </div>
           </div>
           {mobileSectors.length > 1 ? (
             <div className="mt-2 flex items-center justify-center gap-1.5">
@@ -926,32 +934,29 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
           ) : null}
         </div>
       ) : (
-        <div className={cn(HEATMAP_SHELL_CLASS, "overflow-hidden")}>
-          <svg
-            width={size.w}
-            height={size.h}
-            className="max-w-full"
-            role="img"
-            aria-label="Market cap treemap colored by performance"
-          >
-            <rect width={size.w} height={size.h} fill="var(--fs-surface-muted)" />
-            <defs>
-              <HeatmapSectorShadowFilter />
-            </defs>
-            {sectors.map((sec, idx) => (
-              <g key={sec.name}>
-                {renderSectorGroup(
-                  sec,
-                  `heatmap-sector-${idx}`,
-                  market,
-                  hover,
-                  onTileEnter,
-                  scheduleClearHover,
-                )}
-              </g>
-            ))}
-          </svg>
-        </div>
+        <svg
+          width={size.w}
+          height={size.h}
+          className="max-w-full overflow-visible"
+          role="img"
+          aria-label="Market cap treemap colored by performance"
+        >
+          <defs>
+            <HeatmapSectorShadowFilter />
+          </defs>
+          {sectors.map((sec, idx) => (
+            <g key={sec.name}>
+              {renderSectorGroup(
+                sec,
+                `heatmap-sector-${idx}`,
+                market,
+                hover,
+                onTileEnter,
+                scheduleClearHover,
+              )}
+            </g>
+          ))}
+        </svg>
       )}
     </div>
   );

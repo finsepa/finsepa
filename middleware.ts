@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 import { requestHasSupabaseAuthCookies } from "@/lib/auth/supabase-auth-cookies";
+import { supabaseAuthCookieOptions, withDurableAuthCookieOptions } from "@/lib/supabase/auth-cookie-options";
 import { supabaseAuthTimedFetch } from "@/lib/supabase/auth-fetch-timeout";
 
 /**
@@ -11,9 +12,14 @@ import { supabaseAuthTimedFetch } from "@/lib/supabase/auth-fetch-timeout";
  */
 const AUTH_GET_USER_BUDGET_MS = 5_000;
 
-async function getMiddlewareUser(
+type MiddlewareAuthResult =
+  | { status: "authenticated"; id: string }
+  | { status: "anonymous" }
+  | { status: "unknown" };
+
+async function getMiddlewareAuth(
   supabase: ReturnType<typeof createServerClient>,
-): Promise<{ id: string } | null> {
+): Promise<MiddlewareAuthResult> {
   try {
     const claimsSettled = await Promise.race([
       supabase.auth.getClaims().then(
@@ -25,7 +31,12 @@ async function getMiddlewareUser(
     ]);
     if (claimsSettled.kind === "claims") {
       const sub = claimsSettled.r.data?.claims?.sub;
-      if (typeof sub === "string" && sub.length > 0) return { id: sub };
+      if (typeof sub === "string" && sub.length > 0) {
+        return { status: "authenticated", id: sub };
+      }
+    } else {
+      // Claims timed out — don't treat as logged out on flaky mobile networks.
+      return { status: "unknown" };
     }
 
     const result = await Promise.race([
@@ -34,10 +45,12 @@ async function getMiddlewareUser(
         setTimeout(() => reject(new Error("supabase_auth_timeout")), AUTH_GET_USER_BUDGET_MS);
       }),
     ]);
-    return result.data.user ?? null;
+    const user = result.data.user;
+    if (user?.id) return { status: "authenticated", id: user.id };
+    return { status: "anonymous" };
   } catch {
-    // Auth outage / timeout: treat as logged out so pages still render.
-    return null;
+    // Auth outage / timeout: keep existing cookies; page/client can recover.
+    return { status: "unknown" };
   }
 }
 
@@ -110,8 +123,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const hasAuthCookies = requestHasSupabaseAuthCookies(request.cookies.getAll());
+
   // No session cookies → skip remote Auth on protected routes (redirect immediately).
-  if ((isProtectedPath || isActivateSubscriptionPath) && !requestHasSupabaseAuthCookies(request.cookies.getAll())) {
+  if ((isProtectedPath || isActivateSubscriptionPath) && !hasAuthCookies) {
     const loginUrl = new URL(PATH_LOGIN, request.url);
     loginUrl.searchParams.set("next", path);
     return NextResponse.redirect(loginUrl);
@@ -120,6 +135,7 @@ export async function middleware(request: NextRequest) {
   // Minimal, Edge-safe Supabase client that reads/writes cookies.
   const response = NextResponse.next({ request });
   const supabase = createServerClient(url, key, {
+    cookieOptions: supabaseAuthCookieOptions,
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -127,8 +143,9 @@ export async function middleware(request: NextRequest) {
       setAll(cookiesToSet) {
         // Merge every chunk onto the same response — recreating NextResponse drops prior Set-Cookie headers.
         cookiesToSet.forEach(({ name, value, options }) => {
+          const durable = withDurableAuthCookieOptions(options);
           request.cookies.set(name, value);
-          response.cookies.set(name, value, options);
+          response.cookies.set(name, value, durable);
         });
       },
     },
@@ -137,15 +154,16 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const user = await getMiddlewareUser(supabase);
+  const auth = await getMiddlewareAuth(supabase);
 
-  if (!user && (isProtectedPath || isActivateSubscriptionPath)) {
-    // Preserve where the user was trying to go (optional).
+  if (auth.status === "anonymous" && (isProtectedPath || isActivateSubscriptionPath)) {
     const loginUrl = new URL(PATH_LOGIN, request.url);
     loginUrl.searchParams.set("next", path);
     return NextResponse.redirect(loginUrl);
   }
 
+  // `unknown` (timeout/outage) with cookies present: allow through so mobile reopen
+  // does not force a false logout when Auth is slow.
   return response;
 }
 

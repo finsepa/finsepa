@@ -5,6 +5,10 @@ import { NextResponse } from "next/server";
 import { resolvePostLoginPath } from "@/lib/auth/post-login-redirect";
 import { verifyPasswordForEmail } from "@/lib/auth/verify-password-for-email";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import {
+  supabaseAuthCookieOptions,
+  withDurableAuthCookieOptions,
+} from "@/lib/supabase/auth-cookie-options";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,14 +38,16 @@ async function createCookieSessionClient() {
   const sessionCookies: SessionCookie[] = [];
 
   const supabase = createServerClient(config.url, config.anonKey, {
+    cookieOptions: supabaseAuthCookieOptions,
     cookies: {
       getAll() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-          sessionCookies.push({ name, value, options });
+          const durable = withDurableAuthCookieOptions(options);
+          cookieStore.set(name, value, durable);
+          sessionCookies.push({ name, value, options: durable });
         });
       },
     },
@@ -53,7 +59,7 @@ async function createCookieSessionClient() {
 function buildLoginSuccessResponse(redirectTo: string, sessionCookies: SessionCookie[]) {
   const response = NextResponse.json({ ok: true as const, redirectTo });
   sessionCookies.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, options);
+    response.cookies.set(name, value, withDurableAuthCookieOptions(options));
   });
   return response;
 }

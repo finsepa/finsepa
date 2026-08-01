@@ -176,7 +176,7 @@ export function HeatmapHoverTooltip({
       aria-label={`${f.ticker} details`}
     >
       <div className={dropdownMenuSearchHeaderClassName}>
-        <p className="truncate px-2 text-[11px] font-semibold tracking-wide text-fg-subtle uppercase">
+        <p className="truncate px-2 text-[11px] font-semibold tracking-wide text-fg uppercase">
           {title}
         </p>
       </div>

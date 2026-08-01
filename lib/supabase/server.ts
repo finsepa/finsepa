@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+import { supabaseAuthCookieOptions } from "@/lib/supabase/auth-cookie-options";
 import { supabaseAuthTimedFetch } from "@/lib/supabase/auth-fetch-timeout";
 
 export async function getSupabaseServerClient() {
@@ -15,6 +16,7 @@ export async function getSupabaseServerClient() {
   const cookieStore = await cookies();
 
   return createServerClient(url, key, {
+    cookieOptions: supabaseAuthCookieOptions,
     cookies: {
       getAll() {
         return cookieStore.getAll();
