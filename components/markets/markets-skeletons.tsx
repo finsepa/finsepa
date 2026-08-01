@@ -375,11 +375,11 @@ export function StocksGainersLosersSkeleton({
   );
 }
 
-export type ScreenerMarketTabSkeletonVariant = "Stocks" | "Crypto" | "Indices" | "ETF's";
+export type ScreenerMarketTabSkeletonVariant = "Stocks" | "Crypto" | "Indices" | "ETF's" | "Currencies";
 
 /** Matches {@link MarketTabs} / {@link UnderlineTabs} chrome while tabs are not yet interactive. */
 export function MarketTabsSkeleton() {
-  const tabWidths = ["w-12", "w-14", "w-14", "w-11"] as const;
+  const tabWidths = ["w-12", "w-14", "w-14", "w-11", "w-20"] as const;
 
   return (
     <div className="mb-5 hidden border-b border-solid border-stroke md:block">
@@ -424,6 +424,14 @@ export function ScreenerMarketTabSkeleton({ tab }: { tab: ScreenerMarketTabSkele
     return (
       <div className="min-w-0 w-full max-w-full">
         <IndicesTableSkeleton rows={10} />
+      </div>
+    );
+  }
+
+  if (tab === "Currencies") {
+    return (
+      <div className="min-w-0 w-full max-w-full">
+        <IndicesTableSkeleton rows={6} />
       </div>
     );
   }

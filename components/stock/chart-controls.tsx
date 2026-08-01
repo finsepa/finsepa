@@ -35,12 +35,18 @@ export function ChartControls({
   titleSlot,
   seriesSelectDisabled = false,
   rangeLabels,
+  availableRanges,
+  hideMarketCapSeries = false,
   children,
 }: {
   activeRange: StockChartRange;
   onRangeChange: (range: StockChartRange) => void;
   /** Per-range display label overrides (e.g. crypto shows `24H` instead of `1D`). */
   rangeLabels?: Partial<Record<StockChartRange, string>>;
+  /** When set, only these ranges appear (e.g. index EOD-only: no 1D/5D). */
+  availableRanges?: readonly StockChartRange[];
+  /** Hide market-cap metric (indices / non-equity charts). */
+  hideMarketCapSeries?: boolean;
   /** When set (stock overview), show metric toggle instead of a static title. */
   chartSeries?: StockChartSeries;
   onChartSeriesChange?: (s: StockChartSeries) => void;
@@ -56,19 +62,22 @@ export function ChartControls({
   children?: ReactNode;
 }) {
   const showSeriesToggle = chartSeries != null && onChartSeriesChange != null;
-  const chartSeriesSegmentOptions = CHART_SERIES_OPTIONS;
+  const chartSeriesSegmentOptions = hideMarketCapSeries
+    ? CHART_SERIES_OPTIONS.filter((o) => o.value !== "marketCap")
+    : CHART_SERIES_OPTIONS;
   const chartBodyLayout = children != null;
 
-  const rangeOptions = useMemo<readonly SegmentedControlOption<StockChartRange>[]>(
-    () =>
-      rangeLabels
-        ? CHART_RANGE_OPTIONS.map((option) => ({
-            ...option,
-            label: rangeLabels[option.value] ?? option.label,
-          }))
-        : CHART_RANGE_OPTIONS,
-    [rangeLabels],
-  );
+  const rangeOptions = useMemo<readonly SegmentedControlOption<StockChartRange>[]>(() => {
+    const base = availableRanges?.length
+      ? CHART_RANGE_OPTIONS.filter((option) => availableRanges.includes(option.value))
+      : CHART_RANGE_OPTIONS;
+    return rangeLabels
+      ? base.map((option) => ({
+          ...option,
+          label: rangeLabels[option.value] ?? option.label,
+        }))
+      : base;
+  }, [availableRanges, rangeLabels]);
 
   /** Mobile range row omits YTD to save horizontal space. */
   const mobileRangeOptions = useMemo(

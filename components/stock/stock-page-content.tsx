@@ -1334,7 +1334,7 @@ export function StockPageContent({
           aria-hidden={displayTab !== "overview"}
           className={displayTab === "overview" ? "space-y-5 max-md:-mt-2" : "hidden"}
         >
-          {comparePicks.length > 0 ? (
+          {isEtf || comparePicks.length > 0 ? (
             <MiniTable
               ticker={ticker}
               headerMeta={headerMeta}

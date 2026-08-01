@@ -6,8 +6,9 @@
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import type { ScreenerIndustryDrill } from "@/lib/screener/screener-industry-url";
+import type { CurrencyTableRow } from "@/lib/screener/screener-currencies-universe";
 
-export type ScreenerMarketTab = "stocks" | "crypto" | "indices" | "etfs";
+export type ScreenerMarketTab = "stocks" | "crypto" | "indices" | "etfs" | "currencies";
 
 export type IndexCardData = {
   name: string;
@@ -72,7 +73,8 @@ export type ScreenerPagePayload =
       marketCacheSegment: string;
     }
   | { market: "indices"; indicesRows: IndexTableRow[]; marketCacheSegment: string }
-  | { market: "etfs"; etfsRows: EtfTableRow[]; marketCacheSegment: string };
+  | { market: "etfs"; etfsRows: EtfTableRow[]; marketCacheSegment: string }
+  | { market: "currencies"; currenciesRows: CurrencyTableRow[]; marketCacheSegment: string };
 
 export function marketCacheSegmentFromPayload(payload: ScreenerPagePayload): string {
   if (payload.market === "stocks") return payload.companiesMarketCacheSegment;

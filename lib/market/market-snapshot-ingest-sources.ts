@@ -15,6 +15,8 @@ import {
   buildMarketSnapshotScreenerDerivedForIngest,
   buildMarketSnapshotStocksAllPagesForIngest,
 } from "@/lib/market/simple-market-layer";
+import { buildMarketSnapshotCurrenciesTabForIngest } from "@/lib/screener/screener-currencies-rows";
+import type { CurrencyTableRow } from "@/lib/screener/screener-currencies-universe";
 
 export type MarketSnapshotIngestPayloads = {
   stocksAllPages: SimpleMarketData;
@@ -24,6 +26,7 @@ export type MarketSnapshotIngestPayloads = {
   cryptoDerived: SimpleCryptoDerived;
   indicesTab: SimpleMarketData;
   indicesDerived: SimpleIndicesDerived;
+  currenciesTab: CurrencyTableRow[];
 };
 
 export type MarketSnapshotHotIngestPayloads = Pick<
@@ -33,7 +36,7 @@ export type MarketSnapshotHotIngestPayloads = Pick<
 
 export type MarketSnapshotSlowIngestPayloads = Pick<
   MarketSnapshotIngestPayloads,
-  "screenerDerived" | "cryptoDerived" | "indicesDerived"
+  "screenerDerived" | "cryptoDerived" | "indicesDerived" | "currenciesTab"
 >;
 
 /** Hot quotes/tabs — cron only; never reads Supabase. */
@@ -49,12 +52,13 @@ export async function buildMarketSnapshotHotPayloadsForIngest(): Promise<MarketS
 
 /** EOD-derived blobs — cron only; never reads Supabase. */
 export async function buildMarketSnapshotSlowPayloadsForIngest(): Promise<MarketSnapshotSlowIngestPayloads> {
-  const [screenerDerived, cryptoDerived, indicesDerived] = await Promise.all([
+  const [screenerDerived, cryptoDerived, indicesDerived, currenciesTab] = await Promise.all([
     buildMarketSnapshotScreenerDerivedForIngest(),
     buildMarketSnapshotCryptoDerivedForIngest(),
     buildMarketSnapshotIndicesDerivedForIngest(),
+    buildMarketSnapshotCurrenciesTabForIngest(),
   ]);
-  return { screenerDerived, cryptoDerived, indicesDerived };
+  return { screenerDerived, cryptoDerived, indicesDerived, currenciesTab };
 }
 
 /** Loads all snapshot blobs from EODHD (cron only — never reads Supabase). */

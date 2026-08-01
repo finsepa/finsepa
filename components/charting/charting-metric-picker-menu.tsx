@@ -20,9 +20,9 @@ import {
 import { Plus } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
-/** Matches {@link WatchlistSectionHeader} section title typography. */
+/** Section headers — secondary text so categories read as labels, not rows. */
 const metricPickerSectionLabelClass =
-  "px-4 pb-1 pt-2 text-[13px] font-medium text-fg";
+  "px-4 pb-1 pt-2 text-[13px] font-medium text-fg-muted";
 
 function MetricPickerSectionLabel({ label }: { label: string }) {
   return <p className={metricPickerSectionLabelClass}>{label}</p>;

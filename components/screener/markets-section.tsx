@@ -8,6 +8,7 @@ import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { IndexTableRow } from "@/lib/market/indices-top10";
 import type { EtfTableRow } from "@/lib/screener/screener-etfs-universe";
+import type { CurrencyTableRow } from "@/lib/screener/screener-currencies-universe";
 import type { ScreenerPagePayload } from "@/lib/screener/screener-page-payload-types";
 import { buildScreenerMarketTabApiUrl } from "@/lib/screener/build-screener-market-tab-url";
 import {
@@ -77,6 +78,7 @@ import {
 } from "@/lib/screener/screener-stocks-subtab-cache";
 import { CryptoTable } from "@/components/screener/crypto-table";
 import { EtfsTable } from "@/components/screener/etfs-table";
+import { CurrenciesTable } from "@/components/screener/currencies-table";
 import { IndicesTable } from "@/components/screener/indices-table";
 import {
   ScreenerMarketTabSkeleton,
@@ -403,6 +405,14 @@ function EtfsTabBody({ etfsRows }: { etfsRows: EtfTableRow[] }) {
   return (
     <div>
       <EtfsTable initialRows={etfsRows} />
+    </div>
+  );
+}
+
+function CurrenciesTabBody({ currenciesRows }: { currenciesRows: CurrencyTableRow[] }) {
+  return (
+    <div>
+      <CurrenciesTable initialRows={currenciesRows} />
     </div>
   );
 }
@@ -1112,6 +1122,8 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
         <IndicesTabBody indicesRows={activePayload.indicesRows} />
       ) : displayTab === "ETF's" && activePayload.market === "etfs" ? (
         <EtfsTabBody etfsRows={activePayload.etfsRows} />
+      ) : displayTab === "Currencies" && activePayload.market === "currencies" ? (
+        <CurrenciesTabBody currenciesRows={activePayload.currenciesRows} />
       ) : null}
     </div>
   );

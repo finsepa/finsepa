@@ -55,7 +55,7 @@ export const protectedMarketItems: ProtectedNavItem[] = [
     icon: Globe01,
     href: "/screener",
     available: true,
-    activePathPrefixes: ["/screener", "/stock", "/crypto", "/index"],
+    activePathPrefixes: ["/screener", "/stock", "/crypto", "/index", "/currency"],
   },
   { label: "Heatmaps", icon: Grid01, href: "/heatmaps", available: true },
   {

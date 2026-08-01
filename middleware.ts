@@ -100,7 +100,8 @@ export async function middleware(request: NextRequest) {
     path.startsWith("/superinvestors/") ||
     path === "/agents" ||
     path.startsWith("/agents/") ||
-    path.startsWith("/index/");
+    path.startsWith("/index/") ||
+    path.startsWith("/currency/");
 
   const isAuthGatePagePath = path === PATH_LOGIN || path === PATH_SIGNUP || path === PATH_FORGOT_PASSWORD;
 
@@ -188,6 +189,7 @@ export const config = {
     "/agents",
     "/agents/:path*",
     "/index/:path*",
+    "/currency/:path*",
     "/login",
     "/signup",
     "/forgot-password",

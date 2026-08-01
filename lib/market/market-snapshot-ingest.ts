@@ -155,6 +155,7 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
         ["screenerDerived", MARKET_SNAPSHOT_KEY.screenerDerived],
         ["cryptoDerived", MARKET_SNAPSHOT_KEY.cryptoDerived],
         ["indicesDerived", MARKET_SNAPSHOT_KEY.indicesDerived],
+        ["currenciesTab", MARKET_SNAPSHOT_KEY.currenciesTab],
       ];
       for (const [name, snapshotKey] of slowEntries) {
         const res = await upsertMarketSnapshot(snapshotKey, slowSeg, slow[name]);

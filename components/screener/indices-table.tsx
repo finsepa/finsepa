@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
 import { TABLE_END_ALIGNED_PAD_CLASS } from "@/components/screener/screener-table-pad";
 import {
@@ -14,6 +15,7 @@ import {
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
+import { indexAssetHref } from "@/lib/market/index-page-shared";
 import { indexWatchlistKey } from "@/lib/watchlist/constants";
 import { SCREENER_INDICES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
@@ -160,7 +162,9 @@ export function IndicesTable({
                     <div className={cn(rowGrid, "min-h-[56px] w-full items-center sm:min-h-[60px]")}>
                       <div className={mobileRankCellClass}>{rankOffset + i + 1}</div>
                       <div className="min-w-0 w-full text-left text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
-                        {r.name}
+                        <Link href={indexAssetHref(r.symbol)} className="block min-w-0 truncate hover:underline">
+                          {r.name}
+                        </Link>
                       </div>
                       <div className="block sm:hidden">
                         <ValueAndChangeCell value={r.value} change1D={r.change1D} />

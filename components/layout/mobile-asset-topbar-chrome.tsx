@@ -10,7 +10,7 @@ import { topbarSquircleIconClass } from "@/components/design-system/topbar-contr
 import {
   parseMobileAssetTopbarRoute,
 } from "@/lib/layout/mobile-asset-topbar-route";
-import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
+import { cryptoWatchlistKey, forexWatchlistKey, indexWatchlistKey } from "@/lib/watchlist/constants";
 
 function MobileAssetTopbarTitle({
   line1,
@@ -116,6 +116,24 @@ export function MobileAssetTopbarChrome() {
           watchlistLabel={route.symbol}
           transactionSymbol={route.symbol}
           transactionName={route.symbol}
+        />
+      ) : route.kind === "index" ? (
+        <AssetPageHeaderActions
+          className="relative z-[1]"
+          watchlistStorageKey={indexWatchlistKey(route.symbol)}
+          watchlistLabel={route.symbol}
+          transactionSymbol={route.symbol.replace(/\.INDX$/i, "").replace(/\.US$/i, "")}
+          transactionName={route.symbol}
+          hideAddTrade
+        />
+      ) : route.kind === "currency" ? (
+        <AssetPageHeaderActions
+          className="relative z-[1]"
+          watchlistStorageKey={forexWatchlistKey(route.symbol)}
+          watchlistLabel={route.symbol}
+          transactionSymbol={route.symbol.replace(/\.FOREX$/i, "")}
+          transactionName={route.symbol}
+          hideAddTrade
         />
       ) : (
         <div className="w-9 shrink-0" aria-hidden />

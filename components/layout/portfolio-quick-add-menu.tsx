@@ -255,7 +255,11 @@ export function PortfolioQuickAddMenu({
           )}
         >
           {activityItems.map(renderItem)}
-          <div role="separator" aria-hidden className="-mx-1 my-0.5 h-px shrink-0 bg-stroke" />
+          <div
+            role="separator"
+            aria-hidden
+            className="-mx-1 my-0.5 h-px shrink-0 bg-dropdown-divider"
+          />
           {createItems.map(renderItem)}
         </div>
       </TopbarDropdownPortal>

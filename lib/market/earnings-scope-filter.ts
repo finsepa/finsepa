@@ -1,4 +1,4 @@
-import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist/constants";
+import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_FOREX_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist/constants";
 import { watchlistWatchedAliasKeys } from "@/lib/watchlist/normalize-storage-key";
 
 import type {
@@ -43,7 +43,11 @@ export function buildAllowedKeysFromWatchlist(watched: ReadonlySet<string>): Set
   const keys = new Set<string>();
   for (const w of watched) {
     for (const alias of watchlistWatchedAliasKeys(w)) {
-      if (alias.startsWith(WATCHLIST_CRYPTO_PREFIX) || alias.startsWith(WATCHLIST_INDEX_PREFIX)) {
+      if (
+        alias.startsWith(WATCHLIST_CRYPTO_PREFIX) ||
+        alias.startsWith(WATCHLIST_INDEX_PREFIX) ||
+        alias.startsWith(WATCHLIST_FOREX_PREFIX)
+      ) {
         continue;
       }
       keys.add(canonicalEarningsScopeKey(alias));

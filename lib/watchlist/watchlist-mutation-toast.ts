@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
-import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist/constants";
+import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_FOREX_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist/constants";
 
 /** Human-readable symbol for Sonner copy (MSFT, BTC, GSPC.INDX, …). */
 export function watchlistToastLabel(storageKey: string): string {
@@ -11,6 +11,9 @@ export function watchlistToastLabel(storageKey: string): string {
   }
   if (key.startsWith(WATCHLIST_INDEX_PREFIX)) {
     return key.slice(WATCHLIST_INDEX_PREFIX.length);
+  }
+  if (key.startsWith(WATCHLIST_FOREX_PREFIX)) {
+    return key.slice(WATCHLIST_FOREX_PREFIX.length).replace(/\.FOREX$/i, "");
   }
   return key;
 }

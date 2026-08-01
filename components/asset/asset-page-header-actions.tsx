@@ -11,12 +11,15 @@ export function AssetPageHeaderActions({
   watchlistLabel,
   transactionSymbol,
   transactionName,
+  hideAddTrade = false,
   className,
 }: {
   watchlistStorageKey: string;
   watchlistLabel: string;
   transactionSymbol: string;
   transactionName: string;
+  /** Indices and non-tradable assets — watchlist only. */
+  hideAddTrade?: boolean;
   className?: string;
 }) {
   const { openNewTransactionWithPreset } = usePortfolioWorkspace();
@@ -31,21 +34,23 @@ export function AssetPageHeaderActions({
       <div className="group shrink-0">
         <WatchlistStarButton variant="detail" storageKey={watchlistStorageKey} label={watchlistLabel} />
       </div>
-      <button
-        type="button"
-        suppressHydrationWarning
-        onClick={() =>
-          openNewTransactionWithPreset({
-            symbol: sym,
-            name: transactionName.trim() || sym,
-          })
-        }
-        className={addTradeButtonClass}
-        aria-label="Add Trade"
-      >
-        <Plus className="h-5 w-5 shrink-0 md:h-4 md:w-4" strokeWidth={1.75} aria-hidden />
-        <span className="hidden md:inline">Add Trade</span>
-      </button>
+      {hideAddTrade ? null : (
+        <button
+          type="button"
+          suppressHydrationWarning
+          onClick={() =>
+            openNewTransactionWithPreset({
+              symbol: sym,
+              name: transactionName.trim() || sym,
+            })
+          }
+          className={addTradeButtonClass}
+          aria-label="Add Trade"
+        >
+          <Plus className="h-5 w-5 shrink-0 md:h-4 md:w-4" strokeWidth={1.75} aria-hidden />
+          <span className="hidden md:inline">Add Trade</span>
+        </button>
+      )}
     </div>
   );
 }

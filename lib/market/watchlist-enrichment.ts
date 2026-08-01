@@ -1,6 +1,6 @@
 import "server-only";
 
-import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist/constants";
+import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_FOREX_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist/constants";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import type { WatchlistRow } from "@/lib/watchlist/types";
 import { getCryptoAsset } from "@/lib/market/crypto-asset";
@@ -19,6 +19,8 @@ import {
   type SimpleMarketDatum,
   type SimpleScreenerStockDerived,
 } from "@/lib/market/simple-market-layer";
+import { getScreenerCurrenciesMajorsRows } from "@/lib/screener/screener-currencies-rows";
+import { currencyAssetHref, resolveCurrencyPageTitle } from "@/lib/market/currency-page-shared";
 import {
   buildScreenerCompanyRowFromUniverse,
   screenerPeDisplayFromUniverse,
@@ -50,13 +52,19 @@ import { getNvdaPerformance, getNvdaHeaderMeta } from "@/lib/fixtures/nvda";
 /** Caps parallel work when the watchlist has many symbols. */
 const WATCHLIST_ENRICH_CONCURRENCY = 8;
 
-export function parseWatchlistStorageKey(key: string): { kind: "stock" | "crypto" | "index"; symbol: string } {
+export function parseWatchlistStorageKey(key: string): {
+  kind: "stock" | "crypto" | "index" | "forex";
+  symbol: string;
+} {
   const t = key.trim().toUpperCase();
   if (t.startsWith(WATCHLIST_CRYPTO_PREFIX)) {
     return { kind: "crypto", symbol: t.slice(WATCHLIST_CRYPTO_PREFIX.length).trim() || "?" };
   }
   if (t.startsWith(WATCHLIST_INDEX_PREFIX)) {
     return { kind: "index", symbol: t.slice(WATCHLIST_INDEX_PREFIX.length).trim() || "?" };
+  }
+  if (t.startsWith(WATCHLIST_FOREX_PREFIX)) {
+    return { kind: "forex", symbol: t.slice(WATCHLIST_FOREX_PREFIX.length).trim() || "?" };
   }
   return { kind: "stock", symbol: t };
 }
@@ -477,6 +485,29 @@ async function enrichIndex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> 
   };
 }
 
+async function enrichForex(entry: WatchlistRow): Promise<WatchlistEnrichedItem> {
+  const { symbol } = parseWatchlistStorageKey(entry.ticker);
+  const name = resolveCurrencyPageTitle(symbol);
+  const rows = await getScreenerCurrenciesMajorsRows();
+  const row = rows.find((r) => r.symbol.toUpperCase() === symbol.toUpperCase());
+  return {
+    entryId: entry.id,
+    storageKey: entry.ticker,
+    symbol,
+    name,
+    kind: "forex",
+    href: currencyAssetHref(symbol),
+    logoUrl: null,
+    price: row && Number.isFinite(row.value) ? row.value : null,
+    pct1d: row && Number.isFinite(row.change1D) ? row.change1D : null,
+    pct1m: row?.change1M ?? null,
+    ytd: row?.changeYTD ?? null,
+    mcapDisplay: "—",
+    peDisplay: "—",
+    earningsDisplay: "—",
+  };
+}
+
 async function buildWatchlistEnrichedGroupsUncached(items: WatchlistRow[]): Promise<{
   stocks: WatchlistEnrichedItem[];
   crypto: WatchlistEnrichedItem[];
@@ -504,7 +535,9 @@ async function buildWatchlistEnrichedGroupsUncached(items: WatchlistRow[]): Prom
             ? await enrichCrypto(entry)
             : kind === "index"
               ? await enrichIndex(entry)
-              : await enrichStock(entry, stockBatch);
+              : kind === "forex"
+                ? await enrichForex(entry)
+                : await enrichStock(entry, stockBatch);
         return { kind, row } as const;
       } catch {
         return null;

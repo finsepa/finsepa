@@ -1,9 +1,10 @@
-import { SCREENER_CRYPTO_HREF, SCREENER_INDICES_HREF } from "@/lib/screener/screener-market-url";
+import { SCREENER_CRYPTO_HREF, SCREENER_CURRENCIES_HREF, SCREENER_INDICES_HREF } from "@/lib/screener/screener-market-url";
 
 export type MobileAssetTopbarRoute =
   | { kind: "stock"; ticker: string; backHref: string }
   | { kind: "crypto"; symbol: string; backHref: string }
-  | { kind: "index"; symbol: string; backHref: string };
+  | { kind: "index"; symbol: string; backHref: string }
+  | { kind: "currency"; symbol: string; backHref: string };
 
 function decodeRouteSegment(raw: string): string {
   try {
@@ -13,7 +14,7 @@ function decodeRouteSegment(raw: string): string {
   }
 }
 
-/** `/stock/[ticker]`, `/crypto/[symbol]`, `/index/[symbol]` — mobile nested asset chrome. */
+/** `/stock/[ticker]`, `/crypto/[symbol]`, `/index/[symbol]`, `/currency/[symbol]` — mobile nested asset chrome. */
 export function parseMobileAssetTopbarRoute(pathname: string): MobileAssetTopbarRoute | null {
   if (pathname.startsWith("/stock/")) {
     const rest = pathname.slice("/stock/".length);
@@ -49,6 +50,18 @@ export function parseMobileAssetTopbarRoute(pathname: string): MobileAssetTopbar
       kind: "index",
       symbol: symbol.toUpperCase(),
       backHref: subpath.length > 0 ? assetHref : SCREENER_INDICES_HREF,
+    };
+  }
+  if (pathname.startsWith("/currency/")) {
+    const rest = pathname.slice("/currency/".length);
+    const [segment, ...subpath] = rest.split("/").filter(Boolean);
+    const symbol = decodeRouteSegment(segment ?? "");
+    if (!symbol) return null;
+    const assetHref = `/currency/${encodeURIComponent(symbol)}`;
+    return {
+      kind: "currency",
+      symbol: symbol.toUpperCase(),
+      backHref: subpath.length > 0 ? assetHref : SCREENER_CURRENCIES_HREF,
     };
   }
   return null;

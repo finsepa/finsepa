@@ -7,6 +7,8 @@ export const MARKET_SNAPSHOT_KEY = {
   cryptoDerived: "crypto_derived",
   indicesTab: "indices_tab",
   indicesDerived: "indices_derived",
+  /** Screener Currencies tab — EOD majors (slow tier; not US live quotes). */
+  currenciesTab: "currencies_tab",
   /** Screener stocks tab index strip — hot tier, built during cron. */
   indexCards: "index_cards",
   /** Top-500 screener rows with live 1D/1M/YTD fields — hot tier, 15m refresh. */
@@ -26,6 +28,7 @@ export const MARKET_SNAPSHOT_INGEST_KEYS: readonly MarketSnapshotKey[] = [
   MARKET_SNAPSHOT_KEY.cryptoDerived,
   MARKET_SNAPSHOT_KEY.indicesTab,
   MARKET_SNAPSHOT_KEY.indicesDerived,
+  MARKET_SNAPSHOT_KEY.currenciesTab,
 ];
 
 /** Quotes / tab lists — refresh every live 15m segment (or frozen day). */
@@ -46,4 +49,5 @@ export const MARKET_SNAPSHOT_SLOW_INGEST_KEYS: readonly MarketSnapshotKey[] = [
   MARKET_SNAPSHOT_KEY.screenerDerived,
   MARKET_SNAPSHOT_KEY.cryptoDerived,
   MARKET_SNAPSHOT_KEY.indicesDerived,
+  MARKET_SNAPSHOT_KEY.currenciesTab,
 ];

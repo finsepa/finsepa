@@ -1,7 +1,10 @@
-import Link from "next/link";
-import { SCREENER_INDICES_HREF } from "@/lib/screener/screener-market-url";
-import { formatIndexValue, getIndexDisplayMeta, getIndicesTop10 } from "@/lib/market/indices-top10";
+import { IndexPageContent } from "@/components/index/index-page-content";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
+import { loadIndexPageInitialData } from "@/lib/market/index-page-initial-data";
+import { isIndexPageSymbol } from "@/lib/market/index-page-shared";
+import { notFound } from "next/navigation";
+
+export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: Promise<{ symbol: string }>;
@@ -9,7 +12,7 @@ type PageProps = {
 
 export default async function IndexSymbolPage({ params }: PageProps) {
   const { symbol: raw } = await params;
-  const symbol = decodeURIComponent(raw).trim();
+  const routeSymbol = decodeURIComponent(raw).trim().toUpperCase();
 
   if (isSingleAssetMode()) {
     return (
@@ -17,40 +20,10 @@ export default async function IndexSymbolPage({ params }: PageProps) {
     );
   }
 
-  const meta = getIndexDisplayMeta(symbol);
-  const rows = await getIndicesTop10();
-  const live = rows.find((r) => r.symbol.toUpperCase() === symbol.toUpperCase());
+  if (!isIndexPageSymbol(routeSymbol)) {
+    notFound();
+  }
 
-  const title = meta?.name ?? live?.name ?? symbol;
-  const displayValue = live != null ? formatIndexValue(live.value) : "—";
-
-  return (
-    <div className="min-w-0 px-4 py-5 sm:px-9 sm:py-8">
-      <div className="mb-6 flex items-center gap-1 text-[14px] text-fg-muted">
-        <Link href={SCREENER_INDICES_HREF} className="transition-colors hover:text-fg">
-          Markets
-        </Link>
-        <span>/</span>
-        <span className="font-medium text-fg">Indices</span>
-      </div>
-
-      <div className="space-y-2">
-        <h1 className="text-[22px] font-semibold leading-8 text-fg">{title}</h1>
-        <p className="text-[14px] font-medium text-fg-muted">{symbol}</p>
-        <p className="pt-2 text-[28px] font-semibold tabular-nums text-fg">{displayValue}</p>
-        <p className="text-[12px] text-fg-muted">Last update from markets data</p>
-      </div>
-
-      <p className="mt-8 max-w-md text-[14px] leading-6 text-fg-muted">
-        Index detail view uses the same benchmark list as the markets screener. For full context, open the{" "}
-        <Link
-          href={SCREENER_INDICES_HREF}
-          className="font-medium text-fg underline decoration-stroke underline-offset-4"
-        >
-          screener
-        </Link>
-        .
-      </p>
-    </div>
-  );
+  const initialData = await loadIndexPageInitialData(routeSymbol);
+  return <IndexPageContent routeSymbol={routeSymbol} initialData={initialData} />;
 }

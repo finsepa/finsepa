@@ -54,7 +54,7 @@ export async function fetchWatchlistEnriched(
     const withIdentity = applyWatchlistScreenerIdentity(memoryCached);
     const stocks = withIdentity.filter((r) => r.kind === "stock");
     const crypto = withIdentity.filter((r) => r.kind === "crypto");
-    const indices = withIdentity.filter((r) => r.kind === "index");
+    const indices = withIdentity.filter((r) => r.kind === "index" || r.kind === "forex");
     return { stocks, crypto, indices, marketCacheSegment: "" };
   }
 
@@ -73,7 +73,7 @@ export async function fetchWatchlistEnriched(
       return {
         stocks: withIdentity.filter((r) => r.kind === "stock"),
         crypto: withIdentity.filter((r) => r.kind === "crypto"),
-        indices: withIdentity.filter((r) => r.kind === "index"),
+        indices: withIdentity.filter((r) => r.kind === "index" || r.kind === "forex"),
         marketCacheSegment,
       };
     }
@@ -106,7 +106,7 @@ export async function fetchWatchlistEnriched(
     return {
       stocks: withIdentity.filter((r) => r.kind === "stock"),
       crypto: withIdentity.filter((r) => r.kind === "crypto"),
-      indices: withIdentity.filter((r) => r.kind === "index"),
+      indices: withIdentity.filter((r) => r.kind === "index" || r.kind === "forex"),
       marketCacheSegment: segment,
     };
   })();

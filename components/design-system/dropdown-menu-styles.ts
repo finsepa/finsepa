@@ -19,8 +19,9 @@ export const dropdownMenuElevationImportantClass =
  */
 export function dropdownMenuSurfaceClassName(...extra: (string | undefined | null | false)[]) {
   return cn(
+    // Dark stroke uses `--fs-dropdown-stroke` (#484848) — matches button gradient peak;
+    // do not override with white/12 (too faint on glass menus).
     "rounded-2xl border border-dropdown-stroke bg-dropdown/70 text-fg outline-none backdrop-blur-2xl backdrop-saturate-150",
-    "dark:border-white/12",
     dropdownMenuElevationClass,
     ...extra.filter(Boolean),
   );

@@ -1,8 +1,10 @@
 import "server-only";
 
 import { getScreenerUsMarketCacheEpoch, withScreenerUsMarketCache } from "@/lib/screener/screener-us-market-cache";
+import { marketSnapshotSlowSegment } from "@/lib/market/market-snapshot-store";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import { getScreenerEtfsTop20 } from "@/lib/screener/screener-etfs-universe";
+import { getScreenerCurrenciesMajorsRows } from "@/lib/screener/screener-currencies-rows";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import type { SimpleMarketData, SimpleMarketDatum, SimpleScreenerDerived } from "@/lib/market/simple-market-layer";
 import type { TopCompanyUniverseRow } from "@/lib/screener/top500-companies";
@@ -467,6 +469,15 @@ export async function buildScreenerPagePayload(
       marketCacheSegment,
     };
   }
+  if (market === "currencies") {
+    const currenciesRows = await getScreenerCurrenciesMajorsRows();
+    return {
+      market: "currencies",
+      currenciesRows,
+      // FX is EOD — align client LRU with slow snapshot day, not US 15m live slots.
+      marketCacheSegment: marketSnapshotSlowSegment(getScreenerUsMarketCacheEpoch()),
+    };
+  }
 
   const companiesApiOpts: ScreenerCompaniesApiQueryOpts = stocksIndustry
     ? {
@@ -517,6 +528,10 @@ export async function buildScreenerMarketTabApiResponse(
   market: ScreenerMarketTab,
   opts?: ScreenerMarketTabFetchOpts,
 ): Promise<ScreenerPagePayload> {
+  // Currencies are EOD FX — do not freeze/refresh with US equity session windows.
+  if (market === "currencies") {
+    return buildScreenerPagePayload(market, opts);
+  }
   const listKey = market === "stocks" ? stocksMarketTabCacheKey(opts) : market;
   return withScreenerUsMarketCache(
     "screener-market-tab-payload-v1",

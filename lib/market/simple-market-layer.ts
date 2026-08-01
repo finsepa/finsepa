@@ -223,19 +223,28 @@ async function loadUsStockDatumsFromEodDaily(
 }
 
 async function loadIndexDatumsFromEodDaily(): Promise<Record<string, SimpleMarketDatum>> {
-  const window = eodFetchWindowUtc();
-  const { fetchEodhdEodDaily } = await import("@/lib/market/eodhd-eod");
-  const barsPerSymbol = await runWithConcurrencyLimit(
-    [...SCREENER_INDEX_SYMBOLS],
-    SCREENER_EOD_DERIVED_INDEX_CONCURRENCY,
-    (sym) => fetchEodhdEodDaily(sym, window.from, window.to),
-  );
+  const barsPerSymbol = await getCachedIndexEodBars();
   const indices: Record<string, SimpleMarketDatum> = {};
   SCREENER_INDEX_SYMBOLS.forEach((sym, i) => {
     const raw = barsPerSymbol[i];
     indices[sym] = datumFromEodDailyBars(Array.isArray(raw) ? raw : []);
   });
   return indices;
+}
+
+/**
+ * Shared index EOD bars — frozen quotes + 1M/YTD derived reuse one fan-out per US session segment
+ * (same idea as {@link getCachedScreenerEodBarsForTickers} for equities).
+ */
+function getCachedIndexEodBars(): Promise<(EodhdDailyBar[] | null)[]> {
+  return withScreenerUsMarketCache("screener-index-eod-bars-v1", async () => {
+    const window = eodFetchWindowUtc();
+    return runWithConcurrencyLimit(
+      [...SCREENER_INDEX_SYMBOLS],
+      SCREENER_EOD_DERIVED_INDEX_CONCURRENCY,
+      (sym) => fetchEodhdEodDailyScreener(sym, window.from, window.to),
+    );
+  });
 }
 
 /** Realtime batch: configurable US top10, page-2 slice, crypto, indices — chunked EODHD requests. */
@@ -899,12 +908,7 @@ export async function getSimpleCryptoDerivedForMetas(metas: readonly CryptoMeta[
 }
 
 async function loadSimpleIndicesDerivedUncached(): Promise<SimpleIndicesDerived> {
-  const window = eodFetchWindowUtc();
-  const barsList = await runWithConcurrencyLimit(
-    [...SCREENER_INDEX_SYMBOLS],
-    SCREENER_EOD_DERIVED_INDEX_CONCURRENCY,
-    (sym) => fetchEodhdEodDailyScreener(sym, window.from, window.to),
-  );
+  const barsList = await getCachedIndexEodBars();
   const out: SimpleIndicesDerived = {};
   SCREENER_INDEX_SYMBOLS.forEach((sym, i) => {
     const raw = barsList[i];

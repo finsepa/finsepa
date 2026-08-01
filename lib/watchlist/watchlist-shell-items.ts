@@ -1,8 +1,13 @@
 "use client";
 
 import { toSupportedCryptoTicker } from "@/lib/market/crypto-meta";
+import { resolveCurrencyPageTitle } from "@/lib/market/currency-page-shared";
 import { applyWatchlistScreenerIdentity } from "@/lib/watchlist/apply-watchlist-identity";
-import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist/constants";
+import {
+  WATCHLIST_CRYPTO_PREFIX,
+  WATCHLIST_FOREX_PREFIX,
+  WATCHLIST_INDEX_PREFIX,
+} from "@/lib/watchlist/constants";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import { normalizeWatchlistStorageKey } from "@/lib/watchlist/normalize-storage-key";
 
@@ -14,6 +19,9 @@ function parseStorageKey(key: string): { kind: WatchlistEnrichedItem["kind"]; sy
   if (t.startsWith(WATCHLIST_INDEX_PREFIX)) {
     return { kind: "index", symbol: t.slice(WATCHLIST_INDEX_PREFIX.length).trim() || "?" };
   }
+  if (t.startsWith(WATCHLIST_FOREX_PREFIX)) {
+    return { kind: "forex", symbol: t.slice(WATCHLIST_FOREX_PREFIX.length).trim() || "?" };
+  }
   return { kind: "stock", symbol: t };
 }
 
@@ -24,6 +32,9 @@ function shellHref(kind: WatchlistEnrichedItem["kind"], symbol: string): string 
   }
   if (kind === "index") {
     return `/index/${encodeURIComponent(symbol)}`;
+  }
+  if (kind === "forex") {
+    return `/currency/${encodeURIComponent(symbol)}`;
   }
   return `/stock/${encodeURIComponent(symbol)}`;
 }
@@ -49,7 +60,7 @@ export function buildWatchlistShellItems(tickers: string[]): WatchlistEnrichedIt
       entryId: `shell-${storageKey}-${i}`,
       storageKey,
       symbol,
-      name: symbol,
+      name: kind === "forex" ? resolveCurrencyPageTitle(symbol) : symbol,
       kind,
       href: shellHref(kind, symbol),
       logoUrl: null,

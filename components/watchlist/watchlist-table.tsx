@@ -36,8 +36,12 @@ function globalTickerIndex(watchedTickers: string[], storageKey: string): number
   return watchedTickers.findIndex((ticker) => normalizeWatchlistStorageKey(ticker) === key);
 }
 
-function formatPrice(n: number | null, kind: "stock" | "crypto" | "index"): string {
+function formatPrice(n: number | null, kind: "stock" | "crypto" | "index" | "forex"): string {
   if (n == null || !Number.isFinite(n)) return "-";
+  if (kind === "forex") {
+    const digits = n >= 20 ? 2 : 4;
+    return n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  }
   if (kind === "crypto" && Math.abs(n) < 1) {
     return `$${n.toLocaleString("en-US", { maximumFractionDigits: 6 })}`;
   }
@@ -70,7 +74,7 @@ function PriceAndChangeCell({
 }: {
   price: number | null;
   change1D: number | null;
-  kind: "stock" | "crypto" | "index";
+  kind: "stock" | "crypto" | "index" | "forex";
 }) {
   const hasPrice = price != null && Number.isFinite(price);
   const hasChange = change1D != null && Number.isFinite(change1D);

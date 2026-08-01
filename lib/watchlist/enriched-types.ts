@@ -4,7 +4,7 @@ export type WatchlistEnrichedItem = {
   storageKey: string;
   symbol: string;
   name: string;
-  kind: "stock" | "crypto" | "index";
+  kind: "stock" | "crypto" | "index" | "forex";
   href: string;
   logoUrl: string | null;
   price: number | null;

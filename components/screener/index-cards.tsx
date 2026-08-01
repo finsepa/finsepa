@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { ArrowDown, ArrowUp } from "@/lib/icons";
 import { useEffect, useMemo, useState } from "react";
 
 import { FadeIn } from "@/components/markets/skeleton";
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { IndexCardData } from "@/lib/screener/indices-today";
+import { MARKET_INDICES_TODAY } from "@/lib/screener/indices-config";
+import { indexAssetHref } from "@/lib/market/index-page-shared";
 import { cn } from "@/lib/utils";
 import {
   fetchScreenerIndexCardsCached,
@@ -130,8 +133,10 @@ export function IndexCards({
         <div className={INDEX_CARDS_GRID_CLASS}>
         {entries.map(({ name, value, change, positive, neutral }) => {
           const TrendIcon = neutral ? null : positive ? ArrowUp : ArrowDown;
-          return (
-            <div key={name} className={INDEX_CARD_SURFACE_CLASS}>
+          const symbol = MARKET_INDICES_TODAY.find((row) => row.name === name)?.eodhdSymbol;
+          const href = symbol ? indexAssetHref(symbol) : null;
+          const body = (
+            <>
               <p className="w-full truncate text-left text-[14px] font-medium leading-5 text-fg-muted">
                 {name}
               </p>
@@ -154,6 +159,19 @@ export function IndexCards({
                   {TrendIcon ? <TrendIcon className="h-4 w-4 shrink-0" aria-hidden /> : null}
                 </div>
               </FadeIn>
+            </>
+          );
+          return href ? (
+            <Link
+              key={name}
+              href={href}
+              className={cn(INDEX_CARD_SURFACE_CLASS, "hover:bg-surface-muted/60")}
+            >
+              {body}
+            </Link>
+          ) : (
+            <div key={name} className={INDEX_CARD_SURFACE_CLASS}>
+              {body}
             </div>
           );
         })}

@@ -191,7 +191,11 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     [items, watchedTickers],
   );
   const indices = useMemo(
-    () => sortEnrichedItemsByTickerOrder(items.filter((r) => r.kind === "index"), watchedTickers),
+    () =>
+      sortEnrichedItemsByTickerOrder(
+        items.filter((r) => r.kind === "index" || r.kind === "forex"),
+        watchedTickers,
+      ),
     [items, watchedTickers],
   );
 

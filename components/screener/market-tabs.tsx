@@ -4,7 +4,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode
 
 import { cn } from "@/lib/utils";
 
-const tabs = ["Stocks", "Crypto", "Indices", "ETF's"] as const;
+const tabs = ["Stocks", "Crypto", "Indices", "ETF's", "Currencies"] as const;
 export type MarketTab = (typeof tabs)[number];
 
 export const MARKET_TAB_ITEMS = tabs;

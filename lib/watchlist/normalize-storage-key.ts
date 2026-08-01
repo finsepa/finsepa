@@ -1,13 +1,14 @@
 import { toSupportedCryptoTicker } from "@/lib/market/crypto-meta";
 
-import { cryptoWatchlistKey, WATCHLIST_CRYPTO_PREFIX, WATCHLIST_INDEX_PREFIX } from "./constants";
+import { cryptoWatchlistKey, WATCHLIST_CRYPTO_PREFIX, WATCHLIST_FOREX_PREFIX, WATCHLIST_INDEX_PREFIX } from "./constants";
 
-/** Canonical `watchlist.ticker` value (e.g. AAPL, CRYPTO:ARB, INDEX:GSPC.INDX). */
+/** Canonical `watchlist.ticker` value (e.g. AAPL, CRYPTO:ARB, INDEX:GSPC.INDX, FOREX:EURUSD.FOREX). */
 export function normalizeWatchlistStorageKey(raw: string): string {
   const t = raw.trim().toUpperCase();
   if (!t) return t;
 
   if (t.startsWith(WATCHLIST_INDEX_PREFIX)) return t;
+  if (t.startsWith(WATCHLIST_FOREX_PREFIX)) return t;
 
   if (t.startsWith(WATCHLIST_CRYPTO_PREFIX)) {
     const sym = t.slice(WATCHLIST_CRYPTO_PREFIX.length);

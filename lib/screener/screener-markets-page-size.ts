@@ -9,3 +9,6 @@ export const SCREENER_INDICES_PAGE_SIZE = 15;
 
 /** Rows per page — Screener → ETFs (top 20, single page). */
 export const SCREENER_ETFS_PAGE_SIZE = 20;
+
+/** Rows per page — Screener → Currencies (6 majors, single page). */
+export const SCREENER_CURRENCIES_PAGE_SIZE = 6;

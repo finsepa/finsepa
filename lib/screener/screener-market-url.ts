@@ -1,14 +1,15 @@
-/** Query key for Screener market tab (Stocks / Crypto / Indices / ETFs). */
+/** Query key for Screener market tab (Stocks / Crypto / Indices / ETFs / Currencies). */
 export const SCREENER_MARKET_QUERY = "market" as const;
 
 /** Server + URL parsing — safe for client bundles (no `server-only` imports). */
-export type ScreenerMarketTabParam = "stocks" | "crypto" | "indices" | "etfs";
+export type ScreenerMarketTabParam = "stocks" | "crypto" | "indices" | "etfs" | "currencies";
 
 export function parseScreenerMarketTab(raw: string | null | undefined): ScreenerMarketTabParam {
   const v = raw?.trim().toLowerCase();
   if (v === "crypto") return "crypto";
   if (v === "indices") return "indices";
   if (v === "etfs" || v === "etf") return "etfs";
+  if (v === "currencies" || v === "currency" || v === "fx" || v === "forex") return "currencies";
   return "stocks";
 }
 
@@ -21,12 +22,16 @@ export const SCREENER_INDICES_HREF = `/screener?${SCREENER_MARKET_QUERY}=indices
 /** Deep link: Screener with ETFs tab active. */
 export const SCREENER_ETFS_HREF = `/screener?${SCREENER_MARKET_QUERY}=etfs` as const;
 
-export type ScreenerMarketTabLabel = "Stocks" | "Crypto" | "Indices" | "ETF's";
+/** Deep link: Screener with Currencies tab active. */
+export const SCREENER_CURRENCIES_HREF = `/screener?${SCREENER_MARKET_QUERY}=currencies` as const;
+
+export type ScreenerMarketTabLabel = "Stocks" | "Crypto" | "Indices" | "ETF's" | "Currencies";
 
 export function screenerMarketTabLabelFromParam(market: ScreenerMarketTabParam): ScreenerMarketTabLabel {
   if (market === "crypto") return "Crypto";
   if (market === "indices") return "Indices";
   if (market === "etfs") return "ETF's";
+  if (market === "currencies") return "Currencies";
   return "Stocks";
 }
 
@@ -34,5 +39,6 @@ export function screenerMarketTabParamFromLabel(tab: ScreenerMarketTabLabel): Sc
   if (tab === "Crypto") return "crypto";
   if (tab === "Indices") return "indices";
   if (tab === "ETF's") return "etfs";
+  if (tab === "Currencies") return "currencies";
   return "stocks";
 }
