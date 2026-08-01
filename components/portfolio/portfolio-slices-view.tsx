@@ -207,7 +207,7 @@ function SlicesSortHeader({
       <button
         type="button"
         className={cn(
-          "inline-flex items-center gap-1 rounded text-[14px] font-medium leading-5 text-[#5C5D5F] hover:text-[#141414]",
+          "inline-flex items-center gap-1 rounded text-[14px] font-medium leading-5 text-fg-muted hover:text-fg",
           align === "end" && "w-full justify-end",
         )}
         onClick={() => onSort(sortKey)}
@@ -518,7 +518,7 @@ function PortfolioSlicesViewInner({
 
   if (!hasAnyPositions) {
     return (
-      <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-6 py-12 text-center text-sm text-[#5C5D5F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+      <div className="rounded-[12px] border border-stroke bg-surface px-6 py-12 text-center text-sm text-fg-muted shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
         Add positions to see them grouped by sector.
       </div>
     );
@@ -527,14 +527,14 @@ function PortfolioSlicesViewInner({
   if (sectorFetchPending) {
     return (
       <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
-        <div className="flex w-full min-h-[280px] shrink-0 animate-pulse flex-col items-center justify-center rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-8 lg:max-w-[320px]">
-          <div className="h-[220px] w-[220px] rounded-full bg-[#E4E4E7]" />
+        <div className="flex w-full min-h-[280px] shrink-0 animate-pulse flex-col items-center justify-center rounded-[12px] border border-stroke bg-surface px-4 py-8 lg:max-w-[320px]">
+          <div className="h-[220px] w-[220px] rounded-full bg-stroke" />
         </div>
-        <div className="min-h-[220px] flex-1 animate-pulse space-y-3 rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-4">
-          <div className="h-4 w-1/3 rounded bg-[#E4E4E7]" />
-          <div className="h-10 w-full rounded bg-[#E4E4E7]" />
-          <div className="h-10 w-full rounded bg-[#E4E4E7]" />
-          <div className="h-10 w-full rounded bg-[#E4E4E7]" />
+        <div className="min-h-[220px] flex-1 animate-pulse space-y-3 rounded-[12px] border border-stroke bg-surface px-4 py-4">
+          <div className="h-4 w-1/3 rounded bg-stroke" />
+          <div className="h-10 w-full rounded bg-stroke" />
+          <div className="h-10 w-full rounded bg-stroke" />
+          <div className="h-10 w-full rounded bg-stroke" />
         </div>
       </div>
     );
@@ -563,17 +563,17 @@ function PortfolioSlicesViewInner({
               className="mx-auto shrink-0"
               center={
                 <div className="flex flex-col items-center gap-0.5 px-4 text-center">
-                  <div className="text-[18px] font-semibold leading-tight tabular-nums text-[#141414]">
+                  <div className="text-[18px] font-semibold leading-tight tabular-nums text-fg">
                     {usd2.format(normalizeUsdForDisplay(chartCenterValue))}
                   </div>
                   <div
                     className={cn(
                       "text-[13px] font-semibold tabular-nums",
                       chartCenterGainUsd === null
-                        ? "text-[#5C5D5F]"
+                        ? "text-fg-muted"
                         : chartCenterGainUsd >= 0
-                          ? "text-[#16A34A]"
-                          : "text-[#DC2626]",
+                          ? "text-up"
+                          : "text-down",
                     )}
                   >
                     {chartCenterGainUsd === null ? EM_DASH : formatSignedUsd2(chartCenterGainUsd)}
@@ -582,13 +582,13 @@ function PortfolioSlicesViewInner({
                     <div
                       className={cn(
                         "text-[12px] font-medium tabular-nums",
-                        chartCenterGainPct >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                        chartCenterGainPct >= 0 ? "text-up" : "text-down",
                       )}
                     >
                       {formatSignedPct2(chartCenterGainPct)}
                     </div>
                   ) : (
-                    <div className="text-[12px] tabular-nums text-[#5C5D5F]">{EM_DASH}</div>
+                    <div className="text-[12px] tabular-nums text-fg-muted">{EM_DASH}</div>
                   )}
                 </div>
               }
@@ -624,7 +624,7 @@ function PortfolioSlicesViewInner({
                       <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
                     </button>
                     {drilledBucket ? (
-                      <div className="min-w-0 truncate text-left font-['Inter'] text-[16px] font-semibold leading-6 tracking-normal text-[#141414]">
+                      <div className="min-w-0 truncate text-left font-['Inter'] text-[16px] font-semibold leading-6 tracking-normal text-fg">
                         {drilledBucket.label}
                       </div>
                     ) : null}
@@ -635,7 +635,7 @@ function PortfolioSlicesViewInner({
                   <div
                     className={cn(
                       SLICES_TABLE_GRID,
-                      "min-h-[44px] py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                      "min-h-[44px] py-0 text-[14px] font-medium leading-5 text-fg-muted",
                     )}
                   >
                     <SlicesSortHeader
@@ -673,7 +673,7 @@ function PortfolioSlicesViewInner({
               </div>
 
               {sortedHoldingRows.length === 0 ? (
-                <div className={cn("px-6 py-8 text-center text-[14px] leading-6 text-[#5C5D5F]")}>
+                <div className={cn("px-6 py-8 text-center text-[14px] leading-6 text-fg-muted")}>
                   No positions in this slice.
                 </div>
               ) : (
@@ -694,7 +694,7 @@ function PortfolioSlicesViewInner({
                               style={{ backgroundColor: hRow.color }}
                               aria-hidden
                             />
-                            <div className="h-8 w-8 shrink-0 overflow-hidden rounded-[10px] bg-white">
+                            <div className="h-8 w-8 shrink-0 overflow-hidden rounded-[10px] bg-surface">
                               <CompanyLogo
                                 name={hRow.name}
                                 logoUrl={displayLogoUrlForPortfolioSymbol(hRow.symbol)}
@@ -703,26 +703,26 @@ function PortfolioSlicesViewInner({
                               />
                             </div>
                             <div className="min-w-0">
-                              <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
+                              <div className="truncate text-[14px] font-semibold leading-5 text-fg">
                                 {hRow.name}
                               </div>
-                              <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                              <div className="text-[12px] font-normal leading-4 text-fg-muted">
                                 {hRow.symbol}
                               </div>
                             </div>
                           </div>
                         </div>
                         <div className={slicesEndCellClass}>
-                          <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+                          <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
                             {usd2.format(hRow.valueUsd)}
                           </div>
-                          <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                          <div className="text-[12px] font-normal leading-4 text-fg-muted">
                             {usd2.format(hRow.investedUsd)} invested
                           </div>
                         </div>
                         <div className={slicesEndCellClass}>
                           {hRow.gainUsd === null ? (
-                            <div className="w-full text-[14px] font-medium leading-5 text-[#5C5D5F]">
+                            <div className="w-full text-[14px] font-medium leading-5 text-fg-muted">
                               {EM_DASH}
                             </div>
                           ) : (
@@ -730,7 +730,7 @@ function PortfolioSlicesViewInner({
                               <div
                                 className={cn(
                                   "font-['Inter'] text-[14px] font-medium leading-5 tabular-nums",
-                                  hRow.gainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                                  hRow.gainUsd >= 0 ? "text-up" : "text-down",
                                 )}
                               >
                                 {formatSignedUsd2(hRow.gainUsd)}
@@ -739,7 +739,7 @@ function PortfolioSlicesViewInner({
                                 <div
                                   className={cn(
                                     "text-[14px] font-medium leading-5 tabular-nums",
-                                    hRow.gainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                                    hRow.gainUsd >= 0 ? "text-up" : "text-down",
                                   )}
                                 >
                                   {formatSignedPct1(hRow.gainPct)}
@@ -750,7 +750,7 @@ function PortfolioSlicesViewInner({
                         </div>
                         <div
                           className={cn(
-                            "font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-[#141414]",
+                            "font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-fg",
                             slicesEndCellClass,
                           )}
                         >
@@ -779,7 +779,7 @@ function PortfolioSlicesViewInner({
                   <div
                     className={cn(
                       SLICES_TABLE_GRID,
-                      "min-h-[44px] py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                      "min-h-[44px] py-0 text-[14px] font-medium leading-5 text-fg-muted",
                     )}
                   >
                     <SlicesSortHeader
@@ -846,26 +846,26 @@ function PortfolioSlicesViewInner({
                               <Icon className="h-4 w-4 text-white" strokeWidth={2} aria-hidden />
                             </span>
                             <div className="min-w-0">
-                              <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
+                              <div className="truncate text-[14px] font-semibold leading-5 text-fg">
                                 {row.label}
                               </div>
-                              <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                              <div className="text-[12px] font-normal leading-4 text-fg-muted">
                                 {row.assetCount} {row.assetCount === 1 ? "asset" : "assets"}
                               </div>
                             </div>
                           </div>
                         </div>
                         <div className={slicesEndCellClass}>
-                          <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+                          <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
                             {usd2.format(row.valueUsd)}
                           </div>
-                          <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                          <div className="text-[12px] font-normal leading-4 text-fg-muted">
                             {usd2.format(row.investedUsd)} invested
                           </div>
                         </div>
                         <div className={slicesEndCellClass}>
                           {row.gainUsd === null ? (
-                            <div className="w-full text-[14px] font-medium leading-5 text-[#5C5D5F]">
+                            <div className="w-full text-[14px] font-medium leading-5 text-fg-muted">
                               {EM_DASH}
                             </div>
                           ) : (
@@ -873,7 +873,7 @@ function PortfolioSlicesViewInner({
                               <div
                                 className={cn(
                                   "font-['Inter'] text-[14px] font-medium leading-5 tabular-nums",
-                                  row.gainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                                  row.gainUsd >= 0 ? "text-up" : "text-down",
                                 )}
                               >
                                 {formatSignedUsd2(row.gainUsd)}
@@ -882,7 +882,7 @@ function PortfolioSlicesViewInner({
                                 <div
                                   className={cn(
                                     "text-[14px] font-medium leading-5 tabular-nums",
-                                    row.gainUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                                    row.gainUsd >= 0 ? "text-up" : "text-down",
                                   )}
                                 >
                                   {formatSignedPct1(row.gainPct)}
@@ -893,7 +893,7 @@ function PortfolioSlicesViewInner({
                         </div>
                         <div
                           className={cn(
-                            "font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-[#141414]",
+                            "font-['Inter'] text-[14px] font-normal leading-5 tracking-normal tabular-nums text-fg",
                             slicesEndCellClass,
                           )}
                         >

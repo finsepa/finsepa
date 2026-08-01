@@ -279,7 +279,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
         }
       >
           {isIncome || isExpense ? (
-            <p className="text-sm text-[#5C5D5F]">This transaction type cannot be edited here yet.</p>
+            <p className="text-sm text-fg-muted">This transaction type cannot be edited here yet.</p>
           ) : isCash ? (
             <div className="flex flex-col gap-5">
               <Field label="Portfolio">
@@ -309,9 +309,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
               <Field label="Portfolio">
                 <TransactionPortfolioField />
               </Field>
-              <Field label="Ticker/Company">
-                <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
-              </Field>
+              <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Operation">
                   <TransactionOperationField value={operation} onChange={setOperation} />
@@ -362,7 +360,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex w-full flex-col gap-2">
-      <span className="text-sm font-medium leading-5 text-[#141414]">{label}</span>
+      <span className="text-sm font-medium leading-5 text-fg">{label}</span>
       {children}
     </div>
   );

@@ -77,11 +77,11 @@ export function MacroCard({
                 {changeText && changeDelta != null ? (
                   <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 font-['Inter'] text-[14px] font-medium tabular-nums leading-5">
                     {changeDelta > 0 ? (
-                      <TrendingUp className="h-3.5 w-3.5 shrink-0 text-[#16A34A]" strokeWidth={2.25} aria-hidden />
+                      <TrendingUp className="h-3.5 w-3.5 shrink-0 text-up" strokeWidth={2.25} aria-hidden />
                     ) : changeDelta < 0 ? (
-                      <TrendingDown className="h-3.5 w-3.5 shrink-0 text-[#DC2626]" strokeWidth={2.25} aria-hidden />
+                      <TrendingDown className="h-3.5 w-3.5 shrink-0 text-down" strokeWidth={2.25} aria-hidden />
                     ) : null}
-                    <span className={changeDelta >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"}>{changeText}</span>
+                    <span className={changeDelta >= 0 ? "text-up" : "text-down"}>{changeText}</span>
                     {priorPeriodLabel ? (
                       <span className={EARNINGS_CARD_PRIOR_LINE_CLASS}>vs {priorPeriodLabel}</span>
                     ) : null}
@@ -93,7 +93,7 @@ export function MacroCard({
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="shrink-0 rounded-lg p-1.5 text-[#5C5D5F] outline-none transition-colors hover:bg-black/5 hover:text-[#141414] focus-visible:ring-2 focus-visible:ring-[#141414]/10"
+            className="shrink-0 rounded-lg p-1.5 text-fg-muted outline-none transition-colors hover:bg-black/5 hover:text-fg focus-visible:ring-2 focus-visible:ring-fg/10"
             aria-label={`Open ${model.title} in full view`}
           >
             <Maximize2 className="h-4 w-4" strokeWidth={2} aria-hidden />

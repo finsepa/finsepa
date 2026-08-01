@@ -117,7 +117,7 @@ function ModalField({ label, children }: { label: ReactNode; children: ReactNode
   return (
     <div className="flex w-full flex-col gap-2">
       {typeof label === "string" ? (
-        <span className="text-sm font-medium leading-5 text-[#141414]">{label}</span>
+        <span className="text-sm font-medium leading-5 text-fg">{label}</span>
       ) : (
         label
       )}
@@ -198,7 +198,7 @@ function EditPortfolioModal({
             <button
               type="button"
               onClick={onRequestDelete}
-              className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-[#DC2626] transition-colors hover:bg-[#FEE2E2] hover:text-[#B91C1C]"
+              className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-down transition-colors hover:bg-down-soft hover:text-down"
             >
               Delete
             </button>

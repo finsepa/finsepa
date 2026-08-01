@@ -27,9 +27,9 @@ const KEY_STATS_MOBILE_SHELL_CLASS = cn(
   MOBILE_INSET_CARD_CLASS,
 );
 
-/** 4px dash / 4px gap (CSS `border-dashed` at 1px looks solid) — #E4E4E7 at 100%. */
+/** 4px dash / 4px gap (CSS `border-dashed` at 1px looks solid) — stroke at 100%. */
 const KEY_STATS_ROW_BORDER_CLASS =
-  "relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:[background-image:repeating-linear-gradient(90deg,#E4E4E7_0,#E4E4E7_4px,transparent_4px,transparent_8px)] last:after:hidden";
+  "relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:[background-image:repeating-linear-gradient(90deg,var(--fs-stroke)_0,var(--fs-stroke)_4px,transparent_4px,transparent_8px)] last:after:hidden";
 /** Mobile keeps the taller row; web reverts to the original compact height (matches crypto key stats). */
 const KEY_STATS_ROW_PY_CLASS = "py-2.5 md:py-1.5";
 
@@ -103,7 +103,7 @@ function KeyStatsSectionTabNav({
   }, [measureIndicator]);
 
   return (
-    <div className={cn("w-full border-b border-solid border-[#E4E4E7]", embedded ? "mb-0" : "mb-4")}>
+    <div className={cn("w-full border-b border-solid border-stroke", embedded ? "mb-0" : "mb-4")}>
       <nav
         ref={navRef}
         className={cn(
@@ -124,8 +124,8 @@ function KeyStatsSectionTabNav({
               type="button"
               onClick={() => onTabChange(id)}
               className={cn(
-                "-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-[#141414] transition-[color,opacity] duration-100",
-                "focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
+                "-mb-px shrink-0 cursor-pointer border-b-2 border-solid border-transparent py-2 text-left text-[14px] font-medium leading-6 text-fg transition-[color,opacity] duration-100",
+                "focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
                 "hover:opacity-80",
                 isActive ? "font-semibold opacity-100" : "opacity-70",
               )}
@@ -135,7 +135,7 @@ function KeyStatsSectionTabNav({
           );
         })}
         <span
-          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#141414] motion-reduce:transition-none"
+          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-fg motion-reduce:transition-none"
           style={{
             left: indicator.left,
             width: indicator.width,
@@ -300,13 +300,13 @@ function BasicValueDisplay({
 }) {
   const textClass = cn(
     "text-[14px] font-medium leading-5 tabular-nums",
-    valueClassName ?? "text-[#141414]",
+    valueClassName ?? "text-fg",
   );
 
   if (label === "Earnings Date" && value !== "—") {
     return (
       <span className="inline-flex shrink-0 items-center justify-end gap-1.5 text-right">
-        <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#5C5D5F]" strokeWidth={2} aria-hidden />
+        <CalendarDays className="h-3.5 w-3.5 shrink-0 text-icon" strokeWidth={2} aria-hidden />
         <span className={textClass}>{value}</span>
       </span>
     );
@@ -344,12 +344,12 @@ function KeyStatMetricRow({
         else if (metricId) onMetricClick?.(metricId);
       }}
       className={cn(
-        "group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 text-left last:border-0 hover:bg-[#FAFAFA]",
+        "group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 text-left last:border-0 hover:bg-surface-hover",
         KEY_STATS_ROW_PY_CLASS,
         KEY_STATS_ROW_BORDER_CLASS,
       )}
     >
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline">
+      <span className="min-w-0 shrink text-[14px] leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
         {label}
       </span>
       <BasicValueDisplay label={label} value={value} valueClassName={valueClassName} />
@@ -368,7 +368,7 @@ function StatRow({
 }) {
   return (
     <div className={cn("flex items-center justify-between gap-3 last:border-0", KEY_STATS_ROW_BORDER_CLASS, KEY_STATS_ROW_PY_CLASS)}>
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#141414]">{label}</span>
+      <span className="min-w-0 shrink text-[14px] leading-5 text-fg">{label}</span>
       <BasicValueDisplay label={label} value={value} valueClassName={valueClassName} />
     </div>
   );
@@ -379,8 +379,8 @@ function CardSkeleton({ rowLabels }: { rowLabels: string[] }) {
     <div className="space-y-2 pt-0.5" aria-hidden>
       {rowLabels.map((label) => (
         <div key={label} className={cn("flex justify-between gap-3 last:border-0", KEY_STATS_ROW_BORDER_CLASS, KEY_STATS_ROW_PY_CLASS)}>
-          <div className="h-4 w-28 rounded bg-neutral-100" />
-          <div className="h-4 w-20 rounded bg-neutral-100" />
+          <div className="h-4 w-28 rounded bg-skeleton" />
+          <div className="h-4 w-20 rounded bg-skeleton" />
         </div>
       ))}
     </div>

@@ -18,12 +18,12 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="space-y-4 border-b border-[#E4E4E7] pb-10 last:border-b-0 last:pb-0">
+    <section className="space-y-4 border-b border-stroke pb-10 last:border-b-0 last:pb-0">
       <div>
-        <h2 className="text-[18px] font-semibold leading-7 text-[#141414]">{title}</h2>
-        {description ? <p className="mt-1 max-w-2xl text-[14px] leading-6 text-[#5C5D5F]">{description}</p> : null}
+        <h2 className="text-[18px] font-semibold leading-7 text-fg">{title}</h2>
+        {description ? <p className="mt-1 max-w-2xl text-[14px] leading-6 text-fg-muted">{description}</p> : null}
       </div>
-      <div className="rounded-[12px] border border-[#E4E4E7] bg-white p-6 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+      <div className="rounded-[12px] border border-stroke bg-surface p-6 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
         {children}
       </div>
     </section>
@@ -41,11 +41,11 @@ export function DesignSystemShowcase() {
   return (
     <div className="mx-auto max-w-4xl space-y-10 px-4 py-8 sm:px-6 lg:px-8">
       <header className="space-y-2">
-        <p className="text-[13px] font-medium uppercase tracking-wide text-[#5C5D5F]">Finsepa</p>
-        <h1 className="text-[28px] font-semibold leading-9 tracking-tight text-[#141414]">Component design system</h1>
-        <p className="max-w-2xl text-[15px] leading-7 text-[#52525B]">
+        <p className="text-[13px] font-medium uppercase tracking-wide text-fg-muted">Finsepa</p>
+        <h1 className="text-[28px] font-semibold leading-9 tracking-tight text-fg">Component design system</h1>
+        <p className="max-w-2xl text-[15px] leading-7 text-fg-muted">
           Reference implementations for reusable controls. Import from{" "}
-          <code className="rounded bg-[#F4F4F5] px-1.5 py-0.5 font-mono text-[13px] text-[#141414]">
+          <code className="rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[13px] text-fg">
             @/components/design-system
           </code>
           . Product pages are unchanged; use this page when matching Figma specs.
@@ -58,7 +58,7 @@ export function DesignSystemShowcase() {
       >
         <div className="space-y-8">
           <div>
-            <p className="mb-3 text-[12px] font-medium uppercase tracking-wide text-[#A1A1AA]">Two options</p>
+            <p className="mb-3 text-[12px] font-medium uppercase tracking-wide text-fg-subtle">Two options</p>
             <SegmentedControl
               aria-label="Demo metric"
               options={[
@@ -70,7 +70,7 @@ export function DesignSystemShowcase() {
             />
           </div>
           <div>
-            <p className="mb-3 text-[12px] font-medium uppercase tracking-wide text-[#A1A1AA]">
+            <p className="mb-3 text-[12px] font-medium uppercase tracking-wide text-fg-subtle">
               Many options · horizontal scroll on narrow viewports
             </p>
             <div className="overflow-x-auto pb-1">
@@ -84,7 +84,7 @@ export function DesignSystemShowcase() {
             </div>
           </div>
           <div>
-            <p className="mb-3 text-[12px] font-medium uppercase tracking-wide text-[#A1A1AA]">Small size (md vs sm)</p>
+            <p className="mb-3 text-[12px] font-medium uppercase tracking-wide text-fg-subtle">Small size (md vs sm)</p>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
               <SegmentedControl
                 aria-label="Size md"
@@ -109,7 +109,7 @@ export function DesignSystemShowcase() {
             </div>
           </div>
           <div>
-            <p className="mb-3 text-[12px] font-medium uppercase tracking-wide text-[#A1A1AA]">Disabled segment</p>
+            <p className="mb-3 text-[12px] font-medium uppercase tracking-wide text-fg-subtle">Disabled segment</p>
             <SegmentedControl
               aria-label="Demo with disabled"
               options={[

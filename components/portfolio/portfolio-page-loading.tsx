@@ -9,18 +9,18 @@ import { publicPortfolioViewTabs } from "@/components/portfolio/portfolio-page-t
 import { cn } from "@/lib/utils";
 
 const METRIC_CARD_CLASS =
-  "flex flex-col items-start gap-1 overflow-hidden rounded-2xl border border-[#E4E4E7] bg-white px-3 py-3 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] sm:px-4 sm:py-4";
+  "flex flex-col items-start gap-1 overflow-hidden rounded-2xl border border-stroke bg-surface px-3 py-3 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] sm:px-4 sm:py-4";
 
 function Pulse({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded bg-neutral-200", className)} aria-hidden />;
+  return <div className={cn("animate-pulse rounded bg-skeleton", className)} aria-hidden />;
 }
 
 function OverviewMetricCardSkeleton() {
   return (
     <div className={METRIC_CARD_CLASS} aria-hidden>
-      <Pulse className="h-3 w-14 bg-neutral-200" />
+      <Pulse className="h-3 w-14 bg-skeleton" />
       <Pulse className="mt-1 h-8 w-[min(100%,11rem)] max-w-full rounded-md" />
-      <Pulse className="mt-1 h-4 w-24 bg-neutral-100" />
+      <Pulse className="mt-1 h-4 w-24 bg-skeleton" />
     </div>
   );
 }
@@ -31,23 +31,23 @@ function PortfolioOverviewCardsSkeleton() {
       <div className="sm:hidden">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1 space-y-2">
-            <Pulse className="h-3 w-10 bg-neutral-200" />
+            <Pulse className="h-3 w-10 bg-skeleton" />
             <Pulse className="mt-2 h-8 w-[min(100%,14rem)] max-w-full rounded-md" />
-            <Pulse className="h-4 w-36 bg-neutral-100" />
+            <Pulse className="h-4 w-36 bg-skeleton" />
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
-            <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
+            <Pulse className="h-9 w-9 rounded-[10px] bg-skeleton" />
+            <Pulse className="h-9 w-9 rounded-[10px] bg-skeleton" />
           </div>
         </div>
         <div className="max-md:mt-2 sm:mt-4 space-y-0">
           <div className="flex items-center justify-between gap-4 max-md:py-2 sm:py-3">
-            <Pulse className="h-4 w-20 bg-neutral-100" />
-            <Pulse className="h-4 w-16 bg-neutral-100" />
+            <Pulse className="h-4 w-20 bg-skeleton" />
+            <Pulse className="h-4 w-16 bg-skeleton" />
           </div>
           <div className="flex items-center justify-between gap-4 pb-0.5">
-            <Pulse className="h-4 w-16 bg-neutral-100" />
-            <Pulse className="h-4 w-24 bg-neutral-100" />
+            <Pulse className="h-4 w-16 bg-skeleton" />
+            <Pulse className="h-4 w-24 bg-skeleton" />
           </div>
         </div>
       </div>
@@ -69,7 +69,7 @@ function PortfolioPageTabsSkeleton({ publicView = false }: { publicView?: boolea
 
   return (
     <nav
-      className="-mx-1 mb-6 flex gap-4 overflow-x-auto overflow-y-hidden border-b border-[#E4E4E7] pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:gap-6 sm:overflow-visible"
+      className="-mx-1 mb-6 flex gap-4 overflow-x-auto overflow-y-hidden border-b border-stroke pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:gap-6 sm:overflow-visible"
       aria-hidden
     >
       {tabs.map((label) => (
@@ -78,7 +78,8 @@ function PortfolioPageTabsSkeleton({ publicView = false }: { publicView?: boolea
             className={cn(
               "h-4 rounded-sm",
               label === "Overview" ? "w-16" : label === "Transactions" ? "w-24" : "w-20",
-              label === "Overview" ? "bg-neutral-300" : "bg-neutral-100",
+              // Active tab stand-in — theme tokens (never light-only `neutral-300`).
+              label === "Overview" ? "bg-surface-muted" : "bg-skeleton",
             )}
           />
         </div>
@@ -91,14 +92,14 @@ function PortfolioChartControlsSkeleton() {
   return (
     <>
       <div className="mb-4 hidden w-full min-w-0 flex-wrap items-center justify-between gap-3 sm:flex" aria-hidden>
-        <Pulse className="h-9 w-[min(100%,18rem)] rounded-[10px] bg-[#F4F4F5]" />
+        <Pulse className="h-9 w-[min(100%,18rem)] rounded-[10px] bg-surface-muted" />
         <div className="flex items-center gap-3">
-          <Pulse className="h-9 w-9 rounded-[10px] bg-[#F4F4F5]" />
-          <Pulse className="h-9 w-[min(100%,20rem)] rounded-[10px] bg-[#F4F4F5]" />
+          <Pulse className="h-9 w-9 rounded-[10px] bg-surface-muted" />
+          <Pulse className="h-9 w-[min(100%,20rem)] rounded-[10px] bg-surface-muted" />
         </div>
       </div>
       <div className="mb-3 mt-2 w-full sm:hidden" aria-hidden>
-        <Pulse className="h-10 w-full rounded-[10px] bg-[#F4F4F5]" />
+        <Pulse className="h-10 w-full rounded-[10px] bg-surface-muted" />
       </div>
     </>
   );
@@ -110,7 +111,7 @@ function PortfolioHoldingsSubTabsSkeleton({ className }: { className?: string })
       {["Assets", "Earnings", "Allocation", "Slices"].map((label, i) => (
         <Pulse
           key={label}
-          className={cn("h-8 rounded-lg", i === 0 ? "w-[4.25rem] bg-neutral-200" : "w-[4.75rem] bg-neutral-100")}
+          className={cn("h-8 rounded-lg", i === 0 ? "w-[4.25rem] bg-skeleton" : "w-[4.75rem] bg-skeleton")}
         />
       ))}
     </div>
@@ -120,9 +121,9 @@ function PortfolioHoldingsSubTabsSkeleton({ className }: { className?: string })
 function PortfolioHoldingsTableSkeleton() {
   return (
     <div className="w-full min-w-0" aria-hidden>
-      <div className="hidden border-t border-[#E4E4E7] sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:gap-4 sm:px-0 sm:py-3">
+      <div className="hidden border-t border-stroke sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:gap-4 sm:px-0 sm:py-3">
         {["Asset", "Price", "Holdings", "Avg. Buy Price", "Profit/Loss", "Weight"].map((label) => (
-          <Pulse key={label} className="h-3 w-16 bg-neutral-100" />
+          <Pulse key={label} className="h-3 w-16 bg-skeleton" />
         ))}
       </div>
 
@@ -133,30 +134,30 @@ function PortfolioHoldingsTableSkeleton() {
             className="flex min-h-[60px] items-center justify-between gap-3 px-4 py-3 sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:items-center sm:gap-4 sm:px-0 sm:py-4"
           >
             <div className="flex min-w-0 items-center gap-3">
-              <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-neutral-100" />
+              <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-skeleton" />
               <div className="min-w-0 space-y-2">
                 <Pulse className="h-4 w-[min(100%,10rem)]" />
-                <Pulse className="h-3 w-20 bg-neutral-100" />
+                <Pulse className="h-3 w-20 bg-skeleton" />
               </div>
             </div>
             <div className="hidden sm:block">
-              <Pulse className="ml-auto h-4 w-14 bg-neutral-100" />
+              <Pulse className="ml-auto h-4 w-14 bg-skeleton" />
             </div>
             <div className="hidden sm:block">
-              <Pulse className="ml-auto h-4 w-16 bg-neutral-100" />
+              <Pulse className="ml-auto h-4 w-16 bg-skeleton" />
             </div>
             <div className="hidden sm:block">
-              <Pulse className="ml-auto h-4 w-14 bg-neutral-100" />
+              <Pulse className="ml-auto h-4 w-14 bg-skeleton" />
             </div>
             <div className="hidden sm:block">
-              <Pulse className="ml-auto h-4 w-16 bg-neutral-100" />
+              <Pulse className="ml-auto h-4 w-16 bg-skeleton" />
             </div>
             <div className="hidden sm:block">
-              <Pulse className="ml-auto h-4 w-10 bg-neutral-100" />
+              <Pulse className="ml-auto h-4 w-10 bg-skeleton" />
             </div>
             <div className="shrink-0 text-right sm:hidden">
               <Pulse className="ml-auto h-4 w-16" />
-              <Pulse className="mt-2 ml-auto h-3 w-24 bg-neutral-100" />
+              <Pulse className="mt-2 ml-auto h-3 w-24 bg-skeleton" />
             </div>
           </div>
         ))}
@@ -180,16 +181,16 @@ function PortfolioPageHeaderSkeleton({
           <Pulse className="h-8 w-[min(100%,12rem)] max-w-full rounded-lg" />
         ) : (
           <div className="flex min-w-0 items-center gap-2">
-            <Pulse className="h-8 w-8 shrink-0 rounded-lg bg-neutral-100" />
+            <Pulse className="h-8 w-8 shrink-0 rounded-lg bg-skeleton" />
             <Pulse className="h-8 w-[min(100%,12rem)] max-w-full rounded-lg" />
-            <Pulse className="h-9 w-9 shrink-0 rounded-[10px] bg-neutral-100" />
+            <Pulse className="h-9 w-9 shrink-0 rounded-[10px] bg-skeleton" />
           </div>
         )}
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
-        <Pulse className="h-9 w-9 rounded-[10px] bg-neutral-100" />
+        <Pulse className="h-9 w-9 rounded-[10px] bg-skeleton" />
+        <Pulse className="h-9 w-9 rounded-[10px] bg-skeleton" />
       </div>
     </div>
   );
@@ -215,12 +216,12 @@ export function PortfolioPageLoadingShell({
       {showPortfoliosBreadcrumb ? (
         <nav
           aria-hidden
-          className="flex min-w-0 items-center px-4 py-3 max-md:border-b-0 md:border-b md:border-[#E4E4E7] sm:px-9"
+          className="flex min-w-0 items-center px-4 py-3 max-md:border-b-0 md:border-b md:border-stroke-shell sm:px-9"
         >
           <div className="flex min-w-0 items-center gap-2">
-            <Pulse className="h-4 w-20 bg-neutral-100" />
-            <Pulse className="h-4 w-1 bg-neutral-100" />
-            <Pulse className="h-4 w-28 bg-neutral-100" />
+            <Pulse className="h-4 w-20 bg-skeleton" />
+            <Pulse className="h-4 w-1 bg-skeleton" />
+            <Pulse className="h-4 w-28 bg-skeleton" />
           </div>
         </nav>
       ) : null}
@@ -240,7 +241,7 @@ export function PortfolioPageLoadingShell({
         <PortfolioHoldingsSubTabsSkeleton className="hidden md:flex" />
         <div
           className={cn(
-            "w-full min-w-0 max-w-full bg-white",
+            "w-full min-w-0 max-w-full bg-surface",
             SCREENER_TABLE_OUTER_BORDER_CLASS,
             SCREENER_TABLE_MOBILE_SURFACE_CLASS,
             "max-md:overflow-hidden max-md:rounded-2xl md:contents",
@@ -262,7 +263,7 @@ export function PortfolioTabPanelSkeleton({ className }: { className?: string })
   return (
     <div
       className={cn(
-        "min-h-[min(50vh,420px)] rounded-xl border border-[#E4E4E7] bg-white p-6 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]",
+        "min-h-[min(50vh,420px)] rounded-xl border border-stroke bg-surface p-6 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]",
         className,
       )}
       aria-hidden
@@ -270,7 +271,7 @@ export function PortfolioTabPanelSkeleton({ className }: { className?: string })
       <Pulse className="h-5 w-40" />
       <div className="mt-6 space-y-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <Pulse key={i} className="h-12 w-full rounded-lg bg-[#F4F4F5]" />
+          <Pulse key={i} className="h-12 w-full rounded-lg bg-surface-muted" />
         ))}
       </div>
     </div>

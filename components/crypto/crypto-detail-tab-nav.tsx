@@ -17,8 +17,8 @@ export function CryptoDetailTabNav({
   onTabChange: (tab: CryptoDetailTabId) => void;
 }) {
   return (
-    <div className="max-md:bg-[#FAFAFA] max-md:-mt-2 max-md:pt-0 max-md:pb-1 px-3 sm:-mx-9 sm:px-9">
-      <div className="border-b border-solid border-[#E4E4E7]">
+    <div className="max-md:bg-canvas max-md:-mt-2 max-md:pt-0 max-md:pb-1 px-3 sm:-mx-9 sm:px-9">
+      <div className="border-b border-solid border-stroke">
       <nav className="flex flex-wrap items-start gap-5" aria-label="Crypto sections">
         {TABS.map(({ id, label }) => {
           const isActive = id === activeTab;
@@ -29,8 +29,8 @@ export function CryptoDetailTabNav({
               onClick={() => onTabChange(id)}
               className={`-mb-px cursor-pointer border-b-2 border-solid py-2 text-left text-[14px] leading-6 transition-colors duration-100 ${
                 isActive
-                  ? "border-[#141414] font-semibold text-[#141414]"
-                  : "border-transparent font-medium text-[#5C5D5F] hover:text-[#141414]"
+                  ? "border-fg font-semibold text-fg"
+                  : "border-transparent font-medium text-fg-muted hover:text-fg"
               }`}
             >
               {label}

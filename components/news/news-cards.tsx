@@ -27,14 +27,14 @@ function formatDate(iso: string): string {
 
 export function NewsCards({ items }: { items: NewsItem[] }) {
   return (
-    <div className="bg-white">
+    <div className="bg-surface">
       {items.map((n, idx) => {
         const logoUrl =
           n.assetType === "crypto" ? getCryptoLogoUrl(n.assetSymbol) : logoDevStockLogoUrl(n.assetSymbol) || "";
 
         const content = (
           <div className="px-0 py-4">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[13px] leading-5 text-[#5C5D5F]">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[14px] font-medium leading-5 text-fg-muted">
               <span className="tabular-nums">
                 {formatTime(n.publishedAt)} · {formatDate(n.publishedAt)}
               </span>
@@ -46,14 +46,14 @@ export function NewsCards({ items }: { items: NewsItem[] }) {
                   logoUrl={logoUrl}
                   size="xs"
                 />
-                <span className="inline-flex h-6 max-w-[140px] items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+                <span className="inline-flex h-6 max-w-[140px] items-center rounded-md border border-stroke bg-surface px-2 text-[12px] font-semibold leading-4 text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
                   <span className="truncate">{n.assetSymbol}</span>
                 </span>
               </span>
               <span aria-hidden>·</span>
               <span className="min-w-0 truncate">{n.source}</span>
             </div>
-            <div className="mt-2 line-clamp-2 text-[16px] font-semibold leading-6 text-[#141414]">
+            <div className="mt-2 line-clamp-2 text-[16px] font-semibold leading-6 text-fg">
               {n.title}
             </div>
           </div>

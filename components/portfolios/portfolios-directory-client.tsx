@@ -25,6 +25,7 @@ import {
 import { PortfolioOwnerName } from "@/components/portfolios/portfolio-owner-name";
 import { PortfoliosDirectoryTable } from "@/components/portfolios/portfolios-directory-table";
 import { PUBLIC_LISTINGS_CHANGED_EVENT } from "@/lib/portfolio/sync-public-listing-client";
+import { SegmentedControl } from "@/components/design-system";
 import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { cn } from "@/lib/utils";
@@ -83,9 +84,9 @@ function fmtPct(n: number | null, signed: boolean): string {
 }
 
 function athReturnClass(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "text-[#141414]";
-  if (Math.abs(n) < 0.0005) return "text-[#141414]";
-  return n >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
+  if (n == null || !Number.isFinite(n)) return "text-fg";
+  if (Math.abs(n) < 0.0005) return "text-fg";
+  return n >= 0 ? "text-up" : "text-down";
 }
 
 function initialsFromOwnerName(name: string): string {
@@ -98,8 +99,8 @@ function initialsFromOwnerName(name: string): string {
 function StatCell({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-[4px]">
-      <p className="text-xs font-medium leading-5 tracking-normal text-[#5C5D5F]">{label}</p>
-      <div className="text-sm font-medium leading-5 tracking-normal text-[#141414]">{children}</div>
+      <p className="text-xs font-medium leading-5 tracking-normal text-fg-muted">{label}</p>
+      <div className="text-sm font-medium leading-5 tracking-normal text-fg">{children}</div>
     </div>
   );
 }
@@ -124,7 +125,7 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
       href={`/portfolios/${listing.id}`}
       className={cn(
         MOBILE_PANEL_CARD_CLASS,
-        "group mb-5 block p-5 transition-colors hover:bg-[#FAFAFA] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
+        "group mb-5 block p-5 transition-colors hover:bg-canvas focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
       )}
       aria-label={`View public portfolio ${listing.name} by ${ownerName}`}
     >
@@ -141,14 +142,14 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
           />
           <div className="flex min-w-0 flex-col gap-[4px]">
             <h2
-              className="truncate text-xl font-semibold leading-7 tracking-normal text-[#141414]"
+              className="truncate text-xl font-semibold leading-7 tracking-normal text-fg"
               title={listing.name}
             >
               {listing.name}
             </h2>
             <PortfolioOwnerName
               name={ownerName}
-              className="text-sm font-normal leading-6 tracking-normal text-[#5C5D5F]"
+              className="text-sm font-normal leading-6 tracking-normal text-fg-muted"
             />
           </div>
         </div>
@@ -162,7 +163,7 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
           >
             {fmtPct(ath, true)}
           </p>
-          <p className="text-sm font-normal leading-6 tracking-normal text-[#5C5D5F]">Returns (ATH)</p>
+          <p className="text-sm font-normal leading-6 tracking-normal text-fg-muted">Returns (ATH)</p>
         </div>
       </div>
 
@@ -180,10 +181,10 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
             <span className="tabular-nums">{updatedLabel}</span>
           </StatCell>
           <div className="flex min-w-0 flex-col gap-[4px] md:col-span-1">
-            <p className="text-xs font-medium leading-5 tracking-normal text-[#5C5D5F]">Top 5 Holdings</p>
+            <p className="text-xs font-medium leading-5 tracking-normal text-fg-muted">Top 5 Holdings</p>
             <div className="flex items-center">
               {topSyms.length === 0 ? (
-                <span className="text-sm font-medium leading-5 tracking-normal text-[#A1A1AA]">—</span>
+                <span className="text-sm font-medium leading-5 tracking-normal text-fg-subtle">—</span>
               ) : (
                 <div className="flex flex-row items-center">
                   {topSyms.map((sym, i) => (
@@ -209,7 +210,7 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
         </div>
 
         <div className="flex shrink-0 justify-end md:justify-center">
-          <div className={cn(topbarSquircleIconClass, "group-hover:bg-[#F4F4F5]")} aria-hidden>
+          <div className={cn(topbarSquircleIconClass, "group-hover:bg-surface-muted")} aria-hidden>
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
           </div>
         </div>
@@ -226,36 +227,23 @@ function PortfoliosViewToggle({
   onChange: (view: PortfoliosDirectoryView) => void;
 }) {
   return (
-    <div className="flex shrink-0 rounded-[10px] bg-[#F4F4F5] p-0.5">
-      <button
-        type="button"
-        onClick={() => onChange("cards")}
-        className={cn(
-          "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
-          view === "cards"
-            ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-            : "text-[#52525B] hover:text-[#141414]",
-        )}
-        aria-pressed={view === "cards"}
-        aria-label="Card view"
-      >
-        <Grid01 className="h-5 w-5" strokeWidth={1.75} />
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange("list")}
-        className={cn(
-          "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
-          view === "list"
-            ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-            : "text-[#52525B] hover:text-[#141414]",
-        )}
-        aria-pressed={view === "list"}
-        aria-label="List view"
-      >
-        <LayoutList className="h-5 w-5" strokeWidth={1.75} />
-      </button>
-    </div>
+    <SegmentedControl
+      aria-label="Portfolios directory view"
+      value={view}
+      onChange={onChange}
+      options={[
+        {
+          value: "cards",
+          "aria-label": "Card view",
+          label: <Grid01 className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
+        },
+        {
+          value: "list",
+          "aria-label": "List view",
+          label: <LayoutList className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
+        },
+      ]}
+    />
   );
 }
 
@@ -309,7 +297,7 @@ export function PortfoliosDirectoryClient() {
     return (
       <div className="flex min-w-0 flex-col">
         <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#141414]">Portfolios</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">Portfolios</h1>
           <PortfoliosViewToggle view={view} onChange={setView} />
         </div>
         <PortfoliosDirectorySkeleton cards={5} variant={view === "list" ? "table" : "cards"} />
@@ -321,10 +309,10 @@ export function PortfoliosDirectoryClient() {
     return (
       <div className="flex min-w-0 flex-col">
         <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#141414]">Portfolios</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">Portfolios</h1>
           <PortfoliosViewToggle view={view} onChange={setView} />
         </div>
-        <div className={cn(MOBILE_PANEL_CARD_CLASS, "px-6 py-12 text-center text-sm text-[#5C5D5F]")}>
+        <div className={cn(MOBILE_PANEL_CARD_CLASS, "px-6 py-12 text-center text-sm text-fg-muted")}>
           {error}
         </div>
       </div>
@@ -335,7 +323,7 @@ export function PortfoliosDirectoryClient() {
     return (
       <div className="flex min-w-0 flex-col">
         <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#141414]">Portfolios</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">Portfolios</h1>
           <PortfoliosViewToggle view={view} onChange={setView} />
         </div>
         <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
@@ -351,7 +339,7 @@ export function PortfoliosDirectoryClient() {
         </EmptyHeader>
         <Link
           href="/portfolio"
-          className="mt-8 text-sm font-medium text-[#2563EB] transition-colors hover:text-[#1D4ED8] hover:underline"
+          className="mt-8 text-sm font-medium text-accent transition-colors hover:text-accent-hover hover:underline"
         >
           Go to My Portfolio
         </Link>
@@ -367,7 +355,7 @@ export function PortfoliosDirectoryClient() {
   return (
     <div className="flex min-w-0 flex-col">
       <div className="mb-6 flex min-w-0 items-center justify-between gap-4 sm:mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-[#141414]">Portfolios</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-fg">Portfolios</h1>
         <PortfoliosViewToggle view={view} onChange={setView} />
       </div>
 

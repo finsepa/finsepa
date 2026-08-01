@@ -22,8 +22,16 @@ import {
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
 import {
-  SCREENER_TABLE_BODY_DIVIDE_CLASS,
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+  ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { ScreenerPagination } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
@@ -39,14 +47,14 @@ const ACTIVITY_SIDE_FILTER_OPTIONS = [
 ] as const;
 
 const thCompany =
-  "whitespace-nowrap py-0 text-left align-middle text-[14px] font-medium leading-5 text-[#5C5D5F]";
+  "whitespace-nowrap py-0 text-left align-middle text-[14px] font-medium leading-5 text-fg-muted";
 const thRight =
-  "whitespace-nowrap py-0 text-right align-middle text-[14px] font-medium leading-5 text-[#5C5D5F]";
+  "whitespace-nowrap py-0 text-right align-middle text-[14px] font-medium leading-5 text-fg-muted";
 const tdCompany = "min-w-0 py-1 text-left text-[14px] leading-5 whitespace-normal";
 const tdActivity =
   "flex min-w-0 flex-col items-end justify-center py-1 text-right text-[14px] leading-5 whitespace-normal";
 const tdNum =
-  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
+  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg";
 
 /** Company | Recent activity | Avg closing price | % of change to portfolio. */
 const rowGridFour =
@@ -57,7 +65,7 @@ const mobileRowGrid =
 
 const rowShellBase = "min-h-[60px] items-center transition-colors duration-75";
 
-const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFour);
+const headerGrid = cn("h-11 min-h-[44px] items-center bg-surface", rowGridFour);
 
 type FlatTransactionRow = {
   quarterLabel: string;
@@ -133,22 +141,19 @@ function rowHref(displayName: string, ticker: string | null): string {
 function TransactionRowShell({
   ticker,
   displayName,
-  gridClass,
   children,
 }: {
   ticker: string | null;
   displayName: string;
-  gridClass: string;
   children: ReactNode;
 }) {
   const href = rowHref(displayName, ticker);
   const hasTicker = Boolean(ticker?.trim());
-  const merged = cn(gridClass, rowShellBase, "group cursor-pointer no-underline hover:bg-neutral-50");
   return (
     <Link
       href={href}
       prefetch={false}
-      className={merged}
+      className="group contents"
       aria-label={
         hasTicker
           ? `Open ${displayName} (${ticker!.trim().toUpperCase()})`
@@ -168,10 +173,10 @@ function CompanyTickerCell({ companyName, ticker }: { companyName: string; ticke
     <div className="flex min-w-0 items-center gap-3 pr-2 text-left">
       <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym ?? undefined} size="md" />
       <div className="flex min-w-0 max-w-[min(280px,45vw)] flex-col gap-0.5 py-0.5">
-        <span className="line-clamp-1 text-[14px] font-semibold leading-5 text-[#141414] underline-offset-[3px] decoration-[#141414] group-hover:underline sm:line-clamp-2">
+        <span className="line-clamp-1 text-[14px] font-semibold leading-5 text-fg underline-offset-[3px] decoration-fg group-hover:underline sm:line-clamp-2">
           {displayName}
         </span>
-        <span className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{sym ?? "—"}</span>
+        <span className="text-[12px] font-normal leading-4 text-fg-muted">{sym ?? "—"}</span>
       </div>
     </div>
   );
@@ -181,7 +186,7 @@ function MobilePricesCell({ tx }: { tx: SuperinvestorQuarterlyTransaction }) {
   return (
     <div className="flex flex-col items-end justify-center gap-1 text-right">
       <span className={cn(tdNum, "block font-medium")}>{formatSuperinvestorTxPrice(tx.avgClosingPriceUsd)}</span>
-      <span className="text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
+      <span className="text-[12px] font-normal leading-4 tabular-nums text-fg-muted">
         {formatSuperinvestorPortfolioWeightChange(tx.portfolioWeightChangePct)}
       </span>
     </div>
@@ -201,7 +206,7 @@ function ActivityTableToolbar({
 }) {
   return (
     <div className="mb-4 flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-0">
-      <h2 className="text-[20px] font-semibold leading-7 tracking-tight text-[#141414]">Activity</h2>
+      <h2 className="text-[20px] font-semibold leading-7 tracking-tight text-fg">Activity</h2>
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-3 sm:ml-auto">
         <SegmentedControl
           options={ACTIVITY_SIDE_FILTER_OPTIONS}
@@ -220,8 +225,10 @@ function ActivityTableToolbar({
 
 function QuarterDividerRow({ quarterLabel }: { quarterLabel: string }) {
   return (
-    <div className="flex h-11 min-h-[44px] items-center bg-[#F4F4F5] px-4">
-      <span className="text-[14px] font-semibold leading-5 text-[#141414]">{quarterLabel}</span>
+    <div className="px-0">
+      <div className="flex h-11 min-h-[44px] items-center rounded-none bg-surface-section px-[20px]">
+      <span className="text-[14px] font-semibold leading-5 text-fg">{quarterLabel}</span>
+      </div>
     </div>
   );
 }
@@ -230,15 +237,15 @@ function DesktopTransactionRow({ row }: { row: FlatTransactionRow }) {
   const displayName = issuerDisplayTitle(row.tx.companyName);
   const ticker = row.tx.ticker?.trim() ? row.tx.ticker : null;
   return (
-    <TransactionRowShell ticker={ticker} displayName={displayName} gridClass={cn(rowGridFour, "px-4")}>
-      <div className={tdCompany}>
+    <TransactionRowShell ticker={ticker} displayName={displayName}>
+      <div className={cn(tdCompany, TABLE_START_ALIGNED_PAD_CLASS)}>
         <CompanyTickerCell companyName={row.tx.companyName} ticker={ticker} />
       </div>
-      <div className={tdActivity}>
+      <div className={cn(tdActivity, TABLE_END_ALIGNED_PAD_CLASS)}>
         <SuperinvestorTransactionActivityCell tx={row.tx} />
       </div>
-      <div className={tdNum}>{formatSuperinvestorTxPrice(row.tx.avgClosingPriceUsd)}</div>
-      <div className={tdNum}>{formatSuperinvestorPortfolioWeightChange(row.tx.portfolioWeightChangePct)}</div>
+      <div className={cn(tdNum, TABLE_END_ALIGNED_PAD_CLASS)}>{formatSuperinvestorTxPrice(row.tx.avgClosingPriceUsd)}</div>
+      <div className={cn(tdNum, TABLE_END_ALIGNED_PAD_CLASS)}>{formatSuperinvestorPortfolioWeightChange(row.tx.portfolioWeightChangePct)}</div>
     </TransactionRowShell>
   );
 }
@@ -247,14 +254,16 @@ function MobileTransactionRow({ row }: { row: FlatTransactionRow }) {
   const displayName = issuerDisplayTitle(row.tx.companyName);
   const ticker = row.tx.ticker?.trim() ? row.tx.ticker : null;
   return (
-    <TransactionRowShell ticker={ticker} displayName={displayName} gridClass={cn(mobileRowGrid, "px-4")}>
-      <div className={tdCompany}>
+    <TransactionRowShell ticker={ticker} displayName={displayName}>
+      <div className={cn(tdCompany, TABLE_START_ALIGNED_PAD_CLASS)}>
         <CompanyTickerCell companyName={row.tx.companyName} ticker={ticker} />
       </div>
       <div className={tdActivity}>
         <SuperinvestorTransactionActivityCell tx={row.tx} />
       </div>
-      <MobilePricesCell tx={row.tx} />
+      <div className={TABLE_END_ALIGNED_PAD_CLASS}>
+        <MobilePricesCell tx={row.tx} />
+      </div>
     </TransactionRowShell>
   );
 }
@@ -297,7 +306,7 @@ export function SuperinvestorTransactionsTable({
 
   if (data.source === "unavailable") {
     return (
-      <p className="text-sm text-[#5C5D5F]">
+      <p className="text-sm text-fg-muted">
         Quarterly transaction history could not be loaded from the SEC right now. Try again later.
       </p>
     );
@@ -312,7 +321,7 @@ export function SuperinvestorTransactionsTable({
           companySearch={companySearch}
           onCompanySearchChange={onCompanySearchChange}
         />
-        <p className="px-4 text-sm text-[#5C5D5F] sm:px-0">
+        <p className="px-4 text-sm text-fg-muted sm:px-0">
           {companySearch.trim() && historyLoading ?
             "No matches in the last five years. Loading older 13F quarters…"
           : companySearch.trim() ?
@@ -328,7 +337,7 @@ export function SuperinvestorTransactionsTable({
   }
 
   return (
-    <div className="min-w-0 -mx-4 sm:mx-0">
+    <div className="min-w-0">
       <ActivityTableToolbar
         sideFilter={sideFilter}
         onSideFilterChange={setSideFilter}
@@ -336,55 +345,103 @@ export function SuperinvestorTransactionsTable({
         onCompanySearchChange={onCompanySearchChange}
       />
       {historyLoading && companySearch.trim().length >= 2 ?
-        <p className="mb-3 px-4 text-xs text-[#5C5D5F] sm:px-0">Loading older 13F quarters in the background…</p>
+        <p className="mb-3 px-4 text-xs text-fg-muted sm:px-0">Loading older 13F quarters in the background…</p>
       : null}
       {/* ── Mobile: single table ── */}
       <div className="sm:hidden">
-        <div className="border-t border-b border-[#E4E4E7] bg-white">
-          <div
-            className={cn(
-              mobileRowGrid,
-              "h-11 min-h-[44px] bg-white px-4",
-              SCREENER_TABLE_HEADER_STICKY_CLASS,
-            )}
-          >
-            <div className={thCompany}>Company</div>
-            <div className={thRight}>Recent Activity</div>
-            <div className={thRight}>Price</div>
-          </div>
-          <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
-          {pagedTableRows.map((item) =>
-            item.kind === "quarter" ? (
-              <QuarterDividerRow key={`q-${item.sectionKey}`} quarterLabel={item.quarterLabel} />
-            ) : (
-              <MobileTransactionRow key={item.row.rowKey} row={item.row} />
-            ),
-          )}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Desktop: single table ── */}
-      <div className="hidden overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:block sm:overflow-visible sm:pb-0">
-        <div className="min-w-[720px] sm:min-w-0">
-          <div className="border-t border-b border-[#E4E4E7] bg-white">
-            <div className={cn(headerGrid, "px-4", SCREENER_TABLE_HEADER_STICKY_CLASS)}>
-              <div className={thCompany}>Company</div>
-              <div className={thRight}>Recent Activity</div>
-              <div className={thRight}>Avg closing price</div>
-              <div className={thRight}>% of change to portfolio</div>
+        <ScreenerTableScroll mobileScroll minWidthClassName="min-w-0">
+          <div className="bg-surface">
+            <div
+              className={cn(
+                SCREENER_TABLE_HEADER_STICKY_CLASS,
+                SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+                "md:border-b-0",
+              )}
+            >
+              <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                <div className={cn(mobileRowGrid, "h-11 min-h-[44px] items-center bg-surface")}>
+                  <div className={cn(thCompany, TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
+                  <div className={thRight}>Recent Activity</div>
+                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>Price</div>
+                </div>
+              </div>
+              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
             </div>
-            <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
-            {pagedTableRows.map((item) =>
+            {pagedTableRows.map((item, index) =>
               item.kind === "quarter" ? (
                 <QuarterDividerRow key={`q-${item.sectionKey}`} quarterLabel={item.quarterLabel} />
               ) : (
-                <DesktopTransactionRow key={item.row.rowKey} row={item.row} />
+                <div key={item.row.rowKey} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                  <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                    <div
+                      className={cn(
+                        mobileRowGrid,
+                        rowShellBase,
+                        "items-center bg-surface",
+                        SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                      )}
+                    >
+                      <MobileTransactionRow row={item.row} />
+                    </div>
+                  </div>
+                  {index < pagedTableRows.length - 1 ? (
+                    <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                  ) : null}
+                </div>
               ),
             )}
-            </div>
           </div>
-        </div>
+        </ScreenerTableScroll>
+      </div>
+
+      {/* ── Desktop: single table ── */}
+      <div className="hidden sm:block">
+        <ScreenerTableScroll className="sm:pb-6">
+          <div className="bg-surface">
+            <div
+              className={cn(
+                SCREENER_TABLE_HEADER_STICKY_CLASS,
+                SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+                "md:border-b-0",
+              )}
+            >
+              <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                <div className={cn(headerGrid, "text-[14px] font-medium leading-5 text-fg-muted")}>
+                  <div className={cn(thCompany, TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
+                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>Recent Activity</div>
+                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>Avg closing price</div>
+                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>% of change to portfolio</div>
+                </div>
+              </div>
+              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+            </div>
+            {pagedTableRows.map((item, index) =>
+              item.kind === "quarter" ? (
+                <QuarterDividerRow key={`q-${item.sectionKey}`} quarterLabel={item.quarterLabel} />
+              ) : (
+                <div key={item.row.rowKey} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                  <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                    <div
+                      className={cn(
+                        rowGridFour,
+                        rowShellBase,
+                        "items-center bg-surface text-[14px] font-normal leading-5",
+                        SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                      )}
+                    >
+                      <DesktopTransactionRow row={item.row} />
+                    </div>
+                  </div>
+                  {index < pagedTableRows.length - 1 ? (
+                    <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                  ) : null}
+                </div>
+              ),
+            )}
+          </div>
+        </ScreenerTableScroll>
       </div>
 
       <ScreenerPagination

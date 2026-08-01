@@ -119,23 +119,23 @@ function formatCell(
 }
 
 function toneClass(tone: "neutral" | "positive" | "negative"): string {
-  if (tone === "positive") return "text-[#16A34A]";
-  if (tone === "negative") return "text-[#DC2626]";
-  return "text-[#141414]";
+  if (tone === "positive") return "text-up";
+  if (tone === "negative") return "text-down";
+  return "text-fg";
 }
 
 const numCellClass = cn(
-  "flex min-h-full min-w-0 w-full items-center justify-end self-stretch text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+  "flex min-h-full min-w-0 w-full items-center justify-end self-stretch text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
   TABLE_END_ALIGNED_PAD_CLASS,
 );
 
 const headerYearClass = cn(
-  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#5C5D5F]",
+  "relative z-[1] min-w-0 w-full truncate bg-surface text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-fg-muted",
   TABLE_END_ALIGNED_PAD_CLASS,
 );
 
 const headerPeriodEndClass = cn(
-  "relative z-[1] min-w-0 w-full truncate bg-white text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#5C5D5F]",
+  "relative z-[1] min-w-0 w-full truncate bg-surface text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-fg-muted",
   TABLE_END_ALIGNED_PAD_CLASS,
 );
 
@@ -143,23 +143,23 @@ const headerPeriodEndClass = cn(
  * 12px left inset via {@link TABLE_START_ALIGNED_PAD_CLASS}.
  */
 const stickyLabelHeadClass = cn(
-  "sticky left-0 z-40 flex min-h-full min-w-0 items-center self-stretch bg-white pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+  "sticky left-0 z-40 flex min-h-full min-w-0 items-center self-stretch bg-surface pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-fg-muted",
   TABLE_START_ALIGNED_PAD_CLASS,
 );
 
 const stickyLabelBodyClass = cn(
-  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch bg-white pr-4 text-left group-hover/row:bg-neutral-50",
+  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch bg-surface pr-4 text-left group-hover/row:bg-table-row-hover",
   TABLE_START_ALIGNED_PAD_CLASS,
 );
 
 /** Vertical rule between sticky labels and year columns — Financials only. */
 const stickyLabelColumnRuleClass =
-  "border-r border-[#EFEFEF] shadow-[1px_0_0_0_#EFEFEF]";
+  "border-r border-table-row-stroke shadow-[1px_0_0_0_var(--fs-table-row-stroke)]";
 
-const headerValueCellClass = "relative z-[1] flex min-h-full min-w-0 items-center justify-end self-stretch bg-white";
+const headerValueCellClass = "relative z-[1] flex min-h-full min-w-0 items-center justify-end self-stretch bg-surface";
 
 /** Forecast columns — mute via color (not opacity) so sticky headers stay above body paint. */
-const forecastMuteClass = "text-[#A1A1AA]";
+const forecastMuteClass = "text-fg-subtle";
 
 function forecastColumnStyle(isForecast: boolean | undefined, isFirstForecast: boolean): CSSProperties | undefined {
   if (!isForecast) return undefined;
@@ -180,7 +180,7 @@ const incomeHeaderRowClass = "min-h-[44px]";
 const incomeDataRowClass = "min-h-[60px]";
 
 /** Header / period rules — same inset stroke as screener companies. */
-const incomeHeaderBorderClass = "border-b border-solid border-[#EFEFEF]";
+const incomeHeaderBorderClass = "border-b border-solid border-stroke";
 
 export function StockIncomeStatementTable({
   model,
@@ -280,7 +280,7 @@ export function StockIncomeStatementTable({
           : undefined
       }
     >
-      <div className="bg-white">
+      <div className="bg-surface">
         <div
           className={cn(
             viewportScroll
@@ -292,7 +292,7 @@ export function StockIncomeStatementTable({
         >
           <div
             className={cn(
-              "grid items-stretch gap-x-2 bg-white py-0 pr-0",
+              "grid items-stretch gap-x-2 bg-surface py-0 pr-0",
               incomeHeaderBorderClass,
               incomeHeaderRowClass,
             )}
@@ -306,7 +306,7 @@ export function StockIncomeStatementTable({
           {showPeriodEndingRow ? (
             <div
               className={cn(
-                "grid items-stretch gap-x-2 bg-white py-0 pr-0",
+                "grid items-stretch gap-x-2 bg-surface py-0 pr-0",
                 incomeHeaderRowClass,
               )}
               style={{ gridTemplateColumns }}
@@ -369,8 +369,8 @@ function IncomeRow({
   showDivider: boolean;
 }) {
   const labelClass = row.emphasize
-    ? "text-[14px] font-semibold leading-5 text-[#141414]"
-    : "text-[14px] font-normal leading-5 text-[#141414]";
+    ? "text-[14px] font-semibold leading-5 text-fg"
+    : "text-[14px] font-normal leading-5 text-fg";
 
   const nestedLabelPad =
     row.id === "fcf_ps" || row.id === "fcf_margin" ? "pl-3 sm:pl-6" : "";
@@ -385,7 +385,7 @@ function IncomeRow({
         showLabelColumnRule && stickyLabelColumnRuleClass,
         nestedLabelPad,
         labelClass,
-        rowInteractive && "underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline",
+        rowInteractive && "underline-offset-2 decoration-fg-muted group-hover/row:underline",
       )}
     >
       <span className="min-w-0 truncate">{row.label}</span>
@@ -410,7 +410,7 @@ function IncomeRow({
         className={cn(
           numCellClass,
           hasSub && "flex-col items-end justify-center gap-0.5 py-2",
-          isGrowth && (growthMissing ? "text-[#5C5D5F]" : toneClass(tone)),
+          isGrowth && (growthMissing ? "text-fg-muted" : toneClass(tone)),
           isForecast && forecastMuteClass,
         )}
         style={forecastColumnStyle(isForecast, i === firstForecastIndex)}
@@ -423,7 +423,7 @@ function IncomeRow({
               isForecast
                 ? forecastMuteClass
                 : subMissing
-                  ? "text-[#5C5D5F]"
+                  ? "text-fg-muted"
                   : toneClass(sub.tone),
             )}
           >
@@ -435,7 +435,7 @@ function IncomeRow({
   });
 
   const rowSurfaceClass = cn(
-    "group/row relative z-0 grid w-full items-stretch gap-x-2 border-0 bg-white py-0 pr-0 text-left font-inherit transition-colors duration-75 hover:bg-neutral-50",
+    "group/row relative z-0 grid w-full items-stretch gap-x-2 border-0 bg-surface py-0 pr-0 text-left font-inherit transition-colors duration-75 hover:bg-table-row-hover",
     incomeDataRowClass,
   );
 

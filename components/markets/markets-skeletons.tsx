@@ -101,7 +101,7 @@ function CompanyCellSkeleton({ nameWidth }: { nameWidth: string }) {
 export function IndexCardSkeleton({ name }: { name: string }) {
   return (
     <div className={`${INDEX_CARD_SURFACE_CLASS} min-h-[112px]`}>
-      <span className="text-[14px] font-medium leading-5 text-[#5C5D5F]">{name}</span>
+      <span className="text-[14px] font-medium leading-5 text-fg-muted">{name}</span>
       <SkeletonBox className="h-8 w-[7.5rem] max-w-full rounded-md" />
       <TextSkeleton wClass="w-14" hClass="h-3.5" />
     </div>
@@ -141,7 +141,7 @@ export function StocksTableSkeleton({
 }) {
   return (
     <ScreenerTableScroll embeddedInMobileCard={embeddedInMobileCard}>
-      <div className="bg-white">
+      <div className="bg-surface">
         <TableHeaderShell hideMobileHeader={hideMobileHeader}>
           <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 sm:gap-x-2">
             <StarHeaderSpacer />
@@ -208,7 +208,7 @@ function CryptoRowSkeleton({ showDivider }: { showDivider: boolean }) {
 export function CryptoTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
     <ScreenerTableScroll>
-      <div className="bg-white">
+      <div className="bg-surface">
         <TableHeaderShell>
           <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 sm:gap-x-2">
             <StarHeaderSpacer />
@@ -274,7 +274,7 @@ function IndicesRowSkeleton({ showDivider }: { showDivider: boolean }) {
 export function IndicesTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
     <ScreenerTableScroll minWidthClassName="min-w-0" className="h-fit">
-      <div className="bg-white">
+      <div className="bg-surface">
         <TableHeaderShell>
           <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 sm:gap-x-2">
             <StarHeaderSpacer />
@@ -314,7 +314,7 @@ function CryptoMoverCardSkeleton({ title }: { title: string }) {
         MOBILE_PANEL_CARD_CLASS,
       )}
     >
-      <span className="h-5 text-[14px] font-semibold leading-5 text-[#5C5D5F]">{title}</span>
+      <span className="h-5 text-[14px] font-semibold leading-5 text-fg-muted">{title}</span>
       <div className="flex w-full flex-col gap-[12px]">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="flex items-center gap-[8px]">
@@ -382,7 +382,7 @@ export function MarketTabsSkeleton() {
   const tabWidths = ["w-12", "w-14", "w-14", "w-11"] as const;
 
   return (
-    <div className="mb-5 hidden border-b border-solid border-[#E4E4E7] md:block">
+    <div className="mb-5 hidden border-b border-solid border-stroke md:block">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 md:gap-x-3">
         <nav className="flex min-w-0 flex-1 flex-nowrap items-start gap-4 pb-px md:gap-5" aria-hidden>
           {tabWidths.map((width, index) => (

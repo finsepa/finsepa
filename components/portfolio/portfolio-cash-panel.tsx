@@ -53,18 +53,18 @@ function netCashUsd(transactions: { sum: number }[]): number {
 }
 
 function balanceClassName(n: number): string {
-  if (n < 0) return "text-[#DC2626]";
-  return "text-[#141414]";
+  if (n < 0) return "text-down";
+  return "text-fg";
 }
 
 /** Summ column: green for cash / income inflows; red for outflows; black otherwise. */
 function cashSummClassName(operation: string, sum: number): string {
-  if (sum < 0) return "text-[#DC2626]";
+  if (sum < 0) return "text-down";
   if (sum > 0) {
     const u = operation.toLowerCase();
-    if (u.includes("cash in") || u.includes("other income")) return "text-[#16A34A]";
+    if (u.includes("cash in") || u.includes("other income")) return "text-up";
   }
-  return "text-[#141414]";
+  return "text-fg";
 }
 
 function formatSignedUsd(n: number): string {
@@ -74,9 +74,9 @@ function formatSignedUsd(n: number): string {
 
 function operationClassName(operation: string): string {
   const u = operation.toLowerCase();
-  if (u.includes("cash in") || u.includes("other income")) return "text-[#16A34A]";
-  if (u.includes("cash out") || u.includes("other expense")) return "text-[#DC2626]";
-  return "text-[#141414]";
+  if (u.includes("cash in") || u.includes("other income")) return "text-up";
+  if (u.includes("cash out") || u.includes("other expense")) return "text-down";
+  return "text-fg";
 }
 
 type CashDirectionFilter = "all" | "in" | "out";
@@ -112,7 +112,7 @@ function CashTableHeader({
       )}
     >
       <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
-        <div className={cn(gridClass, "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]")}>
+        <div className={cn(gridClass, "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted")}>
           {children}
         </div>
       </div>
@@ -217,7 +217,7 @@ function PortfolioCashPanelInner() {
 
       <div className="w-full min-w-0">
         <ScreenerTableScroll>
-          <div className="bg-white">
+          <div className="bg-surface">
             <CashTableHeader gridClass={cashBalanceGrid}>
               <div className={cn("min-w-0 text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Currency</div>
               <div
@@ -242,10 +242,10 @@ function PortfolioCashPanelInner() {
                   <div className={cn("flex min-w-0 items-center gap-3", TABLE_START_ALIGNED_PAD_CLASS)}>
                     <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
                     <div className="min-w-0">
-                      <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
+                      <div className="truncate text-[14px] font-semibold leading-5 text-fg">
                         US Dollar
                       </div>
-                      <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">USD</div>
+                      <div className="text-[12px] font-normal leading-4 text-fg-muted">USD</div>
                     </div>
                   </div>
                   <div
@@ -266,13 +266,13 @@ function PortfolioCashPanelInner() {
 
       <section className="mt-5" aria-labelledby="cash-tx-heading">
         <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-          <h3 id="cash-tx-heading" className="text-lg font-semibold leading-7 text-[#141414]">
+          <h3 id="cash-tx-heading" className="text-lg font-semibold leading-7 text-fg">
             Cash Transactions
           </h3>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-[200px] max-w-full flex-1 sm:w-[260px] sm:flex-none">
               <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5C5D5F]"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
                 aria-hidden
               />
               <input
@@ -280,7 +280,7 @@ function PortfolioCashPanelInner() {
                 value={cashSearch}
                 onChange={(e) => setCashSearch(e.target.value)}
                 placeholder="Type to search..."
-                className="h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-9 pr-3 text-sm text-[#141414] placeholder:text-[#5C5D5F] outline-none focus:ring-2 focus:ring-[#141414]/10"
+                className="h-9 w-full rounded-[10px] border-0 bg-surface-muted py-2 pl-9 pr-3 text-sm text-fg placeholder:text-fg-muted outline-none focus:ring-2 focus:ring-fg/10"
                 aria-label="Search cash transactions"
               />
             </div>
@@ -288,7 +288,7 @@ function PortfolioCashPanelInner() {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-[14px] font-medium leading-5 text-[#141414] transition-colors duration-100 hover:bg-[#E4E4E7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2"
+                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] bg-surface-muted px-4 text-[14px] font-medium leading-5 text-fg transition-colors duration-100 hover:bg-stroke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
                 >
                   <Filter className="h-4 w-4 opacity-90" aria-hidden />
                   Filter
@@ -316,14 +316,14 @@ function PortfolioCashPanelInner() {
                         dropdownMenuPlainItemRowClassName({
                           selected: cashDirectionFilter === value,
                         }),
-                        "text-[#141414]",
+                        "text-fg",
                         cashDirectionFilter === value ? "font-medium" : "font-normal",
                       )}
                     >
                       <span className="min-w-0 flex-1 truncate text-left">{label}</span>
                       <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
                         {cashDirectionFilter === value ? (
-                          <Check className="h-4 w-4 text-[#141414]" strokeWidth={2} />
+                          <Check className="h-4 w-4 text-fg" strokeWidth={2} />
                         ) : null}
                       </span>
                     </button>
@@ -347,19 +347,19 @@ function PortfolioCashPanelInner() {
             </EmptyHeader>
           </Empty>
         ) : filteredCashRows.length === 0 ? (
-          <p className="py-8 text-center text-sm text-[#5C5D5F]">No transactions match your search.</p>
+          <p className="py-8 text-center text-sm text-fg-muted">No transactions match your search.</p>
         ) : (
           <div className="w-full min-w-0">
             {/* Mobile: remove standalone Operation column; show operation in the holding cell. */}
             <div className="sm:hidden">
               <ScreenerTableScroll>
-                <div className="bg-white">
+                <div className="bg-surface">
                   <CashTableHeader gridClass="flex items-center justify-between gap-3">
                     <div className={cn("min-w-0 text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Holding</div>
                     <button
                       type="button"
                       onClick={() => setCashDateAsc((v) => !v)}
-                      className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
+                      className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
                     >
                       Date
                       {cashDateAsc ? (
@@ -394,14 +394,14 @@ function PortfolioCashPanelInner() {
                               >
                                 {t.operation}
                               </div>
-                              <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                              <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
                                 {portfolioAssetSymbolCaption(t.symbol)}
                               </div>
                             </div>
                           </div>
 
                           <div className="min-w-0 shrink-0 text-right">
-                            <div className="font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
+                            <div className="font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg">
                               {format(parseISO(t.date), "MM/dd/yyyy")}
                             </div>
                             <div
@@ -427,7 +427,7 @@ function PortfolioCashPanelInner() {
             {/* Desktop: keep the full grid table. */}
             <div className="hidden sm:block">
               <ScreenerTableScroll minWidthClassName="min-w-[640px]">
-                <div className="bg-white">
+                <div className="bg-surface">
                   <CashTableHeader gridClass={cashTxGrid}>
                     <div className={cn("min-w-0 w-full text-left", TABLE_START_ALIGNED_PAD_CLASS)}>
                       Operation
@@ -437,7 +437,7 @@ function PortfolioCashPanelInner() {
                       <button
                         type="button"
                         onClick={() => setCashDateAsc((v) => !v)}
-                        className="ml-auto inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
+                        className="ml-auto inline-flex items-center gap-1 rounded-md transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
                       >
                         Date
                         {cashDateAsc ? (
@@ -481,10 +481,10 @@ function PortfolioCashPanelInner() {
                                 symbol={t.symbol}
                               />
                               <div className="min-w-0">
-                                <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
+                                <div className="truncate text-[14px] font-semibold leading-5 text-fg">
                                   {t.name}
                                 </div>
-                                <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                                <div className="text-[12px] font-normal leading-4 text-fg-muted">
                                   {portfolioAssetSymbolCaption(t.symbol)}
                                 </div>
                               </div>
@@ -492,7 +492,7 @@ function PortfolioCashPanelInner() {
                           </div>
                           <div
                             className={cn(
-                              "min-w-0 w-full text-right font-['Inter'] tabular-nums text-[#141414]",
+                              "min-w-0 w-full text-right font-['Inter'] tabular-nums text-fg",
                               TABLE_END_ALIGNED_PAD_CLASS,
                             )}
                           >
@@ -500,7 +500,7 @@ function PortfolioCashPanelInner() {
                           </div>
                           <div
                             className={cn(
-                              "min-w-0 w-full text-right font-['Inter'] tabular-nums text-[#141414]",
+                              "min-w-0 w-full text-right font-['Inter'] tabular-nums text-fg",
                               TABLE_END_ALIGNED_PAD_CLASS,
                             )}
                           >

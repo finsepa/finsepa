@@ -58,7 +58,7 @@ export function AppModalOverlay({
       className={cn(
         "fixed inset-0",
         ALIGN_CLASS[align],
-        isFullscreen ? "bg-white" : "bg-black/40 backdrop-blur-[2px]",
+        isFullscreen ? "bg-surface" : "bg-black/40 backdrop-blur-[2px] dark:bg-black/45",
         className,
       )}
       style={{ zIndex }}

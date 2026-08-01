@@ -96,7 +96,7 @@ export function UnderlineTabs<T extends string>({
   }, [measureIndicator]);
 
   return (
-    <div className={cn("mb-5 border-b border-solid border-[#E4E4E7]", className)}>
+    <div className={cn("mb-5 border-b border-solid border-stroke-subtle", className)}>
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 md:gap-x-3">
         <nav
           ref={navRef}
@@ -114,8 +114,8 @@ export function UnderlineTabs<T extends string>({
                 }}
                 type="button"
                 onClick={() => onChange(value)}
-                className={`-mb-px inline-flex h-9 shrink-0 cursor-pointer items-center border-b-2 border-solid border-transparent text-left text-[14px] font-medium leading-5 transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
-                  isActive ? "font-semibold text-[#141414] opacity-100" : "text-[#5C5D5F] opacity-100"
+                className={`-mb-px inline-flex h-9 shrink-0 cursor-pointer items-center border-b-2 border-solid border-transparent text-left text-[14px] font-medium leading-5 transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2 hover:opacity-80 ${
+                  isActive ? "font-semibold text-fg opacity-100" : "text-fg-muted opacity-100"
                 }`}
               >
                 {label}
@@ -123,7 +123,7 @@ export function UnderlineTabs<T extends string>({
             );
           })}
           <span
-            className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#141414] motion-reduce:transition-none"
+            className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-fg motion-reduce:transition-none"
             style={{
               left: indicator.left,
               width: indicator.width,

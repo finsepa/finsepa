@@ -190,20 +190,20 @@ export function HelpFeedbackModal({
         {phase === "success" ? (
           <div className="flex flex-col items-center px-2 pb-2 pt-4 text-center">
             <div
-              className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#DCFCE7]"
+              className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-up-soft"
               aria-hidden
             >
-              <CircleCheck className="h-7 w-7 text-[#16A34A]" strokeWidth={2} />
+              <CircleCheck className="h-7 w-7 text-up" strokeWidth={2} />
             </div>
-            <p className="max-w-[320px] text-sm leading-relaxed text-[#5C5D5F]">
+            <p className="max-w-[320px] text-sm leading-relaxed text-fg-muted">
               Thank you for your message. We&apos;ll review it and get back to you as soon as we can.
             </p>
           </div>
         ) : (
           <>
             <div className="flex flex-col gap-2">
-              <label htmlFor={`${titleId}-message`} className="text-sm font-medium leading-5 text-[#141414]">
-                Message <span className="text-[#DC2626]">*</span>
+              <label htmlFor={`${titleId}-message`} className="text-sm font-medium leading-5 text-fg">
+                Message <span className="text-down">*</span>
               </label>
               <textarea
                 id={`${titleId}-message`}
@@ -212,7 +212,7 @@ export function HelpFeedbackModal({
                 rows={5}
                 maxLength={SUPPORT_FEEDBACK_MESSAGE_MAX_LENGTH}
                 placeholder="Is there an issue, a question or a suggestion you'd like to share with us?"
-                className="min-h-[120px] w-full resize-y rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2.5 text-sm text-[#141414] placeholder:text-[#5C5D5F] outline-none focus:ring-2 focus:ring-[#141414]/10"
+                className="min-h-[120px] w-full resize-y rounded-[10px] border border-stroke bg-surface px-3 py-2.5 text-sm text-fg placeholder:text-fg-muted outline-none focus:ring-2 focus:ring-fg/10"
               />
             </div>
 
@@ -240,13 +240,13 @@ export function HelpFeedbackModal({
                 onClick={() => fileInputRef.current?.click()}
                 className={cn(
                   "flex min-h-[88px] cursor-pointer flex-col items-center justify-center rounded-[10px] border border-dashed px-4 py-5 text-center transition-colors",
-                  dragOver ? "border-[#141414] bg-[#F4F4F5]" : "border-[#D4D4D8] bg-[#FAFAFA] hover:border-[#A1A1AA]",
+                  dragOver ? "border-fg bg-surface-muted" : "border-stroke bg-canvas hover:border-fg-subtle",
                 )}
               >
-                <Upload className="mb-2 h-5 w-5 text-[#5C5D5F]" aria-hidden />
-                <p className="text-sm text-[#52525B]">
+                <Upload className="mb-2 h-5 w-5 text-fg-muted" aria-hidden />
+                <p className="text-sm text-fg-muted">
                   Please upload file if needed
-                  <span className="block text-xs text-[#5C5D5F]">
+                  <span className="block text-xs text-fg-muted">
                     Files no larger than 50 MB, up to {SUPPORT_FEEDBACK_MAX_FILES} files
                   </span>
                 </p>
@@ -263,17 +263,17 @@ export function HelpFeedbackModal({
               </div>
 
               {files.length > 0 ? (
-                <ul className="flex flex-col gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] px-3 py-2">
+                <ul className="flex flex-col gap-1.5 rounded-[10px] border border-stroke bg-canvas px-3 py-2">
                   {files.map((file, index) => (
                     <li key={`${file.name}-${file.size}-${index}`} className="flex items-center gap-2 text-sm">
-                      <span className="min-w-0 flex-1 truncate text-[#141414]">{file.name}</span>
-                      <span className="shrink-0 tabular-nums text-xs text-[#5C5D5F]">
+                      <span className="min-w-0 flex-1 truncate text-fg">{file.name}</span>
+                      <span className="shrink-0 tabular-nums text-xs text-fg-muted">
                         {formatFileSize(file.size)}
                       </span>
                       <button
                         type="button"
                         onClick={() => removeFile(index)}
-                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[#5C5D5F] hover:bg-[#F4F4F5] hover:text-[#141414]"
+                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-fg-muted hover:bg-surface-muted hover:text-fg"
                         aria-label={`Remove ${file.name}`}
                       >
                         <X className="h-4 w-4" strokeWidth={2} aria-hidden />

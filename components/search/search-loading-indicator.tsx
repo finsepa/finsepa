@@ -10,7 +10,7 @@ export function SearchLoadingIndicator({
 }) {
   return (
     <div className={cn("flex items-center justify-center py-8", className)} aria-live="polite">
-      <Spinner className={cn("size-5 text-[#5C5D5F]", spinnerClassName)} aria-label="Searching" />
+      <Spinner className={cn("size-5 text-fg-muted", spinnerClassName)} aria-label="Searching" />
     </div>
   );
 }

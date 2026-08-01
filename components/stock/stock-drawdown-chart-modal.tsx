@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import {
   useCallback,
   useEffect,
@@ -25,6 +26,7 @@ import {
   CHARTING_LINE_HOVER_HALO_BG,
   CHARTING_LINE_POINT_MARKER_BORDER_PX,
   CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
+  CHARTING_LINE_POINT_MARKER_FILL,
   CHARTING_LINE_POINT_MARKER_RADIUS_PX,
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
@@ -45,7 +47,7 @@ import {
 import { formatPercentMetric } from "@/lib/market/key-stats-basic-format";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
-import { AppModalShell } from "@/components/ui/app-modal-shell";
+import { AppModalShell, APP_MODAL_RULE_CLASS } from "@/components/ui/app-modal-shell";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { MOBILE_MODAL_SHEET_OVERLAY_CLASS } from "@/components/ui/mobile-bottom-sheet";
 import { Download } from "@/lib/icons";
@@ -56,8 +58,7 @@ const MOBILE_KEY_STATS_CHART_HEIGHT_PX = 268;
 const MOBILE_SHEET_DISMISS_DRAG_PX = 72;
 const LINE_AREA_GRADIENT_TOP_OPACITY = 0.18;
 const LINE_AREA_GRADIENT_BOTTOM_OPACITY = 0.02;
-const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-[#DC2626]";
-const DRAWDOWN_LINE_COLOR = "#DC2626";
+const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-down";
 const DRAWDOWN_Y_MIN = -1;
 const DRAWDOWN_Y_MAX = 0;
 const DRAWDOWN_Y_TICKS = [0, -0.25, -0.5, -0.75, -1] as const;
@@ -67,10 +68,9 @@ const DRAWDOWN_VALUE_LABEL_ANCHOR_CLASS =
   "pointer-events-none absolute z-[15] max-w-[5.5rem] -translate-x-1/2 text-center";
 
 const DRAWDOWN_VALUE_LABEL_TEXT_CLASS =
-  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#141414]";
+  "block truncate text-[11px] font-semibold leading-none tabular-nums text-fg";
 
-const DRAWDOWN_VALUE_LABEL_TEXT_SHADOW =
-  "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)";
+const DRAWDOWN_VALUE_LABEL_TEXT_SHADOW = "var(--fs-chart-value-label-shadow)";
 
 const TIME_RANGE_TAB_OPTIONS: TabSwitcherOption<FundamentalsChartTimeRange>[] =
   FUNDAMENTALS_CHART_TIME_RANGE_ORDER.map((value) => ({
@@ -445,7 +445,7 @@ function DrawdownHistoryChart({
   }
 
   if (points.length < 2) {
-    return <p className="text-[14px] leading-6 text-[#5C5D5F]">No drawdown history available.</p>;
+    return <p className="text-[14px] leading-6 text-fg-muted">No drawdown history available.</p>;
   }
 
   return (
@@ -462,14 +462,14 @@ function DrawdownHistoryChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-[#FCFCFD]"
+              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
             </div>
 
             <div
-              className="pointer-events-none absolute inset-x-0 z-[3] border-t border-dashed border-[#A1A1AA]"
+              className="pointer-events-none absolute inset-x-0 z-[3] border-t border-dashed border-fg-subtle"
               style={{ top: `${zeroBaselineTopPct}%` }}
               aria-hidden
             />
@@ -541,7 +541,7 @@ function DrawdownHistoryChart({
                     <path
                       d={lineSvg.d}
                       fill="none"
-                      stroke={DRAWDOWN_LINE_COLOR}
+                      stroke={resolveFsColor("--fs-down")}
                       strokeWidth={MULTICHART_LINE_STROKE_WIDTH_PX}
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -564,9 +564,9 @@ function DrawdownHistoryChart({
                         cx={lineSvg.pts[hoveredIndex]!.x}
                         cy={lineSvg.pts[hoveredIndex]!.y}
                         r={CHARTING_LINE_POINT_MARKER_RADIUS_PX}
-                        fill="white"
+                        fill={CHARTING_LINE_POINT_MARKER_FILL}
                         stroke={
-                          lineSvg.pts[hoveredIndex]!.v < 0 ? DRAWDOWN_LINE_COLOR : "#2563EB"
+                          lineSvg.pts[hoveredIndex]!.v < 0 ? resolveFsColor("--fs-down") : resolveFsColor("--fs-accent")
                         }
                         strokeWidth={CHARTING_LINE_POINT_MARKER_BORDER_PX}
                         className="pointer-events-none"
@@ -578,11 +578,11 @@ function DrawdownHistoryChart({
                       cx={lineSvg.lastPt.x}
                       cy={lineSvg.lastPt.y}
                       r={CHARTING_LINE_POINT_MARKER_RADIUS_PX}
-                      fill="white"
+                      fill={CHARTING_LINE_POINT_MARKER_FILL}
                       stroke={
                         (lineSvg.pts[lineSvg.pts.length - 1]?.v ?? 0) < 0
-                          ? DRAWDOWN_LINE_COLOR
-                          : "#2563EB"
+                          ? resolveFsColor("--fs-down")
+                          : resolveFsColor("--fs-accent")
                       }
                       strokeWidth={CHARTING_LINE_POINT_MARKER_BORDER_PX}
                       className="pointer-events-none"
@@ -640,8 +640,8 @@ function DrawdownHistoryChart({
                 role="tooltip"
                 aria-label="Chart tooltip"
               >
-                <p className="text-[11px] leading-4 text-[#5C5D5F]">{tip.periodLabel}</p>
-                <p className="text-[13px] font-semibold leading-5 text-[#141414] tabular-nums">
+                <p className="text-[11px] leading-4 text-fg-muted">{tip.periodLabel}</p>
+                <p className="text-[13px] font-semibold leading-5 text-fg tabular-nums">
                   {tip.value}
                 </p>
               </div>
@@ -649,7 +649,7 @@ function DrawdownHistoryChart({
           </div>
 
           <div
-            className="relative h-full shrink-0 pl-0 pr-2 text-left text-[11px] leading-4 text-[#5C5D5F] tabular-nums"
+            className="relative h-full shrink-0 pl-0 pr-2 text-left text-[11px] leading-4 text-fg-muted tabular-nums"
             style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
             aria-hidden
           >
@@ -657,7 +657,7 @@ function DrawdownHistoryChart({
               {yDomain.ticks.map((tick) => (
                 <span
                   key={tick}
-                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
+                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
                   style={{ top: `${valueToPlotBandTopPercent(tick, yDomain.min, yDomain.max)}%` }}
                 >
                   {formatDrawdownAxisTick(tick)}
@@ -672,7 +672,7 @@ function DrawdownHistoryChart({
           {xTicks.map(({ ts, leftPct, label }) => (
             <span
               key={ts}
-              className="absolute bottom-[10px] -translate-x-1/2 text-[11px] leading-4 text-[#5C5D5F]"
+              className="absolute bottom-[10px] -translate-x-1/2 text-[11px] leading-4 text-fg-muted"
               style={{ left: `${leftPct}%` }}
             >
               {label}
@@ -871,7 +871,7 @@ export function StockDrawdownChartModal({
       showClose={false}
       maxWidthClass="w-full"
       maxHeightClass="max-h-[min(92vh,720px)]"
-      className="key-stats-metric-sheet-enter !rounded-t-xl !rounded-b-none !bg-white !p-0 !shadow-[0px_10px_8px_rgba(10,10,10,0.1),0px_4px_3px_rgba(10,10,10,0.04)]"
+      className="key-stats-metric-sheet-enter !rounded-t-xl !rounded-b-none !bg-surface !p-0 !shadow-[0px_10px_8px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-10)),0px_4px_3px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]"
       bareBody
       bodyScroll={false}
     >
@@ -881,10 +881,10 @@ export function StockDrawdownChartModal({
       >
         <div className="h-1 w-10 shrink-0 rounded-full bg-[#D9D9D9]" aria-hidden />
         <div className="flex w-full flex-col items-center gap-1 text-center">
-          <h2 id="drawdown-chart-title" className="text-[16px] font-semibold leading-6 text-[#141414]">
+          <h2 id="drawdown-chart-title" className="text-[16px] font-semibold leading-6 text-fg">
             Drawdown
           </h2>
-          <p className="text-[11px] leading-4 text-[#5C5D5F]">{mobileSubtitle}</p>
+          <p className="text-[11px] leading-4 text-fg-muted">{mobileSubtitle}</p>
         </div>
       </div>
       <div className="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto px-4 py-2">
@@ -902,7 +902,7 @@ export function StockDrawdownChartModal({
       bodyScroll={false}
       bodyClassName="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-0"
     >
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 pt-5 pb-3">
+      <div className={`flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-5 pt-5 pb-3 ${APP_MODAL_RULE_CLASS}`}>
         <div className="flex min-w-0 flex-1 items-start gap-3">
           <CompanyLogo
             name={logoName}
@@ -912,11 +912,11 @@ export function StockDrawdownChartModal({
             className="!rounded-xl"
           />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#141414]">Drawdown</span>
+            <span className="shrink-0 text-[18px] font-semibold leading-7 text-fg">Drawdown</span>
             {companyLine ? (
-              <span className="min-w-0 truncate text-[14px] leading-5 text-[#5C5D5F]">{companyLine}</span>
+              <span className="min-w-0 truncate text-[14px] leading-5 text-fg-muted">{companyLine}</span>
             ) : (
-              <span className="min-w-0 truncate text-[14px] leading-5 text-[#5C5D5F]">{ticker}</span>
+              <span className="min-w-0 truncate text-[14px] leading-5 text-fg-muted">{ticker}</span>
             )}
           </span>
         </div>

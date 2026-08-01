@@ -58,8 +58,8 @@ function formatRailPercent(value: number | null): string {
 function RailPriceSkeleton() {
   return (
     <div className="ml-auto flex shrink-0 items-center gap-3">
-      <div className="h-5 w-[4.5rem] animate-pulse rounded bg-[#E4E4E7]" />
-      <div className="h-5 w-12 animate-pulse rounded bg-[#E4E4E7]" />
+      <div className="h-5 w-[4.5rem] animate-pulse rounded bg-stroke" />
+      <div className="h-5 w-12 animate-pulse rounded bg-stroke" />
     </div>
   );
 }
@@ -70,8 +70,8 @@ function WatchlistRailTitleSkeleton() {
       className="flex min-w-0 flex-1 items-center gap-0.5 pl-1"
       aria-hidden
     >
-      <div className="h-4 w-[5.5rem] max-w-[45%] animate-pulse rounded bg-[#E4E4E7]" />
-      <div className="h-4 w-4 shrink-0 animate-pulse rounded bg-[#F4F4F5]" />
+      <div className="h-4 w-[5.5rem] max-w-[45%] animate-pulse rounded bg-stroke" />
+      <div className="h-4 w-4 shrink-0 animate-pulse rounded bg-surface-muted" />
     </div>
   );
 }
@@ -85,7 +85,7 @@ function RailChange({ value }: { value: number | null }) {
     <span
       className={cn(
         "flex h-5 w-full items-center justify-end text-[14px] font-normal leading-5 tabular-nums",
-        positive ? "text-[#16A34A]" : "text-[#DC2626]",
+        positive ? "text-up" : "text-down",
       )}
     >
       {formatRailPercent(value)}
@@ -153,7 +153,7 @@ function WatchlistRailRow({
       }}
       className={cn(
         "group flex min-w-0 items-center gap-1 rounded-lg px-2 py-1.5 transition-colors",
-        dragOver ? "bg-[#E4E4E7]" : "hover:bg-[#F4F4F5]",
+        dragOver ? "bg-stroke" : "hover:bg-surface-muted",
       )}
     >
       <Link
@@ -167,7 +167,7 @@ function WatchlistRailRow({
           symbol={row.symbol}
           size="sm"
         />
-        <span className="min-w-0 shrink truncate text-[14px] font-normal leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline">
+        <span className="min-w-0 shrink truncate text-[14px] font-normal leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
           {symbolLabel}
         </span>
       </Link>
@@ -176,7 +176,7 @@ function WatchlistRailRow({
       ) : (
         <div className="ml-auto flex shrink-0 items-center gap-3 font-['Inter'] tabular-nums">
           {priceText ? (
-            <span className="shrink-0 text-right text-[14px] font-normal leading-5 text-[#141414]">
+            <span className="shrink-0 text-right text-[14px] font-normal leading-5 text-fg">
               {priceText}
             </span>
           ) : null}
@@ -193,12 +193,12 @@ function WatchlistRailRow({
                   e.stopPropagation();
                   onRemove(row.storageKey);
                 }}
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[#A1A1AA] outline-none hover:bg-[#EBEBEB] hover:text-[#5C5D5F] focus-visible:ring-2 focus-visible:ring-[#141414]/10"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-fg-subtle outline-none hover:bg-surface-hover hover:text-fg-muted focus-visible:ring-2 focus-visible:ring-fg/10"
               >
                 <X className="h-3.5 w-3.5" strokeWidth={2} />
               </button>
               <span
-                className="flex h-5 w-5 shrink-0 cursor-grab items-center justify-center text-[#5C5D5F] active:cursor-grabbing"
+                className="flex h-5 w-5 shrink-0 cursor-grab items-center justify-center text-fg-muted active:cursor-grabbing"
                 aria-hidden
               >
                 <GripVertical className="h-4 w-4" strokeWidth={2} />
@@ -283,11 +283,11 @@ function WatchlistRailSkeleton() {
     <div className="flex flex-col">
       {[0, 1, 2].map((i) => (
         <div key={i} className="flex items-center gap-2 rounded-lg px-2 py-1.5">
-          <div className="h-6 w-6 shrink-0 animate-pulse rounded-[8px] bg-[#E4E4E7]" />
-          <div className="h-4 w-12 animate-pulse rounded bg-[#E4E4E7]" />
+          <div className="h-6 w-6 shrink-0 animate-pulse rounded-[8px] bg-stroke" />
+          <div className="h-4 w-12 animate-pulse rounded bg-stroke" />
           <div className="ml-auto flex items-center gap-4">
-            <div className="h-5 w-14 animate-pulse rounded bg-[#E4E4E7]" />
-            <div className="h-4 w-10 animate-pulse rounded bg-[#F4F4F5]" />
+            <div className="h-5 w-14 animate-pulse rounded bg-stroke" />
+            <div className="h-4 w-10 animate-pulse rounded bg-surface-muted" />
           </div>
         </div>
       ))}
@@ -338,7 +338,7 @@ function WatchlistRailScrollContent({
     );
   }
   if (error) {
-    return <p className="px-3 py-4 text-[13px] leading-5 text-[#DC2626]">{error}</p>;
+    return <p className="px-3 py-4 text-[13px] leading-5 text-down">{error}</p>;
   }
   return (
     <div className="flex flex-col">
@@ -478,7 +478,7 @@ export function WatchlistRail() {
     <div
       suppressHydrationWarning
       className={cn(
-        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden md:flex md:border-l md:border-[#EBEBEC]",
+        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden md:flex md:border-l md:border-stroke-shell",
         SHELL_DESKTOP_PANEL_BG_CLASS,
         WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
       )}

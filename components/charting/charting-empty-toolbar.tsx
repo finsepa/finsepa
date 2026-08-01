@@ -276,7 +276,7 @@ export function ChartingEmptyToolbar({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-        <h1 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:flex-1">
+        <h1 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-fg sm:flex-1">
           Charting
         </h1>
         <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">

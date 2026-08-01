@@ -6,5 +6,5 @@ export const metadata: Metadata = {
 };
 
 export default function OpsLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-dvh bg-[#FAFAFA] text-[#141414]">{children}</div>;
+  return <div className="min-h-dvh bg-canvas text-fg">{children}</div>;
 }

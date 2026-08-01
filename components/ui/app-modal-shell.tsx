@@ -4,36 +4,53 @@ import type { ReactNode } from "react";
 import { X } from "@/lib/icons";
 
 import { APP_MODAL_DIALOG_ENTER_CLASS } from "@/components/ui/app-modal-overlay";
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
 import { cn } from "@/lib/utils";
 
 export const APP_MODAL_SHELL_SHADOW_CLASS =
-  "shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]";
+  "shadow-[0px_10px_16px_-3px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-10)),0px_4px_6px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]";
 
+/**
+ * Modal chrome frame — title sits here.
+ * Light: page wash. Dark: glass via `--fs-modal-title*` (stronger blur than dropdowns).
+ */
 export const APP_MODAL_SHELL_OUTER_CLASS = cn(
-  "rounded-2xl bg-[#F3F3F4] p-1",
+  "rounded-2xl bg-page p-1",
+  "dark:border dark:border-modal-title-stroke dark:bg-modal-title/70 dark:backdrop-blur-3xl dark:backdrop-saturate-150",
   APP_MODAL_SHELL_SHADOW_CLASS,
 );
 
-/** Matches `.shell-desktop-panel` stroke + shadow (`app/globals.css`). */
+/**
+ * Inner modal card (form body).
+ * Light: dropdown chrome. Dark: page fill + shell stroke (matches panel / top bar).
+ */
 export const APP_MODAL_SHELL_CARD_CLASS =
-  "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#EBEBEC] bg-[#FCFCFD] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+  "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-dropdown-stroke bg-dropdown shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] dark:border-stroke-shell dark:bg-page";
 
-export const APP_MODAL_TITLE_CLASS = "text-base font-semibold leading-7 text-[#141414]";
+/**
+ * Horizontal / edge rules inside modal cards — dark matches panel/top-bar shell stroke.
+ * Use with `border-b` / `border-t` (e.g. `border-b ${APP_MODAL_RULE_CLASS}`).
+ */
+export const APP_MODAL_RULE_CLASS = "border-stroke dark:border-stroke-shell";
 
-export const appModalCancelButtonClass =
-  "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] px-4 py-2 text-sm font-medium text-[#141414] transition-colors hover:bg-[#EBEBEB] disabled:cursor-not-allowed disabled:opacity-50";
+export const APP_MODAL_TITLE_CLASS = "text-base font-semibold leading-7 text-fg";
+
+export const appModalCancelButtonClass = cn(
+  "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-3 py-2 text-sm font-medium text-fg transition-colors hover:bg-surface-muted dark:hover:bg-dropdown-item-hover disabled:cursor-not-allowed disabled:opacity-50",
+  whiteSurfaceButtonChromeClass,
+);
 
 export function appModalPrimaryButtonClass(enabled: boolean) {
   return cn(
-    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-white transition-colors",
-    enabled ? "bg-[#141414] hover:bg-[#27272A]" : "cursor-not-allowed bg-[#A1A1AA] opacity-50",
+    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-3 py-2 text-sm font-medium text-surface transition-colors",
+    enabled ? "bg-fg hover:bg-fg" : "cursor-not-allowed bg-fg-subtle opacity-50",
   );
 }
 
 export function appModalDangerButtonClass(enabled = true) {
   return cn(
-    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-white transition-colors",
-    enabled ? "bg-[#DC2626] hover:bg-[#B91C1C]" : "cursor-not-allowed bg-[#A1A1AA] opacity-50",
+    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-3 py-2 text-sm font-medium text-white transition-colors",
+    enabled ? "bg-down hover:bg-down" : "cursor-not-allowed bg-fg-subtle opacity-50",
   );
 }
 
@@ -52,7 +69,7 @@ export function AppModalCloseButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-[#141414] transition-colors hover:bg-[#EBEBEB] disabled:cursor-not-allowed disabled:opacity-40",
+        "flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-fg transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40",
         className,
       )}
       aria-label="Close"
@@ -66,7 +83,8 @@ export function AppModalFooter({ children, className }: { children: ReactNode; c
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-between gap-3 border-t border-[#E4E4E7] px-6 py-4",
+        "flex shrink-0 items-center justify-between gap-3 border-t px-6 py-4",
+        APP_MODAL_RULE_CLASS,
         className,
       )}
     >

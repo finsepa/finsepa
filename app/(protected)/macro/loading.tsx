@@ -25,7 +25,7 @@ export default function Loading() {
           style={{ maxWidth: `${SIDEBAR_OUTER_EXPANDED_PX}px` }}
           aria-hidden
         >
-          <div className="overflow-hidden rounded-2xl border border-[#EBEBEC] bg-white p-2 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]">
+          <div className="overflow-hidden rounded-2xl border border-stroke-subtle bg-surface p-2 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
             <div className="flex flex-col gap-2">
               {Array.from({ length: 3 }).map((_, section) => (
                 <div key={section} className="flex flex-col gap-0.5">

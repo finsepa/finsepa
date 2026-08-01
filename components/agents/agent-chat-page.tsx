@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AgentChatHistoryHeader } from "@/components/agents/agent-chat-history-header";
 import { AgentMessageContent } from "@/components/agents/agent-message-content";
 import { secondaryOutlineButtonClassName } from "@/components/design-system";
+import { authAlertBannerClassName } from "@/components/auth/auth-form-ui";
 import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { Spinner } from "@/components/ui/spinner";
 import { deriveAgentThreadTitle } from "@/lib/agents/agent-thread-title";
@@ -54,11 +55,11 @@ function ThinkingLabel() {
 
   return (
     <span
-      className="inline-flex items-center gap-2 text-[16px] font-normal leading-6 text-[#5C5D5F]"
+      className="inline-flex items-center gap-2 text-[16px] font-normal leading-6 text-fg-muted"
       aria-live="polite"
       aria-label={`Thinking, ${elapsedSec} seconds`}
     >
-      <Spinner className="size-4 shrink-0 text-[#71717A]" aria-hidden />
+      <Spinner className="size-4 shrink-0 text-fg-muted" aria-hidden />
       <span className="inline-flex">
         Thinking
         <span className="inline-block w-[1.25em] text-left" aria-hidden>
@@ -631,7 +632,7 @@ export function AgentChatPage() {
                 : "Ask Finsepa…"
           }
           disabled={loadingThread || usageBlocked}
-          className="w-full resize-none bg-transparent px-2 py-2 text-[16px] font-normal leading-6 text-[#141414] outline-none placeholder:text-[#A1A1AA] disabled:opacity-60"
+          className="w-full resize-none bg-transparent px-2 py-2 text-[16px] font-normal leading-6 text-fg outline-none placeholder:text-fg-subtle disabled:opacity-60"
         />
         <div className="flex items-center justify-end gap-2 px-1 pb-1">
           {busy ? (
@@ -639,7 +640,7 @@ export function AgentChatPage() {
               {input.trim() ? (
                 <button
                   type="submit"
-                  className="inline-flex size-9 items-center justify-center rounded-full bg-[#141414] text-white"
+                  className="inline-flex size-9 items-center justify-center rounded-full bg-fg text-surface"
                   aria-label="Stack request"
                 >
                   <ArrowUp className="size-4" strokeWidth={2.5} />
@@ -648,7 +649,7 @@ export function AgentChatPage() {
               <button
                 type="button"
                 onClick={stop}
-                className="inline-flex size-9 items-center justify-center rounded-full bg-[#141414] text-white"
+                className="inline-flex size-9 items-center justify-center rounded-full bg-fg text-surface"
                 aria-label="Stop"
               >
                 <StopSolid className="size-4" />
@@ -658,7 +659,7 @@ export function AgentChatPage() {
             <button
               type="submit"
               disabled={!input.trim() || loadingThread || usageBlocked}
-              className="inline-flex size-9 items-center justify-center rounded-full bg-[#141414] text-white disabled:opacity-40"
+              className="inline-flex size-9 items-center justify-center rounded-full bg-fg text-surface disabled:opacity-40"
               aria-label="Send"
             >
               <ArrowUp className="size-4" strokeWidth={2.5} />
@@ -672,7 +673,7 @@ export function AgentChatPage() {
   return (
     <div
       className={cn(
-        "relative flex min-w-0 flex-col bg-[#FCFCFD]",
+        "relative flex min-w-0 flex-col bg-panel",
         "h-[calc(var(--app-vh)-var(--mobile-topbar-offset,0px)-var(--mobile-bottom-nav-main-clearance,0px))] max-md:min-h-0",
         "md:h-full md:min-h-0",
       )}
@@ -697,10 +698,7 @@ export function AgentChatPage() {
               {error ? (
                 <div
                   role="alert"
-                  className={cn(
-                    MOBILE_PANEL_CARD_CLASS,
-                    "mb-3 border-[#FECACA] bg-[#FEF2F2] px-3 py-2.5 text-sm text-[#991B1B]",
-                  )}
+                  className={cn(MOBILE_PANEL_CARD_CLASS, authAlertBannerClassName, "mb-3 py-2.5")}
                 >
                   {error}
                 </div>
@@ -722,19 +720,19 @@ export function AgentChatPage() {
 
               {recentThreads.length > 0 ? (
                 <div className="mt-10 w-full">
-                  <p className="mb-2 text-[13px] font-medium leading-5 text-[#A1A1AA]">Recents</p>
+                  <p className="mb-2 text-[13px] font-medium leading-5 text-fg-subtle">Recents</p>
                   <ul className="flex w-full flex-col gap-0.5">
                     {recentThreads.map((thread) => {
                       const label = thread.title.trim() || "New chat";
                       return (
                         <li key={thread.id} className="group/recent w-full">
-                          <div className="flex w-full items-center gap-0.5 rounded-lg transition-colors hover:bg-[#F4F4F5]">
+                          <div className="flex w-full items-center gap-0.5 rounded-lg transition-colors hover:bg-surface-muted">
                             <button
                               type="button"
                               onClick={() => void selectThread(thread.id)}
-                              className="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left text-sm leading-5 text-[#52525B] transition-colors hover:text-[#141414]"
+                              className="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left text-sm leading-5 text-fg-muted transition-colors hover:text-fg"
                             >
-                              <History className="size-4 shrink-0 text-[#A1A1AA]" aria-hidden />
+                              <History className="size-4 shrink-0 text-fg-subtle" aria-hidden />
                               <span className="min-w-0 flex-1 truncate">{label}</span>
                             </button>
                             <button
@@ -746,9 +744,9 @@ export function AgentChatPage() {
                                 void deleteThread(thread.id);
                               }}
                               className={cn(
-                                "mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-[#A1A1AA]",
-                                "opacity-0 transition-opacity hover:bg-[#FEE2E2] hover:text-[#DC2626]",
-                                "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
+                                "mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-fg-subtle",
+                                "opacity-0 transition-opacity hover:bg-down-soft hover:text-down",
+                                "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
                                 "group-hover/recent:opacity-100 max-sm:opacity-100",
                               )}
                             >
@@ -768,7 +766,7 @@ export function AgentChatPage() {
             <div className="relative min-h-0 flex-1">
               <div
                 className={cn(
-                  "pointer-events-none absolute inset-x-0 top-0 z-10 h-10 bg-gradient-to-b from-[#FCFCFD] to-transparent transition-opacity duration-150",
+                  "pointer-events-none absolute inset-x-0 top-0 z-10 h-10 bg-gradient-to-b from-panel to-transparent transition-opacity duration-150",
                   showTopFade ? "opacity-100" : "opacity-0",
                 )}
                 aria-hidden
@@ -780,7 +778,7 @@ export function AgentChatPage() {
                 <div className="mx-auto flex min-h-full w-full max-w-[820px] flex-col gap-4 px-4 py-6 pb-8 sm:px-6">
                   {loadingThread ? (
                     <div className="flex flex-1 items-center justify-center">
-                      <Spinner className="size-5 text-[#71717A]" />
+                      <Spinner className="size-5 text-fg-muted" />
                     </div>
                   ) : (
                     <>
@@ -798,7 +796,7 @@ export function AgentChatPage() {
                             className={cn(
                               "max-w-[85%]",
                               m.role === "user"
-                                ? "inline-flex min-h-10 items-center whitespace-pre-wrap rounded-lg bg-[#F1F1F2] px-3 py-2 text-[16px] font-normal leading-5 text-[#141414]"
+                                ? "inline-flex min-h-10 items-center whitespace-pre-wrap rounded-lg bg-surface-subtle px-3 py-2 text-[16px] font-normal leading-5 text-fg"
                                 : null,
                             )}
                           >
@@ -821,10 +819,10 @@ export function AgentChatPage() {
               </div>
             </div>
 
-            <div className="relative shrink-0 bg-[#FCFCFD]">
+            <div className="relative shrink-0 bg-panel">
               <div
                 className={cn(
-                  "pointer-events-none absolute inset-x-0 bottom-full h-10 bg-gradient-to-t from-[#FCFCFD] to-transparent transition-opacity duration-150",
+                  "pointer-events-none absolute inset-x-0 bottom-full h-10 bg-gradient-to-t from-panel to-transparent transition-opacity duration-150",
                   showJumpToLatest ? "opacity-100" : "opacity-0",
                 )}
                 aria-hidden
@@ -836,7 +834,7 @@ export function AgentChatPage() {
                     onClick={scrollToLatest}
                     className={cn(
                       secondaryOutlineButtonClassName,
-                      "pointer-events-auto h-8 gap-1.5 rounded-full px-3 text-[13px] font-medium shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]",
+                      "pointer-events-auto h-8 gap-1.5 rounded-full px-3 text-[13px] font-medium shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]",
                     )}
                   >
                     <ArrowDown className="size-3.5" aria-hidden />
@@ -850,10 +848,7 @@ export function AgentChatPage() {
                   {error ? (
                     <div
                       role="alert"
-                      className={cn(
-                        MOBILE_PANEL_CARD_CLASS,
-                        "mb-3 border-[#FECACA] bg-[#FEF2F2] px-3 py-2.5 text-sm text-[#991B1B]",
-                      )}
+                      className={cn(MOBILE_PANEL_CARD_CLASS, authAlertBannerClassName, "mb-3 py-2.5")}
                     >
                       {error}
                     </div>
@@ -861,7 +856,7 @@ export function AgentChatPage() {
 
                   {queue.length > 0 ? (
                     <div
-                      className="mb-2 rounded-2xl bg-[#F1F1F2] px-3 py-2"
+                      className="mb-2 rounded-2xl bg-surface-subtle px-3 py-2"
                       aria-label={`${queue.length} stacked ${queue.length === 1 ? "request" : "requests"}`}
                     >
                       <ul className="flex flex-col gap-1">
@@ -870,10 +865,10 @@ export function AgentChatPage() {
                             <button
                               type="button"
                               onClick={() => removeQueuedRequest(item.id)}
-                              className="flex w-full items-start gap-2 rounded-lg px-1 py-0.5 text-left text-[13px] leading-5 text-[#71717A] transition-colors hover:bg-[#E4E4E7]/70 hover:text-[#141414]"
+                              className="flex w-full items-start gap-2 rounded-lg px-1 py-0.5 text-left text-[13px] leading-5 text-fg-muted transition-colors hover:bg-stroke/70 hover:text-fg"
                               title="Remove from queue"
                             >
-                              <span className="shrink-0 select-none text-[#A1A1AA]" aria-hidden>
+                              <span className="shrink-0 select-none text-fg-subtle" aria-hidden>
                                 ↳
                               </span>
                               <span className="min-w-0 flex-1 truncate">{item.text}</span>

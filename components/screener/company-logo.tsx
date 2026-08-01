@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { readScreenerCompanyIdentity } from "@/lib/screener/screener-company-identity-storage";
+import { withLogoDevTheme } from "@/lib/screener/company-logo-url";
+import { useClientMounted, useLogoDevTheme } from "@/lib/theme/use-logo-dev-theme";
 import { cn } from "@/lib/utils";
 import { logoColors } from "./data";
 
@@ -58,7 +60,7 @@ function InitialsMark({
   const colors = logoColors[name] ?? {
     bg: "bg-neutral-100",
     text: "text-neutral-600",
-    border: "border-neutral-200",
+    border: "border-stroke-muted",
   };
   const box =
     size === "xs"
@@ -112,7 +114,7 @@ function UsdCashMark({
       decoding="async"
       className={cn(
         imgBox,
-        "shrink-0 border-0 object-cover shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
+        "shrink-0 border-0 object-cover shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]",
         className,
       )}
     />
@@ -140,18 +142,18 @@ export function CompanyLogo({
   eagerLoad?: boolean;
   className?: string;
 }) {
-  const [failed, setFailed] = useState(false);
-  const [storageHydrated, setStorageHydrated] = useState(false);
-  useEffect(() => {
-    setStorageHydrated(true);
-  }, []);
+  const logoTheme = useLogoDevTheme();
+  const mounted = useClientMounted();
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
   const cachedIdentity =
-    storageHydrated && symbol ? readScreenerCompanyIdentity(symbol) : null;
+    mounted && symbol ? readScreenerCompanyIdentity(symbol) : null;
   const displayName = cachedIdentity?.name?.trim() || name;
   const fromServer = typeof logoUrl === "string" ? logoUrl.trim() : "";
-  const fromMem = storageHydrated && symbol ? readLogoMemory(symbol) : undefined;
-  const effective = (fromServer || cachedIdentity?.logoUrl || (fromMem ?? "")).trim();
+  const fromMem = mounted && symbol ? readLogoMemory(symbol) : undefined;
+  const effectiveBase = (fromServer || cachedIdentity?.logoUrl || (fromMem ?? "")).trim();
+  const effective = withLogoDevTheme(effectiveBase, logoTheme, symbol);
+  const failed = failedSrc === effective;
 
   useEffect(() => {
     if (symbol && fromServer) mergeLogoMemory(symbol, fromServer);
@@ -188,7 +190,7 @@ export function CompanyLogo({
     (fill && !LOGO_INSET_TICKERS.has(sym ?? "")) || scaleBoost != null;
   const fillScale = scaleBoost ?? 1.22;
   const onLogoError = () => {
-    setFailed(true);
+    setFailedSrc(effective);
     if (symbol) mergeLogoMemory(symbol, null);
   };
 
@@ -199,7 +201,7 @@ export function CompanyLogo({
       <div
         className={cn(
           imgBox,
-          "relative shrink-0 overflow-hidden border border-neutral-200 bg-white",
+          "relative shrink-0 overflow-hidden border border-stroke-muted bg-surface",
           className,
         )}
       >
@@ -232,7 +234,7 @@ export function CompanyLogo({
       fetchPriority={eagerLoad ? "high" : undefined}
       className={cn(
         imgBox,
-        "shrink-0 border border-neutral-200 bg-white object-contain",
+        "shrink-0 border border-stroke-muted bg-surface object-contain",
         brandLogoInsetClass(symbol, size),
         className,
       )}

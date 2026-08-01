@@ -9,6 +9,7 @@ import {
   AppPanelModalOverlay,
 } from "@/components/ui/app-panel-modal-overlay";
 import { AppPanelModalShell } from "@/components/ui/app-panel-modal-shell";
+import { APP_MODAL_RULE_CLASS } from "@/components/ui/app-modal-shell";
 import {
   Empty,
   EmptyDescription,
@@ -33,12 +34,12 @@ type PanelView = "list" | "settings";
 const PANEL_TRANSITION_MS = 400;
 
 const panelHeaderActionButtonClass =
-  "inline-flex h-7 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] text-[#141414] transition-colors hover:bg-[#EBEBEB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex h-7 shrink-0 items-center justify-center rounded-[10px] text-fg transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:cursor-not-allowed disabled:opacity-40";
 
-const NOTIFICATION_UNREAD_DOT_CLASS = "h-2 w-2 rounded-full bg-[#DC2626]";
+const NOTIFICATION_UNREAD_DOT_CLASS = "h-2 w-2 rounded-full bg-down";
 
 const notificationDismissButtonClass =
-  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-[#5C5D5F] transition-colors hover:bg-[#EBEBEB] hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15";
+  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15";
 
 function notificationToEarningsPreviewItem(item: NotificationItem): EarningsCalendarItem {
   const payload = parseEarningsNotificationPayload(item.payload);
@@ -77,15 +78,15 @@ function NotificationPillSwitch({
       disabled={disabled}
       onClick={() => onPressedChange(!pressed)}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
-        pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
+        pressed ? "bg-accent" : "bg-stroke",
         disabled && "cursor-not-allowed opacity-50",
       )}
     >
       <span
         className={cn(
-          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform",
-          pressed && "translate-x-4",
+          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-switch-thumb-off shadow-sm transition-[transform,background-color]",
+          pressed && "translate-x-4 bg-switch-thumb",
         )}
         aria-hidden
       />
@@ -226,11 +227,11 @@ export function NotificationsPanelModal({
             headerClassName="gap-2"
             footer={
               !inSettings && hasUnread ? (
-                <div className="shrink-0 border-t border-[#E4E4E7] px-2 py-3">
+                <div className={`shrink-0 border-t px-2 py-3 ${APP_MODAL_RULE_CLASS}`}>
                   <button
                     type="button"
                     onClick={() => void markAllRead()}
-                    className="text-[13px] font-medium text-[#2563EB] hover:text-[#1D4ED8]"
+                    className="text-[13px] font-medium text-accent hover:text-accent-hover"
                   >
                     Mark all as read
                   </button>
@@ -245,14 +246,14 @@ export function NotificationsPanelModal({
                   aria-busy="true"
                   aria-label="Loading notification settings"
                 >
-                  <Spinner className="size-6 text-[#5C5D5F]" />
+                  <Spinner className="size-6 text-fg-muted" />
                 </div>
               ) : (
                 <div className="flex min-h-0 flex-1 flex-col">
                   <div className="flex items-center justify-between gap-4 py-1">
                     <div className="min-w-0">
-                      <p className="text-[14px] font-medium leading-5 text-[#141414]">Earning results</p>
-                      <p className="mt-0.5 text-[13px] leading-5 text-[#5C5D5F]">
+                      <p className="text-[14px] font-medium leading-5 text-fg">Earning results</p>
+                      <p className="mt-0.5 text-[13px] leading-5 text-fg-muted">
                         Earnings result for companies you follow
                       </p>
                     </div>
@@ -271,10 +272,10 @@ export function NotificationsPanelModal({
                 aria-busy="true"
                 aria-label="Loading notifications"
               >
-                <Spinner className="size-6 text-[#5C5D5F]" />
+                <Spinner className="size-6 text-fg-muted" />
               </div>
             ) : error && items.length === 0 ? (
-              <p className="py-8 text-center text-[13px] text-[#5C5D5F]">{error}</p>
+              <p className="py-8 text-center text-[13px] text-fg-muted">{error}</p>
             ) : items.length === 0 ? (
               <Empty variant="plain" className="min-h-0 flex-1 justify-center py-12">
                 <EmptyHeader>
@@ -291,11 +292,11 @@ export function NotificationsPanelModal({
               <ul className="flex min-h-0 flex-1 flex-col gap-1">
                 {items.map((item) => (
                   <li key={item.id}>
-                    <div className="group relative rounded-[12px] p-3 transition-colors hover:bg-[#F4F4F5]">
+                    <div className="group relative rounded-[12px] p-3 transition-colors hover:bg-surface-muted">
                       <button
                         type="button"
                         onClick={() => openEarningsPreview(item)}
-                        className="w-full min-w-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2"
+                        className="w-full min-w-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
                       >
                         <EarningsNotificationCard item={item} />
                       </button>

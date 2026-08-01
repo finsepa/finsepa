@@ -13,6 +13,7 @@ import {
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
+  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   formatFundamentalsAxisTickLabel,
 } from "@/lib/chart/fundamentals-chart-surface";
 import {
@@ -28,7 +29,6 @@ const ESTIMATED_BAR_FILL = earningsForecastBarFillStyle(ESTIMATE_BAR);
 
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
-const CHART_ZERO_BASELINE_BORDER = "rgba(228, 228, 231, 0.85)";
 const AXIS_LABEL_ROTATE_DEG = -42;
 const MULTICHART_AXIS_ROW_PX = 32;
 const MULTICHART_AXIS_BOTTOM_PAD_PX = 10;
@@ -41,10 +41,9 @@ const BAR_GAP_PX = 4;
 const BAR_HOVER_PAD_PX = 6;
 
 const BAR_VALUE_LABEL_CLASS =
-  "pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#141414]";
+  "pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-fg";
 
-const BAR_VALUE_LABEL_TEXT_SHADOW =
-  "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)";
+const BAR_VALUE_LABEL_TEXT_SHADOW = "var(--fs-chart-value-label-shadow)";
 
 type MonthBar = {
   key: string;
@@ -162,13 +161,13 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
         <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
           <div ref={plotAreaRef} className="relative min-h-0 min-w-0 flex-1" onPointerLeave={clearHover}>
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-[#FCFCFD]"
+              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
               <div
                 className="absolute inset-x-0 bottom-0 border-t"
-                style={{ borderColor: CHART_ZERO_BASELINE_BORDER }}
+                style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
               />
             </div>
 
@@ -268,26 +267,15 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
                       : "translate(10px, -50%)",
                 }}
               >
-                {tip.side === "left" ? (
-                  <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
-                    <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
-                    <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
-                  </span>
-                ) : (
-                  <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
-                    <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
-                    <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
-                  </span>
-                )}
-                <p className="text-[12px] font-semibold leading-4 text-[#141414]">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-fg">{tip.periodLabel}</p>
                 {tip.declaredUsd > 0 ? (
-                  <p className="mt-1 text-[12px] leading-4 text-[#141414]">
+                  <p className="mt-1 text-[12px] leading-4 text-fg">
                     <span className="inline-block h-2 w-2 rounded-sm align-middle" style={{ background: DECLARED_BAR }} />{" "}
                     Declared: {formatUsdCompact(tip.declaredUsd)}
                   </p>
                 ) : null}
                 {tip.estimatedUsd > 0 ? (
-                  <p className="mt-0.5 text-[12px] leading-4 text-[#141414]">
+                  <p className="mt-0.5 text-[12px] leading-4 text-fg">
                     <span
                       className="inline-block h-2 w-2 overflow-hidden rounded-sm align-middle"
                       style={ESTIMATED_BAR_FILL}
@@ -300,7 +288,7 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
           </div>
 
           <div
-            className="relative h-full shrink-0 pl-1.5 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]"
+            className="relative h-full shrink-0 pl-1.5 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted"
             style={{ width: Y_AXIS_W_PX }}
             aria-hidden
           >
@@ -312,7 +300,7 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
                 return (
                   <span
                     key={i}
-                    className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-0.5 py-px"
+                    className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-0.5 py-px"
                     style={{ top: `${(PLOT_INSET_TOP_FRAC + pct * insetSpan) * 100}%` }}
                   >
                     {formatFundamentalsAxisTickLabel("usd", t)}
@@ -334,7 +322,7 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
               >
                 <span
                   className={cn(
-                    "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
+                    "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
                     !(p.declaredUsd > 0) && p.estimatedUsd > 0 && EARNINGS_FORECAST_OPACITY_CLASS,
                   )}
                   style={{
@@ -352,7 +340,7 @@ function PortfolioDividendsChartInner({ months }: { months: PortfolioDividendSch
         <div className="shrink-0" style={{ height: MULTICHART_AXIS_BOTTOM_PAD_PX }} aria-hidden />
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-6 text-[12px] font-medium leading-4 text-[#5C5D5F]">
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-6 text-[12px] font-medium leading-4 text-fg-muted">
         <span className="inline-flex items-center gap-2">
           <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: DECLARED_BAR }} aria-hidden />
           Declared

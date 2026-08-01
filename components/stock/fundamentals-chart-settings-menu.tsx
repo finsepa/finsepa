@@ -29,14 +29,14 @@ function PillSwitch({
       aria-label={ariaLabel}
       onClick={() => onPressedChange(!pressed)}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
-        pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
+        pressed ? "bg-accent" : "bg-stroke",
       )}
     >
       <span
         className={cn(
-          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform",
-          pressed && "translate-x-4",
+          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-switch-thumb-off shadow-sm transition-[transform,background-color]",
+          pressed && "translate-x-4 bg-switch-thumb",
         )}
         aria-hidden
       />
@@ -170,7 +170,7 @@ export function FundamentalsChartSettingsMenu({
           >
             {toggleRows.map(({ key, label, ariaLabel }) => (
               <div key={key} role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
-                <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#141414]">{label}</span>
+                <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-fg">{label}</span>
                 <PillSwitch
                   pressed={options[key]}
                   onPressedChange={(next) => onChange({ ...options, [key]: next })}

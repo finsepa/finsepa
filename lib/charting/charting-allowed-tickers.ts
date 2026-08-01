@@ -2,8 +2,8 @@ import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset
 import { TOP10_TICKERS } from "@/lib/screener/top10-config";
 
 /**
- * Equities allowed on `/charting` — same universe as the company picker and screener stock search
- * (screener universe; top-10 preserved first).
+ * Popular equities for charting / comparison pickers (top-10 first, then screener universe).
+ * Search can still surface remote hits outside this list; URL sessions keep those picks.
  */
 export function buildChartingAllowedTickerList(universe: readonly { ticker: string }[]): string[] {
   const seen = new Set<string>();
@@ -40,8 +40,9 @@ function resolveChartingTickerAgainstAllowlist(raw: string, allow: Set<string>):
 
 /**
  * Tickers from `?ticker=` for Charting / comparison sessions.
- * When the allowlist is empty (cold or failed universe build), accept URL tickers so sessions are not stuck.
- * Otherwise require membership (with hyphen/dot alias resolution).
+ * Prefer the allowlist’s canonical form when present (hyphen/dot aliases).
+ * Otherwise keep the URL ticker so company-picker remote search picks (e.g. FIG)
+ * are not silently dropped after `router.replace`.
  */
 export function filterChartingUrlTickersForSession(
   parsedTickers: readonly string[],
@@ -61,19 +62,15 @@ export function filterChartingUrlTickersForSession(
     return out;
   }
 
-  if (chartingAllowSet.size === 0) {
-    for (const t of parsedTickers) {
-      const u = t.trim().toUpperCase();
-      if (!u || seen.has(u)) continue;
-      seen.add(u);
-      out.push(u);
-    }
-    return out;
-  }
-
   for (const t of parsedTickers) {
-    const resolved = resolveChartingTickerAgainstAllowlist(t, chartingAllowSet);
-    if (!resolved || seen.has(resolved)) continue;
+    const u = t.trim().toUpperCase();
+    if (!u) continue;
+    const resolved =
+      chartingAllowSet.size > 0
+        ? (resolveChartingTickerAgainstAllowlist(t, chartingAllowSet) ?? u)
+        : u;
+    if (seen.has(resolved)) continue;
+    if (chartingTickerUrlAliases(resolved).some((alias) => seen.has(alias))) continue;
     seen.add(resolved);
     out.push(resolved);
   }

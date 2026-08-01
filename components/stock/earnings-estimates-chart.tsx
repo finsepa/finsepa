@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
@@ -16,6 +17,7 @@ import {
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
+  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   formatFundamentalsAxisTickLabel,
 } from "@/lib/chart/fundamentals-chart-surface";
 import {
@@ -42,13 +44,10 @@ import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { StockEarningsEstimatesChart, StockEarningsEstimatesPoint } from "@/lib/market/stock-earnings-types";
 
 /** Estimates bars are grey (hatched when forecast); actual bars are blue. */
-const ACTUAL_BAR = "#2563EB";
 const ESTIMATE_BAR = "#D4D4D8";
 const FORECAST_BAR = "#A1A1AA";
 const FORECAST_BAR_FILL = earningsForecastBarFillStyle(FORECAST_BAR);
 
-const BEAT_COLOR = "#16A34A";
-const MISS_COLOR = "#DC2626";
 const MEET_COLOR = "#5C5D5F";
 
 const BAR_WIDTH_QUARTERLY_PX = 11;
@@ -134,7 +133,7 @@ function EarningsBeatMissIndicator({
   if (bottomPct <= 0) return null;
 
   const color =
-    outcome === "beat" ? BEAT_COLOR : outcome === "miss" ? MISS_COLOR : MEET_COLOR;
+    outcome === "beat" ? resolveFsColor("--fs-up") : outcome === "miss" ? resolveFsColor("--fs-down") : MEET_COLOR;
   const gapAboveBarPx = 4;
 
   return (
@@ -212,7 +211,7 @@ function EarningsPeriodBars({
             width: widthPx,
             height: `${valueHeightPct(actual, maxV) * enterProgress}%`,
             minHeight: 2,
-            backgroundColor: ACTUAL_BAR,
+            backgroundColor: resolveFsColor("--fs-accent"),
           }}
           aria-hidden
         />
@@ -223,7 +222,6 @@ function EarningsPeriodBars({
 
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
-const CHART_ZERO_BASELINE_BORDER = "rgba(228, 228, 231, 0.85)";
 const AXIS_LABEL_ROTATE_DEG = -42;
 const MULTICHART_AXIS_ROW_PX = 32;
 const MULTICHART_AXIS_BOTTOM_PAD_PX = 10;
@@ -268,10 +266,10 @@ function tooltipLineClass(tone: BarTooltipLineTone, isFirst: boolean): string {
   const base = isFirst
     ? "mt-1.5 max-w-[min(100vw-2rem,14rem)] truncate text-[12px] leading-4"
     : "mt-0.5 max-w-[min(100vw-2rem,14rem)] truncate text-[12px] leading-4";
-  if (tone === "beat") return `${base} font-semibold text-[#16A34A]`;
-  if (tone === "miss") return `${base} font-semibold text-[#DC2626]`;
-  if (tone === "met") return `${base} font-semibold text-[#5C5D5F]`;
-  return `${base} font-normal text-[#141414]`;
+  if (tone === "beat") return `${base} font-semibold text-up`;
+  if (tone === "miss") return `${base} font-semibold text-down`;
+  if (tone === "met") return `${base} font-semibold text-fg-muted`;
+  return `${base} font-normal text-fg`;
 }
 
 type PeriodBar = {
@@ -454,7 +452,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
             <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
               <div ref={plotAreaRef} className="relative min-h-0 min-w-0 flex-1" onPointerLeave={clearHover}>
                 <div
-                  className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-[#FCFCFD]"
+                  className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
                   aria-hidden
                 >
                   <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -477,7 +475,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                   ) : null}
                   <div
                     className="absolute inset-x-0 bottom-0 border-t"
-                    style={{ borderColor: CHART_ZERO_BASELINE_BORDER }}
+                    style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
                   />
                 </div>
 
@@ -588,18 +586,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                           : "translate(10px, -50%)",
                     }}
                   >
-                    {tip.side === "left" ? (
-                      <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
-                        <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
-                        <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
-                      </span>
-                    ) : (
-                      <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
-                        <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
-                        <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
-                      </span>
-                    )}
-                    <p className="text-[12px] font-semibold leading-4 text-[#141414]">{tip.periodLabel}</p>
+                    <p className="text-[12px] font-semibold leading-4 text-fg">{tip.periodLabel}</p>
                     {tip.lines.map((line, i) => (
                       <p key={`${line.tone}-${line.text}`} className={tooltipLineClass(line.tone, i === 0)} title={line.text}>
                         {line.text}
@@ -610,7 +597,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
               </div>
 
               <div
-                className="relative h-full shrink-0 pl-1.5 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]"
+                className="relative h-full shrink-0 pl-1.5 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted"
                 style={{ width: Y_AXIS_W_PX }}
                 aria-hidden
               >
@@ -622,7 +609,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     return (
                       <span
                         key={i}
-                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-0.5 py-px"
+                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-0.5 py-px"
                         style={{ top: `${(PLOT_INSET_TOP_FRAC + pct * insetSpan) * 100}%` }}
                       >
                         {formatFundamentalsAxisTickLabel(metricConfig.axisKind, t)}
@@ -650,7 +637,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     >
                       <span
                         className={cn(
-                          "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
+                          "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
                           p.isForecast && EARNINGS_FORECAST_OPACITY_CLASS,
                         )}
                         style={{
@@ -671,7 +658,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
         </div>
       ) : (
         <div
-          className="flex items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#5C5D5F]"
+          className="flex items-center justify-center rounded-xl border border-dashed border-stroke bg-canvas text-[13px] text-fg-muted"
           style={{ height: CHART_HEIGHT_PX }}
         >
           No estimate data for this view.

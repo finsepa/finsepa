@@ -47,6 +47,7 @@ function temporarilyReplaceMaskedDotPatterns(root: HTMLElement): () => void {
   for (const el of root.querySelectorAll<HTMLElement>("*")) {
     const className = elementClassName(el);
     const usesPlotDots =
+      className.split(/\s+/).includes("chart-plot-dots") ||
       className.includes("background-size:8px_8px") ||
       (hasMaskImage(el) &&
         window.getComputedStyle(el).backgroundImage.includes("radial-gradient"));

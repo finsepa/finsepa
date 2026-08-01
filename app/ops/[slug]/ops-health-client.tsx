@@ -78,7 +78,7 @@ function PasswordGate({ slug, onAuthenticated }: { slug: string; onAuthenticated
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-md items-center px-4 py-12">
-      <div className="w-full rounded-2xl border border-[#E4E4E7] bg-white p-8 shadow-sm">
+      <div className="w-full rounded-2xl border border-stroke bg-surface p-8 shadow-sm">
         <AuthTitleBlock
           title="Ops access"
           subtitle="Enter the ops password to view system status."
@@ -115,14 +115,14 @@ function CheckCard({
   const detailEntries = details ? Object.entries(details) : [];
 
   return (
-    <article className="rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-sm">
+    <article className="rounded-xl border border-stroke bg-surface p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className={cn("h-2.5 w-2.5 shrink-0 rounded-full", styles.dot)} aria-hidden />
-            <h2 className="text-sm font-semibold text-[#141414]">{label}</h2>
+            <h2 className="text-sm font-semibold text-fg">{label}</h2>
           </div>
-          <p className="mt-1 text-sm text-[#52525B]">{summary}</p>
+          <p className="mt-1 text-sm text-fg-muted">{summary}</p>
           {error ? <p className="mt-1 text-xs text-red-600">{error}</p> : null}
         </div>
         <span
@@ -135,7 +135,7 @@ function CheckCard({
         </span>
       </div>
       {detailEntries.length > 0 || latencyMs != null ? (
-        <dl className="mt-3 grid gap-1 border-t border-[#F4F4F5] pt-3 text-xs text-[#5C5D5F]">
+        <dl className="mt-3 grid gap-1 border-t border-surface-muted pt-3 text-xs text-fg-muted">
           {latencyMs != null ? (
             <div className="flex justify-between gap-4">
               <dt>Latency</dt>
@@ -183,12 +183,12 @@ function Dashboard({
     <main className="mx-auto max-w-3xl px-4 py-10">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#141414]">System status</h1>
-          <p className="mt-1 text-sm text-[#52525B]">
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">System status</h1>
+          <p className="mt-1 text-sm text-fg-muted">
             Last checked {formatWhen(report.checkedAt)}
             {report.vercelEnv ? ` · ${report.vercelEnv}` : null}
           </p>
-          <p className="mt-2 text-xs text-[#5C5D5F]">
+          <p className="mt-2 text-xs text-fg-muted">
             {okCount} ok · {warnCount} warn · {errorCount} error
           </p>
         </div>
@@ -197,14 +197,14 @@ function Dashboard({
             type="button"
             onClick={onRefresh}
             disabled={refreshing}
-            className="rounded-lg bg-[#141414] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#27272A] disabled:opacity-60"
+            className="rounded-lg bg-fg px-3 py-2 text-sm font-medium text-surface transition hover:bg-fg disabled:opacity-60"
           >
             {refreshing ? "Refreshing…" : "Run checks"}
           </button>
           <button
             type="button"
             onClick={onLogout}
-            className="rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 text-sm font-medium text-[#52525B] transition hover:bg-[#F4F4F5]"
+            className="rounded-lg border border-stroke bg-surface px-3 py-2 text-sm font-medium text-fg-muted transition hover:bg-surface-muted"
           >
             Lock
           </button>

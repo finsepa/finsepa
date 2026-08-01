@@ -1,8 +1,9 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
-import { AppModalShell } from "@/components/ui/app-modal-shell";
+import { AppModalShell, APP_MODAL_RULE_CLASS } from "@/components/ui/app-modal-shell";
 import { Spinner } from "@/components/ui/spinner";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
@@ -37,7 +38,6 @@ type HistoryPoint = {
   previous: number | null;
 };
 
-const NEGATIVE_BAR_COLOR = "#DC2626";
 const BAR_HOVER_DIM_OPACITY = 0.6;
 const CHART_PLOT_HEIGHT_PX = 320;
 const CHART_TOTAL_HEIGHT_PX = CHART_PLOT_HEIGHT_PX + FUNDAMENTALS_CHART_AXIS_ROW_PX;
@@ -48,13 +48,13 @@ const POSITIVE_BAR_COLOR = fundamentalsBarSolidAtIndex(0);
 const historyTableGrid =
   "grid grid-cols-[minmax(11rem,2fr)_repeat(3,minmax(5.25rem,1fr))] gap-x-2";
 const historyLabelHeaderClass =
-  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]";
+  "flex min-h-full min-w-0 items-center self-stretch border-r border-stroke pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-fg-muted";
 const historyValueHeaderClass =
-  "flex min-h-full min-w-0 items-center justify-end self-stretch font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]";
+  "flex min-h-full min-w-0 items-center justify-end self-stretch font-['Inter'] text-[14px] font-medium leading-5 text-fg-muted";
 const historyNumCellClass =
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg";
 const historyLabelCellClass =
-  "flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] pr-4 text-left font-['Inter'] text-[14px] font-normal leading-5 text-[#141414]";
+  "flex min-h-full min-w-0 items-center self-stretch border-r border-stroke pr-4 text-left font-['Inter'] text-[14px] font-normal leading-5 text-fg";
 
 function formatPeriodLabel(dateStr: string, period: string | null): string {
   const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr.split(" ")[0]}T12:00:00Z`);
@@ -80,7 +80,7 @@ function formatAxisLabel(dateStr: string, period: string | null): string {
 
 function resolveBarFillColor(baseColor: string, dimmed: boolean): string {
   if (!dimmed) return baseColor;
-  if (baseColor === NEGATIVE_BAR_COLOR) {
+  if (baseColor === resolveFsColor("--fs-down")) {
     return `rgba(220, 38, 38, ${BAR_HOVER_DIM_OPACITY})`;
   }
   return fundamentalsBarColorAtIndex(0, BAR_HOVER_DIM_OPACITY);
@@ -163,7 +163,7 @@ function EconomyHistoryBarChart({
       e.clientX - plotR.left,
       Math.max(1, Math.floor(plotR.width)),
     );
-    const fill = col.value < 0 ? NEGATIVE_BAR_COLOR : POSITIVE_BAR_COLOR;
+    const fill = col.value < 0 ? resolveFsColor("--fs-down") : POSITIVE_BAR_COLOR;
     setHoveredIndex(i);
     setTip({
       anchorX,
@@ -178,7 +178,7 @@ function EconomyHistoryBarChart({
   if (n === 0) {
     return (
       <div
-        className="flex items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#5C5D5F]"
+        className="flex items-center justify-center rounded-xl border border-dashed border-stroke bg-canvas text-[13px] text-fg-muted"
         style={{ height: CHART_TOTAL_HEIGHT_PX }}
       >
         No data
@@ -199,7 +199,7 @@ function EconomyHistoryBarChart({
             onPointerLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 z-0 bg-[#FCFCFD]"
+              className="pointer-events-none absolute inset-x-0 z-0 bg-panel"
               style={{ top: plotInsetTop, bottom: plotInsetBottom }}
               aria-hidden
             >
@@ -225,7 +225,7 @@ function EconomyHistoryBarChart({
                 const vTop = valueToPlotBandTopPercent(v, yMin, yMax);
                 const barHeightPct = v >= 0 ? Math.max(0, zeroTop - vTop) : Math.max(0, vTop - zeroTop);
                 const barTopPct = v >= 0 ? vTop : zeroTop;
-                const baseBarColor = v < 0 ? NEGATIVE_BAR_COLOR : POSITIVE_BAR_COLOR;
+                const baseBarColor = v < 0 ? resolveFsColor("--fs-down") : POSITIVE_BAR_COLOR;
                 const barColor = resolveBarFillColor(
                   baseBarColor,
                   hoveredIndex != null && hoveredIndex !== i,
@@ -291,19 +291,8 @@ function EconomyHistoryBarChart({
                 role="tooltip"
                 aria-label="Chart tooltip"
               >
-                {tip.side === "left" ? (
-                  <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
-                    <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
-                    <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
-                  </span>
-                ) : (
-                  <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
-                    <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
-                    <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
-                  </span>
-                )}
-                <p className="text-[12px] font-semibold leading-4 text-[#141414]">{tip.periodLabel}</p>
-                <p className="mt-1.5 flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                <p className="text-[12px] font-semibold leading-4 text-fg">{tip.periodLabel}</p>
+                <p className="mt-1.5 flex items-center gap-2 whitespace-nowrap text-[12px] font-normal leading-4 text-fg-muted">
                   <span
                     className="h-2.5 w-2.5 shrink-0 rounded-full"
                     style={{ backgroundColor: tip.dotColor }}
@@ -319,7 +308,7 @@ function EconomyHistoryBarChart({
 
           <div
             className={cn(
-              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
+              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted",
               FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
             )}
             style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -332,7 +321,7 @@ function EconomyHistoryBarChart({
               {yTicks.map((t, i) => (
                 <span
                   key={i}
-                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
+                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
                   style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
                 >
                   {formatEconomyChartAxisTick(t, yMax)}
@@ -360,7 +349,7 @@ function EconomyHistoryBarChart({
                 >
                   {show ? (
                     <span
-                      className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]"
+                      className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]"
                       style={{
                         transform: `rotate(${FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG}deg)`,
                         transformOrigin: "center bottom",
@@ -470,13 +459,13 @@ export function EconomyEventHistoryModal({
         cardClassName="overflow-hidden"
       >
         {latestActual ? (
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 pt-5 pb-3">
+          <div className={`flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-5 pt-5 pb-3 ${APP_MODAL_RULE_CLASS}`}>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-x-3 text-[13px] leading-5 text-[#5C5D5F]">
+              <div className="flex flex-wrap items-baseline gap-x-3 text-[13px] leading-5 text-fg-muted">
                 {latestActual.actual != null && (
                   <span>
                     Actual:{" "}
-                    <span className="font-medium text-[#141414]">
+                    <span className="font-medium text-fg">
                       {formatEconomyMetric(latestActual.actual)}
                     </span>
                   </span>
@@ -484,7 +473,7 @@ export function EconomyEventHistoryModal({
                 {latestActual.estimate != null && (
                   <span>
                     Forecast:{" "}
-                    <span className="font-medium text-[#141414]">
+                    <span className="font-medium text-fg">
                       {formatEconomyMetric(latestActual.estimate)}
                     </span>
                   </span>
@@ -492,7 +481,7 @@ export function EconomyEventHistoryModal({
                 {latestActual.previous != null && (
                   <span>
                     Prior:{" "}
-                    <span className="font-medium text-[#141414]">
+                    <span className="font-medium text-fg">
                       {formatEconomyMetric(latestActual.previous)}
                     </span>
                   </span>
@@ -510,18 +499,18 @@ export function EconomyEventHistoryModal({
               aria-live="polite"
               aria-label="Loading historical data"
             >
-              <Spinner className="size-6 text-[#5C5D5F]" />
+              <Spinner className="size-6 text-fg-muted" />
             </div>
           ) : error ? (
             <div
-              className="flex items-center justify-center text-[14px] text-[#5C5D5F]"
+              className="flex items-center justify-center text-[14px] text-fg-muted"
               style={{ height: CHART_TOTAL_HEIGHT_PX }}
             >
               {error}
             </div>
           ) : points.length === 0 ? (
             <div
-              className="flex items-center justify-center text-[14px] text-[#5C5D5F]"
+              className="flex items-center justify-center text-[14px] text-fg-muted"
               style={{ height: CHART_TOTAL_HEIGHT_PX }}
             >
               No historical data available
@@ -532,10 +521,10 @@ export function EconomyEventHistoryModal({
         </div>
 
         {!loading && points.length > 0 && (
-          <div className="max-h-[280px] shrink-0 overflow-y-auto border-t border-[#E4E4E7]">
-            <div className="divide-y divide-[#E4E4E7] bg-white">
+          <div className={`max-h-[280px] shrink-0 overflow-y-auto border-t ${APP_MODAL_RULE_CLASS}`}>
+            <div className="divide-y divide-stroke bg-surface">
               <div
-                className={`${historyTableGrid} sticky top-0 z-10 min-h-[44px] items-stretch border-b border-[#E4E4E7] bg-white px-4 py-0`}
+                className={`${historyTableGrid} sticky top-0 z-10 min-h-[44px] items-stretch border-b bg-surface px-4 py-0 ${APP_MODAL_RULE_CLASS}`}
               >
                 <div className={historyLabelHeaderClass}>Date</div>
                 <div className={historyValueHeaderClass}>Actual</div>
@@ -545,7 +534,7 @@ export function EconomyEventHistoryModal({
               {[...points].reverse().map((pt, i) => (
                 <div
                   key={`${pt.date}-${i}`}
-                  className={`${historyTableGrid} group min-h-[60px] max-h-[60px] items-stretch bg-white px-4 transition-colors duration-75 hover:bg-neutral-50`}
+                  className={`${historyTableGrid} group min-h-[60px] max-h-[60px] items-stretch bg-surface px-4 transition-colors duration-75 hover:bg-neutral-50`}
                 >
                   <div className={historyLabelCellClass}>
                     <span className="truncate">{formatPeriodLabel(pt.date, pt.period)}</span>

@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Search } from "@/lib/icons";
+import { fieldChromeClassName, textInputShellClassName } from "@/components/design-system/text-input-styles";
+import { cn } from "@/lib/utils";
 
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { useSearchRecentStorage } from "@/lib/search/use-search-recent-storage";
@@ -179,11 +181,14 @@ export function NewsMobileSearchSheet({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-9 w-full min-w-0 items-center gap-2 rounded-lg bg-[#F4F4F5] px-4 text-left transition-all duration-100 hover:bg-[#EBEBEB]"
+        className={cn(
+          "flex h-9 w-full min-w-0 items-center gap-2 rounded-[10px] px-3 text-left",
+          textInputShellClassName,
+        )}
         aria-label="Search news"
       >
-        <Search className="h-5 w-5 shrink-0 text-[#141414]" aria-hidden />
-        <span className="min-w-0 flex-1 truncate text-sm leading-5 text-[#A1A1AA]">{triggerLabel}</span>
+        <Search className="h-5 w-5 shrink-0 text-icon" strokeWidth={2} aria-hidden />
+        <span className="min-w-0 flex-1 truncate text-sm leading-5 text-fg-subtle">{triggerLabel}</span>
       </button>
 
       {mounted && open
@@ -195,15 +200,15 @@ export function NewsMobileSearchSheet({
                 aria-label="Close search"
                 onClick={close}
               />
-              <div className="absolute inset-x-0 bottom-0 rounded-t-2xl bg-white shadow-[0_-8px_30px_rgba(10,10,10,0.18)]">
+              <div className="absolute inset-x-0 bottom-0 rounded-t-2xl bg-surface shadow-[0_-8px_30px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-12))]">
                 <div className="flex items-center justify-between px-4 pb-3 pt-4">
-                  <div className="flex-1 text-center text-[16px] font-semibold leading-6 text-[#141414]">
+                  <div className="flex-1 text-center text-[16px] font-semibold leading-6 text-fg">
                     Search
                   </div>
                   <button
                     type="button"
                     onClick={handleDone}
-                    className="ml-3 shrink-0 text-[15px] font-semibold text-[#141414]"
+                    className="ml-3 shrink-0 text-[15px] font-semibold text-fg"
                   >
                     Done
                   </button>
@@ -212,7 +217,8 @@ export function NewsMobileSearchSheet({
                 <div className="px-4 pb-3">
                   <div className="relative block w-full">
                     <Search
-                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5C5D5F]"
+                      className="pointer-events-none absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-icon"
+                      strokeWidth={2}
                       aria-hidden
                     />
                     <input
@@ -221,7 +227,13 @@ export function NewsMobileSearchSheet({
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder={placeholder}
-                      className="h-11 w-full rounded-[14px] bg-[#F4F4F5] py-2 pl-9 pr-3 text-[15px] text-[#141414] placeholder:text-[#A1A1AA] outline-none focus:ring-2 focus:ring-[#141414]/10"
+                      className={cn(
+                        fieldChromeClassName,
+                        "box-border h-11 w-full rounded-[10px] py-0 pl-10 pr-3 text-[15px] text-fg placeholder:text-fg-subtle outline-none",
+                        "transition-[color,background-color,border-color,box-shadow]",
+                        "dark:[&:not(:focus)]:hover:border-field-stroke-hover",
+                        "focus:shadow-[0_0_0_2px_var(--fs-field-ring)] focus-visible:outline-none",
+                      )}
                       autoComplete="off"
                       autoCorrect="off"
                     />
@@ -231,7 +243,7 @@ export function NewsMobileSearchSheet({
                 <div className="max-h-[min(58vh,520px)] overflow-y-auto pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
                   {emptyQuery ? (
                     <>
-                      <div className="px-4 pb-2 pt-1 text-[12px] font-semibold text-[#141414]">
+                      <div className="px-4 pb-2 pt-1 text-[12px] font-semibold text-fg">
                         Recent
                         {!noRecent ? (
                           <button
@@ -242,14 +254,14 @@ export function NewsMobileSearchSheet({
                               setRecent([]);
                               setHighlight(0);
                             }}
-                            className="float-right text-[12px] font-medium text-[#2563EB]"
+                            className="float-right text-[12px] font-medium text-accent"
                           >
                             Clear
                           </button>
                         ) : null}
                       </div>
                       {noRecent ? (
-                        <div className="px-4 py-10 text-center text-[14px] text-[#5C5D5F]">
+                        <div className="px-4 py-10 text-center text-[14px] text-fg-muted">
                           No recent searches yet.
                         </div>
                       ) : (
@@ -275,13 +287,13 @@ export function NewsMobileSearchSheet({
                   ) : searchPending && !showStaleList ? (
                     <SearchLoadingIndicator className="px-4 py-10" />
                   ) : noResults ? (
-                    <div className="px-4 py-10 text-center text-[14px] text-[#5C5D5F]">
+                    <div className="px-4 py-10 text-center text-[14px] text-fg-muted">
                       No results for “{queryTrim}”
                     </div>
                   ) : (
                     <>
                       {loading && showStaleList ? (
-                        <div className="px-4 pb-1 text-center text-[11px] text-[#A1A1AA]" aria-hidden>
+                        <div className="px-4 pb-1 text-center text-[11px] text-fg-subtle" aria-hidden>
                           Updating…
                         </div>
                       ) : null}

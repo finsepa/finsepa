@@ -99,9 +99,9 @@ export function WatchlistSectionHeader({
 
   const dragSurfaceClassName = cn(
     "group transition-colors",
-    variant === "table" ? "border-b border-[#E4E4E7]" : variant === "rail" ? "rounded-lg" : "bg-white",
+    variant === "table" ? "border-b border-stroke" : variant === "rail" ? "rounded-lg" : "bg-surface",
     dragOver &&
-      (variant === "table" || variant === "card" ? "bg-[#E4E4E7]" : "bg-[#F4F4F5]"),
+      (variant === "table" || variant === "card" ? "bg-stroke" : "bg-surface-muted"),
   );
 
   const dragHandlers = {
@@ -129,8 +129,8 @@ export function WatchlistSectionHeader({
   };
 
   const actionButtonClassName = cn(
-    "flex h-7 w-7 items-center justify-center rounded-[8px] text-[#5C5D5F] opacity-0 transition-opacity",
-    "hover:bg-[#F4F4F5] hover:text-[#141414] group-hover:opacity-100 focus-visible:opacity-100",
+    "flex h-7 w-7 items-center justify-center rounded-[8px] text-fg-muted opacity-0 transition-opacity",
+    "hover:bg-surface-muted hover:text-fg group-hover:opacity-100 focus-visible:opacity-100",
   );
 
   const headerContent = (
@@ -138,7 +138,7 @@ export function WatchlistSectionHeader({
       <button
         type="button"
         onClick={onToggleCollapsed}
-        className="flex min-w-0 flex-1 items-center gap-2 text-left text-[13px] font-medium text-[#5C5D5F] transition-colors hover:text-[#141414]"
+        className="flex min-w-0 flex-1 items-center gap-2 text-left text-[13px] font-medium text-fg-muted transition-colors hover:text-fg"
       >
         {collapsed ? <ChevronRight className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
         <span className="truncate">{label}</span>
@@ -153,7 +153,7 @@ export function WatchlistSectionHeader({
           onClick={() => setMenuOpen((open) => !open)}
           className={cn(
             actionButtonClassName,
-            menuOpen && "opacity-100 bg-[#F4F4F5] text-[#141414]",
+            menuOpen && "opacity-100 bg-surface-muted text-fg",
           )}
         >
           <Pencil className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
@@ -217,7 +217,7 @@ export function WatchlistSectionHeader({
                 }}
                 className={cn(
                   dropdownMenuPlainItemClassName(),
-                  "text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
+                  "text-down hover:bg-down-soft hover:text-down",
                 )}
               >
                 <DropdownMenuLottieIcon
@@ -245,7 +245,7 @@ export function WatchlistSectionHeader({
         </div>
       ) : (
         <tr className={dragSurfaceClassName} {...dragHandlers}>
-          <td colSpan={9} className="bg-white px-4 py-2">
+          <td colSpan={9} className="bg-surface px-4 py-2">
             {headerContent}
           </td>
         </tr>
@@ -279,7 +279,7 @@ export function WatchlistSectionHeader({
           }
         >
           <label className="flex w-full flex-col gap-2">
-            <span className="text-sm font-medium leading-5 text-[#141414]">Section name</span>
+            <span className="text-sm font-medium leading-5 text-fg">Section name</span>
             <ClearableInput
               type="text"
               value={renameValue}
@@ -315,9 +315,9 @@ export function WatchlistSectionHeader({
             </AppModalFooter>
           }
         >
-          <p className="text-sm leading-5 text-[#141414]">Are you sure you want to delete this section?</p>
-          <p className="mt-3 text-sm leading-5 text-[#5C5D5F]">
-            Assets in <span className="font-semibold text-[#141414]">{label}</span> will move to the section above, or
+          <p className="text-sm leading-5 text-fg">Are you sure you want to delete this section?</p>
+          <p className="mt-3 text-sm leading-5 text-fg-muted">
+            Assets in <span className="font-semibold text-fg">{label}</span> will move to the section above, or
             back to your main watchlist if this is the first section.
           </p>
         </AppModalShell>

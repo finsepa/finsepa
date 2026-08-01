@@ -146,9 +146,9 @@ function SliceExternalLabel({
     >
       <div
         className={cn(
-          "flex w-max max-w-none items-center border border-[#E4E4E7] bg-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)] transition-[padding,box-shadow,gap,border-radius] duration-200 ease-out",
+          "flex w-max max-w-none items-center border border-stroke bg-surface shadow-[0px_1px_4px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-08))] transition-[padding,box-shadow,gap,border-radius] duration-200 ease-out",
           isHovered
-            ? "gap-2.5 rounded-[12px] py-1.5 pl-1.5 pr-3.5 shadow-[0px_4px_14px_0px_rgba(10,10,10,0.12)]"
+            ? "gap-2.5 rounded-[12px] py-1.5 pl-1.5 pr-3.5 shadow-[0px_4px_14px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-12))]"
             : "gap-1 rounded-[8px] py-0.5 pl-0.5 pr-2",
         )}
       >
@@ -180,15 +180,15 @@ function SliceExternalLabel({
         </div>
         {isHovered ? (
           <div className="flex shrink-0 flex-col gap-0.5">
-            <span className="whitespace-nowrap text-[13px] font-semibold leading-4 text-[#141414]">
+            <span className="whitespace-nowrap text-[13px] font-semibold leading-4 text-fg">
               {ticker}
             </span>
-            <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-[#141414]">
+            <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-fg">
               {pct1.format(row.weightPct)}%
             </span>
           </div>
         ) : (
-          <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-[#141414]">
+          <span className="whitespace-nowrap text-[12px] font-medium tabular-nums leading-4 text-fg">
             {pct1.format(row.weightPct)}%
           </span>
         )}

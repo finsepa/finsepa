@@ -5,9 +5,14 @@
  *
  * Server holds `LOGO_DEV_PUBLISHABLE_KEY`; the browser never sees the token. Do not point `<img>` at
  * `img.logo.dev` directly — always use these URL builders.
+ *
+ * Logo.dev supports `theme=light|dark` (+ `format=png`). Pass `theme` on the proxy URL (see
+ * {@link withLogoDevTheme}) so dark UI gets inverted/adjusted marks.
  */
 
 const TICKER_RE = /^[A-Z0-9][A-Z0-9.-]{0,11}$/i;
+
+export type LogoDevTheme = "light" | "dark";
 
 function isReasonableHost(host: string): boolean {
   const h = host.trim().toLowerCase().replace(/^www\./, "");
@@ -41,6 +46,46 @@ export function logoDevCryptoLogoUrl(symbol: string): string | null {
   const c = symbol.trim().toUpperCase();
   if (!/^[A-Z0-9]{1,12}$/.test(c)) return null;
   return `/api/media/logo?kind=crypto&c=${encodeURIComponent(c)}`;
+}
+
+/**
+ * Append / replace `theme` on a same-origin Logo.dev proxy URL.
+ * Non-proxy URLs (favicons, etc.) are returned unchanged.
+ *
+ * Some marks (Alphabet, Ferrari) look better as Logo.dev’s light/white tile even on dark UI —
+ * pass {@link symbol} so those tickers stay `theme=light` when the app is dark.
+ */
+export function withLogoDevTheme(
+  url: string,
+  theme: LogoDevTheme,
+  symbol?: string,
+): string {
+  const raw = url.trim();
+  if (!raw.startsWith("/api/media/logo")) return raw;
+  const resolved = resolveLogoDevThemeForSymbol(symbol, theme);
+  try {
+    const u = new URL(raw, "https://finsepa.local");
+    u.searchParams.set("theme", resolved === "dark" ? "dark" : "light");
+    return `${u.pathname}?${u.searchParams.toString()}`;
+  } catch {
+    return raw;
+  }
+}
+
+/**
+ * Tickers that keep Logo.dev’s light (white-tile) artwork in dark mode.
+ * Expand carefully — most brands prefer `theme=dark` on dark UI.
+ */
+export const LOGO_DEV_FORCE_LIGHT_ON_DARK_TICKERS = new Set(["GOOGL", "GOOG", "RACE"]);
+
+export function resolveLogoDevThemeForSymbol(
+  symbol: string | undefined,
+  appTheme: LogoDevTheme,
+): LogoDevTheme {
+  if (appTheme !== "dark") return "light";
+  const sym = symbol?.trim().toUpperCase();
+  if (sym && LOGO_DEV_FORCE_LIGHT_ON_DARK_TICKERS.has(sym)) return "light";
+  return "dark";
 }
 
 /** Stable domain-based favicon (no API key). */

@@ -51,18 +51,18 @@ function isRenderable(payload: StockKeyIndicatorsResponse | null | undefined): b
 function IndicatorIcon({ indicator }: { indicator: StockKeyIndicator }) {
   if (indicator.id === "earnings_countdown") {
     return (
-      <CalendarDays className="size-4 shrink-0 text-[#16A34A]" strokeWidth={2} aria-hidden />
+      <CalendarDays className="size-4 shrink-0 text-up" strokeWidth={2} aria-hidden />
     );
   }
 
   if (indicator.direction === "up") {
     return (
-      <ArrowCircleBrokenUpRight className="size-4 shrink-0 text-[#16A34A]" strokeWidth={2} aria-hidden />
+      <ArrowCircleBrokenUpRight className="size-4 shrink-0 text-up" strokeWidth={2} aria-hidden />
     );
   }
 
   return (
-    <ArrowCircleBrokenDownRight className="size-4 shrink-0 text-[#DC2626]" strokeWidth={2} aria-hidden />
+    <ArrowCircleBrokenDownRight className="size-4 shrink-0 text-down" strokeWidth={2} aria-hidden />
   );
 }
 
@@ -72,10 +72,10 @@ function IndicatorLine({ indicator }: { indicator: StockKeyIndicator }) {
       <span className="mt-0.5">
         <IndicatorIcon indicator={indicator} />
       </span>
-      <p className="min-w-0 pt-0.5 text-[14px] leading-5 text-[#141414]">
+      <p className="min-w-0 pt-0.5 text-[14px] leading-5 text-fg">
         {indicator.parts.map((part, i) =>
           part.kind === "emphasis" ? (
-            <span key={i} className="font-semibold text-[#141414]">
+            <span key={i} className="font-semibold text-fg">
               {part.value}
             </span>
           ) : (
@@ -184,7 +184,7 @@ function KeyIndicatorsInner({
       )}
 
       {analyzedLabel ? (
-        <p className="mt-4 text-[12px] leading-4 text-[#5C5D5F]">Metrics analyzed at {analyzedLabel}</p>
+        <p className="mt-4 text-[12px] leading-4 text-fg-muted">Metrics analyzed at {analyzedLabel}</p>
       ) : null}
     </section>
   );

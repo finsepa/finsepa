@@ -10,28 +10,49 @@ export {
   SHELL_DESKTOP_PANEL_BG_MD_CLASS,
 } from "./card-surface-styles";
 export {
+  accentFillButtonClassName,
+  invertedFillButtonClassName,
   secondaryFillButtonClassName,
   secondaryOutlineButtonClassName,
   whiteSurfaceButtonBorderClass,
   whiteSurfaceButtonChromeClass,
+  whiteSurfaceButtonFillClass,
   whiteSurfaceButtonShadowClass,
   whiteSurfaceChipDividerClass,
   whiteSurfaceChipLabelClass,
   whiteSurfaceChipRemoveClass,
   whiteSurfaceChipShellClass,
 } from "./secondary-button-styles";
+export {
+  dropdownTriggerFieldClassName,
+  fieldChromeClassName,
+  fieldIdleHoverStrokeClassName,
+  fieldStrokeOutlineClassName,
+  formFieldControlHeightClassName,
+  textInputActiveRingClassName,
+  textInputFieldClassName,
+  textInputShellClassName,
+} from "./text-input-styles";
 export { SegmentedControl, type SegmentedControlOption, type SegmentedControlSize } from "./segmented-control";
 export { TabSwitcher, type TabSwitcherOption } from "./tab-switcher";
 export {
   dropdownMenuCompositeRowClassName,
+  dropdownMenuDividerClassName,
   dropdownMenuElevationClass,
   dropdownMenuPanelBodyClassName,
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemClassName,
   dropdownMenuPlainItemRowClassName,
   dropdownMenuRichItemClassName,
+  dropdownMenuSearchHeaderClassName,
   dropdownMenuSurfaceClassName,
 } from "./dropdown-menu-styles";
+export {
+  tooltipDwellSurfaceClassName,
+  tooltipGlassDarkClassName,
+  tooltipSurfaceClassName,
+  tooltipSurfaceShadowClassName,
+} from "./tooltip-surface-styles";
 
 /** Figma naming — same implementation as {@link SegmentedControl}. */
 export { SegmentedControl as ButtonGroup } from "./segmented-control";

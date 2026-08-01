@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
-import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
+import { whiteSurfaceButtonBorderClass, whiteSurfaceButtonShadowClass } from "@/components/design-system/secondary-button-styles";
 import { cn } from "@/lib/utils";
 
 const SEGMENT_MOTION_MS = 280;
@@ -16,20 +16,33 @@ const SEGMENT_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
  * same border + light shadow as white-surface buttons; label **Inter Medium 14px / 20px / #141414** (Figma).
  * Inactive: zinc-500, regular weight.
  * Set {@link fullWidth} for a single joined row that spans the container (equal-width segments).
+ * Icon-only options (non-string {@link SegmentedControlOption.label} + `aria-label`) use square `size-8` hit targets.
  */
 export type SegmentedControlOption<T extends string = string> = {
   value: T;
-  label: string;
+  label: ReactNode;
   disabled?: boolean;
+  /** Accessible name when {@link label} is not plain text (e.g. icon-only). */
+  "aria-label"?: string;
 };
 
 export type SegmentedControlSize = "sm" | "md";
 
 const RADIUS = "rounded-[10px]";
-const TRACK_PAD = "p-0.5";
+/** Active thumb sits inside track pad — 2px tighter than the track. */
+const ACTIVE_RADIUS = "rounded-[8px]";
+const TRACK_PAD = "p-px";
 
-/** Active thumb — match outline / squircle button chrome (stroke + shadow). */
-const ACTIVE_THUMB_CHROME = whiteSurfaceButtonChromeClass;
+/** Active thumb — light: same border + shadow as outline buttons; dark: fill + shadow, no stroke. */
+const ACTIVE_THUMB_CHROME = cn(
+  whiteSurfaceButtonBorderClass,
+  whiteSurfaceButtonShadowClass,
+  "bg-button dark:border-transparent dark:bg-[#2C2C2E]",
+);
+
+function isIconOnlyOption(opt: SegmentedControlOption): boolean {
+  return typeof opt.label !== "string" && Boolean(opt["aria-label"]);
+}
 
 export function SegmentedControl<T extends string>({
   options,
@@ -51,7 +64,9 @@ export function SegmentedControl<T extends string>({
 }) {
   // Size kept for API compatibility; track is locked to `h-9` to match outline buttons.
   void size;
-  const padClasses = "px-3";
+  const iconOnly = options.length > 0 && options.every(isIconOnlyOption);
+  /** Text segments: 12px pad. Icon-only: 32×32 square (width = height). */
+  const padClasses = iconOnly ? "size-8 px-0" : "px-3";
   /** Figma: Inter Medium 14 / 20, letter-spacing 0 — active uses `font-medium`, inactive `font-normal`. */
   const labelTypography = "font-sans text-[14px] leading-5 tracking-normal";
 
@@ -72,9 +87,9 @@ export function SegmentedControl<T extends string>({
     const height = Math.round(btnRect.height);
     if (width <= 0 || height <= 0) return;
     setIndicator({
-      left: Math.round(btnRect.left - trackRect.left),
+      left: Math.round(btnRect.left - trackRect.left - track.clientLeft),
       width,
-      top: Math.round(btnRect.top - trackRect.top),
+      top: Math.round(btnRect.top - trackRect.top - track.clientTop),
       height,
     });
   }, [value]);
@@ -116,7 +131,8 @@ export function SegmentedControl<T extends string>({
       ref={trackRef}
       className={cn(
         fullWidth ? "flex w-full min-w-0" : "inline-flex max-w-full min-w-0",
-        "relative h-9 items-stretch gap-0 bg-[#F1F1F2]",
+        "relative h-9 gap-0 bg-surface-subtle",
+        iconOnly ? "items-center" : "items-stretch",
         RADIUS,
         TRACK_PAD,
         className,
@@ -127,7 +143,7 @@ export function SegmentedControl<T extends string>({
       <span
         className={cn(
           "pointer-events-none absolute z-0 motion-reduce:transition-none",
-          RADIUS,
+          ACTIVE_RADIUS,
           ACTIVE_THUMB_CHROME,
         )}
         style={{
@@ -136,7 +152,7 @@ export function SegmentedControl<T extends string>({
           top: indicator.top,
           height: indicator.height,
           opacity: indicator.width > 0 && indicator.height > 0 ? 1 : 0,
-          transitionProperty: indicatorMotionEnabled ? "left, width" : "none",
+          transitionProperty: indicatorMotionEnabled ? "left, width, top, height" : "none",
           transitionDuration: indicatorMotionEnabled ? `${SEGMENT_MOTION_MS}ms` : "0ms",
           transitionTimingFunction: SEGMENT_MOTION_EASE,
         }}
@@ -158,16 +174,19 @@ export function SegmentedControl<T extends string>({
               onChange(opt.value);
             }}
             aria-pressed={active}
+            aria-label={opt["aria-label"]}
             className={cn(
-              "relative z-[1] flex items-center justify-center self-stretch",
-              fullWidth ? "min-w-0 flex-1 basis-0 text-center" : "min-w-0 shrink-0",
+              "relative z-[1] flex items-center justify-center",
+              iconOnly ? "shrink-0" : "self-stretch",
+              fullWidth && !iconOnly ? "min-w-0 flex-1 basis-0 text-center" : "min-w-0",
+              !iconOnly && !fullWidth && "shrink-0",
               "cursor-pointer transition-[color,opacity] duration-100",
-              RADIUS,
+              iconOnly ? ACTIVE_RADIUS : RADIUS,
               padClasses,
               labelTypography,
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
-              active ? "font-medium text-[#141414]" : "font-normal text-[#5C5D5F] hover:text-[#141414]",
-              opt.disabled && "cursor-not-allowed opacity-50 hover:text-[#5C5D5F]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
+              active ? "font-medium text-fg" : "font-normal text-fg-muted hover:text-fg",
+              opt.disabled && "cursor-not-allowed opacity-50 hover:text-fg-muted",
             )}
           >
             {opt.label}

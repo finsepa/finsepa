@@ -105,12 +105,14 @@ export {
   Loading01 as Loader2,
   Lock01 as Lock,
   LogOut01 as LogOut,
+  Mail01 as Mail,
   Maximize01 as Maximize2,
   Menu01 as Menu,
   MessageCircle01 as MessageCircle,
   MessageSquare02 as MessagesSquare,
   Minimize01 as Minimize2,
   Minus,
+  Moon01 as Moon,
   Pencil01 as Pencil,
   Phone01 as Smartphone,
   PieChart01 as PieChart,
@@ -130,6 +132,7 @@ export {
   Star01 as Star,
   Stars01 as Sparkles,
   Stop,
+  Sun,
   SwitchHorizontal01 as ArrowLeftRight,
   Table as FileSpreadsheet,
   Trash01 as Trash2,
@@ -142,5 +145,36 @@ export {
   Wallet01 as Wallet,
   XClose as X,
 } from "@untitledui-pro/icons/line";
+
+/** Half-filled circle — Appearance / theme menu (Cursor-style contrast mark). */
+export const Contrast: AppIcon = ({
+  size = 24,
+  color = "currentColor",
+  strokeWidth = 2,
+  ...props
+}) =>
+  createElement(
+    "svg",
+    {
+      viewBox: "0 0 24 24",
+      fill: "none",
+      width: size,
+      height: size,
+      color,
+      "aria-hidden": true,
+      ...props,
+    },
+    createElement("circle", {
+      cx: 12,
+      cy: 12,
+      r: 9,
+      stroke: "currentColor",
+      strokeWidth,
+    }),
+    createElement("path", {
+      d: "M12 3a9 9 0 0 0 0 18V3Z",
+      fill: "currentColor",
+    }),
+  );
 
 export { CheckVerified02 as VerifiedBadge, Stop as StopSolid, XCircle } from "@untitledui-pro/icons/solid";

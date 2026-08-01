@@ -175,7 +175,7 @@ export function ChartScreenshotDownloadModal({
         <div className={`flex shrink-0 ${CHART_DOWNLOAD_PREVIEW_BODY_HEIGHT_CLASS}`}>
           <div
             ref={previewPaneRef}
-            className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-[#FAFAFA]"
+            className="flex h-full min-w-0 flex-1 flex-col overflow-hidden bg-canvas"
             style={{ padding: CHART_SCREENSHOT_PREVIEW_PANE_PADDING_PX }}
           >
             <div
@@ -194,7 +194,7 @@ export function ChartScreenshotDownloadModal({
               />
             </div>
           </div>
-          <aside className="flex w-[320px] shrink-0 flex-col border-l border-[#E4E4E7] bg-white">
+          <aside className="flex w-[320px] shrink-0 flex-col border-l border-stroke bg-surface">
             <ChartScreenshotExportSettings
               value={exportOptions}
               onChange={setExportOptions}

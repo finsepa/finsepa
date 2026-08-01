@@ -162,13 +162,13 @@ function StocksTabBody({
         ) : null}
 
         {!companiesLoading && companiesError ? (
-          <div className="rounded-2xl border border-[#E4E4E7] bg-white px-4 py-4 text-sm text-[#5C5D5F]">
+          <div className="rounded-2xl border border-stroke bg-surface px-4 py-4 text-sm text-fg-muted">
             {companiesError}
           </div>
         ) : null}
 
         {!companiesLoading && !companiesError && companiesRows.length === 0 ? (
-          <div className="rounded-2xl border border-[#E4E4E7] bg-white px-4 py-6 text-center text-[14px] leading-6 text-[#5C5D5F]">
+          <div className="rounded-2xl border border-stroke bg-surface px-4 py-6 text-center text-[14px] leading-6 text-fg-muted">
             {companiesIndustryFilter
               ? `No companies from "${companiesIndustryFilter.industry}" (${companiesIndustryFilter.sector}) appear in the current screener universe.`
               : companiesSectorFilter
@@ -186,7 +186,7 @@ function StocksTabBody({
         ) : null}
 
         {companiesLoading && companiesRows.length > 0 ? (
-          <p className="mt-3 text-sm font-medium text-[#5C5D5F]">Loading companies…</p>
+          <p className="mt-3 text-sm font-medium text-fg-muted">Loading companies…</p>
         ) : null}
 
         <ScreenerPagination
@@ -221,15 +221,15 @@ function StocksTabBody({
     panel = (
       <>
         {companiesSectorFilter ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-solid border-[#E4E4E7] bg-[#FAFAFA] px-4 py-2.5 max-md:border-b-[0.5px] md:mb-3 md:rounded-[10px] md:border md:px-3 md:py-2.5 sm:px-4">
-            <p className="text-[13px] leading-5 text-[#141414] sm:text-[14px]">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-solid border-stroke bg-canvas px-4 py-2.5 max-md:border-b-[0.5px] md:mb-3 md:rounded-[10px] md:border md:px-3 md:py-2.5 sm:px-4">
+            <p className="text-[13px] leading-5 text-fg sm:text-[14px]">
               Showing companies in{" "}
-              <span className="font-semibold tabular-nums text-[#141414]">{companiesSectorFilter}</span>
+              <span className="font-semibold tabular-nums text-fg">{companiesSectorFilter}</span>
             </p>
             <button
               type="button"
               onClick={onClearCompaniesSector}
-              className="shrink-0 rounded-lg border border-[#E4E4E7] bg-white px-3 py-1.5 text-[13px] font-medium leading-5 text-[#141414] transition-colors hover:bg-[#F4F4F5]"
+              className="shrink-0 rounded-lg border border-stroke bg-surface px-3 py-1.5 text-[13px] font-medium leading-5 text-fg transition-colors hover:bg-surface-muted"
             >
               Show all companies
             </button>
@@ -241,13 +241,13 @@ function StocksTabBody({
         ) : null}
 
         {!companiesLoading && companiesError ? (
-          <div className="px-4 py-4 text-sm text-[#5C5D5F] md:rounded-2xl md:border md:border-[#E4E4E7] md:bg-white">
+          <div className="px-4 py-4 text-sm text-fg-muted md:rounded-2xl md:border md:border-stroke md:bg-surface">
             {companiesError}
           </div>
         ) : null}
 
         {!companiesLoading && !companiesError && companiesRows.length === 0 ? (
-          <div className="px-4 py-6 text-center text-[14px] leading-6 text-[#5C5D5F] md:rounded-2xl md:border md:border-[#E4E4E7] md:bg-white">
+          <div className="px-4 py-6 text-center text-[14px] leading-6 text-fg-muted md:rounded-2xl md:border md:border-stroke md:bg-surface">
             No companies to show.
           </div>
         ) : null}
@@ -262,7 +262,7 @@ function StocksTabBody({
         ) : null}
 
         {companiesLoading && companiesRows.length > 0 ? (
-          <p className="px-4 py-3 text-sm font-medium text-[#5C5D5F] md:px-0">Loading companies…</p>
+          <p className="px-4 py-3 text-sm font-medium text-fg-muted md:px-0">Loading companies…</p>
         ) : null}
       </>
     );
@@ -281,13 +281,13 @@ function StocksTabBody({
     panel = (
       <div className="flex flex-col">
         <div>
-          <div className="mb-5 hidden text-[14px] font-semibold leading-5 text-[#5C5D5F] md:block">
+          <div className="mb-5 hidden text-[14px] font-semibold leading-5 text-fg-muted md:block">
             Top gainers (1D %)
           </div>
           <ScreenerTable rows={gainersLosers.gainers} {...mobileTableChrome} />
         </div>
         <div className={useMobileStocksSubTabCard ? "max-md:mt-4 md:mt-5" : "mt-5"}>
-          <div className="mb-5 hidden text-[14px] font-semibold leading-5 text-[#5C5D5F] md:block">
+          <div className="mb-5 hidden text-[14px] font-semibold leading-5 text-fg-muted md:block">
             Top losers (1D %)
           </div>
           <ScreenerTable rows={gainersLosers.losers} {...mobileTableChrome} />
@@ -378,7 +378,7 @@ function CryptoTabBody({
       />
 
       {cryptoRemoteLoading && cryptoRowsResolved.length > 0 ? (
-        <p className="mt-3 text-sm font-medium text-[#5C5D5F]">Loading…</p>
+        <p className="mt-3 text-sm font-medium text-fg-muted">Loading…</p>
       ) : null}
 
       <ScreenerPagination

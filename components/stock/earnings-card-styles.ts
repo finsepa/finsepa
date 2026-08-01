@@ -5,15 +5,15 @@ import { cn } from "@/lib/utils";
 
 /** Figma: card value titles — Inter Semi Bold 24 / 36, #141414. Shared by Earnings summary cards and Multicharts metric cards. */
 export const EARNINGS_CARD_VALUE_CLASS =
-  "font-['Inter'] text-[24px] font-semibold leading-[36px] tracking-normal text-[#141414]";
+  "font-['Inter'] text-[24px] font-semibold leading-[36px] tracking-normal text-fg";
 
 /** Figma: card labels — Inter Semi Bold 14 / 20, #5C5D5F. */
 export const EARNINGS_CARD_LABEL_CLASS =
-  "font-['Inter'] text-[14px] font-semibold leading-5 tracking-normal text-[#5C5D5F]";
+  "font-['Inter'] text-[14px] font-semibold leading-5 tracking-normal text-fg-muted";
 
 /** Prior-period line under summary metric headline (e.g. "from $416.16B"). */
 export const EARNINGS_CARD_PRIOR_LINE_CLASS =
-  "font-['Inter'] text-[14px] font-medium leading-5 tracking-normal text-[#5C5D5F] tabular-nums";
+  "font-['Inter'] text-[14px] font-medium leading-5 tracking-normal text-fg-muted tabular-nums";
 
 /** Forward / consensus-only periods in Estimates (chart bars, table columns, summary cards). */
 export const EARNINGS_FORECAST_OPACITY_CLASS = "opacity-60";
@@ -32,7 +32,7 @@ export const EARNINGS_FORECAST_BAND_EDGE_STYLE: CSSProperties = {
 
 /** Opaque Forecast pill — chart band + table overlay. */
 export const EARNINGS_FORECAST_BADGE_CLASS =
-  "pointer-events-none whitespace-nowrap rounded-md border border-[#E4E4E7] bg-white px-2 py-0.5 font-['Inter'] text-[10px] font-semibold uppercase tracking-wider text-[#A1A1AA] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+  "pointer-events-none whitespace-nowrap rounded-md border border-stroke bg-surface px-2 py-0.5 font-['Inter'] text-[10px] font-semibold uppercase tracking-wider text-fg-subtle shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]";
 
 /** Diagonal hatch fill for forward estimate bars in the Estimates chart. */
 export function earningsForecastBarFillStyle(barColor: string): CSSProperties {

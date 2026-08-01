@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { dropdownTriggerFieldClassName } from "@/components/design-system/text-input-styles";
 import { cn } from "@/lib/utils";
 
 function startOfCalendarMonth(d: Date): Date {
@@ -88,11 +89,12 @@ export function TransactionDateField({
         <button
           type="button"
           className={cn(
-            "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F1F1F2] px-3 text-left text-sm font-normal text-[#141414] transition-colors hover:bg-[#E6E6E7]",
+            "flex w-full items-center justify-between gap-2 rounded-[10px] px-3 text-left text-sm font-normal text-fg",
+            dropdownTriggerFieldClassName,
           )}
         >
           <span className="tabular-nums">{format(date, "MM/dd/yyyy")}</span>
-          <CalendarIcon className="h-5 w-5 shrink-0 text-[#141414]" aria-hidden />
+          <CalendarIcon className="h-5 w-5 shrink-0 text-fg" aria-hidden />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -117,8 +119,8 @@ export function TransactionDateField({
             dropdowns:
               "!relative !z-[2] grid w-full min-w-0 grid-cols-2 gap-2 !items-stretch !justify-normal",
             dropdown_root: "!relative flex w-full min-w-0 max-w-none shrink",
-            weekday: "text-[0.8rem] font-normal text-[#5C5D5F]",
-            outside: "text-[#A1A1AA]",
+            weekday: "text-[0.8rem] font-normal text-fg-muted",
+            outside: "text-fg-subtle",
           }}
           components={{ DropdownNav: YearFirstCaptionDropdownNav }}
           month={month}

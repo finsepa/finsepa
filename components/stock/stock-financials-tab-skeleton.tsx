@@ -17,12 +17,12 @@ const gridTemplateColumns = stockTableGridTemplateColumns(SKELETON_YEAR_COLUMNS)
 
 const incomeHeaderRowClass = "min-h-[44px]";
 const incomeDataRowClass = "min-h-[60px]";
-const incomeRowDividerClass = "border-b border-[#E4E4E7]";
+const incomeRowDividerClass = "border-b border-stroke";
 
 const stickyLabelCellClass =
-  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch border-r border-[#E4E4E7] bg-white pr-4 shadow-[1px_0_0_0_#E4E4E7] pl-3";
+  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch border-r border-table-row-stroke bg-surface pr-4 shadow-[1px_0_0_0_var(--fs-table-row-stroke)] pl-3";
 
-const headerValueCellClass = "flex min-h-full min-w-0 items-center justify-end self-stretch bg-white";
+const headerValueCellClass = "flex min-h-full min-w-0 items-center justify-end self-stretch bg-surface";
 
 const labelWidths = ["w-[72%]", "w-[55%]", "w-[80%]", "w-[64%]", "w-[88%]", "w-[70%]", "w-[76%]", "w-[60%]", "w-[68%]", "w-[74%]"];
 
@@ -32,11 +32,11 @@ const valueWidths = ["w-12", "w-14", "w-10", "w-12", "w-14", "w-10", "w-12", "w-
 export function FinancialsTableSkeleton() {
   return (
     <ScreenerTableScroll mobileScroll viewportScroll>
-      <div className="bg-white" aria-hidden>
+      <div className="bg-surface" aria-hidden>
         <div className={SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS}>
           <div
             className={cn(
-              "grid items-stretch gap-x-2 border-b border-[#E4E4E7] py-0 pr-2 sm:pr-4",
+              "grid items-stretch gap-x-2 border-b border-stroke py-0 pr-2 sm:pr-4",
               incomeHeaderRowClass,
             )}
             style={{ gridTemplateColumns }}
@@ -52,7 +52,7 @@ export function FinancialsTableSkeleton() {
           </div>
           <div
             className={cn(
-              "grid items-stretch gap-x-2 border-b border-[#E4E4E7] py-0 pr-2 sm:pr-4",
+              "grid items-stretch gap-x-2 border-b border-stroke py-0 pr-2 sm:pr-4",
               incomeHeaderRowClass,
             )}
             style={{ gridTemplateColumns }}
@@ -72,7 +72,7 @@ export function FinancialsTableSkeleton() {
           <div
             key={ri}
             className={cn(
-              "grid items-stretch gap-x-2 bg-white py-0 pr-2 sm:pr-4",
+              "grid items-stretch gap-x-2 bg-surface py-0 pr-2 sm:pr-4",
               incomeRowDividerClass,
               incomeDataRowClass,
             )}

@@ -20,8 +20,8 @@ export function ChartLoadingIndicator({
       aria-label={message}
     >
       <div className="flex flex-col items-center gap-3">
-        <Spinner className="size-5 text-[#5C5D5F]" />
-        <p className="text-[14px] font-normal leading-5 text-[#5C5D5F]">{message}</p>
+        <Spinner className="size-5 text-fg-muted" />
+        <p className="text-[14px] font-normal leading-5 text-fg-muted">{message}</p>
       </div>
     </div>
   );

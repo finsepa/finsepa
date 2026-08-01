@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   friendlyNetworkErrorMessage,
@@ -14,11 +14,14 @@ import {
   AuthPrimaryButton,
   AuthSecondaryButton,
   authEntryCtaClassName,
+  authAlertBannerClassName,
+  authWarningBannerClassName,
 } from "@/components/auth/auth-form-ui";
 import {
   AuthFloatingInput,
   AuthFloatingPasswordInput,
 } from "@/components/auth/auth-floating-field";
+import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
 import { SpinnerLabel } from "@/components/ui/spinner";
 import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
@@ -155,6 +158,46 @@ export function SignupClient() {
   const showEmailError = touched.email && (!email.trim() || !emailLooksValid);
   const showPasswordError =
     touched.password && (password.length === 0 || password.length < MIN_PASSWORD_LEN);
+
+  const preCardBanner = useMemo(() => {
+    if (errorMessage) {
+      return (
+        <div role="alert" className={authAlertBannerClassName}>
+          <div className="font-medium">{errorMessage}</div>
+          {isDuplicateEmail ? (
+            <div className="mt-1 text-sm leading-5 text-down">
+              Try logging in or resetting your password.{" "}
+              <span className="ml-1 inline-flex gap-3">
+                <Link
+                  href="/login"
+                  className="font-semibold underline decoration-[#FECACA] underline-offset-4 transition-colors hover:decoration-[#FCA5A5]"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/forgot-password"
+                  className="font-semibold underline decoration-[#FECACA] underline-offset-4 transition-colors hover:decoration-[#FCA5A5]"
+                >
+                  Forgot password?
+                </Link>
+              </span>
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+    if (SIGNUP_DISABLED) {
+      return (
+        <div role="status" className={authWarningBannerClassName}>
+          New sign-ups are temporarily paused while we block automated abuse. Existing users can
+          still log in.
+        </div>
+      );
+    }
+    return null;
+  }, [errorMessage, isDuplicateEmail]);
+
+  useAuthPreCardBanner(preCardBanner);
 
   async function handleGoogle() {
     setErrorMessage(null);
@@ -348,15 +391,6 @@ export function SignupClient() {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit} noValidate aria-label="Sign up">
-      {SIGNUP_DISABLED ? (
-        <div
-          role="status"
-          className="rounded-[10px] border border-[#FDE68A] bg-[#FFFBEB] px-3 py-2 text-sm leading-5 text-[#92400E]"
-        >
-          New sign-ups are temporarily paused while we block automated abuse. Existing users can still log in.
-        </div>
-      ) : null}
-
       <AuthSecondaryButton
         className={authEntryCtaClassName}
         onClick={handleGoogle}
@@ -367,34 +401,6 @@ export function SignupClient() {
       </AuthSecondaryButton>
 
       <AuthDivider />
-
-      {errorMessage ? (
-        <div
-          role="alert"
-          className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
-        >
-          <div className="font-medium">{errorMessage}</div>
-          {isDuplicateEmail ? (
-            <div className="mt-1 text-sm leading-5 text-[#B91C1C]">
-              Try logging in or resetting your password.{" "}
-              <span className="ml-1 inline-flex gap-3">
-                <Link
-                  href="/login"
-                  className="font-semibold underline decoration-[#FECACA] underline-offset-4 transition-colors hover:decoration-[#FCA5A5]"
-                >
-                  Log in
-                </Link>
-                <Link
-                  href="/forgot-password"
-                  className="font-semibold underline decoration-[#FECACA] underline-offset-4 transition-colors hover:decoration-[#FCA5A5]"
-                >
-                  Forgot password?
-                </Link>
-              </span>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
@@ -410,7 +416,7 @@ export function SignupClient() {
             disabled={loading}
           />
           {showFirstError ? (
-            <p className="mt-1 text-xs leading-4 text-[#DC2626]">First name is required.</p>
+            <p className="mt-1 text-xs leading-4 text-down">First name is required.</p>
           ) : null}
         </div>
         <div>
@@ -439,7 +445,7 @@ export function SignupClient() {
           disabled={loading}
         />
         {showEmailError ? (
-          <p className="mt-1 text-xs leading-4 text-[#DC2626]">
+          <p className="mt-1 text-xs leading-4 text-down">
             {!email.trim() ? "Email is required." : "Enter a valid email address."}
           </p>
         ) : null}
@@ -458,13 +464,13 @@ export function SignupClient() {
           disabled={loading}
         />
         {showPasswordError ? (
-          <p className="mt-1 text-xs leading-4 text-[#DC2626]">
+          <p className="mt-1 text-xs leading-4 text-down">
             {password.length === 0
               ? "Password is required."
               : `Password must be at least ${MIN_PASSWORD_LEN} characters.`}
           </p>
         ) : password.length > 0 && !passOk ? (
-          <p className="mt-1 text-xs leading-4 text-[#DC2626]">
+          <p className="mt-1 text-xs leading-4 text-down">
             At least {MIN_PASSWORD_LEN} characters.
           </p>
         ) : null}

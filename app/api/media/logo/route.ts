@@ -5,6 +5,7 @@ import {
   getCachedLogoFromUpstream,
   LOGO_PROXY_CACHE_MAX_AGE_SEC,
   LOGO_PROXY_STALE_WHILE_REVALIDATE_SEC,
+  type LogoDevTheme,
   type LogoProxyKind,
 } from "@/lib/media/logo-proxy-upstream";
 
@@ -44,23 +45,28 @@ function googleFaviconFallback(kind: LogoProxyKind, raw: string): string {
   return "https://www.google.com/s2/favicons?domain=example.com&sz=128";
 }
 
-function parseRequest(url: URL): { kind: LogoProxyKind; id: string } | null {
+function parseTheme(url: URL): LogoDevTheme {
+  return url.searchParams.get("theme")?.trim().toLowerCase() === "dark" ? "dark" : "light";
+}
+
+function parseRequest(url: URL): { kind: LogoProxyKind; id: string; theme: LogoDevTheme } | null {
+  const theme = parseTheme(url);
   const kindRaw = url.searchParams.get("kind")?.trim().toLowerCase();
   if (kindRaw === "stock") {
     const t = url.searchParams.get("t")?.trim().toUpperCase() ?? "";
     if (!TICKER_RE.test(t)) return null;
-    return { kind: "stock", id: t };
+    return { kind: "stock", id: t, theme };
   }
   if (kindRaw === "crypto") {
     const c = url.searchParams.get("c")?.trim().toUpperCase() ?? "";
     if (!/^[A-Z0-9]{1,12}$/.test(c)) return null;
-    return { kind: "crypto", id: c };
+    return { kind: "crypto", id: c, theme };
   }
   if (kindRaw === "domain") {
     const h = url.searchParams.get("h")?.trim().toLowerCase() ?? "";
     const host = h.replace(/^www\./, "");
     if (!host || !isReasonableHost(host)) return null;
-    return { kind: "domain", id: host };
+    return { kind: "domain", id: host, theme };
   }
   return null;
 }
@@ -69,6 +75,7 @@ function parseRequest(url: URL): { kind: LogoProxyKind; id: string } | null {
  * Proxies Logo.dev images with long CDN/browser caching so many users share one upstream fetch per symbol
  * (see `LOGO_PROXY_CACHE_MAX_AGE_SEC` in `lib/media/logo-proxy-upstream.ts`).
  * Query: `kind=stock&t=AAPL` | `kind=crypto&c=BTC` | `kind=domain&h=apple.com`
+ * Optional: `theme=light|dark` (Logo.dev color adjust; default `light`).
  */
 export async function GET(req: Request) {
   const parsed = parseRequest(new URL(req.url));
@@ -77,7 +84,7 @@ export async function GET(req: Request) {
   }
 
   const normId = parsed.kind === "stock" || parsed.kind === "crypto" ? parsed.id : parsed.id.toLowerCase();
-  const row = await getCachedLogoFromUpstream(parsed.kind, normId);
+  const row = await getCachedLogoFromUpstream(parsed.kind, normId, parsed.theme);
   if (!row) {
     const fallbackUrl = googleFaviconFallback(parsed.kind, parsed.id);
     try {

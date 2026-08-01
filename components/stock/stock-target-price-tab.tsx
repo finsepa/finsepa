@@ -99,10 +99,10 @@ function AnalystConsensusGaugeCard({ buckets }: { buckets: StockAnalystDistribut
         <svg viewBox="0 0 320 200" className="h-full w-full" role="img" aria-label="Analyst consensus gauge">
           <defs>
             <linearGradient id="analyst-consensus-grad" x1="0" y1="0" x2="320" y2="0" gradientUnits="userSpaceOnUse">
-              <stop offset="0" stopColor="#DC2626" />
+              <stop offset="0" stopColor= "var(--fs-down)" />
               <stop offset="0.35" stopColor="#F59E0B" />
               <stop offset="0.6" stopColor="#EAB308" />
-              <stop offset="1" stopColor="#16A34A" />
+              <stop offset="1" stopColor= "var(--fs-up)" />
             </linearGradient>
           </defs>
 
@@ -114,7 +114,7 @@ function AnalystConsensusGaugeCard({ buckets }: { buckets: StockAnalystDistribut
             strokeLinecap="round"
           />
 
-          <circle cx={gauge.dot.x} cy={gauge.dot.y} r="14" fill="#FFFFFF" />
+          <circle cx={gauge.dot.x} cy={gauge.dot.y} r="14" fill="var(--fs-surface)" />
           <circle cx={gauge.dot.x} cy={gauge.dot.y} r="11" fill={tone.dot} opacity={consensusScore == null ? 0.35 : 1} />
 
           <text
@@ -136,7 +136,7 @@ function AnalystConsensusGaugeCard({ buckets }: { buckets: StockAnalystDistribut
             x="160"
             y="154"
             textAnchor="middle"
-            className="fill-[#5C5D5F]"
+            className="fill-fg-muted"
             style={{ fontFamily: "Inter", fontSize: 14, fontWeight: 600, lineHeight: "20px", letterSpacing: "0px" }}
           >
             Total Consensus
@@ -159,10 +159,10 @@ function AnalystDistributionCard({ buckets }: { buckets: StockAnalystDistributio
           const fill = DISTRIBUTION_FILLS[i] ?? "#5C5D5F";
           return (
             <div key={row.label} className="flex items-center gap-3 sm:gap-4">
-              <span className="w-[92px] shrink-0 text-[14px] leading-5 text-[#141414] sm:w-[100px]">{row.label}</span>
-              <span className="w-8 shrink-0 text-right text-[14px] tabular-nums leading-5 text-[#141414]">{row.count}</span>
+              <span className="w-[92px] shrink-0 text-[14px] leading-5 text-fg sm:w-[100px]">{row.label}</span>
+              <span className="w-8 shrink-0 text-right text-[14px] tabular-nums leading-5 text-fg">{row.count}</span>
               <div className="min-w-0 flex-1">
-                <div className="h-2.5 overflow-hidden rounded-full bg-[#F4F4F5]">
+                <div className="h-2.5 overflow-hidden rounded-full bg-surface-muted">
                   {row.count > 0 ? (
                     <div
                       className="h-full rounded-full transition-[width] duration-300 ease-out"
@@ -276,8 +276,8 @@ export function StockTargetPriceTab({
   if (loading) {
     return (
       <div className="w-full min-w-0 space-y-3">
-        <div className="h-40 w-full animate-pulse rounded-2xl bg-[#F4F4F5]" />
-        <div className="h-32 w-full animate-pulse rounded-2xl bg-[#F4F4F5]" />
+        <div className="h-40 w-full animate-pulse rounded-2xl bg-surface-muted" />
+        <div className="h-32 w-full animate-pulse rounded-2xl bg-surface-muted" />
       </div>
     );
   }
@@ -285,7 +285,7 @@ export function StockTargetPriceTab({
   if (!hasAnyData) {
     return (
       <div className="w-full min-w-0">
-        <p className="w-full text-[14px] leading-6 text-[#5C5D5F]">
+        <p className="w-full text-[14px] leading-6 text-fg-muted">
           No analyst consensus, price target, or distribution data is available for this symbol from the current data
           provider.
         </p>

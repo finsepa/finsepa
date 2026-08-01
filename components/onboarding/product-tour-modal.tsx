@@ -62,17 +62,17 @@ function TourMockupViewport({
 }) {
   return (
     <div
-      className="relative w-full shrink-0 overflow-hidden bg-white"
+      className="relative w-full shrink-0 overflow-hidden bg-surface"
       style={{ height: previewHeightPx }}
     >
       <div
-        className="relative h-full overflow-hidden border border-r-0 border-[#E4E4E7] bg-white"
+        className="relative h-full overflow-hidden border border-r-0 border-stroke bg-surface"
         style={{
           borderTopLeftRadius: TOUR_FRAME_RADIUS,
           borderBottomLeftRadius: TOUR_FRAME_RADIUS,
           borderTopRightRadius: 0,
           borderBottomRightRadius: 0,
-          boxShadow: "-6px 16px 20px rgba(10, 10, 10, 0.07)",
+          boxShadow: "-6px 16px 20px rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-07))",
         }}
       >
         {PRODUCT_TOUR_STEPS.map((step, i) => {
@@ -81,7 +81,7 @@ function TourMockupViewport({
             <div
               key={step.id}
               className={cn(
-                "absolute inset-0 bg-white transition-opacity duration-150 ease-out",
+                "absolute inset-0 bg-surface transition-opacity duration-150 ease-out",
                 i === activeIndex ? "z-10 opacity-100" : "pointer-events-none z-0 opacity-0",
               )}
               aria-hidden={i !== activeIndex}
@@ -175,21 +175,21 @@ export function ProductTourModal({
             <div className="flex min-w-0 max-w-[400px] flex-col gap-3">
               <div className="flex items-center gap-2">
                 <span className="relative flex h-5 w-5 shrink-0 items-center justify-center">
-                  <span className="absolute left-1.5 top-1 h-4 w-4 rounded-full bg-[#E4E4E7]" aria-hidden />
-                  <Icon className="relative h-5 w-5 text-[#141414]" aria-hidden />
+                  <span className="absolute left-1.5 top-1 h-4 w-4 rounded-full bg-stroke" aria-hidden />
+                  <Icon className="relative h-5 w-5 text-fg" aria-hidden />
                 </span>
-                <p id={titleId} className="text-base font-semibold leading-6 text-[#141414]">
+                <p id={titleId} className="text-base font-semibold leading-6 text-fg">
                   {step.title}
                 </p>
               </div>
-              <p className="text-base leading-6 text-[#52525B]">{step.description}</p>
+              <p className="text-base leading-6 text-fg-muted">{step.description}</p>
             </div>
             <AppModalCloseButton onClick={onDismiss} />
           </div>
         }
         headerClassName="px-5 pb-0 pt-6 md:px-8 md:pt-8"
         cardClassName="overflow-hidden"
-        bodyClassName="min-h-0 flex-1 overflow-hidden bg-white py-3 pl-4 pr-0 md:py-6 md:pl-8"
+        bodyClassName="min-h-0 flex-1 overflow-hidden bg-surface py-3 pl-4 pr-0 md:py-6 md:pl-8"
         footer={
           <AppModalFooter className="border-transparent">
             <div className="flex w-full items-center justify-between gap-4">
@@ -210,7 +210,7 @@ export function ProductTourModal({
                     key={s.id}
                     className={cn(
                       "h-1.5 w-1.5 rounded-full transition-colors",
-                      i === stepIndex ? "bg-[#141414]" : "bg-[#E4E4E7]",
+                      i === stepIndex ? "bg-fg" : "bg-stroke",
                     )}
                     aria-hidden
                   />

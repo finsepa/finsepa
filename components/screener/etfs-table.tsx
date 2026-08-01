@@ -34,14 +34,15 @@ function formatPercent(v: number | null): string {
 
 function ChangeCell({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
-    return <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-[#5C5D5F]">-</div>;
+    return <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-fg-muted">-</div>;
   }
   const positive = value >= 0;
   return (
     <div
-      className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
-        positive ? "text-[#16A34A]" : "text-[#DC2626]"
-      }`}
+      className={cn(
+        "min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium",
+        positive ? "text-up" : "text-down",
+      )}
     >
       {formatPercent(value)}
     </div>
@@ -54,13 +55,14 @@ function ValueAndChangeCell({ value, change1D }: { value: number; change1D: numb
   const positive = (change1D ?? 0) >= 0;
   return (
     <div className="min-w-0 w-full text-right">
-      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
         {hasValue ? formatValue(value) : "-"}
       </div>
       <div
-        className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
-          !hasChange ? "text-[#5C5D5F]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
-        }`}
+        className={cn(
+          "mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums",
+          !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down",
+        )}
       >
         {formatPercent(change1D)}
       </div>
@@ -78,7 +80,7 @@ const desktopNumericCellClass = cn(
 );
 
 const mobileRankCellClass =
-  "text-center text-[14px] font-semibold leading-5 tabular-nums text-[#5C5D5F]";
+  "text-center text-[14px] font-semibold leading-5 tabular-nums text-fg-muted";
 
 export function EtfsTable({
   initialRows,
@@ -100,7 +102,7 @@ export function EtfsTable({
 
   return (
     <ScreenerTableScroll minWidthClassName="min-w-0" className="h-fit">
-      <div className="bg-white">
+      <div className="bg-surface">
         <div
           className={cn(
             SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -110,7 +112,7 @@ export function EtfsTable({
           )}
         >
           <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
-            <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:gap-x-2">
+            <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 text-[14px] font-medium leading-5 text-fg-muted sm:gap-x-2">
               <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
               <div className={cn(rowLinkGrid, "min-h-[44px] w-full items-center")}>
                 <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
@@ -153,7 +155,7 @@ export function EtfsTable({
                       prefetch={false}
                       className={cn(
                         rowLinkGrid,
-                        "min-h-[56px] w-full cursor-pointer items-center justify-items-stretch no-underline text-[#141414] visited:text-[#141414] sm:min-h-[60px]",
+                        "min-h-[56px] w-full cursor-pointer items-center justify-items-stretch no-underline text-fg visited:text-fg sm:min-h-[60px]",
                       )}
                       aria-label={`Open ${r.name} (${wlKey})`}
                     >
@@ -161,10 +163,10 @@ export function EtfsTable({
                       <div className="flex min-w-0 items-center justify-start gap-[12px] pr-0 text-left sm:pr-4">
                         <CompanyLogo name={r.name} logoUrl="" symbol={wlKey} />
                         <div className="min-w-0">
-                          <div className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline">
+                          <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
                             {r.name}
                           </div>
-                          <div className="text-[12px] font-normal leading-4 !text-[#5C5D5F]">
+                          <div className="text-[12px] font-normal leading-4 text-fg-muted">
                             <span>{wlKey}</span>
                           </div>
                         </div>
@@ -175,7 +177,7 @@ export function EtfsTable({
                       <div
                         className={cn(
                           desktopNumericCellClass,
-                          "font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+                          "font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
                         )}
                       >
                         {formatValue(r.value)}

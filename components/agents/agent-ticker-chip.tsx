@@ -254,9 +254,9 @@ export function AgentTickerChip({
       prefetch={false}
       href={ticker.href}
       className={cn(
-        "inline-flex h-8 max-w-full items-center gap-1.5 rounded-[10px] border border-[#E8E8EB] bg-white px-2",
-        "text-[13px] font-semibold leading-none text-[#141414] no-underline shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]",
-        "transition-colors hover:bg-[#F4F4F5]",
+        "inline-flex h-8 max-w-full items-center gap-1.5 rounded-[10px] border border-stroke-muted bg-surface px-2",
+        "text-[13px] font-semibold leading-none text-fg no-underline shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]",
+        "transition-colors hover:bg-surface-muted",
         className,
       )}
     >
@@ -294,10 +294,10 @@ const HOLDINGS_GRID_PNL_NO_WEIGHT =
 const HOLDINGS_CELL_PAD_CLASS = "px-3 py-3";
 
 function pnlToneClass(pnlLabel: string | null): string {
-  if (!pnlLabel) return "text-[#5C5D5F]";
+  if (!pnlLabel) return "text-fg-muted";
   const n = Number(pnlLabel.replace(/[^0-9.-]/g, ""));
-  if (!Number.isFinite(n) || n === 0) return "text-[#141414]";
-  return n > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
+  if (!Number.isFinite(n) || n === 0) return "text-fg";
+  return n > 0 ? "text-up" : "text-down";
 }
 
 /** Portfolio holdings — screener table container + row chrome. */
@@ -314,7 +314,7 @@ export function AgentHoldingList({ holdings }: { holdings: AgentHoldingRef[] }) 
   return (
     <div
       className={cn(
-        "w-full min-w-0 bg-white p-2",
+        "w-full min-w-0 bg-surface p-2",
         SCREENER_TABLE_OUTER_BORDER_CLASS,
         SCREENER_TABLE_MOBILE_SURFACE_CLASS,
       )}
@@ -328,7 +328,7 @@ export function AgentHoldingList({ holdings }: { holdings: AgentHoldingRef[] }) 
         )}
       >
         <div className={HOLDINGS_CELL_PAD_CLASS}>
-          <div className={cn(grid, "text-[14px] font-medium leading-5 text-[#5C5D5F]")}>
+          <div className={cn(grid, "text-[14px] font-medium leading-5 text-fg-muted")}>
             <div className="text-left">Ticker</div>
             <div className="text-right">Shares</div>
             <div className="text-right">Worth</div>
@@ -357,17 +357,17 @@ export function AgentHoldingList({ holdings }: { holdings: AgentHoldingRef[] }) 
                   logoUrl={h.ticker.logoUrl}
                   size="sm"
                 />
-                <span className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline">
+                <span className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
                   {h.ticker.symbol}
                 </span>
               </div>
-              <span className="text-right text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
+              <span className="text-right text-[14px] font-normal leading-5 tabular-nums text-fg">
                 {h.sharesLabel}
               </span>
               <span
                 className={cn(
                   "text-right text-[14px] font-normal leading-5 tabular-nums",
-                  h.worthLabel ? "text-[#141414]" : "text-[#5C5D5F]",
+                  h.worthLabel ? "text-fg" : "text-fg-muted",
                 )}
               >
                 {h.worthLabel ?? "—"}
@@ -383,7 +383,7 @@ export function AgentHoldingList({ holdings }: { holdings: AgentHoldingRef[] }) 
                 </span>
               ) : null}
               {showWeight ? (
-                <span className="text-right text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
+                <span className="text-right text-[14px] font-normal leading-5 tabular-nums text-fg">
                   {h.weightLabel ?? "—"}
                 </span>
               ) : null}
@@ -408,7 +408,7 @@ export function AgentAllocationList({
   return (
     <div
       className={cn(
-        "w-full min-w-0 bg-white p-2",
+        "w-full min-w-0 bg-surface p-2",
         SCREENER_TABLE_OUTER_BORDER_CLASS,
         SCREENER_TABLE_MOBILE_SURFACE_CLASS,
       )}
@@ -422,7 +422,7 @@ export function AgentAllocationList({
         )}
       >
         <div className={HOLDINGS_CELL_PAD_CLASS}>
-          <div className={cn(ALLOC_GRID, "text-[14px] font-medium leading-5 text-[#5C5D5F]")}>
+          <div className={cn(ALLOC_GRID, "text-[14px] font-medium leading-5 text-fg-muted")}>
             <div className="text-left">Ticker</div>
             <div className="text-right">Weight</div>
             {showWorth ? <div className="text-right">Worth</div> : <div />}
@@ -441,15 +441,15 @@ export function AgentAllocationList({
                   logoUrl={r.ticker.logoUrl}
                   size="sm"
                 />
-                <span className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline">
+                <span className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
                   {r.ticker.symbol}
                 </span>
               </div>
-              <span className="text-right text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
+              <span className="text-right text-[14px] font-normal leading-5 tabular-nums text-fg">
                 {r.weightLabel}
               </span>
               {showWorth ? (
-                <span className="text-right text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
+                <span className="text-right text-[14px] font-normal leading-5 tabular-nums text-fg">
                   {r.worthLabel ?? "—"}
                 </span>
               ) : (

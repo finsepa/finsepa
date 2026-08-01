@@ -37,24 +37,24 @@ export function WatchlistSavedList() {
 
   if (items === null && !error) {
     return (
-      <p className="text-sm leading-6 text-[#5C5D5F]">Loading…</p>
+      <p className="text-sm leading-6 text-fg-muted">Loading…</p>
     );
   }
 
   if (error) {
-    return <p className="text-sm leading-6 text-[#B91C1C]">{error}</p>;
+    return <p className="text-sm leading-6 text-down">{error}</p>;
   }
 
   if (!items?.length) {
     return (
-      <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-[#E4E4E7] bg-white px-6 py-12 text-center">
+      <div className="flex min-h-[200px] flex-col items-center justify-center rounded-xl border border-stroke bg-surface px-6 py-12 text-center">
         <p className={emptyTitleClassName}>No saved symbols yet</p>
         <p className={`mt-1 max-w-sm ${emptyDescriptionClassName}`}>
           Add stocks from the screener or a stock page with the star. They will show up here.
         </p>
         <Link
           href="/screener"
-          className="mt-6 text-sm font-semibold text-[#141414] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+          className="mt-6 text-sm font-semibold text-fg underline decoration-stroke underline-offset-4 transition-colors hover:decoration-fg-subtle"
         >
           Go to screener
         </Link>
@@ -63,11 +63,11 @@ export function WatchlistSavedList() {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[#E4E4E7] bg-white">
-      <div className="border-b border-[#E4E4E7] px-4 py-3 text-[14px] font-semibold leading-5 text-[#5C5D5F]">
+    <div className="overflow-hidden rounded-xl border border-stroke bg-surface">
+      <div className="border-b border-stroke px-4 py-3 text-[14px] font-semibold leading-5 text-fg-muted">
         Your watchlist
       </div>
-      <ul className="divide-y divide-[#E4E4E7]">
+      <ul className="divide-y divide-stroke">
         {items.map((row) => {
           const ticker = row.ticker.trim().toUpperCase();
           const meta = getWatchlistTickerMeta(ticker);
@@ -81,8 +81,8 @@ export function WatchlistSavedList() {
                   {meta.initials}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">{meta.displayName}</div>
-                  <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{ticker}</div>
+                  <div className="truncate text-[14px] font-semibold leading-5 text-fg">{meta.displayName}</div>
+                  <div className="text-[12px] font-normal leading-4 text-fg-muted">{ticker}</div>
                 </div>
               </Link>
             </li>

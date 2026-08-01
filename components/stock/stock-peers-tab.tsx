@@ -11,15 +11,18 @@ export { PeerSearchDropdownRow } from "@/components/comparison/peer-search-dropd
 function StockPeersTabInner({
   ticker,
   initialPageData,
+  isActive = true,
 }: {
   ticker: string;
   initialPageData?: StockPageInitialData | null;
+  /** Visible stock tab — gates shared company-rail ownership. */
+  isActive?: boolean;
 }) {
   const main = ticker.trim().toUpperCase();
 
   if (isSingleAssetMode()) {
     return (
-      <div className="space-y-2 pt-2 text-[#5C5D5F]">Peers temporarily unavailable in NVDA-only mode.</div>
+      <div className="space-y-2 pt-2 text-fg-muted">Peers temporarily unavailable in NVDA-only mode.</div>
     );
   }
 
@@ -34,6 +37,7 @@ function StockPeersTabInner({
         initialByTicker={initialByTicker}
         allowedChartingTickers={[]}
         urlMode="stock-tab"
+        isActive={isActive}
       />
     </div>
   );

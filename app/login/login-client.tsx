@@ -1,49 +1,30 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
-import Link from "next/link";
+import { useMemo, useState, type FormEvent } from "react";
 import {
   AuthDivider,
   AuthPrimaryButton,
   AuthSecondaryButton,
   authEntryCtaClassName,
-  authAccentLinkClassName,
+  authAlertBannerClassName,
+  authSuccessBannerClassName,
 } from "@/components/auth/auth-form-ui";
 import {
   AuthFloatingInput,
   AuthFloatingPasswordInput,
 } from "@/components/auth/auth-floating-field";
+import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { cn } from "@/lib/utils";
 import { SpinnerLabel } from "@/components/ui/spinner";
 
 const STORAGE_REMEMBER = "finsepa_remember_me";
 
-const CALLBACK_ERROR_MESSAGES: Record<string, string> = {
-  session:
-    "Google sign-in could not finish (session expired or was already used). Close other Finsepa tabs, try again from https://app.finsepa.com/login, or use email and password.",
-  missing_code: "That sign-in link is incomplete. Open the link from your email again.",
-  oauth:
-    "Google sign-in was cancelled or blocked. Try again, or use email and password if the problem continues.",
-  config: "Authentication isn’t configured correctly. Please try again later.",
-};
-
 type Props = {
   resetSuccess?: boolean;
-  callbackError?: string | null;
   authNext?: string | null;
-  signedOut?: boolean;
 };
-
-type EmailLookupStatus =
-  | "idle"
-  | "checking"
-  | "found"
-  | "not_found"
-  | "google_only"
-  | "unavailable";
 
 function GoogleMark() {
   return (
@@ -58,106 +39,51 @@ function GoogleMark() {
 }
 
 const REDIRECT_AFTER_LOGIN_MS = 900;
-const EMAIL_LOOKUP_DEBOUNCE_MS = 400;
 const LOGIN_FETCH_TIMEOUT_MS = 25_000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LEN = 8;
 
-export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }: Props) {
+export function LoginClient({ resetSuccess, authNext }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordLoginSuccess, setPasswordLoginSuccess] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [emailLookup, setEmailLookup] = useState<EmailLookupStatus>("idle");
-  const [emailHint, setEmailHint] = useState<string | null>(null);
 
   const busy = googleLoading || passwordLoading;
+  const formLocked = busy || passwordLoginSuccess;
   const emailNorm = email.trim().toLowerCase();
   const emailReady = emailNorm.length > 0 && EMAIL_RE.test(emailNorm);
   const passwordReady = password.length >= MIN_PASSWORD_LEN;
-  const showPasswordStep = emailLookup === "found" || emailLookup === "unavailable";
-  const formCanSubmit = emailReady && showPasswordStep && passwordReady;
+  const formCanSubmit = emailReady && passwordReady;
 
-  const callbackHint = callbackError ? CALLBACK_ERROR_MESSAGES[callbackError] ?? "Something went wrong. Please try again." : null;
-  const sessionExpiredHint =
-    !callbackHint && !signedOut && authNext ?
-      "Please sign in to continue."
-    : null;
-  const bannerHint = callbackHint ?? sessionExpiredHint;
-
-  useEffect(() => {
-    if (!emailReady) {
-      setEmailLookup("idle");
-      setEmailHint(null);
-      setPassword("");
-      return;
+  const preCardBanner = useMemo(() => {
+    if (errorMessage) {
+      return (
+        <div role="alert" className={authAlertBannerClassName}>
+          {errorMessage}
+        </div>
+      );
     }
+    if (passwordLoginSuccess) {
+      return (
+        <div role="status" className={authSuccessBannerClassName}>
+          Signed in successfully.
+        </div>
+      );
+    }
+    if (resetSuccess) {
+      return (
+        <div role="status" className={authSuccessBannerClassName}>
+          Your password was updated. You can log in with your new password.
+        </div>
+      );
+    }
+    return null;
+  }, [errorMessage, passwordLoginSuccess, resetSuccess]);
 
-    const emailAtRequest = emailNorm;
-    const controller = new AbortController();
-    setEmailLookup("checking");
-    setEmailHint(null);
-    setPassword("");
-
-    const timer = window.setTimeout(async () => {
-      try {
-        const res = await fetch("/api/auth/check-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: emailAtRequest }),
-          signal: controller.signal,
-        });
-        const data = (await res.json().catch(() => ({}))) as {
-          exists?: boolean;
-          googleOnly?: boolean;
-          message?: string;
-          error?: string;
-        };
-
-        if (controller.signal.aborted) return;
-
-        if (res.status === 429) {
-          setEmailLookup("idle");
-          setEmailHint(data.message?.trim() || "Too many checks. Wait a moment and try again.");
-          return;
-        }
-
-        if (!res.ok) {
-          // Degrade: still allow password entry if lookup is down.
-          setEmailLookup("unavailable");
-          setEmailHint(null);
-          return;
-        }
-
-        if (data.exists && data.googleOnly) {
-          setEmailLookup("google_only");
-          setEmailHint("This account uses Google sign-in. Continue with Google instead.");
-          return;
-        }
-
-        if (data.exists) {
-          setEmailLookup("found");
-          setEmailHint(null);
-          return;
-        }
-
-        setEmailLookup("not_found");
-        setEmailHint("No account found for this email.");
-      } catch (err) {
-        if (controller.signal.aborted) return;
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        setEmailLookup("unavailable");
-        setEmailHint(null);
-      }
-    }, EMAIL_LOOKUP_DEBOUNCE_MS);
-
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [emailNorm, emailReady]);
+  useAuthPreCardBanner(preCardBanner);
 
   function persistRememberMe() {
     try {
@@ -169,7 +95,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
 
   async function handleGoogle() {
     setErrorMessage(null);
-    if (busy) return;
+    if (formLocked) return;
     setGoogleLoading(true);
     try {
       persistRememberMe();
@@ -185,12 +111,12 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage(null);
-    if (!showPasswordStep || busy) return;
+    if (!formCanSubmit || formLocked) return;
 
     const form = e.currentTarget;
     const fd = new FormData(form);
-    const email = String(fd.get("email") ?? "").trim();
-    const password = String(fd.get("password") ?? "");
+    const emailValue = String(fd.get("email") ?? "").trim();
+    const passwordValue = String(fd.get("password") ?? "");
 
     setPasswordLoading(true);
     const controller = new AbortController();
@@ -199,7 +125,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, next: authNext }),
+        body: JSON.stringify({ email: emailValue, password: passwordValue, next: authNext }),
         signal: controller.signal,
       });
 
@@ -211,6 +137,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
 
       if (!res.ok) {
         setErrorMessage(data.message?.trim() || "Invalid email or password.");
+        setPasswordLoading(false);
         return;
       }
 
@@ -224,6 +151,7 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
           ? data.redirectTo
           : PATH_APP_ENTRY,
       );
+      // Keep spinner + blue CTA through redirect; do not clear loading.
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") {
         setErrorMessage("Sign-in timed out. Check your connection and try again.");
@@ -231,120 +159,62 @@ export function LoginClient({ resetSuccess, callbackError, authNext, signedOut }
         const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
         setErrorMessage(message);
       }
+      setPasswordLoading(false);
     } finally {
       window.clearTimeout(timeoutId);
-      setPasswordLoading(false);
     }
   }
 
   return (
     <div className="space-y-4">
-      {passwordLoginSuccess ? (
-        <div
-          role="status"
-          className="rounded-[10px] border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2.5 text-center text-sm font-medium leading-5 text-[#166534] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
-        >
-          Logged in successfully. Redirecting to the app…
-        </div>
-      ) : null}
-
       <AuthSecondaryButton
         className={authEntryCtaClassName}
         onClick={handleGoogle}
-        disabled={busy}
+        disabled={formLocked}
       >
         <GoogleMark />
         {googleLoading ? <SpinnerLabel>Redirecting…</SpinnerLabel> : "Continue with Google"}
       </AuthSecondaryButton>
 
       <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-      <AuthDivider />
+        <AuthDivider />
 
-      {resetSuccess ? (
-        <div
-          role="status"
-          className="rounded-[10px] border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-2 text-sm leading-5 text-[#166534]"
-        >
-          Your password was updated. You can log in with your new password.
-        </div>
-      ) : null}
-
-      {bannerHint ? (
-        <div
-          role="alert"
-          className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
-        >
-          {bannerHint}
-        </div>
-      ) : null}
-
-      {errorMessage ? (
-        <div
-          role="alert"
-          className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
-        >
-          {errorMessage}
-        </div>
-      ) : null}
-
-      <div>
         <AuthFloatingInput
           type="email"
           name="email"
           label="Email"
           autoComplete="email"
           required
-          disabled={busy}
+          disabled={formLocked}
           value={email}
-          trailingLoading={emailLookup === "checking"}
           onChange={(e) => {
             setEmail(e.target.value);
             setErrorMessage(null);
           }}
         />
-        {emailHint ? (
-          <p
-            role="status"
-            className={cn(
-              "mt-1.5 text-sm leading-5",
-              emailLookup === "not_found" || emailLookup === "google_only"
-                ? "text-[#B91C1C]"
-                : "text-[#52525B]",
-            )}
+
+        <AuthFloatingPasswordInput
+          name="password"
+          label="Password"
+          autoComplete="current-password"
+          required
+          disabled={formLocked}
+          value={password}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setErrorMessage(null);
+          }}
+        />
+
+        <div className="!mt-6">
+          <AuthPrimaryButton
+            type="submit"
+            className={authEntryCtaClassName}
+            disabled={formLocked || !formCanSubmit}
           >
-            {emailHint}
-          </p>
-        ) : null}
-      </div>
-
-      {showPasswordStep ? (
-        <div>
-          <AuthFloatingPasswordInput
-            name="password"
-            label="Password"
-            autoComplete="current-password"
-            required
-            disabled={busy}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+            {passwordLoading ? <SpinnerLabel>Signing in…</SpinnerLabel> : "Log in"}
+          </AuthPrimaryButton>
         </div>
-      ) : null}
-
-      <div className="!mt-6 space-y-3">
-        <AuthPrimaryButton
-          type="submit"
-          className={authEntryCtaClassName}
-          disabled={busy || !formCanSubmit}
-        >
-          {passwordLoading ? <SpinnerLabel>Signing in…</SpinnerLabel> : "Log in"}
-        </AuthPrimaryButton>
-        <div className="text-center">
-          <Link href="/forgot-password" className={cn(authAccentLinkClassName)}>
-            Forgot password?
-          </Link>
-        </div>
-      </div>
       </form>
     </div>
   );

@@ -28,7 +28,7 @@ function InstitutionalHoldingsTableInner({
     <div className={cn("w-full overflow-x-auto", className)}>
       <table className="w-full min-w-[720px] border-collapse text-sm">
         <thead>
-          <tr className="border-b border-[#E4E4E7] text-[#5C5D5F]">
+          <tr className="border-b border-stroke text-fg-muted">
             <th className="pb-3 pr-4 text-left font-medium">Issuer</th>
             <th className="whitespace-nowrap pb-3 pr-4 text-left font-medium">Class</th>
             <th className="whitespace-nowrap pb-3 pr-4 text-right font-medium">Value</th>
@@ -37,13 +37,13 @@ function InstitutionalHoldingsTableInner({
         </thead>
         <tbody>
           {holdings.map((h, i) => (
-            <tr key={`${h.issuer}-${i}`} className="border-b border-[#E4E4E7]">
-              <td className="py-3 pr-4 align-middle font-medium text-[#141414]">{h.issuer}</td>
-              <td className="py-3 pr-4 align-middle text-[#5C5D5F]">{h.titleOfClass ?? "—"}</td>
-              <td className="whitespace-nowrap py-3 pr-4 text-right align-middle tabular-nums text-[#141414]">
+            <tr key={`${h.issuer}-${i}`} className="border-b border-stroke">
+              <td className="py-3 pr-4 align-middle font-medium text-fg">{h.issuer}</td>
+              <td className="py-3 pr-4 align-middle text-fg-muted">{h.titleOfClass ?? "—"}</td>
+              <td className="whitespace-nowrap py-3 pr-4 text-right align-middle tabular-nums text-fg">
                 {usd.format(h.valueUsd)}
               </td>
-              <td className="whitespace-nowrap py-3 pr-0 text-right align-middle tabular-nums text-[#141414]">
+              <td className="whitespace-nowrap py-3 pr-0 text-right align-middle tabular-nums text-fg">
                 {pct.format(h.pct)}%
               </td>
             </tr>

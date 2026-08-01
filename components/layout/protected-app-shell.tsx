@@ -13,6 +13,7 @@ import { PortfolioWorkspaceProvider } from "@/components/portfolio/portfolio-wor
 import { SuperinvestorFollowProvider } from "@/components/superinvestors/superinvestor-follow-provider";
 import { WatchlistProvider } from "@/lib/watchlist/use-watchlist-client";
 import { userNeedsOnboarding } from "@/lib/auth/onboarding";
+import { userFromJwtClaims } from "@/lib/auth/user-from-claims";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   readSidebarCollapsedPreference,
@@ -44,8 +45,22 @@ export async function ProtectedAppShell({
 
   let user: Awaited<ReturnType<typeof supabase.auth.getUser>>["data"]["user"] = null;
   try {
-    const result = await supabase.auth.getUser();
-    user = result.data.user;
+    const { data: claimsData } = await supabase.auth.getClaims();
+    user = userFromJwtClaims(claimsData?.claims ?? null);
+    // Best-effort enrich for avatar / display fields — do not block the shell on Auth latency.
+    if (user) {
+      try {
+        const enriched = await Promise.race([
+          supabase.auth.getUser(),
+          new Promise<null>((resolve) => {
+            setTimeout(() => resolve(null), 1_500);
+          }),
+        ]);
+        if (enriched && enriched.data.user) user = enriched.data.user;
+      } catch {
+        /* keep claims-based user during Auth latency / outage */
+      }
+    }
   } catch {
     redirect(PATH_LOGIN);
   }

@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
@@ -121,7 +122,6 @@ import {
   ChartingFundamentalsLineChart,
   chartingMetricsShareLineChartKind,
 } from "@/components/charting/charting-fundamentals-line-chart";
-import { FundamentalsChartSettingsMenu } from "@/components/stock/fundamentals-chart-settings-menu";
 import {
   DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS,
   type FundamentalsChartDisplayOptions,
@@ -1310,6 +1310,11 @@ type Props = {
     showVerticalLegend: boolean;
     showHorizontalLegend: boolean;
   };
+  /**
+   * Stock tab keep-alive: only the visible Charting tab should own the company rail.
+   * Defaults to true (standalone `/charting` / first paint).
+   */
+  isActive?: boolean;
 };
 
 const PERIOD_TAB_OPTIONS = [
@@ -1837,6 +1842,7 @@ export function ChartingWorkspace({
   assetDisplayName,
   assetLogoUrl,
   screenshotDisplayOptions,
+  isActive = true,
 }: Props) {
   const router = useRouter();
   const chartPlotCleanupRef = useRef<(() => void) | null>(null);
@@ -1856,6 +1862,7 @@ export function ChartingWorkspace({
   /** Standalone `/charting` or stock Charting tab (legend placement) — right Company/Metric card. */
   const useRailMetricPicker =
     useRailPickers &&
+    isActive &&
     !screenshotPreviewMode &&
     (isFullPageCharting || metricControlsPlacement === "legend");
   const animateBars = animateBarsOnAppear && !screenshotPreviewMode;
@@ -2574,7 +2581,7 @@ export function ChartingWorkspace({
             },
             layout: {
               background: { type: ColorType.Solid, color: "transparent" },
-              textColor: "#5C5D5F",
+              textColor: resolveFsColor("--fs-fg-muted"),
               fontSize: 12,
               fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
               attributionLogo: false,
@@ -3428,7 +3435,7 @@ export function ChartingWorkspace({
         ? selected.map((id) => ({
             id,
             label: CHARTING_METRIC_LABEL[id],
-            color: metricChipColorById.get(id) ?? "#2563EB",
+            color: metricChipColorById.get(id) ?? resolveFsColor("--fs-accent"),
             showBarValues: isBarValuesVisible(id),
           }))
         : undefined,
@@ -3511,7 +3518,7 @@ export function ChartingWorkspace({
       >
       {useRailMetricPicker && !screenshotPreviewMode ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:flex-1">
+          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-fg sm:flex-1">
             {workspaceTitle}
           </h2>
           <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
@@ -3525,13 +3532,7 @@ export function ChartingWorkspace({
                   aria-label="Reporting period"
                 />
               ) : null}
-              {useFundamentalsLineChart ? (
-                <FundamentalsChartSettingsMenu
-                  variant="line"
-                  options={lineDisplayOptions}
-                  onChange={setLineDisplayOptions}
-                />
-              ) : null}
+              {null}
               <ChartingVisualSwitcher value={chartType} onChange={handleChartTypeChange} />
             </div>
             <div className="shrink-0">
@@ -3611,13 +3612,7 @@ export function ChartingWorkspace({
                   aria-label="Reporting period"
                 />
               ) : null}
-              {useFundamentalsLineChart ? (
-                <FundamentalsChartSettingsMenu
-                  variant="line"
-                  options={lineDisplayOptions}
-                  onChange={setLineDisplayOptions}
-                />
-              ) : null}
+              {null}
               <ChartingVisualSwitcher value={chartType} onChange={handleChartTypeChange} />
             </div>
             <div className="shrink-0">
@@ -3717,13 +3712,13 @@ export function ChartingWorkspace({
           className="min-h-[min(50vh,420px)]"
         />
       ) : empty ? (
-        <p className="max-w-md text-[14px] leading-6 text-[#5C5D5F]">
+        <p className="max-w-md text-[14px] leading-6 text-fg-muted">
           Financial statement data isn&apos;t available for this symbol.
         </p>
       ) : (
         <>
           {noMetricData ? (
-            <p className="max-w-md text-[14px] leading-6 text-[#5C5D5F]">
+            <p className="max-w-md text-[14px] leading-6 text-fg-muted">
               No series data for the selected metrics on this symbol.
             </p>
           ) : useFundamentalsLineChart ? (
@@ -3739,11 +3734,11 @@ export function ChartingWorkspace({
           ) : (
             <div className="w-full min-w-0 overflow-visible" style={{ height: chartHeight }}>
               <div className="flex min-h-0 w-full overflow-visible" style={{ height: chartPlotHeight }}>
-                <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-[#FCFCFD]">
+                <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-panel">
                   <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
                     <div
                       className={cn(
-                        "absolute inset-x-0 bg-[#FCFCFD]",
+                        "absolute inset-x-0 bg-panel",
                         CHARTING_PLOT_BACKDROP_INSET_CLASS,
                       )}
                     >
@@ -3782,15 +3777,14 @@ export function ChartingWorkspace({
                           >
                             <span
                               className={cn(
-                                "truncate text-[11px] font-semibold leading-none tabular-nums text-[#141414]",
+                                "truncate text-[11px] font-semibold leading-none tabular-nums text-fg",
                                 !screenshotPreviewMode && "fundamentals-bar-value-label-in",
                               )}
                               style={{
                                 animationDelay: screenshotPreviewMode
                                   ? undefined
                                   : `${b.periodIndex * FUNDAMENTALS_BAR_VALUE_LABEL_STAGGER_MS}ms`,
-                                textShadow:
-                                  "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
+                                textShadow: "var(--fs-chart-value-label-shadow)",
                               }}
                             >
                               {b.text}
@@ -3816,7 +3810,7 @@ export function ChartingWorkspace({
                       ? visibleLineEndBadges.map((b) => (
                           <div
                             key={`line-end-${b.id}`}
-                            className="pointer-events-none absolute right-2 z-[15] max-w-[min(40%,9rem)] truncate rounded-full px-2.5 py-1 text-[11px] font-semibold tabular-nums leading-none text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)]"
+                            className="pointer-events-none absolute right-2 z-[15] max-w-[min(40%,9rem)] truncate rounded-full px-2.5 py-1 text-[11px] font-semibold tabular-nums leading-none text-white shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-12))]"
                             style={{
                               top: b.topPx,
                               transform: "translateY(-50%)",
@@ -3842,15 +3836,14 @@ export function ChartingWorkspace({
                         >
                           <span
                             className={cn(
-                              "truncate text-[11px] font-semibold leading-none tabular-nums text-[#141414]",
+                              "truncate text-[11px] font-semibold leading-none tabular-nums text-fg",
                               !screenshotPreviewMode && "fundamentals-bar-value-label-in",
                             )}
                             style={{
                               animationDelay: screenshotPreviewMode
                                 ? undefined
                                 : `${b.periodIndex * FUNDAMENTALS_BAR_VALUE_LABEL_STAGGER_MS}ms`,
-                              textShadow:
-                                "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
+                              textShadow: "var(--fs-chart-value-label-shadow)",
                             }}
                           >
                             {b.text}
@@ -3870,10 +3863,9 @@ export function ChartingWorkspace({
                           title={b.text}
                         >
                           <span
-                            className="truncate text-[11px] font-semibold leading-none tabular-nums text-[#141414]"
+                            className="truncate text-[11px] font-semibold leading-none tabular-nums text-fg"
                             style={{
-                              textShadow:
-                                "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
+                              textShadow: "var(--fs-chart-value-label-shadow)",
                             }}
                           >
                             {b.text}
@@ -3896,18 +3888,7 @@ export function ChartingWorkspace({
                         role="tooltip"
                         aria-label="Chart tooltip"
                       >
-                        {hover.side === "left" ? (
-                          <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
-                            <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
-                            <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
-                          </span>
-                        ) : (
-                          <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
-                            <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
-                            <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
-                          </span>
-                        )}
-                        <p className="text-[12px] font-semibold leading-4 text-[#141414]">{hover.periodLabel}</p>
+                        <p className="text-[12px] font-semibold leading-4 text-fg">{hover.periodLabel}</p>
                         <div className="mt-1.5 space-y-1">
                           {hover.rows.map((r) => (
                             <div key={r.id} className="flex items-baseline justify-between gap-3">
@@ -3917,11 +3898,11 @@ export function ChartingWorkspace({
                                   style={{ backgroundColor: r.color }}
                                   aria-hidden
                                 />
-                                <span className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                                <span className="truncate text-[12px] font-normal leading-4 text-fg-muted">
                                   {r.label}
                                 </span>
                               </span>
-                              <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#141414]">
+                              <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-fg">
                                 {r.value}
                               </span>
                             </div>
@@ -3936,7 +3917,7 @@ export function ChartingWorkspace({
                     {primaryYAxis ? (
                       <div
                         className={cn(
-                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
+                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted",
                           FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
                         )}
                         style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -3950,7 +3931,7 @@ export function ChartingWorkspace({
                             return (
                               <span
                                 key={`y-tick-primary-${i}`}
-                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
+                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
                                 style={{
                                   top:
                                     topPx != null && Number.isFinite(topPx)
@@ -3968,7 +3949,7 @@ export function ChartingWorkspace({
                     {percentYAxis ? (
                       <div
                         className={cn(
-                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
+                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted",
                           FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
                         )}
                         style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -3982,7 +3963,7 @@ export function ChartingWorkspace({
                             return (
                               <span
                                 key={`y-tick-percent-${i}`}
-                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
+                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
                                 style={{
                                   top:
                                     topPx != null && Number.isFinite(topPx)
@@ -4000,7 +3981,7 @@ export function ChartingWorkspace({
                     {valuationYAxis ? (
                       <div
                         className={cn(
-                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
+                          "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted",
                           FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
                         )}
                         style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -4014,7 +3995,7 @@ export function ChartingWorkspace({
                             return (
                               <span
                                 key={`y-tick-valuation-${i}`}
-                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
+                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
                                 style={{
                                   top:
                                     topPx != null && Number.isFinite(topPx)
@@ -4057,7 +4038,7 @@ export function ChartingWorkspace({
                       <span
                         key={lab.key}
                         className={cn(
-                          "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
+                          "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
                           horizontalPeriodAxisLabels
                             ? spacedHorizontalPeriodAxis
                               ? "top-3"
@@ -4096,12 +4077,12 @@ export function ChartingWorkspace({
                 metricControlsInLegend && !screenshotPreviewMode ? (
                   <div
                     key={`chart-legend-${id}`}
-                    className="inline-flex h-6 max-w-full min-w-0 items-stretch overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white text-[12px] font-medium leading-none text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
+                    className="inline-flex h-6 max-w-full min-w-0 items-stretch overflow-hidden rounded-[8px] border border-stroke bg-surface text-[12px] font-medium leading-none text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]"
                   >
                     <span className="flex min-w-0 items-center gap-2 pl-3 pr-1 py-0">
                       <span
                         className="h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: metricChipColorById.get(id) ?? "#2563EB" }}
+                        style={{ backgroundColor: metricChipColorById.get(id) ?? resolveFsColor("--fs-accent") }}
                         aria-hidden
                       />
                       <span className="min-w-0 truncate">
@@ -4118,7 +4099,7 @@ export function ChartingWorkspace({
                       type="button"
                       onClick={() => removeMetric(id)}
                       disabled={!stockTabStartsEmptyMetrics && selected.length <= 1}
-                      className="flex w-6 shrink-0 items-center justify-center border-l border-[#E4E4E7] text-[#141414] transition-colors hover:bg-[#FAFAFA] disabled:pointer-events-none disabled:opacity-30"
+                      className="flex w-6 shrink-0 items-center justify-center border-l border-stroke text-fg transition-colors hover:bg-canvas disabled:pointer-events-none disabled:opacity-30"
                       aria-label={`Remove ${CHARTING_METRIC_LABEL[id]}`}
                     >
                       <X className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
@@ -4127,11 +4108,11 @@ export function ChartingWorkspace({
                 ) : (
                   <div
                     key={`chart-legend-${id}`}
-                    className="inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]"
+                    className="inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-stroke bg-surface px-3 py-0 text-[12px] font-medium leading-none text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]"
                   >
                     <span
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: metricChipColorById.get(id) ?? "#2563EB" }}
+                      style={{ backgroundColor: metricChipColorById.get(id) ?? resolveFsColor("--fs-accent") }}
                       aria-hidden
                     />
                     <span className="min-w-0 truncate">

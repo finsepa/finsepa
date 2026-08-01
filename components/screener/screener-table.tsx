@@ -61,14 +61,14 @@ const screenerTableWideHeaderScrollClass =
 function ChangeCell({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
     return (
-      <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-[#5C5D5F]">-</div>
+      <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-fg-muted">-</div>
     );
   }
   const positive = value >= 0;
   return (
     <div
       className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
-        positive ? "text-[#16A34A]" : "text-[#DC2626]"
+        positive ? "text-up" : "text-down"
       }`}
     >
       {formatPercentValue(value)}
@@ -82,12 +82,12 @@ function PriceAndChangeCell({ price, change1D }: { price: number | null; change1
   const positive = (change1D ?? 0) >= 0;
   return (
     <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
-      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+      <div className="min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
         {hasPrice ? `$${price!.toFixed(2)}` : "-"}
       </div>
       <div
         className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
-          !hasChange ? "text-[#5C5D5F]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+          !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down"
         }`}
       >
         {hasChange ? formatPercentValue(change1D!) : "-"}
@@ -131,7 +131,7 @@ export function screenerTableMinWidthPx(keyStatCount: number): number | undefine
   return SCREENER_TABLE_DESKTOP_BASE_MIN_WIDTH_PX + keyStatCount * SCREENER_TABLE_KEY_STAT_COL_MIN_WIDTH_PX;
 }
 
-const mobileRankCellClass = "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-[#5C5D5F]";
+const mobileRankCellClass = "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-fg-muted";
 
 const desktopNumericCellFluidClass = cn(
   "hidden min-w-0 w-full text-right sm:block",
@@ -217,7 +217,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
           prefetch={false}
           className={cn(
             gridClassName,
-            "min-h-[56px] cursor-pointer items-center justify-items-stretch no-underline text-[#141414] visited:text-[#141414] sm:min-h-[60px]",
+            "min-h-[56px] cursor-pointer items-center justify-items-stretch no-underline text-fg visited:text-fg sm:min-h-[60px]",
           )}
           aria-label={`Open ${item.name} (${item.ticker})`}
         >
@@ -226,10 +226,10 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
           <div className="flex min-w-0 items-center justify-start gap-[12px] pr-0 text-left sm:pr-4">
             <CompanyLogo name={item.name} logoUrl={item.logoUrl} symbol={item.ticker} />
             <div className="min-w-0">
-              <div className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline">
+              <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
                 {item.name}
               </div>
-              <div className="text-[12px] font-normal leading-4 !text-[#5C5D5F]">
+              <div className="text-[12px] font-normal leading-4 text-fg-muted">
                 <span>{item.ticker}</span>
                 <span className="sm:hidden">
                   {typeof item.marketCap === "string" && item.marketCap.trim() && item.marketCap.trim() !== "-" ?
@@ -244,7 +244,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
             <PriceAndChangeCell price={item.price} change1D={item.change1D} />
           </div>
           <div
-            className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]`}
+            className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg`}
           >
             {item.price != null && Number.isFinite(item.price) ? `$${item.price.toFixed(2)}` : "-"}
           </div>
@@ -260,13 +260,13 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
           </div>
 
           <div
-            className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]`}
+            className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg`}
           >
             {item.marketCap}
           </div>
 
           <div
-            className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]`}
+            className={`${desktopNumericCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg`}
           >
             {item.pe}
           </div>
@@ -275,7 +275,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
             <div
               key={col.header}
               className={`${desktopKeyStatCellClass} font-['Inter'] text-[14px] font-normal leading-5 tabular-nums ${
-                col.loading ? "text-[#5C5D5F]" : "text-[#141414]"
+                col.loading ? "text-fg-muted" : "text-fg"
               }`}
               title={keyStatDisplays[i]}
             >
@@ -317,13 +317,13 @@ export function ScreenerTable({
   const headerRow = (
     <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
       <div
-        className={`flex min-h-[44px] max-md:min-h-10 min-w-0 w-full items-center gap-x-1.5 py-0 max-md:py-2 text-[14px] font-medium leading-5 text-[#5C5D5F] max-md:gap-x-1.5 sm:gap-x-2`}
+        className={`flex min-h-[44px] max-md:min-h-10 min-w-0 w-full items-center gap-x-1.5 py-0 max-md:py-2 text-[14px] font-medium leading-5 text-fg-muted max-md:gap-x-1.5 sm:gap-x-2`}
       >
         <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
         <div
           className={cn(
             gridClassName,
-            "min-h-[44px] max-md:min-h-0 items-center text-[14px] font-medium leading-5 text-[#5C5D5F]",
+            "min-h-[44px] max-md:min-h-0 items-center text-[14px] font-medium leading-5 text-fg-muted",
           )}
         >
           <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
@@ -331,7 +331,7 @@ export function ScreenerTable({
           <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS, !useFluidDesktopColumns && "sm:shrink-0 sm:max-w-[8rem] sm:min-w-[5.25rem]")}>
             <span className="sm:hidden">Price</span>
             <span className="hidden sm:inline">Price</span>
-            <span className="hidden text-[12px] font-medium leading-4 text-[#A1A1AA] sm:hidden">1D %</span>
+            <span className="hidden text-[12px] font-medium leading-4 text-fg-subtle sm:hidden">1D %</span>
           </div>
           <div className={cn(desktopNumericCellClass, "truncate")}>1D %</div>
           <div className={cn(desktopNumericCellClass, "truncate")}>1M %</div>
@@ -393,7 +393,7 @@ export function ScreenerTable({
     return (
       <div
         className={cn(
-          "w-full min-w-0 max-w-full bg-white",
+          "w-full min-w-0 max-w-full bg-surface",
           SCREENER_TABLE_OUTER_BORDER_CLASS,
           SCREENER_TABLE_MOBILE_SURFACE_CLASS,
           embeddedInMobileCard &&
@@ -427,7 +427,7 @@ export function ScreenerTable({
 
   return (
     <ScreenerTableScroll embeddedInMobileCard={embeddedInMobileCard}>
-      <div className="bg-white">
+      <div className="bg-surface">
         {headerSection}
         {bodyRows}
       </div>

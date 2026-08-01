@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { LineChart } from "@/lib/icons";
 
@@ -26,7 +27,6 @@ import type { PortfolioChartRange, PortfolioValueHistoryPoint } from "@/lib/port
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { cn } from "@/lib/utils";
 
-const PORTFOLIO_SWATCH = "#2563EB";
 const SPY_SWATCH = "#EA580C";
 const SPY_LABEL = "S&P 500";
 
@@ -48,7 +48,7 @@ function PerformanceLegendBadge({
       onClick={onToggle}
       aria-pressed={pressed}
       className={cn(
-        "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
+        "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-stroke bg-surface px-3 py-0 text-[12px] font-medium leading-none text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] transition-opacity",
         !pressed && "opacity-40",
       )}
     >
@@ -126,7 +126,7 @@ function PerformanceChartSection({
     <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
       <PerformanceLegendBadge
         label="Portfolio"
-        swatch={PORTFOLIO_SWATCH}
+        swatch={resolveFsColor("--fs-accent")}
         pressed={showPortfolio}
         onToggle={togglePortfolio}
       />
@@ -142,7 +142,7 @@ function PerformanceChartSection({
   return (
     <section className="mb-10 w-full min-w-0">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414]">{title}</h2>
+        <h2 className="shrink-0 text-2xl font-semibold leading-9 tracking-tight text-fg">{title}</h2>
         <div className="hidden sm:flex">{rangeSwitcherDesktop}</div>
       </div>
 
@@ -163,7 +163,7 @@ function PerformanceChartSection({
           <AssetChartSkeleton />
         ) : error ? (
           <div className="flex h-[320px] flex-col items-center justify-center px-6">
-            <p className="text-sm text-[#5C5D5F]">{error}</p>
+            <p className="text-sm text-fg-muted">{error}</p>
           </div>
         ) : points.length === 0 ? (
           <Empty variant="plain" className="h-[320px] justify-center py-0">
@@ -291,7 +291,7 @@ function PortfolioPerformancePanelInner({
       <PortfolioReturnsDynamicsChart transactions={transactions} canLoad={canLoad} />
 
       <section className="pt-6">
-        <h2 className="mb-4 text-2xl font-semibold leading-9 tracking-tight text-[#141414]">
+        <h2 className="mb-4 text-2xl font-semibold leading-9 tracking-tight text-fg">
           Holdings performance
         </h2>
         <PortfolioHoldingsPerformanceChart holdings={holdings} transactions={transactions} />

@@ -34,9 +34,9 @@ function StatRow({
   const interactive = typeof onLabelClick === "function";
   if (!interactive) {
     return (
-      <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
-        <span className="min-w-0 shrink text-[14px] leading-5 text-[#141414]">{label}</span>
-        <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#141414] tabular-nums">{value}</span>
+      <div className="flex items-center justify-between gap-3 border-b border-stroke py-1.5 last:border-0">
+        <span className="min-w-0 shrink text-[14px] leading-5 text-fg">{label}</span>
+        <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-fg tabular-nums">{value}</span>
       </div>
     );
   }
@@ -44,12 +44,12 @@ function StatRow({
     <button
       type="button"
       onClick={onLabelClick}
-      className="group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 text-left last:border-0 hover:bg-[#FAFAFA]"
+      className="group flex w-full min-w-0 cursor-pointer items-center justify-between gap-3 border-b border-stroke py-1.5 text-left last:border-0 hover:bg-canvas"
     >
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline">
+      <span className="min-w-0 shrink text-[14px] leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
         {label}
       </span>
-      <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-[#141414] tabular-nums">{value}</span>
+      <span className="shrink-0 text-right text-[14px] font-medium leading-5 text-fg tabular-nums">{value}</span>
     </button>
   );
 }
@@ -110,9 +110,9 @@ export function KeyStatsRevenueProfitCard({
       {loading ? (
         <div className="space-y-2 pt-0.5" aria-hidden>
           {displayRows.map((r) => (
-            <div key={r.label} className="flex justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
-              <div className="h-4 w-28 rounded bg-neutral-100" />
-              <div className="h-4 w-20 rounded bg-neutral-100" />
+            <div key={r.label} className="flex justify-between gap-3 border-b border-stroke py-1.5 last:border-0">
+              <div className="h-4 w-28 rounded bg-skeleton" />
+              <div className="h-4 w-20 rounded bg-skeleton" />
             </div>
           ))}
         </div>

@@ -105,22 +105,22 @@ function InsiderPeriodCard({
 
   return (
     <div className={cn(MOBILE_PANEL_CARD_CLASS, "p-4")}>
-      <p className="mb-3 text-[13px] font-semibold leading-5 text-[#5C5D5F]">{title}</p>
-      <div className="mb-4 flex h-2 w-full overflow-hidden rounded-full bg-[#F4F4F5]">
+      <p className="mb-3 text-[13px] font-semibold leading-5 text-fg-muted">{title}</p>
+      <div className="mb-4 flex h-2 w-full overflow-hidden rounded-full bg-surface-muted">
         {total === 0 ? (
-          <div className="h-full w-full bg-[#E4E4E7]" />
+          <div className="h-full w-full bg-stroke" />
         ) : (
           <>
             {sellPct > 0 ? (
-              <div className="h-full shrink-0 bg-[#DC2626]" style={{ width: `${sellPct}%` }} title="Sells" />
+              <div className="h-full shrink-0 bg-down" style={{ width: `${sellPct}%` }} title="Sells" />
             ) : null}
             {buyPct > 0 ? (
-              <div className="h-full shrink-0 bg-[#16A34A]" style={{ width: `${buyPct}%` }} title="Buys" />
+              <div className="h-full shrink-0 bg-up" style={{ width: `${buyPct}%` }} title="Buys" />
             ) : null}
           </>
         )}
       </div>
-      <div className="mb-2 flex items-center justify-between text-[14px] font-medium leading-5 text-[#141414]">
+      <div className="mb-2 flex items-center justify-between text-[14px] font-medium leading-5 text-fg">
         <span>
           {agg.sellCount} {agg.sellCount === 1 ? "Sell" : "Sells"}
         </span>
@@ -128,7 +128,7 @@ function InsiderPeriodCard({
           {agg.buyCount} {agg.buyCount === 1 ? "Buy" : "Buys"}
         </span>
       </div>
-      <div className="flex items-center justify-between text-[14px] font-normal leading-5 text-[#5C5D5F]">
+      <div className="flex items-center justify-between text-[14px] font-normal leading-5 text-fg-muted">
         <span className="tabular-nums">{formatCardUsd(agg.sellValue)}</span>
         <span className="tabular-nums">{formatCardUsd(agg.buyValue)}</span>
       </div>
@@ -175,27 +175,27 @@ function insiderMarkerSide(kind: InsiderTransactionKind): "buy" | "sell" {
 function TransactionBadge({ kind }: { kind: InsiderTransactionKind }) {
   if (kind === "purchase") {
     return (
-      <span className="inline-flex rounded-lg bg-[#F0FDF4] px-2 py-0.5 text-[12px] font-normal leading-4 text-[#16A34A]">
+      <span className="inline-flex rounded-lg bg-[#F0FDF4] px-2 py-0.5 text-[12px] font-normal leading-4 text-up">
         Purchase
       </span>
     );
   }
   if (kind === "planned_sale") {
     return (
-      <span className="inline-flex rounded-lg bg-[#FFF1F2] px-2 py-0.5 text-[12px] font-normal leading-4 text-[#DC2626]">
+      <span className="inline-flex rounded-lg bg-[#FFF1F2] px-2 py-0.5 text-[12px] font-normal leading-4 text-down">
         Planned sale
       </span>
     );
   }
   if (kind === "sale") {
     return (
-      <span className="inline-flex rounded-lg bg-[#FEF2F2] px-2 py-0.5 text-[12px] font-normal leading-4 text-[#DC2626]">
+      <span className="inline-flex rounded-lg bg-down-soft px-2 py-0.5 text-[12px] font-normal leading-4 text-down">
         Sale
       </span>
     );
   }
   return (
-    <span className="inline-flex rounded-lg bg-[#F4F4F5] px-2 py-0.5 text-[12px] font-normal leading-4 text-[#52525B]">
+    <span className="inline-flex rounded-lg bg-surface-muted px-2 py-0.5 text-[12px] font-normal leading-4 text-fg-muted">
       Other
     </span>
   );
@@ -276,7 +276,7 @@ function InsiderRow({
   const isBuy = row.kind === "purchase";
   const isSellSide = row.kind === "sale" || row.kind === "planned_sale";
   const shareColor =
-    row.shares == null ? "text-[#5C5D5F]" : isBuy ? "text-[#16A34A]" : isSellSide ? "text-[#DC2626]" : "text-[#141414]";
+    row.shares == null ? "text-fg-muted" : isBuy ? "text-up" : isSellSide ? "text-down" : "text-fg";
   const pctColor = shareColor;
 
   const sharesText =
@@ -298,13 +298,13 @@ function InsiderRow({
             SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
           )}
         >
-          <div className={cn("text-left font-medium tabular-nums text-[#141414]", TABLE_START_ALIGNED_PAD_CLASS)}>
+          <div className={cn("text-left font-medium tabular-nums text-fg", TABLE_START_ALIGNED_PAD_CLASS)}>
             {formatDisplayDate(row.transactionDate)}
           </div>
-          <div className="min-w-0 truncate text-right text-[#141414]" title={row.ownerName}>
+          <div className="min-w-0 truncate text-right text-fg" title={row.ownerName}>
             {row.ownerName}
           </div>
-          <div className="min-w-0 truncate text-right text-[#141414]" title={row.ownerTitle ?? undefined}>
+          <div className="min-w-0 truncate text-right text-fg" title={row.ownerTitle ?? undefined}>
             {row.ownerTitle?.trim() ? row.ownerTitle : "-"}
           </div>
           <div className="flex min-w-0 justify-end">
@@ -314,12 +314,12 @@ function InsiderRow({
             <span>{sharesText}</span>
             {pctText ? <span className={`ml-2 ${pctColor}`}>{pctText}</span> : null}
           </div>
-          <div className="min-w-0 w-full text-right font-['Inter'] font-normal tabular-nums text-[#141414]">
+          <div className="min-w-0 w-full text-right font-['Inter'] font-normal tabular-nums text-fg">
             {row.price != null && Number.isFinite(row.price) ? `$${row.price.toFixed(2)}` : "-"}
           </div>
           <div
             className={cn(
-              "min-w-0 w-full text-right font-['Inter'] font-normal tabular-nums text-[#141414]",
+              "min-w-0 w-full text-right font-['Inter'] font-normal tabular-nums text-fg",
               TABLE_END_ALIGNED_PAD_CLASS,
             )}
           >
@@ -424,7 +424,7 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
         />
       </div>
 
-      <div className="overflow-visible bg-[#FCFCFD]">
+      <div className="overflow-visible bg-panel">
         <PriceChart
           kind="stock"
           symbol={sym}
@@ -450,13 +450,13 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
       {loading ? (
         <div className="space-y-3">
           <InsidersTableSkeleton rows={8} />
-          <div className="flex items-center justify-center gap-2 py-4 text-[14px] text-[#2563EB]">
-            <Spinner className="size-4 text-[#2563EB]" />
+          <div className="flex items-center justify-center gap-2 py-4 text-[14px] text-accent">
+            <Spinner className="size-4 text-accent" />
             <span>Loading…</span>
           </div>
         </div>
       ) : error ? (
-        <p className="py-8 text-center text-[14px] leading-6 text-[#DC2626]">{error}</p>
+        <p className="py-8 text-center text-[14px] leading-6 text-down">{error}</p>
       ) : !rows?.length ? (
         <Empty variant="card" className="min-h-[min(40vh,360px)]">
           <EmptyHeader>
@@ -483,7 +483,7 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
               <div
                 className={cn(
                   INSIDER_GRID,
-                  "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                  "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted",
                 )}
               >
                 <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Date</div>

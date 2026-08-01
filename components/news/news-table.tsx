@@ -38,17 +38,17 @@ function NewsRowCells({ item }: { item: NewsItem }) {
     <>
       <div
         className={cn(
-          "hidden text-[13px] leading-5 text-[#5C5D5F] tabular-nums sm:block",
+          "hidden text-[14px] font-medium leading-5 text-fg-muted tabular-nums sm:block",
           TABLE_START_ALIGNED_PAD_CLASS,
         )}
       >
         {formatTime(item.publishedAt)}
       </div>
       <div className={cn("min-w-0 pr-3", "max-sm:pl-3 sm:pl-0")}>
-        <div className="text-[12px] leading-4 text-[#5C5D5F] tabular-nums sm:hidden">
+        <div className="text-[14px] font-medium leading-5 text-fg-muted tabular-nums sm:hidden">
           {formatTime(item.publishedAt)}
         </div>
-        <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">{item.title}</div>
+        <div className="truncate text-[14px] font-semibold leading-5 text-fg">{item.title}</div>
       </div>
       <div className="min-w-0 pr-3">
         <div className="flex min-w-0 items-center gap-2">
@@ -64,14 +64,14 @@ function NewsRowCells({ item }: { item: NewsItem }) {
               size="xs"
             />
           </span>
-          <span className="inline-flex h-6 max-w-full items-center rounded-md border border-[#E8E8EB] bg-white px-2 text-[12px] font-semibold leading-4 text-[#141414] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]">
+          <span className="inline-flex h-6 max-w-full items-center rounded-md border border-stroke-muted bg-surface px-2 text-[12px] font-semibold leading-4 text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
             <span className="truncate">{item.assetSymbol}</span>
           </span>
         </div>
       </div>
-      <div className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 text-[#5C5D5F]">
+      <div className="flex min-w-0 items-center gap-1.5 text-[13px] leading-5 text-fg-muted">
         {item.url ? <NewsSourceLogo articleUrl={item.url} /> : null}
-        <span className="truncate font-medium text-[#141414]">{item.source}</span>
+        <span className="truncate font-medium text-fg">{item.source}</span>
       </div>
     </>
   );
@@ -92,7 +92,7 @@ export function NewsTable({ items }: { items: NewsItem[] }) {
           <div
             className={cn(
               NEWS_GRID,
-              "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F] [&>div]:text-left",
+              "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted [&>div]:text-left",
             )}
           >
             <div className={cn("hidden sm:block", TABLE_START_ALIGNED_PAD_CLASS)}>Time</div>
@@ -161,9 +161,9 @@ export function NewsTableSkeleton({ rows = 10 }: { rows?: number }) {
       >
         <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
           <div className={cn(NEWS_GRID, "min-h-[44px] items-center")}>
-            <div className="hidden h-3 w-16 rounded bg-[#E4E4E7] sm:block" />
+            <div className="hidden h-3 w-16 rounded bg-stroke sm:block" />
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-3 w-16 rounded bg-[#E4E4E7]" />
+              <div key={i} className="h-3 w-16 rounded bg-stroke" />
             ))}
           </div>
         </div>
@@ -179,10 +179,10 @@ export function NewsTableSkeleton({ rows = 10 }: { rows?: number }) {
                 SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
               )}
             >
-              <div className="hidden h-3 w-20 rounded bg-[#E4E4E7] sm:block" />
-              <div className="h-3 w-[70%] rounded bg-[#E4E4E7]" />
-              <div className="h-3 w-[55%] rounded bg-[#E4E4E7]" />
-              <div className="h-3 w-16 rounded bg-[#E4E4E7]" />
+              <div className="hidden h-3 w-20 rounded bg-stroke sm:block" />
+              <div className="h-3 w-[70%] rounded bg-stroke" />
+              <div className="h-3 w-[55%] rounded bg-stroke" />
+              <div className="h-3 w-16 rounded bg-stroke" />
             </div>
           </div>
           {i < rows - 1 ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}

@@ -52,12 +52,12 @@ const SUPERINVESTOR_GRID =
   "grid min-w-[760px] w-full grid-cols-[minmax(220px,2.4fr)_minmax(88px,0.9fr)_minmax(140px,1.2fr)_minmax(110px,1fr)_minmax(110px,1fr)] items-center gap-x-4 lg:min-w-0";
 
 function ActivityCell({ label }: { label: string | null }) {
-  if (!label) return <span className="text-[#5C5D5F]">—</span>;
+  if (!label) return <span className="text-fg-muted">—</span>;
   const lower = label.toLowerCase();
   const down = lower.startsWith("reduce") || lower.startsWith("sold");
   const up = lower.startsWith("increase") || lower.startsWith("buy") || lower.startsWith("new");
   return (
-    <span className={cn("font-medium", up ? "text-[#16A34A]" : down ? "text-[#DC2626]" : "text-[#5C5D5F]")}>
+    <span className={cn("font-medium", up ? "text-up" : down ? "text-down" : "text-fg-muted")}>
       {label}
     </span>
   );
@@ -77,7 +77,7 @@ function SuperinvestorsTableHeader() {
         <div
           className={cn(
             SUPERINVESTOR_GRID,
-            "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+            "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
           )}
         >
           <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Manager / Fund</div>
@@ -149,13 +149,13 @@ function SuperinvestorRow({
           prefetch={false}
           className={cn(
             SUPERINVESTOR_GRID,
-            "min-h-[60px] no-underline text-[#141414] visited:text-[#141414]",
+            "min-h-[60px] no-underline text-fg visited:text-fg",
             SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
           )}
         >
           <div className={cn("flex min-w-0 items-center gap-3 pr-2", TABLE_START_ALIGNED_PAD_CLASS)}>
             {position.avatarSrc ? (
-              <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#EBEBEC] bg-[#F4F4F5] ring-1 ring-white">
+              <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-stroke-muted bg-surface-muted">
                 <Image
                   src={position.avatarSrc}
                   alt={position.managerName}
@@ -166,19 +166,19 @@ function SuperinvestorRow({
                 />
               </span>
             ) : (
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#EBEBEC] bg-[#F4F4F5] text-[#5C5D5F]">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-stroke-muted bg-surface-muted text-fg-muted">
                 {position.managerName.trim().slice(0, 2).toUpperCase()}
               </span>
             )}
             <div className="min-w-0">
-              <div className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-[3px] decoration-[#141414] group-hover/row:underline">
+              <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-[3px] decoration-fg group-hover/row:underline">
                 {position.managerName}
               </div>
-              <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">{position.fundName}</div>
+              <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{position.fundName}</div>
             </div>
           </div>
 
-          <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#141414]">
+          <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-fg">
             {pct.format(position.weightPct)}%
           </div>
 
@@ -186,13 +186,13 @@ function SuperinvestorRow({
             <ActivityCell label={position.statusLabel} />
           </div>
 
-          <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#141414]">
+          <div className="text-right font-['Inter'] text-[14px] font-normal tabular-nums text-fg">
             {position.shares != null ? formatSharesCompact(position.shares) : "—"}
           </div>
 
           <div
             className={cn(
-              "text-right font-['Inter'] text-[14px] font-normal tabular-nums text-[#141414]",
+              "text-right font-['Inter'] text-[14px] font-normal tabular-nums text-fg",
               TABLE_END_ALIGNED_PAD_CLASS,
             )}
           >

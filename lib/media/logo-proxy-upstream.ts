@@ -13,7 +13,7 @@ export const LOGO_PROXY_CACHE_MAX_AGE_SEC = 30 * 24 * 60 * 60; // 30d
 export const LOGO_PROXY_STALE_WHILE_REVALIDATE_SEC = 7 * 24 * 60 * 60; // 7d
 
 /** Bump when changing cache policy so old Data Cache entries are not reused. */
-const LOGO_PROXY_UNSTABLE_CACHE_KEY = "finsepa-logo-proxy-upstream-v3" as const;
+const LOGO_PROXY_UNSTABLE_CACHE_KEY = "finsepa-logo-proxy-upstream-v4" as const;
 
 function serverLogoDevToken(): string {
   return (
@@ -23,30 +23,39 @@ function serverLogoDevToken(): string {
 
 export type LogoProxyKind = "stock" | "crypto" | "domain";
 
-export function buildLogoDevUpstreamUrl(kind: LogoProxyKind, id: string): string | null {
+/** Logo.dev `theme` — adjusts mark colors for light/dark UI surfaces (`format=png` required). */
+export type LogoDevTheme = "light" | "dark";
+
+export function buildLogoDevUpstreamUrl(
+  kind: LogoProxyKind,
+  id: string,
+  theme: LogoDevTheme = "light",
+): string | null {
   const key = serverLogoDevToken();
   if (!key) return null;
   const tok = encodeURIComponent(key);
+  const themeQ = `&format=png&theme=${theme === "dark" ? "dark" : "light"}`;
   if (kind === "stock") {
     const sym = id.trim().toLowerCase().replace(/\./g, "-");
     if (!sym) return null;
-    return `https://img.logo.dev/ticker/${encodeURIComponent(sym)}?token=${tok}&size=128`;
+    return `https://img.logo.dev/ticker/${encodeURIComponent(sym)}?token=${tok}&size=128${themeQ}`;
   }
   if (kind === "crypto") {
     const c = id.trim().toLowerCase();
     if (!c) return null;
-    return `https://img.logo.dev/crypto/${encodeURIComponent(c)}?token=${tok}&size=128`;
+    return `https://img.logo.dev/crypto/${encodeURIComponent(c)}?token=${tok}&size=128${themeQ}`;
   }
   const host = id.trim().toLowerCase().replace(/^www\./, "");
   if (!host) return null;
-  return `https://img.logo.dev/${encodeURIComponent(host)}?token=${tok}&size=128`;
+  return `https://img.logo.dev/${encodeURIComponent(host)}?token=${tok}&size=128${themeQ}`;
 }
 
 async function fetchLogoUpstreamUncached(
   kind: LogoProxyKind,
   normId: string,
+  theme: LogoDevTheme,
 ): Promise<{ contentType: string; base64: string } | null> {
-  const url = buildLogoDevUpstreamUrl(kind, normId);
+  const url = buildLogoDevUpstreamUrl(kind, normId, theme);
   if (!url) return null;
   if (!tryConsumeLogoDevUpstreamSlot()) return null;
   try {
@@ -63,10 +72,12 @@ async function fetchLogoUpstreamUncached(
 }
 
 /**
- * One Logo.dev fetch per (kind, id) per revalidate window — shared by all users (browser hits `/api/media/logo` only).
+ * One Logo.dev fetch per (kind, id, theme) per revalidate window — shared by all users
+ * (browser hits `/api/media/logo` only).
  */
 export const getCachedLogoFromUpstream = unstable_cache(
-  async (kind: LogoProxyKind, normId: string) => fetchLogoUpstreamUncached(kind, normId),
+  async (kind: LogoProxyKind, normId: string, theme: LogoDevTheme = "light") =>
+    fetchLogoUpstreamUncached(kind, normId, theme),
   [LOGO_PROXY_UNSTABLE_CACHE_KEY],
   { revalidate: LOGO_PROXY_CACHE_MAX_AGE_SEC },
 );

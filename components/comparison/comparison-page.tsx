@@ -7,8 +7,8 @@ import { useSearchParams } from "next/navigation";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { ComparisonEmptyToolbar } from "@/components/comparison/comparison-empty-toolbar";
+import { filterChartingUrlTickersForSession } from "@/lib/charting/charting-allowed-tickers";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
-import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { capComparisonTickers } from "@/lib/comparison/comparison-session";
 import { isComparisonSessionReady, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 import { ChartLoadingIndicator } from "@/components/ui/chart-loading-indicator";
@@ -19,7 +19,7 @@ const ComparisonWorkspace = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+      <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-stroke bg-surface p-4 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
         <ChartLoadingIndicator className="min-h-0 flex-1" />
       </div>
     ),
@@ -51,10 +51,7 @@ export function ComparisonPage({
   const { sessionReady, allowedTickers } = useMemo(() => {
     const raw = searchParams.get("ticker")?.trim() ?? "";
     const parsed = parseChartingTickerList(raw || null);
-    const allowed = parsed.filter((t) => {
-      if (isSingleAssetMode()) return isSupportedAsset(t);
-      return chartingAllowSet.has(t.trim().toUpperCase());
-    });
+    const allowed = filterChartingUrlTickersForSession(parsed, chartingAllowSet);
     const capped = capComparisonTickers(allowed);
     return { sessionReady: isComparisonSessionReady(capped), allowedTickers: capped };
   }, [searchParams, searchKey, chartingAllowSet]);

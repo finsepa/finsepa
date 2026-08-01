@@ -100,7 +100,7 @@ export function PortfolioPageTabs({
       active={active}
       onChange={onChange}
       ariaLabel="Portfolio"
-      className="max-md:sticky max-md:top-[var(--mobile-topbar-offset)] max-md:z-40 max-md:-mx-4 max-md:mb-2 max-md:bg-[#FAFAFA] max-md:px-4 max-md:pt-1"
+      className="max-md:sticky max-md:top-[var(--mobile-topbar-offset)] max-md:z-40 max-md:-mx-4 max-md:mb-2 max-md:bg-canvas max-md:px-4 max-md:pt-1"
     />
   );
 }

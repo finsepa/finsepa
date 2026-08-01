@@ -43,7 +43,7 @@ function MetricCheckbox({ checked }: { checked: boolean }) {
     <span
       className={cn(
         "flex size-5 shrink-0 items-center justify-center rounded border",
-        checked ? "border-[#2563EB] bg-[#2563EB] text-white" : "border-[#D4D4D8] bg-white",
+        checked ? "border-accent bg-accent text-white" : "border-stroke bg-surface",
       )}
       aria-hidden
     >
@@ -125,7 +125,7 @@ export function ScreenerCompaniesKeyStatToolbar({
             disabled && "pointer-events-none opacity-50",
           )}
         >
-          <SlidersHorizontal className="h-5 w-5 shrink-0 text-[#141414]" aria-hidden />
+          <SlidersHorizontal className="h-5 w-5 shrink-0 text-icon" aria-hidden />
           Customize
         </button>
 
@@ -140,10 +140,10 @@ export function ScreenerCompaniesKeyStatToolbar({
                 dropdownMenuSurfaceClassName("flex max-h-[min(70vh,480px)] flex-col overflow-hidden p-0"),
               )}
             >
-              <div className="shrink-0 border-b border-[#E4E4E7] px-2 py-2">
+              <div className="shrink-0 border-b border-dropdown-divider px-2 py-2">
                 <div className="relative">
                   <Search
-                    className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#5C5D5F]"
+                    className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-fg-muted"
                     aria-hidden
                   />
                   <input
@@ -152,14 +152,14 @@ export function ScreenerCompaniesKeyStatToolbar({
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search metrics…"
-                    className="h-9 w-full rounded-lg border border-[#E4E4E7] bg-[#FAFAFA] py-1.5 pl-9 pr-3 text-[13px] leading-5 text-[#141414] placeholder:text-[#5C5D5F] focus:border-[#141414]/20 focus:outline-none focus:ring-2 focus:ring-[#141414]/10"
+                    className="h-9 w-full rounded-lg border border-stroke bg-canvas py-1.5 pl-9 pr-3 text-[13px] leading-5 text-fg placeholder:text-fg-muted focus:border-fg/20 focus:outline-none focus:ring-2 focus:ring-fg/10"
                   />
                 </div>
               </div>
 
               <DropdownScrollArea className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-1">
                 {filteredMetrics.length === 0 ? (
-                  <div className="px-3 py-6 text-center text-[13px] text-[#5C5D5F]">No metrics match.</div>
+                  <div className="px-3 py-6 text-center text-[13px] text-fg-muted">No metrics match.</div>
                 ) : (
                   filteredMetrics.map(({ metric }) => {
                     const builtin = isScreenerBuiltinTableMetricId(metric.id);
@@ -175,11 +175,11 @@ export function ScreenerCompaniesKeyStatToolbar({
                         onClick={() => onPickMetric(metric.id)}
                         className={cn(
                           "mb-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors last:mb-0",
-                          builtin ? "cursor-default opacity-80" : "hover:bg-[#F4F4F5]",
+                          builtin ? "cursor-default opacity-80" : "hover:bg-surface-muted",
                         )}
                       >
                         <MetricCheckbox checked={checked} />
-                        <span className="min-w-0 flex-1 text-[13px] leading-5 text-[#141414]">
+                        <span className="min-w-0 flex-1 text-[13px] leading-5 text-fg">
                           {metric.label}
                         </span>
                       </button>

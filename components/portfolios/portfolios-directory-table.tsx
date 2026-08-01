@@ -30,7 +30,7 @@ const mobileColLayout = "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(4.7
 const numericHeaderClass = cn("min-w-0 text-right", TABLE_END_ALIGNED_PAD_CLASS);
 
 const numericCellClass = cn(
-  "min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+  "min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
   TABLE_END_ALIGNED_PAD_CLASS,
 );
 
@@ -61,9 +61,9 @@ function fmtPct(n: number | null): string {
 }
 
 function athReturnClass(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "text-[#141414]";
-  if (Math.abs(n) < 0.0005) return "text-[#141414]";
-  return n >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
+  if (n == null || !Number.isFinite(n)) return "text-fg";
+  if (Math.abs(n) < 0.0005) return "text-fg";
+  return n >= 0 ? "text-up" : "text-down";
 }
 
 function initialsFromOwnerName(name: string): string {
@@ -75,7 +75,7 @@ function initialsFromOwnerName(name: string): string {
 
 function TopFiveHoldingsLogos({ symbols }: { symbols: string[] }) {
   if (symbols.length === 0) {
-    return <span className="text-[14px] font-normal leading-5 text-[#A1A1AA]">—</span>;
+    return <span className="text-[14px] font-normal leading-5 text-fg-subtle">—</span>;
   }
 
   return (
@@ -109,7 +109,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
           <div
             className={cn(
               mobileColLayout,
-              "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:hidden",
+              "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted sm:hidden",
             )}
           >
             <div className={startCellClass}>Investor</div>
@@ -118,7 +118,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
           <div
             className={cn(
               colLayout,
-              "hidden min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:grid",
+              "hidden min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted sm:grid",
             )}
           >
             <div className={startCellClass}>Investor</div>
@@ -158,7 +158,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                   href={`/portfolios/${listing.id}`}
                   prefetch={false}
                   className={cn(
-                    "flex min-w-0 items-center gap-3 text-[#141414] no-underline visited:text-[#141414]",
+                    "flex min-w-0 items-center gap-3 text-fg no-underline visited:text-fg",
                     TABLE_START_ALIGNED_PAD_CLASS,
                   )}
                 >
@@ -167,10 +167,10 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                     <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 group-hover/row:underline">
                       {listing.name}
                     </div>
-                    <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                    <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
                       <PortfolioOwnerName name={ownerName} />
                     </div>
-                    <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
+                    <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-fg-muted">
                       {value != null ? formatUsdCompact(value) : "—"}
                       {holdingCount != null ? ` · ${Math.round(holdingCount)} holdings` : null}
                     </div>
@@ -192,7 +192,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                 prefetch={false}
                 className={cn(
                   colLayout,
-                  "hidden h-[60px] max-h-[60px] items-center text-[#141414] no-underline visited:text-[#141414] sm:grid",
+                  "hidden h-[60px] max-h-[60px] items-center text-fg no-underline visited:text-fg sm:grid",
                   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                 )}
                 aria-label={`View portfolio ${listing.name} by ${ownerName}`}
@@ -203,7 +203,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                     <div className="truncate text-[14px] font-semibold leading-5 underline-offset-2 group-hover/row:underline">
                       {listing.name}
                     </div>
-                    <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                    <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
                       <PortfolioOwnerName name={ownerName} />
                     </div>
                   </div>

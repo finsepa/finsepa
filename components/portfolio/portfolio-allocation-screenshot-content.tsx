@@ -35,11 +35,11 @@ function AllocationLegendColumn({
             style={{ backgroundColor: r.color }}
             aria-hidden
           />
-          <span className="min-w-0 flex-1 truncate text-left text-[14px] leading-5 text-[#141414]">
+          <span className="min-w-0 flex-1 truncate text-left text-[14px] leading-5 text-fg">
             {r.name}
           </span>
           {showValues ? (
-            <span className="shrink-0 text-right tabular-nums text-[14px] font-medium leading-5 text-[#141414]">
+            <span className="shrink-0 text-right tabular-nums text-[14px] font-medium leading-5 text-fg">
               {pct1.format(r.weightPct)}%
             </span>
           ) : null}
@@ -90,7 +90,7 @@ export function PortfolioAllocationScreenshotContent({
         avatarInitials={avatarInitials}
         compact
       />
-      <div className="mt-5 box-border flex min-w-0 items-center gap-5 rounded-[12px] border border-[#E4E4E7] bg-white px-5 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+      <div className="mt-5 box-border flex min-w-0 items-center gap-5 rounded-[12px] border border-stroke bg-surface px-5 py-4 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
         <AllocationDonutChart
           rows={rows}
           center={

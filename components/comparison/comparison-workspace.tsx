@@ -56,7 +56,7 @@ import {
   fetchComparisonTickerSlices,
   type ComparisonTickerSlice,
 } from "@/lib/comparison/fetch-comparison-slices";
-import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
+import { filterChartingUrlTickersForSession } from "@/lib/charting/charting-allowed-tickers";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
@@ -102,8 +102,8 @@ const RETURN_WINDOWS = [
 ] as const;
 
 function perfCellClass(v: number | null): string {
-  if (v == null || !Number.isFinite(v)) return "text-[#5C5D5F]";
-  return v >= 0 ? "text-[#16A34A]" : "text-[#DC2626]";
+  if (v == null || !Number.isFinite(v)) return "text-fg-muted";
+  return v >= 0 ? "text-up" : "text-down";
 }
 
 function formatPerfCell(v: number | null): string {
@@ -160,20 +160,12 @@ function ComparisonCompanyBlock({
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={ticker} />
         <div className="min-w-0">
-          <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">{displayName}</div>
-          <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{ticker}</div>
+          <div className="truncate text-[14px] font-semibold leading-5 text-fg">{displayName}</div>
+          <div className="text-[12px] font-normal leading-4 text-fg-muted">{ticker}</div>
         </div>
       </div>
     </div>
   );
-}
-
-function isComparisonTickerAllowed(sym: string, chartingAllowSet: Set<string>): boolean {
-  const t = sym.trim().toUpperCase();
-  if (!t) return false;
-  if (isSingleAssetMode()) return isSupportedAsset(t);
-  if (chartingAllowSet.size === 0) return true;
-  return chartingAllowSet.has(t);
 }
 
 export type ComparisonWorkspaceUrlMode = "standalone" | "stock-tab";
@@ -185,6 +177,11 @@ type Props = {
   /** Stock peers tab: symbol cannot be removed; reset keeps this symbol only. */
   anchorTicker?: string;
   urlMode?: ComparisonWorkspaceUrlMode;
+  /**
+   * Stock tab keep-alive: only the visible tab should own the company rail.
+   * Defaults to true (standalone Comparison / first paint).
+   */
+  isActive?: boolean;
 };
 
 export function ComparisonWorkspace({
@@ -193,6 +190,7 @@ export function ComparisonWorkspace({
   allowedChartingTickers,
   anchorTicker,
   urlMode = "standalone",
+  isActive = true,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -210,7 +208,7 @@ export function ComparisonWorkspace({
       ? (searchParams.get("compare")?.trim() ?? "")
       : (searchParams.get("ticker")?.trim() ?? "");
     const parsed = parseChartingTickerList(raw || null);
-    return parsed.filter((t) => isComparisonTickerAllowed(t, chartingAllowSet));
+    return filterChartingUrlTickersForSession(parsed, chartingAllowSet);
   }, [searchParams, chartingAllowSet, isStockTab]);
 
   const displayTickers = useMemo(() => {
@@ -399,7 +397,8 @@ export function ComparisonWorkspace({
 
   const companyPickerControlsRef = useRef<CompanyPickerOpenControls | null>(null);
   const { useRailPickers, companyAddAnchorRef, metricAddAnchorRef } = useChartingRailPickerAnchors();
-  const useCompanyRail = useRailPickers;
+  // Hidden keep-alive tabs must not steal the shared rail or flash chip vs rail chrome.
+  const useCompanyRail = useRailPickers && isActive;
 
   const openCompanyPicker = useCallback(() => {
     companyPickerControlsRef.current?.open();
@@ -655,7 +654,7 @@ export function ComparisonWorkspace({
         >
           <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, "min-w-[900px]")}>
             <div
-              className="grid min-h-[44px] w-full items-center gap-x-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]"
+              className="grid min-h-[44px] w-full items-center gap-x-2 py-0 text-[14px] font-medium leading-5 text-fg-muted"
               style={{ gridTemplateColumns: fundamentalsGrid }}
             >
               <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
@@ -685,7 +684,7 @@ export function ComparisonWorkspace({
                   prefetch={false}
                   aria-label={`Open ${r.meta?.fullName?.trim() || r.t} (${r.t})`}
                   className={cn(
-                    "grid h-[60px] max-h-[60px] w-full cursor-pointer items-center gap-x-2 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#141414]/15",
+                    "grid h-[60px] max-h-[60px] w-full cursor-pointer items-center gap-x-2 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg/15",
                     SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                   )}
                   style={{ gridTemplateColumns: fundamentalsGrid }}
@@ -737,7 +736,7 @@ export function ComparisonWorkspace({
         >
           <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, "min-w-[720px]")}>
             <div
-              className="grid min-h-[44px] w-full items-center gap-x-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]"
+              className="grid min-h-[44px] w-full items-center gap-x-2 py-0 text-[14px] font-medium leading-5 text-fg-muted"
               style={{ gridTemplateColumns: performanceGrid }}
             >
               <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
@@ -766,7 +765,7 @@ export function ComparisonWorkspace({
                   prefetch={false}
                   aria-label={`Open ${r.meta?.fullName?.trim() || r.t} (${r.t})`}
                   className={cn(
-                    "grid h-[60px] max-h-[60px] w-full cursor-pointer items-center gap-x-2 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#141414]/15",
+                    "grid h-[60px] max-h-[60px] w-full cursor-pointer items-center gap-x-2 no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg/15",
                     SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                   )}
                   style={{ gridTemplateColumns: performanceGrid }}

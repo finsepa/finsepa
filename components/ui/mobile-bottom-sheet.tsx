@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 export const MOBILE_BOTTOM_SHEET_ENTER_CLASS = "mobile-bottom-nav-sheet-enter";
 
 export const MOBILE_BOTTOM_SHEET_PANEL_CLASS =
-  "flex w-full max-h-[min(70vh,560px)] flex-col overflow-y-auto overscroll-contain bg-white shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.10),0px_4px_6px_0px_rgba(10,10,10,0.04)]";
+  "flex w-full max-h-[min(70vh,560px)] flex-col overflow-y-auto overscroll-contain bg-surface shadow-[0px_10px_16px_-3px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-10)),0px_4px_6px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]";
 
 /** 8px horizontal + bottom inset on the overlay so the dimmed backdrop shows around the modal sheet. */
 export const MOBILE_MODAL_SHEET_OVERLAY_BACKDROP_CLASS = "!bg-black/20 !backdrop-blur-none";
@@ -97,7 +97,7 @@ export function MobileBottomSheet({
           <h2
             id={titleId}
             className={cn(
-              "shrink-0 px-4 text-center text-base font-semibold leading-6 text-[#141414]",
+              "shrink-0 px-4 text-center text-base font-semibold leading-6 text-fg",
               showDragHandle ? "pb-2 pt-0" : "pb-2 pt-4",
             )}
           >

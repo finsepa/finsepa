@@ -7,17 +7,17 @@ import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 
 function StatRow({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-[#E4E4E7] py-1.5 last:border-0">
-      <span className="min-w-0 shrink text-[14px] leading-5 text-[#141414]">{label}</span>
-      <span className="shrink-0 text-right text-[14px] font-medium leading-5 tabular-nums text-[#141414]">{value}</span>
+    <div className="flex items-center justify-between gap-3 border-b border-stroke py-1.5 last:border-0">
+      <span className="min-w-0 shrink text-[14px] leading-5 text-fg">{label}</span>
+      <span className="shrink-0 text-right text-[14px] font-medium leading-5 tabular-nums text-fg">{value}</span>
     </div>
   );
 }
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-[#E4E4E7] bg-white p-4">
-      <h3 className="mb-2 text-[14px] font-semibold leading-5 text-[#141414]">{title}</h3>
+    <div className="rounded-xl border border-stroke bg-surface p-4">
+      <h3 className="mb-2 text-[14px] font-semibold leading-5 text-fg">{title}</h3>
       {children}
     </div>
   );
@@ -53,7 +53,7 @@ function CryptoKeyStatsInner({ row }: { row: CryptoAssetRow }) {
 
   return (
     <div>
-      <h2 className="mb-4 text-[18px] font-semibold leading-7 text-[#141414]">Key Stats</h2>
+      <h2 className="mb-4 text-[18px] font-semibold leading-7 text-fg">Key Stats</h2>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         <Card title="General">
           <StatRow label="Market Cap" value={usdFigure(row.marketCap || "—")} />

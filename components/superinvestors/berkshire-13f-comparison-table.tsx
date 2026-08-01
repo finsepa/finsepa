@@ -19,7 +19,16 @@ import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-eq
 import { formatSharesCompact, formatUsdCompactSigDigits } from "@/lib/market/key-stats-basic-format";
 import { SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
 import {
-  SCREENER_TABLE_BODY_DIVIDE_CLASS,
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+  ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { ScreenerPagination } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
@@ -30,34 +39,31 @@ const pct = new Intl.NumberFormat("en-US", {
 });
 
 /** Match screener `ChangeCell`: green / red for up / down. */
-const cellUp = "text-[#16A34A]";
-const cellDown = "text-[#DC2626]";
+const cellUp = "text-up";
+const cellDown = "text-down";
 
 /** Header: no extra horizontal padding — row lives inside `px-4` shell so label lines up with logos. */
 const thCompany =
-  "whitespace-nowrap py-0 text-left align-middle text-[14px] font-medium leading-5 text-[#5C5D5F]";
+  "whitespace-nowrap py-0 text-left align-middle text-[14px] font-medium leading-5 text-fg-muted";
 const thRight =
-  "whitespace-nowrap py-0 text-right align-middle text-[14px] font-medium leading-5 text-[#5C5D5F]";
+  "whitespace-nowrap py-0 text-right align-middle text-[14px] font-medium leading-5 text-fg-muted";
 const tdCompany = "min-w-0 py-1 text-left text-[14px] leading-5 whitespace-normal";
 const tdNum =
-  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
-
-const HOLDINGS_TABLE_HEADER_CLASS =
-  "sticky top-0 z-20 border-b border-solid border-[#E4E4E7] bg-white";
+  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg";
 
 /** Company | % of portfolio | Recent activity | Shares | Value. */
 const rowGridFive =
   "grid w-full min-w-[720px] grid-cols-[minmax(180px,2.05fr)_minmax(72px,0.55fr)_minmax(120px,1.05fr)_minmax(96px,0.9fr)_minmax(96px,0.9fr)] gap-x-4";
 
 /** Desktop header row — same column grid as data rows. */
-const headerGrid = cn("h-11 min-h-[44px] items-center bg-white", rowGridFive);
+const headerGrid = cn("h-11 min-h-[44px] items-center bg-surface", rowGridFive);
 
 /** Mobile: Company | % of Portfolio. */
 const mobileRowGrid =
   "grid grid-cols-[minmax(0,1fr)_minmax(5.5rem,auto)] gap-x-3 items-center";
 
 const HOLDING_COMPANY_NAME_CLASS =
-  "line-clamp-1 text-[14px] font-semibold leading-5 text-[#141414] underline-offset-[3px] decoration-[#141414] group-hover/company:underline sm:line-clamp-2";
+  "line-clamp-1 text-[14px] font-semibold leading-5 text-fg underline-offset-[3px] decoration-fg group-hover/company:underline sm:line-clamp-2";
 
 const rowShellBase = "min-h-[60px] items-center transition-colors duration-75";
 
@@ -105,14 +111,14 @@ function HoldingCompanyCell({
         <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym ?? undefined} size="md" />
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className={HOLDING_COMPANY_NAME_CLASS}>{displayName}</span>
-          <span className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{sym ?? "—"}</span>
+          <span className="text-[12px] font-normal leading-4 text-fg-muted">{sym ?? "—"}</span>
         </div>
       </Link>
     </div>
   );
 }
 
-const holdingActivityMutedClass = "text-[14px] font-medium leading-4 tabular-nums text-[#5C5D5F]";
+const holdingActivityMutedClass = "text-[14px] font-medium leading-4 tabular-nums text-fg-muted";
 
 function RecentActivityColumnCell({ activity }: { activity: HoldingRecentActivityDisplay | null }) {
   if (!activity) {
@@ -143,7 +149,7 @@ function MobilePortfolioCell({
 }) {
   return (
     <div className="flex flex-col items-end justify-center gap-0.5 text-right">
-      <span className="text-[14px] font-medium leading-5 tabular-nums text-[#141414]">
+      <span className="text-[14px] font-medium leading-5 tabular-nums text-fg">
         {pct.format(weight)}%
       </span>
       {activity ?
@@ -307,79 +313,104 @@ export function Berkshire13fComparisonTable({
   }, []);
 
   return (
-    <div className="min-w-0 -mx-4 sm:mx-0">
+    <div className="min-w-0">
       {/* ── Mobile layout ── */}
       <div className="sm:hidden">
-        <div className="bg-white">
-          <div
-            className={cn(
-              mobileRowGrid,
-              "h-11 min-h-[44px] bg-white px-4",
-              HOLDINGS_TABLE_HEADER_CLASS,
-            )}
-          >
-            <div className={thCompany}>Company</div>
-            <div className={thRight}>% of Portfolio</div>
-          </div>
-
-          <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
-          {pagedRows.map((r, i) => {
-            const displayName = issuerDisplayTitle(r.companyName);
-            const key = rowResolveKey(r, displayName);
-            const mergedTicker = r.ticker?.trim() ? r.ticker : resolved[key] ?? null;
-            const globalIndex = (safePage - 1) * pageSize + i;
-            const rowKey = `${r.cusip ?? r.companyName}-${globalIndex}-m`;
-            const expanded = expandedRowKey === rowKey;
-            return (
-              <Fragment key={rowKey}>
-                <div
-                  className={cn(
-                    mobileRowGrid,
-                    rowShellBase,
-                    "items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50",
-                  )}
-                >
-                  <div className={tdCompany}>
-                    <HoldingCompanyCell
-                      companyName={r.companyName}
-                      ticker={mergedTicker}
-                      expanded={expanded}
-                      onToggleExpand={() => toggleExpanded(rowKey)}
-                    />
-                  </div>
-                  <MobilePortfolioCell
-                    weight={r.weight}
-                    activity={resolveHoldingRecentActivity(r, hasPriorFiling)}
-                  />
+        <ScreenerTableScroll mobileScroll minWidthClassName="min-w-0">
+          <div className="bg-surface">
+            <div
+              className={cn(
+                SCREENER_TABLE_HEADER_STICKY_CLASS,
+                SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+                "md:border-b-0",
+              )}
+            >
+              <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                <div className={cn(mobileRowGrid, "h-11 min-h-[44px] items-center bg-surface")}>
+                  <div className={cn(thCompany, TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
+                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>% of Portfolio</div>
                 </div>
-                {expanded ?
-                  <SuperinvestorHoldingTransactionsPanel
-                    row={r}
-                    resolvedTicker={mergedTicker}
-                    allTransactions={allTransactions}
-                    onViewAllTransactions={onViewAllTransactions}
-                  />
-                : null}
-              </Fragment>
-            );
-          })}
+              </div>
+              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+            </div>
+
+            {pagedRows.map((r, i) => {
+              const displayName = issuerDisplayTitle(r.companyName);
+              const key = rowResolveKey(r, displayName);
+              const mergedTicker = r.ticker?.trim() ? r.ticker : resolved[key] ?? null;
+              const globalIndex = (safePage - 1) * pageSize + i;
+              const rowKey = `${r.cusip ?? r.companyName}-${globalIndex}-m`;
+              const expanded = expandedRowKey === rowKey;
+              return (
+                <Fragment key={rowKey}>
+                  <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                    <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                      <div
+                        className={cn(
+                          mobileRowGrid,
+                          rowShellBase,
+                          "items-center bg-surface transition-colors duration-75",
+                          SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                        )}
+                      >
+                        <div className={cn(tdCompany, TABLE_START_ALIGNED_PAD_CLASS)}>
+                          <HoldingCompanyCell
+                            companyName={r.companyName}
+                            ticker={mergedTicker}
+                            expanded={expanded}
+                            onToggleExpand={() => toggleExpanded(rowKey)}
+                          />
+                        </div>
+                        <div className={TABLE_END_ALIGNED_PAD_CLASS}>
+                          <MobilePortfolioCell
+                            weight={r.weight}
+                            activity={resolveHoldingRecentActivity(r, hasPriorFiling)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {!expanded ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
+                  </div>
+                  {expanded ? (
+                    <SuperinvestorHoldingTransactionsPanel
+                      row={r}
+                      resolvedTicker={mergedTicker}
+                      allTransactions={allTransactions}
+                      onViewAllTransactions={onViewAllTransactions}
+                    />
+                  ) : null}
+                </Fragment>
+              );
+            })}
           </div>
-        </div>
+        </ScreenerTableScroll>
       </div>
 
       {/* ── Desktop layout ── */}
-      <div className="hidden overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:block sm:overflow-visible sm:pb-0">
-        <div className="min-w-[720px] sm:min-w-0">
-          <div className="bg-white">
-            <div className={cn(headerGrid, "px-4", HOLDINGS_TABLE_HEADER_CLASS)}>
-              <div className={thCompany}>Company</div>
-              <div className={thRight}>% of Portfolio</div>
-              <div className={thRight}>Recent Activity</div>
-              <div className={thRight}>Shares</div>
-              <div className={thRight}>Value</div>
+      <div className="hidden sm:block">
+        <ScreenerTableScroll className="sm:pb-6">
+          <div className="bg-surface">
+            <div
+              className={cn(
+                SCREENER_TABLE_HEADER_STICKY_CLASS,
+                SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+                "md:border-b-0",
+              )}
+            >
+              <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                <div className={cn(headerGrid, "text-[14px] font-medium leading-5 text-fg-muted")}>
+                  <div className={cn(thCompany, TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
+                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>% of Portfolio</div>
+                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>Recent Activity</div>
+                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>Shares</div>
+                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>Value</div>
+                </div>
+              </div>
+              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
             </div>
 
-            <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
             {pagedRows.map((r, i) => {
               const displayName = issuerDisplayTitle(r.companyName);
               const key = rowResolveKey(r, displayName);
@@ -389,44 +420,55 @@ export function Berkshire13fComparisonTable({
               const expanded = expandedRowKey === rowKey;
               return (
                 <Fragment key={rowKey}>
-                  <div
-                    className={cn(
-                      rowGridFive,
-                      rowShellBase,
-                      "items-center bg-white px-4 transition-colors duration-75 hover:bg-neutral-50",
-                    )}
-                  >
-                    <div className={tdCompany}>
-                      <HoldingCompanyCell
-                        companyName={r.companyName}
-                        ticker={mergedTicker}
-                        expanded={expanded}
-                        onToggleExpand={() => toggleExpanded(rowKey)}
-                      />
+                  <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                    <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                      <div
+                        className={cn(
+                          rowGridFive,
+                          rowShellBase,
+                          "items-center bg-surface text-[14px] font-normal leading-5",
+                          SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                        )}
+                      >
+                        <div className={cn(tdCompany, TABLE_START_ALIGNED_PAD_CLASS)}>
+                          <HoldingCompanyCell
+                            companyName={r.companyName}
+                            ticker={mergedTicker}
+                            expanded={expanded}
+                            onToggleExpand={() => toggleExpanded(rowKey)}
+                          />
+                        </div>
+                        <div className={cn(tdNum, "font-medium", TABLE_END_ALIGNED_PAD_CLASS)}>
+                          {pct.format(r.weight)}%
+                        </div>
+                        <div className={cn(tdNum, "font-medium", TABLE_END_ALIGNED_PAD_CLASS)}>
+                          <RecentActivityColumnCell
+                            activity={resolveHoldingRecentActivity(r, hasPriorFiling)}
+                          />
+                        </div>
+                        <div className={cn(tdNum, TABLE_END_ALIGNED_PAD_CLASS)}>
+                          {r.shares != null ? formatSharesCompact(r.shares) : "—"}
+                        </div>
+                        <div className={cn(tdNum, TABLE_END_ALIGNED_PAD_CLASS)}>
+                          {formatUsdCompactSigDigits(r.valueUsd, 4)}
+                        </div>
+                      </div>
                     </div>
-                    <div className={cn(tdNum, "font-medium")}>{pct.format(r.weight)}%</div>
-                    <div className={cn(tdNum, "font-medium")}>
-                      <RecentActivityColumnCell
-                        activity={resolveHoldingRecentActivity(r, hasPriorFiling)}
-                      />
-                    </div>
-                    <div className={tdNum}>{r.shares != null ? formatSharesCompact(r.shares) : "—"}</div>
-                    <div className={tdNum}>{formatUsdCompactSigDigits(r.valueUsd, 4)}</div>
+                    {!expanded ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
                   </div>
-                  {expanded ?
+                  {expanded ? (
                     <SuperinvestorHoldingTransactionsPanel
                       row={r}
                       resolvedTicker={mergedTicker}
                       allTransactions={allTransactions}
                       onViewAllTransactions={onViewAllTransactions}
                     />
-                  : null}
+                  ) : null}
                 </Fragment>
               );
             })}
-            </div>
           </div>
-        </div>
+        </ScreenerTableScroll>
       </div>
 
       <ScreenerPagination

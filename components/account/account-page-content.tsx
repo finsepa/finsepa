@@ -29,6 +29,23 @@ import { CreditCard } from "@/lib/icons";
 import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
 import { AccountPasswordPlaceholder } from "@/components/account/account-password-placeholder";
 import { ChangePasswordModal } from "@/components/account/change-password-modal";
+import {
+  accentFillButtonClassName,
+  invertedFillButtonClassName,
+  secondaryOutlineButtonClassName,
+  textInputFieldClassName,
+} from "@/components/design-system";
+import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+  SCREENER_TABLE_OUTER_BORDER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+} from "@/components/screener/screener-table-scroll";
+import { cn } from "@/lib/utils";
 
 export type AccountPageInitial = {
   email: string | null;
@@ -39,20 +56,29 @@ export type AccountPageInitial = {
   canChangePassword: boolean;
 };
 
-const fieldClass =
-  "h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-[#F9FAFB] px-3 text-sm text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none transition-all duration-100 placeholder:text-[#A1A1AA] focus:border-[#D4D4D8] focus:bg-white focus:shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06),0_0_0_4px_rgba(20,20,20,0.06)]";
+/** Same field chrome as modal text inputs (`ClearableInput` / `--fs-field*`). */
+const fieldClass = cn("w-full rounded-[10px] px-3 text-sm", textInputFieldClassName);
 
-const readOnlyFieldClass =
-  "h-10 w-full cursor-default rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] px-3 text-sm text-[#5C5D5F] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] outline-none";
-
+/** Non-editable account fields (email / password mask) — muted + not-allowed cursor. */
+const readOnlyFieldClass = cn(
+  fieldClass,
+  "cursor-not-allowed opacity-60 text-fg-muted",
+  "hover:outline-field-stroke focus:shadow-none focus:ring-0 dark:hover:outline-field-stroke dark:focus:ring-0",
+);
 type AccountTabId = "profile" | "billing";
 
-const billingHistoryColLayout = "grid-cols-[120px_minmax(0,1fr)_auto] gap-x-2";
+const billingHistoryColLayout =
+  "grid w-full min-w-0 grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.4fr)] items-center gap-x-2";
+
+const paymentHistoryTableChromeClass = cn(
+  SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+  SCREENER_TABLE_OUTER_BORDER_CLASS,
+);
 const PAYMENT_HISTORY_PAGE_SIZE = 10;
 
 function FieldLabel({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
   return (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-[#141414]">
+    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-fg">
       {children}
     </label>
   );
@@ -378,15 +404,15 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
       <div className="mx-auto w-full max-w-3xl">
-        <div className="border-b border-[#E4E4E7]">
+        <div className="border-b border-stroke">
           <div className="flex items-center gap-6">
             <button
               type="button"
               onClick={() => setActiveTab("profile")}
               className={`inline-block border-b-2 pb-3 text-sm font-semibold transition-colors ${
                 activeTab === "profile"
-                  ? "border-[#141414] text-[#141414]"
-                  : "border-transparent text-[#5C5D5F] hover:text-[#141414]"
+                  ? "border-fg text-fg"
+                  : "border-transparent text-fg-muted hover:text-fg"
               }`}
             >
               Profile
@@ -396,8 +422,8 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
               onClick={() => setActiveTab("billing")}
               className={`inline-block border-b-2 pb-3 text-sm font-semibold transition-colors ${
                 activeTab === "billing"
-                  ? "border-[#141414] text-[#141414]"
-                  : "border-transparent text-[#5C5D5F] hover:text-[#141414]"
+                  ? "border-fg text-fg"
+                  : "border-transparent text-fg-muted hover:text-fg"
               }`}
             >
               Billing
@@ -427,14 +453,14 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="h-10 rounded-[10px] bg-[#141414] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#18181B]"
+                    className={invertedFillButtonClassName}
                   >
                     Upload Image
                   </button>
                   <button
                     type="button"
                     onClick={onRemoveAvatar}
-                    className="h-10 rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5]"
+                    className={secondaryOutlineButtonClassName}
                   >
                     Remove
                   </button>
@@ -483,7 +509,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     <button
                       type="button"
                       onClick={() => setChangePasswordModalOpen(true)}
-                      className="inline-flex h-10 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:w-auto"
+                      className={cn(secondaryOutlineButtonClassName, "shrink-0 sm:w-auto")}
                     >
                       Change Password
                     </button>
@@ -492,12 +518,15 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
               </div>
             </section>
 
-            <div className="flex flex-col-reverse gap-3 border-t border-[#E4E4E7] pt-8 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col-reverse gap-3 border-t border-stroke pt-8 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
                 disabled={signingOut}
                 onClick={() => void handleSignOut()}
-                className="h-10 w-full rounded-[10px] border border-[#E4E4E7] bg-white px-4 text-sm font-semibold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                className={cn(
+                  secondaryOutlineButtonClassName,
+                  "w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto",
+                )}
               >
                 {signingOut ? "Logging out…" : "Log Out"}
               </button>
@@ -505,20 +534,20 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                 type="button"
                 disabled={saving}
                 onClick={() => void handleSave()}
-                className="h-10 w-full rounded-[10px] bg-[#2563EB] px-6 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                className={cn(accentFillButtonClassName, "w-full sm:w-auto")}
               >
                 {saving ? "Saving…" : "Save changes"}
               </button>
             </div>
           </div>
         ) : (
-          <div className="mt-8 space-y-8">
+          <div className="mt-5 space-y-5">
             {(billingAccessState === "canceled" ||
               billingSummary.cancelAtPeriodEnd ||
               subscriptionMeta === "Cancellation scheduled" ||
               subscriptionMeta === "Subscription ending") &&
             accessEndsAtLabel ? (
-              <div className="rounded-xl border border-[#FDBA74] bg-[#FFF7ED] px-4 py-3 text-[#9A3412] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+              <div className="rounded-xl border border-[#FDBA74] bg-[#FFF7ED] px-4 py-3 text-[#9A3412] shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
                 <div className="text-[14px] font-semibold leading-5">Pro subscription canceled</div>
                 <div className="mt-1 text-[13px] leading-5">
                   You&apos;ve canceled your Pro subscription. Your access to Finsepa will be lost after{" "}
@@ -528,7 +557,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
             ) : null}
 
             {billingAccessState === "paused" ? (
-              <div className="rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3 text-[#1E40AF] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+              <div className="rounded-xl border border-[#BFDBFE] bg-[#EFF6FF] px-4 py-3 text-[#1E40AF] shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
                 <div className="text-[14px] font-semibold leading-5">Billing paused in Stripe</div>
                 <div className="mt-1 text-[13px] leading-5">
                   Invoice collection is paused on your subscription, so no payment will be taken until billing resumes.
@@ -545,18 +574,18 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
             ) : null}
 
             {billingAccessState === "expired" ? (
-              <section className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-                <div className="rounded-xl bg-[#F4F4F5] px-6 py-10 text-center">
-                  <p className="text-[12px] font-medium leading-5 text-[#5C5D5F]">Join early access</p>
-                  <div className="mx-auto mt-6 w-full max-w-[360px] rounded-2xl border border-[#E4E4E7] bg-white p-6 shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.08),0px_4px_6px_0px_rgba(10,10,10,0.03)]">
-                    <div className="text-[18px] font-semibold leading-6 text-[#141414]">Finsepa Pro</div>
-                    <div className="mt-1 text-[13px] leading-5 text-[#5C5D5F]">
+              <section className="rounded-xl border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
+                <div className="rounded-xl bg-surface-muted px-6 py-10 text-center">
+                  <p className="text-[12px] font-medium leading-5 text-fg-muted">Join early access</p>
+                  <div className="mx-auto mt-6 w-full max-w-[360px] rounded-2xl border border-stroke bg-surface p-6 shadow-[0px_10px_16px_-3px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-08)),0px_4px_6px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-03))]">
+                    <div className="text-[18px] font-semibold leading-6 text-fg">Finsepa Pro</div>
+                    <div className="mt-1 text-[13px] leading-5 text-fg-muted">
                       Your Pro access has ended. Upgrade to continue using Finsepa.
                     </div>
                     <button
                       type="button"
                       onClick={() => setUpgradeModalOpen(true)}
-                      className="mt-6 h-10 w-full rounded-[10px] bg-[#141414] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#18181B]"
+                      className="mt-6 h-10 w-full rounded-[10px] bg-fg px-6 text-sm font-semibold text-surface transition-colors hover:bg-[#18181B]"
                     >
                       Buy Pro
                     </button>
@@ -567,27 +596,27 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
             <section className="grid gap-4 sm:grid-cols-2">
               {showBillingSkeleton ? (
                 <>
-                  <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+                  <article className="rounded-xl border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
                     <div className="animate-pulse">
-                      <div className="h-4 w-32 rounded bg-[#E4E4E7]" />
-                      <div className="mt-3 h-7 w-24 rounded bg-[#E4E4E7]" />
-                      <div className="mt-2 h-5 w-40 rounded bg-[#E4E4E7]" />
-                      <div className="mt-4 h-10 w-44 rounded-[10px] bg-[#E4E4E7]" />
+                      <div className="h-4 w-32 rounded bg-stroke" />
+                      <div className="mt-3 h-7 w-24 rounded bg-stroke" />
+                      <div className="mt-2 h-5 w-40 rounded bg-stroke" />
+                      <div className="mt-4 h-10 w-44 rounded-[10px] bg-stroke" />
                     </div>
                   </article>
-                  <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+                  <article className="rounded-xl border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
                     <div className="animate-pulse">
-                      <div className="h-4 w-20 rounded bg-[#E4E4E7]" />
-                      <div className="mt-3 h-7 w-24 rounded bg-[#E4E4E7]" />
-                      <div className="mt-2 h-5 w-56 rounded bg-[#E4E4E7]" />
+                      <div className="h-4 w-20 rounded bg-stroke" />
+                      <div className="mt-3 h-7 w-24 rounded bg-stroke" />
+                      <div className="mt-2 h-5 w-56 rounded bg-stroke" />
                     </div>
                   </article>
                 </>
               ) : (
                 <>
-                  <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-                    <p className="text-[13px] font-medium text-[#5C5D5F]">{subscriptionStatusBelowTitle}</p>
-                    <p className="mt-2 text-[22px] font-semibold leading-7 text-[#141414]">{subscriptionTitle}</p>
+                  <article className="rounded-xl border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
+                    <p className="text-[13px] font-medium text-fg-muted">{subscriptionStatusBelowTitle}</p>
+                    <p className="mt-2 text-[22px] font-semibold leading-7 text-fg">{subscriptionTitle}</p>
                     <button
                       type="button"
                       onClick={() => {
@@ -598,15 +627,15 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                         setUpgradeModalOpen(true);
                       }}
                       disabled={portalLoading}
-                      className="mt-4 h-10 rounded-[10px] bg-[#2563EB] px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-[#1D4ED8] disabled:cursor-not-allowed disabled:opacity-60"
+                      className="mt-4 h-10 rounded-[10px] bg-accent px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {portalLoading ? <SpinnerLabel>Opening…</SpinnerLabel> : actionLabel}
                     </button>
                   </article>
 
-                  <article className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-                    <p className="text-[13px] font-medium text-[#5C5D5F]">{recurringMeta}</p>
-                    <p className="mt-2 text-[22px] font-semibold leading-7 text-[#141414]">{recurringAmount}</p>
+                  <article className="rounded-xl border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
+                    <p className="text-[13px] font-medium text-fg-muted">{recurringMeta}</p>
+                    <p className="mt-2 text-[22px] font-semibold leading-7 text-fg">{recurringAmount}</p>
                   </article>
                 </>
               )}
@@ -614,83 +643,150 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
             )}
 
             {billingAccessState === "expired" ? null : (
-            <section className="rounded-xl border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-              <h3 className="text-[16px] font-semibold leading-6 text-[#141414]">Payment history</h3>
+            <section>
+              <h3 className="text-[16px] font-semibold leading-6 text-fg">Payment history</h3>
               {showBillingSkeleton || billingLoading ? (
-                <div className="mt-4">
-                  <div className="-mx-5 overflow-x-auto px-5 [-webkit-overflow-scrolling:touch]">
-                    <div className="min-w-[560px] divide-y divide-[#E4E4E7] bg-white lg:min-w-0">
-                      <div
-                        className={`grid ${billingHistoryColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:px-4`}
-                      >
-                        <div className="text-left">Date</div>
-                        <div className="min-w-0 w-full text-right">Amount</div>
-                        <div className="pl-6 text-right">Description</div>
+                <div className={cn(paymentHistoryTableChromeClass, "mt-5")}>
+                  <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
+                    <div className="min-w-[560px] bg-surface lg:min-w-0">
+                      <div className="bg-surface">
+                        <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                          <div
+                            className={cn(
+                              billingHistoryColLayout,
+                              "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
+                            )}
+                          >
+                            <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Date</div>
+                            <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
+                              Amount
+                            </div>
+                            <div className={cn("text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Plan</div>
+                          </div>
+                        </div>
+                        <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
                       </div>
 
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className={`grid ${billingHistoryColLayout} min-h-[56px] items-center bg-white px-2 sm:min-h-[60px] sm:px-4`}
-                        >
-                          <div className="animate-pulse">
-                            <div className="h-4 w-24 rounded bg-[#E4E4E7]" />
+                        <div key={i} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                          <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                            <div
+                              className={cn(
+                                SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                                billingHistoryColLayout,
+                                "min-h-[56px] sm:min-h-[60px]",
+                              )}
+                            >
+                              <div className={cn("animate-pulse", TABLE_START_ALIGNED_PAD_CLASS)}>
+                                <div className="h-4 w-24 rounded bg-stroke" />
+                              </div>
+                              <div
+                                className={cn(
+                                  "flex justify-end animate-pulse",
+                                  TABLE_END_ALIGNED_PAD_CLASS,
+                                )}
+                              >
+                                <div className="h-4 w-16 rounded bg-stroke" />
+                              </div>
+                              <div
+                                className={cn(
+                                  "flex justify-end animate-pulse",
+                                  TABLE_END_ALIGNED_PAD_CLASS,
+                                )}
+                              >
+                                <div className="h-4 w-40 rounded bg-stroke" />
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex justify-end animate-pulse">
-                            <div className="h-4 w-16 rounded bg-[#E4E4E7]" />
-                          </div>
-                          <div className="flex justify-end pl-6 animate-pulse">
-                            <div className="h-4 w-40 rounded bg-[#E4E4E7]" />
-                          </div>
+                          {i < 4 ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
               ) : paymentHistory.length === 0 ? (
-                <Empty variant="plain" className="mt-4 min-h-0 py-8">
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <CreditCard className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-                    </EmptyMedia>
-                    <EmptyTitle>No payments yet</EmptyTitle>
-                    <EmptyDescription>
-                      Your payment history will appear here once your first charge is processed.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
+                <div className={cn(paymentHistoryTableChromeClass, "mt-5")}>
+                  <Empty variant="plain" className="min-h-0 py-8">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <CreditCard className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+                      </EmptyMedia>
+                      <EmptyTitle>No payments yet</EmptyTitle>
+                      <EmptyDescription>
+                        Your payment history will appear here once your first charge is processed.
+                      </EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                </div>
               ) : (
-                <div className="mt-4">
-                  <div className="-mx-5 overflow-x-auto px-5 [-webkit-overflow-scrolling:touch]">
-                    <div className="min-w-[560px] divide-y divide-[#E4E4E7] bg-white lg:min-w-0">
-                      <div
-                        className={`grid ${billingHistoryColLayout} min-h-[44px] items-center bg-white px-2 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:px-4`}
-                      >
-                        <div className="text-left">Date</div>
-                        <div className="min-w-0 w-full text-right">Amount</div>
-                        <div className="pl-6 text-right">Description</div>
-                      </div>
-
-                      {pagedPaymentHistory.map((row) => (
-                        <div
-                          key={row.id}
-                          className={`group grid ${billingHistoryColLayout} min-h-[56px] items-center bg-white px-2 transition-colors duration-75 hover:bg-neutral-50 sm:min-h-[60px] sm:px-4`}
-                        >
-                          <div className="whitespace-nowrap text-[14px] font-normal leading-5 text-[#141414]">
-                            {new Date(row.date).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                            })}
+                <div className="mt-5">
+                  <div className={paymentHistoryTableChromeClass}>
+                    <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
+                      <div className="min-w-[560px] bg-surface lg:min-w-0">
+                        <div className="bg-surface">
+                          <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                            <div
+                              className={cn(
+                                billingHistoryColLayout,
+                                "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
+                              )}
+                            >
+                              <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Date</div>
+                              <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
+                                Amount
+                              </div>
+                              <div className={cn("text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Plan</div>
+                            </div>
                           </div>
-                          <div className="min-w-0 w-full whitespace-nowrap text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
-                            ${row.amountUsd.toFixed(2)}
-                          </div>
-                          <div className="min-w-0 truncate pl-6 text-right text-[14px] font-normal leading-5 text-[#141414]">
-                            Finsepa Pro
-                          </div>
+                          <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
                         </div>
-                      ))}
+
+                        {pagedPaymentHistory.map((row, i) => (
+                          <div key={row.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                            <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                              <div
+                                className={cn(
+                                  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                                  billingHistoryColLayout,
+                                  "min-h-[56px] sm:min-h-[60px]",
+                                )}
+                              >
+                                <div
+                                  className={cn(
+                                    "whitespace-nowrap text-[14px] font-normal leading-5 text-fg",
+                                    TABLE_START_ALIGNED_PAD_CLASS,
+                                  )}
+                                >
+                                  {new Date(row.date).toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })}
+                                </div>
+                                <div
+                                  className={cn(
+                                    "min-w-0 w-full whitespace-nowrap text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
+                                    TABLE_END_ALIGNED_PAD_CLASS,
+                                  )}
+                                >
+                                  ${row.amountUsd.toFixed(2)}
+                                </div>
+                                <div
+                                  className={cn(
+                                    "min-w-0 truncate text-right text-[14px] font-normal leading-5 text-fg",
+                                    TABLE_END_ALIGNED_PAD_CLASS,
+                                  )}
+                                >
+                                  Finsepa Pro
+                                </div>
+                              </div>
+                            </div>
+                            {i < pagedPaymentHistory.length - 1 ? (
+                              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   <ScreenerPagination

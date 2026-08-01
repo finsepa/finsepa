@@ -171,9 +171,9 @@ export function AgentChatHistoryHeader({
   const renameEnabled = renameValue.trim().length > 0 && !saving;
 
   const ghostIconBtnClass = cn(
-    "inline-flex size-8 shrink-0 items-center justify-center rounded-[10px] text-[#71717A] transition-colors",
-    "hover:bg-[#F4F4F5] hover:text-[#141414]",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
+    "inline-flex size-8 shrink-0 items-center justify-center rounded-[10px] text-fg-muted transition-colors",
+    "hover:bg-surface-muted hover:text-fg",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
   );
 
   const rowMenuThread = rowMenuId ? (threads.find((t) => t.id === rowMenuId) ?? null) : null;
@@ -181,9 +181,9 @@ export function AgentChatHistoryHeader({
   return (
     <>
       {showBar ? (
-        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#EBEBEC] px-4 py-3 sm:px-9">
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-stroke-subtle px-4 py-3 sm:px-9">
           <div className="flex min-w-0 max-w-[min(100%,28rem)] items-center gap-0.5">
-            <h1 className="min-w-0 truncate text-[14px] font-medium leading-5 text-[#141414]">
+            <h1 className="min-w-0 truncate text-[14px] font-medium leading-5 text-fg">
               {displayTitle}
             </h1>
             <button
@@ -199,7 +199,7 @@ export function AgentChatHistoryHeader({
               }}
               className={cn(
                 ghostIconBtnClass,
-                historyOpen && "bg-[#F4F4F5] text-[#141414]",
+                historyOpen && "bg-surface-muted text-fg",
                 disabled && "pointer-events-none opacity-60",
               )}
             >
@@ -222,7 +222,7 @@ export function AgentChatHistoryHeader({
               }}
               className={cn(
                 ghostIconBtnClass,
-                headerMenuOpen && "bg-[#F4F4F5] text-[#141414]",
+                headerMenuOpen && "bg-surface-muted text-fg",
                 (disabled || !canManageActive) && "pointer-events-none opacity-40",
               )}
             >
@@ -239,8 +239,8 @@ export function AgentChatHistoryHeader({
               onNewChat();
             }}
             className={cn(
-              "inline-flex size-8 shrink-0 items-center justify-center rounded-[10px] text-[#141414] transition-colors",
-              "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
+              "inline-flex size-8 shrink-0 items-center justify-center rounded-[10px] text-fg transition-colors",
+              "hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
               disabled && "pointer-events-none opacity-60",
             )}
             aria-label="New chat"
@@ -270,27 +270,27 @@ export function AgentChatHistoryHeader({
                 onNewChat();
               }}
             >
-              <Plus className="size-4 shrink-0 text-[#71717A]" aria-hidden />
+              <Plus className="size-4 shrink-0 text-fg-muted" aria-hidden />
               <span>New chat</span>
             </button>
           </div>
 
           <div
             className={cn(
-              "max-h-[min(360px,50vh)] overflow-y-auto border-t border-[#F4F4F5] p-1",
+              "max-h-[min(360px,50vh)] overflow-y-auto border-t border-surface-muted p-1",
               dropdownMenuOverlayScrollbarClassName,
             )}
           >
             {threadsLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Spinner className="size-5 text-[#71717A]" />
+                <Spinner className="size-5 text-fg-muted" />
               </div>
             ) : grouped.length === 0 ? (
-              <p className="px-3 py-6 text-center text-sm text-[#71717A]">No chats yet</p>
+              <p className="px-3 py-6 text-center text-sm text-fg-muted">No chats yet</p>
             ) : (
               grouped.map(({ label, items }) => (
                 <div key={label} className="mb-1 last:mb-0">
-                  <div className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-[#A1A1AA]">
+                  <div className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
                     {label}
                   </div>
                   {items.map((thread) => {
@@ -301,16 +301,16 @@ export function AgentChatHistoryHeader({
                         key={thread.id}
                         className={cn(
                           "group relative flex items-center rounded-lg",
-                          selected && "bg-[#F4F4F5]",
-                          "hover:bg-[#F4F4F5]",
+                          selected && "bg-surface-muted",
+                          "hover:bg-surface-muted",
                         )}
                       >
                         <button
                           type="button"
                           role="menuitem"
                           className={cn(
-                            "flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm leading-5 text-[#141414]",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10",
+                            "flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm leading-5 text-fg",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10",
                           )}
                           onClick={() => {
                             setHistoryOpen(false);
@@ -320,7 +320,7 @@ export function AgentChatHistoryHeader({
                           <span className="min-w-0 flex-1 truncate">{thread.title || "New chat"}</span>
                           <span
                             className={cn(
-                              "ml-auto hidden shrink-0 text-xs leading-5 text-[#A1A1AA] transition-opacity sm:inline",
+                              "ml-auto hidden shrink-0 text-xs leading-5 text-fg-subtle transition-opacity sm:inline",
                               "group-hover:opacity-0 group-focus-within:opacity-0",
                               menuOpen && "opacity-0",
                             )}
@@ -335,11 +335,11 @@ export function AgentChatHistoryHeader({
                           type="button"
                           aria-label={`Options for ${thread.title || "chat"}`}
                           className={cn(
-                            "absolute right-1 top-1/2 inline-flex size-7 -translate-y-1/2 shrink-0 items-center justify-center rounded-md text-[#71717A]",
+                            "absolute right-1 top-1/2 inline-flex size-7 -translate-y-1/2 shrink-0 items-center justify-center rounded-md text-fg-muted",
                             "opacity-100 transition-opacity sm:opacity-0",
                             "sm:group-hover:opacity-100 sm:group-focus-within:opacity-100",
-                            "hover:bg-[#E4E4E7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:opacity-100",
-                            menuOpen && "bg-[#E4E4E7] !opacity-100",
+                            "hover:bg-stroke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:opacity-100",
+                            menuOpen && "bg-stroke !opacity-100",
                           )}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -402,7 +402,7 @@ export function AgentChatHistoryHeader({
             }}
             className={cn(
               dropdownMenuPlainItemClassName(),
-              "text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
+              "text-down hover:bg-down-soft hover:text-down",
             )}
           >
             <DropdownMenuLottieIcon
@@ -457,7 +457,7 @@ export function AgentChatHistoryHeader({
             }}
             className={cn(
               dropdownMenuPlainItemClassName(),
-              "text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
+              "text-down hover:bg-down-soft hover:text-down",
             )}
           >
             <DropdownMenuLottieIcon
@@ -499,7 +499,7 @@ export function AgentChatHistoryHeader({
           }
         >
           <label className="flex w-full flex-col gap-2">
-            <span className="text-sm font-medium leading-5 text-[#141414]">Chat name</span>
+            <span className="text-sm font-medium leading-5 text-fg">Chat name</span>
             <ClearableInput
               type="text"
               value={renameValue}
@@ -539,7 +539,7 @@ export function AgentChatHistoryHeader({
             </AppModalFooter>
           }
         >
-          <p className="pb-3 text-sm leading-5 text-[#52525B]">
+          <p className="pb-3 text-sm leading-5 text-fg-muted">
             Delete “{modalThread?.title || "New chat"}”? This can’t be undone.
           </p>
         </AppModalShell>

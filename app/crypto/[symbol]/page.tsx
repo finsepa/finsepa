@@ -23,7 +23,7 @@ export default async function CryptoSymbolPage({ params, searchParams }: PagePro
   const initialActiveTab = tabFromSearchParams(sp);
 
   if (isSingleAssetMode() && !isSupportedAsset(routeSymbol)) {
-    return <div className="px-4 py-4 text-[#5C5D5F] sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>;
+    return <div className="px-4 py-4 text-fg-muted sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>;
   }
 
   const initialData = await loadCryptoPageInitialData(routeSymbol);

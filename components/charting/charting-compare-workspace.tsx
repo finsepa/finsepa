@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, RefreshCw, X } from "@/lib/icons";
@@ -1055,7 +1056,7 @@ export function ChartingCompareWorkspace({
             },
             layout: {
               background: { type: ColorType.Solid, color: "transparent" },
-              textColor: "#5C5D5F",
+              textColor: resolveFsColor("--fs-fg-muted"),
               fontSize: 12,
               fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
               attributionLogo: false,
@@ -1621,7 +1622,7 @@ export function ChartingCompareWorkspace({
       >
       {useRailMetricPicker ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:flex-1">
+          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-fg sm:flex-1">
             {workspaceTitle}
           </h2>
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
@@ -1715,7 +1716,7 @@ export function ChartingCompareWorkspace({
         ) : (
         <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:flex-1">
+          <h2 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-fg sm:flex-1">
             {workspaceTitle}
           </h2>
           <div className="flex min-w-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
@@ -1827,12 +1828,12 @@ export function ChartingCompareWorkspace({
                   </span>
                   {chipLoading ? (
                     <span
-                      className="flex w-9 shrink-0 items-center justify-center text-[#5C5D5F]"
+                      className="flex w-9 shrink-0 items-center justify-center text-fg-muted"
                       role="status"
                       aria-live="polite"
                       aria-label={`Loading ${t}`}
                     >
-                      <Spinner className="size-5 text-[#5C5D5F]" />
+                      <Spinner className="size-5 text-fg-muted" />
                     </span>
                   ) : (
                     <button
@@ -1874,24 +1875,24 @@ export function ChartingCompareWorkspace({
           className="min-h-[min(50vh,420px)]"
         />
       ) : empty ? (
-        <p className="max-w-md text-[14px] leading-6 text-[#5C5D5F]">
+        <p className="max-w-md text-[14px] leading-6 text-fg-muted">
           Financial statement data isn&apos;t available for these symbols.
         </p>
       ) : (
         <>
           {noMetricData ? (
-            <p className="max-w-md text-[14px] leading-6 text-[#5C5D5F]">
+            <p className="max-w-md text-[14px] leading-6 text-fg-muted">
               No series data for the selected metrics on these symbols.
             </p>
           ) : (
             <>
               <div className="w-full min-w-0 overflow-visible" style={{ height: chartHeight }}>
                 <div className="flex min-h-0 w-full overflow-visible" style={{ height: chartPlotHeight }}>
-                  <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-[#FCFCFD]">
+                  <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-panel">
                     <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
                       <div
                         className={cn(
-                          "absolute inset-x-0 bg-[#FCFCFD]",
+                          "absolute inset-x-0 bg-panel",
                           CHARTING_PLOT_BACKDROP_INSET_CLASS,
                         )}
                       >
@@ -1929,18 +1930,7 @@ export function ChartingCompareWorkspace({
                         role="tooltip"
                         aria-label="Chart tooltip"
                       >
-                        {hover.side === "left" ? (
-                          <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
-                            <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
-                            <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
-                          </span>
-                        ) : (
-                          <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
-                            <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
-                            <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
-                          </span>
-                        )}
-                        <p className="text-[12px] font-semibold leading-4 text-[#141414]">{hover.periodLabel}</p>
+                        <p className="text-[12px] font-semibold leading-4 text-fg">{hover.periodLabel}</p>
                         <div className="mt-1.5 max-h-[min(240px,40vh)] space-y-1 overflow-y-auto">
                           {hover.rows.map((r) => (
                             <div key={r.key} className="flex items-baseline justify-between gap-3">
@@ -1950,11 +1940,11 @@ export function ChartingCompareWorkspace({
                                   style={{ backgroundColor: r.color }}
                                   aria-hidden
                                 />
-                                <span className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                                <span className="truncate text-[12px] font-normal leading-4 text-fg-muted">
                                   {r.label}
                                 </span>
                               </span>
-                              <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#141414]">
+                              <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-fg">
                                 {r.value}
                               </span>
                             </div>
@@ -1968,7 +1958,7 @@ export function ChartingCompareWorkspace({
                       {primaryYAxis ? (
                         <div
                           className={cn(
-                            "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
+                            "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted",
                             FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
                           )}
                           style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -1982,7 +1972,7 @@ export function ChartingCompareWorkspace({
                               return (
                                 <span
                                   key={`y-tick-primary-${i}`}
-                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
+                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
                                   style={{
                                     top:
                                       topPx != null && Number.isFinite(topPx)
@@ -2000,7 +1990,7 @@ export function ChartingCompareWorkspace({
                       {percentYAxis ? (
                         <div
                           className={cn(
-                            "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
+                            "relative h-full text-left font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted",
                             FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
                           )}
                           style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -2014,7 +2004,7 @@ export function ChartingCompareWorkspace({
                               return (
                                 <span
                                   key={`y-tick-percent-${i}`}
-                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
+                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
                                   style={{
                                     top:
                                       topPx != null && Number.isFinite(topPx)
@@ -2055,7 +2045,7 @@ export function ChartingCompareWorkspace({
                         <span
                           key={lab.key}
                           className={cn(
-                            "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
+                            "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
                             horizontalPeriodAxisLabels
                               ? spacedHorizontalPeriodAxis
                                 ? "top-3"
@@ -2089,7 +2079,7 @@ export function ChartingCompareWorkspace({
                 {seriesDefs.map((s) => (
                   <div
                     key={s.key}
-                    className="inline-flex h-6 min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-2.5 py-0 text-[12px] font-medium leading-none text-[#141414]"
+                    className="inline-flex h-6 min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-stroke bg-surface px-2.5 py-0 text-[12px] font-medium leading-none text-fg"
                   >
                     <span
                       className="h-2 w-2 shrink-0 rounded-full"

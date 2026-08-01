@@ -18,7 +18,7 @@ import { Check, ChevronDown, Minus, Plus } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 const zoomIconButtonClass = cn(
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[#141414] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-40",
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-fg transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40",
   whiteSurfaceButtonChromeClass,
 );
 
@@ -87,7 +87,7 @@ export function ChartScreenshotPreviewZoomControls({
           <span className="tabular-nums">{clamped}%</span>
           <ChevronDown
             className={cn(
-              "h-4 w-4 shrink-0 text-[#5C5D5F] transition-transform",
+              "h-4 w-4 shrink-0 text-fg-muted transition-transform",
               menuOpen && "rotate-180",
             )}
             strokeWidth={2}
@@ -121,7 +121,7 @@ export function ChartScreenshotPreviewZoomControls({
                     <span className="min-w-0 flex-1 text-left tabular-nums">{option}%</span>
                     <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
                       {selected ? (
-                        <Check className="h-4 w-4 text-[#141414]" strokeWidth={2} />
+                        <Check className="h-4 w-4 text-fg" strokeWidth={2} />
                       ) : null}
                     </span>
                   </button>

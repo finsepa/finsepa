@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import {
   dropdownMenuPanelBodyClassName,
-  dropdownMenuRichItemClassName,
+  dropdownMenuPlainItemClassName,
   dropdownMenuSearchHeaderClassName,
   dropdownMenuSearchInputClassName,
   dropdownMenuSurfaceClassName,
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 /** Matches {@link WatchlistSectionHeader} section title typography. */
 const metricPickerSectionLabelClass =
-  "px-2 pb-1 pt-2 text-[13px] font-medium text-[#141414]";
+  "px-4 pb-1 pt-2 text-[13px] font-medium text-fg";
 
 function MetricPickerSectionLabel({ label }: { label: string }) {
   return <p className={metricPickerSectionLabelClass}>{label}</p>;
@@ -30,10 +30,9 @@ function MetricPickerSectionLabel({ label }: { label: string }) {
 
 function metricPickerCategoryButtonClass(active: boolean) {
   return cn(
-    "w-full rounded-lg px-2 py-2 text-left text-[13px] font-medium transition-colors",
-    active
-      ? "bg-[#F4F4F5] text-[#141414]"
-      : "text-[#141414] hover:bg-[#F4F4F5]",
+    dropdownMenuPlainItemClassName(),
+    "font-medium",
+    active && "bg-dropdown-item-hover",
   );
 }
 
@@ -153,7 +152,7 @@ export function ChartingMetricPickerMenu({
       </div>
 
       {emptyMessage ? (
-        <div className="px-3 py-6 text-center text-[13px] text-[#141414]">{emptyMessage}</div>
+        <div className="px-3 py-6 text-center text-[13px] text-fg">{emptyMessage}</div>
       ) : isSearching ? (
         <DropdownScrollArea
           className={cn(dropdownMenuPanelBodyClassName, "max-h-[min(400px,calc(100vh-12rem))] overflow-y-auto")}
@@ -161,7 +160,7 @@ export function ChartingMetricPickerMenu({
           {addableGroups.map((g) => (
             <div key={g.id} className="py-1">
               <MetricPickerSectionLabel label={g.label} />
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 {g.ids.map((id) => (
                   <MetricPickerRow key={id} id={id} onPick={onPick} />
                 ))}
@@ -171,9 +170,9 @@ export function ChartingMetricPickerMenu({
         </DropdownScrollArea>
       ) : (
         <div className="flex items-start overflow-hidden">
-          <div ref={categoriesColumnRef} className="w-[148px] shrink-0 border-r border-[#F4F4F5] p-1">
+          <div ref={categoriesColumnRef} className="w-[148px] shrink-0 border-r border-dropdown-divider p-1">
             <MetricPickerSectionLabel label="Categories" />
-            <ul className="flex flex-col gap-0.5">
+            <ul className="flex flex-col gap-1">
               {addableGroups.map((g) => {
                 const active = activeGroup?.id === g.id;
                 return (
@@ -205,7 +204,7 @@ export function ChartingMetricPickerMenu({
             {activeGroup ? (
               <>
                 <MetricPickerSectionLabel label={activeGroup.label} />
-                <ul className="flex flex-col gap-0.5">
+                <ul className="flex flex-col gap-1">
                   {activeGroup.ids.map((id) => (
                     <li key={id}>
                       <MetricPickerRow id={id} onPick={onPick} />
@@ -227,12 +226,12 @@ function MetricPickerRow({ id, onPick }: { id: ChartingMetricId; onPick: (id: Ch
     <button
       type="button"
       role="option"
-      className={cn(dropdownMenuRichItemClassName(), "group items-center justify-between gap-2")}
+      className={cn(dropdownMenuPlainItemClassName(), "group font-medium")}
       onClick={() => onPick(id)}
     >
-      <span className="truncate">{CHARTING_METRIC_LABEL[id]}</span>
+      <span className="min-w-0 flex-1 truncate">{CHARTING_METRIC_LABEL[id]}</span>
       <Plus
-        className="h-4 w-4 shrink-0 text-[#5C5D5F] opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+        className="h-4 w-4 shrink-0 text-fg-muted opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
         aria-hidden
       />
     </button>

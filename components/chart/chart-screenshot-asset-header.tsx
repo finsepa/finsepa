@@ -44,19 +44,19 @@ export function ChartScreenshotAssetHeader({
       />
       {metricLine ? (
         <div className="flex min-w-0 items-center gap-2">
-          <span className="truncate text-[18px] font-semibold leading-6 text-[#141414]">{metricLine}</span>
-          <span className="shrink-0 text-[18px] font-normal leading-6 text-[#5C5D5F]" aria-hidden>
+          <span className="truncate text-[18px] font-semibold leading-6 text-fg">{metricLine}</span>
+          <span className="shrink-0 text-[18px] font-normal leading-6 text-fg-muted" aria-hidden>
             ·
           </span>
-          <span className="truncate text-[18px] font-semibold leading-6 text-[#141414]">{titleName}</span>
+          <span className="truncate text-[18px] font-semibold leading-6 text-fg">{titleName}</span>
         </div>
       ) : (
         <div className="flex min-w-0 items-center gap-2">
-          <span className="truncate text-[18px] font-semibold leading-6 text-[#141414]">{titleName}</span>
-          <span className="shrink-0 text-[18px] font-normal leading-6 text-[#5C5D5F]" aria-hidden>
+          <span className="truncate text-[18px] font-semibold leading-6 text-fg">{titleName}</span>
+          <span className="shrink-0 text-[18px] font-normal leading-6 text-fg-muted" aria-hidden>
             ·
           </span>
-          <span className="shrink-0 text-[18px] font-semibold leading-6 text-[#5C5D5F]">{symbol}</span>
+          <span className="shrink-0 text-[18px] font-semibold leading-6 text-fg-muted">{symbol}</span>
         </div>
       )}
     </div>

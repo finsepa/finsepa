@@ -101,19 +101,19 @@ export function Superinvestor13fProfileTabs({
   }, []);
 
   return (
-    <div className="mt-8">
+    <div className="mt-5">
       <UnderlineTabs<ProfileTab>
         tabs={TAB_OPTIONS}
         active={tab}
         onChange={setTab}
         ariaLabel="Portfolio view"
-        className="mb-0"
+        className="mb-5"
       />
 
       {tab === "holdings" ? (
           <>
             {!data.hasPriorFiling && data.source !== "unavailable" ? (
-              <p className="mb-4 max-w-3xl text-sm text-[#5C5D5F]">
+              <p className="mb-4 max-w-3xl text-sm text-fg-muted">
                 Only one 13F-HR filing appears in the SEC feed; change badges and prior columns are hidden until a
                 second filing is available.
               </p>

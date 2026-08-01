@@ -12,6 +12,7 @@ import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
@@ -19,6 +20,8 @@ import {
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import { LogoSkeleton, SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
 import type {
@@ -53,7 +56,7 @@ import {
 import { formatEconomyLongDateUtc } from "@/lib/market/economy-format-display";
 import { prefetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-client";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
-import { whiteSurfaceButtonChromeClass } from "@/components/design-system";
+import { SegmentedControl, whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import { cn } from "@/lib/utils";
 
 /** Icon size inside 24px timing bars. */
@@ -94,18 +97,27 @@ function splitEarningsDayListForView(day: EarningsDayColumn): {
 
 const earningsListColLayout = "grid w-full min-w-0 grid-cols-[minmax(0,2fr)_minmax(5.5rem,max-content)_1fr_1fr] gap-x-2";
 
-/** 12px horizontal cell inset (default table — no screener star gutter). */
-const earningsListRowPadClass = "px-3";
+/** Hover inset from card edge (8px desktop / 16px mobile). */
+const earningsListRowPadClass = DEFAULT_TABLE_ROW_HOVER_PAD_CLASS;
 
 const earningsListTimeHeaderClass = "min-w-0 w-full text-right";
 
 const earningsListTimeCellClass = "flex min-w-0 w-full items-center justify-end";
 
 const earningsListRevenueCellClass =
-  "min-w-0 w-full text-center font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
+  "min-w-0 w-full text-center font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg";
 
-const earningsListEpsCellClass =
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
+/** 12px end pad on last column. */
+const earningsListEpsCellClass = cn(
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
+
+/** 12px start pad on company column. */
+const earningsListCompanyCellClass = cn(
+  "flex min-w-0 items-center gap-2 sm:gap-3",
+  TABLE_START_ALIGNED_PAD_CLASS,
+);
 
 function EarningsListDayHeader({ dateYmd, isToday }: { dateYmd: string; isToday: boolean }) {
   return (
@@ -123,26 +135,27 @@ function EarningsListDayHeader({ dateYmd, isToday }: { dateYmd: string; isToday:
         <div
           className={cn(
             earningsListColLayout,
-            "min-h-[44px] items-center text-[14px] font-medium leading-5 text-[#5C5D5F]",
+            "min-h-[44px] items-center text-[14px] font-medium leading-5 text-fg-muted",
           )}
         >
           <div
             className={cn(
               "min-w-0 text-left text-[14px] font-semibold leading-5",
-              isToday ? "text-[#DC2626]" : "text-[#141414]",
+              TABLE_START_ALIGNED_PAD_CLASS,
+              isToday ? "text-down" : "text-fg",
             )}
           >
             {formatEconomyLongDateUtc(dateYmd)}
           </div>
           <div className={earningsListTimeHeaderClass}>Time</div>
-          <div className={cn(earningsListRevenueCellClass, "font-medium text-[#5C5D5F]")}>Est. Revenue</div>
-          <div className={cn(earningsListEpsCellClass, "font-medium text-[#5C5D5F]")}>Est. EPS</div>
+          <div className={cn(earningsListRevenueCellClass, "font-medium text-fg-muted")}>Est. Revenue</div>
+          <div className={cn(earningsListEpsCellClass, "font-medium text-fg-muted")}>Est. EPS</div>
         </div>
       </div>
       <div
         className={cn(
           SCREENER_TABLE_STROKE_INSET_CLASS,
-          isToday && "border-b-2 border-[#DC2626]",
+          isToday && "border-b-2 border-down",
         )}
         aria-hidden
       />
@@ -164,10 +177,10 @@ function earningsListTimingDisplayLabel(timing: EarningsReportTiming): string {
 function EarningsListTimingBadge({ timing }: { timing: EarningsReportTiming }) {
   const barClass =
     timing === "bmo"
-      ? "bg-[#FFF7ED] text-[#EA580C]"
+      ? "bg-orange-soft text-orange"
       : timing === "amc"
-        ? "bg-[#EFF6FF] text-[#2563EB]"
-        : "bg-[#FAFAFA] text-[#5C5D5F]";
+        ? "bg-accent-soft text-accent"
+        : "bg-canvas text-fg-muted";
 
   const icon =
     timing === "bmo" ? (
@@ -175,7 +188,7 @@ function EarningsListTimingBadge({ timing }: { timing: EarningsReportTiming }) {
     ) : timing === "amc" ? (
       <PostMarketEarningsIcon size={12} />
     ) : (
-      <Clock className="text-[#5C5D5F]" size={10} strokeWidth={2} />
+      <Clock className="text-fg-muted" size={10} strokeWidth={2} />
     );
 
   return (
@@ -225,21 +238,21 @@ function EarningsListRow({
         <div
           className={cn(
             earningsListColLayout,
-            "group min-h-[60px] text-[14px] leading-5 text-[#141414]",
+            "group min-h-[60px] text-[14px] leading-5 text-fg",
             SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
           )}
         >
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <div className={earningsListCompanyCellClass}>
             <CompanyLogo
               name={item.companyName || item.ticker}
               logoUrl={item.logoUrl}
               symbol={item.ticker}
             />
             <div className="min-w-0">
-              <div className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 group-hover:underline">
+              <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 group-hover:underline">
                 {item.companyName}
               </div>
-              <div className="text-[12px] font-normal leading-4 text-[#5C5D5F] tabular-nums">{item.ticker}</div>
+              <div className="text-[12px] font-normal leading-4 text-fg-muted tabular-nums">{item.ticker}</div>
             </div>
           </div>
           <div className={earningsListTimeCellClass}>
@@ -254,16 +267,25 @@ function EarningsListRow({
   );
 }
 
+/** Day column — screener/table card chrome (stroke + light shadow). */
+const EARNINGS_WEEK_DAY_CARD_CLASS =
+  "flex w-[min(100%,220px)] shrink-0 flex-col rounded-2xl border border-stroke-subtle bg-surface px-2 py-3 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] md:min-h-0 md:flex-1 md:shrink md:px-0 md:py-0";
+
+/** Horizontal gap between day cards (12px). No outer shell — cards sit on the panel. */
+const EARNINGS_WEEK_DAY_GAP_CLASS =
+  "flex w-max min-w-full gap-3 md:w-full md:flex-row md:items-stretch";
+
 /** Matches logo (32px) + label + card padding in {@link EarningsCard}. */
 const EARNINGS_TIMING_GRID_CELL_MIN_H_PX = 72;
+
 
 function EarningsTimingSectionHeading({ timing, title }: { timing: EarningsReportTiming; title: string }) {
   const barClass =
     timing === "bmo"
-      ? "bg-[#FFF7ED] text-[#EA580C]"
+      ? "bg-orange-soft text-orange"
       : timing === "amc"
-        ? "bg-[#EFF6FF] text-[#2563EB]"
-        : "bg-[#FAFAFA] text-[#5C5D5F]";
+        ? "bg-accent-soft text-accent"
+        : "bg-canvas text-fg-muted";
 
   const icon =
     timing === "bmo" ? (
@@ -271,7 +293,7 @@ function EarningsTimingSectionHeading({ timing, title }: { timing: EarningsRepor
     ) : timing === "amc" ? (
       <PostMarketEarningsIcon size={EARNINGS_CALENDAR_TIMING_ICON_PX} />
     ) : (
-      <Clock className="text-[#5C5D5F]" size={12} strokeWidth={2} />
+      <Clock className="text-fg-muted" size={12} strokeWidth={2} />
     );
 
   const ariaLabel = timing === "bmo" ? "Before market" : timing === "amc" ? "After market" : "Time TBD";
@@ -439,7 +461,7 @@ function EarningsDayColumnBody({
   if (totalSignals === 0) {
     return (
       <div className="flex flex-col">
-        <p className="flex items-center gap-1.5 text-[12px] leading-4 text-[#A1A1AA]">
+        <p className="flex items-center gap-1.5 text-[12px] leading-4 text-fg-subtle">
           <CalendarDays className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
           No earnings
         </p>
@@ -496,10 +518,10 @@ function EarningsCard({
       onClick={onOpen}
       onPointerEnter={() => prefetchStockEarningsTabPayload(ticker, true)}
       onFocus={() => prefetchStockEarningsTabPayload(ticker, true)}
-      className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-[#F4F4F5]"
+      className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-surface-muted"
     >
       <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="md" fill />
-      <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-[#141414]">
+      <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-fg">
         {ticker}
       </span>
     </button>
@@ -508,7 +530,7 @@ function EarningsCard({
 
 /** Week nav — bordered controls (arrows + Today), aligned with toolbar squircles. */
 const weekNavBtnClass = cn(
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-[#141414] transition-all duration-100 hover:bg-[#F4F4F5]",
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-fg transition-all duration-100 hover:bg-surface-muted",
   whiteSurfaceButtonChromeClass,
 );
 
@@ -533,14 +555,14 @@ function EarningsHoldingsWatchlistSwitch({
       aria-label={ariaLabel}
       onClick={() => onPressedChange(!pressed)}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
-        pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
+        pressed ? "bg-accent" : "bg-stroke",
       )}
     >
       <span
         className={cn(
-          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform",
-          pressed && "translate-x-4",
+          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-switch-thumb-off shadow-sm transition-[transform,background-color]",
+          pressed && "translate-x-4 bg-switch-thumb",
         )}
         aria-hidden
       />
@@ -603,27 +625,23 @@ function EarningsWeekGridSkeleton({
   return (
     <div className="flex min-w-0 flex-col" aria-busy="true" aria-label="Loading earnings calendar">
       <div className="-mx-1 flex flex-col overflow-x-auto pb-1 md:mx-0 md:overflow-x-hidden md:overflow-y-visible">
-        <div className="flex w-max min-w-full flex-col rounded-2xl bg-[#F4F4F5] p-1 md:w-full">
-          <div className="flex w-max min-w-full gap-1 rounded-2xl bg-[#F4F4F5] md:w-full md:flex-row md:items-stretch">
+        <div className={EARNINGS_WEEK_DAY_GAP_CLASS}>
             {days.map((day) => {
               const isToday = day.date === todayYmd;
               return (
-                <div
-                  key={day.date}
-                  className="flex w-[min(100%,220px)] shrink-0 flex-col rounded-xl border border-[#E4E4E7] bg-white px-2 py-3 md:min-h-0 md:flex-1 md:shrink md:px-0 md:py-0"
-                >
+                <div key={day.date} className={EARNINGS_WEEK_DAY_CARD_CLASS}>
                   <div
                     className={cn(
-                      "-mx-2 mb-3 rounded-t-xl px-2 pb-2 md:hidden",
+                      "-mx-2 mb-3 rounded-t-2xl px-2 pb-2 md:hidden",
                       SCREENER_TABLE_HEADER_STICKY_CLASS,
                     )}
                   >
-                    <div className="text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
                       {day.weekdayLabel}
                     </div>
                     <div
                       className={`text-[15px] font-semibold tabular-nums ${
-                        isToday ? "text-[#DC2626]" : "text-[#141414]"
+                        isToday ? "text-down" : "text-fg"
                       }`}
                     >
                       {day.dayNumber}
@@ -631,20 +649,20 @@ function EarningsWeekGridSkeleton({
                   </div>
                   <div
                     className={cn(
-                      "hidden rounded-t-xl pt-1 pb-0 md:block",
+                      "hidden rounded-t-2xl pt-1 pb-0 md:block",
                       SCREENER_TABLE_HEADER_STICKY_CLASS,
                     )}
                   >
                     <div
                       className={`flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6 ${
-                        isToday ? "text-[#DC2626]" : "text-[#141414]"
+                        isToday ? "text-down" : "text-fg"
                       }`}
                     >
                       <span className="font-normal">{day.weekdayLabel}</span>
                       <span className="font-semibold tabular-nums">{day.dayNumber}</span>
                     </div>
                     <div className="mt-1" aria-hidden>
-                      <div className={`h-0.5 w-full ${isToday ? "bg-[#DC2626]" : "bg-transparent"}`} />
+                      <div className={`h-0.5 w-full ${isToday ? "bg-down" : "bg-transparent"}`} />
                     </div>
                   </div>
                   <div className="flex flex-col px-2 pt-2 pb-4 md:overflow-visible">
@@ -654,7 +672,6 @@ function EarningsWeekGridSkeleton({
                 </div>
               );
             })}
-          </div>
         </div>
       </div>
     </div>
@@ -693,7 +710,7 @@ function EarningsWeekListSkeleton() {
                   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                 )}
               >
-                <div className="flex min-w-0 items-center gap-2.5">
+                <div className={cn("flex min-w-0 items-center gap-2.5", TABLE_START_ALIGNED_PAD_CLASS)}>
                   <SkeletonBox className="h-8 w-8 shrink-0 rounded-full" />
                   <div className="min-w-0 flex-1 space-y-1.5">
                     <TextSkeleton wClass="w-16" hClass="h-3.5" />
@@ -702,7 +719,9 @@ function EarningsWeekListSkeleton() {
                 </div>
                 <SkeletonBox className="ml-auto h-5 w-12 rounded-md" />
                 <TextSkeleton wClass="w-full" hClass="h-3.5" />
-                <TextSkeleton wClass="w-full" hClass="h-3.5" />
+                <div className={TABLE_END_ALIGNED_PAD_CLASS}>
+                  <TextSkeleton wClass="w-full" hClass="h-3.5" />
+                </div>
               </div>
             </div>
             {i < 7 ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
@@ -841,12 +860,12 @@ export function EarningsWeekGrid({
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <div className="relative z-30 flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h1 className="min-w-0 text-[24px] font-semibold leading-9 tracking-tight text-[#141414]">
+        <h1 className="min-w-0 text-[24px] font-semibold leading-9 tracking-tight text-fg">
           {displayWeekLabel}
         </h1>
         <div className="flex shrink-0 flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-[14px] font-medium leading-5 text-[#5C5D5F]">Holdings &amp; Watchlist</span>
+            <span className="text-[14px] font-medium leading-5 text-fg-muted">Holdings &amp; Watchlist</span>
             <EarningsHoldingsWatchlistSwitch
               pressed={scope === "portfolio"}
               onPressedChange={setHoldingsWatchlistFilter}
@@ -880,36 +899,23 @@ export function EarningsWeekGrid({
               <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
             </button>
           </div>
-          <div className="flex shrink-0 rounded-[10px] bg-[#F4F4F5] p-0.5">
-            <button
-              type="button"
-              onClick={() => setView("grid")}
-              className={cn(
-                "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
-                view === "grid"
-                  ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-                  : "text-[#52525B] hover:text-[#141414]",
-              )}
-              aria-pressed={view === "grid"}
-              aria-label="Week grid view"
-            >
-              <CalendarDays className="h-5 w-5" strokeWidth={1.75} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setView("list")}
-              className={cn(
-                "flex h-8 w-9 items-center justify-center rounded-[10px] transition-colors",
-                view === "list"
-                  ? "bg-white shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12),0px_1px_1px_0px_rgba(10,10,10,0.07)]"
-                  : "text-[#52525B] hover:text-[#141414]",
-              )}
-              aria-pressed={view === "list"}
-              aria-label="List view"
-            >
-              <LayoutList className="h-5 w-5" strokeWidth={1.75} />
-            </button>
-          </div>
+          <SegmentedControl
+            aria-label="Earnings calendar view"
+            value={view}
+            onChange={setView}
+            options={[
+              {
+                value: "grid",
+                "aria-label": "Week grid view",
+                label: <CalendarDays className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
+              },
+              {
+                value: "list",
+                "aria-label": "List view",
+                label: <LayoutList className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -919,27 +925,23 @@ export function EarningsWeekGrid({
           <EarningsWeekGridSkeleton weekMondayYmd={displayWeekMondayYmd} todayYmd={todayYmd} />
         ) : (
         <div className="-mx-1 flex flex-col overflow-x-auto pb-1 md:mx-0 md:overflow-x-hidden md:overflow-y-visible">
-          <div className="flex w-max min-w-full flex-col rounded-2xl bg-[#F4F4F5] p-1 md:w-full">
-            <div className="flex w-max min-w-full gap-1 rounded-2xl bg-[#F4F4F5] md:w-full md:flex-row md:items-stretch">
+          <div className={EARNINGS_WEEK_DAY_GAP_CLASS}>
             {filteredData.days.map((day: EarningsDayColumn) => {
               const isToday = day.date === todayYmd;
               return (
-                <div
-                  key={day.date}
-                  className="flex w-[min(100%,220px)] shrink-0 flex-col rounded-xl border border-[#E4E4E7] bg-white px-2 py-3 md:min-h-0 md:flex-1 md:shrink md:px-0 md:py-0"
-                >
+                <div key={day.date} className={EARNINGS_WEEK_DAY_CARD_CLASS}>
                   <div
                     className={cn(
-                      "-mx-2 mb-3 rounded-t-xl px-2 pb-2 md:hidden",
+                      "-mx-2 mb-3 rounded-t-2xl px-2 pb-2 md:hidden",
                       SCREENER_TABLE_HEADER_STICKY_CLASS,
                     )}
                   >
-                    <div className="text-[11px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
                       {day.weekdayLabel}
                     </div>
                     <div
                       className={`text-[15px] font-semibold tabular-nums ${
-                        isToday ? "text-[#DC2626]" : "text-[#141414]"
+                        isToday ? "text-down" : "text-fg"
                       }`}
                     >
                       {day.dayNumber}
@@ -947,20 +949,20 @@ export function EarningsWeekGrid({
                   </div>
                   <div
                     className={cn(
-                      "hidden rounded-t-xl pt-1 pb-0 md:block",
+                      "hidden rounded-t-2xl pt-1 pb-0 md:block",
                       SCREENER_TABLE_HEADER_STICKY_CLASS,
                     )}
                   >
                     <div
                       className={`flex flex-wrap items-center justify-center gap-1 py-0.5 text-center text-[18px] leading-6 ${
-                        isToday ? "text-[#DC2626]" : "text-[#141414]"
+                        isToday ? "text-down" : "text-fg"
                       }`}
                     >
                       <span className="font-normal">{day.weekdayLabel}</span>
                       <span className="font-semibold tabular-nums">{day.dayNumber}</span>
                     </div>
                     <div className="mt-1" aria-hidden>
-                      <div className={`h-0.5 w-full ${isToday ? "bg-[#DC2626]" : "bg-transparent"}`} />
+                      <div className={`h-0.5 w-full ${isToday ? "bg-down" : "bg-transparent"}`} />
                     </div>
                   </div>
                   <div className="flex flex-col px-2 pt-2 pb-4 md:overflow-visible">
@@ -977,7 +979,6 @@ export function EarningsWeekGrid({
                 </div>
               );
             })}
-            </div>
           </div>
         </div>
         )
@@ -986,7 +987,7 @@ export function EarningsWeekGrid({
         ) : (
         <div className="flex min-w-0 flex-col space-y-0">
           {totalListItems === 0 ? (
-            <div className="rounded-2xl border border-[#EBEBEC] bg-white px-4 py-12 text-center text-sm text-[#5C5D5F] shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]">
+            <div className="rounded-2xl border border-stroke-subtle bg-surface px-4 py-12 text-center text-sm text-fg-muted shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
               No scheduled earnings
             </div>
           ) : (

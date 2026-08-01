@@ -8,7 +8,7 @@ import { fetchSearchItems } from "@/lib/search/fetch-search-items";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { useSearchRecentStorage } from "@/lib/search/use-search-recent-storage";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
-import { AppModalShell } from "@/components/ui/app-modal-shell";
+import { AppModalShell, APP_MODAL_RULE_CLASS } from "@/components/ui/app-modal-shell";
 import { SearchPanelResults } from "@/components/search/search-panel-results";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
@@ -205,35 +205,35 @@ export function SearchModal({
           <div
             className={
               fullscreen
-                ? "flex w-full items-center gap-3 border-b border-[#E4E4E7] px-6 py-4 sm:px-9"
+                ? `flex w-full items-center gap-3 border-b px-6 py-4 sm:px-9 ${APP_MODAL_RULE_CLASS}`
                 : "flex w-full items-center gap-3"
             }
           >
-            <Search className="h-5 w-5 shrink-0 text-[#5C5D5F]" />
+            <Search className="h-5 w-5 shrink-0 text-fg-muted" />
             <input
               ref={inputRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search Apple, NVIDIA, Bitcoin, Ethereum, S&P 500…"
-              className="flex-1 bg-transparent text-[15px] leading-6 text-[#141414] outline-none placeholder:text-[#A1A1AA]"
+              className="flex-1 bg-transparent text-[15px] leading-6 text-fg outline-none placeholder:text-fg-subtle"
               autoComplete="off"
               autoCorrect="off"
             />
             <kbd
               onClick={onClose}
-              className="cursor-pointer select-none rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] px-2 py-1 text-[12px] font-medium text-[#5C5D5F] transition-colors hover:bg-[#E4E4E7]"
+              className="cursor-pointer select-none rounded-lg border border-stroke bg-surface-muted px-2 py-1 text-[12px] font-medium text-fg-muted transition-colors hover:bg-stroke"
             >
               ESC
             </kbd>
           </div>
         }
-        headerClassName={fullscreen ? "shrink-0 bg-white px-0 py-0" : undefined}
+        headerClassName={fullscreen ? "shrink-0 bg-surface px-0 py-0" : undefined}
         bodyClassName={fullscreen ? undefined : "p-0"}
         cardClassName={fullscreen ? undefined : "overflow-hidden"}
       >
         {fullscreen ? (
-          <div className="flex min-h-0 flex-1 flex-col bg-white">{resultsContent}</div>
+          <div className="flex min-h-0 flex-1 flex-col bg-surface">{resultsContent}</div>
         ) : (
           resultsContent
         )}

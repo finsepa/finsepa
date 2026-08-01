@@ -188,7 +188,7 @@ export function PortfolioQuickAddMenu({
         className={cn(
           dropdownMenuPlainItemClassName(),
           "font-medium whitespace-nowrap",
-          disabled ? "cursor-not-allowed text-[#A1A1AA] hover:bg-white" : "text-[#141414]",
+          disabled ? "cursor-not-allowed text-fg-subtle hover:bg-surface" : null,
         )}
       >
         {itemIcon(id)}
@@ -197,6 +197,16 @@ export function PortfolioQuickAddMenu({
     );
   }
 
+  // Stable class string (no `cn`/`twMerge`) — matches topbar notification button hydration pattern.
+  const resolvedTriggerChrome =
+    triggerClassName ??
+    (showDesktopLabel
+      ? `${topbarSquircleTextButtonClass} justify-center w-9 gap-0 px-0 md:w-auto md:gap-1.5 md:px-3.5`
+      : `${topbarSquircleIconClass} justify-center`);
+  const triggerClassNameResolved = open
+    ? `quick-add-trigger ${resolvedTriggerChrome} ${topbarSquircleActiveClass}`
+    : `quick-add-trigger ${resolvedTriggerChrome}`;
+
   const trigger = (
     <button
       type="button"
@@ -204,14 +214,9 @@ export function PortfolioQuickAddMenu({
       aria-expanded={open}
       aria-haspopup="menu"
       aria-label={ariaLabel}
+      suppressHydrationWarning
       onClick={() => setOpen((v) => !v)}
-      className={cn(
-        "quick-add-trigger",
-        triggerClassName ?? (showDesktopLabel ? topbarSquircleTextButtonClass : topbarSquircleIconClass),
-        "justify-center",
-        showDesktopLabel ? "w-9 gap-0 px-0 md:w-auto md:gap-1.5 md:px-3.5" : undefined,
-        open && topbarSquircleActiveClass,
-      )}
+      className={triggerClassNameResolved}
     >
       <span className="quick-add-trigger-icons" aria-hidden>
         <Plus strokeWidth={2} className="h-5 w-5 quick-add-trigger-plus" />
@@ -250,7 +255,7 @@ export function PortfolioQuickAddMenu({
           )}
         >
           {activityItems.map(renderItem)}
-          <div role="separator" aria-hidden className="-mx-1 my-0.5 h-px shrink-0 bg-[#E4E4E7]" />
+          <div role="separator" aria-hidden className="-mx-1 my-0.5 h-px shrink-0 bg-stroke" />
           {createItems.map(renderItem)}
         </div>
       </TopbarDropdownPortal>

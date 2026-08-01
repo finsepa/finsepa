@@ -31,11 +31,11 @@ export function WatchlistHeaderActions({
   return (
     <div className="flex min-w-0 items-center gap-2">
       {showTitle ? (
-        <h1 className="truncate text-[20px] font-semibold leading-7 text-[#141414]" suppressHydrationWarning>
+        <h1 className="truncate text-[20px] font-semibold leading-7 text-fg" suppressHydrationWarning>
           {name}
         </h1>
       ) : (
-        <div className="h-7 w-32 max-w-[50%] animate-pulse rounded bg-[#E4E4E7]" aria-hidden />
+        <div className="h-7 w-32 max-w-[50%] animate-pulse rounded bg-stroke" aria-hidden />
       )}
       <WatchlistOptionsMenu
         name={showTitle ? name : ""}

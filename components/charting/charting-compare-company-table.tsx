@@ -96,7 +96,7 @@ export function ChartingCompareCompanyTable({
             <div
               className={cn(
                 grid.className,
-                "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
               )}
               style={grid.style}
             >
@@ -134,7 +134,7 @@ export function ChartingCompareCompanyTable({
                 )}
                 style={grid.style}
               >
-                <div className={cn("text-left font-medium text-[#141414]", TABLE_START_ALIGNED_PAD_CLASS)}>
+                <div className={cn("text-left font-medium text-fg", TABLE_START_ALIGNED_PAD_CLASS)}>
                   {label}
                 </div>
                 {seriesDefs.map((series) => {

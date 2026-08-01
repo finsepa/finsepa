@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { tooltipDwellSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 
 /** Above app chrome (sidebar `z-20`, topbar `z-30`, menus `z-[120]`) so hints are never clipped by `overflow-hidden`. */
 const TOOLTIP_PORTAL_Z = 280;
@@ -35,7 +36,7 @@ type TopbarDelayedTooltipProps = {
 };
 
 /**
- * Figma-style hint: dark pill with a caret (`placement="bottom"`, `"left"`, or `"right"`).
+ * Delayed hover/focus hint pill (`placement="bottom"`, `"left"`, or `"right"`).
  * Appears only after {@link delayMs} of continuous hover or keyboard focus.
  * Rendered in a **portal** so it is not clipped by sidebar `overflow-y-auto` or stacked under the top bar (`z-30`).
  */
@@ -128,49 +129,35 @@ export function TopbarDelayedTooltip({
   const tooltip =
     visible && mounted ? (
       <div
-        className={cn(
-          "pointer-events-none fixed flex",
-          placement === "right" || placement === "left"
-            ? "flex-row items-center"
-            : cn("flex-col", align === "trailing" ? "items-end" : "items-center"),
-        )}
+        className="pointer-events-none fixed"
         style={{ left: pos.left, top: pos.top, transform: pos.transform, zIndex }}
         role="tooltip"
       >
-        {placement === "right" ? (
-          <div
-            className="h-0 w-0 border-y-[6px] border-r-[7px] border-y-transparent border-r-[#141414]"
-            aria-hidden
-          />
-        ) : null}
-        {placement === "bottom" ? (
-          <div
-            className="h-0 w-0 border-x-[6px] border-b-[7px] border-x-transparent border-b-[#141414]"
-            aria-hidden
-          />
-        ) : null}
         <div
           className={cn(
-            "rounded-md bg-[#141414] px-2.5 py-1.5 text-xs font-medium leading-4 text-white",
-            multiline ? "max-w-[min(calc(100vw-2rem),16rem)] whitespace-pre-line text-left" : "whitespace-nowrap text-center",
-            placement === "right" ? "-ml-px" : placement === "left" ? "-mr-px" : "-mt-px",
+            tooltipDwellSurfaceClassName,
+            multiline
+              ? "max-w-[min(calc(100vw-2rem),16rem)] whitespace-pre-line text-left"
+              : "whitespace-nowrap text-center",
           )}
         >
           {label}
         </div>
-        {placement === "left" ? (
-          <div
-            className="h-0 w-0 border-y-[6px] border-l-[7px] border-y-transparent border-l-[#141414]"
-            aria-hidden
-          />
-        ) : null}
       </div>
     ) : null;
+
+  // Don't force `inline-flex` when callers pass display utilities (`flex`, `block`,
+  // `hidden md:block`, etc.) — that fought twMerge before and still double-applies
+  // without it (search: `flex min-w-0 w-full` → hydration `inline-flex` vs `flex`).
+  const rootClassName = className
+    ? `relative max-w-full ${className}`
+    : "relative inline-flex max-w-full";
 
   return (
     <div
       ref={rootRef}
-      className={cn("relative inline-flex max-w-full", className)}
+      suppressHydrationWarning
+      className={rootClassName}
       onMouseEnter={start}
       onMouseLeave={hide}
       onMouseDown={hide}

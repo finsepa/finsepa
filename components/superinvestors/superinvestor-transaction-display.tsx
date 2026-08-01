@@ -11,19 +11,19 @@ const priceFmt = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
-const cellUp = "text-[#16A34A]";
-const cellDown = "text-[#DC2626]";
+const cellUp = "text-up";
+const cellDown = "text-down";
 
 export const superinvestorTxTdActivity =
   "flex min-w-0 flex-col items-end justify-center py-1 text-right text-[14px] leading-5 whitespace-normal";
 
 export const superinvestorTxTdNum =
-  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]";
+  "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg";
 
 export const superinvestorTxRowGridThree =
   "grid w-full min-w-[520px] grid-cols-[minmax(140px,1.15fr)_minmax(96px,0.9fr)_minmax(120px,1.05fr)] gap-x-4";
 
-const tickerSublineClass = "text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]";
+const tickerSublineClass = "text-[12px] font-normal leading-4 tabular-nums text-fg-muted";
 
 function formatSharesDeltaLine(n: number | null): string | null {
   if (n == null || n === 0 || !Number.isFinite(n)) return null;

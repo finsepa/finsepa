@@ -2,6 +2,10 @@
 
 import { CompanyPicker, type CompanyPick } from "@/components/charting/company-picker";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
+import {
+  dropdownTriggerFieldClassName,
+  textInputActiveRingClassName,
+} from "@/components/design-system/text-input-styles";
 import { IntersectCircle } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
@@ -72,6 +76,7 @@ export function CryptoComparePicker({ baseSymbol, values, onAdd, onRemove }: Pro
       excludeSymbols={excludeSymbols}
       includeCrypto
       menuAlign="trailing"
+      menuPortal
       placeholder="Compare to..."
       wrapClassName="relative min-w-0 w-full sm:w-auto"
     >
@@ -100,9 +105,13 @@ export function CryptoComparePicker({ baseSymbol, values, onAdd, onRemove }: Pro
               setOpen(true);
             }}
             className={cn(
-              "relative cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10",
+              "relative cursor-pointer",
               hasPicks
-                ? "flex h-9 w-full items-center rounded-[10px] bg-[#F4F4F5] py-2 pl-4 pr-10 text-left text-sm font-normal transition-colors hover:bg-[#EBEBEB]"
+                ? cn(
+                    dropdownTriggerFieldClassName,
+                    "flex w-full items-center rounded-[10px] py-0 pl-2 pr-10 text-left text-sm font-normal",
+                    open && textInputActiveRingClassName,
+                  )
                 : cn(topbarSquircleIconClass, "cursor-pointer"),
               atCapacity && "cursor-not-allowed opacity-50",
             )}
@@ -113,7 +122,7 @@ export function CryptoComparePicker({ baseSymbol, values, onAdd, onRemove }: Pro
                 <div
                   key={v.symbol.toUpperCase()}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex h-5 max-w-[220px] shrink-0 items-center gap-0.5 rounded-md border border-[#E4E4E7] bg-white py-0 pl-1.5 pr-0.5 text-[11px] font-medium leading-none text-[#141414]"
+                  className="flex h-5 max-w-[220px] shrink-0 items-center gap-0.5 rounded-md border border-stroke bg-surface py-0 pl-1.5 pr-0.5 text-[11px] font-medium leading-none text-fg"
                 >
                   <span className="min-w-0 truncate">
                     {v.name} · {v.symbol}
@@ -125,20 +134,20 @@ export function CryptoComparePicker({ baseSymbol, values, onAdd, onRemove }: Pro
                       e.stopPropagation();
                       onRemove(v.symbol);
                     }}
-                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-[#141414] hover:bg-black/5"
+                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-fg hover:bg-black/5"
                     aria-label={`Remove ${v.symbol} from comparison`}
                   >
-                    <IconX className="h-3 w-3 text-[#141414]" />
+                    <IconX className="h-3 w-3 text-fg" />
                   </button>
                 </div>
                 ))}
               </div>
             ) : (
-              <IntersectCircle className="h-5 w-5 shrink-0 text-[#141414]" strokeWidth={1.75} aria-hidden />
+              <IntersectCircle className="h-5 w-5 shrink-0 text-fg" strokeWidth={1.75} aria-hidden />
             )}
           </div>
           {hasPicks ? (
-            <IconChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[#141414]" />
+            <IconChevronDown className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg" />
           ) : null}
         </div>
       )}

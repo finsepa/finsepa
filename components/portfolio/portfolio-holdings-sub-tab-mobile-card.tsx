@@ -40,16 +40,16 @@ export function PortfolioHoldingsSubTabMobileToggle({
             onClick={() => onChange(item.id)}
             className={cn(
               "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-[14px] font-medium leading-5 transition-colors duration-100",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
-              isActive ? "bg-[#F4F4F5] text-[#141414]" : "bg-transparent text-[#5C5D5F]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
+              isActive ? "bg-surface-muted text-fg" : "bg-transparent text-fg-muted",
             )}
           >
             {item.label}
             {item.id === "assets" && assetCount != null ? (
               <span
                 className={cn(
-                  "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-[6px] text-[11px] font-medium tabular-nums leading-none text-[#141414] transition-colors duration-100",
-                  isActive ? "bg-white" : "bg-[#E4E4E7]",
+                  "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-[6px] text-[11px] font-medium tabular-nums leading-none text-fg transition-colors duration-100",
+                  isActive ? "bg-surface" : "bg-stroke",
                 )}
               >
                 {assetCount}
@@ -79,7 +79,7 @@ export function PortfolioHoldingsSubTabMobileCard({
   return (
     <div
       className={cn(
-        "w-full min-w-0 max-w-full bg-white",
+        "w-full min-w-0 max-w-full bg-surface",
         SCREENER_TABLE_OUTER_BORDER_CLASS,
         SCREENER_TABLE_MOBILE_SURFACE_CLASS,
         "max-md:overflow-hidden max-md:rounded-2xl md:contents",

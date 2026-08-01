@@ -20,7 +20,7 @@ export function EarningsCountdownBars({
           key={i}
           className={cn(
             "h-3 w-[3px] max-w-[3px] shrink-0 rounded-[1px]",
-            i < filledBars ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
+            i < filledBars ? "bg-accent" : "bg-stroke",
           )}
         />
       ))}

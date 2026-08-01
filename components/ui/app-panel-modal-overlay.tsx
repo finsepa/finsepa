@@ -58,7 +58,7 @@ export function AppPanelModalOverlay({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 bg-black/40 backdrop-blur-[2px]",
+        "fixed inset-0 bg-black/40 backdrop-blur-[2px] dark:bg-[#121212]/36",
         layout === "panel" && "flex justify-end",
         className,
       )}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MOBILE_INSET_CARD_CLASS } from "@/components/design-system/card-surface-styles";
+import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import type {
   AnalyticsMetricResult,
@@ -103,7 +104,7 @@ const PORTFOLIO_METRICS_MOBILE_CARD_CLASS = "max-md:overflow-hidden";
 
 /** 4px dash / 4px gap divider — same as asset Key Stats Basic card. */
 const STAT_ROW_DASHED_DIVIDER_CLASS =
-  "relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:[background-image:repeating-linear-gradient(90deg,#E4E4E7_0,#E4E4E7_4px,transparent_4px,transparent_8px)]";
+  "relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:[background-image:repeating-linear-gradient(90deg,var(--fs-stroke)_0,var(--fs-stroke)_4px,transparent_4px,transparent_8px)]";
 
 function formatDelta(deltaPct: number): string {
   const sign = deltaPct > 0 ? "+" : "";
@@ -111,10 +112,10 @@ function formatDelta(deltaPct: number): string {
 }
 
 function valueToneClass(deltaPct: number | null, muted: boolean): string {
-  if (muted) return "text-[#5C5D5F]";
-  if (deltaPct == null) return "text-[#141414]";
-  if (deltaPct === 0) return "text-[#141414]";
-  return deltaPct > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
+  if (muted) return "text-fg-muted";
+  if (deltaPct == null) return "text-fg";
+  if (deltaPct === 0) return "text-fg";
+  return deltaPct > 0 ? "text-up" : "text-down";
 }
 
 function formatRatioMetric(m: AnalyticsMetricResult | undefined): { text: string; num: number | null; muted: boolean } {
@@ -310,7 +311,7 @@ function MetricValueDisplay({
   }
 
   const deltaLabel = formatDelta(row.deltaPct!);
-  const deltaTone = row.deltaPct! > 0 ? "text-[#16A34A]" : "text-[#DC2626]";
+  const deltaTone = row.deltaPct! > 0 ? "text-up" : "text-down";
 
   return (
     <>
@@ -318,7 +319,7 @@ function MetricValueDisplay({
       <div className={cn("group/value relative hidden shrink-0 md:block", align === "right" && "ml-auto")}>
         <span
           className={cn(
-            "cursor-default underline decoration-dotted decoration-[#D4D4D8] underline-offset-2",
+            "cursor-default underline decoration-dotted decoration-table-row-stroke underline-offset-2",
             valueClass,
           )}
           tabIndex={0}
@@ -330,15 +331,15 @@ function MetricValueDisplay({
           id={`portfolio-metric-tip-${row.label.replace(/\s+/g, "-").toLowerCase()}`}
           role="tooltip"
           className={cn(
-            "pointer-events-none absolute bottom-[calc(100%+6px)] z-30 w-max max-w-[min(calc(100vw-2rem),15rem)]",
+            "pointer-events-none absolute bottom-[calc(100%+6px)] z-30 w-max max-w-[min(calc(100vw-2rem),15rem)] px-3 py-2.5 opacity-0",
             align === "right" ? "right-0" : "left-0",
-            "rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 opacity-0 shadow-[0px_4px_12px_rgba(10,10,10,0.08)]",
+            tooltipSurfaceClassName,
             "transition-opacity duration-100 group-hover/value:opacity-100 group-focus-within/value:opacity-100",
           )}
         >
-          <p className="text-[12px] font-semibold leading-4 text-[#141414]">{row.tooltipTitle}</p>
-          <p className="mt-2 text-[12px] leading-4 text-[#5C5D5F]">S&amp;P 500 - {row.benchmark}</p>
-          <p className="text-[12px] leading-4 text-[#5C5D5F]">Portfolio - {row.portfolio}</p>
+          <p className="text-[12px] font-semibold leading-4 text-fg">{row.tooltipTitle}</p>
+          <p className="mt-2 text-[12px] leading-4 text-fg-muted">S&amp;P 500 - {row.benchmark}</p>
+          <p className="text-[12px] leading-4 text-fg-muted">Portfolio - {row.portfolio}</p>
           <p className={cn("mt-2 text-[12px] font-semibold leading-4 tabular-nums", deltaTone)}>{deltaLabel}</p>
         </div>
       </div>
@@ -372,9 +373,9 @@ function MobileStatCell({
         showBorderBottom && cn(STAT_ROW_DASHED_DIVIDER_CLASS, "pb-3"),
       )}
     >
-      <span className="text-[14px] leading-4 text-[#5C5D5F]">{row.label}</span>
+      <span className="text-[14px] leading-4 text-fg-muted">{row.label}</span>
       {loading ? (
-        <div className="h-4 w-12 animate-pulse rounded bg-neutral-200" aria-hidden />
+        <div className="h-4 w-12 animate-pulse rounded bg-skeleton" aria-hidden />
       ) : (
         <MetricValueDisplay row={row} muted={muted} align="left" />
       )}
@@ -409,9 +410,9 @@ function StatRow({
         className,
       )}
     >
-      <span className="min-w-0 shrink text-[14px] font-medium leading-5 text-[#141414]">{row.label}</span>
+      <span className="min-w-0 shrink text-[14px] font-medium leading-5 text-fg">{row.label}</span>
       {loading ? (
-        <div className="h-4 w-14 shrink-0 animate-pulse rounded bg-neutral-200" aria-hidden />
+        <div className="h-4 w-14 shrink-0 animate-pulse rounded bg-skeleton" aria-hidden />
       ) : (
         <MetricValueDisplay row={row} muted={muted} align="right" />
       )}
@@ -518,7 +519,7 @@ export function PortfolioOverviewMetrics({
       )}
     >
       <div className="md:hidden">
-        <h3 className="mb-4 text-[14px] font-medium leading-5 text-[#5C5D5F]">Key Stats</h3>
+        <h3 className="mb-4 text-[14px] font-medium leading-5 text-fg-muted">Key Stats</h3>
         <div className="flex flex-col">
           {chunkMetricRows(metrics).map((pair, rowIndex, rows) => {
             const showBorderBottom = rowIndex < rows.length - 1;

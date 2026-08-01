@@ -31,10 +31,10 @@ export function formatAllocationReturnPct(pct: number | null | undefined): strin
 }
 
 export function allocationReturnToneClass(pct: number | null | undefined): string {
-  if (pct == null || !Number.isFinite(pct)) return "text-[#5C5D5F]";
-  if (pct > 0) return "text-[#16A34A]";
-  if (pct < 0) return "text-[#DC2626]";
-  return "text-[#141414]";
+  if (pct == null || !Number.isFinite(pct)) return "text-fg-muted";
+  if (pct > 0) return "text-up";
+  if (pct < 0) return "text-down";
+  return "text-fg";
 }
 
 function PeriodTrigger({
@@ -51,9 +51,9 @@ function PeriodTrigger({
 
   if (!interactive || !onPeriodChange) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[12px] font-medium leading-4 text-[#5C5D5F]">
+      <span className="inline-flex items-center gap-0.5 text-[12px] font-medium leading-4 text-fg-muted">
         {allocationReturnPeriodLabel(period)}
-        <ChevronDown className="h-3 w-3 shrink-0 text-[#5C5D5F]" strokeWidth={2} aria-hidden />
+        <ChevronDown className="h-3 w-3 shrink-0 text-fg-muted" strokeWidth={2} aria-hidden />
       </span>
     );
   }
@@ -67,11 +67,11 @@ function PeriodTrigger({
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-0.5 rounded-md px-0.5 py-0.5 text-[12px] font-medium leading-4 text-[#5C5D5F] outline-none transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#141414]/10"
+        className="inline-flex items-center gap-0.5 rounded-md px-0.5 py-0.5 text-[12px] font-medium leading-4 text-fg-muted outline-none transition-colors hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-fg/10"
       >
         {allocationReturnPeriodLabel(period)}
         <ChevronDown
-          className={cn("h-3 w-3 shrink-0 text-[#5C5D5F] transition-transform", open && "rotate-180")}
+          className={cn("h-3 w-3 shrink-0 text-fg-muted transition-transform", open && "rotate-180")}
           strokeWidth={2}
           aria-hidden
         />
@@ -109,7 +109,7 @@ function PeriodTrigger({
                 </span>
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
                   <Check
-                    className={cn("h-4 w-4 text-[#141414]", !selected && "invisible")}
+                    className={cn("h-4 w-4 text-fg", !selected && "invisible")}
                     strokeWidth={2}
                   />
                 </span>
@@ -145,7 +145,7 @@ export function AllocationDonutCenterReturn({
   return (
     <div className={cn("flex max-w-[7.5rem] flex-col items-center gap-0.5 px-1 text-center", className)}>
       {loading && returnPct == null ? (
-        <div className="h-5 w-14 animate-pulse rounded bg-neutral-200 sm:h-[1.125rem]" aria-hidden />
+        <div className="h-5 w-14 animate-pulse rounded bg-skeleton sm:h-[1.125rem]" aria-hidden />
       ) : (
         <div
           className={cn(

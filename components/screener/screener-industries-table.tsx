@@ -30,7 +30,7 @@ function formatPctValue(value: number) {
 function PctCell({ value }: { value: number | null }) {
   if (value == null || !Number.isFinite(value)) {
     return (
-      <div className={cn("min-w-0 w-full text-right text-[14px] leading-5 font-medium text-[#5C5D5F]", TABLE_END_ALIGNED_PAD_CLASS)}>
+      <div className={cn("min-w-0 w-full text-right text-[14px] leading-5 font-medium text-fg-muted", TABLE_END_ALIGNED_PAD_CLASS)}>
         -
       </div>
     );
@@ -41,7 +41,7 @@ function PctCell({ value }: { value: number | null }) {
       className={cn(
         "min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium",
         TABLE_END_ALIGNED_PAD_CLASS,
-        positive ? "text-[#16A34A]" : "text-[#DC2626]",
+        positive ? "text-up" : "text-down",
       )}
     >
       {formatPctValue(value)}
@@ -81,9 +81,9 @@ export function ScreenerIndustriesTable({
     return (
       <div
         className={cn(
-          "px-4 py-6 text-center text-[14px] leading-6 text-[#5C5D5F]",
+          "px-4 py-6 text-center text-[14px] leading-6 text-fg-muted",
           !embeddedInMobileCard &&
-            "rounded-2xl border border-[#EBEBEC] bg-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]",
+            "rounded-2xl border border-stroke-subtle bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]",
         )}
       >
         No industry data is available for the current screener list.
@@ -93,7 +93,7 @@ export function ScreenerIndustriesTable({
 
   return (
     <ScreenerTableScroll minWidthClassName="min-w-0" embeddedInMobileCard={embeddedInMobileCard}>
-      <div className="bg-white">
+      <div className="bg-surface">
         <div
           className={cn(
             SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -105,29 +105,28 @@ export function ScreenerIndustriesTable({
         >
           <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
             <div
-              className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center text-[14px] font-medium leading-5 text-[#5C5D5F]`}
+              className={`grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[44px] items-center text-[14px] font-medium leading-5 text-fg-muted`}
             >
               <div className="text-center">#</div>
               <div className="text-left">Industry</div>
-              <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>1D %</div>
               <div className={cn("hidden min-w-0 w-full text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
                 Market Cap
               </div>
+              <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>1D %</div>
             </div>
           </div>
           <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
         </div>
 
-        {grouped.map(({ sector, items }, groupIndex) => (
+        {grouped.map(({ sector, items }) => (
           <div key={sector}>
-            <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
-              <div className="rounded-[10px] bg-[#F4F4F5] px-3 py-2.5 md:px-3">
-                <h3 className="text-[14px] font-semibold leading-5 text-[#5C5D5F]">{sector}</h3>
+            <div className="px-0">
+              <div className="rounded-none bg-surface-section px-[20px] py-2.5 md:px-[20px]">
+                <div className="font-['Inter'] text-[14px] font-medium leading-5 text-fg-muted">
+                  {sector}
+                </div>
               </div>
             </div>
-            {groupIndex > 0 || items.length > 0 ? (
-              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
-            ) : null}
             {items.map((row, i) => (
               <div key={`${row.sector}-${row.industry}`} className={SCREENER_TABLE_DATA_ROW_CLASS}>
                 <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
@@ -135,30 +134,30 @@ export function ScreenerIndustriesTable({
                     href={screenerIndustryDrillHref(row.sector as ScreenerCanonicalSector, row.industry)}
                     prefetch={false}
                     className={cn(
-                      `grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[56px] cursor-pointer items-center no-underline transition-colors duration-75 visited:text-inherit focus-visible:z-[1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#141414]/25 sm:min-h-[60px]`,
+                      `grid ${colLayoutMobile} ${colLayoutDesktop} min-h-[56px] cursor-pointer items-center no-underline transition-colors duration-75 visited:text-inherit focus-visible:z-[1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-fg/25 sm:min-h-[60px]`,
                       SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                     )}
                   >
-                    <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-[#5C5D5F]">
+                    <div className="text-center text-[14px] font-semibold leading-5 tabular-nums text-fg-muted">
                       {i + 1}
                     </div>
                     <div className="min-w-0">
-                      <span className="block truncate text-left text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline">
+                      <span className="block truncate text-left text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
                         {row.industry}
                       </span>
-                      <span className="mt-0.5 block truncate text-left text-[12px] font-normal leading-4 text-[#5C5D5F] sm:hidden">
+                      <span className="mt-0.5 block truncate text-left text-[12px] font-normal leading-4 text-fg-muted sm:hidden">
                         {row.marketCapDisplay}
                       </span>
                     </div>
-                    <PctCell value={row.change1D} />
                     <div
                       className={cn(
-                        "hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] sm:block",
+                        "hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block",
                         TABLE_END_ALIGNED_PAD_CLASS,
                       )}
                     >
                       {row.marketCapDisplay}
                     </div>
+                    <PctCell value={row.change1D} />
                   </Link>
                 </div>
                 {i < items.length - 1 ? (

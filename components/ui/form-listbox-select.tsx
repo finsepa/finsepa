@@ -11,6 +11,7 @@ import {
 } from "@/components/design-system/dropdown-menu-styles";
 import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
 import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
+import { dropdownTriggerFieldClassName } from "@/components/design-system/text-input-styles";
 import { cn } from "@/lib/utils";
 
 export type ListboxOption<V extends string = string> = { value: V; label: string };
@@ -112,7 +113,7 @@ export function FormListboxSelect<V extends string>({
             </span>
             <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
               <Check
-                className={cn("h-4 w-4 text-[#141414]", !selected && "invisible")}
+                className={cn("h-4 w-4 text-fg", !selected && "invisible")}
                 strokeWidth={2}
               />
             </span>
@@ -124,10 +125,20 @@ export function FormListboxSelect<V extends string>({
 
   if (!active) return null;
 
+  const triggerBaseClass = [
+    "relative flex cursor-pointer items-center rounded-[10px] text-left text-sm font-normal text-fg transition-colors focus-visible:ring-2 focus-visible:ring-fg/10",
+    dropdownTriggerFieldClassName,
+    fitTrigger ? "w-auto gap-2 px-3" : "w-full",
+    disabled ? "cursor-not-allowed opacity-60 hover:bg-surface-subtle" : "",
+    triggerClassName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div
       ref={containerRef}
-      className={cn("relative z-20 min-w-0 w-full", listboxClassName, className)}
+      className={["relative z-20 min-w-0 w-full", listboxClassName, className].filter(Boolean).join(" ")}
     >
       <button
         type="button"
@@ -136,23 +147,17 @@ export function FormListboxSelect<V extends string>({
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
+        suppressHydrationWarning
         onClick={() => {
           if (disabled) return;
           setOpen((v) => !v);
         }}
-        className={cn(
-          cn(
-            "relative flex h-9 cursor-pointer items-center rounded-[10px] bg-[#F1F1F2] py-2 text-left text-sm font-normal text-[#141414] outline-none transition-colors hover:bg-[#E6E6E7] focus-visible:ring-2 focus-visible:ring-[#141414]/10",
-            fitTrigger ? "w-auto gap-2 px-3" : "w-full",
-          ),
-          disabled && "cursor-not-allowed opacity-60 hover:bg-[#F1F1F2]",
-          triggerClassName,
-        )}
+        className={triggerBaseClass}
       >
         {leadingIcon ? (
           <span
             className={cn(
-              "pointer-events-none flex h-5 w-5 shrink-0 items-center justify-center text-[#5C5D5F]",
+              "pointer-events-none flex h-5 w-5 shrink-0 items-center justify-center text-fg-muted",
               !fitTrigger && "absolute left-3 top-1/2 -translate-y-1/2",
             )}
             aria-hidden
@@ -177,7 +182,7 @@ export function FormListboxSelect<V extends string>({
         {fitTrigger ? (
           <ChevronDown
             className={cn(
-              "h-5 w-5 shrink-0 text-[#141414] transition-transform",
+              "h-5 w-5 shrink-0 text-fg transition-transform",
               open && "rotate-180",
             )}
             strokeWidth={2}
@@ -189,7 +194,7 @@ export function FormListboxSelect<V extends string>({
         <ChevronDown
           className={cn(
             cn(
-              "pointer-events-none absolute top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-[#141414] transition-transform",
+              "pointer-events-none absolute top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-fg transition-transform",
               compact ? "right-2.5" : "right-3",
             ),
             open && "rotate-180",

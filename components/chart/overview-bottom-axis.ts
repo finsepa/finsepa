@@ -20,13 +20,11 @@ export function overviewChartAxisRowPx(containerWidthPx: number): number {
   return shouldHideMobileYAxisLabels(containerWidthPx) ? CHART_AXIS_ROW_MOBILE_PX : CHART_AXIS_ROW_PX;
 }
 
-/** Plot-area backdrop — dot grid strongest in center; fades toward all edges. */
-export const CHART_PLOT_DOTS_PATTERN_CLASS =
-  "absolute inset-0 [background-image:radial-gradient(circle,rgba(228,228,231,0.42)_1px,transparent_1px)] [background-size:8px_8px] [mask-image:radial-gradient(ellipse_52%_72%_at_50%_50%,#000_0%,#000_38%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_52%_72%_at_50%_50%,#000_0%,#000_38%,transparent_100%)]";
+/** Plot-area backdrop — oval mask vignette (see `.chart-plot-dots` in `app/globals.css`). */
+export const CHART_PLOT_DOTS_PATTERN_CLASS = "chart-plot-dots";
 
-/** html-to-image safe — same dot grid with a white radial overlay instead of CSS mask. */
-export const CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS =
-  "absolute inset-0 [background-image:radial-gradient(ellipse_52%_72%_at_50%_50%,transparent_0%,transparent_38%,rgba(255,255,255,0.95)_100%),radial-gradient(circle,rgba(228,228,231,0.42)_1px,transparent_1px)] [background-size:100%_100%,8px_8px]";
+/** html-to-image safe — panel overlay vignette (no CSS mask). */
+export const CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS = "chart-plot-dots--export";
 
 export type OverviewAxisLabel = { key: string; leftPx: number; label: string };
 

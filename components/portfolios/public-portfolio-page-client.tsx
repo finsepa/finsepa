@@ -71,7 +71,7 @@ function PublicPortfolioPageInner({ listingId }: { listingId: string }) {
 
   if (error || !listing) {
     return (
-      <div className="relative flex min-h-full min-w-0 flex-col bg-white">
+      <div className="relative flex min-h-full min-w-0 flex-col bg-surface">
         <PortfoliosBreadcrumbs />
         <div className="flex min-h-full flex-1 flex-col px-4 py-8 sm:px-9">
         <Empty variant="card" className="min-h-[min(50vh,400px)]">
@@ -90,7 +90,7 @@ function PublicPortfolioPageInner({ listingId }: { listingId: string }) {
 
   if (!listing.snapshot) {
     return (
-      <div className="relative flex min-h-full min-w-0 flex-col bg-white">
+      <div className="relative flex min-h-full min-w-0 flex-col bg-surface">
         <PortfoliosBreadcrumbs currentLabel={listing.name} />
         <div className="flex min-h-full flex-1 flex-col px-4 py-8 sm:px-9">
         <Empty variant="card" className="min-h-[min(50vh,400px)]">

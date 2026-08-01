@@ -30,14 +30,14 @@ function MobileAssetTopbarTitle({
 
   return (
     <div className="mx-auto min-w-0 max-w-[11rem] overflow-hidden px-1 text-center">
-      <p className="truncate text-[14px] font-semibold leading-5 text-[#141414]">{line1}</p>
+      <p className="truncate text-[14px] font-semibold leading-5 text-fg">{line1}</p>
       {line2Loading ? (
-        <div className="mx-auto mt-0.5 h-3.5 w-[5.5rem] max-w-full animate-pulse rounded bg-[#E4E4E7]" aria-hidden />
+        <div className="mx-auto mt-0.5 h-3.5 w-[5.5rem] max-w-full animate-pulse rounded bg-stroke" aria-hidden />
       ) : hasStructuredLine2 ? (
-        <p className="mt-0.5 truncate text-[11px] leading-4 text-[#5C5D5F]">
+        <p className="mt-0.5 truncate text-[11px] leading-4 text-fg-muted">
           {line2Exchange?.trim() ? <span>{line2Exchange.trim()}</span> : null}
           {line2Exchange?.trim() && line2CountryFlag ? (
-            <span className="text-[#E4E4E7]" aria-hidden>
+            <span className="text-stroke" aria-hidden>
               {" "}
               ·{" "}
             </span>
@@ -49,7 +49,7 @@ function MobileAssetTopbarTitle({
           ) : null}
         </p>
       ) : hasPlainLine2 ? (
-        <p className="mt-0.5 truncate text-[11px] leading-4 text-[#5C5D5F]">{line2}</p>
+        <p className="mt-0.5 truncate text-[11px] leading-4 text-fg-muted">{line2}</p>
       ) : null}
     </div>
   );
@@ -87,6 +87,7 @@ export function MobileAssetTopbarChrome() {
         type="button"
         onClick={handleBack}
         aria-label="Go back"
+        suppressHydrationWarning
         className={`${topbarSquircleIconClass} relative z-[1] shrink-0`}
       >
         <ChevronLeft className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />

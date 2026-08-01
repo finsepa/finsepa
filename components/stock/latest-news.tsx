@@ -145,12 +145,12 @@ function NewsListRowContent({ item }: { item: StockNewsArticle }) {
     <>
       <div className={cn(showThumb && NEWS_THUMB_TEXT_PAD_CLASS)}>
         <div className="mb-1 flex flex-wrap items-center gap-1.5">
-          <span className="text-[12px] text-[#5C5D5F]">{formatPublishedLabel(item.publishedAt)}</span>
-          <span className="inline-block size-1 shrink-0 rounded-full bg-[#E4E4E7]" aria-hidden />
+          <span className="text-[12px] text-fg-muted">{formatPublishedLabel(item.publishedAt)}</span>
+          <span className="inline-block size-1 shrink-0 rounded-full bg-stroke" aria-hidden />
           <NewsSourceLogo articleUrl={item.url} />
-          <span className="text-[12px] font-medium text-[#141414]">{item.source}</span>
+          <span className="text-[12px] font-medium text-fg">{item.source}</span>
         </div>
-        <h3 className="line-clamp-2 text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline">
+        <h3 className="line-clamp-2 text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
           {decodeNewsTitle(item.title)}
         </h3>
       </div>
@@ -163,7 +163,7 @@ function NewsListRowContent({ item }: { item: StockNewsArticle }) {
 
 /** Mobile news card title: 3 lines at `text-[14px]` / `leading-5` (20px). */
 const MOBILE_NEWS_TITLE_CLASS =
-  "overflow-hidden text-[14px] font-semibold leading-5 text-[#141414] [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] max-h-[3.75rem] break-words";
+  "overflow-hidden text-[14px] font-semibold leading-5 text-fg [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical] max-h-[3.75rem] break-words";
 
 function MobileNewsCard({
   item,
@@ -184,10 +184,10 @@ function MobileNewsCard({
         MOBILE_ELEVATED_CARD_CLASS,
       )}
     >
-      <p className="flex shrink-0 items-center gap-1.5 truncate text-[12px] leading-4 text-[#5C5D5F]">
+      <p className="flex shrink-0 items-center gap-1.5 truncate text-[12px] leading-4 text-fg-muted">
         <NewsSourceLogo articleUrl={item.url} />
-        <span className="font-medium text-[#141414]">{item.source}</span>
-        <span className="inline-block size-1 shrink-0 rounded-full bg-[#E4E4E7]" aria-hidden />
+        <span className="font-medium text-fg">{item.source}</span>
+        <span className="inline-block size-1 shrink-0 rounded-full bg-stroke" aria-hidden />
         {formatPublishedLabel(item.publishedAt)}
       </p>
       <h3 className={cn("mt-2 shrink-0 group-hover:underline", MOBILE_NEWS_TITLE_CLASS)}>
@@ -195,7 +195,7 @@ function MobileNewsCard({
       </h3>
       <div className="mt-2 flex shrink-0 items-center gap-1.5">
         <CompanyLogo name={symbol} symbol={symbol} logoUrl={logoUrl} size="xs" />
-        <span className="inline-flex h-6 max-w-[8rem] items-center rounded-md border border-[#E4E4E7] bg-white px-2 text-[12px] font-semibold leading-4 text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
+        <span className="inline-flex h-6 max-w-[8rem] items-center rounded-md border border-stroke bg-surface px-2 text-[12px] font-semibold leading-4 text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
           <span className="truncate">{symbol}</span>
         </span>
       </div>
@@ -218,7 +218,7 @@ function LatestNewsHeader({
       {showSeeAll && seeAllHref ? (
         <Link
           href={seeAllHref}
-          className="hidden shrink-0 text-[14px] font-semibold leading-5 text-[#2563EB] max-md:inline"
+          className="hidden shrink-0 text-[14px] font-semibold leading-5 text-accent max-md:inline"
         >
           See all
         </Link>
@@ -445,7 +445,7 @@ function LatestNewsInner({
           </div>
         </>
       ) : !loading && items.length === 0 ? (
-        <p className="max-md:px-0 py-2 text-[13px] leading-5 text-[#5C5D5F] sm:px-0">No recent news found for {sym}.</p>
+        <p className="max-md:px-0 py-2 text-[13px] leading-5 text-fg-muted sm:px-0">No recent news found for {sym}.</p>
       ) : !loading ? (
         <>
           {isOverview ? (

@@ -4,7 +4,7 @@ import { useCallback, useEffect } from "react";
 import { ExternalLink } from "@/lib/icons";
 
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
-import { AppModalCloseButton, AppModalShell } from "@/components/ui/app-modal-shell";
+import { AppModalCloseButton, AppModalShell, APP_MODAL_RULE_CLASS } from "@/components/ui/app-modal-shell";
 import {
   earningsDocumentPreviewKind,
   type EarningsDocumentPreviewKind,
@@ -67,7 +67,7 @@ export function EarningsPdfPreviewModal({ open, title, sourceUrl, onClose }: Pro
           <div className="flex w-full items-center justify-between gap-3">
             <h2
               id="earnings-pdf-preview-title"
-              className="min-w-0 text-[16px] font-semibold leading-6 text-[#141414] sm:text-[17px]"
+              className="min-w-0 text-[16px] font-semibold leading-6 text-fg sm:text-[17px]"
             >
               {title}
             </h2>
@@ -76,7 +76,7 @@ export function EarningsPdfPreviewModal({ open, title, sourceUrl, onClose }: Pro
                 href={sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-[#E4E4E7] bg-white px-2.5 text-[12px] font-semibold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-colors hover:bg-[#F4F4F5] sm:px-3"
+                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-stroke bg-surface px-2.5 text-[12px] font-semibold text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] transition-colors hover:bg-surface-muted sm:px-3"
                 title="Open document in a new tab"
               >
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />
@@ -86,16 +86,16 @@ export function EarningsPdfPreviewModal({ open, title, sourceUrl, onClose }: Pro
             </div>
           </div>
         }
-        headerClassName="border-b border-[#E4E4E7] px-4 py-3 sm:px-5"
-        bodyClassName="min-h-0 flex-1 bg-[#F4F4F5] p-0"
+        headerClassName={`border-b px-4 py-3 sm:px-5 ${APP_MODAL_RULE_CLASS}`}
+        bodyClassName="min-h-0 flex-1 bg-surface-muted p-0"
         cardClassName="overflow-hidden"
       >
         {iframeSrc ? (
           <iframe title={title} className="h-full min-h-[240px] w-full border-0" src={iframeSrc} />
         ) : (
-          <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-2 px-4 text-center text-[14px] text-[#5C5D5F]">
+          <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-2 px-4 text-center text-[14px] text-fg-muted">
             <p>Preview is not available for this host.</p>
-            <a href={sourceUrl} className="font-semibold text-[#141414] underline" target="_blank" rel="noopener noreferrer">
+            <a href={sourceUrl} className="font-semibold text-fg underline" target="_blank" rel="noopener noreferrer">
               Open in new tab
             </a>
           </div>

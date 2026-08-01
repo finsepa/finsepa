@@ -21,7 +21,7 @@ export function TransactionCompanyField({
       menuPortal
       menuAlign="leading"
       shellClassName="rounded-[10px]"
-      placeholder="Start entering a ticker, company, or crypto name"
+      placeholder="Find asset name or ticker.."
     />
   );
 }

@@ -4,12 +4,14 @@ import { FormListboxSelect, type ListboxOption } from "@/components/ui/form-list
 
 export type CashDirection = "in" | "out" | "other_income" | "other_expense";
 
-const OPTIONS: ListboxOption<CashDirection>[] = [
+export const CASH_DIRECTION_OPTIONS: ListboxOption<CashDirection>[] = [
   { value: "in", label: "Cash In" },
   { value: "out", label: "Cash Out" },
   { value: "other_income", label: "Other income" },
   { value: "other_expense", label: "Other expense" },
 ];
+
+const OPTIONS = CASH_DIRECTION_OPTIONS;
 
 /** Stored on `PortfolioTransaction.operation` for cash rows. */
 export function cashOperationLabel(d: CashDirection): string {

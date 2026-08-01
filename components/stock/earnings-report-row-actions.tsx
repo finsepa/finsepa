@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 const outlineButtonClass = cn(
   secondaryOutlineButtonClassName,
-  "min-w-[76px] gap-1.5 overflow-hidden whitespace-nowrap px-3 font-['Inter'] text-[14px] font-normal leading-5 active:bg-white focus-visible:ring-neutral-900/10",
+  "min-w-[76px] gap-1.5 overflow-hidden whitespace-nowrap px-3 font-['Inter'] text-[14px] font-normal leading-5 active:bg-surface focus-visible:ring-neutral-900/10",
 );
 
 function firstPartyEarningsDocumentUrls(
@@ -105,7 +105,7 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
             label="Open earnings presentation preview"
             onClick={() => setPreview({ url: slidesUrl!, title: "Earnings presentation" })}
           >
-            <Presentation className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
+            <Presentation className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
             <span className="shrink-0">Slides</span>
           </ActionButton>
         ) : (
@@ -119,7 +119,7 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
             label="Open quarterly report preview"
             onClick={() => setPreview({ url: filingsUrl!, title: "Quarterly report" })}
           >
-            <FileSearch className="h-4 w-4 shrink-0 text-[#52525B]" aria-hidden />
+            <FileSearch className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
             <span className="shrink-0">Filings</span>
           </ActionButton>
         ) : (

@@ -85,12 +85,12 @@ export function SnaptradeUpdateFromDateField({
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="flex h-9 w-full items-center justify-between gap-2 rounded-[10px] border border-[#E4E4E7] bg-white px-3 text-left text-sm font-normal transition-colors hover:bg-[#FAFAFA]"
+          className="flex h-9 w-full items-center justify-between gap-2 rounded-[10px] border border-stroke bg-surface px-3 text-left text-sm font-normal transition-colors hover:bg-canvas"
         >
-          <span className={cn("min-w-0 truncate", valueYmd ? "text-[#141414]" : "text-[#5C5D5F]")}>
+          <span className={cn("min-w-0 truncate", valueYmd ? "text-fg" : "text-fg-muted")}>
             {valueYmd ? format(ymdToLocalDate(valueYmd), "MM/dd/yyyy") : "first transaction"}
           </span>
-          <CalendarIcon className="h-5 w-5 shrink-0 text-[#5C5D5F]" aria-hidden />
+          <CalendarIcon className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -102,7 +102,7 @@ export function SnaptradeUpdateFromDateField({
           {valueYmd ?
             <button
               type="button"
-              className="rounded-md px-2 py-1.5 text-left text-xs font-medium text-[#5C5D5F] transition-colors hover:bg-[#F4F4F5] hover:text-[#141414]"
+              className="rounded-md px-2 py-1.5 text-left text-xs font-medium text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
               onClick={() => {
                 onChangeYmd(null);
                 setOpen(false);
@@ -128,8 +128,8 @@ export function SnaptradeUpdateFromDateField({
               dropdowns:
                 "!relative !z-[2] grid w-full min-w-0 grid-cols-2 gap-2 !items-stretch !justify-normal",
               dropdown_root: "!relative flex w-full min-w-0 max-w-none shrink",
-              weekday: "text-[0.8rem] font-normal text-[#5C5D5F]",
-              outside: "text-[#A1A1AA]",
+              weekday: "text-[0.8rem] font-normal text-fg-muted",
+              outside: "text-fg-subtle",
             }}
             components={{ DropdownNav: YearFirstCaptionDropdownNav }}
             month={month}

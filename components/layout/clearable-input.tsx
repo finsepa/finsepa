@@ -3,10 +3,13 @@
 import type { FocusEventHandler, InputHTMLAttributes } from "react";
 import { X } from "@/lib/icons";
 
+import { textInputFieldClassName } from "@/components/design-system/text-input-styles";
 import { cn } from "@/lib/utils";
 
-const baseInputClass =
-  "h-9 w-full rounded-[10px] border-0 bg-[#F1F1F2] text-sm text-[#141414] placeholder:text-[#5C5D5F] outline-none focus:ring-2 focus:ring-[#141414]/10";
+const baseInputClass = cn(
+  "w-full rounded-[10px] text-sm",
+  textInputFieldClassName,
+);
 
 type ClearableInputProps = {
   id?: string;
@@ -64,7 +67,7 @@ export function ClearableInput({
         <button
           type="button"
           onClick={() => onChange("")}
-          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[#5C5D5F] transition-colors hover:bg-black/5 hover:text-[#141414]"
+          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-black/5 hover:text-fg"
           aria-label={clearLabel}
         >
           <X className="h-4 w-4" strokeWidth={2} />

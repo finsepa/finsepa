@@ -25,7 +25,7 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
   const canonicalSector = sectorLabel ? mapProviderSectorToCanonical(sectorLabel) : null;
 
   const breadcrumbCrumbClass = "min-w-0 truncate";
-  const breadcrumbLinkClass = `${breadcrumbCrumbClass} transition-colors hover:text-[#141414] hover:underline`;
+  const breadcrumbLinkClass = `${breadcrumbCrumbClass} transition-colors hover:text-fg hover:underline`;
   const breadcrumbSep = (
     <span className="shrink-0 select-none" aria-hidden>
       /
@@ -35,7 +35,7 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="hidden min-w-0 items-center justify-between gap-3 px-4 py-3 text-[14px] text-[#5C5D5F] md:flex md:border-b md:border-[#E4E4E7] sm:px-9"
+      className="hidden min-w-0 items-center justify-between gap-3 px-4 py-3 text-[14px] text-fg-muted md:flex md:border-b md:border-stroke-shell sm:px-9"
     >
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
       <Link
@@ -88,7 +88,7 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
       ) : null}
       {breadcrumbSep}
       <span
-        className={`${breadcrumbCrumbClass} shrink-0 font-medium text-[#141414]`}
+        className={`${breadcrumbCrumbClass} shrink-0 font-medium text-fg`}
         title={breadcrumbSymbol}
         aria-current="page"
       >

@@ -1,9 +1,9 @@
-const pulse = "animate-pulse rounded-md bg-neutral-200/80";
+const pulse = "animate-pulse rounded-md bg-skeleton";
 
 function HoldingsTableSkeleton() {
   return (
     <div className="mt-6 min-w-0" aria-busy aria-label="Loading holdings">
-      <div className="mb-3 flex gap-6 border-b border-[#E4E4E7] pb-2">
+      <div className="mb-3 flex gap-6 border-b border-stroke pb-2">
         <div className={`h-5 w-20 ${pulse}`} />
         <div className={`h-5 w-16 ${pulse}`} />
       </div>
@@ -20,10 +20,10 @@ export function SuperinvestorProfileSkeleton() {
     <div className="relative min-w-0" aria-busy aria-label="Loading superinvestor profile">
       <nav
         aria-hidden
-        className="flex items-center gap-2 px-4 py-3 text-[14px] sm:px-9 md:border-b md:border-[#E4E4E7]"
+        className="flex items-center gap-2 px-4 py-3 text-[14px] sm:px-9 md:border-b md:border-stroke-shell"
       >
         <div className={`h-4 w-24 ${pulse}`} />
-        <span className="text-[#E4E4E7]">/</span>
+        <span className="text-stroke">/</span>
         <div className={`h-4 w-32 ${pulse}`} />
       </nav>
 
@@ -39,7 +39,7 @@ export function SuperinvestorProfileSkeleton() {
             </div>
             <div className="mt-4 flex gap-0">
               {Array.from({ length: 3 }, (_, i) => (
-                <div key={i} className="flex flex-1 flex-col gap-2 border-r border-[#E4E4E7] px-4 last:border-r-0">
+                <div key={i} className="flex flex-1 flex-col gap-2 border-r border-stroke px-4 last:border-r-0">
                   <div className={`h-3.5 w-16 ${pulse}`} />
                   <div className={`h-6 w-20 ${pulse}`} />
                 </div>
@@ -53,7 +53,7 @@ export function SuperinvestorProfileSkeleton() {
             <div className={`mt-1 h-4 w-40 ${pulse}`} />
             <div className="mt-5 flex max-w-3xl gap-0">
               {Array.from({ length: 3 }, (_, i) => (
-                <div key={i} className="flex flex-1 flex-col gap-2 border-r border-[#E4E4E7] px-8 first:pl-0 last:border-r-0">
+                <div key={i} className="flex flex-1 flex-col gap-2 border-r border-stroke px-8 first:pl-0 last:border-r-0">
                   <div className={`h-3.5 w-20 ${pulse}`} />
                   <div className={`h-7 w-24 ${pulse}`} />
                 </div>

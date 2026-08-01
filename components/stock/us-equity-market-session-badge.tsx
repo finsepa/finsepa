@@ -12,7 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 
 /** Matches {@link PriceChart} last-price marker pulse (`LastPriceAnimationMode.OnDataUpdate`). */
-const MARKET_OPEN_DOT_GREEN = "bg-[#16A34A]";
+const MARKET_OPEN_DOT_GREEN = "bg-up";
 
 function MarketOpenStatusDot({ dotSizeClass }: { dotSizeClass: string }) {
   const compact = dotSizeClass.includes("1.5");
@@ -26,7 +26,7 @@ function MarketOpenStatusDot({ dotSizeClass }: { dotSizeClass: string }) {
       />
       <span
         className={cn(
-          "relative block size-full rounded-full ring-white",
+          "relative block size-full rounded-full ring-panel",
           MARKET_OPEN_DOT_GREEN,
           compact ? "ring-1" : "ring-2",
         )}
@@ -69,14 +69,14 @@ function BadgeRow({
     case "pre_opens_soon":
       return (
         <>
-          <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-[#5C5D5F]")} aria-hidden />
+          <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-fg-muted")} aria-hidden />
           <span>{formatUsEquitySessionBadgeLabel(display)}</span>
         </>
       );
     default:
       return (
         <>
-          <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-[#5C5D5F]")} aria-hidden />
+          <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-fg-muted")} aria-hidden />
           <span>{formatUsEquitySessionBadgeLabel(display)}</span>
         </>
       );
@@ -105,7 +105,7 @@ export function UsEquityMarketSessionBadge({ className, variant = "default" }: P
   return (
     <div
       className={cn(
-        "inline-flex items-center text-[#5C5D5F]",
+        "inline-flex items-center text-fg-muted",
         inline ? "gap-1 text-[12px] font-normal leading-4" : "gap-1.5 text-[13px] font-medium",
         className,
       )}

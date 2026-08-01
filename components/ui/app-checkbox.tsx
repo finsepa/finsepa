@@ -29,10 +29,10 @@ export function AppCheckbox({
       className={cn(
         "relative flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors",
         disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-        "focus-within:outline-none focus-within:ring-2 focus-within:ring-[#2563EB]/30 focus-within:ring-offset-2",
+        "focus-within:outline-none focus-within:ring-2 focus-within:ring-accent/30 focus-within:ring-offset-2",
         on
-          ? "border-[#2563EB] bg-[#2563EB] hover:bg-[#1D4ED8]"
-          : "border-[#E4E4E7] bg-white hover:bg-[#F4F4F5]",
+          ? "border-accent bg-accent hover:bg-accent-hover"
+          : "border-stroke bg-surface hover:bg-surface-muted",
         className,
       )}
     >

@@ -330,13 +330,13 @@ export function CompanyPicker({
     >
       {!showSearchPanel ? (
         <>
-          <div className="px-3 pb-1 pt-1 text-[11px] font-semibold tracking-wide text-[#A1A1AA]">
+          <div className="px-3 pb-1 pt-1 text-[11px] font-semibold tracking-wide text-fg-subtle">
             Most popular
           </div>
           {pickerStocksLoading && screenerList.length === 0 && !isSingleAssetMode() ? (
-            <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">Loading companies…</p>
+            <p className="px-3 py-2 text-[12px] text-fg-muted">Loading companies…</p>
           ) : screenerList.length === 0 ? (
-            <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">No companies to add.</p>
+            <p className="px-3 py-2 text-[12px] text-fg-muted">No companies to add.</p>
           ) : (
             <ul className="flex flex-col gap-1 pb-2">
               {screenerList.map((row) => (
@@ -353,9 +353,9 @@ export function CompanyPicker({
                     <CompanyLogo name={row.name} logoUrl={row.logoUrl} symbol={row.ticker} />
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{row.name}</div>
-                      <div className="truncate text-[12px] text-[#5C5D5F]">{row.ticker}</div>
+                      <div className="truncate text-[12px] text-fg-muted">{row.ticker}</div>
                     </div>
-                    <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#5C5D5F]">
+                    <span className="shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-fg-muted">
                       Stock
                     </span>
                   </button>
@@ -365,11 +365,11 @@ export function CompanyPicker({
           )}
           {includeCrypto ? (
             <>
-              <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-[#A1A1AA]">
+              <div className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-fg-subtle">
                 Crypto
               </div>
               {cryptoPickerList.length === 0 ? (
-                <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">No crypto to add.</p>
+                <p className="px-3 py-2 text-[12px] text-fg-muted">No crypto to add.</p>
               ) : (
                 <ul className="flex flex-col gap-1 pb-2">
                   {cryptoPickerList.map((row) => (
@@ -390,11 +390,11 @@ export function CompanyPicker({
                         />
                         <div className="min-w-0 flex-1">
                           <div className="truncate font-medium">{row.name}</div>
-                          <div className="truncate text-[12px] text-[#5C5D5F]">
+                          <div className="truncate text-[12px] text-fg-muted">
                             {eodhdCryptoSpotTickerDisplay(row.symbol)}
                           </div>
                         </div>
-                        <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#5C5D5F]">
+                        <span className="shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-fg-muted">
                           Crypto
                         </span>
                       </button>
@@ -408,11 +408,11 @@ export function CompanyPicker({
       ) : searchPending && !showStaleList ? (
         <SearchLoadingIndicator />
       ) : noResults ? (
-        <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">No results for &ldquo;{queryTrim}&rdquo;</p>
+        <p className="px-3 py-2 text-[12px] text-fg-muted">No results for &ldquo;{queryTrim}&rdquo;</p>
       ) : (
         <>
           {searchLoading && showStaleList ? (
-            <p className="px-3 pb-1 text-center text-[11px] text-[#A1A1AA]" aria-hidden>
+            <p className="px-3 pb-1 text-center text-[11px] text-fg-subtle" aria-hidden>
               Updating…
             </p>
           ) : null}

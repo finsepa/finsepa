@@ -89,11 +89,11 @@ function PerfValue({
   );
 
   if (value == null || !Number.isFinite(value)) {
-    return <div className={cn(base, "text-[#5C5D5F]")}>—</div>;
+    return <div className={cn(base, "text-fg-muted")}>—</div>;
   }
   const isPositive = value >= 0;
   return (
-    <div className={cn(base, isPositive ? "text-[#16A34A]" : "text-[#DC2626]")}>
+    <div className={cn(base, isPositive ? "text-up" : "text-down")}>
       {formatPerformancePct(value)}
     </div>
   );
@@ -151,15 +151,15 @@ function CompanyCell({
       style={{ borderLeftWidth: 3, borderLeftStyle: "solid", borderLeftColor: borderColor }}
     >
       {metaLoading ? (
-        <div className="h-8 w-8 shrink-0 animate-pulse rounded-lg border border-[#E4E4E7] bg-[#F4F4F5]" aria-hidden />
+        <div className="h-8 w-8 shrink-0 animate-pulse rounded-lg border border-stroke bg-surface-muted" aria-hidden />
       ) : (
         <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={symbol} />
       )}
       <div className="min-w-0 overflow-hidden">
-        <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]" title={displayName}>
+        <div className="truncate text-[14px] font-semibold leading-5 text-fg" title={displayName}>
           {displayName}
         </div>
-        <div className="truncate text-[12px] leading-4 text-[#5C5D5F]" title={symbol}>
+        <div className="truncate text-[12px] leading-4 text-fg-muted" title={symbol}>
           {isCryptoOverviewSymbol(symbol) ? eodhdCryptoSpotTickerDisplay(symbol) : symbol}
         </div>
       </div>
@@ -167,7 +167,7 @@ function CompanyCell({
         <button
           type="button"
           onClick={onRemove}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#5C5D5F] transition-colors hover:bg-[#F4F4F5] hover:text-[#141414]"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
           aria-label={`Remove ${symbol} from comparison`}
         >
           <X className="h-4 w-4" strokeWidth={2} />
@@ -288,7 +288,7 @@ function MiniTableHeader({ hasCompare }: { hasCompare: boolean }) {
         <div
           className={cn(
             hasCompare ? MINI_GRID_WITH_COMPANY : MINI_GRID_PERIODS_ONLY,
-            "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+            "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
           )}
         >
           {hasCompare ? (
@@ -406,7 +406,7 @@ export function MiniTable({
                 symbol={sym}
                 logoUrl={logoUrl}
                 metaLoading={primaryMetaLoading}
-                borderColor="#2563EB"
+                borderColor="var(--fs-accent)"
               />
             ) : null}
             {MINI_TABLE_PERF_COLUMNS.map((col, i) => (

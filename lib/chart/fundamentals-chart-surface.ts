@@ -5,6 +5,8 @@ import {
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
 import type { ChartingMetricKind } from "@/lib/market/stock-charting-metrics";
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
+import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import {
   LastPriceAnimationMode,
   LineStyle,
@@ -19,18 +21,21 @@ import {
 export const FUNDAMENTALS_CHART_HOVER_BAND_BG = "rgba(59, 130, 246, 0.14)";
 
 /**
- * Chart plot canvas — matches shell main panel (`md:bg-[#FCFCFD]`).
+ * Chart plot canvas — matches shell main panel (`bg-panel` / `--fs-panel`).
  * Use for backdrop fills and Y-axis label chips that sit on the plot.
  */
-export const CHART_PLOT_BACKGROUND = "#FCFCFD";
-export const CHART_PLOT_BACKGROUND_CLASS = "bg-[#FCFCFD]";
-export const CHART_PLOT_BACKGROUND_FAINT_CLASS = "bg-[#FCFCFD]/55";
-export const CHART_PLOT_BACKGROUND_LABEL_CLASS = "bg-[#FCFCFD]";
+export const CHART_PLOT_BACKGROUND = "var(--fs-panel)";
+export const CHART_PLOT_BACKGROUND_CLASS = "bg-panel";
+export const CHART_PLOT_BACKGROUND_FAINT_CLASS = "bg-panel/55";
+export const CHART_PLOT_BACKGROUND_LABEL_CLASS = "bg-panel";
 
 /** Hollow point markers on fundamentals line charts (Key Stats modal / Multichart line). */
 export const CHARTING_LINE_POINT_MARKER_RADIUS_PX = 4.5;
 export const CHARTING_LINE_POINT_MARKER_BORDER_PX = 2;
 export const CHARTING_LINE_POINT_MARKER_DIAMETER_PX = CHARTING_LINE_POINT_MARKER_RADIUS_PX * 2;
+
+/** SVG / CSS fill for hollow markers — matches chart panel (`--fs-panel`). */
+export const CHARTING_LINE_POINT_MARKER_FILL = CHART_PLOT_BACKGROUND;
 
 /** Active-point halo on line hover (not a full-height column). */
 export const CHARTING_LINE_HOVER_HALO_RADIUS_PX = 14;
@@ -54,8 +59,8 @@ export function chartingFundamentalsLineSeriesOptions(color: string): LineSeries
     pointMarkersVisible: false,
     crosshairMarkerVisible: true,
     crosshairMarkerRadius: CHARTING_LINE_POINT_MARKER_RADIUS_PX,
-    crosshairMarkerBorderColor: "#FFFFFF",
-    crosshairMarkerBackgroundColor: color,
+    crosshairMarkerBorderColor: color,
+    crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
     crosshairMarkerBorderWidth: CHARTING_LINE_POINT_MARKER_BORDER_PX,
     lastPriceAnimation: LastPriceAnimationMode.Disabled,
   };
@@ -63,8 +68,8 @@ export function chartingFundamentalsLineSeriesOptions(color: string): LineSeries
 
 export const FUNDAMENTALS_CHART_GRID_LINE_COLOR = "#F4F4F5";
 
-/** $0 baseline under bar plots — matches {@link MultichartFundamentalsBar}. */
-export const FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER = "rgba(228, 228, 231, 0.85)";
+/** $0 baseline under bar plots — same stroke as table row separators (`--fs-stroke`). */
+export const FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER = "var(--fs-stroke)";
 
 /** Plot band insets (Multicharts / Key Stats modal bar charts). */
 export const FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC = 0.08;
@@ -97,11 +102,11 @@ export type FundamentalsChartReferenceKind = "avg" | "max" | "min";
 const FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS =
   "inline-block rounded-[6px] px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums whitespace-nowrap";
 
-/** Colored pills for avg / max / min reference lines (aligned with {@link PriceChart} green / red / blue). */
+/** Colored pills for avg / max / min reference lines — theme soft washes + semantic text. */
 export const FUNDAMENTALS_CHART_REFERENCE_BADGE_CLASS: Record<FundamentalsChartReferenceKind, string> = {
-  max: `${FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS} bg-[#DCFCE7] text-[#16A34A]`,
-  min: `${FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS} bg-[#FEE2E2] text-[#DC2626]`,
-  avg: `${FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS} bg-[#DBEAFE] text-[#2563EB]`,
+  max: `${FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS} bg-up-soft text-up`,
+  min: `${FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS} bg-down-soft text-down`,
+  avg: `${FUNDAMENTALS_CHART_REFERENCE_BADGE_BASE_CLASS} bg-accent-soft text-accent`,
 };
 
 export function fundamentalsChartScaleMarginTop(mode: "bars" | "line"): number {
@@ -306,8 +311,10 @@ export function formatFundamentalsAxisTickLabel(kind: ChartingMetricKind, p: num
   }
 }
 
-export const FUNDAMENTALS_CHART_TOOLTIP_CLASS =
-  "pointer-events-none absolute z-30 max-w-[min(280px,calc(100%-16px))] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2.5 pr-3.5 text-left shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+export const FUNDAMENTALS_CHART_TOOLTIP_CLASS = [
+  "pointer-events-none absolute z-30 max-w-[min(280px,calc(100%-16px))] px-3 py-2.5 pr-3.5 text-left",
+  tooltipSurfaceClassName,
+].join(" ");
 
 export const FUNDAMENTALS_CHART_Y_AXIS_LABEL_COUNT = 6;
 
@@ -334,16 +341,18 @@ export function computeFundamentalsChartTooltipPlacement(
   return { anchorX, side: "right" };
 }
 
-const Y_AXIS_LABEL_ONLY = {
-  color: "transparent",
-  lineWidth: 1,
-  lineStyle: LineStyle.Solid,
-  axisLabelVisible: true,
-  axisLabelColor: "#ffffff",
-  axisLabelTextColor: "#5C5D5F",
-  lineVisible: false,
-  title: "",
-} as const;
+function yAxisLabelOnlyOptions() {
+  return {
+    color: "transparent",
+    lineWidth: 1 as const,
+    lineStyle: LineStyle.Solid,
+    axisLabelVisible: true,
+    axisLabelColor: resolveFsColor("--fs-panel"),
+    axisLabelTextColor: resolveFsColor("--fs-fg-muted"),
+    lineVisible: false,
+    title: "",
+  };
+}
 
 type YAxisSeries = ISeriesApi<"Line"> | ISeriesApi<"Histogram"> | ISeriesApi<"Area"> | ISeriesApi<"Baseline">;
 
@@ -459,9 +468,9 @@ export function syncFundamentalsChartYAxisTickLabels(
     const price = prices[i]!;
     const existing = ticksRef.current[i];
     if (existing) {
-      existing.applyOptions({ price, ...Y_AXIS_LABEL_ONLY });
+      existing.applyOptions({ price, ...yAxisLabelOnlyOptions() });
     } else {
-      ticksRef.current.push(series.createPriceLine({ price, ...Y_AXIS_LABEL_ONLY }));
+      ticksRef.current.push(series.createPriceLine({ price, ...yAxisLabelOnlyOptions() }));
     }
   }
 }

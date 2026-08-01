@@ -28,6 +28,8 @@ type Props = {
   initialKeyStatsBundle?: StockKeyStatsBundle | null;
   assetDisplayName?: string | null;
   assetLogoUrl?: string | null;
+  /** Visible stock tab — gates shared company-rail ownership. */
+  isActive?: boolean;
 };
 
 const LABEL_TO_METRIC: Partial<Record<string, ChartingMetricId>> = {
@@ -154,6 +156,7 @@ export function StockChartingTab({
   initialKeyStatsBundle,
   assetDisplayName,
   assetLogoUrl,
+  isActive = true,
 }: Props) {
   const router = useRouter();
   const companyPickerControlsRef = useRef<CompanyPickerOpenControls | null>(null);
@@ -179,9 +182,10 @@ export function StockChartingTab({
       enableScreenshotDownload
       assetDisplayName={assetDisplayName}
       assetLogoUrl={assetLogoUrl}
+      isActive={isActive}
       companyPickerControlsRef={companyPickerControlsRef}
       fullPageCompanyAddSlot={
-        useRailPickers ? (
+        useRailPickers && isActive ? (
           <ChartingCompanyAddDropdown
             hideTrigger
             anchorRef={companyAddAnchorRef}

@@ -22,7 +22,7 @@ const ChartingFullPageTab = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+      <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-stroke bg-surface p-4 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
         <ChartLoadingIndicator className="min-h-0 flex-1" />
       </div>
     ),
@@ -123,7 +123,7 @@ export function ChartingPage({
           aria-busy={pendingChartWorkspace}
         >
           {pendingChartWorkspace ? (
-            <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-[#E4E4E7] bg-white p-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
+            <div className="flex min-h-[min(50vh,420px)] w-full flex-col rounded-xl border border-stroke bg-surface p-4 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
               <ChartLoadingIndicator className="min-h-0 flex-1" />
             </div>
           ) : (

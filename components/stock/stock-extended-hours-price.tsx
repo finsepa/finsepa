@@ -14,7 +14,7 @@ type Props = {
 };
 
 const extendedHoursShellClass =
-  "min-w-0 max-md:border-0 max-md:pl-0 sm:min-w-[9rem] sm:border-l sm:border-[#E4E4E7] sm:pl-6";
+  "min-w-0 max-md:border-0 max-md:pl-0 sm:min-w-[9rem] sm:border-l sm:border-stroke sm:pl-6";
 
 export function StockExtendedHoursPrice({ quote, loading = false }: Props) {
   if (!quote && !loading) return null;
@@ -24,10 +24,10 @@ export function StockExtendedHoursPrice({ quote, loading = false }: Props) {
       <div className={extendedHoursShellClass} aria-busy aria-label="Loading extended session price">
         <div className="space-y-1.5">
           <div className="flex items-baseline gap-2.5">
-            <div className="h-7 w-[5.5rem] animate-pulse rounded-md bg-neutral-200/80" />
-            <div className="h-5 w-[6.5rem] animate-pulse rounded-md bg-neutral-200/80" />
+            <div className="h-7 w-[5.5rem] animate-pulse rounded-md bg-skeleton" />
+            <div className="h-5 w-[6.5rem] animate-pulse rounded-md bg-skeleton" />
           </div>
-          <div className="h-4 w-[8.5rem] animate-pulse rounded-md bg-neutral-200/80" />
+          <div className="h-4 w-[8.5rem] animate-pulse rounded-md bg-skeleton" />
         </div>
       </div>
     );
@@ -36,18 +36,18 @@ export function StockExtendedHoursPrice({ quote, loading = false }: Props) {
   if (!quote) return null;
 
   const isPositive = isPositivePriceChange(quote.extendedChangeAbs, quote.extendedChangePct);
-  const changeClass = isPositive ? "text-[#16A34A]" : "text-[#DC2626]";
+  const changeClass = isPositive ? "text-up" : "text-down";
   const changeText = `${formatSignedUsdAmountGrouped2dp(quote.extendedChangeAbs)} (${formatSignedPercent2dp(quote.extendedChangePct)})`;
 
   return (
     <div className={extendedHoursShellClass}>
       <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-        <span className="text-[22px] font-semibold leading-8 tabular-nums text-[#141414] sm:text-[24px] sm:leading-8">
+        <span className="text-[22px] font-semibold leading-8 tabular-nums text-fg sm:text-[24px] sm:leading-8">
           {formatUsdPrice(quote.extendedPrice)}
         </span>
         <span className={`text-[15px] font-medium tabular-nums ${changeClass}`}>{changeText}</span>
       </div>
-      <p className="mt-0.5 flex items-center gap-1.5 text-[13px] leading-5 text-[#5C5D5F]">
+      <p className="mt-0.5 flex items-center gap-1.5 text-[13px] leading-5 text-fg-muted">
         {quote.session === "pre" ? (
           <PreMarketEarningsIcon size={EXTENDED_HOURS_TIMING_ICON_PX} />
         ) : (

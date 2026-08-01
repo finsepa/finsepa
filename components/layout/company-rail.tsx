@@ -20,13 +20,13 @@ import { cn } from "@/lib/utils";
 
 /** White card — same stroke / shadow as screener inset containers. */
 const companyRailCardClass =
-  "flex w-full flex-col overflow-hidden rounded-2xl border border-[#EBEBEC] bg-white shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]";
+  "flex w-full flex-col overflow-hidden rounded-2xl border border-stroke-subtle bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]";
 
 /** Fit-content body; 8px pad; scroll only when the list exceeds the viewport. */
 const companyRailBodyClass =
   "flex max-h-[calc(100dvh-5rem)] flex-col overflow-y-auto overscroll-y-contain p-2";
 
-const companyRailDividerClass = "mx-3 my-2 h-px shrink-0 bg-[#EFEFEF]";
+const companyRailDividerClass = "mx-3 my-2 h-px shrink-0 bg-stroke-subtle";
 
 const CompanyRailAddButton = forwardRef<
   HTMLButtonElement,

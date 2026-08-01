@@ -87,7 +87,7 @@ export function AppPanelModalShell({
             <div className="flex shrink-0 items-center gap-1">
               {headerActions}
               {headerActions && onClose ? (
-                <span className="mx-0.5 h-4 w-px shrink-0 bg-[#E4E4E7]" aria-hidden />
+                <span className="mx-0.5 h-4 w-px shrink-0 bg-stroke" aria-hidden />
               ) : null}
               {onClose ? <AppModalCloseButton onClick={onClose} /> : null}
             </div>

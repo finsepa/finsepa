@@ -15,9 +15,9 @@ function avatarNeedsDarkTile(src: string): boolean {
  * optimizer quirks with protected-route static files; `onError` falls back to the generic icon.
  */
 const headerShell =
-  "relative block h-14 w-14 shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] ring-1 ring-white";
+  "relative block h-14 w-14 shrink-0 overflow-hidden rounded-full border border-stroke-muted";
 const donutShell =
-  "relative block h-[60px] w-[60px] shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]";
+  "relative block h-[60px] w-[60px] shrink-0 overflow-hidden rounded-full border border-stroke-muted shadow-[0px_1px_4px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-08))]";
 
 export function SuperinvestorProfileAvatar({
   src,
@@ -37,8 +37,8 @@ export function SuperinvestorProfileAvatar({
     return (
       <span
         className={cn(
-          "flex shrink-0 items-center justify-center rounded-full border border-[#E4E4E7] bg-[#F4F4F5] text-[#5C5D5F]",
-          size === "donut" ? "h-[60px] w-[60px] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]" : "h-14 w-14",
+          "flex shrink-0 items-center justify-center rounded-full border border-stroke-muted bg-surface-muted text-fg-muted",
+          size === "donut" ? "h-[60px] w-[60px] shadow-[0px_1px_4px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-08))]" : "h-14 w-14",
         )}
         aria-hidden
       >
@@ -52,7 +52,7 @@ export function SuperinvestorProfileAvatar({
 
   return (
     <span
-      className={cn(shell, darkTile ? "bg-[#141414]" : "bg-[#F4F4F5]")}
+      className={cn(shell, darkTile ? "bg-fg" : "bg-surface-muted")}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars */}
       <img

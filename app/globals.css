@@ -1,7 +1,123 @@
 @import "tailwindcss";
 
+/** Class-based dark mode (`next-themes` sets `html.dark`) — not OS `prefers-color-scheme`. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #F3F3F4;
+  /**
+   * Semantic color tokens — light values match current UI 1:1.
+   * Dark mode: override the same names under `.dark` (see docs/DARK-MODE-TOKENS.md).
+   * Prefer Tailwind utilities: bg-page, text-fg, border-stroke, etc.
+   */
+  --fs-page: #f3f3f4;
+  --fs-canvas: #fafafa;
+  --fs-panel: #fcfcfd;
+  /** Left navigation rail fill — separate from page wash / main panel. */
+  --fs-nav: #f3f3f4;
+  --fs-surface: #ffffff;
+  /** Outline / white-chrome controls (topbar squircles, Customize, chips). */
+  --fs-button: #ffffff;
+  /** Modal dialog fill (legacy). */
+  --fs-modal: #fcfcfd;
+  /** Modal title chrome (frame behind title) — light matches page. */
+  --fs-modal-title: #f3f3f4;
+  /** Modal title chrome stroke — transparent on light. */
+  --fs-modal-title-stroke: transparent;
+  /** Switch knob on accent track — white for contrast. */
+  --fs-switch-thumb: #ffffff;
+  /** Switch knob idle (off) — white on light; placeholder grey on dark. */
+  --fs-switch-thumb-off: #ffffff;
+  /**
+   * Soft halo behind chart bar value labels — follows panel so light stays white,
+   * dark matches main panel black (#050505) instead of a white glow.
+   */
+  --fs-chart-value-label-shadow: 0 0 3px color-mix(in srgb, var(--fs-panel) 95%, transparent),
+    0 1px 2px color-mix(in srgb, var(--fs-panel) 80%, transparent);
+  --fs-surface-muted: #f4f4f5;
+  /** Table year / section bands — light matches muted; dark is a fixed lift off card. */
+  --fs-surface-section: #f4f4f5;
+  --fs-surface-subtle: #f1f1f2;
+  --fs-surface-hover: #ebebeb;
+  /** Text-entry fields (search, clearable inputs) — fill / border / hover / focus stroke. */
+  --fs-field: #f1f1f2;
+  --fs-field-stroke: transparent;
+  --fs-field-hover: #ebebeb;
+  --fs-field-stroke-hover: transparent;
+  --fs-field-stroke-active: transparent;
+  --fs-field-ring: transparent;
+  /**
+   * Floating dropdown / popover menus — shell fill, stroke, row hover/selected.
+   * Separate from cards (`--fs-surface`) so menus can diverge.
+   */
+  --fs-dropdown: #ffffff;
+  --fs-dropdown-stroke: #e4e4e7;
+  /** Internal section rules inside menus — separate from outline stroke. */
+  --fs-dropdown-divider: #e4e4e7;
+  --fs-dropdown-item-hover: #ebebeb;
+  /** Menu / dropdown row hover — aliases dropdown item hover. */
+  --fs-menu-item-hover: var(--fs-dropdown-item-hover);
+  /** Inset screener/data-table row hover — quieter than dropdown item hover. */
+  --fs-table-row-hover: #f4f4f5;
+  --fs-fg: #141414;
+  --fs-fg-muted: #5c5d5f;
+  --fs-fg-subtle: #a1a1aa;
+  --fs-icon: #141414;
+  --fs-stroke: #e4e4e7;
+  /** Inset data-table row rules — softer than primary stroke on light. */
+  --fs-table-row-stroke: #efefef;
+  --fs-stroke-subtle: #ebebec;
+  /** Desktop shell chrome — panel outline, topbar rule, watchlist rail. */
+  --fs-stroke-shell: #ebebec;
+  --fs-stroke-muted: #e8e8eb;
+  --fs-up: #16a34a;
+  --fs-down: #dc2626;
+  --fs-accent: #364aff;
+  --fs-accent-hover: #2b3fe6;
+  --fs-accent-soft: #dbeafe;
+  --fs-up-soft: #d1fae5;
+  --fs-down-soft: #fecaca;
+  /** Form / inline error banners — softer wash on light than `down-soft`. */
+  --fs-alert-bg: #fef2f2;
+  --fs-alert-border: #fecaca;
+  --fs-alert-fg: #b91c1c;
+  /** Info banners (e.g. signed out) — soft blue wash, parallel to alert / success. */
+  --fs-info-bg: #eff6ff;
+  --fs-info-border: #bfdbfe;
+  --fs-info-fg: #1d4ed8;
+  /** Success banners (signed in, password updated, …) — soft green wash. */
+  --fs-success-bg: #f0fdf4;
+  --fs-success-border: #bbf7d0;
+  --fs-success-fg: #166534;
+  /** Watchlist / follow star (and other accent orange). */
+  --fs-orange: #EA580C;
+  --fs-orange-soft: #ffedd5;
+  /** Left nav active pill — light #E6E6E6; dark matches `--fs-surface-subtle`. */
+  --fs-sidebar-nav-active: #e6e6e6;
+  /** Chart plot dot grid (radial pattern) — keep subtle on panel. */
+  --fs-chart-dot: rgba(228, 228, 231, 0.42);
+  /** Chart brand watermark (“Finsepa”) behind series. */
+  --fs-chart-watermark: rgba(161, 161, 170, 0.2);
+  /** Chart loading area shape (minimal skeleton). */
+  --fs-chart-skeleton-top: #e4e4e7;
+  --fs-chart-skeleton-bottom: #f4f4f5;
+  /** UI skeleton bars / pills (`.skeleton`, `bg-skeleton`). */
+  --fs-skeleton: #f4f4f5;
+  --fs-skeleton-shimmer: color-mix(in srgb, var(--fs-surface) 75%, transparent);
+  /** Comma-separated RGB for rgba(var(--fs-*-rgb), a) washes / skeleton. */
+  --fs-canvas-rgb: 250, 250, 250;
+  --fs-stroke-rgb: 228, 228, 231;
+  --fs-surface-rgb: 255, 255, 255;
+  --fs-shadow-rgb: 10, 10, 10;
+  /** Shadow alphas — dark raises these so elevation stays visible on black. */
+  --fs-shadow-a-03: 0.03;
+  --fs-shadow-a-04: 0.04;
+  --fs-shadow-a-06: 0.06;
+  --fs-shadow-a-07: 0.07;
+  --fs-shadow-a-08: 0.08;
+  --fs-shadow-a-10: 0.1;
+  --fs-shadow-a-12: 0.12;
+
+  --background: var(--fs-page);
   --foreground: #171717;
   /**
    * iOS Safari can report a "wrong" 100vh when the URL bar is visible.
@@ -80,7 +196,175 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-page: var(--fs-page);
+  --color-canvas: var(--fs-canvas);
+  --color-panel: var(--fs-panel);
+  --color-nav: var(--fs-nav);
+  --color-surface: var(--fs-surface);
+  --color-button: var(--fs-button);
+  --color-modal: var(--fs-modal);
+  --color-modal-title: var(--fs-modal-title);
+  --color-modal-title-stroke: var(--fs-modal-title-stroke);
+  --color-switch-thumb: var(--fs-switch-thumb);
+  --color-switch-thumb-off: var(--fs-switch-thumb-off);
+  --color-surface-muted: var(--fs-surface-muted);
+  --color-surface-section: var(--fs-surface-section);
+  --color-skeleton: var(--fs-skeleton);
+  --color-surface-subtle: var(--fs-surface-subtle);
+  --color-surface-hover: var(--fs-surface-hover);
+  --color-field: var(--fs-field);
+  --color-field-stroke: var(--fs-field-stroke);
+  --color-field-hover: var(--fs-field-hover);
+  --color-field-stroke-hover: var(--fs-field-stroke-hover);
+  --color-field-stroke-active: var(--fs-field-stroke-active);
+  --color-field-ring: var(--fs-field-ring);
+  --color-dropdown: var(--fs-dropdown);
+  --color-dropdown-stroke: var(--fs-dropdown-stroke);
+  --color-dropdown-divider: var(--fs-dropdown-divider);
+  --color-dropdown-item-hover: var(--fs-dropdown-item-hover);
+  --color-menu-item-hover: var(--fs-menu-item-hover);
+  --color-table-row-hover: var(--fs-table-row-hover);
+  --color-fg: var(--fs-fg);
+  --color-fg-muted: var(--fs-fg-muted);
+  --color-fg-subtle: var(--fs-fg-subtle);
+  --color-icon: var(--fs-icon);
+  --color-stroke: var(--fs-stroke);
+  --color-table-row-stroke: var(--fs-table-row-stroke);
+  --color-stroke-subtle: var(--fs-stroke-subtle);
+  --color-stroke-shell: var(--fs-stroke-shell);
+  --color-stroke-muted: var(--fs-stroke-muted);
+  --color-up: var(--fs-up);
+  --color-down: var(--fs-down);
+  --color-accent: var(--fs-accent);
+  --color-accent-hover: var(--fs-accent-hover);
+  --color-accent-soft: var(--fs-accent-soft);
+  --color-orange: var(--fs-orange);
+  --color-orange-soft: var(--fs-orange-soft);
+  --color-up-soft: var(--fs-up-soft);
+  --color-down-soft: var(--fs-down-soft);
+  --color-alert: var(--fs-alert-bg);
+  --color-alert-border: var(--fs-alert-border);
+  --color-alert-fg: var(--fs-alert-fg);
+  --color-info: var(--fs-info-bg);
+  --color-info-border: var(--fs-info-border);
+  --color-info-fg: var(--fs-info-fg);
+  --color-success: var(--fs-success-bg);
+  --color-success-border: var(--fs-success-border);
+  --color-success-fg: var(--fs-success-fg);
   --font-sans: var(--font-inter);
+}
+
+/**
+ * Dark theme overrides — same token names as `:root`.
+ * Values currently mirror light so enabling `.dark` early does not invent a palette.
+ * Replace with design values from docs/DARK-MODE-TOKENS.md when ready.
+ */
+.dark {
+  /* Confirmed from design — rest still TBD (mirror light until filled). */
+  --fs-page: #000000; /* outer chrome / app wash */
+  --fs-canvas: #000000; /* mobile wash — match page */
+  --fs-panel: #000000; /* main desktop panel + top bar + watchlist rail */
+  --fs-nav: #000000; /* left navigation rail */
+  --fs-surface: #151515;
+  /** Outline buttons — slightly above surface so chrome lifts on black panel. */
+  --fs-button: #212123;
+  /** Modal dialog fill — legacy. */
+  --fs-modal: #0a0a0b;
+  /**
+   * Modal title chrome only — dark matches dropdown glass fill (`--fs-dropdown`).
+   * Separate token so panel surface / page stay unchanged.
+   */
+  --fs-modal-title: #212123;
+  /** Modal title chrome stroke — dark matches dropdown glass edge (`white/12`). */
+  --fs-modal-title-stroke: rgb(255 255 255 / 0.12);
+  /** Switch knob on accent track — white for contrast (surface is too dark). */
+  --fs-switch-thumb: #ffffff;
+  /** Idle knob — match placeholder so off state reads on stroke track. */
+  --fs-switch-thumb-off: #5d5d5f;
+  --fs-surface-muted: #242424;
+  /** Year / sector bands in table cards. */
+  --fs-surface-section: #191919;
+  --fs-surface-subtle: #1a1a1a; /* segmented track / group fills */
+  --fs-surface-hover: #232325;
+  /** Text-entry fields — same hex as `--fs-surface` (separate token). */
+  --fs-field: #151515;
+  /** Resting stroke — same hex as `--fs-stroke-subtle` (separate token). */
+  --fs-field-stroke: #222222;
+  /** Legacy hover fill — dropdowns / menus; text inputs no longer wash fill on hover. */
+  --fs-field-hover: #2c2c2e;
+  /** Idle hover stroke — slightly lighter than resting (dark inputs only). */
+  --fs-field-stroke-hover: #2a2a2a;
+  /** Unused for color on dark — active keeps resting stroke + ring shadow. */
+  --fs-field-stroke-active: #222222;
+  /** Focus / open outer ring (2px) — soft lift like reference inputs. */
+  --fs-field-ring: rgba(255, 255, 255, 0.12);
+  /** Floating dropdown / popover menus — match outline button chrome. */
+  --fs-dropdown: #212123;
+  /** Button gradient stroke peak (#484848) as a solid edge on menus. */
+  --fs-dropdown-stroke: #484848;
+  /**
+   * Internal menu dividers — matches glass outline (`white/12`), separate token from
+   * `--fs-dropdown-stroke` so outline and section rules can diverge later.
+   */
+  --fs-dropdown-divider: rgba(255, 255, 255, 0.12);
+  /** Row hover — one step above dropdown fill. */
+  --fs-dropdown-item-hover: #38383a;
+  --fs-menu-item-hover: var(--fs-dropdown-item-hover);
+  /** Table row hover — quieter than dropdown item hover. */
+  --fs-table-row-hover: #2a2a2c;
+  --fs-fg: #ffffff; /* primary text */
+  --fs-fg-muted: #999999; /* secondary text */
+  --fs-fg-subtle: #5d5d5f; /* placeholder */
+  --fs-icon: #ffffff;
+  --fs-stroke: #212121;
+  /** Inset table row rules. */
+  --fs-table-row-stroke: #1f1f1f;
+  --fs-stroke-subtle: #222222; /* card stroke */
+  /** Shell chrome — tiny darker than card stroke. */
+  --fs-stroke-shell: #161617;
+  --fs-stroke-muted: #222222; /* button border — match card stroke on dark */
+  --fs-up: #35d96c;
+  --fs-down: #ff3349;
+  --fs-accent: #364aff;
+  --fs-accent-hover: #2b3fe6;
+  --fs-accent-soft: #0f1e29;
+  --fs-up-soft: #002c17;
+  --fs-down-soft: #49080e;
+  --fs-alert-bg: #382828;
+  --fs-alert-border: #382828;
+  --fs-alert-fg: #ff3349;
+  --fs-info-bg: #0f1e29;
+  --fs-info-border: #0f1e29;
+  --fs-info-fg: #3b9eff;
+  --fs-success-bg: #0e170e;
+  --fs-success-border: #0e170e;
+  --fs-success-fg: #35d96c;
+  /** Watchlist / follow star; pre-market sun stroke in dark. */
+  --fs-orange: #f7931a;
+  --fs-orange-soft: #322817;
+  --fs-sidebar-nav-active: #1a1a1a;
+  /** Plot backdrop dots — slightly stronger than “barely there” so they read on black panel. */
+  --fs-chart-dot: rgba(255, 255, 255, 0.095);
+  /** Quieter watermark on dark panel (muted fg, low alpha). */
+  --fs-chart-watermark: rgba(144, 144, 144, 0.08);
+  /** Soft lift above panel — quieter than surface-muted. */
+  --fs-chart-skeleton-top: #1c1c1e;
+  --fs-chart-skeleton-bottom: #161617;
+  --fs-skeleton: #1a1a1b;
+  --fs-skeleton-shimmer: color-mix(in srgb, var(--fs-fg) 6%, transparent);
+  --fs-canvas-rgb: 12, 12, 13;
+  --fs-stroke-rgb: 33, 33, 33;
+  --fs-surface-rgb: 21, 21, 21;
+  --fs-shadow-rgb: 0, 0, 0;
+  --fs-shadow-a-03: 0.1;
+  --fs-shadow-a-04: 0.14;
+  --fs-shadow-a-06: 0.2;
+  --fs-shadow-a-07: 0.22;
+  --fs-shadow-a-08: 0.26;
+  --fs-shadow-a-10: 0.32;
+  --fs-shadow-a-12: 0.36;
+  --background: var(--fs-page);
+  --foreground: #ffffff;
 }
 
 @supports (height: 100svh) {
@@ -95,6 +379,83 @@
   }
 }
 
+/**
+ * Chart plot dot grid — same oval vignette as light theme.
+ * Mask fades dot opacity toward edges so they merge into the panel.
+ * Screenshot export swaps to `.chart-plot-dots--export` (html-to-image ignores CSS masks).
+ */
+.chart-plot-dots {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--fs-chart-dot) 1px, transparent 1px);
+  background-size: 8px 8px;
+  -webkit-mask-image: radial-gradient(
+    ellipse 52% 72% at 50% 50%,
+    #000 0%,
+    #000 38%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 52% 72% at 50% 50%,
+    #000 0%,
+    #000 38%,
+    transparent 100%
+  );
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* Dark: slightly wider oval than before so side fade is softer (still quieter than light). */
+.dark .chart-plot-dots {
+  -webkit-mask-image: radial-gradient(
+    ellipse 50% 64% at 50% 50%,
+    #000 0%,
+    #000 30%,
+    transparent 88%
+  );
+  mask-image: radial-gradient(
+    ellipse 50% 64% at 50% 50%,
+    #000 0%,
+    #000 30%,
+    transparent 88%
+  );
+}
+
+.dark .chart-plot-dots--export {
+  background-image:
+    radial-gradient(
+      ellipse 50% 64% at 50% 50%,
+      transparent 0%,
+      transparent 30%,
+      var(--fs-panel) 88%,
+      var(--fs-panel) 100%
+    ),
+    radial-gradient(circle, var(--fs-chart-dot) 1px, transparent 1px);
+}
+
+/** Overlay vignette (no mask) for html-to-image / screenshot export. */
+.chart-plot-dots--export {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(
+      ellipse 52% 72% at 50% 50%,
+      transparent 0%,
+      transparent 38%,
+      var(--fs-panel) 100%
+    ),
+    radial-gradient(circle, var(--fs-chart-dot) 1px, transparent 1px);
+  background-size: 100% 100%, 8px 8px;
+  background-position: center, 0 0;
+  background-repeat: no-repeat, repeat;
+}
+
 @media (min-width: 768px) {
   :root {
     --financials-table-max-h: calc(100dvh - 17.5rem);
@@ -107,8 +468,37 @@
 @media (max-width: 767px) {
   .shell-desktop-panel,
   .shell-desktop-panel__content {
-    background: #fafafa;
+    background: var(--fs-canvas);
   }
+}
+
+/**
+ * Dark-only button stroke — diagonal #4E4E4E at 93% → 43% → 73%.
+ * Face fill via `--fs-button-face` (falls back to `--fs-button`).
+ * `!important` on fill/border so Tailwind hover:bg utilities do not paint over the gradient border.
+ */
+.dark .fs-button-gradient-stroke {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(
+      var(--fs-button-face, var(--fs-button)),
+      var(--fs-button-face, var(--fs-button))
+    ),
+    linear-gradient(
+      135deg,
+      rgb(78 78 78 / 0.93) 0%,
+      rgb(78 78 78 / 0.43) 50%,
+      rgb(78 78 78 / 0.73) 100%
+    );
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+/** Rest face is `--fs-button` (#212123); hover lifts to menu-item hover (#2C2C2E). */
+.dark .fs-button-gradient-stroke:hover:not(:disabled):not([aria-disabled="true"]),
+.dark .fs-button-gradient-stroke:focus-visible:not(:disabled):not([aria-disabled="true"]) {
+  --fs-button-face: var(--fs-dropdown-item-hover);
 }
 
 @media (min-width: 768px) {
@@ -117,10 +507,10 @@
   }
 
   .shell-desktop-panel {
-    background: #fcfcfd;
-    border: 1px solid #ebebec;
+    background: var(--fs-panel);
+    border: 1px solid var(--fs-stroke-shell);
     border-radius: var(--shell-desktop-panel-radius);
-    box-shadow: 0 1px 2px 0 rgba(10, 10, 10, 0.06);
+    box-shadow: 0 1px 2px 0 rgba(var(--fs-shadow-rgb), var(--fs-shadow-a-06));
     overflow: hidden;
     border-top-left-radius: var(--shell-desktop-panel-radius);
     border-top-right-radius: var(--shell-desktop-panel-radius);
@@ -132,20 +522,24 @@
     border-top-left-radius: var(--shell-desktop-panel-radius);
     border-top-right-radius: var(--shell-desktop-panel-radius);
     overflow: hidden;
-    background: #fcfcfd;
+    background: var(--fs-panel);
   }
 
   .shell-desktop-panel__content {
     border-bottom-left-radius: var(--shell-desktop-panel-radius);
     border-bottom-right-radius: var(--shell-desktop-panel-radius);
     overflow: hidden;
-    background: #fcfcfd;
+    background: var(--fs-panel);
   }
 }
 
+/**
+ * When the document is not `.dark`, keep light tokens even if the OS prefers dark.
+ * Actual dark UI is driven by next-themes adding `html.dark` (System / Dark).
+ */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #F3F3F4;
+  :root:not(.dark) {
+    --background: var(--fs-page);
     --foreground: #171717;
   }
 }
@@ -180,7 +574,7 @@ body {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    background: #fafafa;
+    background: var(--fs-canvas);
   }
 
   /** Horizontal pan without a visible scrollbar (tab rows, index cards, etc.). */
@@ -444,10 +838,10 @@ body {
     opacity: 0;
     background: linear-gradient(
       to bottom,
-      rgba(250, 250, 250, 0.92) 0%,
-      rgba(250, 250, 250, 0.55) 38%,
-      rgba(250, 250, 250, 0.12) 72%,
-      rgba(250, 250, 250, 0) 100%
+      rgba(var(--fs-canvas-rgb), 0.92) 0%,
+      rgba(var(--fs-canvas-rgb), 0.55) 38%,
+      rgba(var(--fs-canvas-rgb), 0.12) 72%,
+      rgba(var(--fs-canvas-rgb), 0) 100%
     );
     -webkit-backdrop-filter: blur(20px) saturate(150%);
     backdrop-filter: blur(20px) saturate(150%);
@@ -466,11 +860,11 @@ body {
     opacity: 1;
     background: linear-gradient(
       to bottom,
-      rgba(250, 250, 250, 0.98) 0%,
-      rgba(250, 250, 250, 0.94) 28%,
-      rgba(250, 250, 250, 0.72) 58%,
-      rgba(250, 250, 250, 0.2) 82%,
-      rgba(250, 250, 250, 0) 100%
+      rgba(var(--fs-canvas-rgb), 0.98) 0%,
+      rgba(var(--fs-canvas-rgb), 0.94) 28%,
+      rgba(var(--fs-canvas-rgb), 0.72) 58%,
+      rgba(var(--fs-canvas-rgb), 0.2) 82%,
+      rgba(var(--fs-canvas-rgb), 0) 100%
     );
   }
 
@@ -485,11 +879,11 @@ body {
     opacity: 1;
     background: linear-gradient(
       to bottom,
-      rgba(250, 250, 250, 0.98) 0%,
-      rgba(250, 250, 250, 0.94) 28%,
-      rgba(250, 250, 250, 0.72) 58%,
-      rgba(250, 250, 250, 0.2) 82%,
-      rgba(250, 250, 250, 0) 100%
+      rgba(var(--fs-canvas-rgb), 0.98) 0%,
+      rgba(var(--fs-canvas-rgb), 0.94) 28%,
+      rgba(var(--fs-canvas-rgb), 0.72) 58%,
+      rgba(var(--fs-canvas-rgb), 0.2) 82%,
+      rgba(var(--fs-canvas-rgb), 0) 100%
     );
   }
 
@@ -530,9 +924,9 @@ body {
     pointer-events: none;
     background: linear-gradient(
       to bottom,
-      rgba(250, 250, 250, 0) 0%,
-      rgba(250, 250, 250, 0.45) 42%,
-      rgba(250, 250, 250, 0.88) 100%
+      rgba(var(--fs-canvas-rgb), 0) 0%,
+      rgba(var(--fs-canvas-rgb), 0.45) 42%,
+      rgba(var(--fs-canvas-rgb), 0.88) 100%
     );
     -webkit-backdrop-filter: blur(20px) saturate(150%);
     backdrop-filter: blur(20px) saturate(150%);
@@ -560,25 +954,25 @@ body {
 }
 
 .financials-table-viewport-scroll::-webkit-scrollbar-track {
-  background: #f4f4f5;
+  background: var(--fs-surface-muted);
 }
 
 .financials-table-viewport-scroll::-webkit-scrollbar-thumb {
-  background-color: #a1a1aa;
+  background-color: var(--fs-fg-subtle);
   border-radius: 9999px;
-  border: 2px solid #f4f4f5;
+  border: 2px solid var(--fs-surface-muted);
   background-clip: padding-box;
 }
 
 .financials-table-viewport-scroll::-webkit-scrollbar-corner {
-  background: #f4f4f5;
+  background: var(--fs-surface-muted);
 }
 
 @media (min-width: 768px) {
   .mobile-topbar-shell {
     position: static;
     padding-top: 0;
-    background: #fcfcfd;
+    background: var(--fs-panel);
   }
 }
 
@@ -627,10 +1021,10 @@ body {
     background-color: transparent;
   }
   12% {
-    background-color: #d1fae5;
+    background-color: var(--fs-up-soft);
   }
   38% {
-    background-color: #d1fae5;
+    background-color: var(--fs-up-soft);
   }
   100% {
     background-color: transparent;
@@ -642,10 +1036,10 @@ body {
     background-color: transparent;
   }
   12% {
-    background-color: #fecaca;
+    background-color: var(--fs-down-soft);
   }
   38% {
-    background-color: #fecaca;
+    background-color: var(--fs-down-soft);
   }
   100% {
     background-color: transparent;
@@ -677,8 +1071,8 @@ body {
   position: relative;
   overflow: hidden;
   border-radius: 8px;
-  background: rgba(228, 228, 231, 0.88);
-  opacity: 0.8;
+  background: var(--fs-skeleton);
+  opacity: 1;
 }
 
 .skeleton::after {
@@ -688,9 +1082,9 @@ body {
   transform: translateX(-100%);
   background: linear-gradient(
     90deg,
-    rgba(228, 228, 231, 0) 0%,
-    rgba(255, 255, 255, 0.75) 45%,
-    rgba(228, 228, 231, 0) 100%
+    transparent 0%,
+    var(--fs-skeleton-shimmer) 45%,
+    transparent 100%
   );
   animation: skeleton-shimmer 1.25s ease-in-out infinite;
 }
@@ -708,9 +1102,9 @@ body {
   transform: translateX(-100%);
   background: linear-gradient(
     90deg,
-    rgba(250, 250, 250, 0) 0%,
-    rgba(255, 255, 255, 0.9) 48%,
-    rgba(250, 250, 250, 0) 100%
+    transparent 0%,
+    color-mix(in srgb, var(--fs-fg) 6%, transparent) 48%,
+    transparent 100%
   );
   animation: skeleton-shimmer 1.35s ease-in-out infinite;
   pointer-events: none;
@@ -897,6 +1291,36 @@ body {
   }
 }
 
+/** Login success CTA — cycling ellipsis after “Redirecting to the app”. */
+@keyframes auth-redirect-ellipsis {
+  0%,
+  20% {
+    content: "";
+  }
+  40% {
+    content: ".";
+  }
+  60% {
+    content: "..";
+  }
+  80%,
+  100% {
+    content: "...";
+  }
+}
+
+.auth-redirect-ellipsis::after {
+  content: "";
+  animation: auth-redirect-ellipsis 1.2s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-redirect-ellipsis::after {
+    animation: none;
+    content: "...";
+  }
+}
+
 /* ── App modal overlay (Figma Web App — scaled shell + blurred backdrop) ── */
 
 @media (min-width: 768px) {
@@ -920,7 +1344,7 @@ body {
     border-radius: var(--app-modal-shell-radius);
     overflow: hidden;
     z-index: 1;
-    box-shadow: 0 0 0 1px rgba(10, 10, 10, 0.04);
+    box-shadow: 0 0 0 1px rgba(var(--fs-shadow-rgb), var(--fs-shadow-a-04));
   }
 }
 

@@ -85,9 +85,9 @@ export function CryptoFearGreedCard({
           onClick={onOpenFullscreen}
           disabled={!onOpenFullscreen}
           className={cn(
-            "group inline-flex h-5 min-w-0 items-center gap-1.5 truncate rounded-[10px] text-left text-[14px] font-semibold leading-5 text-[#5C5D5F] outline-none transition-colors",
+            "group inline-flex h-5 min-w-0 items-center gap-1.5 truncate rounded-[10px] text-left text-[14px] font-semibold leading-5 text-fg-muted outline-none transition-colors",
             onOpenFullscreen
-              ? "hover:text-[#141414] focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2"
+              ? "hover:text-fg focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
               : "cursor-default",
           )}
           aria-label={onOpenFullscreen ? "Open Fear & Greed history" : undefined}
@@ -95,8 +95,8 @@ export function CryptoFearGreedCard({
           <span className="min-w-0 truncate">Fear &amp; Greed Index</span>
           <ChevronRight
             className={cn(
-              "h-4 w-4 shrink-0 text-[#A1A1AA] transition-colors",
-              onOpenFullscreen ? "group-hover:text-[#5C5D5F]" : "",
+              "h-4 w-4 shrink-0 text-icon transition-colors",
+              onOpenFullscreen ? "group-hover:text-fg-muted" : "",
             )}
             aria-hidden
           />
@@ -118,14 +118,21 @@ export function CryptoFearGreedCard({
             ))}
 
             {/* knob */}
-            <circle cx={gauge.dot.x} cy={gauge.dot.y} r="12" fill="#141414" stroke="#FFFFFF" strokeWidth="4" />
+            <circle
+              cx={gauge.dot.x}
+              cy={gauge.dot.y}
+              r="12"
+              className="fill-fg"
+              stroke="var(--color-page)"
+              strokeWidth="4"
+            />
 
             {/* value */}
             <text
               x={gauge.cx}
               y="94"
               textAnchor="middle"
-              className="fill-[#141414]"
+              className="fill-fg"
               style={{ fontFamily: "Inter", fontSize: 30, fontWeight: 900, lineHeight: "32px" }}
             >
               {value == null ? "—" : String(value)}
@@ -134,7 +141,7 @@ export function CryptoFearGreedCard({
               x={gauge.cx}
               y="118"
               textAnchor="middle"
-              className="fill-[#5C5D5F]"
+              className="fill-fg"
               style={{ fontFamily: "Inter", fontSize: 16, fontWeight: 400, lineHeight: "22px" }}
             >
               {classification}
@@ -144,7 +151,7 @@ export function CryptoFearGreedCard({
       </div>
 
       {value == null ? (
-        <div className="-mt-2 text-center text-[12px] leading-5 text-[#5C5D5F]">Unavailable</div>
+        <div className="-mt-2 text-center text-[12px] leading-5 text-fg-muted">Unavailable</div>
       ) : null}
     </div>
   );

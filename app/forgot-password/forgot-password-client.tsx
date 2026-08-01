@@ -1,8 +1,14 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { AuthPrimaryButton, authEntryCtaClassName } from "@/components/auth/auth-form-ui";
+import { useMemo, useState, type FormEvent } from "react";
+import {
+  AuthPrimaryButton,
+  authAlertBannerClassName,
+  authEntryCtaClassName,
+  authSuccessBannerClassName,
+} from "@/components/auth/auth-form-ui";
 import { AuthFloatingInput } from "@/components/auth/auth-floating-field";
+import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
 import { SpinnerLabel } from "@/components/ui/spinner";
 import { requestPasswordResetEmail } from "@/lib/auth/request-password-reset";
 
@@ -16,17 +22,38 @@ export function ForgotPasswordClient() {
 
   const emailReady = email.trim().length > 0 && EMAIL_RE.test(email.trim());
 
+  const preCardBanner = useMemo(() => {
+    if (sent) {
+      return (
+        <div role="status" className={`${authSuccessBannerClassName} py-3 leading-6`}>
+          Check your email for reset instructions. If you don&apos;t see it, look in spam or try
+          again in a few minutes.
+        </div>
+      );
+    }
+    if (errorMessage) {
+      return (
+        <div role="alert" className={authAlertBannerClassName}>
+          {errorMessage}
+        </div>
+      );
+    }
+    return null;
+  }, [sent, errorMessage]);
+
+  useAuthPreCardBanner(preCardBanner);
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setErrorMessage(null);
 
     const form = e.currentTarget;
     const fd = new FormData(form);
-    const email = String(fd.get("email") ?? "").trim();
+    const emailValue = String(fd.get("email") ?? "").trim();
 
     setLoading(true);
     try {
-      const result = await requestPasswordResetEmail(email);
+      const result = await requestPasswordResetEmail(emailValue);
       if (!result.ok) {
         setErrorMessage(result.message);
         return;
@@ -40,48 +67,37 @@ export function ForgotPasswordClient() {
     }
   }
 
+  if (sent) {
+    return (
+      <p className="text-center text-sm leading-5 text-fg-muted">
+        You can close this page or return to log in when you&apos;re ready.
+      </p>
+    );
+  }
+
   return (
-    <>
-      {sent ? (
-        <div
-          role="status"
-          className="rounded-[10px] border border-[#BBF7D0] bg-[#F0FDF4] px-3 py-3 text-sm leading-6 text-[#166534]"
-        >
-          Check your email for reset instructions. If you don&apos;t see it, look in spam or try again in a few minutes.
-        </div>
-      ) : (
-        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-          {errorMessage ? (
-            <div
-              role="alert"
-              className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
-            >
-              {errorMessage}
-            </div>
-          ) : null}
+    <form className="space-y-4" onSubmit={handleSubmit} noValidate>
+      <AuthFloatingInput
+        type="email"
+        name="email"
+        label="Email"
+        autoComplete="email"
+        required
+        disabled={loading}
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          setErrorMessage(null);
+        }}
+      />
 
-          <div>
-            <AuthFloatingInput
-              type="email"
-              name="email"
-              label="Email"
-              autoComplete="email"
-              required
-              disabled={loading}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          <AuthPrimaryButton
-            type="submit"
-            className={authEntryCtaClassName}
-            disabled={loading || !emailReady}
-          >
-            {loading ? <SpinnerLabel>Sending…</SpinnerLabel> : "Send reset link"}
-          </AuthPrimaryButton>
-        </form>
-      )}
-    </>
+      <AuthPrimaryButton
+        type="submit"
+        className={authEntryCtaClassName}
+        disabled={loading || !emailReady}
+      >
+        {loading ? <SpinnerLabel>Sending…</SpinnerLabel> : "Send reset link"}
+      </AuthPrimaryButton>
+    </form>
   );
 }

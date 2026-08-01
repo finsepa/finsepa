@@ -150,7 +150,7 @@ export function CryptoFearGreedModal({
         onClick={toggleIndex}
         aria-pressed={showIndex}
         className={cn(
-          "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
+          "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-stroke bg-surface px-3 py-0 text-[12px] font-medium leading-none text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] transition-opacity",
           !showIndex && "opacity-40",
         )}
       >
@@ -166,7 +166,7 @@ export function CryptoFearGreedModal({
         onClick={toggleBtc}
         aria-pressed={showBtc}
         className={cn(
-          "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
+          "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-stroke bg-surface px-3 py-0 text-[12px] font-medium leading-none text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] transition-opacity",
           !showBtc && "opacity-40",
         )}
       >
@@ -189,7 +189,7 @@ export function CryptoFearGreedModal({
         bodyScroll={false}
         header={
           <div className="flex w-full min-w-0 items-center gap-3">
-            <h2 id={titleId} className="min-w-0 flex-1 truncate text-[18px] font-semibold leading-7 text-[#141414]">
+            <h2 id={titleId} className="min-w-0 flex-1 truncate text-[18px] font-semibold leading-7 text-fg">
               Fear &amp; Greed Index
             </h2>
             <div className="flex shrink-0 items-center gap-3">
@@ -200,7 +200,7 @@ export function CryptoFearGreedModal({
                 onChange={setRange}
                 aria-label="Date range"
               />
-              <div className="h-6 w-px shrink-0 bg-[#E4E4E7]" aria-hidden />
+              <div className="h-6 w-px shrink-0 bg-stroke" aria-hidden />
               <AppModalCloseButton onClick={onClose} />
             </div>
           </div>

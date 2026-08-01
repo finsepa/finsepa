@@ -20,12 +20,12 @@ import {
 } from "@/components/design-system";
 import { CompanyRailCard } from "@/components/layout/company-rail";
 import { cn } from "@/lib/utils";
+import { filterChartingUrlTickersForSession } from "@/lib/charting/charting-allowed-tickers";
 import {
   COMPARISON_MAX_COMPANIES,
   capComparisonTickers,
   writeComparisonSessionTickers,
 } from "@/lib/comparison/comparison-session";
-import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { buildComparisonPath, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 
 type Props = {
@@ -47,10 +47,7 @@ export function ComparisonEmptyToolbar({ tickers, allowedChartingTickers, childr
   const tickersFromRouter = useMemo(() => {
     const raw = searchParams.get("ticker")?.trim() ?? "";
     const parsed = parseChartingTickerList(raw || null);
-    return parsed.filter((t) => {
-      if (isSingleAssetMode()) return isSupportedAsset(t);
-      return chartingAllowSet.has(t.trim().toUpperCase());
-    });
+    return filterChartingUrlTickersForSession(parsed, chartingAllowSet);
   }, [searchParams, chartingAllowSet]);
 
   const displayTickers = useMemo(

@@ -13,7 +13,7 @@ export function AssetNewsPageContent({
   initialItems?: StockNewsArticle[];
 }) {
   return (
-    <div className="min-w-0 max-md:bg-[#FAFAFA] max-md:px-4 md:px-4 md:py-4 lg:px-9 lg:py-6">
+    <div className="min-w-0 max-md:bg-canvas max-md:px-4 md:px-4 md:py-4 lg:px-9 lg:py-6">
       <LatestNews
         ticker={ticker}
         variant={variant}

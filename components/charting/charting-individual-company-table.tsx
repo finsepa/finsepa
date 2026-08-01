@@ -81,11 +81,11 @@ export function chartingTableCellTone(id: ChartingMetricId, v: number | null): s
     v == null ||
     !Number.isFinite(v)
   ) {
-    return "text-[#141414]";
+    return "text-fg";
   }
-  if (v > 0) return "text-[#16A34A]";
-  if (v < 0) return "text-[#DC2626]";
-  return "text-[#5C5D5F]";
+  if (v > 0) return "text-up";
+  if (v < 0) return "text-down";
+  return "text-fg-muted";
 }
 
 function metricRowLabel(ticker: string | undefined, id: ChartingMetricId): string {
@@ -166,7 +166,7 @@ export function ChartingIndividualCompanyTable({
             <div
               className={cn(
                 grid.className,
-                "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
               )}
               style={grid.style}
             >
@@ -212,7 +212,7 @@ export function ChartingIndividualCompanyTable({
                 )}
                 style={grid.style}
               >
-                <div className={cn("text-left font-medium text-[#141414]", TABLE_START_ALIGNED_PAD_CLASS)}>
+                <div className={cn("text-left font-medium text-fg", TABLE_START_ALIGNED_PAD_CLASS)}>
                   {formatChartingPeriodLabel(periodRow.periodEnd, periodMode)}
                 </div>
                 {selected.map((id) => {

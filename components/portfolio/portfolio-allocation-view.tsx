@@ -38,10 +38,10 @@ function AllocationColumn({
             style={{ backgroundColor: r.color }}
             aria-hidden
           />
-          <span className="min-w-0 flex-1 truncate text-left text-[14px] leading-5 text-[#141414]">
+          <span className="min-w-0 flex-1 truncate text-left text-[14px] leading-5 text-fg">
             {r.name}
           </span>
-          <span className="shrink-0 text-right tabular-nums text-[14px] font-medium leading-5 text-[#141414]">
+          <span className="shrink-0 text-right tabular-nums text-[14px] font-medium leading-5 text-fg">
             {pct1.format(r.weightPct)}%
           </span>
         </li>
@@ -98,7 +98,7 @@ function PortfolioAllocationViewInner({
   }
 
   return (
-    <div className="rounded-[12px] border border-[#E4E4E7] bg-white py-5 pl-6 pr-8 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] max-md:rounded-none max-md:border-0 max-md:p-0 max-md:shadow-none sm:pr-10 lg:pr-12">
+    <div className="rounded-[12px] border border-stroke bg-surface py-5 pl-6 pr-8 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] max-md:rounded-none max-md:border-0 max-md:p-0 max-md:shadow-none sm:pr-10 lg:pr-12">
       <div className="flex flex-col md:hidden">
         <div className="flex justify-center overflow-visible px-4 -mt-1 pt-0">
           <AllocationDonutChart

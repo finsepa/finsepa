@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 /** Section label inside {@link dropdownMenuPanelBodyClassName} — matches company/search pickers. */
 export const searchDropdownSectionClassName =
-  "px-2 pb-1 pt-0 text-[11px] font-semibold tracking-wide text-[#A1A1AA] uppercase";
+  "px-2 pb-1 pt-0 text-[11px] font-semibold tracking-wide text-fg-subtle uppercase";
 
 const defaultListClassName =
   "max-h-[min(420px,60dvh)] overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch]";
@@ -98,13 +98,13 @@ export function SearchPanelResults({
       ) : searchPending && !showStaleList ? (
         <SearchLoadingIndicator />
       ) : noResults ? (
-        <p className="px-2 py-8 text-center text-[12px] leading-5 text-[#5C5D5F]">
+        <p className="px-2 py-8 text-center text-[12px] leading-5 text-fg-muted">
           No results for &ldquo;{queryTrim}&rdquo;
         </p>
       ) : (
         <>
           {loading && showStaleList ? (
-            <p className="px-2 pb-1 text-center text-[11px] text-[#A1A1AA]" aria-hidden>
+            <p className="px-2 pb-1 text-center text-[11px] text-fg-subtle" aria-hidden>
               Updating…
             </p>
           ) : null}

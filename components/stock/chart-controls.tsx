@@ -22,7 +22,7 @@ const CHART_RANGE_OPTIONS: readonly SegmentedControlOption<StockChartRange>[] = 
 
 const MOBILE_CHART_METRIC_TRIGGER_CLASS = cn(
   topbarSquircleTextButtonClass,
-  "w-auto bg-white font-semibold hover:bg-[#F4F4F5]",
+  "w-auto bg-surface font-semibold hover:bg-surface-muted",
 );
 
 export function ChartControls({
@@ -141,7 +141,7 @@ export function ChartControls({
           <div className="min-w-0 shrink overflow-hidden">{titleSlot}</div>
         : compareSlot || downloadSlot ?
           null
-        : <h2 className="shrink-0 text-[14px] font-semibold leading-5 text-[#141414]">Price</h2>}
+        : <h2 className="shrink-0 text-[14px] font-semibold leading-5 text-fg">Price</h2>}
         {compareSlot || downloadSlot ?
           <div className="flex shrink-0 items-center gap-2">
             {compareSlot ? <div className="shrink-0">{compareSlot}</div> : null}
@@ -170,7 +170,7 @@ export function ChartControls({
       ) : titleSlot ? (
         <div className="min-w-0 w-full max-w-full shrink-0 sm:w-auto">{titleSlot}</div>
       ) : (
-        <h2 className="text-[18px] font-semibold leading-7 text-[#141414]">Price</h2>
+        <h2 className="text-[18px] font-semibold leading-7 text-fg">Price</h2>
       )}
 
       <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-2">

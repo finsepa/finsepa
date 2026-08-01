@@ -43,10 +43,10 @@ export function ComparisonCompanyLimitModal({
           </AppModalFooter>
         }
       >
-        <p className="text-sm leading-5 text-[#141414]">
+        <p className="text-sm leading-5 text-fg">
           You can compare up to {COMPARISON_MAX_COMPANIES} companies at a time.
         </p>
-        <p className="mt-3 text-sm leading-5 text-[#5C5D5F]">
+        <p className="mt-3 text-sm leading-5 text-fg-muted">
           Remove one from the list before adding another.
         </p>
       </AppModalShell>

@@ -7,6 +7,7 @@ import { supabaseAuthTimedFetch } from "@/lib/supabase/auth-fetch-timeout";
 /**
  * Cap Auth round-trips so a Supabase Cloudflare 522 / hang cannot burn the full
  * Vercel Edge 25s budget (which surfaces as Cloudflare 504 on /login).
+ * Prefer `getClaims()` (local JWT verify) — only fall back to `getUser()` when needed.
  */
 const AUTH_GET_USER_BUDGET_MS = 5_000;
 
@@ -14,6 +15,19 @@ async function getMiddlewareUser(
   supabase: ReturnType<typeof createServerClient>,
 ): Promise<{ id: string } | null> {
   try {
+    const claimsSettled = await Promise.race([
+      supabase.auth.getClaims().then(
+        (r: Awaited<ReturnType<typeof supabase.auth.getClaims>>) => ({ kind: "claims" as const, r }),
+      ),
+      new Promise<{ kind: "timeout" }>((resolve) => {
+        setTimeout(() => resolve({ kind: "timeout" }), AUTH_GET_USER_BUDGET_MS);
+      }),
+    ]);
+    if (claimsSettled.kind === "claims") {
+      const sub = claimsSettled.r.data?.claims?.sub;
+      if (typeof sub === "string" && sub.length > 0) return { id: sub };
+    }
+
     const result = await Promise.race([
       supabase.auth.getUser(),
       new Promise<never>((_, reject) => {

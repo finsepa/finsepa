@@ -45,7 +45,7 @@ import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screensho
 import type { ChartType } from "@/components/charting/charting-time-range";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { MOBILE_MODAL_SHEET_OVERLAY_CLASS } from "@/components/ui/mobile-bottom-sheet";
-import { AppModalShell } from "@/components/ui/app-modal-shell";
+import { AppModalShell, APP_MODAL_RULE_CLASS } from "@/components/ui/app-modal-shell";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import {
   fetchChartingFundamentalsSeriesCached,
@@ -475,7 +475,7 @@ export function KeyStatsMetricChartModal({
       return <AssetChartSkeleton heightPx={chartHeight} className="w-full min-w-0" />;
     }
     if (!hasSeries) {
-      return <p className="text-[14px] leading-6 text-[#5C5D5F]">No data for this metric.</p>;
+      return <p className="text-[14px] leading-6 text-fg-muted">No data for this metric.</p>;
     }
     return (
       <div className="min-w-0">
@@ -499,7 +499,7 @@ export function KeyStatsMetricChartModal({
           showBrandWatermark
         />
         {!isMobile && metricId === "forward_pe" ? (
-          <p className="mt-3 text-[12px] leading-5 text-[#5C5D5F]">
+          <p className="mt-3 text-[12px] leading-5 text-fg-muted">
             Live forward P/E in Key Stats uses current price and consensus EPS. Historical fiscal rows
             rarely include that forward multiple; when it is missing, the bar uses trailing P/E for the
             same period so year-to-year comparisons stay available.
@@ -569,7 +569,7 @@ export function KeyStatsMetricChartModal({
       showClose={false}
       maxWidthClass="w-full"
       maxHeightClass="max-h-[min(92vh,720px)]"
-      className="key-stats-metric-sheet-enter !rounded-t-xl !rounded-b-none !bg-white !p-0 !shadow-[0px_10px_8px_rgba(10,10,10,0.1),0px_4px_3px_rgba(10,10,10,0.04)]"
+      className="key-stats-metric-sheet-enter !rounded-t-xl !rounded-b-none !bg-surface !p-0 !shadow-[0px_10px_8px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-10)),0px_4px_3px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]"
       bareBody
       bodyScroll={false}
     >
@@ -581,11 +581,11 @@ export function KeyStatsMetricChartModal({
         <div className="flex w-full flex-col items-center gap-1 text-center">
           <h2
             id="key-stats-metric-chart-title"
-            className="text-[16px] font-semibold leading-6 text-[#141414]"
+            className="text-[16px] font-semibold leading-6 text-fg"
           >
             {metricTitle}
           </h2>
-          <p className="text-[11px] leading-4 text-[#5C5D5F]">{mobileSubtitle}</p>
+          <p className="text-[11px] leading-4 text-fg-muted">{mobileSubtitle}</p>
         </div>
       </div>
       <div className="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto px-4 py-2">
@@ -617,7 +617,7 @@ export function KeyStatsMetricChartModal({
       bodyScroll={false}
       bodyClassName="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-0"
     >
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#E4E4E7] px-5 pt-5 pb-3">
+      <div className={`flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-5 pt-5 pb-3 ${APP_MODAL_RULE_CLASS}`}>
         <div className="flex min-w-0 flex-1 items-start gap-3">
           <CompanyLogo
             name={logoName}
@@ -627,13 +627,13 @@ export function KeyStatsMetricChartModal({
             className="!rounded-xl"
           />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#141414]">
+            <span className="shrink-0 text-[18px] font-semibold leading-7 text-fg">
               {metricTitle}
             </span>
             {companyLine ? (
-              <span className="min-w-0 truncate text-[14px] leading-5 text-[#5C5D5F]">{companyLine}</span>
+              <span className="min-w-0 truncate text-[14px] leading-5 text-fg-muted">{companyLine}</span>
             ) : (
-              <span className="min-w-0 truncate text-[14px] leading-5 text-[#5C5D5F]">{ticker}</span>
+              <span className="min-w-0 truncate text-[14px] leading-5 text-fg-muted">{ticker}</span>
             )}
           </span>
         </div>

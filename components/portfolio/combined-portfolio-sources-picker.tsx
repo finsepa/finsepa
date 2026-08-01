@@ -14,19 +14,19 @@ export function CombinedPortfolioSourcesPicker({
   onToggle: (id: string) => void;
 }) {
   if (standardPortfolios.length < 2) {
-    return <p className="mt-2 text-sm text-[#5C5D5F]">Create another standard portfolio first.</p>;
+    return <p className="mt-2 text-sm text-fg-muted">Create another standard portfolio first.</p>;
   }
 
   return (
-    <ul className="mt-2 divide-y divide-[#E4E4E7] rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA]">
+    <ul className="mt-2 divide-y divide-stroke rounded-[10px] border border-stroke bg-canvas">
       {standardPortfolios.map((p) => {
         const on = !!picked[p.id];
         return (
           <li key={p.id}>
             <label
               className={cn(
-                "flex cursor-pointer items-center gap-3 px-4 py-3 text-sm text-[#141414] transition-colors",
-                on ? "bg-white" : "hover:bg-[#F4F4F5]",
+                "flex cursor-pointer items-center gap-3 px-4 py-3 text-sm text-fg transition-colors",
+                on ? "bg-surface" : "hover:bg-surface-muted",
               )}
             >
               <AppCheckbox
@@ -45,7 +45,7 @@ export function CombinedPortfolioSourcesPicker({
 
 export function CombinedPortfolioSourceHint() {
   return (
-    <p className="text-xs leading-4 text-[#5C5D5F]">
+    <p className="text-xs leading-4 text-fg-muted">
       Choose at least two standard portfolios. Combined portfolios are read-only — trades and cash are managed in each
       source portfolio.
     </p>

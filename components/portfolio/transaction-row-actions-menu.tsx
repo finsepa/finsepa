@@ -14,7 +14,7 @@ import { deleteMenuIconAnimation, renameMenuIconAnimation } from "@/lib/lottie/w
 import { cn } from "@/lib/utils";
 
 const ghostSquareBtn =
-  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-transparent text-[#141414] transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2";
+  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-transparent text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
 
 /** Matches `min-w-[11.5rem]` — icon + label rows. */
 const MENU_WIDTH_PX = 184;
@@ -120,7 +120,7 @@ export function TransactionRowActionsMenu({
             role="menuitem"
             className={cn(
               dropdownMenuPlainItemClassName(),
-              "text-[#DC2626] hover:bg-[#FEE2E2] hover:text-[#B91C1C]",
+              "text-down hover:bg-down-soft hover:text-down",
             )}
             onMouseEnter={() => setDeleteIconPlaying(true)}
             onMouseLeave={() => setDeleteIconPlaying(false)}

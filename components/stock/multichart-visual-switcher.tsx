@@ -4,7 +4,6 @@ import { BarChart3, LineChart } from "@/lib/icons";
 
 import type { MultichartVisual } from "@/components/stock/multichart-fundamentals-bar";
 import { SegmentedControl } from "@/components/design-system/segmented-control";
-import { whiteSurfaceButtonShadowClass } from "@/components/design-system/secondary-button-styles";
 import { cn } from "@/lib/utils";
 
 const CHART_VISUAL_OPTIONS = [
@@ -12,7 +11,18 @@ const CHART_VISUAL_OPTIONS = [
   { value: "line" as const, label: "Line" },
 ] as const;
 
-const ICON_ACTIVE_CLASS = cn("bg-white text-[#141414]", whiteSurfaceButtonShadowClass);
+const CHART_VISUAL_ICON_OPTIONS = [
+  {
+    value: "bar" as const,
+    "aria-label": "Bar chart",
+    label: <BarChart3 className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
+  },
+  {
+    value: "line" as const,
+    "aria-label": "Line chart",
+    label: <LineChart className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
+  },
+] as const;
 
 /** Stock Charting tab uses `bars` | `line`; multicharts use `bar` | `line`. */
 export type ChartingChartType = "bars" | "line";
@@ -52,48 +62,13 @@ export function MultichartVisualSwitcher({
   variant?: "labeled" | "icon";
   className?: string;
 }) {
-  if (variant === "icon") {
-    return (
-      <div
-        className={cn("flex h-9 shrink-0 gap-0 rounded-[10px] bg-[#F1F1F2] p-0.5", className)}
-        role="group"
-        aria-label="Chart style"
-      >
-        <button
-          type="button"
-          onClick={() => onChange("bar")}
-          className={cn(
-            "flex h-full w-8 items-center justify-center rounded-[10px] transition-colors",
-            value === "bar" ? ICON_ACTIVE_CLASS : "text-[#5C5D5F] hover:text-[#141414]",
-          )}
-          aria-pressed={value === "bar"}
-          aria-label="Bar chart"
-        >
-          <BarChart3 className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-        </button>
-        <button
-          type="button"
-          onClick={() => onChange("line")}
-          className={cn(
-            "flex h-full w-8 items-center justify-center rounded-[10px] transition-colors",
-            value === "line" ? ICON_ACTIVE_CLASS : "text-[#5C5D5F] hover:text-[#141414]",
-          )}
-          aria-pressed={value === "line"}
-          aria-label="Line chart"
-        >
-          <LineChart className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-        </button>
-      </div>
-    );
-  }
-
   return (
     <SegmentedControl
-      options={CHART_VISUAL_OPTIONS}
+      options={variant === "icon" ? CHART_VISUAL_ICON_OPTIONS : CHART_VISUAL_OPTIONS}
       value={value}
       onChange={onChange}
       size={size}
-      fullWidth={fullWidth}
+      fullWidth={variant === "icon" ? false : fullWidth}
       aria-label="Chart style"
       className={cn(className)}
     />

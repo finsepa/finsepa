@@ -34,7 +34,7 @@ export function ChartBrandWatermark({
           "select-none font-['Inter'] font-semibold leading-none tracking-[0.05em]",
           size === "compact" ? "text-[48px] sm:text-[56px]" : "text-[60px] sm:text-[72px]",
         )}
-        style={{ color: "rgba(161, 161, 170, 0.2)" }}
+        style={{ color: "var(--fs-chart-watermark)" }}
       >
         Finsepa
       </span>

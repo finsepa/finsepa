@@ -336,11 +336,11 @@ function AgentAppPathLink({
       <Link
         prefetch={false}
         href={clean}
-        className="group inline-flex items-center gap-0.5 font-semibold text-[#141414] no-underline underline-offset-2 decoration-[#5C5D5F] hover:underline"
+        className="group inline-flex items-center gap-0.5 font-semibold text-fg no-underline underline-offset-2 decoration-fg-muted hover:underline"
       >
         <span>{label.charAt(0).toUpperCase() + label.slice(1)}</span>
         <ChevronRight
-          className="h-4 w-4 shrink-0 text-[#A1A1AA] transition-colors group-hover:text-[#5C5D5F]"
+          className="h-4 w-4 shrink-0 text-fg-subtle transition-colors group-hover:text-fg-muted"
           strokeWidth={2}
           aria-hidden
         />
@@ -426,21 +426,21 @@ export function AgentMessageContent({
 
   if (!hasRich) {
     return (
-      <div className={cn("whitespace-pre-wrap font-normal text-[16px] leading-6 text-[#141414]", className)}>
+      <div className={cn("whitespace-pre-wrap font-normal text-[16px] leading-6 text-fg", className)}>
         {renderInline(content)}
       </div>
     );
   }
 
   return (
-    <div className={cn("flex w-full max-w-xl flex-col gap-3 font-normal text-[16px] leading-6 text-[#141414]", className)}>
+    <div className={cn("flex w-full max-w-xl flex-col gap-3 font-normal text-[16px] leading-6 text-fg", className)}>
       {blocks.map((b, i) => {
         if (b.type === "heading") {
           return (
             <h3
               key={`h-${i}`}
               className={cn(
-                "text-[18px] font-semibold leading-7 tracking-tight text-[#141414]",
+                "text-[18px] font-semibold leading-7 tracking-tight text-fg",
                 i > 0 && "mt-1",
               )}
             >
@@ -452,10 +452,10 @@ export function AgentMessageContent({
           return (
             <ul
               key={`l-${i}`}
-              className="m-0 list-disc space-y-1.5 pl-5 marker:text-[#A1A1AA]"
+              className="m-0 list-disc space-y-1.5 pl-5 marker:text-fg-subtle"
             >
               {b.items.map((item, j) => (
-                <li key={`li-${i}-${j}`} className="pl-0.5 leading-6 text-[#141414]">
+                <li key={`li-${i}-${j}`} className="pl-0.5 leading-6 text-fg">
                   {renderInline(item)}
                 </li>
               ))}

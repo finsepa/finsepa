@@ -11,10 +11,11 @@ export default function ForgotPasswordPage() {
   return (
     <AuthCenteredLayout
       split={false}
+      cornerActions
       title="Reset your password"
       subtitle={
         <>
-          <span className="text-[#5C5D5F]">Remember your password? </span>
+          <span className="text-fg-muted">Remember your password? </span>
           <Link href={PATH_LOGIN} className={authAccentLinkClassName}>
             Log in
           </Link>

@@ -55,19 +55,19 @@ export function EarningsPreviewModal({
             <Link
               href={stockEarningsHref}
               onClick={() => onClose()}
-              className="group flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-[10px] outline-none ring-offset-2 transition-colors hover:bg-[#F4F4F5] focus-visible:ring-2 focus-visible:ring-[#141414]/15"
+              className="group flex min-w-0 flex-1 cursor-pointer items-start gap-3 rounded-[10px] outline-none ring-offset-2 transition-colors hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-fg/15"
               id="earnings-preview-title"
               title={`Open ${item.ticker.trim()} — Earnings`}
             >
               <CompanyLogo name={item.companyName || item.ticker} logoUrl={item.logoUrl} symbol={item.ticker} size="lg" />
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="flex min-w-0 flex-wrap items-center gap-2">
-                  <span className="shrink-0 text-[18px] font-semibold leading-7 text-[#141414] underline-offset-2 decoration-[#141414] group-hover:underline">
+                  <span className="shrink-0 text-[18px] font-semibold leading-7 text-fg underline-offset-2 decoration-fg group-hover:underline">
                     {item.ticker}
                   </span>
                   {item.screenerRank != null ? <ScreenerRankBadge rank={item.screenerRank} /> : null}
                 </span>
-                <span className="min-w-0 truncate text-[14px] leading-5 text-[#5C5D5F] underline-offset-2 decoration-[#5C5D5F] group-hover:underline">
+                <span className="min-w-0 truncate text-[14px] leading-5 text-fg-muted underline-offset-2 decoration-fg-muted group-hover:underline">
                   {item.companyName}
                 </span>
               </span>
@@ -78,7 +78,7 @@ export function EarningsPreviewModal({
                 storageKey={item.ticker.trim().toUpperCase()}
                 label={item.ticker.trim()}
               />
-              <span className="mx-0.5 h-4 w-px shrink-0 bg-[#E4E4E7]" aria-hidden />
+              <span className="mx-0.5 h-4 w-px shrink-0 bg-stroke" aria-hidden />
               <AppModalCloseButton onClick={onClose} />
             </div>
           </div>

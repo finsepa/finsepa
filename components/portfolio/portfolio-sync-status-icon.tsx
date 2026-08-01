@@ -79,10 +79,10 @@ export function PortfolioSyncStatusIcon({
         className={cn(
           "inline-flex items-center justify-center",
           variant === "toolbar" ?
-            cn(topbarSquircleTextButtonClass, "text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2")
+            cn(topbarSquircleTextButtonClass, "text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2")
           : variant === "title" ?
-            "h-9 w-9 rounded-[10px] text-[#5C5D5F] transition-colors hover:bg-[#F4F4F5] hover:text-[#141414]"
-          : "h-9 w-9 rounded-lg text-[#5C5D5F] hover:bg-[#F4F4F5] hover:text-[#141414]",
+            "h-9 w-9 rounded-[10px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
+          : "h-9 w-9 rounded-lg text-fg-muted hover:bg-surface-muted hover:text-fg",
         )}
         aria-label={tooltipLabel.replace(/\n/g, ". ")}
       >

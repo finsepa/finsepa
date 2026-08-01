@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Search, X } from "@/lib/icons";
 
+import { textInputActiveRingClassName, textInputShellClassName } from "@/components/design-system/text-input-styles";
 import { dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
@@ -133,15 +134,16 @@ export function TopbarSearch() {
         role="search"
         data-open={open ? "true" : "false"}
         className={cn(
-          "relative flex h-9 min-w-0 w-full cursor-text items-center overflow-hidden rounded-lg bg-[#F1F1F2] pl-3 pr-3",
-          "transition-colors motion-reduce:transition-none",
-          !open && "hover:bg-[#E6E6E7]",
+          "relative flex h-9 min-w-0 w-full cursor-text items-center overflow-hidden rounded-[10px] pl-3 pr-3",
+          textInputShellClassName,
+          "motion-reduce:transition-none",
+          open && textInputActiveRingClassName,
         )}
         style={motionStyle}
         onPointerDown={handleSearchShellPointerDown}
       >
         <span
-          className="pointer-events-none absolute top-1/2 z-10 flex h-5 w-5 items-center justify-center text-[#141414] motion-reduce:transition-none"
+          className="pointer-events-none absolute top-1/2 z-10 flex h-5 w-5 items-center justify-center text-icon motion-reduce:transition-none"
           style={{
             left: SEARCH_ICON_INSET_PX,
             ...motionStyle,
@@ -166,7 +168,7 @@ export function TopbarSearch() {
           onChange={(e) => panel.setQuery(e.target.value)}
           placeholder="Search..."
           className={cn(
-            "absolute inset-0 z-[1] h-full w-full min-w-0 cursor-text bg-transparent text-sm leading-5 text-[#141414] outline-none placeholder:text-[#A1A1AA] caret-[#141414] read-only:cursor-text transition-[padding] motion-reduce:transition-none",
+            "absolute inset-0 z-[1] h-full w-full min-w-0 cursor-text bg-transparent text-sm leading-5 text-fg outline-none placeholder:text-fg-subtle caret-fg read-only:cursor-text transition-[padding] motion-reduce:transition-none",
             !open && "pointer-events-none",
           )}
           style={{
@@ -210,9 +212,9 @@ export function TopbarSearch() {
               close();
             }}
             className={cn(
-              "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-[#5C5D5F]",
+              "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-fg-muted",
               "transition-opacity motion-reduce:transition-none",
-              "hover:bg-[#EBEBEB] hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10",
+              "hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10",
               open ? "opacity-100" : "opacity-0",
             )}
             style={motionStyle}
@@ -223,7 +225,7 @@ export function TopbarSearch() {
           </button>
           <kbd
             className={cn(
-              "hidden rounded border border-neutral-200 bg-white px-1.5 py-0.5 font-sans text-[10px] font-medium text-[#A1A1AA] md:inline-flex",
+              "hidden rounded border border-stroke bg-surface px-1.5 py-0.5 font-sans text-[10px] font-medium text-fg-subtle md:inline-flex",
               "transition-opacity motion-reduce:transition-none",
               open ? "opacity-0" : "opacity-100",
             )}

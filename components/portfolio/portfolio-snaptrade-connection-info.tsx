@@ -55,21 +55,21 @@ export function PortfolioSnaptradeConnectionInfo({
 
   return (
     <div className="flex w-full flex-col gap-2">
-      <span className="text-sm font-medium leading-5 text-[#141414]">Brokerage connection</span>
-      <div className="rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] px-3 py-3">
+      <span className="text-sm font-medium leading-5 text-fg">Brokerage connection</span>
+      <div className="rounded-[10px] border border-stroke bg-canvas px-3 py-3">
         <div className="flex items-start gap-3">
           <PortfolioBrokerageLogo snaptrade={snaptrade} className="mt-0.5" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-[#141414]">{brokerageName}</p>
-            <p className="mt-0.5 text-xs text-[#5C5D5F]">
+            <p className="truncate text-sm font-medium text-fg">{brokerageName}</p>
+            <p className="mt-0.5 text-xs text-fg-muted">
               SnapTrade · {accountLine}
             </p>
-            <p className="mt-1 text-xs text-[#5C5D5F]">{formatPortfolioLastSyncLine(snaptrade.syncedAt)}</p>
+            <p className="mt-1 text-xs text-fg-muted">{formatPortfolioLastSyncLine(snaptrade.syncedAt)}</p>
           </div>
         </div>
-        <div className="mt-3 border-t border-[#E4E4E7] pt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#5C5D5F]">How sync works</p>
-          <ul className="mt-2 list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-[#52525B]">
+        <div className="mt-3 border-t border-stroke pt-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-fg-muted">How sync works</p>
+          <ul className="mt-2 list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-fg-muted">
             {explanation.map((line) => (
               <li key={line}>{line}</li>
             ))}

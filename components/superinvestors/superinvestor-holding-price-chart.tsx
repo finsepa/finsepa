@@ -46,7 +46,7 @@ export function SuperinvestorHoldingPriceChart({
 
   return (
     <section className="mb-6">
-      <div className="overflow-visible rounded-[12px] bg-white">
+      <div className="overflow-visible rounded-[12px] bg-white dark:bg-white">
         <PriceChart
           kind="stock"
           symbol={sym}

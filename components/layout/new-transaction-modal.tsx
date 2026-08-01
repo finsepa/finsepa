@@ -8,6 +8,7 @@ import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import {
   AppModalFooter,
   AppModalShell,
+  APP_MODAL_RULE_CLASS,
   appModalCancelButtonClass,
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
@@ -40,7 +41,12 @@ import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { portfolioSymbolMatchesAssetRoute } from "@/lib/portfolio/portfolio-asset-route-match";
 import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-transaction";
 import { lotUnrealizedPnL, mergeBuyIntoPosition } from "@/lib/portfolio/holding-position";
-import { toastTransactionAdded } from "@/lib/portfolio/transaction-added-toast";
+import {
+  formatExpenseToastDescription,
+  formatIncomeToastDescription,
+  formatTradeToastDescription,
+  toastTransactionAdded,
+} from "@/lib/portfolio/transaction-added-toast";
 import { refreshHoldingMarketPrices, replayTradeTransactionsToHoldings } from "@/lib/portfolio/rebuild-holdings-from-trades";
 import { parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
 
@@ -337,7 +343,10 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
         profitPct: null,
         profitUsd: null,
       });
-      toastTransactionAdded(`Income added for ${selectedCompany.name} (${sym}).`, transactionDate);
+      toastTransactionAdded(
+        "Income added",
+        formatIncomeToastDescription(opLabel, sym, net),
+      );
       onClose();
     } finally {
       setSubmitting(false);
@@ -384,7 +393,10 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
         profitPct: null,
         profitUsd: null,
       });
-      toastTransactionAdded(`Expense recorded for ${selectedCompany.name} (${sym}).`, transactionDate);
+      toastTransactionAdded(
+        "Expense recorded",
+        formatExpenseToastDescription(expenseOperation, sym, amt),
+      );
       onClose();
     } finally {
       setSubmitting(false);
@@ -528,7 +540,10 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
       const quoted = await refreshHoldingMarketPrices(rebuilt);
       setPortfolioHoldings(selectedPortfolioId, quoted);
 
-      toastTransactionAdded(`Transaction added for ${assetName} (${symUpper}).`, transactionDate);
+      toastTransactionAdded(
+        "Transaction added",
+        formatTradeToastDescription(operation, sh, symUpper),
+      );
       onClose();
     } finally {
       setSubmitting(false);
@@ -617,9 +632,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                 />
 
                 {tradeAssetSource === "listed" ? (
-                  <Field label="Ticker/Company">
-                    <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
-                  </Field>
+                  <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
                 ) : (
                   <Field label="Asset name">
                     <ClearableInput
@@ -653,16 +666,16 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                       clearLabel="Clear shares"
                     />
                     {operation === "Sell" && selectedHoldingShares != null ? (
-                      <div className="mt-1 text-[12px] leading-4 text-[#5C5D5F]">
+                      <div className="mt-1 text-[12px] leading-4 text-fg-muted">
                         You have{" "}
-                        <span className="font-medium text-[#141414]">
+                        <span className="font-medium text-fg">
                           {formatSharesHint(selectedHoldingShares, selectedCompany?.symbol ?? "")}
                         </span>
                         {selectedHoldingWorthUsd != null ? (
                           <>
                             {" "}
                             worth of{" "}
-                            <span className="font-medium tabular-nums text-[#141414]">
+                            <span className="font-medium tabular-nums text-fg">
                               {usdBalance.format(selectedHoldingWorthUsd)}
                             </span>
                           </>
@@ -696,9 +709,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
 
             {transactionTab === "Incomes" ? (
               <>
-                <Field label="Ticker/Company">
-                  <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
-                </Field>
+                <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
 
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Operation">
@@ -745,9 +756,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                   <TransactionExpenseOperationSelect value={expenseOperation} onChange={setExpenseOperation} />
                 </Field>
 
-                <Field label="Ticker/Company">
-                  <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
-                </Field>
+                <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
 
                 <Field label="Date">
                   <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
@@ -765,16 +774,16 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
             ) : null}
 
             <div className="pt-1">
-              <div className="flex items-center gap-1 border-b border-dashed border-[#E4E4E7] py-2.5 text-sm">
-                <span className="flex-1 font-medium text-[#5C5D5F]">Current cash balance</span>
+              <div className="flex items-center gap-1 border-b border-dashed border-stroke py-2.5 text-sm">
+                <span className="flex-1 font-medium text-fg-muted">Current cash balance</span>
                 <span
                   className={cn(
                     "shrink-0 font-semibold tabular-nums",
                     currentCashBalanceDisplayUsd < 0
-                      ? "text-[#DC2626]"
+                      ? "text-down"
                       : currentCashBalanceDisplayUsd > 0
-                        ? "text-[#16A34A]"
-                        : "text-[#141414]",
+                        ? "text-up"
+                        : "text-fg",
                   )}
                 >
                   {usdBalance.format(currentCashBalanceDisplayUsd)}
@@ -782,30 +791,30 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
               </div>
               {transactionTab === "Trades" ? (
                 <div className="flex items-center gap-1 py-2.5 text-sm">
-                  <span className="flex-1 font-medium text-[#5C5D5F]">Total</span>
-                  <span className="shrink-0 font-semibold tabular-nums text-[#141414]">
+                  <span className="flex-1 font-medium text-fg-muted">Total</span>
+                  <span className="shrink-0 font-semibold tabular-nums text-fg">
                     {usdFormatter.format(transactionTotal)}
                   </span>
                 </div>
               ) : null}
               {transactionTab === "Incomes" && incomeGrossUsd > 0 && incomeNetUsd > 0 ? (
                 <>
-                  <div className="flex items-center gap-1 border-b border-dashed border-[#E4E4E7] py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-[#5C5D5F]">Net to cash</span>
-                    <span className="shrink-0 font-semibold tabular-nums text-[#16A34A]">
+                  <div className="flex items-center gap-1 border-b border-dashed border-stroke py-2.5 text-sm">
+                    <span className="flex-1 font-medium text-fg-muted">Net to cash</span>
+                    <span className="shrink-0 font-semibold tabular-nums text-up">
                       {usdFormatter.format(incomeNetUsd)}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-[#5C5D5F]">Balance after</span>
+                    <span className="flex-1 font-medium text-fg-muted">Balance after</span>
                     <span
                       className={cn(
                         "shrink-0 font-semibold tabular-nums",
                         balanceAfterIncomeUsd < 0
-                          ? "text-[#DC2626]"
+                          ? "text-down"
                           : balanceAfterIncomeUsd > 0
-                            ? "text-[#16A34A]"
-                            : "text-[#141414]",
+                            ? "text-up"
+                            : "text-fg",
                       )}
                     >
                       {usdBalance.format(balanceAfterIncomeUsd)}
@@ -815,22 +824,22 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
               ) : null}
               {transactionTab === "Expenses" && expenseAmountNum > 0 ? (
                 <>
-                  <div className="flex items-center gap-1 border-b border-dashed border-[#E4E4E7] py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-[#5C5D5F]">Cash out</span>
-                    <span className="shrink-0 font-semibold tabular-nums text-[#DC2626]">
+                  <div className="flex items-center gap-1 border-b border-dashed border-stroke py-2.5 text-sm">
+                    <span className="flex-1 font-medium text-fg-muted">Cash out</span>
+                    <span className="shrink-0 font-semibold tabular-nums text-down">
                       {usdFormatter.format(-expenseAmountNum)}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-[#5C5D5F]">Balance after</span>
+                    <span className="flex-1 font-medium text-fg-muted">Balance after</span>
                     <span
                       className={cn(
                         "shrink-0 font-semibold tabular-nums",
                         balanceAfterExpenseUsd < 0
-                          ? "text-[#DC2626]"
+                          ? "text-down"
                           : balanceAfterExpenseUsd > 0
-                            ? "text-[#16A34A]"
-                            : "text-[#141414]",
+                            ? "text-up"
+                            : "text-fg",
                       )}
                     >
                       {usdBalance.format(balanceAfterExpenseUsd)}
@@ -848,7 +857,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex w-full flex-col gap-2">
-      <span className="text-sm font-medium leading-5 text-[#141414]">{label}</span>
+      <span className="text-sm font-medium leading-5 text-fg">{label}</span>
       {children}
     </div>
   );
@@ -918,7 +927,7 @@ function TransactionTypeTabs({
   }, [measureIndicator]);
 
   return (
-    <div className="w-full border-b border-[#E4E4E7]">
+    <div className={`w-full border-b ${APP_MODAL_RULE_CLASS}`}>
       <nav ref={navRef} className="relative flex w-full flex-nowrap items-start gap-5 pb-px" aria-label="Transaction type">
         {TABS.map((tab) => {
           const isOn = tab === active;
@@ -933,7 +942,7 @@ function TransactionTypeTabs({
               onClick={() => onChange(tab)}
               className={cn(
                 "-mb-px shrink-0 cursor-pointer border-b-2 border-transparent py-2 text-sm font-medium leading-6 transition-[color,opacity] duration-100 hover:opacity-100",
-                isOn ? "font-semibold text-[#141414] opacity-100" : "text-[#141414] opacity-80",
+                isOn ? "font-semibold text-fg opacity-100" : "text-fg opacity-80",
               )}
             >
               {tab}
@@ -941,7 +950,7 @@ function TransactionTypeTabs({
           );
         })}
         <span
-          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#141414] motion-reduce:transition-none"
+          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-fg motion-reduce:transition-none"
           style={{
             left: indicator.left,
             width: indicator.width,

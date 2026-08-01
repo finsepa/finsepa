@@ -1,10 +1,10 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { useId } from "react";
 
 import { cn } from "@/lib/utils";
 
-const VALUE_BLUE = "#2563EB";
 
 type ChartSkeletonProps = {
   className?: string;
@@ -79,8 +79,8 @@ export function ChartSkeleton({
         >
           <defs>
             <linearGradient id={blobId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#E4E4E7" stopOpacity="0.95" />
-              <stop offset="100%" stopColor="#F4F4F5" stopOpacity="0.9" />
+              <stop offset="0%" stopColor="var(--fs-chart-skeleton-top)" stopOpacity="0.95" />
+              <stop offset="100%" stopColor="var(--fs-chart-skeleton-bottom)" stopOpacity="0.9" />
             </linearGradient>
           </defs>
           <path
@@ -113,7 +113,7 @@ export function ChartSkeleton({
           <div className="chart-skeleton-shimmer relative min-h-0 flex-1 overflow-hidden bg-transparent">
             <div className="pointer-events-none absolute inset-x-0 bottom-5 top-0 flex flex-col justify-between py-1">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-px w-full bg-[#F4F4F5]" />
+                <div key={i} className="h-px w-full bg-surface-muted" />
               ))}
             </div>
             <svg
@@ -124,8 +124,8 @@ export function ChartSkeleton({
             >
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={VALUE_BLUE} stopOpacity="0.2" />
-                  <stop offset="100%" stopColor={VALUE_BLUE} stopOpacity="0" />
+                  <stop offset="0%" stopColor={resolveFsColor("--fs-accent")} stopOpacity="0.2" />
+                  <stop offset="100%" stopColor={resolveFsColor("--fs-accent")} stopOpacity="0" />
                 </linearGradient>
               </defs>
               <path
@@ -135,7 +135,7 @@ export function ChartSkeleton({
               <path
                 d="M 0,78 C 55,72 95,58 140,52 C 185,46 230,28 280,22 C 320,17 360,18 400,12"
                 fill="none"
-                stroke={VALUE_BLUE}
+                stroke={resolveFsColor("--fs-accent")}
                 strokeOpacity="0.35"
                 strokeWidth="2"
                 strokeLinecap="round"

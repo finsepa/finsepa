@@ -4,6 +4,10 @@
  *
  * Only `/auth/v1/*` is timed — PostgREST / storage / realtime keep the default
  * fetch so normal DB queries are not aborted after a few seconds.
+ *
+ * On timeout/abort we return a synthetic 504 Response instead of throwing
+ * `TimeoutError`. Auth-js logs thrown fetch errors with `console.error` and may
+ * retry; a Response keeps the failure path quiet and predictable.
  */
 export const SUPABASE_AUTH_FETCH_TIMEOUT_MS = 4_000;
 /** Browser sign-in / session refresh can wait a bit longer than middleware checks. */
@@ -23,7 +27,19 @@ function isSupabaseAuthRequest(input: RequestInfo | URL): boolean {
   }
 }
 
-export function supabaseAuthTimedFetch(
+function isAbortOrTimeoutError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.name === "TimeoutError" || error.name === "AbortError";
+}
+
+function authTimeoutResponse(): Response {
+  return new Response(JSON.stringify({ message: "Auth request timed out", error: "timeout" }), {
+    status: 504,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+export async function supabaseAuthTimedFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
   timeoutMs: number = SUPABASE_AUTH_FETCH_TIMEOUT_MS,
@@ -37,5 +53,13 @@ export function supabaseAuthTimedFetch(
     init?.signal != null && typeof AbortSignal.any === "function"
       ? AbortSignal.any([timeout, init.signal])
       : timeout;
-  return fetch(input, { ...init, signal });
+
+  try {
+    return await fetch(input, { ...init, signal });
+  } catch (error) {
+    if (isAbortOrTimeoutError(error)) {
+      return authTimeoutResponse();
+    }
+    throw error;
+  }
 }

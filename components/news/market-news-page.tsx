@@ -5,7 +5,9 @@ import { isSingleAssetMode } from "@/lib/features/single-asset";
 import { NewsTable } from "@/components/news/news-table";
 import { NewsCards } from "@/components/news/news-cards";
 import { ScreenerPaginationLinks } from "@/components/ui/screener-pagination-links";
+import { textInputFieldClassName } from "@/components/design-system/text-input-styles";
 import { Search } from "@/lib/icons";
+import { cn } from "@/lib/utils";
 
 function toInt(v: string | null | undefined, fallback: number): number {
   const n = Number(v);
@@ -18,7 +20,7 @@ export async function MarketNewsPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   if (isSingleAssetMode()) {
-    return <div className="px-4 py-4 text-[#5C5D5F] sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>;
+    return <div className="px-4 py-4 text-fg-muted sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>;
   }
 
   const sp = (await searchParams) ?? {};
@@ -54,7 +56,7 @@ export async function MarketNewsPage({
 
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
-      <div className="mb-4 border-b border-[#E4E4E7]">
+      <div className="mb-4 border-b border-stroke">
         <div className="flex min-w-0 items-end gap-5">
           {tabs.map((t) => {
             const active = t.id === tab;
@@ -68,8 +70,8 @@ export async function MarketNewsPage({
                 href={`/news?${p.toString()}`}
                 className={`relative py-2 text-[14px] font-medium leading-6 transition-colors duration-100 ${
                   active
-                    ? "text-[#141414] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#141414] after:content-['']"
-                    : "text-[#5C5D5F] hover:text-[#141414]"
+                    ? "text-fg after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-fg after:content-['']"
+                    : "text-fg-muted hover:text-fg"
                 }`}
               >
                 {t.label}
@@ -80,7 +82,7 @@ export async function MarketNewsPage({
       </div>
 
       <div className="mb-4 flex min-w-0 items-center justify-between gap-4">
-        <h1 className="min-w-0 shrink-0 text-[22px] font-semibold leading-8 tracking-tight text-[#141414]">
+        <h1 className="min-w-0 shrink-0 text-[22px] font-semibold leading-8 tracking-tight text-fg">
           {title}
         </h1>
 
@@ -89,7 +91,8 @@ export async function MarketNewsPage({
           <input type="hidden" name="tab" value={tab} />
           <div className="relative block w-full max-w-full">
             <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#141414]"
+              className="pointer-events-none absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-icon"
+              strokeWidth={2}
               aria-hidden
             />
             <input
@@ -97,7 +100,7 @@ export async function MarketNewsPage({
               name="q"
               defaultValue={q}
               placeholder="Search..."
-              className="h-9 w-full min-w-0 rounded-lg bg-[#F4F4F5] py-2 pl-9 pr-3 text-sm text-[#141414] placeholder:text-[#A1A1AA] outline-none transition-all duration-100 hover:bg-[#EBEBEB] focus:ring-2 focus:ring-[#141414]/10"
+              className={cn(textInputFieldClassName, "w-full min-w-0 rounded-[10px] pl-10 pr-3 placeholder:text-fg-subtle")}
               aria-label="Search news"
             />
           </div>
@@ -105,7 +108,7 @@ export async function MarketNewsPage({
       </div>
 
       {items.length === 0 ? (
-        <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-6 text-sm text-[#5C5D5F]">
+        <div className="rounded-[12px] border border-stroke bg-surface px-4 py-6 text-sm text-fg-muted">
           No news yet
         </div>
       ) : (

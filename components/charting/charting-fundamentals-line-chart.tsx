@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import {
   useCallback,
   useEffect,
@@ -38,6 +39,7 @@ import {
   buildFundamentalsYAxisDomain,
   CHARTING_LINE_HOVER_HALO_BG,
   CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
+  CHARTING_LINE_POINT_MARKER_FILL,
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
@@ -59,7 +61,7 @@ const MULTICHART_Y_AXIS_W_LINE_PX = 46;
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
 const HOVER_DOT_HALO_RADIUS_PX = 14;
-const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-[#2563EB]";
+const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-accent";
 const MULTICHART_LINE_STROKE_WIDTH_PX = 2;
 
 const LINE_PERIOD_MARGINS: PeriodPlotEdgeMargin = { left: 0, right: 0 };
@@ -147,7 +149,7 @@ function ChartingMultiMetricFundamentalsLineChart({
       return {
         id,
         kind: CHARTING_METRIC_KIND[id],
-        color: metricColors.get(id) ?? "#2563EB",
+        color: metricColors.get(id) ?? resolveFsColor("--fs-accent"),
         values: ends.map((pe) => {
           const v = byEnd.get(pe);
           return v != null && Number.isFinite(v) ? v : null;
@@ -340,7 +342,7 @@ function ChartingMultiMetricFundamentalsLineChart({
   if (periodEnds.length === 0 || numericValues.length === 0) {
     return (
       <div
-        className="flex items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#5C5D5F]"
+        className="flex items-center justify-center rounded-xl border border-dashed border-stroke bg-canvas text-[13px] text-fg-muted"
         style={{ height }}
       >
         No data
@@ -359,7 +361,7 @@ function ChartingMultiMetricFundamentalsLineChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-[#FCFCFD]"
+              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -424,7 +426,7 @@ function ChartingMultiMetricFundamentalsLineChart({
                       ) : null,
                     )}
                     {hoveredLinePts.map((pt, idx) => {
-                      const color = linePaths[idx]?.color ?? "#2563EB";
+                      const color = linePaths[idx]?.color ?? resolveFsColor("--fs-accent");
                       return (
                         <g key={`hover-${idx}`}>
                           <circle
@@ -433,7 +435,7 @@ function ChartingMultiMetricFundamentalsLineChart({
                             r={HOVER_DOT_HALO_RADIUS_PX}
                             fill={CHARTING_LINE_HOVER_HALO_BG}
                           />
-                          <circle cx={pt.x} cy={pt.y} r={4.5} fill="white" stroke={color} strokeWidth={2} />
+                          <circle cx={pt.x} cy={pt.y} r={4.5} fill={CHARTING_LINE_POINT_MARKER_FILL} stroke={color} strokeWidth={2} />
                         </g>
                       );
                     })}
@@ -457,10 +459,9 @@ function ChartingMultiMetricFundamentalsLineChart({
                         title={text}
                       >
                         <span
-                          className="block truncate text-[11px] font-semibold leading-none tabular-nums text-[#141414]"
+                          className="block truncate text-[11px] font-semibold leading-none tabular-nums text-fg"
                           style={{
-                            textShadow:
-                              "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
+                            textShadow: "var(--fs-chart-value-label-shadow)",
                           }}
                         >
                           {text}
@@ -483,7 +484,7 @@ function ChartingMultiMetricFundamentalsLineChart({
                 }}
                 role="tooltip"
               >
-                <p className="text-[12px] font-semibold leading-4 text-[#141414]">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-fg">{tip.periodLabel}</p>
                 <div className="mt-1.5 space-y-1">
                   {tip.rows.map((r) => (
                     <div key={r.id} className="flex items-baseline justify-between gap-3">
@@ -493,11 +494,11 @@ function ChartingMultiMetricFundamentalsLineChart({
                           style={{ backgroundColor: r.color }}
                           aria-hidden
                         />
-                        <span className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                        <span className="truncate text-[12px] font-normal leading-4 text-fg-muted">
                           {r.label}
                         </span>
                       </span>
-                      <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#141414]">
+                      <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-fg">
                         {r.value}
                       </span>
                     </div>
@@ -518,7 +519,7 @@ function ChartingMultiMetricFundamentalsLineChart({
               return (
                 <span
                   key={`y-${i}`}
-                  className="absolute left-0 block -translate-y-1/2 text-[12px] tabular-nums leading-none text-[#5C5D5F]"
+                  className="absolute left-0 block -translate-y-1/2 text-[12px] tabular-nums leading-none text-fg-muted"
                   style={{ top }}
                 >
                   {formatAxisValue(kind, t)}
@@ -538,7 +539,7 @@ function ChartingMultiMetricFundamentalsLineChart({
             return (
               <span
                 key={pe}
-                className="absolute top-1.5 inline-block -translate-x-1/2 whitespace-nowrap text-[12px] tabular-nums leading-none text-[#5C5D5F]"
+                className="absolute top-1.5 inline-block -translate-x-1/2 whitespace-nowrap text-[12px] tabular-nums leading-none text-fg-muted"
                 style={{ left: `${leftPct}%` }}
               >
                 {label}

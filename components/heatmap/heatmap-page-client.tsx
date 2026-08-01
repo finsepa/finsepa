@@ -122,7 +122,7 @@ export function HeatmapPageClient({ initial }: { initial: HeatmapPagePayload }) 
       </div>
 
       {leaves.length === 0 ? (
-        <p className="rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] px-4 py-8 text-center text-sm text-[#5C5D5F]">
+        <p className="rounded-[10px] border border-stroke bg-surface-muted px-4 py-8 text-center text-sm text-fg-muted">
           No data available for this view.
         </p>
       ) : (

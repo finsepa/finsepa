@@ -9,7 +9,7 @@ export function StockEarningsTabLoading() {
     <div className="min-w-0 space-y-5" aria-busy aria-label="Loading earnings">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-stretch gap-6">
-          <div className="flex flex-col gap-1.5 border-r border-[#E4E4E7] pr-6">
+          <div className="flex flex-col gap-1.5 border-r border-stroke pr-6">
             <SkeletonBox className="h-4 w-24 rounded" />
             <SkeletonBox className="h-7 w-20 rounded" />
           </div>
@@ -27,7 +27,7 @@ export function StockEarningsTabLoading() {
         {Array.from({ length: 2 }).map((_, i) => (
           <div
             key={i}
-            className="flex h-fit flex-col gap-2 overflow-hidden rounded-xl border border-[#E4E4E7] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+            className="flex h-fit flex-col gap-2 overflow-hidden rounded-xl border border-stroke bg-surface px-4 py-4 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]"
           >
             <SkeletonBox className="h-5 w-32 rounded" />
             <SkeletonBox className="h-9 w-36 rounded" />
@@ -35,7 +35,7 @@ export function StockEarningsTabLoading() {
         ))}
       </div>
       <SkeletonBox className="h-[320px] w-full rounded" />
-      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-[#141414]">Reports</h3>
+      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-fg">Reports</h3>
       <div className="space-y-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonBox key={i} className="h-12 w-full rounded" />

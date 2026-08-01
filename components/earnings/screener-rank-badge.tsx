@@ -12,7 +12,7 @@ export function ScreenerRankBadge({
       : "rounded-md px-1.5 py-0.5 text-[11px] leading-4";
   return (
     <span
-      className={`inline-flex shrink-0 items-center border border-[#E4E4E7] bg-[#F4F4F5] font-semibold tabular-nums text-[#52525B] ${cls}`}
+      className={`inline-flex shrink-0 items-center border border-stroke bg-surface-muted font-semibold tabular-nums text-fg-muted ${cls}`}
       aria-label={`Screener rank ${rank}`}
     >
       #{rank}

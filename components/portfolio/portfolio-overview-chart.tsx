@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import {
   memo,
   useCallback,
@@ -27,9 +28,21 @@ import {
 } from "lightweight-charts";
 import { LineChart, Settings } from "@/lib/icons";
 
+import { accentAreaGradientColors, baselineUpDownFillColors } from "@/lib/chart/accent-area-fill";
+import { useChartThemePaintKey } from "@/lib/theme/use-logo-dev-theme";
 import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-gradient";
+import {
+  fundamentalsBarEnterProgress,
+  prefersReducedFundamentalsBarMotion,
+  runFundamentalsBarEnterAnimation,
+} from "@/lib/chart/fundamentals-bar-enter-animation";
 import { fitSeriesLogicalRangeToPlotWidth } from "@/lib/chart/mobile-plot-horizontal-gutter";
-import { FUNDAMENTALS_CHART_Y_AXIS_W_PX, FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS } from "@/lib/chart/fundamentals-chart-surface";
+import {
+  CHART_PLOT_BACKGROUND_CLASS,
+  CHART_PLOT_BACKGROUND_LABEL_CLASS,
+  FUNDAMENTALS_CHART_Y_AXIS_W_PX,
+  FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
+} from "@/lib/chart/fundamentals-chart-surface";
 
 import { horzTimeToUnixSeconds } from "@/components/chart/chart-selection-utils";
 import {
@@ -68,6 +81,11 @@ import {
 import { netCashUsdUpTo, normalizeUsdForDisplay } from "@/lib/portfolio/overview-metrics";
 import { whiteSurfaceButtonBorderClass, whiteSurfaceButtonShadowClass } from "@/components/design-system";
 import {
+  topbarSquircleActiveClass,
+  topbarSquircleIconClass,
+} from "@/components/design-system/topbar-control-classes";
+import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
+import {
   SegmentedControl,
   type SegmentedControlOption,
 } from "@/components/design-system/segmented-control";
@@ -77,9 +95,6 @@ import type {
   PortfolioValueHistoryPoint,
 } from "@/lib/portfolio/portfolio-chart-types";
 
-const VALUE_BLUE = "#2563EB";
-const GREEN = "#16A34A";
-const RED = "#DC2626";
 const BENCHMARK_SPY_LINE = "#EA580C";
 const BENCHMARK_NASDAQ_LINE = "#9333EA";
 const PORTFOLIO_CHART_TIME_ZONE = "America/New_York";
@@ -87,6 +102,17 @@ const PORTFOLIO_Y_AXIS_LABEL_COUNT_DESKTOP = 6;
 const PORTFOLIO_Y_AXIS_LABEL_COUNT_MOBILE = 4;
 
 const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
+
+/** Left-to-right reveal clip — matches Metrics / Multichart / holdings line enter animation. */
+function applyOverviewLineRevealClip(el: HTMLElement | null, progress: number): void {
+  if (!el) return;
+  if (progress >= 1) {
+    el.style.clipPath = "";
+    return;
+  }
+  const rightInset = (1 - progress) * 100;
+  el.style.clipPath = `inset(0 ${rightInset}% 0 0)`;
+}
 
 /** Matches `rightPriceScale.scaleMargins` on the overview LW chart. */
 const OVERVIEW_SCALE_MARGIN_TOP = 0.12;
@@ -416,7 +442,7 @@ function syncPortfolioTradeDotsOverlay(
     const y = series.priceToCoordinate(pt.value);
     if (x == null || y == null) continue;
     const netCash = bucket.reduce((s, t) => s + t.sum, 0);
-    const border = netCash <= 0 ? GREEN : RED;
+    const border = netCash <= 0 ? resolveFsColor("--fs-up") : resolveFsColor("--fs-down");
 
     const hit = document.createElement("div");
     hit.style.cssText = [
@@ -492,15 +518,15 @@ function PillSwitch({
         onPressedChange(!pressed);
       }}
       className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
-        pressed ? "bg-[#2563EB]" : "bg-[#E4E4E7]",
+        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
+        pressed ? "bg-accent" : "bg-stroke",
         disabled && "cursor-not-allowed opacity-50",
       )}
     >
       <span
         className={cn(
-          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-white shadow-sm transition-transform",
-          pressed ? "translate-x-4" : "translate-x-0",
+          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-switch-thumb-off shadow-sm transition-[transform,background-color]",
+          pressed ? "translate-x-4 bg-switch-thumb" : "translate-x-0",
         )}
       />
     </button>
@@ -579,10 +605,9 @@ function PortfolioChartSettingsButton({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#141414]",
-          "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100",
-          "hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
-          open && "bg-[#F4F4F5]",
+          topbarSquircleIconClass,
+          "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
+          open && topbarSquircleActiveClass,
         )}
       >
         <Settings className="h-5 w-5 shrink-0" strokeWidth={2} aria-hidden />
@@ -609,7 +634,7 @@ function PortfolioChartSettingsButton({
                 : undefined;
               return (
                 <div key={key} role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
-                  <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-[#141414]">{label}</span>
+                  <span className="min-w-0 flex-1 text-sm font-medium leading-5 text-fg">{label}</span>
                   <PillSwitch
                     pressed={values[key]}
                     onPressedChange={(next) => onChangeForKey(key, next)}
@@ -667,7 +692,7 @@ const PORTFOLIO_CHART_MOBILE_RANGE_LABELS = PORTFOLIO_CHART_RANGE_LABELS.filter(
 const PORTFOLIO_CHART_METRIC_SEGMENTS: readonly SegmentedControlOption<PortfolioChartMetricMode>[] =
   PORTFOLIO_CHART_METRIC_OPTIONS;
 
-const PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS = `w-auto ${whiteSurfaceButtonBorderClass} bg-white font-medium ${whiteSurfaceButtonShadowClass} hover:bg-[#FAFAFA]`;
+const PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS = `w-auto ${whiteSurfaceButtonBorderClass} bg-button font-medium ${whiteSurfaceButtonShadowClass} hover:bg-canvas`;
 
 /** One-decimal truncation (e.g. 7616 → 7.6) so axis + last-price badge stay distinct. */
 function truncOneDecimalUnit(abs: number, unit: number): string {
@@ -1131,6 +1156,7 @@ export function PortfolioValueHistoryChartPane({
   const chartLayout = usePortfolioOverviewChartLayout();
   const chartLayoutRef = useRef(chartLayout);
   chartLayoutRef.current = chartLayout;
+  const chartThemePaintKey = useChartThemePaintKey();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -1153,6 +1179,9 @@ export function PortfolioValueHistoryChartPane({
   }>({ show: false, txs: [], lineData: [], sessionYmds: [] });
   const scheduleTradeDotsSyncRef = useRef<(() => void) | null>(null);
   const tradeDotHoverApiRef = useRef<TradeDotHoverApi | null>(null);
+  const lineEnterCancelRef = useRef<(() => void) | null>(null);
+  const lineAnimKeyRef = useRef<string>("");
+  const lineEnterDoneRef = useRef(true);
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
@@ -1236,7 +1265,7 @@ export function PortfolioValueHistoryChartPane({
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
-        textColor: "#5C5D5F",
+        textColor: resolveFsColor("--fs-fg-muted"),
         fontSize: 11,
         fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
         attributionLogo: false,
@@ -1291,45 +1320,43 @@ export function PortfolioValueHistoryChartPane({
 
     const baselineOpts = {
       relativeGradient: false,
-      topFillColor1: "rgba(22, 163, 74, 0.22)",
-      topFillColor2: "rgba(22, 163, 74, 0.04)",
-      topLineColor: GREEN,
-      bottomFillColor1: "rgba(220, 38, 38, 0.04)",
-      bottomFillColor2: "rgba(220, 38, 38, 0.18)",
-      bottomLineColor: RED,
+      ...baselineUpDownFillColors("bright"),
       lineWidth: 2,
       lineType: LineType.Curved,
       priceLineVisible: false,
       lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
       crosshairMarkerVisible: true,
       crosshairMarkerRadius: 5,
-      crosshairMarkerBorderColor: "rgba(255,255,255,0.95)",
-      crosshairMarkerBackgroundColor: "",
+      crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
+      crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
       crosshairMarkerBorderWidth: 2,
     } as const;
 
     const series =
       metric === "value" ?
-        chart.addSeries(AreaSeries, {
-          lineColor: VALUE_BLUE,
-          topColor: "rgba(37, 99, 235, 0.22)",
-          bottomColor: "rgba(37, 99, 235, 0.02)",
+        (() => {
+          const fill = accentAreaGradientColors();
+          return chart.addSeries(AreaSeries, {
+          lineColor: resolveFsColor("--fs-accent"),
+          topColor: fill.top,
+          bottomColor: fill.bottom,
           lineWidth: 2,
           lineType: LineType.Curved,
           priceLineVisible: false,
           lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
           crosshairMarkerVisible: true,
           crosshairMarkerRadius: 5,
-          crosshairMarkerBorderColor: "rgba(255,255,255,0.95)",
-          crosshairMarkerBackgroundColor: VALUE_BLUE,
+          crosshairMarkerBorderColor: resolveFsColor("--fs-accent"),
+          crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
           crosshairMarkerBorderWidth: 2,
-        })
+        });
+        })()
       : chart.addSeries(BaselineSeries, {
           ...baselineOpts,
           // Drawdowns are always ≤ 0: force red even for the flat 0% stretches at peaks.
           ...(metric === "drawdown" ?
             {
-              topLineColor: RED,
+              topLineColor: resolveFsColor("--fs-down"),
               topFillColor1: "rgba(220, 38, 38, 0)",
               topFillColor2: "rgba(220, 38, 38, 0)",
             }
@@ -1510,6 +1537,11 @@ export function PortfolioValueHistoryChartPane({
     return () => {
       chart.unsubscribeCrosshairMove(onCrosshairMove);
       ro.disconnect();
+      lineEnterCancelRef.current?.();
+      lineEnterCancelRef.current = null;
+      lineEnterDoneRef.current = true;
+      lineAnimKeyRef.current = "";
+      applyOverviewLineRevealClip(wrapRef.current, 1);
       setYAxisLabels([]);
       chart.remove();
       chartRef.current = null;
@@ -1526,7 +1558,7 @@ export function PortfolioValueHistoryChartPane({
       setAxisPlotWidthPx(0);
       setYAxisLabels([]);
     };
-  }, [metric, chartLayout.plotHeightPx, setPeriodAxisLabelsGuarded]);
+  }, [metric, chartLayout.plotHeightPx, setPeriodAxisLabelsGuarded, chartThemePaintKey]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -1557,6 +1589,11 @@ export function PortfolioValueHistoryChartPane({
         });
 
     if (data.length === 0) {
+      lineEnterCancelRef.current?.();
+      lineEnterCancelRef.current = null;
+      lineEnterDoneRef.current = true;
+      lineAnimKeyRef.current = "";
+      applyOverviewLineRevealClip(wrapRef.current, 1);
       series.setData([]);
       sessionYmdsRef.current = [];
       chartPointsRef.current = [];
@@ -1611,6 +1648,45 @@ export function PortfolioValueHistoryChartPane({
     compareSeriesRefs.current.nasdaq?.applyOptions({ visible: drawCompareNasdaq });
 
     snapOverviewTimeScale(chart, series);
+
+    const lineAnimKey = `${metric}:${range}:${data.length}:${String(data[0]?.time ?? "")}:${String(data.at(-1)?.time ?? "")}`;
+    const shouldAnimateLine =
+      data.length >= 2 && !prefersReducedFundamentalsBarMotion();
+
+    let deferTradeDots = false;
+    if (shouldAnimateLine && lineAnimKey !== lineAnimKeyRef.current) {
+      lineAnimKeyRef.current = lineAnimKey;
+      lineEnterCancelRef.current?.();
+      lineEnterDoneRef.current = false;
+      deferTradeDots = true;
+      tradeOverlayRef.current?.replaceChildren();
+      applyOverviewLineRevealClip(wrapRef.current, 0);
+      lineEnterCancelRef.current = runFundamentalsBarEnterAnimation({
+        periodCount: 1,
+        onFrame: (elapsedMs) => {
+          applyOverviewLineRevealClip(
+            wrapRef.current,
+            fundamentalsBarEnterProgress(0, 1, elapsedMs),
+          );
+        },
+        onComplete: () => {
+          lineEnterDoneRef.current = true;
+          applyOverviewLineRevealClip(wrapRef.current, 1);
+          lineEnterCancelRef.current = null;
+          scheduleTradeDotsSyncRef.current?.();
+        },
+      });
+    } else if (shouldAnimateLine && !lineEnterDoneRef.current && lineEnterCancelRef.current) {
+      // Enter animation still running from this effect’s prior frame.
+      deferTradeDots = true;
+    } else {
+      // No live enter animation (or it was aborted) — never leave the plot clipped.
+      lineEnterCancelRef.current?.();
+      lineEnterCancelRef.current = null;
+      lineEnterDoneRef.current = true;
+      applyOverviewLineRevealClip(wrapRef.current, 1);
+    }
+
     let axisSyncCancelled = false;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
@@ -1619,7 +1695,7 @@ export function PortfolioValueHistoryChartPane({
         const s = seriesRef.current;
         if (!c || !s || c !== chart || s !== series || s.data().length === 0) return;
         setYAxisLabels(syncOverviewYAxisLabels(s, metric, chartLayoutRef.current.yAxisLabelCount));
-        scheduleTradeDotsSyncRef.current?.();
+        if (!deferTradeDots) scheduleTradeDotsSyncRef.current?.();
         const plotWidthPx = Math.max(0, wrapRef.current?.clientWidth ?? 0);
         const hoverTime = hoverTimeRef.current;
         if (hoverTime != null) {
@@ -1640,6 +1716,12 @@ export function PortfolioValueHistoryChartPane({
     });
     return () => {
       axisSyncCancelled = true;
+      lineEnterCancelRef.current?.();
+      lineEnterCancelRef.current = null;
+      // Aborting mid-reveal must not leave `clip-path` hiding the series.
+      lineEnterDoneRef.current = true;
+      lineAnimKeyRef.current = "";
+      applyOverviewLineRevealClip(wrapRef.current, 1);
     };
   }, [
     points,
@@ -1689,13 +1771,13 @@ export function PortfolioValueHistoryChartPane({
       }}
     >
       <div className="relative min-h-0 min-w-0 flex-1">
-        <div className="pointer-events-none absolute inset-0 z-0 bg-[#FCFCFD]" aria-hidden>
+        <div className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)} aria-hidden>
           <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
         </div>
         <div ref={wrapRef} className="relative z-10 h-full w-full min-w-0" />
         <div
           className={cn(
-            "pointer-events-none absolute inset-y-0 right-0 z-[9] text-right font-['Inter'] text-[11px] tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
+            "pointer-events-none absolute inset-y-0 right-0 z-[9] text-right font-['Inter'] text-[11px] tabular-nums leading-none text-fg-muted sm:text-[12px]",
             FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
           )}
           style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -1705,7 +1787,10 @@ export function PortfolioValueHistoryChartPane({
             {yAxisLabels.map((lab) => (
               <span
                 key={lab.key}
-                className="absolute right-0 block -translate-y-1/2 rounded-sm bg-[#FCFCFD]/90 px-0.5 py-px"
+                className={cn(
+                  "absolute right-0 block -translate-y-1/2 rounded-sm px-0.5 py-px",
+                  CHART_PLOT_BACKGROUND_LABEL_CLASS,
+                )}
                 style={{ top: `${lab.topPct}%` }}
               >
                 {lab.label}
@@ -1716,19 +1801,22 @@ export function PortfolioValueHistoryChartPane({
         <div ref={tradeOverlayRef} className="pointer-events-none absolute inset-0 z-[15]" />
         {tooltip ? (
           <div
-            className="pointer-events-none absolute z-10 min-w-[148px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+            className={cn(
+              "pointer-events-none absolute z-10 min-w-[148px] px-3 py-2",
+              tooltipSurfaceClassName,
+            )}
             style={{ left: tooltip.x, top: tooltip.y }}
             role="status"
           >
-            <p className="text-xs font-semibold tabular-nums text-[#141414]">
+            <p className="text-xs font-semibold tabular-nums text-fg">
               {metricTitle}:{" "}
               <span
                 className={
                   tooltip.valueTone === "pos" ?
-                    "text-[#16A34A]"
+                    "text-up"
                   : tooltip.valueTone === "neg" ?
-                    "text-[#DC2626]"
-                  : "text-[#141414]"
+                    "text-down"
+                  : "text-fg"
                 }
               >
                 {tooltip.valueLabel}
@@ -1738,12 +1826,15 @@ export function PortfolioValueHistoryChartPane({
         ) : null}
         {tradeTooltip ? (
           <div
-            className="pointer-events-none absolute z-[15] max-w-[min(calc(100vw-2rem),260px)] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+            className={cn(
+              "pointer-events-none absolute z-[15] max-w-[min(calc(100vw-2rem),260px)] px-3 py-2",
+              tooltipSurfaceClassName,
+            )}
             style={{ left: tradeTooltip.x, top: tradeTooltip.y }}
             role="tooltip"
           >
-            <p className="text-[11px] leading-4 text-[#5C5D5F]">{tradeTooltip.dateLabel}</p>
-            <div className="mt-1.5 space-y-0.5 text-xs leading-snug text-[#141414]">
+            <p className="text-[11px] leading-4 text-fg-muted">{tradeTooltip.dateLabel}</p>
+            <div className="mt-1.5 space-y-0.5 text-xs leading-snug text-fg">
               {tradeTooltip.lines.map((line, i) => {
                 const isTxDate =
                   /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}$/.test(line) &&
@@ -1754,9 +1845,9 @@ export function PortfolioValueHistoryChartPane({
                     className={cn(
                       "tabular-nums",
                       line.startsWith("Cash before:") || line.startsWith("Total cash:") ?
-                        "font-semibold text-[#141414]"
+                        "font-semibold text-fg"
                       : isTxDate ?
-                        "pt-1.5 text-[11px] font-medium text-[#5C5D5F]"
+                        "pt-1.5 text-[11px] font-medium text-fg-muted"
                       : "font-medium",
                     )}
                   >
@@ -1777,7 +1868,7 @@ export function PortfolioValueHistoryChartPane({
           (
           <span
             className={cn(
-              "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#141414] sm:text-[12px]",
+              "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-fg sm:text-[12px]",
               periodAxisLabelMaxWidthClass("center"),
               periodAxisLabelTransformClass("center"),
             )}
@@ -1792,7 +1883,7 @@ export function PortfolioValueHistoryChartPane({
             <span
               key={lab.key}
               className={cn(
-                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]",
+                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
                 periodAxisLabelMaxWidthClass(anchor),
                 periodAxisLabelTransformClass(anchor),
               )}
@@ -1967,7 +2058,7 @@ function PortfolioOverviewChartInner({
           </div>
         ) : error ? (
           <div className="flex h-[240px] flex-col items-center justify-center px-6 sm:h-[320px]">
-            <p className="text-sm text-[#5C5D5F]">{error}</p>
+            <p className="text-sm text-fg-muted">{error}</p>
           </div>
         ) : points.length === 0 ? (
           <Empty variant="plain" className="h-[240px] justify-center py-0 sm:h-[320px]">

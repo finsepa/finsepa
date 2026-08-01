@@ -10,6 +10,7 @@ import {
 } from "@/components/design-system/dropdown-menu-styles";
 import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
 import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
+import { dropdownTriggerFieldClassName } from "@/components/design-system/text-input-styles";
 import { cn } from "@/lib/utils";
 
 const OPERATIONS = ["Buy", "Sell"] as const;
@@ -59,7 +60,7 @@ export function TransactionOperationField({
             <span className="min-w-0 flex-1 text-left">{op}</span>
             <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
               <Check
-                className={cn("h-4 w-4 text-[#141414]", !selected && "invisible")}
+                className={cn("h-4 w-4 text-fg", !selected && "invisible")}
                 strokeWidth={2}
               />
             </span>
@@ -76,10 +77,13 @@ export function TransactionOperationField({
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F1F1F2] px-3 text-left text-sm font-normal text-[#141414] transition-colors hover:bg-[#E6E6E7]"
+        className={cn(
+          "flex w-full items-center justify-between gap-2 rounded-[10px] px-3 text-left text-sm font-normal text-fg",
+          dropdownTriggerFieldClassName,
+        )}
       >
         <span>{operation}</span>
-        <ChevronDown className="h-5 w-5 shrink-0 text-[#141414]" aria-hidden />
+        <ChevronDown className="h-5 w-5 shrink-0 text-fg" aria-hidden />
       </button>
       {open && isMobileSheet ? (
         <MobileBottomSheet open={open} onClose={() => setOpen(false)} title="Operation">

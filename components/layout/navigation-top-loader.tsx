@@ -212,7 +212,7 @@ export function NavigationTopLoader() {
       aria-hidden
     >
       <div
-        className="h-full origin-left rounded-none bg-[#141414]"
+        className="h-full origin-left rounded-none bg-fg"
         style={{
           transform: `scaleX(${Math.min(1, Math.max(0, progress))})`,
           transition:

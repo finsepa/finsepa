@@ -34,7 +34,6 @@ import {
   topbarSquircleActiveClass,
   topbarSquircleIconClass,
   topbarSquircleSplitShellClass,
-  topbarSquircleTextButtonClass,
 } from "@/components/design-system/topbar-control-classes";
 import { parseMobileAssetTopbarRoute } from "@/lib/layout/mobile-asset-topbar-route";
 import { isScreenerRoute } from "@/lib/layout/is-screener-route";
@@ -73,43 +72,31 @@ const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
   }, [selectedPortfolioId, holdingsByPortfolioId, transactionsByPortfolioId]);
 
   const displayTotal = normalizeUsdForDisplay(total);
-  const amountClass = displayTotal < 0 ? "text-red-600" : "text-[#141414]";
+  const amountClass = displayTotal < 0 ? "text-down" : "text-fg";
 
   const ready = mounted && portfolioDisplayReady;
   const balanceLabel = ready ? `Portfolio, ${usdTopbar.format(displayTotal)}` : "Portfolio, loading";
 
+  // Parent wraps this in `hidden sm:flex` — keep a single stable shell (no cn / no flex+hidden fight).
   return (
-    <TopbarDelayedTooltip label="My Portfolio" className="max-w-full min-w-0 shrink-0">
-      {/* Mobile: hidden (portfolio lives in bottom nav + dedicated pages). */}
-      <Link
-        href="/portfolio"
-        prefetch={false}
-        aria-busy={!ready}
-        aria-label={balanceLabel}
-        className={cn(
-          topbarSquircleTextButtonClass,
-          // Legacy compact label button; keep hidden so tablets use the full amount + dropdown control.
-          "hidden",
-        )}
-      >
-        <Briefcase className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
-        <span className="whitespace-nowrap">My Portfolio</span>
-      </Link>
-
-      <div className={cn(topbarSquircleSplitShellClass, "hidden sm:flex")}>
+    <TopbarDelayedTooltip label="My Portfolio" className="inline-flex min-w-0 shrink-0">
+      <div suppressHydrationWarning className={topbarSquircleSplitShellClass}>
         <Link
           href="/portfolio"
           prefetch={false}
           aria-busy={!ready}
           aria-label={balanceLabel}
-          className="flex min-w-0 max-w-none items-center gap-2 border-r border-[#E4E4E7] px-3 text-sm font-medium tabular-nums transition-colors hover:bg-[#F4F4F5]"
+          suppressHydrationWarning
+          className="flex min-w-0 max-w-none items-center gap-2 rounded-l-[10px] border-r border-stroke-muted px-3 text-sm font-medium tabular-nums text-fg transition-colors hover:bg-surface-muted dark:border-[rgb(78_78_78/0.5)] dark:hover:bg-dropdown-item-hover"
         >
-          <Briefcase className="h-5 w-5 shrink-0 text-[#141414]" aria-hidden />
+          <Briefcase className="h-5 w-5 shrink-0 text-icon" aria-hidden />
           {ready ? (
-            <span className={`min-w-0 truncate ${amountClass}`}>{usdTopbar.format(displayTotal)}</span>
+            <span className={`min-w-0 truncate ${amountClass}`} suppressHydrationWarning>
+              {usdTopbar.format(displayTotal)}
+            </span>
           ) : (
             <span
-              className="inline-block h-[18px] min-w-[4.75rem] shrink-0 animate-pulse rounded-md bg-[#E4E4E7]"
+              className="inline-block h-[18px] min-w-[4.75rem] shrink-0 animate-pulse rounded-md bg-stroke"
               aria-hidden
             />
           )}
@@ -191,7 +178,7 @@ export function Topbar({
           <div className="min-w-0 flex-1 md:hidden">
             <h1
               suppressHydrationWarning
-              className="truncate text-[22px] font-semibold leading-7 tracking-[-0.02em] text-[#141414]"
+              className="truncate text-[22px] font-semibold leading-7 tracking-[-0.02em] text-fg"
             >
               {resolvedMobileTitle}
             </h1>
@@ -212,9 +199,10 @@ export function Topbar({
           )}
         >
           {TOPBAR_SHOW_NOTIFICATIONS ? (
-            <TopbarDelayedTooltip label="Notifications" className="shrink-0" enabled={!notificationsOpen}>
+            <TopbarDelayedTooltip label="Notifications" className="inline-flex shrink-0" enabled={!notificationsOpen}>
               <button
                 type="button"
+                suppressHydrationWarning
                 aria-label={
                   unreadNotifications > 0
                     ? `Notifications, ${unreadNotifications} unread`
@@ -223,16 +211,17 @@ export function Topbar({
                 aria-expanded={notificationsOpen}
                 aria-haspopup="dialog"
                 onClick={() => setNotificationsOpen(true)}
-                className={cn(
-                  topbarSquircleIconClass,
-                  "relative",
-                  notificationsOpen && topbarSquircleActiveClass,
-                )}
+                className={
+                  notificationsOpen
+                    ? `${topbarSquircleIconClass} relative ${topbarSquircleActiveClass}`
+                    : `${topbarSquircleIconClass} relative`
+                }
               >
                 <Bell className="h-5 w-5" strokeWidth={1.75} aria-hidden />
                 {unreadNotifications > 0 ? (
                   <span
-                    className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#DC2626] ring-2 ring-white"
+                    suppressHydrationWarning
+                    className="absolute right-1 top-1 h-2 w-2 rounded-full bg-down ring-2 ring-white dark:ring-stroke-muted"
                     aria-hidden
                   />
                 ) : null}

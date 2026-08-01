@@ -21,8 +21,8 @@ const ROW_SCROLL_DELAYS_S = [-24, -58, -36, -71, -49] as const;
 function AuthMockupCard({ src }: { src: string }) {
   return (
     <div className="shrink-0 overflow-hidden rounded-[16px] border border-[rgba(228,228,231,0.5)]">
-      <div className="overflow-hidden rounded-[14px] border-2 border-[#E4E4E7] p-[2px] shadow-[0_20px_12px_rgba(10,10,10,0.1),0_8px_4px_rgba(10,10,10,0.04)]">
-        <div className="h-[319.437px] w-[480px] overflow-hidden rounded-[14px] bg-white">
+      <div className="overflow-hidden rounded-[14px] border-2 border-stroke p-[2px] shadow-[0_20px_12px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-10)),0_8px_4px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
+        <div className="h-[319.437px] w-[480px] overflow-hidden rounded-[14px] bg-surface">
           <img
             src={src}
             srcSet={mockupSrcSet(src)}
@@ -85,7 +85,7 @@ export function AuthSplitAsidePanel() {
 
   return (
     <div
-      className="relative h-full min-h-[calc(100dvh-8px)] w-full overflow-hidden rounded-[8px] bg-[#FAFAFA]"
+      className="relative h-full min-h-[calc(100dvh-8px)] w-full overflow-hidden rounded-[8px] bg-canvas"
       aria-hidden
     >
       <div className="absolute inset-0 [background-image:radial-gradient(circle,rgba(228,228,231,0.3)_2px,transparent_2px)] [background-size:12px_14px]" />

@@ -14,8 +14,8 @@ function formatPct(value: number | null) {
 }
 
 function pctClass(value: number | null) {
-  if (value == null || !Number.isFinite(value)) return "text-[#5C5D5F]";
-  return value >= 0 ? "text-[#16A34A]" : "text-[#B91C1C]";
+  if (value == null || !Number.isFinite(value)) return "text-fg-muted";
+  return value >= 0 ? "text-up" : "text-down";
 }
 
 export function CryptoLargestMoversCard({
@@ -37,7 +37,7 @@ export function CryptoLargestMoversCard({
         className,
       )}
     >
-      <p className="h-5 w-full text-[14px] font-semibold leading-5 text-[#5C5D5F]">{title}</p>
+      <p className="h-5 w-full text-[14px] font-semibold leading-5 text-fg-muted">{title}</p>
 
       <div className="flex w-full flex-col gap-[12px]">
         {slice.map((r, i) => (
@@ -46,17 +46,17 @@ export function CryptoLargestMoversCard({
             href={`/crypto/${encodeURIComponent(r.symbol)}`}
             prefetch={false}
             aria-label={`Open ${r.name} (${r.symbol})`}
-            className="group flex w-full items-center gap-[8px] rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/20"
+            className="group flex w-full items-center gap-[8px] rounded-md outline-none focus-visible:ring-2 focus-visible:ring-fg/20"
           >
-            <p className="shrink-0 text-left text-[14px] font-semibold leading-5 tabular-nums text-[#5C5D5F]">
+            <p className="shrink-0 text-left text-[14px] font-semibold leading-5 tabular-nums text-fg-muted">
               {i + 1}
             </p>
             <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} size="sm" />
             <div className="flex min-w-0 flex-1 items-center gap-[4px] whitespace-nowrap">
-              <p className="text-[14px] font-medium leading-5 text-[#141414] group-hover:underline">
+              <p className="text-[14px] font-medium leading-5 text-fg group-hover:underline">
                 {r.symbol}
               </p>
-              <p className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F] group-hover:underline">
+              <p className="truncate text-[12px] font-normal leading-4 text-fg group-hover:underline">
                 {r.name}
               </p>
             </div>

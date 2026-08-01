@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -9,7 +10,6 @@ import { SegmentedControl } from "@/components/design-system/segmented-control";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
-  FUNDAMENTALS_CHART_GRID_LINE_COLOR,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
 } from "@/lib/chart/fundamentals-chart-surface";
@@ -33,8 +33,6 @@ import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfo
 
 const PROFIT_BAR = "#22C55E";
 const LOSS_BAR = "#EF4444";
-const PROFIT_TEXT = "#16A34A";
-const LOSS_TEXT = "#DC2626";
 
 const Y_LABEL_W_PX = 76;
 const VALUE_LABEL_W_PX = 52;
@@ -192,36 +190,36 @@ function HoldingsPerformanceBarChart({
           className={cn(FUNDAMENTALS_CHART_TOOLTIP_CLASS, "!fixed z-[200] w-[240px]")}
           style={{ left: tooltipPos.left, top: tooltipPos.top }}
         >
-          <div className="text-[12px] font-semibold leading-4 text-[#141414]">{hovered.companyName}</div>
+          <div className="text-[12px] font-semibold leading-4 text-fg">{hovered.companyName}</div>
           <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[12px] leading-4">
-            <div className="text-[#5C5D5F]">Unrealized</div>
+            <div className="text-fg-muted">Unrealized</div>
             <div
               className={cn(
                 "text-right tabular-nums",
-                hovered.unrealizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                hovered.unrealizedUsd >= 0 ? "text-up" : "text-down",
               )}
             >
               {formatSignedUsd(hovered.unrealizedUsd)}
             </div>
-            <div className="text-[#5C5D5F]">Realized</div>
+            <div className="text-fg-muted">Realized</div>
             <div
               className={cn(
                 "text-right tabular-nums",
-                hovered.realizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                hovered.realizedUsd >= 0 ? "text-up" : "text-down",
               )}
             >
               {formatSignedUsd(hovered.realizedUsd)}
             </div>
-            <div className="text-[#5C5D5F]">Total</div>
+            <div className="text-fg-muted">Total</div>
             <div
               className={cn(
                 "text-right font-semibold tabular-nums",
-                hovered.totalProfitUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                hovered.totalProfitUsd >= 0 ? "text-up" : "text-down",
               )}
             >
               {formatSignedUsd(hovered.totalProfitUsd)}
               {hovered.totalProfitPct != null ? (
-                <span className="font-normal text-[#5C5D5F]"> · {formatSignedPct(hovered.totalProfitPct)}</span>
+                <span className="font-normal text-fg-muted"> · {formatSignedPct(hovered.totalProfitPct)}</span>
               ) : null}
             </div>
           </div>
@@ -244,7 +242,7 @@ function HoldingsPerformanceBarChart({
               {rows.map((row, i) => (
                 <div
                   key={row.h.id}
-                  className="flex items-center justify-end pr-2 text-[13px] font-medium leading-5 text-[#141414]"
+                  className="flex items-center justify-end pr-2 text-[13px] font-medium leading-5 text-fg"
                   style={{ height: ROW_HEIGHT_PX }}
                   onPointerEnter={(e) => updateHover(i, e.clientX, e.clientY)}
                   onPointerMove={(e) => updateHover(i, e.clientX, e.clientY)}
@@ -255,7 +253,7 @@ function HoldingsPerformanceBarChart({
             </div>
 
             <div className="relative min-w-0 flex-1 overflow-hidden">
-              <div className="pointer-events-none absolute inset-0 z-0 bg-[#FCFCFD]" aria-hidden>
+              <div className="pointer-events-none absolute inset-0 z-0 bg-panel" aria-hidden>
                 <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
               </div>
 
@@ -264,8 +262,8 @@ function HoldingsPerformanceBarChart({
                 return (
                   <div
                     key={tick}
-                    className="pointer-events-none absolute inset-y-0 z-[1] w-px border-l border-dashed"
-                    style={{ left: `${leftPct}%`, borderColor: FUNDAMENTALS_CHART_GRID_LINE_COLOR }}
+                    className="pointer-events-none absolute inset-y-0 z-[1] w-px border-l border-dashed border-stroke-shell"
+                    style={{ left: `${leftPct}%` }}
                     aria-hidden
                   />
                 );
@@ -336,7 +334,7 @@ function HoldingsPerformanceBarChart({
                 const value = rowValue(row, metric);
                 const hasValue = value != null && Number.isFinite(value);
                 const isPositive = hasValue && value >= 0;
-                const textColor = isPositive ? PROFIT_TEXT : LOSS_TEXT;
+                const textColor = isPositive ? resolveFsColor("--fs-up") : resolveFsColor("--fs-down");
                 const label =
                   hasValue ?
                     metric === "usd" ?
@@ -370,7 +368,7 @@ function HoldingsPerformanceBarChart({
                   <span
                     key={tick}
                     className={cn(
-                      "absolute top-2 text-[11px] font-normal tabular-nums leading-4 text-[#5C5D5F]",
+                      "absolute top-2 text-[11px] font-normal tabular-nums leading-4 text-fg-muted",
                       isFirst && "left-0",
                       isLast && "right-0",
                       !isFirst && !isLast && "-translate-x-1/2",
@@ -454,7 +452,7 @@ function PortfolioHoldingsPerformanceChartInner({
         <button
           type="button"
           onClick={() => setSortDesc((v) => !v)}
-          className="inline-flex items-center gap-1 rounded-md text-[13px] font-medium leading-5 text-[#5C5D5F] transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
+          className="inline-flex items-center gap-1 rounded-md text-[13px] font-medium leading-5 text-fg-muted transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
           aria-label={
             sortDesc ?
               "Sort: lowest first"

@@ -104,11 +104,11 @@ export function StockDetailTabNav({
   }, [measureIndicator, revealScrollbar]);
 
   const shellClassName =
-    "max-md:bg-[#FAFAFA] bg-[#FCFCFD] max-md:mx-0 max-md:-mt-2 max-md:pt-0 max-md:pb-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2 sm:pb-0";
+    "max-md:bg-canvas bg-panel max-md:mx-0 max-md:-mt-2 max-md:pt-0 max-md:pb-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2 sm:pb-0";
 
   return (
     <div className={sticky ? `sticky top-0 z-40 max-md:top-[var(--mobile-topbar-offset)] ${shellClassName}` : shellClassName}>
-      <div className="min-w-0 border-b border-solid border-[#E4E4E7]">
+      <div className="min-w-0 border-b border-solid border-stroke">
         <nav
           ref={navRef}
           className={cn(
@@ -134,16 +134,17 @@ export function StockDetailTabNav({
                 onClick={() => onTabChange(id)}
                 onPointerEnter={() => onTabIntent?.(id)}
                 onFocus={() => onTabIntent?.(id)}
-                className={`-mb-px inline-flex h-9 shrink-0 cursor-pointer items-center whitespace-nowrap border-b-2 border-solid border-transparent text-left text-[14px] font-medium leading-5 text-[#141414] transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2 hover:opacity-80 ${
-                  isActive ? "font-semibold opacity-100" : "opacity-70"
-                }`}
+                className={cn(
+                  "-mb-px inline-flex h-9 shrink-0 cursor-pointer items-center whitespace-nowrap border-b-2 border-solid border-transparent text-left text-[14px] font-medium leading-5 text-fg transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2 hover:opacity-80",
+                  isActive ? "font-semibold opacity-100" : "opacity-70",
+                )}
               >
                 {label}
               </button>
             );
           })}
           <span
-            className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-[#141414] motion-reduce:transition-none"
+            className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-fg motion-reduce:transition-none"
             style={{
               left: indicator.left,
               width: indicator.width,
@@ -162,8 +163,8 @@ export function StockDetailTabNav({
 export function StockDetailTabPlaceholder({ title, message }: { title: string; message: string }) {
   return (
     <div className="space-y-2 pt-1">
-      <h2 className="text-[15px] font-semibold tracking-tight text-[#141414]">{title}</h2>
-      <p className="max-w-md text-[14px] leading-6 text-[#5C5D5F]">{message}</p>
+      <h2 className="text-[15px] font-semibold tracking-tight text-fg">{title}</h2>
+      <p className="max-w-md text-[14px] leading-6 text-fg-muted">{message}</p>
     </div>
   );
 }

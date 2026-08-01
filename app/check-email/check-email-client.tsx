@@ -59,7 +59,7 @@ export function CheckEmailClient({ email }: { email: string | null }) {
   return (
     <div className="space-y-4">
       {status ? (
-        <div className="rounded-[10px] border border-[#E4E4E7] bg-[#FAFAFA] px-3 py-2 text-sm leading-6 text-[#52525B]">
+        <div className="rounded-[10px] border border-stroke bg-canvas px-3 py-2 text-sm leading-6 text-fg-muted">
           {status}
         </div>
       ) : null}
@@ -71,7 +71,7 @@ export function CheckEmailClient({ email }: { email: string | null }) {
       <div className="text-center">
         <Link
           href="/login"
-          className="text-sm font-semibold text-[#141414] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+          className="text-sm font-semibold text-fg underline decoration-stroke underline-offset-4 transition-colors hover:decoration-fg-subtle"
         >
           Back to Log In
         </Link>

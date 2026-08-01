@@ -47,7 +47,7 @@ function ChangeCell({ value }: { value: number | null }) {
   return (
     <div
       className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
-        isMissing ? "text-[#5C5D5F]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+        isMissing ? "text-fg-muted" : positive ? "text-up" : "text-down"
       }`}
     >
       {formatPercent(value)}
@@ -69,14 +69,14 @@ function PriceAndChangeCell({
     <div className="min-w-0 w-full text-right">
       <div
         className={`min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums ${
-          hasPrice ? "text-[#141414]" : "text-[#5C5D5F]"
+          hasPrice ? "text-fg" : "text-fg-muted"
         }`}
       >
         {hasPrice ? formatCryptoScreenerUsdPrice(price!) : "-"}
       </div>
       <div
         className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
-          !hasChange ? "text-[#5C5D5F]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+          !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down"
         }`}
       >
         {formatPercent(change1D)}
@@ -95,7 +95,7 @@ const desktopNumericCellClass = cn(
 );
 
 const mobileRankCellClass =
-  "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-[#5C5D5F]";
+  "max-md:-ml-0.5 text-center text-[14px] font-semibold leading-5 tabular-nums text-fg-muted";
 
 export function CryptoTable({
   initialRows,
@@ -116,7 +116,7 @@ export function CryptoTable({
 
   return (
     <ScreenerTableScroll>
-      <div className="bg-white">
+      <div className="bg-surface">
         <div
           className={cn(
             SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -126,7 +126,7 @@ export function CryptoTable({
           )}
         >
           <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
-            <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:gap-x-2">
+            <div className="flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 text-[14px] font-medium leading-5 text-fg-muted sm:gap-x-2">
               <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
               <div className={cn(rowLinkGrid, "min-h-[44px] w-full items-center")}>
                 <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
@@ -170,7 +170,7 @@ export function CryptoTable({
                       prefetch={false}
                       className={cn(
                         rowLinkGrid,
-                        "min-h-[56px] w-full cursor-pointer items-center justify-items-stretch no-underline text-[#141414] visited:text-[#141414] sm:min-h-[60px]",
+                        "min-h-[56px] w-full cursor-pointer items-center justify-items-stretch no-underline text-fg visited:text-fg sm:min-h-[60px]",
                       )}
                       aria-label={`Open ${r.name} (${eodhdCryptoSpotTickerDisplay(r.symbol)})`}
                     >
@@ -179,10 +179,10 @@ export function CryptoTable({
                       <div className="flex min-w-0 items-center justify-start gap-[12px] pr-0 text-left sm:pr-4">
                         <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} />
                         <div className="min-w-0">
-                          <div className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover/row:underline">
+                          <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
                             {r.name}
                           </div>
-                          <div className="text-[12px] font-normal leading-4 !text-[#5C5D5F]">
+                          <div className="text-[12px] font-normal leading-4 text-fg-muted">
                             {eodhdCryptoSpotTickerDisplay(r.symbol)}
                           </div>
                         </div>
@@ -195,7 +195,7 @@ export function CryptoTable({
                         className={cn(
                           desktopNumericCellClass,
                           "font-['Inter'] text-[14px] font-normal leading-5 tabular-nums",
-                          r.price == null || !Number.isFinite(r.price) ? "text-[#5C5D5F]" : "text-[#141414]",
+                          r.price == null || !Number.isFinite(r.price) ? "text-fg-muted" : "text-fg",
                         )}
                       >
                         {r.price == null || !Number.isFinite(r.price)
@@ -216,7 +216,7 @@ export function CryptoTable({
                       <div
                         className={cn(
                           desktopNumericCellClass,
-                          "font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+                          "font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
                         )}
                       >
                         {r.marketCap === "-" ? "-" : r.marketCap}

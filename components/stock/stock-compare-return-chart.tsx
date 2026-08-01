@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   AreaSeries,
@@ -17,6 +18,8 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 
+import { accentAreaGradientColors } from "@/lib/chart/accent-area-fill";
+import { useChartThemePaintKey } from "@/lib/theme/use-logo-dev-theme";
 import { horzTimeToUnixSeconds, nearestPointByTime } from "@/components/chart/chart-selection-utils";
 import {
   overviewChartAxisRowPx,
@@ -45,10 +48,10 @@ import {
   mobileTimeScaleOptions,
   shouldHideMobileYAxisLabels,
 } from "@/lib/chart/mobile-plot-horizontal-gutter";
+import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import { cn } from "@/lib/utils";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 
-const PRIMARY_BLUE = "#2563EB";
 
 /** Line colors for additional compare tickers (primary is blue area). */
 export const STOCK_OVERVIEW_COMPARE_LINE_COLORS = [
@@ -171,6 +174,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
 
   const axisRowPx = overviewChartAxisRowPx(containerWidth);
   const plotHeight = Math.max(120, height - axisRowPx);
+  const chartThemePaintKey = useChartThemePaintKey();
 
   const pSym = primaryTicker.trim().toUpperCase();
   const compareSlotsKey = useMemo(
@@ -344,7 +348,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
-        textColor: "#5C5D5F",
+        textColor: resolveFsColor("--fs-fg-muted"),
         fontSize: 11,
         fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif",
         attributionLogo: false,
@@ -379,10 +383,11 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       handleScale: false,
     });
 
+    const fill = accentAreaGradientColors();
     const primarySeries = chart.addSeries(AreaSeries, {
-      lineColor: PRIMARY_BLUE,
-      topColor: "rgba(37, 99, 235, 0.20)",
-      bottomColor: "rgba(37, 99, 235, 0.02)",
+      lineColor: resolveFsColor("--fs-accent"),
+      topColor: fill.top,
+      bottomColor: fill.bottom,
       lineWidth: 2,
       lineType: LineType.Curved,
       priceLineVisible: false,
@@ -390,8 +395,8 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
       crosshairMarkerVisible: true,
       crosshairMarkerRadius: 5,
-      crosshairMarkerBorderColor: "rgba(255,255,255,0.95)",
-      crosshairMarkerBackgroundColor: PRIMARY_BLUE,
+      crosshairMarkerBorderColor: resolveFsColor("--fs-accent"),
+      crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
       crosshairMarkerBorderWidth: 2,
     });
 
@@ -408,8 +413,8 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
           lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
           crosshairMarkerVisible: true,
           crosshairMarkerRadius: 5,
-          crosshairMarkerBorderColor: "rgba(255,255,255,0.95)",
-          crosshairMarkerBackgroundColor: color,
+          crosshairMarkerBorderColor: color,
+          crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
           crosshairMarkerBorderWidth: 2,
         }),
       );
@@ -486,7 +491,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       const picks = comparePicksRef.current;
       const lists = comparePointsListRef.current;
       const linesOut: { label: string; color: string }[] = [
-        { label: `${pSym} ${formatReturnPctFromIndex(na.value)}`, color: PRIMARY_BLUE },
+        { label: `${pSym} ${formatReturnPctFromIndex(na.value)}`, color: resolveFsColor("--fs-accent") },
       ];
       for (let i = 0; i < picks.length; i++) {
         const pb = lists[i] ?? [];
@@ -519,7 +524,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       primarySeriesRef.current = null;
       compareSeriesRefs.current = [];
     };
-  }, [plotHeight, pSym, compareSlotsKey]);
+  }, [plotHeight, pSym, compareSlotsKey, chartThemePaintKey]);
 
   useEffect(() => {
     const chart = chartRef.current;
@@ -597,7 +602,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       }}
     >
       <div className="relative min-h-0 min-w-0 flex-1" style={{ height: plotHeight }}>
-        <div className="pointer-events-none absolute inset-0 z-0 bg-[#FCFCFD]" aria-hidden>
+        <div className="pointer-events-none absolute inset-0 z-0 bg-panel" aria-hidden>
           <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
         </div>
         <div
@@ -609,14 +614,17 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
         />
         {hoverPoint && ready && !loading ? (
           <div
-            className="pointer-events-none absolute inset-y-0 right-0 z-[15] bg-[#FCFCFD]/55"
+            className="pointer-events-none absolute inset-y-0 right-0 z-[15] bg-panel/55"
             style={{ left: Math.max(0, hoverPoint.x) }}
             aria-hidden
           />
         ) : null}
         {hoverLines && hoverPoint && tooltipPos ? (
           <div
-            className="pointer-events-none absolute z-30 min-w-[148px] rounded-lg border border-[#E4E4E7] bg-white px-3 py-2 shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08),0px_1px_2px_0px_rgba(10,10,10,0.06)]"
+            className={cn(
+              "pointer-events-none absolute z-30 min-w-[148px] px-3 py-2",
+              tooltipSurfaceClassName,
+            )}
             style={{
               left: tooltipPos.left,
               top: tooltipPos.top,
@@ -644,7 +652,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
           </div>
         ) : null}
         {empty ? (
-          <div className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[14px] text-[#5C5D5F]">
+          <div className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[14px] text-fg-muted">
             {emptyMessage()}
           </div>
         ) : null}
@@ -663,7 +671,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
               });
               return (
             <span
-              className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-[#141414] sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
+              className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-fg sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
               style={periodAxisLabelLayoutStyle(hoverAxisLabel.leftPx, anchor)}
             >
               {hoverAxisLabel.label}
@@ -676,7 +684,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
               return (
               <span
                 key={lab.key}
-                className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
+                className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
                 style={periodAxisLabelLayoutStyle(lab.leftPx, anchor)}
               >
                 {lab.label}

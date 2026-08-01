@@ -23,9 +23,9 @@ export function SuperinvestorHoldingExpandButton({
         onToggle();
       }}
       className={cn(
-        "inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent bg-transparent text-[#141414]",
-        "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
-        expanded && "bg-[#F4F4F5]",
+        "inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent bg-transparent text-fg",
+        "transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
+        expanded && "bg-surface-muted",
       )}
     >
       {expanded ?

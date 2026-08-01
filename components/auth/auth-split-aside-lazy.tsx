@@ -8,7 +8,7 @@ export const AuthSplitAsidePanelLazy = dynamic(
     ssr: false,
     loading: () => (
       <div
-        className="relative h-full min-h-[calc(100dvh-8px)] w-full overflow-hidden rounded-[8px] bg-[#FAFAFA]"
+        className="relative h-full min-h-[calc(100dvh-8px)] w-full overflow-hidden rounded-[8px] bg-canvas"
         aria-hidden
       />
     ),

@@ -85,8 +85,8 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
       >
         <div
           className={cn(
-            "relative shrink-0 overflow-hidden rounded-2xl border border-[#E4E4E7]",
-            isPortfolioAllocation ? "bg-[#FAFAFA]" : "bg-white",
+            "relative shrink-0 overflow-hidden rounded-2xl border border-stroke",
+            isPortfolioAllocation ? "bg-canvas" : "bg-surface",
             APP_MODAL_SHELL_SHADOW_CLASS,
           )}
           style={{
@@ -110,7 +110,7 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
               data-chart-screenshot-height={frameSize.height}
               className={cn(
                 "pointer-events-none box-border flex select-none flex-col overflow-hidden",
-                isPortfolioAllocation ? "bg-[#FAFAFA]" : "bg-white",
+                isPortfolioAllocation ? "bg-canvas" : "bg-surface",
               )}
               style={{
                 width: frameSize.width,

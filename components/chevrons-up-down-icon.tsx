@@ -1,6 +1,6 @@
 "use client";
 
-import { useImperativeHandle } from "react";
+import { useEffect, useImperativeHandle, useState } from "react";
 import { motion, useAnimation } from "motion/react";
 
 export type ChevronsUpDownIconHandle = {
@@ -13,6 +13,9 @@ export type ChevronsUpDownIconProps = React.ComponentPropsWithoutRef<"svg"> & {
   duration?: number;
 };
 
+const PATH_DOWN = "M7 15L12 20L17 15";
+const PATH_UP = "M7 9L12 4L17 9";
+
 /** Animated chevrons — morphs up-down ↔ down-up (https://chanhdai.com/components/chevrons-up-down-icon). */
 export function ChevronsUpDownIcon({
   ref,
@@ -20,6 +23,12 @@ export function ChevronsUpDownIcon({
   ...props
 }: ChevronsUpDownIconProps) {
   const controls = useAnimation();
+  // motion.path SSR markup can disagree with the client first paint — static paths until mount.
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useImperativeHandle(ref, () => ({
     startAnimation: () => controls.start("animate"),
@@ -38,26 +47,35 @@ export function ChevronsUpDownIcon({
       aria-hidden
       {...props}
     >
-      <motion.path
-        d="M7 15L12 20L17 15"
-        variants={{
-          normal: { d: "M7 15L12 20L17 15" },
-          animate: { d: "M7 20L12 15L17 20" },
-        }}
-        initial="normal"
-        animate={controls}
-        transition={{ duration }}
-      />
-      <motion.path
-        d="M7 9L12 4L17 9"
-        variants={{
-          normal: { d: "M7 9L12 4L17 9" },
-          animate: { d: "M7 4L12 9L17 4" },
-        }}
-        initial="normal"
-        animate={controls}
-        transition={{ duration }}
-      />
+      {mounted ? (
+        <>
+          <motion.path
+            d={PATH_DOWN}
+            variants={{
+              normal: { d: PATH_DOWN },
+              animate: { d: "M7 20L12 15L17 20" },
+            }}
+            initial="normal"
+            animate={controls}
+            transition={{ duration }}
+          />
+          <motion.path
+            d={PATH_UP}
+            variants={{
+              normal: { d: PATH_UP },
+              animate: { d: "M7 4L12 9L17 4" },
+            }}
+            initial="normal"
+            animate={controls}
+            transition={{ duration }}
+          />
+        </>
+      ) : (
+        <>
+          <path d={PATH_DOWN} />
+          <path d={PATH_UP} />
+        </>
+      )}
     </svg>
   );
 }

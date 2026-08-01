@@ -45,7 +45,7 @@ const EM_DASH = "\u2014";
 
 /** Matches screener / holdings company column. */
 const HOLDING_COMPANY_NAME_CLASS =
-  "truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline group-hover/row:underline";
+  "truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline group-hover/row:underline";
 
 const EARNINGS_GRID =
   "grid min-w-[640px] grid-cols-[minmax(200px,2fr)_minmax(140px,1fr)_minmax(140px,1fr)] items-center gap-x-2";
@@ -107,7 +107,7 @@ function DaysLeftCell({
     );
   }
   if (daysLeft == null) {
-    return <span className="tabular-nums text-[#141414]">{EM_DASH}</span>;
+    return <span className="tabular-nums text-fg">{EM_DASH}</span>;
   }
   return (
     <div
@@ -116,7 +116,7 @@ function DaysLeftCell({
         align === "right" && "justify-end",
       )}
     >
-      <span className="inline-block w-7 shrink-0 text-center font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#141414]">
+      <span className="inline-block w-7 shrink-0 text-center font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-fg">
         {formatDaysLeftLabel(daysLeft)}
       </span>
       <EarningsCountdownBars daysLeft={daysLeft} />
@@ -258,12 +258,12 @@ function PortfolioEarningsTableInner({
                   <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                   <div className="min-w-0">
                     <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                    <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">{caption}</div>
+                    <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{caption}</div>
                   </div>
                 </div>
                 <div className="flex min-w-0 shrink-0 flex-col items-end gap-1">
                   <DaysLeftCell daysLeft={daysLeft} loading={metaLoading} />
-                  <div className="font-['Inter'] text-[12px] font-medium leading-4 tabular-nums text-[#5C5D5F]">
+                  <div className="font-['Inter'] text-[12px] font-medium leading-4 tabular-nums text-fg-muted">
                     {earningsLabel === "…" ?
                       <SkeletonBox className="ml-auto h-3 w-20 rounded" />
                     : earningsLabel}
@@ -277,7 +277,7 @@ function PortfolioEarningsTableInner({
 
       <div className="hidden sm:block">
         <ScreenerTableScroll className="sm:pb-6" minWidthClassName="min-w-[640px]">
-          <div className="bg-white">
+          <div className="bg-surface">
             <div
               className={cn(
                 SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -290,7 +290,7 @@ function PortfolioEarningsTableInner({
                 <div
                   className={cn(
                     EARNINGS_GRID,
-                    "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                    "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
                   )}
                 >
                   <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Asset</div>
@@ -331,7 +331,7 @@ function PortfolioEarningsTableInner({
                         <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                         <div className="min-w-0 text-left">
                           <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                          <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">{caption}</div>
+                          <div className="text-[12px] font-normal leading-4 text-fg-muted">{caption}</div>
                         </div>
                       </div>
                       <div className="min-w-0">
@@ -339,7 +339,7 @@ function PortfolioEarningsTableInner({
                       </div>
                       <div
                         className={cn(
-                          "min-w-0 w-full text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-[#141414]",
+                          "min-w-0 w-full text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-fg",
                           TABLE_END_ALIGNED_PAD_CLASS,
                         )}
                       >

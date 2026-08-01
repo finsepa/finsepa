@@ -6,10 +6,10 @@ import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-a
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
   dropdownMenuPanelClassName,
-  dropdownMenuRichItemClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
 } from "@/components/screener/screener-table-scroll";
@@ -137,7 +137,7 @@ export function EarningsListSeeMoreMenu({
       onMouseEnter={show}
       onMouseLeave={scheduleHide}
     >
-      <div className="px-3">
+      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
         <button
           type="button"
           onClick={toggleOpen}
@@ -149,7 +149,7 @@ export function EarningsListSeeMoreMenu({
           aria-expanded={open}
           aria-label={`${overflowCount} more companies`}
         >
-          <span className="text-[13px] font-semibold tabular-nums leading-5 text-[#2563EB]">
+          <span className="text-[13px] font-semibold tabular-nums leading-5 text-accent">
             +{overflowCount} more
           </span>
         </button>
@@ -167,7 +167,7 @@ export function EarningsListSeeMoreMenu({
             aria-label="More companies"
             className={cn(
               dropdownMenuPanelClassName(),
-              "min-w-[148px] max-w-[min(200px,calc(100vw-1.5rem))]",
+              "min-w-[220px] w-[min(248px,calc(100vw-1.5rem))] max-w-[min(248px,calc(100vw-1.5rem))]",
             )}
           >
             <DropdownScrollArea className="max-h-[min(280px,50vh)] overflow-y-auto">
@@ -178,20 +178,20 @@ export function EarningsListSeeMoreMenu({
                   aria-live="polite"
                   aria-label="Loading companies"
                 >
-                  <Spinner className="size-5 text-[#5C5D5F]" />
+                  <Spinner className="size-5 text-fg-muted" />
                 </div>
               ) : error && displayItems.length === 0 ? (
-                <p className="px-3 py-2 text-[12px] text-[#DC2626]">Could not load</p>
+                <p className="px-3 py-2 text-[12px] text-down">Could not load</p>
               ) : displayItems.length === 0 ? (
-                <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">No companies</p>
+                <p className="px-3 py-2 text-[12px] text-fg-muted">No companies</p>
               ) : (
-                <ul className="flex flex-col gap-1">
+                <ul className="grid grid-cols-3 gap-1">
                   {displayItems.map((item) => (
-                    <li key={`${item.ticker}-${item.reportDate}`}>
+                    <li key={`${item.ticker}-${item.reportDate}`} className="min-w-0">
                       <button
                         type="button"
                         role="option"
-                        className={cn(dropdownMenuRichItemClassName(), "items-center gap-2")}
+                        className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           onOpenCard(item);
@@ -204,9 +204,10 @@ export function EarningsListSeeMoreMenu({
                           name={item.companyName || item.ticker}
                           logoUrl={item.logoUrl}
                           symbol={item.ticker}
-                          size="sm"
+                          size="md"
+                          fill
                         />
-                        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold tabular-nums leading-5 text-[#141414]">
+                        <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-fg">
                           {item.ticker}
                         </span>
                       </button>

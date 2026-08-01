@@ -25,11 +25,11 @@ export function PeerSearchDropdownRow({
       <SearchResultLogo item={item} />
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium">{item.name}</div>
-        <div className="truncate text-[12px] text-[#5C5D5F]">
+        <div className="truncate text-[12px] text-fg-muted">
           {item.type === "crypto" ? eodhdCryptoSpotTickerDisplay(item.symbol) : item.symbol}
         </div>
       </div>
-      <span className="shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#5C5D5F]">
+      <span className="shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-fg-muted">
         {searchResultCategoryLabel(item)}
       </span>
     </button>

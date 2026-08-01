@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import {
   memo,
   useCallback,
@@ -38,9 +39,10 @@ import type {
 } from "@/lib/portfolio/portfolio-period-returns-types";
 import { cn } from "@/lib/utils";
 
-const PORTFOLIO_BAR = "#2563EB";
 const BENCHMARK_BAR = "#EA580C";
-const NEGATIVE_ZONE = "rgba(254, 242, 242, 0.92)";
+/** Light: soft rose wash. Dark: `--fs-down-soft` (#49080e). */
+const NEGATIVE_ZONE_CLASS = "bg-[rgba(254,242,242,0.92)] dark:bg-down-soft";
+const NEGATIVE_ZONE_FILL_CLASS = "fill-[rgba(254,242,242,0.92)] dark:fill-down-soft";
 
 /** Total chart height — plot band plus slanted period labels (matches Charting). */
 const CHART_TOTAL_HEIGHT_PX = 320;
@@ -187,7 +189,7 @@ function ReturnsLegendBadge({
       onClick={onToggle}
       aria-pressed={pressed}
       className={cn(
-        "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-[#E4E4E7] bg-white px-3 py-0 text-[12px] font-medium leading-none text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)] transition-opacity",
+        "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-stroke bg-surface px-3 py-0 text-[12px] font-medium leading-none text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] transition-opacity",
         !pressed && "opacity-40",
       )}
     >
@@ -218,7 +220,7 @@ function ReturnsDynamicsChartSkeleton() {
           <div className="relative min-w-0 flex-1">
             <div
               className={cn(
-                "pointer-events-none absolute inset-x-0 z-0 bg-[#FCFCFD]",
+                "pointer-events-none absolute inset-x-0 z-0 bg-panel",
                 CHART_PLOT_BACKDROP_INSET_CLASS,
               )}
             >
@@ -228,8 +230,9 @@ function ReturnsDynamicsChartSkeleton() {
               className={cn(
                 "pointer-events-none absolute inset-x-0 rounded-sm",
                 CHART_PLOT_BACKDROP_INSET_CLASS,
+                NEGATIVE_ZONE_CLASS,
               )}
-              style={{ background: NEGATIVE_ZONE, top: "52%" }}
+              style={{ top: "52%" }}
             />
             <div
               className={cn(
@@ -400,7 +403,7 @@ function DynamicsSvg({
           <div ref={plotRef} className="relative min-h-0 min-w-0 flex-1 overflow-visible">
             <div
               className={cn(
-                "pointer-events-none absolute inset-x-0 z-0 bg-[#FCFCFD]",
+                "pointer-events-none absolute inset-x-0 z-0 bg-panel",
                 CHART_PLOT_BACKDROP_INSET_CLASS,
               )}
               aria-hidden
@@ -420,7 +423,7 @@ function DynamicsSvg({
                 y={y0}
                 width={innerW}
                 height={Math.max(0, padT + innerH - y0)}
-                fill={NEGATIVE_ZONE}
+                className={NEGATIVE_ZONE_FILL_CLASS}
               />
               <line
                 x1={padL}
@@ -465,7 +468,7 @@ function DynamicsSvg({
                       height={hPix}
                       rx={2}
                       ry={2}
-                      fill={PORTFOLIO_BAR}
+                      fill={resolveFsColor("--fs-accent")}
                     />,
                   );
                 }
@@ -514,12 +517,12 @@ function DynamicsSvg({
             {barValueLabels.map((b) => (
               <div
                 key={b.key}
-                className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#141414]"
+                className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-fg"
                 style={{
                   left: b.leftPx,
                   top: b.topPx,
                   transform: "translate(-50%, -100%)",
-                  textShadow: "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
+                  textShadow: "var(--fs-chart-value-label-shadow)",
                 }}
                 title={b.text}
               >
@@ -537,24 +540,24 @@ function DynamicsSvg({
                   transform: "translate(-50%, calc(-100% - 10px))",
                 }}
               >
-                <p className="text-[12px] font-semibold leading-4 text-[#141414]">{hoveredBar.label}</p>
+                <p className="text-[12px] font-semibold leading-4 text-fg">{hoveredBar.label}</p>
                 {showPortfolio ? (
-                  <p className="mt-1.5 text-[12px] leading-4 text-[#5C5D5F]">
-                    <span className="font-semibold" style={{ color: PORTFOLIO_BAR }}>
+                  <p className="mt-1.5 text-[12px] leading-4 text-fg-muted">
+                    <span className="font-semibold" style={{ color: resolveFsColor("--fs-accent") }}>
                       Portfolio
                     </span>
-                    <span className="tabular-nums text-[#141414]">
+                    <span className="tabular-nums text-fg">
                       {" "}
                       {formatTooltipPct(hoveredBar.portfolioPct)}
                     </span>
                   </p>
                 ) : null}
                 {showBenchmark ? (
-                  <p className={cn("text-[12px] leading-4 text-[#5C5D5F]", showPortfolio ? "mt-0.5" : "mt-1.5")}>
+                  <p className={cn("text-[12px] leading-4 text-fg-muted", showPortfolio ? "mt-0.5" : "mt-1.5")}>
                     <span className="font-semibold" style={{ color: BENCHMARK_BAR }}>
                       {benchmarkLabel}
                     </span>
-                    <span className="tabular-nums text-[#141414]">
+                    <span className="tabular-nums text-fg">
                       {" "}
                       {formatTooltipPct(hoveredBar.benchmarkPct)}
                     </span>
@@ -566,7 +569,7 @@ function DynamicsSvg({
 
           <div
             className={cn(
-              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
+              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted",
               FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
             )}
             style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -576,7 +579,7 @@ function DynamicsSvg({
               {ticks.map((t) => (
                 <span
                   key={t}
-                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-0.5 py-px"
+                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-0.5 py-px"
                   style={{ top: `${tickTopPercent(t, yMin, yMax)}%` }}
                 >
                   {formatPctAxis(t)}
@@ -604,7 +607,7 @@ function DynamicsSvg({
                   title={b.label}
                 >
                   <span
-                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]"
+                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]"
                     style={
                       rotate
                         ? {
@@ -627,7 +630,7 @@ function DynamicsSvg({
       <div className="mt-3 hidden flex-wrap items-center justify-center gap-2 sm:flex">
         <ReturnsLegendBadge
           label="Portfolio"
-          swatch={PORTFOLIO_BAR}
+          swatch={resolveFsColor("--fs-accent")}
           pressed={showPortfolio}
           onToggle={onTogglePortfolio}
         />
@@ -714,7 +717,7 @@ function PortfolioReturnsDynamicsChartInner({
     <section className="mb-10 w-full min-w-0">
       <div className="mb-4 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="flex min-w-0 items-start justify-between gap-3">
-          <h2 className="min-w-0 shrink text-2xl font-semibold leading-9 tracking-tight text-[#141414]">
+          <h2 className="min-w-0 shrink text-2xl font-semibold leading-9 tracking-tight text-fg">
             Dynamics of portfolio returns
           </h2>
         </div>
@@ -751,7 +754,7 @@ function PortfolioReturnsDynamicsChartInner({
           <ReturnsDynamicsChartSkeleton />
         ) : error ? (
           <div className="flex min-h-[320px] flex-col items-center justify-center px-6">
-            <p className="text-sm text-[#5C5D5F]">{error}</p>
+            <p className="text-sm text-fg-muted">{error}</p>
           </div>
         ) : !hasRenderable ? (
           <Empty variant="plain" className="min-h-[320px] justify-center py-0">
@@ -794,7 +797,7 @@ function PortfolioReturnsDynamicsChartInner({
         <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:hidden">
           <ReturnsLegendBadge
             label="Portfolio"
-            swatch={PORTFOLIO_BAR}
+            swatch={resolveFsColor("--fs-accent")}
             pressed={showPortfolio}
             onToggle={togglePortfolio}
           />

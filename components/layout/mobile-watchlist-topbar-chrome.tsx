@@ -25,12 +25,12 @@ export function MobileWatchlistTopbarChrome() {
     <div className="flex min-w-0 flex-1 items-center gap-2">
       <h1
         suppressHydrationWarning
-        className="min-w-0 truncate text-[22px] font-semibold leading-7 tracking-[-0.02em] text-[#141414]"
+        className="min-w-0 truncate text-[22px] font-semibold leading-7 tracking-[-0.02em] text-fg"
       >
         {storageHydrated ? (
           activeWatchlistName
         ) : (
-          <span className="inline-block h-7 w-[min(100%,10rem)] max-w-full animate-pulse rounded-md bg-[#E4E4E7]" />
+          <span className="inline-block h-7 w-[min(100%,10rem)] max-w-full animate-pulse rounded-md bg-stroke" />
         )}
       </h1>
       <WatchlistOptionsMenu

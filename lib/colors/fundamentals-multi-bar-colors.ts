@@ -1,6 +1,9 @@
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
+
 /**
  * Canonical order for multiple fundamentals bars (e.g. fiscal periods in a row, or stacked metrics).
  * Reused by Key Stats modal multichart, Charting workspace histograms, and compare workspace.
+ * Index 0 resolves to `--fs-accent` so dark mode uses the theme blue.
  */
 export const FUNDAMENTALS_MULTI_BAR_COLORS = [
   "#2563EB",
@@ -13,7 +16,9 @@ export const FUNDAMENTALS_MULTI_BAR_COLORS = [
 
 export function fundamentalsBarSolidAtIndex(i: number): string {
   const n = FUNDAMENTALS_MULTI_BAR_COLORS.length;
-  return FUNDAMENTALS_MULTI_BAR_COLORS[((i % n) + n) % n]!;
+  const idx = ((i % n) + n) % n;
+  if (idx === 0) return resolveFsColor("--fs-accent");
+  return FUNDAMENTALS_MULTI_BAR_COLORS[idx]!;
 }
 
 /** Solid bar color at a given opacity (hex palette only). */

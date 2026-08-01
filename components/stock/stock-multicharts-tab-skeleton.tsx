@@ -21,10 +21,10 @@ function SkeletonGrid() {
     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {PLACEHOLDER_KEYS.map((id) => (
         <div key={id} className={cn(MULTICHART_CARD_CLASS, "animate-pulse")}>
-          <div className="h-5 w-28 rounded bg-neutral-200/90" />
-          <div className="h-9 w-44 rounded bg-neutral-200/80" />
+          <div className="h-5 w-28 rounded bg-skeleton" />
+          <div className="h-9 w-44 rounded bg-skeleton" />
           <div
-            className="rounded-2xl bg-neutral-100"
+            className="rounded-2xl bg-skeleton"
             style={{ height: MULTICHART_CARD_CHART_HEIGHT_PX }}
           />
         </div>

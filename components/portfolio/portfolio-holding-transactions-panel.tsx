@@ -46,7 +46,7 @@ const HOLDING_TX_GRID =
 
 const numericHeaderClass = cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS);
 const numericCellClass = cn(
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
   TABLE_END_ALIGNED_PAD_CLASS,
 );
 
@@ -61,16 +61,16 @@ function formatSignedPct(n: number): string {
 }
 
 function sumColorClass(sum: number): string {
-  if (sum > 0) return "text-[#16A34A]";
-  if (sum < 0) return "text-[#DC2626]";
-  return "text-[#141414]";
+  if (sum > 0) return "text-up";
+  if (sum < 0) return "text-down";
+  return "text-fg";
 }
 
 function opColorClass(operation: string): string {
   const u = operation.toLowerCase();
-  if (u.includes("sell")) return "text-[#DC2626]";
-  if (u.includes("buy")) return "text-[#16A34A]";
-  return "text-[#141414]";
+  if (u.includes("sell")) return "text-down";
+  if (u.includes("buy")) return "text-up";
+  return "text-fg";
 }
 
 function PortfolioHoldingTransactionsPanelInner({
@@ -100,10 +100,10 @@ function PortfolioHoldingTransactionsPanelInner({
 
   return (
     <div className="min-w-0 max-w-full px-2 pb-4 pt-3 sm:px-4" data-holding-expanded-panel>
-      <h3 className="mb-3 text-[20px] font-semibold leading-7 tracking-tight text-[#141414]">Transactions</h3>
+      <h3 className="mb-3 text-[20px] font-semibold leading-7 tracking-tight text-fg">Transactions</h3>
 
       {recentRows.length === 0 ? (
-        <p className="py-6 text-center text-sm text-[#5C5D5F]">No trades for this asset yet.</p>
+        <p className="py-6 text-center text-sm text-fg-muted">No trades for this asset yet.</p>
       ) : (
         <div
           className={cn(
@@ -113,7 +113,7 @@ function PortfolioHoldingTransactionsPanelInner({
             SCREENER_TABLE_MOBILE_SURFACE_CLASS,
           )}
         >
-          <div className="min-w-[920px] bg-white">
+          <div className="min-w-[920px] bg-surface">
             <div
               className={cn(
                 SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -126,7 +126,7 @@ function PortfolioHoldingTransactionsPanelInner({
                 <div
                   className={cn(
                     HOLDING_TX_GRID,
-                    "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                    "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
                   )}
                 >
                   <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Asset</div>
@@ -162,10 +162,10 @@ function PortfolioHoldingTransactionsPanelInner({
                             symbol={holding.symbol}
                           />
                           <div className="min-w-0">
-                            <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">
+                            <div className="truncate text-[14px] font-semibold leading-5 text-fg">
                               {companyName}
                             </div>
-                            <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                            <div className="text-[12px] font-normal leading-4 text-fg-muted">
                               {portfolioAssetSymbolCaption(holding.symbol)}
                             </div>
                           </div>
@@ -213,7 +213,7 @@ function PortfolioHoldingTransactionsPanelInner({
                           <div
                             className={cn(
                               "flex flex-col items-end tabular-nums",
-                              t.profitUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                              t.profitUsd >= 0 ? "text-up" : "text-down",
                             )}
                           >
                             <div className="text-[14px] font-medium leading-5">
@@ -224,7 +224,7 @@ function PortfolioHoldingTransactionsPanelInner({
                             </div>
                           </div>
                         ) : (
-                          <span className="text-[14px] font-medium text-[#5C5D5F]">-</span>
+                          <span className="text-[14px] font-medium text-fg-muted">-</span>
                         )}
                       </div>
                     </div>
@@ -247,9 +247,9 @@ function PortfolioHoldingTransactionsPanelInner({
           );
         }}
         className={cn(
-          "mt-4 flex h-10 w-full items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white",
-          "text-[14px] font-medium leading-5 text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]",
-          "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
+          "mt-4 flex h-10 w-full items-center justify-center rounded-[10px] border border-stroke bg-surface",
+          "text-[14px] font-medium leading-5 text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]",
+          "transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
         )}
       >
         Show all transactions

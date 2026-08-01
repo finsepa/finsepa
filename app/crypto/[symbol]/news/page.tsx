@@ -27,7 +27,7 @@ export default async function CryptoNewsPage({ params }: PageProps) {
 
   if (isSingleAssetMode() && !isSupportedAsset(routeSymbol)) {
     return (
-      <div className="px-4 py-4 text-[#5C5D5F] sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>
+      <div className="px-4 py-4 text-fg-muted sm:px-9 sm:py-6">Temporarily unavailable in NVDA-only mode.</div>
     );
   }
 

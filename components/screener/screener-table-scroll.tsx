@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 /** Column label row — sticky in desktop `<main>`; static on mobile (avoids topbar-offset gap in card). */
 export const SCREENER_TABLE_HEADER_STICKY_CLASS =
-  "z-30 isolate bg-white max-md:static md:sticky md:top-0 md:border-b md:border-solid md:border-[#EFEFEF]";
+  "z-30 isolate bg-surface max-md:static md:sticky md:top-0 md:border-b md:border-solid md:border-table-row-stroke";
 
 /** Top corners for the header inside a 16px-radius screener table card. */
 export const SCREENER_TABLE_ROUNDED_HEADER_CLASS = "md:rounded-t-2xl";
@@ -25,22 +25,22 @@ export const SCREENER_TABLE_ROUNDED_HEADER_CLASS = "md:rounded-t-2xl";
  * Opaque cells + isolation keep body values from painting through on scroll.
  */
 export const SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS =
-  "sticky top-0 z-30 isolate bg-white border-b border-solid border-[#EFEFEF]";
+  "sticky top-0 z-30 isolate bg-surface border-b border-solid border-table-row-stroke";
 
 /** Row separators (keep header outside this so the header/rule line is exactly 1px on desktop). */
 export const SCREENER_TABLE_BODY_DIVIDE_CLASS =
-  "md:divide-y md:divide-solid md:divide-[#EFEFEF]";
+  "md:divide-y md:divide-solid md:divide-table-row-stroke";
 
 /** Bottom rule on individual rows (e.g. industries drill). */
 export const SCREENER_TABLE_ROW_BORDER_B_CLASS =
-  "md:border-b md:border-solid md:border-[#EFEFEF]";
+  "md:border-b md:border-solid md:border-table-row-stroke";
 
 /**
  * Companies table desktop: hover fill inset 8px from the card; stroke inset 20px
  * so the rule sits inside the hover area. Strokes hide above/below the hovered row.
  */
 export const SCREENER_TABLE_DATA_ROW_CLASS = cn(
-  "screener-data-row group/row relative bg-white max-md:hover:bg-neutral-50",
+  "screener-data-row group/row relative bg-surface max-md:hover:bg-table-row-hover",
   // Hide this row's bottom stroke while hovered.
   "[&:hover_.screener-row-stroke]:opacity-0",
   // Hide this row's bottom stroke when the next row is hovered (top rule of hovered row).
@@ -67,10 +67,10 @@ export {
 } from "@/components/screener/screener-table-pad";
 
 export const SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS =
-  "md:rounded-[10px] md:transition-colors md:duration-75 md:group-hover/row:bg-neutral-50";
+  "md:rounded-[10px] md:transition-colors md:duration-75 md:group-hover/row:bg-table-row-hover";
 
 export const SCREENER_TABLE_STROKE_INSET_CLASS =
-  "screener-row-stroke mx-5 hidden border-b border-solid border-[#EFEFEF] transition-opacity duration-75 md:block";
+  "screener-row-stroke mx-5 hidden border-b border-solid border-table-row-stroke transition-opacity duration-75 md:block";
 
 /** Hide header rule when the first data row is hovered. */
 export const SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS =
@@ -78,11 +78,11 @@ export const SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS =
 
 /** Full frame on desktop; borderless on mobile (card shadow instead). */
 export const SCREENER_TABLE_OUTER_BORDER_CLASS =
-  "max-md:border-0 md:border md:border-solid md:border-[#EBEBEC]";
+  "max-md:border-0 md:border md:border-solid md:border-stroke-subtle";
 
-/** 16px rounded white surface — mobile elevation, desktop border + shadow. */
+/** 16px rounded surface — mobile elevation, desktop border + shadow. */
 export const SCREENER_TABLE_MOBILE_SURFACE_CLASS = cn(
-  "overflow-hidden rounded-2xl bg-white md:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]",
+  "overflow-hidden rounded-2xl bg-surface md:shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]",
   MOBILE_CARD_SURFACE_CLASS,
 );
 
@@ -91,7 +91,7 @@ export const SCREENER_TABLE_MOBILE_SURFACE_CLASS = cn(
  * Styled webkit bars avoid macOS overlay auto-hide so the horizontal track stays put.
  */
 export const FINANCIALS_TABLE_VIEWPORT_SCROLLBAR_CLASS =
-  "financials-table-viewport-scroll [scrollbar-width:thin] [scrollbar-color:#A1A1AA_#F4F4F5]";
+  "financials-table-viewport-scroll [scrollbar-width:thin] [scrollbar-color:var(--fs-fg-subtle)_var(--fs-surface-muted)]";
 
 const MIN_VIEWPORT_SCROLL_H_PX = 240;
 
@@ -171,9 +171,9 @@ function FinancialsViewportScrollFrame({
     <div
       className={cn(
         // Border / radius / shadow live outside the scroll mask so the right stroke stays visible.
-        "w-full min-w-0 max-w-full rounded-2xl bg-white",
+        "w-full min-w-0 max-w-full rounded-2xl bg-surface",
         SCREENER_TABLE_OUTER_BORDER_CLASS,
-        "md:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]",
+        "md:shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]",
         MOBILE_CARD_SURFACE_CLASS,
         embeddedInMobileCard &&
           "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",

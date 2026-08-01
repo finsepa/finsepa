@@ -61,7 +61,7 @@ export function ChartingRailMetricRow({
   return (
     <div className={chartingRailRowClass}>
       <span
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] bg-white"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] bg-surface"
         aria-hidden
       >
         <span

@@ -12,14 +12,20 @@ import { cn } from "@/lib/utils";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import type { SearchAssetItem } from "@/lib/search/search-types";
+import { withLogoDevTheme } from "@/lib/screener/company-logo-url";
+import { useClientMounted, useLogoDevTheme } from "@/lib/theme/use-logo-dev-theme";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
 export function SearchResultLogo({ item }: { item: SearchAssetItem }) {
-  const [imgErr, setImgErr] = useState(false);
+  const logoTheme = useLogoDevTheme();
+  const mounted = useClientMounted();
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const sym = item.symbol.trim().toUpperCase();
   const fromServer = item.logoUrl?.trim() ?? "";
-  const fromMem = readLogoMemory(sym);
-  const src = fromServer || (fromMem ?? "");
+  const fromMem = mounted ? readLogoMemory(sym) : undefined;
+  const base = fromServer || (fromMem ?? "");
+  const src = withLogoDevTheme(base, logoTheme, sym);
+  const imgErr = failedSrc === src;
 
   useEffect(() => {
     if (fromServer) mergeLogoMemory(sym, fromServer);
@@ -34,12 +40,12 @@ export function SearchResultLogo({ item }: { item: SearchAssetItem }) {
         width={32}
         height={32}
         className={cn(
-          "h-8 w-8 shrink-0 border border-neutral-200 bg-white object-contain",
+          "h-8 w-8 shrink-0 border border-stroke-muted bg-surface object-contain",
           item.type === "superinvestor" ? "rounded-full object-cover" : "rounded-lg",
-          item.type === "superinvestor" && src.includes("blackrock") && "bg-[#141414] p-1",
+          item.type === "superinvestor" && src.includes("blackrock") && "bg-fg p-1",
         )}
         onError={() => {
-          setImgErr(true);
+          setFailedSrc(src);
           mergeLogoMemory(sym, null);
         }}
       />
@@ -56,7 +62,7 @@ export function SearchResultLogo({ item }: { item: SearchAssetItem }) {
           .toUpperCase()
       : item.symbol.slice(0, 2).toUpperCase();
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] text-[10px] font-bold text-[#141414]">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-stroke bg-surface-muted text-[10px] font-bold text-fg">
       {initials}
     </div>
   );
@@ -78,7 +84,7 @@ function MetaRight({ item, className }: { item: SearchAssetItem; className?: str
   return (
     <span
       className={cn(
-        "shrink-0 rounded-full bg-[#F4F4F5] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[#5C5D5F]",
+        "shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-fg-muted",
         className,
       )}
     >
@@ -88,7 +94,7 @@ function MetaRight({ item, className }: { item: SearchAssetItem; className?: str
 }
 
 const recentRemoveButtonClass =
-  "flex h-6 w-6 shrink-0 items-center justify-center self-center rounded-md text-[#141414] outline-none transition-[opacity,background-color,color] duration-100 focus-visible:ring-2 focus-visible:ring-[#141414]/10";
+  "flex h-6 w-6 shrink-0 items-center justify-center self-center rounded-md text-fg outline-none transition-[opacity,background-color,color] duration-100 focus-visible:ring-2 focus-visible:ring-fg/10";
 
 function RecentRowTrailing({
   item,
@@ -120,9 +126,9 @@ function RecentRowTrailing({
           recentRemoveButtonClass,
           "max-md:relative max-md:opacity-100",
           "md:[grid-area:trailing] md:opacity-0 md:pointer-events-none",
-          "md:group-hover:pointer-events-auto md:group-hover:bg-[#E4E4E7] md:group-hover:opacity-100",
-          "md:group-focus-within:pointer-events-auto md:group-focus-within:bg-[#E4E4E7] md:group-focus-within:opacity-100",
-          "md:group-data-[active=true]:pointer-events-auto md:group-data-[active=true]:bg-[#E4E4E7] md:group-data-[active=true]:opacity-100",
+          "md:group-hover:pointer-events-auto md:group-hover:bg-stroke md:group-hover:opacity-100",
+          "md:group-focus-within:pointer-events-auto md:group-focus-within:bg-stroke md:group-focus-within:opacity-100",
+          "md:group-data-[active=true]:pointer-events-auto md:group-data-[active=true]:bg-stroke md:group-data-[active=true]:opacity-100",
         )}
         onClick={(e) => {
           e.preventDefault();
@@ -220,7 +226,7 @@ function SearchResultRowInner({
   const rowClass = cn(
     dropdownMenuRichItemClassName(),
     "group items-center",
-    active && "bg-[#F4F4F5]",
+    active && "bg-surface-muted",
   );
 
   const mainLink = (
@@ -234,10 +240,10 @@ function SearchResultRowInner({
     >
       <SearchResultLogo item={item} />
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium underline-offset-2 decoration-[#141414] group-hover:underline group-data-[active=true]:underline">
+        <div className="truncate font-medium text-fg underline-offset-2 decoration-fg group-hover:underline group-data-[active=true]:underline">
           {item.name}
         </div>
-        <div className="truncate text-[12px] text-[#5C5D5F]">
+        <div className="truncate text-[12px] text-fg-muted">
           {item.type === "crypto" ? eodhdCryptoSpotTickerDisplay(item.symbol) : item.symbol}
         </div>
       </div>

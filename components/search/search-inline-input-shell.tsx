@@ -3,6 +3,7 @@
 import { useCallback, type RefObject } from "react";
 import { Search, X } from "@/lib/icons";
 
+import { formFieldControlHeightClassName, textInputActiveRingClassName, textInputShellClassName } from "@/components/design-system/text-input-styles";
 import { cn } from "@/lib/utils";
 
 export const SEARCH_SHELL_MOTION_MS = 280;
@@ -88,9 +89,11 @@ export function SearchInlineInputShell({
       role="search"
       data-open={open ? "true" : "false"}
       className={cn(
-        "relative flex h-9 min-w-0 w-full cursor-text items-center overflow-hidden bg-[#F1F1F2] pl-3 pr-3",
-        "transition-colors motion-reduce:transition-none",
-        !open && !disabled && "hover:bg-[#E6E6E7]",
+        "relative flex min-w-0 w-full cursor-text items-center overflow-hidden rounded-[10px] pl-3 pr-3",
+        formFieldControlHeightClassName,
+        textInputShellClassName,
+        "motion-reduce:transition-none",
+        open && textInputActiveRingClassName,
         disabled && "cursor-not-allowed opacity-50",
         shellClassName,
       )}
@@ -98,7 +101,7 @@ export function SearchInlineInputShell({
       onPointerDown={handleShellPointerDown}
     >
       <span
-        className="pointer-events-none absolute top-1/2 z-10 flex h-5 w-5 items-center justify-center text-[#141414] motion-reduce:transition-none"
+        className="pointer-events-none absolute top-1/2 z-10 flex h-5 w-5 items-center justify-center text-icon motion-reduce:transition-none"
         style={{
           left: SEARCH_ICON_INSET_PX,
           ...motionStyle,
@@ -122,7 +125,7 @@ export function SearchInlineInputShell({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={cn(
-          "absolute inset-0 z-[1] h-full w-full min-w-0 cursor-text bg-transparent text-sm leading-5 text-[#141414] outline-none placeholder:text-[#A1A1AA] caret-[#141414] read-only:cursor-text transition-[padding] motion-reduce:transition-none",
+          "absolute inset-0 z-[1] h-full w-full min-w-0 cursor-text bg-transparent text-sm leading-5 text-fg outline-none placeholder:text-fg-subtle caret-fg read-only:cursor-text transition-[padding] motion-reduce:transition-none",
           !open && "pointer-events-none",
           value && !open && "font-medium",
         )}
@@ -166,7 +169,7 @@ export function SearchInlineInputShell({
               e.stopPropagation();
               onTrailingClear?.();
             }}
-            className="pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-[#141414] hover:bg-[#EBEBEB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10"
+            className="pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-icon hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
             aria-label="Clear selection"
           >
             <X className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -182,9 +185,9 @@ export function SearchInlineInputShell({
               close();
             }}
             className={cn(
-              "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-[#5C5D5F]",
+              "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-fg-muted",
               "transition-opacity motion-reduce:transition-none",
-              "hover:bg-[#EBEBEB] hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10",
+              "hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10",
               open ? "opacity-100" : "opacity-0",
             )}
             style={motionStyle}

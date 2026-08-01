@@ -139,12 +139,12 @@ export function EarningsOverflowHoverMenu({
       <button
         type="button"
         onClick={toggleTouch}
-        className="flex h-full w-full items-center justify-center rounded-xl bg-[#EFF6FF] px-1 py-1.5 text-center transition-colors hover:bg-[#DBEAFE]"
+        className="flex h-full w-full items-center justify-center rounded-xl bg-surface-muted px-1 py-1.5 text-center transition-colors hover:bg-dropdown-item-hover"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`${count} more companies in ${title}`}
       >
-        <span className="text-[13px] font-semibold tabular-nums leading-5 text-[#2563EB]">+{count}</span>
+        <span className="text-[13px] font-semibold tabular-nums leading-5 text-fg-muted">+{count}</span>
       </button>
 
       <TopbarDropdownPortal open={open} anchorRef={anchorRef} align="trailing">
@@ -170,12 +170,12 @@ export function EarningsOverflowHoverMenu({
                   aria-live="polite"
                   aria-label="Loading companies"
                 >
-                  <Spinner className="size-5 text-[#5C5D5F]" />
+                  <Spinner className="size-5 text-fg-muted" />
                 </div>
               ) : error && displayItems.length === 0 ? (
-                <p className="px-3 py-2 text-[12px] text-[#DC2626]">Could not load</p>
+                <p className="px-3 py-2 text-[12px] text-down">Could not load</p>
               ) : displayItems.length === 0 ? (
-                <p className="px-3 py-2 text-[12px] text-[#5C5D5F]">No companies</p>
+                <p className="px-3 py-2 text-[12px] text-fg-muted">No companies</p>
               ) : (
                 <ul className="grid grid-cols-3 gap-1">
                   {displayItems.map((item) => (
@@ -183,7 +183,7 @@ export function EarningsOverflowHoverMenu({
                       <button
                         type="button"
                         role="option"
-                        className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10"
+                        className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           onOpenCard(item);
@@ -199,7 +199,7 @@ export function EarningsOverflowHoverMenu({
                           size="md"
                           fill
                         />
-                        <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-[#141414]">
+                        <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-fg">
                           {item.ticker}
                         </span>
                       </button>

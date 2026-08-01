@@ -16,7 +16,7 @@ import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
 
 const watchlistRowRemoveButtonClass =
-  "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-[#5C5D5F] transition-colors hover:bg-[#F4F4F5] hover:text-[#DC2626] focus-visible:bg-[#F4F4F5] focus-visible:text-[#DC2626] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2";
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-down focus-visible:bg-surface-muted focus-visible:text-down focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
 
 type ToggleProps = {
   /** Stored watchlist key (plain ticker, CRYPTO:BTC, INDEX:GSPC.INDX, …). */
@@ -74,7 +74,7 @@ function WatchlistPickerDropdown({
   return (
     <TopbarDropdownPortal open={open} anchorRef={anchorRef} align="trailing">
       <div ref={menuRef} className={dropdownMenuPanelClassName("w-[200px]")} role="menu">
-        <p className="px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-[#5C5D5F]">
+        <p className="px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-fg-muted">
           Add to watchlist
         </p>
         {watchlists.map((list) => (
@@ -170,6 +170,7 @@ function WatchlistStarToggleInteractive({
         <button
           ref={buttonRef}
           type="button"
+          suppressHydrationWarning
           aria-label={isWatched ? `Remove ${label} from watchlist` : `Add ${label} to watchlist`}
           aria-pressed={isWatched}
           aria-haspopup={showListPicker ? "menu" : undefined}
@@ -177,8 +178,9 @@ function WatchlistStarToggleInteractive({
           onClick={handleStarClick}
           className={
             isDetail
-              ? cn(topbarSquircleIconClass, "outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15", buttonClassName)
-              : `flex items-center justify-center rounded-md p-0.5 text-[#141414] outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/20 ${buttonClassName}`
+              ? // Stable string — `cn`/`twMerge` on topbar chrome mismatches SSR vs client.
+                `${topbarSquircleIconClass} outline-none focus-visible:ring-2 focus-visible:ring-fg/15${buttonClassName ? ` ${buttonClassName}` : ""}`
+              : `flex items-center justify-center rounded-md p-0.5 text-fg outline-none focus-visible:ring-2 focus-visible:ring-fg/20${buttonClassName ? ` ${buttonClassName}` : ""}`
           }
         >
           <Star
@@ -186,12 +188,12 @@ function WatchlistStarToggleInteractive({
               isDetail
                 ? `h-5 w-5 shrink-0 transition-colors ${
                     isWatched
-                      ? "fill-amber-500 text-amber-500"
-                      : "fill-none text-[#141414]"
+                      ? "fill-orange text-orange"
+                      : "fill-none text-icon"
                   }`
                 : `h-4 w-4 transition-colors ${
                     isWatched
-                      ? "fill-orange-400 text-orange-400"
+                      ? "fill-orange text-orange"
                       : "fill-none text-neutral-300 group-hover:text-neutral-400"
                   }`
             }

@@ -74,21 +74,21 @@ export function PortfolioSnaptradeSyncModal({
         }
       >
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium leading-5 text-[#141414]">Update from</span>
+          <span className="text-sm font-medium leading-5 text-fg">Update from</span>
           <SnaptradeUpdateFromDateField valueYmd={updateFromYmd} onChangeYmd={setUpdateFromYmd} />
         </div>
-        <p className="text-xs leading-5 text-[#5C5D5F]">
-          Syncing <span className="font-medium text-[#141414]">{portfolioName}</span> with your
+        <p className="text-xs leading-5 text-fg-muted">
+          Syncing <span className="font-medium text-fg">{portfolioName}</span> with your
           brokerage.{" "}
           {updateFromYmd ?
             <>
-              From this date we <span className="font-medium text-[#141414]">add or refresh</span>{" "}
+              From this date we <span className="font-medium text-fg">add or refresh</span>{" "}
               broker transactions — older rows stay. Cash/position reconcile runs only on a full
               sync.
             </>
           : (
             <>
-              <span className="font-medium text-[#141414]">First transaction</span> reloads full
+              <span className="font-medium text-fg">First transaction</span> reloads full
               broker history and replaces prior broker rows (manual entries are kept).
             </>
           )}

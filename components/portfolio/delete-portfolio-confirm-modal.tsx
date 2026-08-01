@@ -57,11 +57,11 @@ export function DeletePortfolioConfirmModal({
           </AppModalFooter>
         }
       >
-        <p className="text-sm leading-5 text-[#141414]">
+        <p className="text-sm leading-5 text-fg">
           Are you sure you want to delete{" "}
           <span className="font-semibold">{portfolioName}</span>?
         </p>
-        <p className="mt-3 text-sm leading-5 text-[#5C5D5F]">
+        <p className="mt-3 text-sm leading-5 text-fg-muted">
           All related transactions and holdings for this portfolio will be removed.
         </p>
       </AppModalShell>

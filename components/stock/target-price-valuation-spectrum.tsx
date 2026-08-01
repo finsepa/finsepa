@@ -4,11 +4,6 @@ import { MOBILE_PANEL_CARD_CLASS, STOCK_OVERVIEW_SECTION_TITLE_CLASS } from "@/c
 import { formatUsdPrice } from "@/lib/market/key-stats-basic-format";
 import { cn } from "@/lib/utils";
 
-/** Soft tints for undervalued / about right / overvalued zones. */
-const ZONE_UNDERVALUED = "#BBF7D0";
-const ZONE_ABOUT_RIGHT = "#FDE68A";
-const ZONE_OVERVALUED = "#FECACA";
-
 /** Fixed spectrum bands: undervalued 60% | about right 20% | overvalued 20%. */
 const ZONE_UNDERVALUED_WIDTH_PCT = 60;
 const ZONE_ABOUT_RIGHT_WIDTH_PCT = 20;
@@ -64,7 +59,7 @@ export function TargetPriceValuationSpectrum({
     return (
       <div className={cn(MOBILE_PANEL_CARD_CLASS, "w-full min-w-0 p-3 sm:p-4")}>
         <p className={STOCK_OVERVIEW_SECTION_TITLE_CLASS}>Target price</p>
-        <p className="mt-1 text-[28px] font-semibold tabular-nums leading-8 tracking-tight text-[#141414]">—</p>
+        <p className="mt-1 text-[28px] font-semibold tabular-nums leading-8 tracking-tight text-fg">—</p>
       </div>
     );
   }
@@ -83,9 +78,9 @@ export function TargetPriceValuationSpectrum({
     : vsFairPct < -2 ? "Overvalued"
     : "About right";
   const valuationTone =
-    valuationLabel === "Undervalued" ? "text-[#16A34A]"
-    : valuationLabel === "Overvalued" ? "text-[#DC2626]"
-    : "text-[#CA8A04]";
+    valuationLabel === "Undervalued" ? "text-up"
+    : valuationLabel === "Overvalued" ? "text-down"
+    : "text-orange";
 
   const fairCaption = fair != null ? "Fair value" : "Target price";
   const leftMarkerPct = currentPct != null ? Math.min(currentPct, fairPct) : fairPct;
@@ -125,19 +120,19 @@ export function TargetPriceValuationSpectrum({
                       borderTopStyle: "solid",
                       borderTopColor:
                         valuationLabel === "Undervalued"
-                          ? "#16A34A"
+                          ? "var(--fs-up)"
                           : valuationLabel === "Overvalued"
-                            ? "#DC2626"
-                            : "#CA8A04",
+                            ? "var(--fs-down)"
+                            : "var(--fs-orange)",
                     }}
                     aria-hidden
                   >
                     <span
-                      className="absolute left-0 top-0 w-px bg-[#A1A1AA]"
+                      className="absolute left-0 top-0 w-px bg-fg-subtle"
                       style={{ height: currentIsLeft ? "2.35rem" : "4.85rem" }}
                     />
                     <span
-                      className="absolute right-0 top-0 w-px bg-[#A1A1AA]"
+                      className="absolute right-0 top-0 w-px bg-fg-subtle"
                       style={{ height: currentIsLeft ? "4.85rem" : "2.35rem" }}
                     />
                   </div>
@@ -147,22 +142,21 @@ export function TargetPriceValuationSpectrum({
 
             <div className="relative h-[6.75rem] w-full overflow-hidden rounded-2xl sm:h-32">
               <div
-                className="absolute inset-y-0 left-0"
-                style={{ width: `${undervaluedPct}%`, backgroundColor: ZONE_UNDERVALUED }}
+                className="absolute inset-y-0 left-0 bg-up-soft"
+                style={{ width: `${undervaluedPct}%` }}
                 aria-hidden
               />
               <div
-                className="absolute inset-y-0"
+                className="absolute inset-y-0 bg-orange-soft"
                 style={{
                   left: `${undervaluedPct}%`,
                   width: `${Math.max(0, overvaluedPct - undervaluedPct)}%`,
-                  backgroundColor: ZONE_ABOUT_RIGHT,
                 }}
                 aria-hidden
               />
               <div
-                className="absolute inset-y-0 right-0"
-                style={{ left: `${overvaluedPct}%`, backgroundColor: ZONE_OVERVALUED }}
+                className="absolute inset-y-0 right-0 bg-down-soft"
+                style={{ left: `${overvaluedPct}%` }}
                 aria-hidden
               />
 
@@ -170,20 +164,16 @@ export function TargetPriceValuationSpectrum({
                 {current != null && currentPct != null ? (
                   <div className="relative h-9 w-full sm:h-10">
                     <div
-                      className="absolute inset-y-0 left-0 rounded-r-[10px]"
-                      style={{
-                        width: `${currentPct}%`,
-                        backgroundImage:
-                          "linear-gradient(to right, rgb(255 255 255 / 30%), #fff 70%, #fff)",
-                      }}
+                      className="absolute inset-y-0 left-0 rounded-r-[10px] bg-gradient-to-r from-surface/30 via-surface to-surface dark:from-surface/40 dark:via-surface/85 dark:to-surface"
+                      style={{ width: `${currentPct}%` }}
                       aria-hidden
                     />
                     <div
-                      className="absolute top-1/2 z-[1] flex h-9 min-w-[6.75rem] -translate-x-full -translate-y-1/2 flex-col items-end justify-center rounded-r-[10px] bg-white px-2.5 py-1 text-right sm:h-10"
+                      className="absolute top-1/2 z-[1] flex h-9 min-w-[6.75rem] -translate-x-full -translate-y-1/2 flex-col items-end justify-center rounded-r-[10px] bg-surface px-2.5 py-1 text-right sm:h-10"
                       style={{ left: `${currentPct}%` }}
                     >
-                      <span className="text-[10px] font-medium leading-3 text-[#5C5D5F]">Current price</span>
-                      <span className="text-[13px] font-semibold tabular-nums leading-4 text-[#141414] sm:text-[14px]">
+                      <span className="text-[10px] font-medium leading-3 text-fg-muted">Current price</span>
+                      <span className="text-[13px] font-semibold tabular-nums leading-4 text-fg sm:text-[14px]">
                         {formatUsdPrice(current)}
                       </span>
                     </div>
@@ -192,20 +182,16 @@ export function TargetPriceValuationSpectrum({
 
                 <div className="relative h-9 w-full sm:h-10">
                   <div
-                    className="absolute inset-y-0 left-0 rounded-r-[10px]"
-                    style={{
-                      width: `${fairPct}%`,
-                      backgroundImage:
-                        "linear-gradient(to right, rgb(255 255 255 / 30%), #fff 70%, #fff)",
-                    }}
+                    className="absolute inset-y-0 left-0 rounded-r-[10px] bg-gradient-to-r from-surface/30 via-surface to-surface dark:from-surface/40 dark:via-surface/85 dark:to-surface"
+                    style={{ width: `${fairPct}%` }}
                     aria-hidden
                   />
                   <div
-                    className="absolute top-1/2 z-[1] flex h-9 min-w-[6.75rem] -translate-x-full -translate-y-1/2 flex-col items-end justify-center rounded-r-[10px] bg-white px-2.5 py-1 text-right sm:h-10"
+                    className="absolute top-1/2 z-[1] flex h-9 min-w-[6.75rem] -translate-x-full -translate-y-1/2 flex-col items-end justify-center rounded-r-[10px] bg-surface px-2.5 py-1 text-right sm:h-10"
                     style={{ left: `${fairPct}%` }}
                   >
-                    <span className="text-[10px] font-medium leading-3 text-[#5C5D5F]">{fairCaption}</span>
-                    <span className="text-[13px] font-semibold tabular-nums leading-4 text-[#141414] sm:text-[14px]">
+                    <span className="text-[10px] font-medium leading-3 text-fg-muted">{fairCaption}</span>
+                    <span className="text-[13px] font-semibold tabular-nums leading-4 text-fg sm:text-[14px]">
                       {formatUsdPrice(anchor)}
                     </span>
                   </div>
@@ -217,19 +203,19 @@ export function TargetPriceValuationSpectrum({
 
         <div className="relative mt-2 h-4 w-full">
           <span
-            className="absolute top-0 -translate-x-1/2 text-center text-[11px] font-medium leading-4 text-[#16A34A]"
+            className="absolute top-0 -translate-x-1/2 text-center text-[11px] font-medium leading-4 text-up"
             style={{ left: `${ZONE_UNDERVALUED_WIDTH_PCT / 2}%` }}
           >
             Undervalued
           </span>
           <span
-            className="absolute top-0 -translate-x-1/2 text-center text-[11px] font-medium leading-4 text-[#CA8A04]"
+            className="absolute top-0 -translate-x-1/2 text-center text-[11px] font-medium leading-4 text-orange"
             style={{ left: `${ZONE_UNDERVALUED_WIDTH_PCT + ZONE_ABOUT_RIGHT_WIDTH_PCT / 2}%` }}
           >
             About right
           </span>
           <span
-            className="absolute top-0 -translate-x-1/2 text-center text-[11px] font-medium leading-4 text-[#DC2626]"
+            className="absolute top-0 -translate-x-1/2 text-center text-[11px] font-medium leading-4 text-down"
             style={{ left: `${ZONE_OVERVALUED_EDGE_PCT + (100 - ZONE_OVERVALUED_EDGE_PCT) / 2}%` }}
           >
             Overvalued

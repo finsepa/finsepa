@@ -55,7 +55,7 @@ function ChangeCell({ value }: { value: number | null }) {
   return (
     <div
       className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
-        isMissing ? "text-[#5C5D5F]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+        isMissing ? "text-fg-muted" : positive ? "text-up" : "text-down"
       }`}
     >
       {formatPercentValue(value)}
@@ -79,14 +79,14 @@ function PriceAndChangeCell({
     <div className="min-w-0 w-full text-right">
       <div
         className={`min-w-0 w-full font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums ${
-          hasPrice ? "text-[#141414]" : "text-[#5C5D5F]"
+          hasPrice ? "text-fg" : "text-fg-muted"
         }`}
       >
         {hasPrice ? formatPrice(price, kind) : "-"}
       </div>
       <div
         className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
-          !hasChange ? "text-[#5C5D5F]" : positive ? "text-[#16A34A]" : "text-[#DC2626]"
+          !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down"
         }`}
       >
         {formatPercentValue(change1D)}
@@ -99,7 +99,7 @@ function WatchlistTableHeader() {
   return (
     <div
       className={cn(
-        "grid min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] max-md:hidden",
+        "grid min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-fg-muted max-md:hidden",
         watchlistRowGridClass,
         SCREENER_TABLE_HEADER_STICKY_CLASS,
       )}
@@ -121,25 +121,25 @@ function WatchlistTableHeader() {
 
 function WatchlistTableSkeletonRow() {
   return (
-    <div className={cn("grid min-h-[60px] items-center bg-white px-4", watchlistRowGridClass)}>
+    <div className={cn("grid min-h-[60px] items-center bg-surface px-4", watchlistRowGridClass)}>
       <div className="flex min-w-0 items-center gap-3 pr-4 max-md:gap-2">
-        <div className="h-8 w-8 shrink-0 animate-pulse rounded-lg bg-neutral-200" />
+        <div className="h-8 w-8 shrink-0 animate-pulse rounded-lg bg-skeleton" />
         <div className="min-w-0 flex-1 space-y-2">
-          <div className="h-4 w-32 animate-pulse rounded bg-neutral-200" />
-          <div className="h-3 w-14 animate-pulse rounded bg-neutral-100" />
+          <div className="h-4 w-32 animate-pulse rounded bg-skeleton" />
+          <div className="h-3 w-14 animate-pulse rounded bg-skeleton" />
         </div>
       </div>
       <div className="space-y-1.5 text-right sm:space-y-0">
-        <div className="ml-auto h-4 w-14 animate-pulse rounded bg-neutral-100 sm:mx-0 sm:ml-auto sm:w-12" />
-        <div className="ml-auto h-3 w-10 animate-pulse rounded bg-neutral-100 sm:hidden" />
+        <div className="ml-auto h-4 w-14 animate-pulse rounded bg-skeleton sm:mx-0 sm:ml-auto sm:w-12" />
+        <div className="ml-auto h-3 w-10 animate-pulse rounded bg-skeleton sm:hidden" />
       </div>
       {Array.from({ length: 5 }).map((_, j) => (
         <div key={j} className="hidden text-right sm:block">
-          <div className="ml-auto h-4 w-12 animate-pulse rounded bg-neutral-100" />
+          <div className="ml-auto h-4 w-12 animate-pulse rounded bg-skeleton" />
         </div>
       ))}
       <div className="flex justify-center">
-        <div className="h-5 w-5 max-w-[1.25rem] animate-pulse rounded bg-neutral-100" />
+        <div className="h-5 w-5 max-w-[1.25rem] animate-pulse rounded bg-skeleton" />
       </div>
     </div>
   );
@@ -148,7 +148,7 @@ function WatchlistTableSkeletonRow() {
 function WatchlistTableSkeleton() {
   return (
     <ScreenerTableScroll>
-      <div className="bg-white">
+      <div className="bg-surface">
         <WatchlistTableHeader />
         <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
           {[0, 1, 2].map((i) => (
@@ -208,17 +208,17 @@ function WatchlistTableRow({
         onMoveItem(payload.globalIndex, { kind: "row", toIndex: globalIndex, sectionId });
       }}
       className={cn(
-        "group grid min-h-[60px] cursor-grab items-center bg-white px-4 transition-colors duration-75 active:cursor-grabbing max-md:touch-manipulation",
+        "group grid min-h-[60px] cursor-grab items-center bg-surface px-4 transition-colors duration-75 active:cursor-grabbing max-md:touch-manipulation",
         watchlistRowGridClass,
         globalIndex < 0 && "cursor-default",
-        dragOver ? "bg-[#E4E4E7]" : "hover:bg-neutral-50",
+        dragOver ? "bg-stroke" : "hover:bg-neutral-50",
       )}
     >
       <Link
         href={row.href}
         draggable={false}
         className={cn(
-          "col-span-2 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-[#141414] visited:text-[#141414] sm:col-span-7 sm:col-start-1 sm:min-h-[60px]",
+          "col-span-2 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-fg visited:text-fg sm:col-span-7 sm:col-start-1 sm:min-h-[60px]",
           watchlistRowLinkGridClass,
         )}
         aria-label={`Open ${row.name} (${row.symbol})`}
@@ -226,10 +226,10 @@ function WatchlistTableRow({
         <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left max-md:gap-2">
           <CompanyLogo name={row.name} logoUrl={row.logoUrl ?? ""} symbol={row.symbol} />
           <div className="min-w-0">
-            <div className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline">
+            <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
               {row.name}
             </div>
-            <div className="text-[12px] font-normal leading-4 text-[#5C5D5F] underline-offset-2 decoration-[#5C5D5F] group-hover:underline">
+            <div className="text-[12px] font-normal leading-4 text-fg-muted underline-offset-2 decoration-fg-muted group-hover:underline">
               {row.kind === "crypto" ? eodhdCryptoSpotTickerDisplay(row.symbol) : row.symbol}
             </div>
           </div>
@@ -241,7 +241,7 @@ function WatchlistTableRow({
 
         <div
           className={`hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums sm:block ${
-            row.price == null || !Number.isFinite(row.price) ? "text-[#5C5D5F]" : "text-[#141414]"
+            row.price == null || !Number.isFinite(row.price) ? "text-fg-muted" : "text-fg"
           }`}
         >
           {formatPrice(row.price, row.kind)}
@@ -256,10 +256,10 @@ function WatchlistTableRow({
         <div className="hidden min-w-0 w-full sm:block">
           <ChangeCell value={row.ytd} />
         </div>
-        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] sm:block">
+        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block">
           {row.mcapDisplay}
         </div>
-        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] sm:block">
+        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block">
           {row.peDisplay}
         </div>
       </Link>
@@ -383,7 +383,7 @@ export function WatchlistTable() {
           storageHydrated={storageHydrated}
         />
         {refreshing ? (
-          <span className="shrink-0 text-[12px] font-medium text-[#A1A1AA]" aria-live="polite">
+          <span className="shrink-0 text-[12px] font-medium text-fg-subtle" aria-live="polite">
             Updating…
           </span>
         ) : null}
@@ -397,7 +397,7 @@ export function WatchlistTable() {
         </p>
       ) : null}
 
-      {error ? <p className="text-[14px] leading-5 text-[#B91C1C]">{error}</p> : null}
+      {error ? <p className="text-[14px] leading-5 text-down">{error}</p> : null}
 
       {storageHydrated && showBlockingSkeleton ? <WatchlistTableSkeleton /> : null}
 
@@ -405,7 +405,7 @@ export function WatchlistTable() {
 
       {storageHydrated && watched.size > 0 && hasUsableRows ? (
         <ScreenerTableScroll>
-          <div className="bg-white">
+          <div className="bg-surface">
             <WatchlistTableHeader />
             <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
               {tableGroups.unsectioned.map((row) => (

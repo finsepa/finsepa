@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import {
   useCallback,
   useEffect,
@@ -36,11 +37,13 @@ import {
   CHART_PLOT_BACKGROUND_CLASS,
   CHARTING_LINE_HOVER_HALO_BG,
   CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
+  CHARTING_LINE_POINT_MARKER_FILL,
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_REFERENCE_BADGE_CLASS,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
+  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   valueToPlotBandTopPercent,
   type FundamentalsChartReferenceKind,
 } from "@/lib/chart/fundamentals-chart-surface";
@@ -222,7 +225,7 @@ const BAR_HOVER_DIM_OPACITY = 0.6;
 
 const HOVER_DOT_HALO_RADIUS_PX = 14;
 /** Vertical guide from hovered dot down to the period label row. */
-const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-[#2563EB]";
+const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-accent";
 
 /** Area fill under line — matches portfolio overview `AreaSeries` (top 22% → bottom 2%). */
 const LINE_AREA_GRADIENT_TOP_OPACITY = 0.22;
@@ -231,10 +234,6 @@ const LINE_AREA_GRADIENT_BOTTOM_OPACITY = 0.02;
 /** Matches portfolio overview Value `AreaSeries` (`lineWidth: 2`, `LineType.Curved`). */
 export const MULTICHART_LINE_STROKE_WIDTH_PX = 2;
 
-/** $0 baseline only — same as overview price chart scale edge. */
-const CHART_ZERO_BASELINE_BORDER = "rgba(228, 228, 231, 0.85)";
-
-const NEGATIVE_BAR_COLOR = "#DC2626";
 
 export { readChartingMetricValue };
 
@@ -262,7 +261,7 @@ function formatTooltipValue(kind: ChartingMetricKind, p: number): string {
 
 function resolveBarFillColor(baseColor: string, dimmed: boolean): string {
   if (!dimmed) return baseColor;
-  if (baseColor === NEGATIVE_BAR_COLOR) {
+  if (baseColor === resolveFsColor("--fs-down")) {
     return `rgba(220, 38, 38, ${BAR_HOVER_DIM_OPACITY})`;
   }
   return fundamentalsBarColorAtIndex(0, BAR_HOVER_DIM_OPACITY);
@@ -332,7 +331,7 @@ type Props = {
   showBrandWatermark?: boolean;
   /**
    * Plot canvas + Y-axis label chip fill. Defaults to shell panel `#FCFCFD`.
-   * Multicharts cards pass `bg-white` so the chart matches the card surface.
+   * Multicharts cards pass `bg-surface` so the chart matches the card surface.
    */
   plotBackgroundClass?: string;
 };
@@ -378,7 +377,7 @@ function FundamentalsReferenceLine({
   return (
     <>
       <div
-        className="pointer-events-none absolute inset-x-0 z-[4] border-t border-dashed border-[#A1A1AA]"
+        className="pointer-events-none absolute inset-x-0 z-[4] border-t border-dashed border-fg-subtle"
         style={{ top: `${topPercent}%` }}
         aria-hidden
       />
@@ -398,10 +397,9 @@ const BAR_VALUE_LABEL_ANCHOR_CLASS =
   "pointer-events-none absolute z-[15] max-w-[5.5rem] -translate-x-1/2 text-center";
 
 const BAR_VALUE_LABEL_TEXT_CLASS =
-  "block truncate text-[11px] font-semibold leading-none tabular-nums text-[#141414]";
+  "block truncate text-[11px] font-semibold leading-none tabular-nums text-fg";
 
-const BAR_VALUE_LABEL_TEXT_SHADOW =
-  "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)";
+const BAR_VALUE_LABEL_TEXT_SHADOW = "var(--fs-chart-value-label-shadow)";
 
 function barValueLabelTopStyle(hPct: number): string {
   const innerFrac = 1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC;
@@ -691,7 +689,7 @@ export function MultichartFundamentalsBar({
     return (
       <div className="w-full">
         <div
-          className="flex h-[196px] items-center justify-center rounded-xl border border-dashed border-[#E4E4E7] bg-[#FAFAFA] text-[13px] text-[#5C5D5F]"
+          className="flex h-[196px] items-center justify-center rounded-xl border border-dashed border-stroke bg-canvas text-[13px] text-fg-muted"
           aria-hidden
         >
           No data
@@ -752,7 +750,7 @@ export function MultichartFundamentalsBar({
               <div
                 className="absolute inset-x-0 border-t"
                 style={{
-                  borderColor: CHART_ZERO_BASELINE_BORDER,
+                  borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
                   top: yBipolar ? `${valueToPlotBandTopPercent(0, yMin, yMax)}%` : undefined,
                   bottom: yBipolar ? undefined : 0,
                 }}
@@ -855,7 +853,7 @@ export function MultichartFundamentalsBar({
                               cx={x}
                               cy={y}
                               r={4.5}
-                              fill="white"
+                              fill={CHARTING_LINE_POINT_MARKER_FILL}
                               stroke={seriesBarColor}
                               strokeWidth={2}
                               className="pointer-events-none"
@@ -875,7 +873,7 @@ export function MultichartFundamentalsBar({
                             cx={lineSvg.pts[hoveredIndex]!.x}
                             cy={lineSvg.pts[hoveredIndex]!.y}
                             r={4.5}
-                            fill="white"
+                            fill={CHARTING_LINE_POINT_MARKER_FILL}
                             stroke={seriesBarColor}
                             strokeWidth={2}
                             className="pointer-events-none"
@@ -991,7 +989,7 @@ export function MultichartFundamentalsBar({
                   const vTop = valueToPlotBandTopPercent(v, yMin, yMax);
                   const barHeightPct = v >= 0 ? Math.max(0, zeroTop - vTop) : Math.max(0, vTop - zeroTop);
                   const barTopPct = v >= 0 ? vTop : zeroTop;
-                  const baseBarColor = v < 0 ? NEGATIVE_BAR_COLOR : seriesBarColor;
+                  const baseBarColor = v < 0 ? resolveFsColor("--fs-down") : seriesBarColor;
                   const barColor = resolveBarFillColor(
                     baseBarColor,
                     hoveredIndex != null && hoveredIndex !== i,
@@ -1146,18 +1144,7 @@ export function MultichartFundamentalsBar({
                 role="tooltip"
                 aria-label="Chart tooltip"
               >
-                {tip.side === "left" ? (
-                  <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
-                    <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
-                    <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
-                  </span>
-                ) : (
-                  <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
-                    <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
-                    <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
-                  </span>
-                )}
-                <p className="text-[12px] font-semibold leading-4 text-[#141414]">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-fg">{tip.periodLabel}</p>
                 <div className="mt-1.5 space-y-1">
                   <div className="flex items-baseline justify-between gap-3">
                     <span className="flex min-w-0 items-baseline gap-2">
@@ -1166,11 +1153,11 @@ export function MultichartFundamentalsBar({
                         style={{ backgroundColor: seriesBarColor }}
                         aria-hidden
                       />
-                      <span className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                      <span className="truncate text-[12px] font-normal leading-4 text-fg-muted">
                         {tip.metricLabel}
                       </span>
                     </span>
-                    <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#141414]">
+                    <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-fg">
                       {tip.value}
                     </span>
                   </div>
@@ -1180,7 +1167,7 @@ export function MultichartFundamentalsBar({
           </div>
 
           <div
-            className={`relative h-full shrink-0 ${yAxisPlClass} text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]`}
+            className={`relative h-full shrink-0 ${yAxisPlClass} text-left font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted`}
             style={{ width: yAxisWidthPx }}
             aria-hidden
           >
@@ -1233,7 +1220,7 @@ export function MultichartFundamentalsBar({
                   title={labels[i]}
                 >
                   <span
-                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]"
+                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]"
                     style={{
                       transform: axisLabelRotateDeg === 0 ? undefined : `rotate(${axisLabelRotateDeg}deg)`,
                       transformOrigin: effectiveHorizontalPeriodAxisLabels ? undefined : "center bottom",

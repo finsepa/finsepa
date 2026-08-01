@@ -25,7 +25,7 @@ export function PillSkeleton({ wClass = "w-12" }: { wClass?: string }) {
 }
 
 export function LogoSkeleton({ sizeClass = "h-8 w-8" }: { sizeClass?: string }) {
-  return <SkeletonBox className={cls(sizeClass, "rounded-lg")} />;
+  return <SkeletonBox className={cls(sizeClass, "rounded-lg border border-stroke-muted")} />;
 }
 
 export function SparklineSkeleton({ className = "h-10 w-full" }: { className?: string }) {

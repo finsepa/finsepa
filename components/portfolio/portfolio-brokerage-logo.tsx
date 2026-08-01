@@ -15,7 +15,7 @@ function BrokerageInitials({ name, className }: { name: string; className?: stri
   return (
     <div
       className={cn(
-        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-[#F4F4F5] text-[11px] font-semibold text-[#5C5D5F]",
+        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-stroke bg-surface-muted text-[11px] font-semibold text-fg-muted",
         className,
       )}
       aria-hidden
@@ -26,11 +26,11 @@ function BrokerageInitials({ name, className }: { name: string; className?: stri
 }
 
 const portfolioListLogoShellClass =
-  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E4E4E7] bg-[#F4F4F5]";
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-stroke bg-surface-muted";
 
 /** Top bar squircle — matches `topbarSquircleIconClass` (36×36). */
 export const portfolioTopbarLogoClass =
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-[#F4F4F5] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]";
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-stroke bg-surface-muted shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]";
 
 type PortfolioLogoSize = "list" | "topbar";
 
@@ -53,7 +53,7 @@ export function PortfolioListLogo({
   if (portfolioIsCombined(portfolio)) {
     return (
       <div className={shellClass} aria-hidden>
-        <GitMerge className={cn(iconClass, "text-[#5C5D5F]")} strokeWidth={2} />
+        <GitMerge className={cn(iconClass, "text-fg-muted")} strokeWidth={2} />
       </div>
     );
   }
@@ -64,7 +64,7 @@ export function PortfolioListLogo({
 
   return (
     <div className={shellClass} aria-hidden>
-      <Briefcase className={cn(iconClass, "text-[#5C5D5F]")} strokeWidth={2} />
+      <Briefcase className={cn(iconClass, "text-fg-muted")} strokeWidth={2} />
     </div>
   );
 }
@@ -127,8 +127,8 @@ export function PortfolioBrokerageLogo({
       alt=""
       className={cn(
         size === "topbar" ?
-          cn(portfolioTopbarLogoClass, "bg-white object-contain p-0.5")
-        : "h-8 w-8 shrink-0 rounded-lg border border-[#E4E4E7] bg-white object-contain p-0.5",
+          cn(portfolioTopbarLogoClass, "bg-surface object-contain p-0.5")
+        : "h-8 w-8 shrink-0 rounded-lg border border-stroke bg-surface object-contain p-0.5",
         className,
       )}
       onError={() => setFailed(true)}

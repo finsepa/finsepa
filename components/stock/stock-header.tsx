@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { LivePriceFlashWrap } from "@/components/chart/live-price-flash-wrap";
 import { isPositivePriceChange, reconcilePriceChangePair } from "@/lib/chart/reconcile-price-change";
@@ -8,7 +8,7 @@ import { useLivePriceFlash } from "@/lib/chart/use-live-price-flash";
 import { MobileAssetHeaderPrice } from "@/components/chart/mobile-asset-header-price";
 import { AssetPageHeaderActions } from "@/components/asset/asset-page-header-actions";
 import { useSetMobileAssetTopbarSubtitle } from "@/components/layout/mobile-asset-topbar-context";
-import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
+import { mergeLogoMemory } from "@/lib/logos/logo-memory";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import {
   getStockListingSubtitleParts,
@@ -20,6 +20,7 @@ import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours
 import { formatUsdCompact, formatUsdPrice, formatSignedUsdAmountGrouped2dp, formatSignedPercent2dp } from "@/lib/market/key-stats-basic-format";
 import { StockExtendedHoursPrice } from "@/components/stock/stock-extended-hours-price";
 import { ScreenerRankBadge } from "@/components/earnings/screener-rank-badge";
+import { CompanyLogo } from "@/components/screener/company-logo";
 
 type Props = {
   ticker: string;
@@ -106,13 +107,6 @@ export function StockHeader({
   const screenerRank = headerMeta?.screenerRank ?? null;
 
   const serverLogo = headerMeta?.logoUrl?.trim() || meta.logoUrl?.trim() || "";
-  const memLogo = readLogoMemory(symbol)?.trim() || "";
-
-  // Track failed logo per "current serverLogo" without needing reset effects.
-  const logoFailureKey = `${ticker}|${serverLogo}`;
-  const [imgFailedForKey, setImgFailedForKey] = useState<string | null>(null);
-  const imgFailed = imgFailedForKey === logoFailureKey;
-  const logoSrc = imgFailed ? "" : serverLogo || memLogo;
 
   useEffect(() => {
     if (serverLogo) mergeLogoMemory(symbol, serverLogo);
@@ -185,9 +179,9 @@ export function StockHeader({
   const mainPriceClass =
     headerChartMetric === "return" && !chartLoading && anim.price != null && hasChange
       ? isPositive
-        ? "text-[#16A34A]"
-        : "text-[#DC2626]"
-      : "text-[#141414]";
+        ? "text-up"
+        : "text-down"
+      : "text-fg";
 
   const listingSubtitle = getStockListingSubtitleParts({
     ticker: symbol,
@@ -207,23 +201,15 @@ export function StockHeader({
     line2Loading: topbarLine2Loading,
   });
 
-  const logoMark =
-    logoSrc ?
-      // eslint-disable-next-line @next/next/no-img-element -- remote favicon with onError fallback in-browser
-      <img
-        src={logoSrc}
-        alt=""
-        width={48}
-        height={48}
-        className={`h-12 w-12 shrink-0 rounded-2xl border border-neutral-200 bg-white object-contain shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]${symbol === "AAPL" ? " p-1.5" : ""}`}
-        onError={() => {
-          setImgFailedForKey(logoFailureKey);
-          mergeLogoMemory(symbol, null);
-        }}
-      />
-    : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#E4E4E7] bg-[#F4F4F5] text-[18px] font-bold text-[#141414] shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)]">
-        {meta.ticker.slice(0, 1)}
-      </div>;
+  const logoMark = (
+    <CompanyLogo
+      name={titleName}
+      logoUrl={serverLogo}
+      symbol={symbol}
+      size="lg"
+      className="rounded-2xl shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]"
+    />
+  );
 
   const priceMotionClass = `transition-[transform,opacity] duration-200 ease-out ${
     chartHovering ? "translate-y-px" : ""
@@ -242,7 +228,7 @@ export function StockHeader({
             })()
           : formatUsdPrice(anim.price);
 
-  const periodLabelClass = "text-[13px] text-[#5C5D5F]";
+  const periodLabelClass = "text-[13px] text-fg-muted";
   const desktopPeriodLabel = periodLabelOverride ?? periodLabel;
   const mobilePeriodLabel =
     chartHovering && scrubPeriodLabel?.trim() ? scrubPeriodLabel.trim() : desktopPeriodLabel;
@@ -263,13 +249,13 @@ export function StockHeader({
     !hasChange || anim.pct == null ? null : `(${formatSignedPercent2dp(anim.pct)})`;
 
   const periodChangeClass = `text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
-    hasChange ? (isPositive ? "text-[#16A34A]" : "text-[#DC2626]") : "text-[#5C5D5F]"
+    hasChange ? (isPositive ? "text-up" : "text-down") : "text-fg-muted"
   }`;
 
   const inlinePeriodChange = showPeriodChange ? (
     changePending ? (
       <div
-        className="h-5 w-[8rem] shrink-0 rounded-md bg-neutral-200/80 animate-pulse"
+        className="h-5 w-[8rem] shrink-0 rounded-md bg-skeleton animate-pulse"
         aria-busy="true"
         aria-label="Loading price change"
       />
@@ -301,7 +287,7 @@ export function StockHeader({
           </span>
           <span
             className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
-              isSelPositive ? "text-[#16A34A]" : "text-[#DC2626]"
+              isSelPositive ? "text-up" : "text-down"
             }`}
           >
             {formatHeaderChangePair(selectionChangeAbs!, selectionChangePct!, headerChartMetric)}
@@ -322,13 +308,13 @@ export function StockHeader({
   const priceLoadingSkeleton = (
     <div className="space-y-1" aria-busy="true" aria-label="Loading chart value">
       <div className="flex flex-wrap items-baseline gap-3">
-        <div className="h-9 w-[7.5rem] rounded-md bg-neutral-200/80 animate-pulse" aria-hidden />
+        <div className="h-9 w-[7.5rem] rounded-md bg-skeleton animate-pulse" aria-hidden />
         {showPeriodChange ? (
-          <div className="h-5 w-[8rem] rounded-md bg-neutral-200/80 animate-pulse" aria-hidden />
+          <div className="h-5 w-[8rem] rounded-md bg-skeleton animate-pulse" aria-hidden />
         ) : null}
       </div>
       {showPeriodChange ? (
-        <div className="h-4 w-[14rem] rounded-md bg-neutral-200/80 animate-pulse" aria-hidden />
+        <div className="h-4 w-[14rem] rounded-md bg-skeleton animate-pulse" aria-hidden />
       ) : null}
     </div>
   );
@@ -381,7 +367,7 @@ export function StockHeader({
     <>
       <div className="flex items-start justify-between gap-3 md:hidden">
         <div className={`min-w-0 flex-1 space-y-0.5 ${priceMotionClass}`}>
-          <h1 className="truncate text-[16px] font-medium leading-5 text-[#141414]">
+          <h1 className="truncate text-[16px] font-medium leading-5 text-fg">
             <span className="inline-flex min-w-0 max-w-full items-center gap-2">
               <span className="truncate">{titleName}</span>
               {screenerRank != null ? <ScreenerRankBadge rank={screenerRank} size="sm" /> : null}
@@ -406,7 +392,7 @@ export function StockHeader({
           <div className="flex min-w-0 flex-1 items-center gap-4">
             {logoMark}
             <div className="min-w-0">
-              <h1 className="text-[20px] font-semibold leading-7 text-[#141414]">
+              <h1 className="text-[20px] font-semibold leading-7 text-fg">
                 <span className="inline-flex min-w-0 max-w-full flex-wrap items-center gap-2">
                   <span className="[display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden break-words">
                     {titleName}
@@ -415,9 +401,9 @@ export function StockHeader({
                 </span>
               </h1>
               {headerMetaLoading ? (
-                <div className="mt-0.5 h-4 w-24 rounded bg-neutral-200/80 animate-pulse" aria-hidden />
+                <div className="mt-0.5 h-4 w-24 rounded bg-skeleton animate-pulse" aria-hidden />
               ) : (
-                <p className="mt-0.5 text-[13px] leading-5 text-[#5C5D5F]">
+                <p className="mt-0.5 text-[13px] leading-5 text-fg-muted">
                   {listingSubtitle.ticker}
                   {listingSubtitle.exchange ? <> · {listingSubtitle.exchange}</> : null}
                   {listingSubtitle.countryFlag ? (

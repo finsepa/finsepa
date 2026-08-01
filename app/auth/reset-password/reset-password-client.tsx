@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { AuthCenteredLayout } from "@/components/auth/auth-centered-layout";
-import { AuthLabel, AuthPrimaryButton } from "@/components/auth/auth-form-ui";
+import {
+  AuthLabel,
+  AuthPrimaryButton,
+  authAlertBannerClassName,
+} from "@/components/auth/auth-form-ui";
 import { AuthPasswordInput } from "@/components/auth/auth-password-input";
+import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
 import {
   establishAuthSessionFromCurrentUrl,
   replaceUrlPathOnly,
@@ -139,17 +144,16 @@ export function ResetPasswordClient({ hasRecoveryToken = false }: ResetPasswordC
         split={false}
         title="Link invalid or expired"
         subtitle="Request a new reset link to continue."
+        preCard={
+          <div role="alert" className={`${authAlertBannerClassName} leading-6`}>
+            This reset link may have expired. Please start the process again.
+          </div>
+        }
       >
-        <div
-          role="alert"
-          className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-6 text-[#B91C1C]"
-        >
-          This reset link may have expired. Please start the process again.
-        </div>
-        <div className="mt-6 text-center">
+        <div className="text-center">
           <Link
             href="/forgot-password"
-            className="text-sm font-semibold text-[#141414] underline decoration-[#E4E4E7] underline-offset-4 transition-colors hover:decoration-[#A1A1AA]"
+            className="text-sm font-semibold text-fg underline decoration-stroke underline-offset-4 transition-colors hover:decoration-fg-subtle"
           >
             Back to forgot password
           </Link>
@@ -159,59 +163,104 @@ export function ResetPasswordClient({ hasRecoveryToken = false }: ResetPasswordC
   }
 
   return (
-    <AuthCenteredLayout split={false} title="Set a new password" subtitle="Choose a new password for your account.">
-      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-        {isVerifying ? (
-          <div className="flex justify-center py-1" role="status" aria-label="Confirming your reset link">
-            <Spinner className="size-6 text-[#141414]" />
-          </div>
-        ) : null}
-
-        {errorMessage ? (
-          <div
-            role="alert"
-            className="rounded-[10px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-sm leading-5 text-[#B91C1C]"
-          >
-            {errorMessage}
-          </div>
-        ) : null}
-
-        <div>
-          <AuthLabel>New password</AuthLabel>
-          <AuthPasswordInput
-            name="password"
-            autoComplete="new-password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              if (errorMessage) setErrorMessage(null);
-            }}
-            minLength={MIN_PASSWORD_LEN}
-            disabled={loading || !sessionReady}
-          />
-        </div>
-
-        <div>
-          <AuthLabel>Confirm new password</AuthLabel>
-          <AuthPasswordInput
-            name="confirmPassword"
-            autoComplete="new-password"
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(e) => {
-              setConfirmPassword(e.target.value);
-              if (errorMessage) setErrorMessage(null);
-            }}
-            minLength={MIN_PASSWORD_LEN}
-            disabled={loading || !sessionReady}
-          />
-        </div>
-
-        <AuthPrimaryButton type="submit" disabled={!formCanSubmit}>
-          {loading ? <SpinnerLabel>Updating…</SpinnerLabel> : "Update password"}
-        </AuthPrimaryButton>
-      </form>
+    <AuthCenteredLayout
+      split={false}
+      title="Set a new password"
+      subtitle="Choose a new password for your account."
+    >
+      <ResetPasswordFormBody
+        errorMessage={errorMessage}
+        isVerifying={isVerifying}
+        password={password}
+        confirmPassword={confirmPassword}
+        loading={loading}
+        sessionReady={sessionReady}
+        formCanSubmit={formCanSubmit}
+        onPasswordChange={(value) => {
+          setPassword(value);
+          if (errorMessage) setErrorMessage(null);
+        }}
+        onConfirmChange={(value) => {
+          setConfirmPassword(value);
+          if (errorMessage) setErrorMessage(null);
+        }}
+        onSubmit={handleSubmit}
+      />
     </AuthCenteredLayout>
+  );
+}
+
+function ResetPasswordFormBody({
+  errorMessage,
+  isVerifying,
+  password,
+  confirmPassword,
+  loading,
+  sessionReady,
+  formCanSubmit,
+  onPasswordChange,
+  onConfirmChange,
+  onSubmit,
+}: {
+  errorMessage: string | null;
+  isVerifying: boolean;
+  password: string;
+  confirmPassword: string;
+  loading: boolean;
+  sessionReady: boolean;
+  formCanSubmit: boolean;
+  onPasswordChange: (value: string) => void;
+  onConfirmChange: (value: string) => void;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+}) {
+  const preCardBanner = useMemo(() => {
+    if (!errorMessage) return null;
+    return (
+      <div role="alert" className={authAlertBannerClassName}>
+        {errorMessage}
+      </div>
+    );
+  }, [errorMessage]);
+
+  useAuthPreCardBanner(preCardBanner);
+
+  return (
+    <form className="space-y-4" onSubmit={onSubmit} noValidate>
+      {isVerifying ? (
+        <div className="flex justify-center py-1" role="status" aria-label="Confirming your reset link">
+          <Spinner className="size-6 text-fg" />
+        </div>
+      ) : null}
+
+      <div>
+        <AuthLabel>New password</AuthLabel>
+        <AuthPasswordInput
+          name="password"
+          autoComplete="new-password"
+          placeholder="••••••••"
+          value={password}
+          onChange={(e) => onPasswordChange(e.target.value)}
+          minLength={MIN_PASSWORD_LEN}
+          disabled={loading || !sessionReady}
+        />
+      </div>
+
+      <div>
+        <AuthLabel>Confirm new password</AuthLabel>
+        <AuthPasswordInput
+          name="confirmPassword"
+          autoComplete="new-password"
+          placeholder="••••••••"
+          value={confirmPassword}
+          onChange={(e) => onConfirmChange(e.target.value)}
+          minLength={MIN_PASSWORD_LEN}
+          disabled={loading || !sessionReady}
+        />
+      </div>
+
+      <AuthPrimaryButton type="submit" disabled={!formCanSubmit}>
+        {loading ? <SpinnerLabel>Updating…</SpinnerLabel> : "Update password"}
+      </AuthPrimaryButton>
+    </form>
   );
 }

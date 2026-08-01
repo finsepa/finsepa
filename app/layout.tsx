@@ -5,6 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { SupabaseBrowserEnvProvider } from "@/components/supabase/supabase-browser-env-provider";
 import { AuthTokenLandingBootstrap } from "@/components/auth/auth-token-landing-bootstrap";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 import { ModalStackProvider } from "@/components/ui/modal-stack-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -33,7 +34,7 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#E4E4E7" },
-    { media: "(prefers-color-scheme: dark)", color: "#E4E4E7" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
 };
 
@@ -46,13 +47,15 @@ export default function RootLayout({
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col">
-        <SupabaseBrowserEnvProvider url={supabaseUrl} anonKey={supabaseAnonKey}>
-          <AuthTokenLandingBootstrap />
-          <ModalStackProvider>{children}</ModalStackProvider>
-        </SupabaseBrowserEnvProvider>
-        <Toaster position="top-center" closeButton />
+        <ThemeProvider>
+          <SupabaseBrowserEnvProvider url={supabaseUrl} anonKey={supabaseAnonKey}>
+            <AuthTokenLandingBootstrap />
+            <ModalStackProvider>{children}</ModalStackProvider>
+          </SupabaseBrowserEnvProvider>
+          <Toaster position="top-center" closeButton />
+        </ThemeProvider>
         <Analytics />
         <SpeedInsights />
       </body>

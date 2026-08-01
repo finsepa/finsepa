@@ -11,7 +11,7 @@ import {
 } from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
 
-const pulse = "animate-pulse rounded-md bg-neutral-200/80";
+const pulse = "animate-pulse rounded-md bg-skeleton";
 
 const colLayout =
   "grid w-full min-w-0 grid-cols-[40px_48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-2";
@@ -80,7 +80,7 @@ export function SuperinvestorsFundTableSkeleton({ rows = 12 }: { rows?: number }
           <div
             className={cn(
               mobileColLayout,
-              "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:hidden",
+              "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted sm:hidden",
             )}
           >
             <div>Fund</div>
@@ -89,7 +89,7 @@ export function SuperinvestorsFundTableSkeleton({ rows = 12 }: { rows?: number }
           <div
             className={cn(
               colLayout,
-              "hidden min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:grid",
+              "hidden min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted sm:grid",
             )}
           >
             <div aria-hidden />

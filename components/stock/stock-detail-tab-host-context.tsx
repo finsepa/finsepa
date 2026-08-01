@@ -4,7 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
+  useLayoutEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -55,5 +55,10 @@ export function useRegisterStockDetailTabHost(
 ): void {
   const { register } = useStockDetailTabHost();
 
-  useEffect(() => register({ activeTab, setActiveTab, isEtf }), [register, activeTab, setActiveTab, isEtf]);
+  // Layout effect so optimistic `displayTab` reaches rail/tab consumers before paint
+  // (URL `?tab=` still updates inside `startTransition` and can lag).
+  useLayoutEffect(
+    () => register({ activeTab, setActiveTab, isEtf }),
+    [register, activeTab, setActiveTab, isEtf],
+  );
 }

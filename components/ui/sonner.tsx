@@ -1,45 +1,62 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import type { ComponentProps, CSSProperties } from "react";
+import { useTheme } from "next-themes";
+import { dropdownMenuElevationImportantClass } from "@/components/design-system/dropdown-menu-styles";
 import { CircleCheck } from "@/lib/icons";
+import { cn } from "@/lib/utils";
 import { Toaster as Sonner } from "sonner";
 
 import "sonner/dist/styles.css";
 
 type ToasterProps = ComponentProps<typeof Sonner>;
 
-/** Matches positive P/L green (`text-[#16A34A]`) used across portfolio and markets tables. */
+/** Matches positive P/L green (`text-up`) used across portfolio and markets tables. */
 const successToastIcon = (
-  <CircleCheck className="size-4 shrink-0 text-[#16A34A]" strokeWidth={2} aria-hidden />
+  <CircleCheck className="size-4 shrink-0 text-up" strokeWidth={2} aria-hidden />
 );
+
+/** Dropdown-matched surface tokens for Sonner CSS variables. */
+const toastSurfaceStyle = {
+  "--border-radius": "16px",
+  "--normal-bg": "var(--fs-surface)",
+  "--normal-bg-hover": "var(--fs-surface-muted)",
+  "--normal-border": "var(--fs-stroke)",
+  "--normal-border-hover": "var(--fs-stroke)",
+  "--normal-text": "var(--fs-fg)",
+  "--toast-close-button-start": "unset",
+  "--toast-close-button-end": "12px",
+  "--toast-close-button-transform": "none",
+} as CSSProperties;
 
 /** Sonner — see https://ui.shadcn.com/docs/components/radix/sonner */
 export function Toaster({ ...props }: ToasterProps) {
+  const { resolvedTheme } = useTheme();
+
   return (
     <Sonner
-      theme="light"
-      className={[
-        "toaster group",
-        "[&_[data-sonner-toaster]]:z-[300]",
-        "[&_[data-sonner-toaster]]:[--toast-close-button-start:unset]",
-        "[&_[data-sonner-toaster]]:[--toast-close-button-end:12px]",
-        "[&_[data-sonner-toaster]]:[--toast-close-button-transform:none]",
-      ].join(" ")}
+      theme={resolvedTheme === "dark" ? "dark" : "light"}
+      className={cn("toaster group", "z-[300]")}
+      style={toastSurfaceStyle}
       icons={{ success: successToastIcon }}
       toastOptions={{
         classNames: {
-          toast:
-            "group-[.toaster]:relative group-[.toaster]:justify-start group-[.toaster]:text-left group-[.toaster]:rounded-xl group-[.toaster]:border group-[.toaster]:border-[#E4E4E7] group-[.toaster]:bg-white group-[.toaster]:px-5 group-[.toaster]:py-3.5 group-[.toaster]:pr-11 group-[.toaster]:text-[#141414] group-[.toaster]:shadow-[0px_10px_16px_-3px_rgba(10,10,10,0.1),0px_4px_6px_0px_rgba(10,10,10,0.04)]",
-          content: "group-[.toast]:items-center group-[.toast]:text-left",
-          title:
-            "group-[.toast]:text-left group-[.toast]:text-[#141414] group-[.toast]:text-sm group-[.toast]:font-semibold",
-          description: "group-[.toast]:text-left group-[.toast]:text-[#5C5D5F] group-[.toast]:text-sm",
-          icon: "group-[.toast]:!mx-0 group-[.toast]:!mr-2",
+          toast: cn(
+            "group toast",
+            "relative !items-start justify-start text-left",
+            "rounded-2xl !border !border-stroke !bg-surface !text-fg",
+            "px-5 py-3.5 pr-11",
+            dropdownMenuElevationImportantClass,
+          ),
+          content: "items-start text-left",
+          title: "text-left text-sm font-semibold text-fg",
+          description: "text-left text-sm text-fg-muted",
+          icon: "!mx-0 !mr-2 !mt-0.5 !self-start",
           closeButton:
-            "group-[.toast]:!left-auto group-[.toast]:!right-3 group-[.toast]:!top-3 group-[.toast]:!translate-y-0 group-[.toast]:!border-[#E4E4E7] group-[.toast]:!bg-white group-[.toast]:!text-[#5C5D5F] group-[.toast]:hover:!border-[#D4D4D8] group-[.toast]:hover:!bg-[#F4F4F5] group-[.toast]:hover:!text-[#141414]",
+            "!left-auto !right-3 !top-3 !translate-y-0 !border-stroke !bg-surface !text-fg-muted opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:!border-stroke hover:!bg-surface-muted hover:!text-fg",
           actionButton:
-            "group-[.toast]:!rounded-lg group-[.toast]:!bg-[#141414] group-[.toast]:!px-3 group-[.toast]:!py-1.5 group-[.toast]:!text-sm group-[.toast]:!font-medium group-[.toast]:!text-white",
-          cancelButton: "group-[.toast]:!rounded-lg group-[.toast]:!text-sm group-[.toast]:!text-[#5C5D5F]",
+            "!rounded-lg !bg-fg !px-3 !py-1.5 !text-sm !font-medium !text-surface",
+          cancelButton: "!rounded-lg !text-sm !text-fg-muted",
         },
       }}
       {...props}

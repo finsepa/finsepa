@@ -91,7 +91,7 @@ export function TurnstileField({
 
   if (loadError) {
     return (
-      <p className="text-sm leading-5 text-[#B91C1C]" role="alert">
+      <p className="text-sm leading-5 text-down" role="alert">
         Security check failed to load. Refresh the page and try again.
       </p>
     );

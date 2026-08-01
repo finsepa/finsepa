@@ -114,17 +114,17 @@ function formatSignedPct(n: number): string {
 }
 
 function sumColorClass(sum: number): string {
-  if (sum > 0) return "text-[#16A34A]";
-  if (sum < 0) return "text-[#DC2626]";
-  return "text-[#141414]";
+  if (sum > 0) return "text-up";
+  if (sum < 0) return "text-down";
+  return "text-fg";
 }
 
 function opColorClass(operation: string): string {
   const u = operation.toLowerCase();
-  if (u.includes("sell") || u.includes("cash out")) return "text-[#DC2626]";
-  if (u.includes("expense") || u.includes("fees") || u.includes("brokerage fee")) return "text-[#DC2626]";
-  if (u.includes("buy") || u.includes("cash in") || u.includes("other income")) return "text-[#16A34A]";
-  return "text-[#141414]";
+  if (u.includes("sell") || u.includes("cash out")) return "text-down";
+  if (u.includes("expense") || u.includes("fees") || u.includes("brokerage fee")) return "text-down";
+  if (u.includes("buy") || u.includes("cash in") || u.includes("other income")) return "text-up";
+  return "text-fg";
 }
 
 function transactionMatchesAssetSearch(t: PortfolioTransaction, query: string): boolean {
@@ -157,10 +157,10 @@ function TxBulkCheckbox({
     <label
       className={cn(
         "relative flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-[4px] border transition-colors",
-        "focus-within:outline-none focus-within:ring-2 focus-within:ring-[#2563EB]/30 focus-within:ring-offset-2",
+        "focus-within:outline-none focus-within:ring-2 focus-within:ring-accent/30 focus-within:ring-offset-2",
         on
-          ? "border-[#2563EB] bg-[#2563EB] hover:bg-[#1D4ED8]"
-          : "border-[#E4E4E7] bg-white hover:bg-[#F4F4F5]",
+          ? "border-accent bg-accent hover:bg-accent-hover"
+          : "border-stroke bg-surface hover:bg-surface-muted",
       )}
     >
       <input
@@ -354,10 +354,10 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
   return (
     <div>
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <h2 className="hidden text-lg font-semibold leading-7 text-[#141414] sm:block">Transactions</h2>
+        <h2 className="hidden text-lg font-semibold leading-7 text-fg sm:block">Transactions</h2>
         {showBulkBar ? (
           <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-3 sm:w-auto">
-            <span className="text-sm font-medium leading-5 text-[#5C5D5F]">
+            <span className="text-sm font-medium leading-5 text-fg-muted">
               {selectedCount === 1 ? "1 selected" : `${selectedCount} selected`}
             </span>
             <button
@@ -366,7 +366,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                 setOpenMenuId(null);
                 setBulkDeleteIds(new Set(selectedIds));
               }}
-              className="h-9 shrink-0 rounded-[10px] bg-[#DC2626] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#B91C1C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DC2626]/40 focus-visible:ring-offset-2"
+              className="h-9 shrink-0 rounded-[10px] bg-down px-4 text-sm font-semibold text-white transition-colors hover:bg-down focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-down/40 focus-visible:ring-offset-2"
             >
               Delete
             </button>
@@ -375,7 +375,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
           <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             <div className="relative min-w-[200px] max-w-full flex-1 sm:w-[260px] sm:flex-none">
               <Search
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5C5D5F]"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
                 strokeWidth={1.5}
                 aria-hidden
               />
@@ -387,14 +387,14 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                 value={txSearch}
                 onChange={(e) => setTxSearch(e.target.value)}
                 placeholder="Type to search..."
-                className="h-9 w-full rounded-[10px] border-0 bg-[#F4F4F5] py-2 pl-9 pr-9 text-sm text-[#141414] placeholder:text-[#5C5D5F] outline-none focus:ring-2 focus:ring-[#141414]/10"
+                className="h-9 w-full rounded-[10px] border-0 bg-surface-muted py-2 pl-9 pr-9 text-sm text-fg placeholder:text-fg-muted outline-none focus:ring-2 focus:ring-fg/10"
                 aria-label="Search transactions by asset name or ticker"
               />
               {txSearch ? (
                 <button
                   type="button"
                   onClick={() => setTxSearch("")}
-                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-[#5C5D5F] transition-colors hover:bg-[#EBEBEB] hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10"
+                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
                   aria-label="Clear search"
                 >
                   <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />
@@ -408,7 +408,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                   <button
                     type="button"
                     aria-label="Transaction filters"
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F4F5] text-[#141414] transition-colors duration-100 hover:bg-[#E4E4E7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-muted text-fg transition-colors duration-100 hover:bg-stroke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
                   >
                     <Filter className="h-4 w-4 opacity-90" aria-hidden />
                   </button>
@@ -431,7 +431,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                         >
                           <span className="min-w-0 flex-1 truncate text-left">{f}</span>
                           <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
-                            {selected ? <Check className="h-4 w-4 text-[#141414]" strokeWidth={2} /> : null}
+                            {selected ? <Check className="h-4 w-4 text-fg" strokeWidth={2} /> : null}
                           </span>
                         </button>
                       );
@@ -457,13 +457,13 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
           </EmptyHeader>
         </Empty>
       ) : filtered.length === 0 ? (
-        <p className="py-8 text-center text-sm text-[#5C5D5F]">
+        <p className="py-8 text-center text-sm text-fg-muted">
           {txSearch.trim() ? "No transactions match your search." : "No transactions in this category."}
         </p>
       ) : (
         <div className="w-full min-w-0">
           <ScreenerTableScroll minWidthClassName="min-w-0 sm:min-w-[960px]">
-            <div className="bg-white">
+            <div className="bg-surface">
               <div
                 className={cn(
                   SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -476,7 +476,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                   <div
                     className={cn(
                       transactionTableGrid(selectedPortfolioReadOnly),
-                      "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                      "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
                     )}
                   >
                     {!selectedPortfolioReadOnly ? (
@@ -510,7 +510,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                       <button
                         type="button"
                         onClick={() => setDateDesc((v) => !v)}
-                        className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15"
+                        className="inline-flex items-center gap-1 rounded-md transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
                         aria-label={dateDesc ? "Sort date oldest first" : "Sort date newest first"}
                       >
                         Date
@@ -548,9 +548,9 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
 
               {grouped.map((g) => (
                 <Fragment key={g.key}>
-                  <div className="bg-[#FAFAFA]">
+                  <div className="bg-canvas">
                     <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, "py-2.5 md:pl-5")}>
-                      <span className="text-[14px] font-semibold leading-5 text-[#5C5D5F]">{g.label}</span>
+                      <span className="text-[14px] font-semibold leading-5 text-fg-muted">{g.label}</span>
                     </div>
                   </div>
                   {g.rows.map((t, rowIndex) => (
@@ -601,10 +601,10 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                                 >
                                   {t.operation}
                                 </div>
-                                <div className="hidden truncate text-[14px] font-semibold leading-5 text-[#141414] sm:block">
+                                <div className="hidden truncate text-[14px] font-semibold leading-5 text-fg sm:block">
                                   {t.name}
                                 </div>
-                                <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                                <div className="text-[12px] font-normal leading-4 text-fg-muted">
                                   {portfolioAssetSymbolCaption(t.symbol)}
                                 </div>
                               </div>
@@ -612,7 +612,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                           </div>
                           {/* Mobile: right cell = date + amount */}
                           <div className="text-right align-middle sm:hidden">
-                            <div className="font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]">
+                            <div className="font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg">
                               {format(parseISO(t.date), "MMM d, yyyy")}
                             </div>
                             <div
@@ -636,7 +636,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                           </div>
                           <div
                             className={cn(
-                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] align-middle sm:block",
+                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg align-middle sm:block",
                               TABLE_END_ALIGNED_PAD_CLASS,
                             )}
                           >
@@ -644,7 +644,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                           </div>
                           <div
                             className={cn(
-                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] align-middle sm:block",
+                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg align-middle sm:block",
                               TABLE_END_ALIGNED_PAD_CLASS,
                             )}
                           >
@@ -654,7 +654,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                           </div>
                           <div
                             className={cn(
-                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] align-middle sm:block",
+                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg align-middle sm:block",
                               TABLE_END_ALIGNED_PAD_CLASS,
                             )}
                           >
@@ -662,7 +662,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                           </div>
                           <div
                             className={cn(
-                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414] align-middle sm:block",
+                              "hidden text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg align-middle sm:block",
                               TABLE_END_ALIGNED_PAD_CLASS,
                             )}
                           >
@@ -687,7 +687,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                               <div
                                 className={cn(
                                   "flex flex-col items-end tabular-nums",
-                                  t.profitUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                                  t.profitUsd >= 0 ? "text-up" : "text-down",
                                 )}
                               >
                                 <div className="text-[14px] font-medium leading-5">
@@ -698,7 +698,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-[14px] font-medium text-[#5C5D5F]">-</span>
+                              <span className="text-[14px] font-medium text-fg-muted">-</span>
                             )}
                           </div>
                           {!selectedPortfolioReadOnly ? (

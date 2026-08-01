@@ -53,7 +53,7 @@ export function MobileStockTopbarTabs() {
         active={activeTab}
         onChange={onChange}
         ariaLabel="Stock sections"
-        className="mb-0 border-b border-solid border-[#E4E4E7] md:mb-0"
+        className="mb-0 border-b border-solid border-stroke-subtle md:mb-0"
       />
     </div>
   );

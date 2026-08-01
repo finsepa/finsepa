@@ -23,22 +23,23 @@ import {
   createCombinedPortfolioMenuIconAnimation,
   createPortfolioMenuIconAnimation,
 } from "@/lib/lottie/portfolio-menu-animations";
+import { dropdownTriggerFieldClassName } from "@/components/design-system/text-input-styles";
 import { cn } from "@/lib/utils";
 
 function PrivacyGlyph({ privacy }: { privacy: PortfolioPrivacy }) {
   const Icon = privacy === "public" ? Globe : Lock;
-  return <Icon className="h-4 w-4 shrink-0 text-[#141414]" strokeWidth={2} aria-hidden />;
+  return <Icon className="h-4 w-4 shrink-0 text-fg" strokeWidth={2} aria-hidden />;
 }
 
 type Variant = "field" | "compact" | "toolbar" | "titleGhost";
 
 const toolbarTriggerClass = cn(
-  "inline-flex h-9 max-w-[min(52vw,220px)] shrink-0 cursor-pointer items-center gap-2 rounded-[10px] px-3 text-left text-sm font-medium text-[#141414] transition-all duration-100 hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40",
+  "inline-flex h-9 max-w-[min(52vw,220px)] shrink-0 cursor-pointer items-center gap-2 rounded-[10px] px-3 text-left text-sm font-medium text-fg transition-all duration-100 hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40",
   whiteSurfaceButtonChromeClass,
 );
 
 const titleGhostTriggerClass =
-  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#5C5D5F] transition-colors hover:bg-[#F4F4F5] hover:text-[#141414] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 /** `leading`: menu grows right (portfolio title). `trailing`: menu aligns to trigger’s right edge (top bar). */
 export type CompactMenuAlign = "leading" | "trailing";
@@ -111,16 +112,13 @@ export function TransactionPortfolioField({
     else chevronsRef.current?.stopAnimation();
   }, [open]);
 
-  const chevronClass = cn(
-    "shrink-0",
-    variant === "toolbar" ? "h-4 w-4 text-[#141414]" : "h-5 w-5",
-    variant !== "titleGhost" && "text-[#141414]",
-  );
+  const chevronClass =
+    variant === "toolbar" ? "h-4 w-4 shrink-0 text-icon" : "h-5 w-5 shrink-0 text-icon";
 
   const menuPanel = (
     <>
       {portfolios.length > 0 ? (
-        <div className="px-3 py-1.5 text-xs font-medium leading-4 text-[#5C5D5F]">My portfolios</div>
+        <div className="px-3 py-1.5 text-xs font-medium leading-4 text-fg-muted">My portfolios</div>
       ) : null}
       {portfolios.map((p) => (
         <div
@@ -128,7 +126,7 @@ export function TransactionPortfolioField({
           className={cn(
             dropdownMenuCompositeRowClassName,
             "group",
-            p.id === selectedPortfolioId && "bg-[#F4F4F5]",
+            p.id === selectedPortfolioId && "bg-surface-muted",
           )}
         >
           <button
@@ -145,21 +143,21 @@ export function TransactionPortfolioField({
           >
             <PortfolioListLogo portfolio={p} />
             <span className="flex min-w-0 flex-1 flex-col items-start gap-0">
-              <span className="w-full truncate text-sm font-medium leading-5 text-[#141414]">{p.name}</span>
-              <span className="text-xs leading-4 text-[#5C5D5F]">{portfolioKindSubtext(p)}</span>
+              <span className="w-full truncate text-sm font-medium leading-5 text-fg">{p.name}</span>
+              <span className="text-xs leading-4 text-fg-muted">{portfolioKindSubtext(p)}</span>
             </span>
           </button>
           {portfoliosOnly ? (
             <span className="flex h-4 w-4 shrink-0 items-center justify-center self-center" aria-hidden>
               {p.id === selectedPortfolioId ? (
-                <Check className="h-4 w-4 text-[#141414]" strokeWidth={2} />
+                <Check className="h-4 w-4 text-fg" strokeWidth={2} />
               ) : null}
             </span>
           ) : (
             <span className="relative mr-1 flex h-9 w-9 shrink-0 items-center justify-center self-center">
               {p.id === selectedPortfolioId ? (
                 <Check
-                  className="h-4 w-4 text-[#141414] group-hover:invisible group-focus-within:invisible"
+                  className="h-4 w-4 text-fg group-hover:invisible group-focus-within:invisible"
                   strokeWidth={2}
                   aria-hidden
                 />
@@ -171,7 +169,7 @@ export function TransactionPortfolioField({
                   setOpen(false);
                   openEditPortfolio(p.id);
                 }}
-                className="absolute inset-0 flex items-center justify-center rounded-lg text-[#141414] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-[#EBEBEB] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10"
+                className="absolute inset-0 flex items-center justify-center rounded-lg text-fg opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-surface-hover focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
                 aria-label={`Edit ${p.name}`}
               >
                 <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -185,7 +183,7 @@ export function TransactionPortfolioField({
           <div
             role="separator"
             aria-hidden
-            className="-mx-1 my-0.5 h-px shrink-0 bg-[#E4E4E7]"
+            className="-mx-1 my-0.5 h-px shrink-0 bg-stroke"
           />
           <button
             type="button"
@@ -227,7 +225,7 @@ export function TransactionPortfolioField({
             className={cn(
               dropdownMenuPlainItemClassName(),
               !canCreateCombinedPortfolio &&
-                "cursor-not-allowed opacity-40 hover:bg-white disabled:pointer-events-none",
+                "cursor-not-allowed opacity-40 hover:bg-surface disabled:pointer-events-none",
             )}
           >
             <DropdownMenuLottieIcon
@@ -241,14 +239,14 @@ export function TransactionPortfolioField({
     </>
   );
 
+  // Stable class strings for topbar compact (avoids cn/twMerge SSR class-order mismatch).
+  const containerClassName =
+    variant === "compact" || variant === "toolbar" || variant === "titleGhost"
+      ? "relative flex shrink-0"
+      : "relative";
+
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        "relative",
-        (variant === "compact" || variant === "toolbar" || variant === "titleGhost") && "flex shrink-0",
-      )}
-    >
+    <div ref={containerRef} className={containerClassName}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -263,14 +261,14 @@ export function TransactionPortfolioField({
           : variant === "titleGhost" ?
             titleGhostTriggerClass
           : variant === "compact" ?
-            "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-[#141414] transition-colors hover:bg-[#F4F4F5] disabled:cursor-not-allowed disabled:opacity-50"
-          : "flex h-9 w-full items-center justify-between gap-2 rounded-[10px] bg-[#F1F1F2] px-3 text-left text-sm transition-colors hover:bg-[#E6E6E7]"
+            "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-icon transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+          : cn("flex w-full items-center justify-between gap-2 rounded-[10px] px-3 text-left text-sm", dropdownTriggerFieldClassName)
         }
       >
         {variant === "field" ? (
           <>
             <span
-              className={cn("min-w-0 truncate", hasPortfolio ? "text-[#141414]" : "text-[#5C5D5F]")}
+              className={cn("min-w-0 truncate", hasPortfolio ? "text-fg" : "text-fg-muted")}
             >
               {hasPortfolio ? selected.name : "No portfolio"}
             </span>
@@ -279,7 +277,7 @@ export function TransactionPortfolioField({
         ) : variant === "toolbar" ? (
           <>
             {hasPortfolio && selected ? <PrivacyGlyph privacy={selected.privacy} /> : null}
-            <span className={cn("min-w-0 flex-1 truncate", hasPortfolio ? "text-[#141414]" : "text-[#5C5D5F]")}>
+            <span className={cn("min-w-0 flex-1 truncate", hasPortfolio ? "text-fg" : "text-fg-muted")}>
               {hasPortfolio ? selected.name : "No portfolio"}
             </span>
             <ChevronsUpDownIcon ref={chevronsRef} className={chevronClass} />

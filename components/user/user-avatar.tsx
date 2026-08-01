@@ -11,24 +11,24 @@ type UserAvatarProps = {
 };
 
 const smShell =
-  "flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#141414] text-[11px] font-semibold text-white";
+  "flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-fg text-[11px] font-semibold text-white";
 /** Public portfolio cards — matches Figma avatar component (32×32). */
 const mdShell =
-  "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-[11px] font-semibold text-[#52525B]";
+  "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-[11px] font-semibold text-fg-muted";
 /** Topbar profile dropdown header — 40×40. */
 const menuShell =
-  "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-[13px] font-semibold text-[#52525B]";
+  "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-[13px] font-semibold text-fg-muted";
 /** `/portfolios` directory — 56×56 per design. */
 const portfoliosShell =
-  "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-lg font-semibold text-[#52525B] ring-1 ring-[#E4E4E7]";
+  "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-lg font-semibold text-fg-muted ring-1 ring-stroke";
 const lgShell =
-  "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-lg font-semibold text-[#52525B] ring-1 ring-[#E4E4E7]";
+  "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-lg font-semibold text-fg-muted ring-1 ring-stroke";
 /** Center of portfolio allocation donut — white ring reads on colored slices. */
 const xlShell =
-  "flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#F4F4F5] text-base font-semibold text-[#52525B] ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(10,10,10,0.08)]";
+  "flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-base font-semibold text-fg-muted ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-08))]";
 
 const proBadgeBySize: Record<UserAvatarSize, { shell: string; icon: string }> = {
-  /** Topbar trigger — keep black disc + white crown readable on 28px avatar. */
+  /** Topbar trigger — keep badge readable on 28px avatar. */
   sm: { shell: "h-4 w-4 -bottom-px -right-px", icon: "h-2.5 w-2.5" },
   md: { shell: "h-4 w-4 -bottom-px -right-px", icon: "h-2.5 w-2.5" },
   menu: { shell: "h-4 w-4 -bottom-px -right-px", icon: "h-2.5 w-2.5" },
@@ -37,15 +37,15 @@ const proBadgeBySize: Record<UserAvatarSize, { shell: string; icon: string }> = 
   xl: { shell: "h-4 w-4 bottom-0 right-0", icon: "h-2.5 w-2.5" },
 };
 
-/** Three-peak crown — sized to leave a clear black ring around the glyph (matches dropdown). */
+/** Three-peak crown — white on light badge; icon token on dark badge. */
 function ProCrownIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 12 12" className={className} aria-hidden>
       <path
-        fill="#fff"
+        fill="currentColor"
         d="M1.5 9.25V4.1l1.9 1.55L6 2.25l2.6 3.4 1.9-1.55v5.15H1.5Z"
       />
-      <path fill="#fff" d="M1.75 9.75h8.5V11h-8.5V9.75Z" />
+      <path fill="currentColor" d="M1.75 9.75h8.5V11h-8.5V9.75Z" />
     </svg>
   );
 }
@@ -76,7 +76,7 @@ export function UserAvatar({ imageSrc, initials, size, showProBadge = false }: U
     <span className="relative inline-flex shrink-0">
       {avatar}
       <span
-        className={`absolute z-[1] flex items-center justify-center overflow-hidden rounded-full bg-[#141414] ring-2 ring-white ${badge.shell}`}
+        className={`absolute z-[1] flex items-center justify-center overflow-hidden rounded-full bg-fg text-white ring-2 ring-white dark:border dark:border-stroke-muted dark:bg-surface dark:text-icon dark:ring-0 ${badge.shell}`}
         title="Pro"
         aria-label="Pro"
       >

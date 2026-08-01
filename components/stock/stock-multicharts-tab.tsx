@@ -340,7 +340,7 @@ export function StockMultichartsTab({
       {loading ? (
         <MultichartsTabSkeletonGrid />
       ) : !hasAny ? (
-        <p className="text-[14px] leading-6 text-[#5C5D5F]">No fundamentals data available for this symbol.</p>
+        <p className="text-[14px] leading-6 text-fg-muted">No fundamentals data available for this symbol.</p>
       ) : (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {metrics.map((metricId, idx) => (
@@ -440,14 +440,14 @@ function MultichartCard({
               {comparison != null && priorRow != null ? (
                 <span className="inline-flex items-center gap-1 font-['Inter'] text-[14px] font-medium tabular-nums leading-5">
                   {comparison.delta > 0 ? (
-                    <TrendingUp className="h-3.5 w-3.5 shrink-0 text-[#16A34A]" strokeWidth={2.25} aria-hidden />
+                    <TrendingUp className="h-3.5 w-3.5 shrink-0 text-up" strokeWidth={2.25} aria-hidden />
                   ) : comparison.delta < 0 ? (
-                    <TrendingDown className="h-3.5 w-3.5 shrink-0 text-[#DC2626]" strokeWidth={2.25} aria-hidden />
+                    <TrendingDown className="h-3.5 w-3.5 shrink-0 text-down" strokeWidth={2.25} aria-hidden />
                   ) : null}
-                  <span className={comparison.delta >= 0 ? "text-[#16A34A]" : "text-[#DC2626]"}>
+                  <span className={comparison.delta >= 0 ? "text-up" : "text-down"}>
                     {comparison.display}
                   </span>
-                  <span className="text-[#5C5D5F]">
+                  <span className="text-fg-muted">
                     vs {multichartPriorPeriodComparisonLabel(priorRow.periodEnd, periodMode)}
                   </span>
                 </span>
@@ -460,7 +460,7 @@ function MultichartCard({
             <button
               type="button"
               onClick={() => onOpenMetricChart(metricId)}
-              className="shrink-0 rounded-lg p-1.5 text-[#5C5D5F] outline-none transition-colors hover:bg-black/5 hover:text-[#141414] focus-visible:ring-2 focus-visible:ring-[#141414]/10"
+              className="shrink-0 rounded-lg p-1.5 text-fg-muted outline-none transition-colors hover:bg-black/5 hover:text-fg focus-visible:ring-2 focus-visible:ring-fg/10"
               aria-label={`Open ${metricLabel} in full view`}
             >
               <Maximize2 className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -469,14 +469,14 @@ function MultichartCard({
           <button
             type="button"
             onClick={onRemove}
-            className="shrink-0 rounded-lg p-1.5 text-[#5C5D5F] outline-none transition-colors hover:bg-black/5 hover:text-[#141414] focus-visible:ring-2 focus-visible:ring-[#141414]/10"
+            className="shrink-0 rounded-lg p-1.5 text-fg-muted outline-none transition-colors hover:bg-black/5 hover:text-fg focus-visible:ring-2 focus-visible:ring-fg/10"
             aria-label={`Remove ${metricLabel}`}
             title="Remove"
           >
             <Trash2 className="h-4 w-4" strokeWidth={2} aria-hidden />
           </button>
           <span
-            className="shrink-0 cursor-grab rounded-lg p-1.5 text-[#5C5D5F]"
+            className="shrink-0 cursor-grab rounded-lg p-1.5 text-fg-muted"
             title="Drag to reorder"
             aria-label="Drag to reorder"
           >
@@ -495,7 +495,7 @@ function MultichartCard({
           periodMode === "quarterly" ? MULTICHART_BAR_WIDTH_ALL_QUARTERLY_PX : undefined
         }
         showLinePointMarkers={chartVisual !== "line"}
-        plotBackgroundClass="bg-white"
+        plotBackgroundClass="bg-surface"
       />
     </div>
   );

@@ -33,7 +33,7 @@ function FundRowAvatar({ src, displayName }: { src: string | null | undefined; d
   if (!trimmed || failed) {
     return (
       <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#E4E4E7] bg-[#F4F4F5] text-[#5C5D5F]"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-stroke-muted bg-surface-muted text-fg-muted"
         aria-hidden
       >
         <UserRound className="h-5 w-5" strokeWidth={1.75} />
@@ -46,8 +46,8 @@ function FundRowAvatar({ src, displayName }: { src: string | null | undefined; d
   return (
     <span
       className={cn(
-        "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-[#E4E4E7] ring-1 ring-white",
-        darkTile ? "bg-[#141414]" : "bg-[#F4F4F5]",
+        "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-stroke-muted",
+        darkTile ? "bg-fg" : "bg-surface-muted",
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars */}
@@ -77,10 +77,10 @@ const mobileColLayout = "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(4.7
 const starToggleClassName =
   "hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3";
 
-const screenerTickerSublineClass = "text-[12px] font-normal leading-4 !text-[#5C5D5F]";
+const screenerTickerSublineClass = "text-[12px] font-normal leading-4 !text-fg-muted";
 
 const numericCellClass = cn(
-  "min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+  "min-w-0 text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
   TABLE_END_ALIGNED_PAD_CLASS,
 );
 
@@ -124,7 +124,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
           <div
             className={cn(
               mobileColLayout,
-              "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:hidden",
+              "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted sm:hidden",
             )}
           >
             <div className="min-w-0 text-left">Fund</div>
@@ -133,7 +133,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
           <div
             className={cn(
               colLayout,
-              "hidden min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-[#5C5D5F] sm:grid",
+              "hidden min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted sm:grid",
             )}
           >
             <div className="hidden sm:block" aria-hidden />
@@ -169,14 +169,14 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                 />
                 <Link
                   href={r.href}
-                  className="flex min-w-0 flex-1 items-start gap-3 text-[#141414] no-underline visited:text-[#141414]"
+                  className="flex min-w-0 flex-1 items-start gap-3 text-fg no-underline visited:text-fg"
                   aria-label={`Open ${r.displayName}`}
                 >
                   <div className="flex shrink-0 justify-center pt-0.5">
                     <FundRowAvatar src={r.avatarSrc} displayName={r.displayName} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-[3px] decoration-[#141414] group-hover/row:underline">
+                    <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-[3px] decoration-fg group-hover/row:underline">
                       {r.displayName}
                     </div>
                     <div className={screenerTickerSublineClass}>
@@ -208,7 +208,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                 href={r.href}
                 className={cn(
                   rowLinkGrid,
-                  "min-h-0 flex-1 items-center text-[#141414] no-underline visited:text-[#141414]",
+                  "min-h-0 flex-1 items-center text-fg no-underline visited:text-fg",
                 )}
                 aria-label={`Open ${r.displayName}`}
               >
@@ -217,7 +217,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                 </div>
 
                 <div className="min-w-0 text-left">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-[3px] decoration-[#141414] group-hover/row:underline">
+                  <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-[3px] decoration-fg group-hover/row:underline">
                     {r.displayName}
                   </div>
                 </div>

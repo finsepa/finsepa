@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, Check, ChevronDown } from "@/lib/icons";
 
@@ -43,11 +44,11 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { dropdownTriggerFieldClassName } from "@/components/design-system/text-input-styles";
 import { cn } from "@/lib/utils";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
 /** Figma Color/Blue/600 + Color/Orange/600 (Charting bar pair). */
-const DEPOSIT = "#2563EB";
 const WITHDRAWAL = "#EA580C";
 
 const CHART_TOTAL_HEIGHT_PX = 320;
@@ -348,7 +349,7 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
           <div ref={plotRef} className="relative min-h-0 min-w-0 flex-1 overflow-visible">
             <div
               className={cn(
-                "pointer-events-none absolute inset-x-0 z-0 bg-[#FCFCFD]",
+                "pointer-events-none absolute inset-x-0 z-0 bg-panel",
                 CHART_PLOT_BACKDROP_INSET_CLASS,
               )}
               aria-hidden
@@ -398,7 +399,7 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
                         height={Math.max(inH, 1)}
                         rx={2}
                         ry={2}
-                        fill={DEPOSIT}
+                        fill={resolveFsColor("--fs-accent")}
                       />
                     ) : null}
                     {outH > 0 ? (
@@ -434,12 +435,12 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
             {barValueLabels.map((b) => (
               <div
                 key={b.key}
-                className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-[#141414]"
+                className="pointer-events-none absolute z-[15] max-w-[5.5rem] truncate text-center text-[11px] font-semibold leading-none tabular-nums text-fg"
                 style={{
                   left: b.leftPx,
                   top: b.topPx,
                   transform: "translate(-50%, -100%)",
-                  textShadow: "0 0 3px rgba(255,255,255,0.95), 0 1px 2px rgba(255,255,255,0.8)",
+                  textShadow: "var(--fs-chart-value-label-shadow)",
                 }}
                 title={b.text}
               >
@@ -457,22 +458,22 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
                   transform: "translate(-50%, calc(-100% - 10px))",
                 }}
               >
-                <p className="text-[12px] font-semibold leading-4 text-[#141414]">{hoveredBucket.label}</p>
+                <p className="text-[12px] font-semibold leading-4 text-fg">{hoveredBucket.label}</p>
                 <div className="mt-1.5 space-y-0.5">
-                  <p className="text-[12px] leading-4 text-[#5C5D5F]">
-                    <span className="font-semibold" style={{ color: DEPOSIT }}>
+                  <p className="text-[12px] leading-4 text-fg-muted">
+                    <span className="font-semibold" style={{ color: resolveFsColor("--fs-accent") }}>
                       Deposits
                     </span>
-                    <span className="tabular-nums text-[#141414]">
+                    <span className="tabular-nums text-fg">
                       {" "}
                       {TOOLTIP_USD.format(hoveredBucket.inAmount)}
                     </span>
                   </p>
-                  <p className="text-[12px] leading-4 text-[#5C5D5F]">
+                  <p className="text-[12px] leading-4 text-fg-muted">
                     <span className="font-semibold" style={{ color: WITHDRAWAL }}>
                       Withdrawals
                     </span>
-                    <span className="tabular-nums text-[#141414]">
+                    <span className="tabular-nums text-fg">
                       {" "}
                       {TOOLTIP_USD.format(hoveredBucket.outAmount)}
                     </span>
@@ -484,7 +485,7 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
 
           <div
             className={cn(
-              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
+              "relative h-full shrink-0 text-right font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted",
               FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
             )}
             style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
@@ -494,7 +495,7 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
               {ticks.map((t) => (
                 <span
                   key={t}
-                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-0.5 py-px"
+                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-0.5 py-px"
                   style={{ top: `${tickTopPercent(t, yMax)}%` }}
                 >
                   {formatAxisUsd(t)}
@@ -520,7 +521,7 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
                   title={b.label}
                 >
                   <span
-                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]"
+                    className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]"
                     style={
                       rotateXLabels
                         ? {
@@ -576,7 +577,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
   return (
     <div className="mb-5">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="hidden text-2xl font-semibold leading-9 tracking-tight text-[#141414] sm:block">Cash</h2>
+        <h2 className="hidden text-2xl font-semibold leading-9 tracking-tight text-fg sm:block">Cash</h2>
         <div className="flex w-full min-w-0 flex-nowrap items-center gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3 md:flex-nowrap">
           {/* Web: compact range toggle (matches portfolio overview / charting). */}
           <SegmentedControl
@@ -595,10 +596,10 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
               aria-haspopup="listbox"
               aria-label="Cash chart time range"
               onClick={() => setRangeOpen((o) => !o)}
-              className="flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] bg-[#F4F4F5] px-4 text-left text-sm font-normal leading-5 text-[#141414] transition-colors hover:bg-[#EBEBEB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/10"
+              className={cn("flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] px-4 text-left text-sm font-normal leading-5 text-fg focus-visible:ring-2 focus-visible:ring-fg/10", dropdownTriggerFieldClassName, "bg-surface-muted")}
             >
               <span className="min-w-0 truncate">{rangeLabel}</span>
-              <ChevronDown className="h-5 w-5 shrink-0 text-[#141414]" aria-hidden />
+              <ChevronDown className="h-5 w-5 shrink-0 text-fg" aria-hidden />
             </button>
             {rangeOpen ? (
               <MobileBottomSheet
@@ -624,7 +625,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
                         <span className="min-w-0 flex-1 text-left">{o.label}</span>
                         <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
                           <Check
-                            className={cn("h-4 w-4 text-[#141414]", !selected && "invisible")}
+                            className={cn("h-4 w-4 text-fg", !selected && "invisible")}
                             strokeWidth={2}
                           />
                         </span>
@@ -659,7 +660,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
           </EmptyHeader>
         </Empty>
       ) : buckets.length === 0 ? (
-        <div className="flex min-h-[200px] items-center justify-center rounded-[12px] border border-[#E4E4E7] bg-white px-4 py-12 text-center text-sm text-[#5C5D5F]">
+        <div className="flex min-h-[200px] items-center justify-center rounded-[12px] border border-stroke bg-surface px-4 py-12 text-center text-sm text-fg-muted">
           No periods in this range yet.
         </div>
       ) : (
@@ -668,11 +669,11 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
             <CashInOutBarChartSvg buckets={buckets} granularity={granularity} />
           </div>
           {!hasAnyActivity ? (
-            <p className="text-center text-xs leading-4 text-[#5C5D5F]">No cash movements in this range.</p>
+            <p className="text-center text-xs leading-4 text-fg-muted">No cash movements in this range.</p>
           ) : null}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-[#5C5D5F]">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-medium text-fg-muted">
             <span className="inline-flex items-center gap-2">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: DEPOSIT }} aria-hidden />
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: resolveFsColor("--fs-accent") }} aria-hidden />
               Deposits
             </span>
             <span className="inline-flex items-center gap-2">

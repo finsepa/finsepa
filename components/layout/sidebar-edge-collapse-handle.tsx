@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ChevronLeft, ChevronRight } from "@/lib/icons";
+import { tooltipDwellSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import { useSidebarLayout } from "@/components/layout/sidebar-layout-context";
 import { cn } from "@/lib/utils";
 
@@ -90,7 +91,7 @@ export function SidebarEdgeCollapseHandle({
         aria-label={collapsed ? "Expand Menu" : "Collapse Menu"}
         className={cn(
           "absolute inset-0 cursor-pointer border-0 bg-transparent p-0 outline-none",
-          "focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-1",
+          "focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-1",
         )}
       >
         {/* Bar + chevron sit just inside the main panel, clear of the divider line */}
@@ -98,7 +99,7 @@ export function SidebarEdgeCollapseHandle({
           <span
             aria-hidden
             className={cn(
-              "absolute left-0 h-4 w-[3px] rounded-full bg-[#A1A1AA]",
+              "absolute left-0 h-4 w-[3px] rounded-full bg-fg-subtle",
               "transition-opacity duration-100 ease-out",
               active ? "opacity-0" : "opacity-100",
             )}
@@ -112,9 +113,9 @@ export function SidebarEdgeCollapseHandle({
             )}
           >
             {collapsed ? (
-              <ChevronRight className="size-4 text-[#52525B]" strokeWidth={2.5} />
+              <ChevronRight className="size-4 text-fg-muted" strokeWidth={2.5} />
             ) : (
-              <ChevronLeft className="size-4 text-[#52525B]" strokeWidth={2.5} />
+              <ChevronLeft className="size-4 text-fg-muted" strokeWidth={2.5} />
             )}
           </span>
         </span>
@@ -128,7 +129,7 @@ export function SidebarEdgeCollapseHandle({
           active ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
         )}
       >
-        <span className="whitespace-nowrap rounded-md bg-[#18181B] px-2 py-1 text-[12px] font-medium leading-4 text-white shadow-[0_4px_12px_rgba(0,0,0,0.18)]">
+        <span className={cn(tooltipDwellSurfaceClassName, "whitespace-nowrap text-[12px]")}>
           {label}
         </span>
       </span>

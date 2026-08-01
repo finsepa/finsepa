@@ -43,6 +43,7 @@ import {
   portfolioHoldingDisplayName,
   usePortfolioHoldingDisplayNames,
 } from "@/lib/portfolio/use-portfolio-holding-display-names";
+import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import { cn } from "@/lib/utils";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
@@ -50,7 +51,7 @@ const EM_DASH = "\u2014";
 
 /** Matches screener company column (`screener-table.tsx`). */
 const HOLDING_COMPANY_NAME_CLASS =
-  "truncate text-[14px] font-semibold leading-5 text-[#141414] underline-offset-2 decoration-[#5C5D5F] group-hover:underline group-hover/row:underline";
+  "truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline group-hover/row:underline";
 
 /** Desktop holdings columns — expand + asset + numerics (+ actions). Fluid so card 8px inset isn’t clipped. */
 const HOLDINGS_GRID_BASE =
@@ -77,9 +78,9 @@ function PortfolioHoldingExpandButton({
         onToggle();
       }}
       className={cn(
-        "inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent bg-transparent text-[#141414]",
-        "transition-colors hover:bg-[#F4F4F5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15",
-        expanded && "bg-[#F4F4F5]",
+        "inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent bg-transparent text-fg",
+        "transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
+        expanded && "bg-surface-muted",
       )}
     >
       {expanded ?
@@ -174,22 +175,25 @@ function PortfolioPnlBreakdownTooltip({
   const tooltip =
     open && mounted ? (
       <div
-        className="pointer-events-none fixed z-[200] w-[240px] rounded-[10px] border border-[#E4E4E7] bg-white px-3 py-2 text-left text-[12px] leading-4 text-[#141414] shadow-[0px_8px_20px_0px_rgba(10,10,10,0.10)]"
+        className={cn(
+          "pointer-events-none fixed z-[200] w-[240px] px-3 py-2 text-left text-[12px] leading-4",
+          tooltipSurfaceClassName,
+        )}
         style={{ left: pos.left, top: pos.top }}
         role="tooltip"
       >
-        <div className="font-semibold text-[#141414]">Profit/Loss</div>
+        <div className="font-semibold text-fg">Profit/Loss</div>
         <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
-          <div className="text-[#5C5D5F]">Unrealized</div>
-          <div className={cn("text-right tabular-nums", unrealizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
+          <div className="text-fg-muted">Unrealized</div>
+          <div className={cn("text-right tabular-nums", unrealizedUsd >= 0 ? "text-up" : "text-down")}>
             {formatSignedUsd(unrealizedUsd)}
           </div>
-          <div className="text-[#5C5D5F]">Realized</div>
-          <div className={cn("text-right tabular-nums", realizedUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
+          <div className="text-fg-muted">Realized</div>
+          <div className={cn("text-right tabular-nums", realizedUsd >= 0 ? "text-up" : "text-down")}>
             {formatSignedUsd(realizedUsd)}
           </div>
-          <div className="text-[#5C5D5F]">Total</div>
-          <div className={cn("text-right tabular-nums font-semibold", totalUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]")}>
+          <div className="text-fg-muted">Total</div>
+          <div className={cn("text-right tabular-nums font-semibold", totalUsd >= 0 ? "text-up" : "text-down")}>
             {formatSignedUsd(totalUsd)}
           </div>
         </div>
@@ -208,7 +212,7 @@ function PortfolioPnlBreakdownTooltip({
         <div
           className={cn(
             "font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums",
-            totalUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+            totalUsd >= 0 ? "text-up" : "text-down",
           )}
         >
           {formatSignedUsd(totalUsd)}
@@ -216,7 +220,7 @@ function PortfolioPnlBreakdownTooltip({
         <div
           className={cn(
             "text-[12px] font-medium leading-4 tabular-nums",
-            totalPct >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+            totalPct >= 0 ? "text-up" : "text-down",
           )}
         >
           {formatSignedPct(totalPct)}
@@ -301,7 +305,7 @@ function HoldingsSortHeader({
     <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
       <button
         type="button"
-        className="inline-flex w-full items-center justify-end gap-1 rounded text-[14px] font-medium leading-5 text-[#5C5D5F] hover:text-[#141414]"
+        className="inline-flex w-full items-center justify-end gap-1 rounded text-[14px] font-medium leading-5 text-fg-muted hover:text-fg"
         onClick={() => onSort(sortKey)}
         aria-label={`Sort by ${label}`}
       >
@@ -447,7 +451,7 @@ function PortfolioHoldingsTableInner({
                 <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                 <div className="min-w-0">
                   <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                  <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                  <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
                     {caption} · {formatSharesAsShares(h.shares)}
                   </div>
                 </div>
@@ -456,13 +460,13 @@ function PortfolioHoldingsTableInner({
 
             const right = (
               <div className="min-w-0 text-right">
-                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
                   {usd0.format(h.currentValue)}
                 </div>
                 <div
                   className={cn(
                     "mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums",
-                    totalUsd >= 0 ? "text-[#16A34A]" : "text-[#DC2626]",
+                    totalUsd >= 0 ? "text-up" : "text-down",
                   )}
                 >
                   {formatSignedUsd(totalUsd)} ({formatSignedPct(totalPct)})
@@ -473,12 +477,12 @@ function PortfolioHoldingsTableInner({
             return (
               <div
                 key={h.id}
-                className="group relative flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-white px-4 py-3 transition-colors duration-75 hover:bg-neutral-50 sm:py-4"
+                className="group relative flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-surface px-4 py-3 transition-colors duration-75 hover:bg-neutral-50 sm:py-4"
               >
                 {assetHref ? (
                   <Link
                     href={assetHref}
-                    className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2"
+                    className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
                     aria-label={`Open ${companyName}`}
                   />
                 ) : null}
@@ -488,21 +492,21 @@ function PortfolioHoldingsTableInner({
             );
           })}
 
-          <div className="flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-white px-4 py-3 sm:py-4">
+          <div className="flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-surface px-4 py-3 sm:py-4">
             <div className="flex min-w-0 items-center gap-3">
               <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
               <div className="min-w-0">
-                <div className="truncate text-[14px] font-semibold leading-5 text-[#141414]">US Dollar</div>
-                <div className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                <div className="truncate text-[14px] font-semibold leading-5 text-fg">US Dollar</div>
+                <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
                   USD · {formatSharesDisplay(cashUsd)} USD
                 </div>
               </div>
             </div>
             <div className="min-w-0 text-right">
-              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
                 {usd0.format(cashUsd)}
               </div>
-              <div className="mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums text-[#5C5D5F]">
+              <div className="mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums text-fg-muted">
                 {EM_DASH}
               </div>
             </div>
@@ -513,7 +517,7 @@ function PortfolioHoldingsTableInner({
 
       <div className="hidden sm:block">
         <ScreenerTableScroll className="sm:pb-6">
-          <div className="bg-white">
+          <div className="bg-surface">
             <div
               className={cn(
                 SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -526,7 +530,7 @@ function PortfolioHoldingsTableInner({
                 <div
                   className={cn(
                     holdingsGridClass,
-                    "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+                    "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
                   )}
                 >
                   <div aria-hidden />
@@ -632,14 +636,14 @@ function PortfolioHoldingsTableInner({
                           <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                           <div className="min-w-0 text-left">
                             <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                            <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                            <div className="text-[12px] font-normal leading-4 text-fg-muted">
                               {caption}
                             </div>
                           </div>
                         </div>
                         <div
                           className={cn(
-                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
                             TABLE_END_ALIGNED_PAD_CLASS,
                           )}
                         >
@@ -651,16 +655,16 @@ function PortfolioHoldingsTableInner({
                             TABLE_END_ALIGNED_PAD_CLASS,
                           )}
                         >
-                          <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+                          <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
                             {usd0.format(h.currentValue)}
                           </div>
-                          <div className="text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
+                          <div className="text-[12px] font-normal leading-4 tabular-nums text-fg-muted">
                             {formatSharesWithUnit(h.shares, h.symbol)}
                           </div>
                         </div>
                         <div
                           className={cn(
-                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
                             TABLE_END_ALIGNED_PAD_CLASS,
                           )}
                         >
@@ -681,7 +685,7 @@ function PortfolioHoldingsTableInner({
                         </div>
                         <div
                           className={cn(
-                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
                             TABLE_END_ALIGNED_PAD_CLASS,
                           )}
                         >
@@ -711,7 +715,7 @@ function PortfolioHoldingsTableInner({
                     ) : null}
                   </div>
                   {expanded ? (
-                    <div className="min-w-0 max-w-full overflow-hidden border-y-2 border-solid border-[#EFEFEF] bg-white">
+                    <div className="min-w-0 max-w-full overflow-hidden border-y-2 border-solid border-[#EFEFEF] bg-surface">
                       <PortfolioHoldingTransactionsPanel
                         holding={h}
                         transactions={transactions}
@@ -751,12 +755,12 @@ function PortfolioHoldingsTableInner({
                     <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
                     <div className="min-w-0 text-left">
                       <div className={HOLDING_COMPANY_NAME_CLASS}>US Dollar</div>
-                      <div className="text-[12px] font-normal leading-4 text-[#5C5D5F]">USD</div>
+                      <div className="text-[12px] font-normal leading-4 text-fg-muted">USD</div>
                     </div>
                   </div>
                   <div
                     className={cn(
-                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
                       TABLE_END_ALIGNED_PAD_CLASS,
                     )}
                   >
@@ -768,16 +772,16 @@ function PortfolioHoldingsTableInner({
                       TABLE_END_ALIGNED_PAD_CLASS,
                     )}
                   >
-                    <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+                    <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
                       {usd0.format(cashUsd)}
                     </div>
-                    <div className="text-[12px] font-normal leading-4 tabular-nums text-[#5C5D5F]">
+                    <div className="text-[12px] font-normal leading-4 tabular-nums text-fg-muted">
                       {formatSharesDisplay(cashUsd)} USD
                     </div>
                   </div>
                   <div
                     className={cn(
-                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
                       TABLE_END_ALIGNED_PAD_CLASS,
                     )}
                   >
@@ -789,12 +793,12 @@ function PortfolioHoldingsTableInner({
                       TABLE_END_ALIGNED_PAD_CLASS,
                     )}
                   >
-                    <div className="text-[14px] font-medium tabular-nums text-[#5C5D5F]">{EM_DASH}</div>
-                    <div className="text-[12px] font-medium tabular-nums text-[#5C5D5F]">{EM_DASH}</div>
+                    <div className="text-[14px] font-medium tabular-nums text-fg-muted">{EM_DASH}</div>
+                    <div className="text-[12px] font-medium tabular-nums text-fg-muted">{EM_DASH}</div>
                   </div>
                   <div
                     className={cn(
-                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-[#141414]",
+                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
                       TABLE_END_ALIGNED_PAD_CLASS,
                     )}
                   >

@@ -176,7 +176,7 @@ export function HeatmapHoverTooltip({
       aria-label={`${f.ticker} details`}
     >
       <div className={dropdownMenuSearchHeaderClassName}>
-        <p className="truncate px-2 text-[11px] font-semibold tracking-wide text-[#A1A1AA] uppercase">
+        <p className="truncate px-2 text-[11px] font-semibold tracking-wide text-fg-subtle uppercase">
           {title}
         </p>
       </div>
@@ -195,12 +195,12 @@ export function HeatmapHoverTooltip({
                 : resolveEquityLogoUrlFromTicker(row.ticker);
             const changeColor =
               row.changePct == null || !Number.isFinite(row.changePct)
-                ? "#5C5D5F"
+                ? "var(--fs-fg-muted)"
                 : row.changePct > 0
                   ? HEATMAP_LABEL_POSITIVE_HEX
                   : row.changePct < 0
                     ? HEATMAP_LABEL_NEGATIVE_HEX
-                    : "#5C5D5F";
+                    : "var(--fs-fg-muted)";
             return (
               <li key={row.id}>
                 <Link
@@ -210,10 +210,10 @@ export function HeatmapHoverTooltip({
                   <CompanyLogo name={row.name} logoUrl={logoUrl} symbol={row.ticker} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{row.name}</div>
-                    <div className="truncate text-[12px] text-[#5C5D5F]">{row.ticker}</div>
+                    <div className="truncate text-[12px] text-fg-muted">{row.ticker}</div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end text-right tabular-nums">
-                    <span className="text-[14px] font-medium leading-5 text-[#141414]">
+                    <span className="text-[14px] font-medium leading-5 text-fg">
                       {formatPrice(row.price, market)}
                     </span>
                     <span className="text-[12px] font-normal leading-4" style={{ color: changeColor }}>

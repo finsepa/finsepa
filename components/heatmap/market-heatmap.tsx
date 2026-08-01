@@ -16,8 +16,8 @@ import { heatmapLeavesForTreemapLayout } from "@/lib/heatmap/heatmap-treemap-wei
 import { HeatmapHoverTooltip } from "@/components/heatmap/heatmap-hover-tooltip";
 import { cn } from "@/lib/utils";
 
-/** Outer heatmap shell — 4px inset, zinc-100 fill, 16px radius. */
-const HEATMAP_SHELL_CLASS = "rounded-2xl bg-[#F4F4F5] p-1";
+/** Outer heatmap shell — 4px inset, muted surface fill, 16px radius. */
+const HEATMAP_SHELL_CLASS = "rounded-2xl bg-surface-muted p-1";
 
 /** Gap between sector cards (treemap padding + visible gutter). */
 const SECTOR_GAP = 4;
@@ -35,7 +35,7 @@ const INDUSTRY_LABEL_CHAR_PX = 5.5;
 const PAD = 4;
 /** Corner radius for every company tile. */
 const TILE_CORNER_RADIUS = 8;
-const SECTOR_BORDER = "#E4E4E7";
+const SECTOR_BORDER = "var(--fs-stroke)";
 const SECTOR_SHADOW_FILTER_ID = "heatmap-sector-shadow";
 
 function leafIndustryGroupKey(L: HeatmapLeaf): string {
@@ -559,7 +559,7 @@ function renderSectorGroup(
         height={sh}
         rx={r}
         ry={r}
-        fill="#FFFFFF"
+        fill="var(--fs-surface)"
         stroke={SECTOR_BORDER}
         strokeWidth={1}
         filter={`url(#${SECTOR_SHADOW_FILTER_ID})`}
@@ -570,7 +570,7 @@ function renderSectorGroup(
           y={sec.outerY0 + PAD}
           width={sw - PAD * 2}
           height={HEADER_H}
-          fill="#FFFFFF"
+          fill="var(--fs-surface)"
         />
         <text
           x={sec.outerX0 + PAD + (sw - PAD * 2) / 2}
@@ -578,7 +578,7 @@ function renderSectorGroup(
           textAnchor="middle"
           fontSize={12}
           fontWeight={500}
-          style={{ fontFamily: "inherit", fill: "#141414" }}
+          style={{ fontFamily: "inherit", fill: "var(--fs-fg)" }}
           className="uppercase"
         >
           {sec.name}
@@ -886,7 +886,7 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
                   role="img"
                   aria-label={`Market cap treemap: ${sec.name}`}
                 >
-                  <rect width={size.w} height={size.h} fill="#F4F4F5" />
+                  <rect width={size.w} height={size.h} fill="var(--fs-surface-muted)" />
                   <defs>
                     <HeatmapSectorShadowFilter />
                   </defs>
@@ -918,7 +918,7 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
                   }}
                   className={cn(
                     "h-1.5 w-1.5 rounded-full transition-colors",
-                    idx === activeSectorIdx ? "bg-[#141414]" : "bg-[#D4D4D8]",
+                    idx === activeSectorIdx ? "bg-fg" : "bg-stroke",
                   )}
                 />
               ))}
@@ -934,7 +934,7 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
             role="img"
             aria-label="Market cap treemap colored by performance"
           >
-            <rect width={size.w} height={size.h} fill="#F4F4F5" />
+            <rect width={size.w} height={size.h} fill="var(--fs-surface-muted)" />
             <defs>
               <HeatmapSectorShadowFilter />
             </defs>

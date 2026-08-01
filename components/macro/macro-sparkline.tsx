@@ -45,7 +45,7 @@ export function MacroSparkline({
   if (!hasData) {
     return (
       <div
-        className="w-full rounded-md bg-[#FAFAFA]"
+        className="w-full rounded-md bg-canvas"
         style={{ height: heightMode === "total" ? height : height }}
         aria-hidden
       />

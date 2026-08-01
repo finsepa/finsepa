@@ -5,7 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { FinsepaLogo } from "@/components/brand/finsepa-logo";
 import { DWELL_TOOLTIP_DELAY_MS } from "@/components/layout/topbar-delayed-tooltip";
+import { tooltipDwellSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import {
   protectedAgentItem,
   protectedPortfolioItem,
@@ -27,7 +29,7 @@ import { requestAgentHomeIfAlreadyThere } from "@/lib/agents/agent-home-nav";
 import { cn } from "@/lib/utils";
 
 const soonBadgeClass =
-  "shrink-0 rounded-md border border-[#E4E4E7] bg-[#F4F4F5] px-1.5 text-[11px] font-medium leading-4 normal-case text-[#5C5D5F]";
+  "shrink-0 rounded-md border border-stroke bg-surface-muted px-1.5 text-[11px] font-medium leading-4 normal-case text-fg-muted";
 
 type NavItem = ProtectedNavItem;
 
@@ -123,17 +125,11 @@ function CollapsedRailTooltip({
   const tooltip =
     enabled && open && mounted ? (
       <div
-        className="pointer-events-none fixed z-[200] flex -translate-y-1/2 items-center shadow-[0px_8px_20px_0px_rgba(10,10,10,0.12)]"
+        className="pointer-events-none fixed z-[200] -translate-y-1/2 shadow-[0px_8px_20px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-12))]"
         style={{ left: pos.left, top: pos.top }}
         role="tooltip"
       >
-        <span
-          className="h-0 w-0 shrink-0 self-center border-y-[5px] border-r-[6px] border-y-transparent border-r-[#141414]"
-          aria-hidden
-        />
-        <span className="whitespace-nowrap rounded-md bg-[#141414] px-2.5 py-1.5 text-xs font-medium leading-4 text-white">
-          {label}
-        </span>
+        <span className={cn(tooltipDwellSurfaceClassName, "whitespace-nowrap")}>{label}</span>
       </div>
     ) : null;
 
@@ -169,8 +165,11 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
     "flex h-9 shrink-0 items-center gap-2 overflow-hidden rounded-lg py-2 text-sm font-medium leading-5",
     SIDEBAR_CONTENT_MOTION_CLASS,
     collapsed ? "w-[calc(100%+5px)] -mr-[5px] pl-4 pr-[11px]" : "w-full px-4",
-    item.available ? "text-[#141414]" : "cursor-not-allowed text-[#A1A1AA] select-none",
-    item.available && (isActive ? "bg-[#E6E6E6]" : "opacity-70 hover:bg-[#E6E6E6]/70"),
+    item.available ? "text-fg" : "cursor-not-allowed text-fg-subtle select-none",
+    item.available &&
+      (isActive
+        ? "bg-[var(--fs-sidebar-nav-active)]"
+        : "opacity-70 hover:bg-[var(--fs-sidebar-nav-active)]/70 dark:hover:bg-[var(--fs-sidebar-nav-active)] dark:hover:opacity-100"),
   );
 
   const labelWrapClass = cn(
@@ -179,7 +178,7 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
     collapsed ? "max-w-0 flex-none opacity-0" : "max-w-[12rem] flex-1 opacity-100",
   );
 
-  const iconClass = cn("h-5 w-5 shrink-0", item.available ? "text-[#141414]" : "text-[#A1A1AA]");
+  const iconClass = cn("h-5 w-5 shrink-0", item.available ? "text-fg" : "text-fg-subtle");
 
   const content =
     item.available ? (
@@ -271,7 +270,7 @@ function SidebarSectionTitle({ title, collapsed }: { title: string; collapsed: b
       ref={ref}
       suppressHydrationWarning
       className={cn(
-        "relative mb-1.5 max-h-8 overflow-hidden text-sm font-semibold leading-5 text-[#52525B]",
+        "relative mb-1.5 max-h-8 overflow-hidden text-sm font-semibold leading-5 text-fg-muted",
         centerDash ? "text-center" : "pl-4",
       )}
       aria-label={title}
@@ -358,12 +357,9 @@ function SidebarChromeHeader() {
       suppressHydrationWarning
       className="relative mb-3 shrink-0 md:mb-3 md:h-[var(--shell-chrome-header-height)] md:py-3"
     >
-      <img
-        src="/logo.svg"
-        alt="Finsepa"
-        width={LOGO_SIZE_PX}
-        height={LOGO_SIZE_PX}
-        className="absolute top-1/2 h-8 w-8 shrink-0 -translate-y-1/2"
+      <FinsepaLogo
+        size={LOGO_SIZE_PX}
+        className="absolute top-1/2 h-8 w-8 -translate-y-1/2"
         style={{ left: leftPx }}
       />
     </div>
@@ -378,7 +374,7 @@ export function Sidebar() {
     <aside
       suppressHydrationWarning
       className={cn(
-        "flex h-full min-h-0 shrink-0 flex-col bg-[#F3F3F4] max-md:rounded-[4px] max-md:py-2 md:rounded-none md:pb-2 md:pt-[var(--shell-desktop-padding-top)]",
+        "flex h-full min-h-0 shrink-0 flex-col bg-nav max-md:rounded-[4px] max-md:py-2 md:rounded-none md:pb-2 md:pt-[var(--shell-desktop-padding-top)]",
         SIDEBAR_WIDTH_MOTION_CLASS,
         collapsed ? "w-full overflow-visible" : "w-[240px] overflow-y-auto overflow-x-hidden",
       )}

@@ -102,7 +102,7 @@ export function OnboardingProPromoModal({
 
         <div className="flex items-end gap-2">
           <span className="text-[36px] font-bold leading-10 text-[#0A0A0A]">{priceText}</span>
-          <span className="pb-1 text-sm leading-5 text-[#5C5D5F]">{suffixText}</span>
+          <span className="pb-1 text-sm leading-5 text-fg-muted">{suffixText}</span>
         </div>
 
         <ul className="space-y-4">
@@ -112,9 +112,9 @@ export function OnboardingProPromoModal({
                 className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#BFDBFE]"
                 aria-hidden
               >
-                <Check className="h-3 w-3 text-[#141414]" strokeWidth={3} />
+                <Check className="h-3 w-3 text-fg" strokeWidth={3} />
               </span>
-              <span className="text-sm leading-5 text-[#141414]">{item}</span>
+              <span className="text-sm leading-5 text-fg">{item}</span>
             </li>
           ))}
         </ul>

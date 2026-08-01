@@ -18,15 +18,15 @@ const DASHED_ROW_DIVIDER_CLASS =
 
 function StatRow({ label, value }: { label: string; value: string }) {
   const valueClass =
-    label === "Analyst Consensus" && value !== "—" ? consensusLabelTextClass(value) : "text-[#141414]";
+    label === "Analyst Consensus" && value !== "—" ? consensusLabelTextClass(value) : "text-fg";
   return (
     <div className={cn("flex items-center justify-between gap-3 py-1.5", DASHED_ROW_DIVIDER_CLASS)}>
-      <span className="min-w-0 shrink cursor-pointer text-[14px] leading-5 text-[#141414] underline decoration-[#E4E4E7] underline-offset-2">
+      <span className="min-w-0 shrink cursor-pointer text-[14px] leading-5 text-fg underline decoration-stroke underline-offset-2">
         {label}
       </span>
       {label === "Earnings Date" && value !== "—" ? (
         <span className="inline-flex shrink-0 items-center justify-end gap-1.5 text-right">
-          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-[#5C5D5F]" strokeWidth={2} aria-hidden />
+          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-fg-muted" strokeWidth={2} aria-hidden />
         <span className={cn("text-[14px] font-medium leading-5 tabular-nums", valueClass)}>{value}</span>
         </span>
       ) : (
@@ -88,8 +88,8 @@ export function KeyStatsBasicCard({ ticker }: { ticker: string }) {
         <div className="space-y-2 pt-0.5" aria-hidden>
           {displayRows.map((r) => (
             <div key={r.label} className={cn("flex justify-between gap-3 py-1.5", DASHED_ROW_DIVIDER_CLASS)}>
-              <div className="h-4 w-28 rounded bg-neutral-100" />
-              <div className="h-4 w-20 rounded bg-neutral-100" />
+              <div className="h-4 w-28 rounded bg-skeleton" />
+              <div className="h-4 w-20 rounded bg-skeleton" />
             </div>
           ))}
         </div>

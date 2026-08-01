@@ -1,5 +1,6 @@
 "use client";
 
+import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { useCallback, useId, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
@@ -31,7 +32,7 @@ export type FearGreedChartRange = (typeof FEAR_GREED_CHART_RANGES)[number];
 /** Axis/tick label modes used by crypto modal + macro (macro adds 10Y/20Y). */
 export type FearGreedHistoryAxisRange = FearGreedChartRange | "10Y" | "20Y";
 
-export const BTC_LINE_COLOR = "#5C5D5F";
+export const BTC_LINE_COLOR = "var(--fs-fg-muted)";
 export const FG_BADGE_SWATCH =
   "conic-gradient(from 210deg, #E03D3E, #E8881A, #E8C42E, #8FCF2E, #2DB873, #E03D3E)";
 
@@ -49,7 +50,7 @@ const Y_TICKS = [0, 25, 50, 75, 100] as const;
 /** Logical SVG space — line always draws even before ResizeObserver reports CSS pixels. */
 const SVG_PLOT_W = 1000;
 const SVG_PLOT_H = 360;
-const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-[#A1A1AA]";
+const LINE_HOVER_CROSSHAIR_CLASS = "border-l border-dashed border-fg-subtle";
 /** Inset horizontal date labels from the plot edges; labels use the date at that x, not series endpoints. */
 const X_AXIS_EDGE_PAD_PX = 24;
 
@@ -362,7 +363,7 @@ export function FearGreedHistoryLineChart({
       ? fearGreedColorForValue(hoveredPt.v)
       : points.length
         ? fearGreedColorForValue(points[points.length - 1]!.value)
-        : "#5C5D5F";
+        : resolveFsColor("--fs-fg-muted");
 
   const lineStrokeStops = useMemo(
     () => fearGreedLineStrokeStops(lineSvg.pts, SVG_PLOT_W),
@@ -450,14 +451,14 @@ export function FearGreedHistoryLineChart({
   if (loading) {
     return (
       <div className="flex items-center justify-center" style={{ height }}>
-        <Spinner className="size-5 text-[#5C5D5F]" />
+        <Spinner className="size-5 text-fg-muted" />
       </div>
     );
   }
 
   if (!visibleFg && !visibleBtc) {
     return (
-      <div className="flex items-center justify-center text-[14px] text-[#5C5D5F]" style={{ height }}>
+      <div className="flex items-center justify-center text-[14px] text-fg-muted" style={{ height }}>
         Turn on a series above to display the chart.
       </div>
     );
@@ -465,7 +466,7 @@ export function FearGreedHistoryLineChart({
 
   if (points.length < 2 && btcPoints.length < 2) {
     return (
-      <div className="flex items-center justify-center text-[14px] text-[#5C5D5F]" style={{ height }}>
+      <div className="flex items-center justify-center text-[14px] text-fg-muted" style={{ height }}>
         No history available.
       </div>
     );
@@ -485,7 +486,7 @@ export function FearGreedHistoryLineChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-[#FCFCFD]"
+              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -556,10 +557,10 @@ export function FearGreedHistoryLineChart({
                       y2={lineSvg.gradY1}
                       gradientUnits="userSpaceOnUse"
                     >
-                      <stop offset="0" stopColor="#5C5D5F" stopOpacity={LINE_AREA_GRADIENT_TOP_OPACITY} />
+                      <stop offset="0" stopColor="var(--fs-fg-muted)" stopOpacity={LINE_AREA_GRADIENT_TOP_OPACITY} />
                       <stop
                         offset="1"
-                        stopColor="#5C5D5F"
+                        stopColor="var(--fs-fg-muted)"
                         stopOpacity={LINE_AREA_GRADIENT_BOTTOM_OPACITY}
                       />
                     </linearGradient>
@@ -618,7 +619,7 @@ export function FearGreedHistoryLineChart({
                   />
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute z-[4] -translate-x-1/2 -translate-y-1/2 rounded-full border-white bg-white"
+                    className="pointer-events-none absolute z-[4] -translate-x-1/2 -translate-y-1/2 rounded-full border-solid bg-panel"
                     style={{
                       left: `${(hoveredPt.x / SVG_PLOT_W) * 100}%`,
                       top: `${(hoveredPt.y / SVG_PLOT_H) * 100}%`,
@@ -647,18 +648,7 @@ export function FearGreedHistoryLineChart({
                 role="tooltip"
                 aria-label="Chart tooltip"
               >
-                {tip.side === "left" ? (
-                  <span className="absolute top-1/2 left-full -translate-y-1/2" aria-hidden>
-                    <span className="block border-y-[7px] border-y-transparent border-l-[8px] border-l-[#E4E4E7]" />
-                    <span className="absolute top-1/2 left-px -translate-y-1/2 border-y-[6px] border-y-transparent border-l-[7px] border-l-white" />
-                  </span>
-                ) : (
-                  <span className="absolute top-1/2 right-full -translate-y-1/2" aria-hidden>
-                    <span className="block border-y-[7px] border-y-transparent border-r-[8px] border-r-[#E4E4E7]" />
-                    <span className="absolute top-1/2 right-px -translate-y-1/2 border-y-[6px] border-y-transparent border-r-[7px] border-r-white" />
-                  </span>
-                )}
-                <p className="text-[12px] font-semibold leading-4 text-[#141414]">{tip.periodLabel}</p>
+                <p className="text-[12px] font-semibold leading-4 text-fg">{tip.periodLabel}</p>
                 <div className="mt-1.5 space-y-1">
                   {tip.rows.map((row) => (
                     <div key={row.label} className="flex items-baseline justify-between gap-3">
@@ -668,11 +658,11 @@ export function FearGreedHistoryLineChart({
                           style={{ backgroundColor: row.color }}
                           aria-hidden
                         />
-                        <span className="truncate text-[12px] font-normal leading-4 text-[#5C5D5F]">
+                        <span className="truncate text-[12px] font-normal leading-4 text-fg-muted">
                           {row.label}
                         </span>
                       </span>
-                      <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-[#141414]">
+                      <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-fg">
                         {row.value}
                       </span>
                     </div>
@@ -684,7 +674,7 @@ export function FearGreedHistoryLineChart({
 
           <div
             className={cn(
-              "relative h-full shrink-0 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-[#5C5D5F]",
+              "relative h-full shrink-0 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted",
               FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
             )}
             style={{
@@ -715,7 +705,7 @@ export function FearGreedHistoryLineChart({
                     return (
                       <span
                         key={i}
-                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[#FCFCFD] px-1 py-px"
+                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
                         style={{ top: `${topPct}%` }}
                       >
                         {t}
@@ -762,7 +752,7 @@ export function FearGreedHistoryLineChart({
                 title={t.label}
               >
                 <span
-                  className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-[#5C5D5F] sm:text-[12px]"
+                  className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]"
                   style={{
                     transform: horizontalXLabels
                       ? undefined

@@ -16,25 +16,25 @@ import { cn } from "@/lib/utils";
 
 /** Figma — Inter Medium 14px / 20px line-height, 0 tracking, #141414. */
 const notificationTickerTextClass =
-  "font-sans text-[14px] font-medium leading-[20px] tracking-normal text-[#141414]";
+  "font-sans text-[14px] font-medium leading-[20px] tracking-normal text-fg";
 
 /** Figma — Inter Semi Bold 14px / 20px line-height, 0 tracking, #141414. */
 const notificationPeriodTextClass =
-  "font-sans text-[14px] font-semibold leading-[20px] tracking-normal text-[#141414]";
+  "font-sans text-[14px] font-semibold leading-[20px] tracking-normal text-fg";
 
 /** Figma — Inter Regular 14px / 20px line-height, 0 tracking, #5C5D5F. */
 const notificationMetaTextClass =
-  "font-sans text-[14px] font-normal leading-[20px] tracking-normal text-[#5C5D5F]";
+  "font-sans text-[14px] font-normal leading-[20px] tracking-normal text-fg-muted";
 
 function MetricRow({ line }: { line: EarningsMetricLine }) {
   return (
     <p className="flex flex-wrap items-baseline gap-0.5 font-sans text-[14px] leading-[20px]">
-      <span className="font-normal text-[#141414]">{line.label}:</span>
-      <span className="font-normal text-[#5C5D5F]">{line.actualDisplay}</span>
+      <span className="font-normal text-fg">{line.label}:</span>
+      <span className="font-normal text-fg-muted">{line.actualDisplay}</span>
       {line.estimateDisplay != null ? (
         <>
-          <span className="font-normal text-[#5C5D5F]">vs</span>
-          <span className="font-normal text-[#5C5D5F]">
+          <span className="font-normal text-fg-muted">vs</span>
+          <span className="font-normal text-fg-muted">
             {line.estimateDisplay} est
           </span>
         </>
@@ -90,7 +90,7 @@ export function EarningsNotificationCard({
       </div>
 
       {hasSummary ? (
-        <div className="mt-3 ml-12 flex w-[calc(100%-3rem)] flex-col gap-0.5 rounded-[12px] bg-[#F4F4F5] px-4 py-2">
+        <div className="mt-3 ml-12 flex w-[calc(100%-3rem)] flex-col gap-0.5 rounded-[12px] bg-surface-muted px-4 py-2">
           {periodLabel ? <p className={notificationPeriodTextClass}>{periodLabel}</p> : null}
           {metricLines.map((line) => (
             <MetricRow key={line.label} line={line} />

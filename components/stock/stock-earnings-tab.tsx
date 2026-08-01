@@ -129,9 +129,9 @@ function formatNextEarningsLabel(
   return quarter ? `${quarter}, ${datePart}` : datePart;
 }
 
-const earningsHeaderStatLabelClass = "text-[13px] font-normal leading-5 text-[#5C5D5F]";
+const earningsHeaderStatLabelClass = "text-[13px] font-normal leading-5 text-fg-muted";
 const earningsHeaderStatValueClass =
-  "text-[16px] font-semibold leading-6 tabular-nums text-[#141414] sm:text-[20px] sm:leading-7";
+  "text-[16px] font-semibold leading-6 tabular-nums text-fg sm:text-[20px] sm:leading-7";
 
 function EarningsHeaderChangePct({ changePct }: { changePct: number | null | undefined }) {
   if (changePct == null || !Number.isFinite(changePct)) return null;
@@ -140,7 +140,7 @@ function EarningsHeaderChangePct({ changePct }: { changePct: number | null | und
       className={cn(
         earningsHeaderStatLabelClass,
         "font-semibold",
-        changePct > 0 ? "text-[#16A34A]" : changePct < 0 ? "text-[#DC2626]" : "text-[#5C5D5F]",
+        changePct > 0 ? "text-up" : changePct < 0 ? "text-down" : "text-fg-muted",
       )}
     >
       ({formatSummaryChangePct(changePct)})
@@ -193,18 +193,18 @@ function EarningsCountdownStats({
 
   return (
     <dl className="flex flex-row flex-wrap items-stretch gap-x-6 gap-y-4" suppressHydrationWarning>
-      <div className="flex flex-col gap-1 border-r border-[#E4E4E7] pr-6">
+      <div className="flex flex-col gap-1 border-r border-stroke pr-6">
         <dt className={earningsHeaderStatLabelClass}>Next earnings</dt>
         <dd className={earningsHeaderStatValueClass}>{info ? info.nextEarningsLabel : "TBA"}</dd>
       </div>
-      <div className="flex flex-col gap-1 border-r border-[#E4E4E7] pr-6">
+      <div className="flex flex-col gap-1 border-r border-stroke pr-6">
         <dt className={earningsHeaderStatLabelClass}>Days left</dt>
         <dd className="flex items-center gap-3">
           <span className={earningsHeaderStatValueClass}>{info ? info.daysLeft : "TBA"}</span>
           {info ? <EarningsCountdownBars daysLeft={info.daysLeft} /> : null}
         </dd>
       </div>
-      <div className="flex flex-col gap-1 border-r border-[#E4E4E7] pr-6">
+      <div className="flex flex-col gap-1 border-r border-stroke pr-6">
         <dt className={earningsHeaderStatLabelClass}>Revenue estimate</dt>
         <dd className="inline-flex flex-wrap items-baseline gap-x-1.5">
           <span className={earningsHeaderStatValueClass}>{revenueEstimate ?? "—"}</span>
@@ -242,19 +242,19 @@ const REPORTS_GRID_STYLE = {
 } as const;
 
 const reportsHeaderLabelClass = cn(
-  "min-w-0 text-left font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+  "min-w-0 text-left font-['Inter'] text-[14px] font-medium leading-5 text-fg-muted",
   TABLE_START_ALIGNED_PAD_CLASS,
 );
 
 const reportsHeaderNumClass = cn(
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]",
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-medium leading-5 text-fg-muted",
   TABLE_END_ALIGNED_PAD_CLASS,
 );
 
 const reportsLabelCellClass = cn("min-w-0 text-left", TABLE_START_ALIGNED_PAD_CLASS);
 
 const reportsNumCellClass = cn(
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-[#141414]",
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
   TABLE_END_ALIGNED_PAD_CLASS,
 );
 
@@ -326,20 +326,20 @@ function ReportsEstimateActualCell({
     outcome === "beat" ? "Beat" : outcome === "miss" ? "Miss" : outcome === "met" ? "Met" : null;
   const outcomeTone =
     outcome === "beat"
-      ? "text-[#16A34A]"
+      ? "text-up"
       : outcome === "miss"
-        ? "text-[#DC2626]"
+        ? "text-down"
         : outcome === "met"
-          ? "text-[#5C5D5F]"
+          ? "text-fg-muted"
           : null;
 
   return (
     <div className={cn(reportsNumCellClass, "flex flex-col items-end justify-center gap-0.5")}>
       {est === "-" && act === "-" ? (
-        <div className="text-[14px] font-medium leading-5 text-[#5C5D5F]">-</div>
+        <div className="text-[14px] font-medium leading-5 text-fg-muted">-</div>
       ) : (
         <>
-          <div className="text-[14px] leading-5 tabular-nums text-[#141414]">
+          <div className="text-[14px] leading-5 tabular-nums text-fg">
             {est} / {act}
           </div>
           {outcomeLabel && pctDisplay ? (
@@ -353,10 +353,10 @@ function ReportsEstimateActualCell({
               className={cn(
                 "text-[14px] font-medium leading-5 tabular-nums",
                 pct != null && pct > 0
-                  ? "text-[#16A34A]"
+                  ? "text-up"
                   : pct != null && pct < 0
-                    ? "text-[#DC2626]"
-                    : "text-[#5C5D5F]",
+                    ? "text-down"
+                    : "text-fg-muted",
               )}
             >
               {pctDisplay}
@@ -380,7 +380,7 @@ function ReportsHeaderRow() {
     >
       <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
         <div
-          className={cn(REPORTS_GRID_CLASS, "min-h-[44px] text-[14px] font-medium leading-5 text-[#5C5D5F]")}
+          className={cn(REPORTS_GRID_CLASS, "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted")}
           style={REPORTS_GRID_STYLE}
         >
           <div className={reportsHeaderLabelClass}>Date</div>
@@ -435,7 +435,7 @@ function EstimatesHeaderSkeleton() {
             key={i}
             className={cn(
               "flex flex-col gap-1.5",
-              i < 3 && "border-r border-[#E4E4E7] pr-6",
+              i < 3 && "border-r border-stroke pr-6",
             )}
           >
             <SkeletonBox className="h-4 w-24 rounded" />
@@ -465,7 +465,7 @@ function EstimatesChartSkeleton() {
         </div>
       </div>
       <div className="-mx-1 overflow-x-auto sm:-mx-0">
-        <div className="min-w-[640px] overflow-hidden rounded-2xl border border-[#EBEBEC] bg-white px-4 py-4 shadow-[0px_1px_2px_0px_rgba(0,0,0,0.04)]">
+        <div className="min-w-[640px] overflow-hidden rounded-2xl border border-stroke-subtle bg-surface px-4 py-4 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
           <SkeletonBox className="h-[200px] w-full rounded" />
         </div>
       </div>
@@ -476,7 +476,7 @@ function EstimatesChartSkeleton() {
 function TableSkeleton() {
   return (
     <ScreenerTableScroll mobileScroll minWidthClassName="min-w-[640px]">
-      <div className="bg-white">
+      <div className="bg-surface">
         <ReportsHeaderRow />
         {Array.from({ length: 4 }).map((_, r) => (
           <div key={r} className={SCREENER_TABLE_DATA_ROW_CLASS}>
@@ -743,14 +743,14 @@ export function StockEarningsTabContent({
 
       {!loading && loadError ? (
         <div className="space-y-3">
-          <p className="text-[14px] leading-6 text-[#5C5D5F]">
+          <p className="text-[14px] leading-6 text-fg-muted">
             Earnings data didn&apos;t load. This can happen when the data provider is slow — try again.
           </p>
           <button
             type="button"
             onClick={() => setReloadNonce((n) => n + 1)}
             className={cn(
-              "inline-flex h-9 items-center justify-center rounded-[10px] px-3 text-[14px] font-medium text-[#141414] hover:bg-[#F4F4F5]",
+              "inline-flex h-9 items-center justify-center rounded-[10px] px-3 text-[14px] font-medium text-fg hover:bg-surface-muted",
               whiteSurfaceButtonChromeClass,
             )}
           >
@@ -760,7 +760,7 @@ export function StockEarningsTabContent({
       ) : null}
 
       {!loading && !loadError && empty ? (
-        <p className="text-[14px] leading-6 text-[#5C5D5F]">No earnings history is available for this symbol.</p>
+        <p className="text-[14px] leading-6 text-fg-muted">No earnings history is available for this symbol.</p>
       ) : null}
 
       {!loading && data?.estimatesChart ? (
@@ -796,16 +796,16 @@ export function StockEarningsTabContent({
         <div className="min-w-0 space-y-5">
           <h3 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Reports</h3>
           <ScreenerTableScroll mobileScroll minWidthClassName="min-w-[640px]">
-            <div className="bg-white">
+            <div className="bg-surface">
               <ReportsHeaderRow />
               {earningsHistoryRendered.map((entry, idx) => {
                 const isLast = idx === earningsHistoryRendered.length - 1;
                 if (entry.kind === "year") {
                   return (
                     <div key={`reports-year-${entry.year}-${idx}`}>
-                      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
-                        <div className="rounded-[10px] bg-[#F4F4F5] px-3 py-2.5">
-                          <div className="font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]">
+                      <div className="px-0">
+                        <div className="rounded-none bg-surface-section px-[20px] py-2.5">
+                          <div className="font-['Inter'] text-[14px] font-medium leading-5 text-fg-muted">
                             {entry.year}
                           </div>
                         </div>
@@ -829,10 +829,10 @@ export function StockEarningsTabContent({
                         style={REPORTS_GRID_STYLE}
                       >
                         <div className={reportsLabelCellClass}>
-                          <div className="truncate font-semibold leading-5 text-[#141414]">
+                          <div className="truncate font-semibold leading-5 text-fg">
                             {tableCell(entry.row.fiscalPeriodLabel)}
                           </div>
-                          <div className="truncate font-['Inter'] text-[14px] font-medium leading-5 text-[#5C5D5F]">
+                          <div className="truncate font-['Inter'] text-[14px] font-medium leading-5 text-fg-muted">
                             {reportDayLineFromDisplay(entry.row.reportDateDisplay)}
                           </div>
                         </div>

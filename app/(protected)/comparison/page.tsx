@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 
 import { ComparisonPage } from "@/components/comparison/comparison-page";
-import { buildChartingAllowedTickerList } from "@/lib/charting/charting-allowed-tickers";
-import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
+import {
+  buildChartingAllowedTickerList,
+  filterChartingUrlTickersForSession,
+} from "@/lib/charting/charting-allowed-tickers";
 import { isComparisonSessionReady, parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
 
@@ -24,10 +26,7 @@ export default async function ComparisonRoutePage({ searchParams }: PageProps) {
   const chartingEquityAllowlist = buildChartingAllowedTickerList(universe);
   const chartingAllowSet = new Set(chartingEquityAllowlist);
 
-  const allowedTickers = tickersParsed.filter((t) => {
-    if (isSingleAssetMode()) return isSupportedAsset(t);
-    return chartingAllowSet.has(t.trim().toUpperCase());
-  });
+  const allowedTickers = filterChartingUrlTickersForSession(tickersParsed, chartingAllowSet);
 
   const comparisonReady = isComparisonSessionReady(allowedTickers);
 

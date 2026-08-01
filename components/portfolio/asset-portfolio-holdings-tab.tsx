@@ -10,6 +10,20 @@ import type { ChartDisplayState, HoldingsTradeTooltipItem } from "@/components/c
 import { PriceChart } from "@/components/chart/PriceChart";
 import { ChartControls } from "@/components/stock/chart-controls";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
+import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
+  SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+  SCREENER_TABLE_OUTER_BORDER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+} from "@/components/screener/screener-table-scroll";
 import {
   Empty,
   EmptyContent,
@@ -46,6 +60,12 @@ const pct = new Intl.NumberFormat("en-US", {
 const assetTxGrid =
   "grid grid-cols-[minmax(108px,1.1fr)_minmax(84px,0.9fr)_minmax(96px,1fr)_minmax(96px,1fr)_minmax(128px,1.1fr)] items-center gap-x-2";
 
+const assetTxNumericHeaderClass = cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS);
+const assetTxNumericCellClass = cn(
+  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
+
 function formatSharesDisplay(n: number): string {
   if (!Number.isFinite(n)) return "";
   const truncated = Math.trunc(n * 100) / 100;
@@ -67,22 +87,22 @@ function formatSignedPct(n: number): string {
 
 function opColorClass(operation: string): string {
   const u = operation.toLowerCase();
-  if (u.includes("sell")) return "text-[#DC2626]";
-  if (u.includes("buy")) return "text-[#16A34A]";
-  return "text-[#141414]";
+  if (u.includes("sell")) return "text-down";
+  if (u.includes("buy")) return "text-up";
+  return "text-fg";
 }
 
 function sumColorClass(sum: number): string {
-  if (sum > 0) return "text-[#16A34A]";
-  if (sum < 0) return "text-[#DC2626]";
-  return "text-[#141414]";
+  if (sum > 0) return "text-up";
+  if (sum < 0) return "text-down";
+  return "text-fg";
 }
 
 function PositionStat({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="text-[13px] font-normal leading-4 text-[#5C5D5F]">{label}</div>
-      <div className="mt-1.5 min-w-0 text-[14px] font-semibold leading-5 tabular-nums text-[#141414]">
+      <div className="text-[13px] font-normal leading-4 text-fg-muted">{label}</div>
+      <div className="mt-1.5 min-w-0 text-[14px] font-semibold leading-5 tabular-nums text-fg">
         {children}
       </div>
     </div>
@@ -199,11 +219,11 @@ export function AssetPortfolioHoldingsTab({
 
   if (!portfolioDisplayReady) {
     return (
-      <div className="rounded-[12px] border border-[#E4E4E7] bg-white px-6 py-10">
+      <div className="rounded-[12px] border border-stroke bg-surface px-6 py-10">
         <div className="mx-auto max-w-md space-y-3">
-          <div className="h-4 w-40 animate-pulse rounded bg-neutral-200" />
-          <div className="h-4 w-full animate-pulse rounded bg-neutral-100" />
-          <div className="h-4 w-5/6 animate-pulse rounded bg-neutral-100" />
+          <div className="h-4 w-40 animate-pulse rounded bg-skeleton" />
+          <div className="h-4 w-full animate-pulse rounded bg-skeleton" />
+          <div className="h-4 w-5/6 animate-pulse rounded bg-skeleton" />
         </div>
       </div>
     );
@@ -278,9 +298,9 @@ export function AssetPortfolioHoldingsTab({
               title={selectedPortfolioReadOnly ? "Trades are not available for combined portfolios." : undefined}
               onClick={() => openNewTransactionWithPreset({ symbol: route, name: assetDisplayName })}
               className={cn(
-                "inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] bg-[#141414] px-4 text-sm font-semibold text-white",
-                "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.12)] transition-colors hover:bg-[#18181B]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/20 focus-visible:ring-offset-2",
+                "inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] bg-fg px-4 text-sm font-semibold text-surface",
+                "shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-12))] transition-colors hover:bg-[#18181B]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:ring-offset-2",
                 "disabled:pointer-events-none disabled:opacity-40",
               )}
             >
@@ -315,7 +335,7 @@ export function AssetPortfolioHoldingsTab({
     return `${num} shares`;
   })();
 
-  const profitTone = (n: number) => (n >= 0 ? "text-[#16A34A]" : "text-[#DC2626]");
+  const profitTone = (n: number) => (n >= 0 ? "text-up" : "text-down");
 
   return (
     <div className="space-y-5">
@@ -325,7 +345,7 @@ export function AssetPortfolioHoldingsTab({
           onRangeChange={setHoldingsChartRange}
           titleSlot={portfolioTitleSlot}
         >
-          <div className="overflow-visible rounded-[12px] bg-white">
+          <div className="overflow-visible rounded-[12px] bg-panel">
             <PriceChart
               kind={assetKind}
               symbol={route}
@@ -341,16 +361,16 @@ export function AssetPortfolioHoldingsTab({
       </section>
 
       <section>
-        <h2 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-[#141414]">My positions</h2>
+        <h2 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-fg">My positions</h2>
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="rounded-[12px] border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-            <h3 className="mb-4 text-[15px] font-semibold leading-5 text-[#141414]">General</h3>
+          <div className="rounded-[12px] border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
+            <h3 className="mb-4 text-[15px] font-semibold leading-5 text-fg">General</h3>
             <div>
-              <div className="grid grid-cols-2 gap-4 border-b border-dotted border-[#E4E4E7] pb-4">
+              <div className="grid grid-cols-2 gap-4 border-b border-dotted border-stroke pb-4">
                 <PositionStat label="Shares">{sharesLabel}</PositionStat>
                 <PositionStat label="Current value">{usd0.format(holding.currentValue)}</PositionStat>
               </div>
-              <div className="grid grid-cols-2 gap-4 border-b border-dotted border-[#E4E4E7] py-4">
+              <div className="grid grid-cols-2 gap-4 border-b border-dotted border-stroke py-4">
                 <PositionStat label="Cost per share">{formatPortfolioUsdPerUnit(holding.avgPrice)}</PositionStat>
                 <PositionStat label="Cost basis">{usd0.format(holding.costBasis)}</PositionStat>
               </div>
@@ -361,10 +381,10 @@ export function AssetPortfolioHoldingsTab({
             </div>
           </div>
 
-          <div className="rounded-[12px] border border-[#E4E4E7] bg-white p-5 shadow-[0px_1px_2px_0px_rgba(10,10,10,0.04)]">
-            <h3 className="mb-4 text-[15px] font-semibold leading-5 text-[#141414]">Return</h3>
+          <div className="rounded-[12px] border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
+            <h3 className="mb-4 text-[15px] font-semibold leading-5 text-fg">Return</h3>
             <div>
-              <div className="grid grid-cols-2 gap-4 border-b border-dotted border-[#E4E4E7] pb-4">
+              <div className="grid grid-cols-2 gap-4 border-b border-dotted border-stroke pb-4">
                 <PositionStat label="Total profit">
                   <span className={cn("font-semibold tabular-nums", profitTone(totalProfitUsd))}>
                     {formatSignedUsd(totalProfitUsd)} ({formatSignedPct(totalProfitPct)})
@@ -383,7 +403,7 @@ export function AssetPortfolioHoldingsTab({
                   </span>
                 </PositionStat>
                 <PositionStat label="Fees paid">
-                  <span className={feesUsd > 0 ? "text-[#DC2626]" : "text-[#5C5D5F]"}>
+                  <span className={feesUsd > 0 ? "text-down" : "text-fg-muted"}>
                     {feesUsd <= 0 ? usd0.format(0) : `-${usd0.format(feesUsd)}`}
                   </span>
                 </PositionStat>
@@ -395,16 +415,17 @@ export function AssetPortfolioHoldingsTab({
 
       <div>
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-[#141414]">Transactions</h2>
+          <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-fg">Transactions</h2>
           <button
             type="button"
             aria-label={`Add transaction for ${holding.name}`}
             disabled={selectedPortfolioReadOnly}
             onClick={() => openNewTransactionWithPreset({ symbol: route, name: holding.name })}
             className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-[10px] border border-[#E4E4E7] bg-white text-[#141414]",
-              "shadow-[0px_1px_2px_0px_rgba(10,10,10,0.06)] transition-all duration-100 hover:bg-[#F4F4F5]",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#141414]/15 focus-visible:ring-offset-2",
+              "flex h-9 w-9 items-center justify-center rounded-[10px] text-fg",
+              whiteSurfaceButtonChromeClass,
+              "transition-all duration-100 hover:bg-surface-muted",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
               "disabled:pointer-events-none disabled:opacity-40",
             )}
           >
@@ -412,65 +433,93 @@ export function AssetPortfolioHoldingsTab({
           </button>
         </div>
         {tradeRows.length === 0 ? (
-          <p className="text-[14px] leading-6 text-[#5C5D5F]">No trades recorded for this symbol in this portfolio.</p>
+          <p className="text-[14px] leading-6 text-fg-muted">No trades recorded for this symbol in this portfolio.</p>
         ) : (
-          <div className="w-full min-w-0">
-            <div className="overflow-x-auto pb-4">
-              <div className="min-w-[640px] divide-y divide-[#E4E4E7] border-t border-[#E4E4E7] rounded-[12px] overflow-hidden bg-white">
-                <div
-                  className={cn(
-                    assetTxGrid,
-                    "min-h-[44px] bg-white px-4 py-0 text-[14px] font-medium leading-5 text-[#5C5D5F]",
-                  )}
-                >
-                  <div className="text-left">Date</div>
-                  <div className="text-left">Type</div>
-                  <div className="text-right">Shares</div>
-                  <div className="text-right">Price</div>
-                  <div className="text-right">Amount</div>
+          <div
+            className={cn(
+              "w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]",
+              SCREENER_TABLE_OUTER_BORDER_CLASS,
+              SCREENER_TABLE_MOBILE_SURFACE_CLASS,
+            )}
+          >
+            <div className="min-w-[640px] bg-surface">
+              <div
+                className={cn(
+                  SCREENER_TABLE_HEADER_STICKY_CLASS,
+                  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+                  "md:border-b-0",
+                )}
+              >
+                <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                  <div
+                    className={cn(
+                      assetTxGrid,
+                      "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
+                    )}
+                  >
+                    <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Date</div>
+                    <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Type</div>
+                    <div className={assetTxNumericHeaderClass}>Shares</div>
+                    <div className={assetTxNumericHeaderClass}>Price</div>
+                    <div className={assetTxNumericHeaderClass}>Amount</div>
+                  </div>
                 </div>
+                <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+              </div>
 
-                {tradeRows.map((t) => {
-                  const adj = splitAdjusted.get(t.id);
-                  const sh = adj?.shares ?? t.shares;
-                  const pr = adj?.price ?? t.price;
-                  return (
-                    <div
-                      key={t.id}
-                      className={cn(
-                        assetTxGrid,
-                        "h-[60px] max-h-[60px] bg-white px-4 transition-colors duration-75 hover:bg-neutral-50",
-                      )}
-                    >
-                      <div className="text-left font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle">
-                        {format(parseISO(t.date), "MMM d, yyyy")}
-                      </div>
+              {tradeRows.map((t, i) => {
+                const adj = splitAdjusted.get(t.id);
+                const sh = adj?.shares ?? t.shares;
+                const pr = adj?.price ?? t.price;
+                return (
+                  <div key={t.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                    <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
                       <div
                         className={cn(
-                          "min-w-0 truncate text-left text-[14px] font-medium leading-5 align-middle",
-                          opColorClass(t.operation),
+                          assetTxGrid,
+                          "min-h-[60px] text-[14px] font-normal leading-5",
+                          SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                         )}
                       >
-                        {t.operation}
-                      </div>
-                      <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle">
-                        {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(sh)}
-                      </div>
-                      <div className="text-right font-['Inter'] text-[14px] leading-5 font-normal tabular-nums text-[#141414] align-middle">
-                        {formatPortfolioUsdPerUnit(pr)}
-                      </div>
-                      <div
-                        className={cn(
-                          "text-right text-[14px] font-medium leading-5 tabular-nums align-middle",
-                          sumColorClass(t.sum),
-                        )}
-                      >
-                        {formatSignedUsd(t.sum)}
+                        <div
+                          className={cn(
+                            "text-left font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
+                            TABLE_START_ALIGNED_PAD_CLASS,
+                          )}
+                        >
+                          {format(parseISO(t.date), "MMM d, yyyy")}
+                        </div>
+                        <div
+                          className={cn(
+                            "min-w-0 truncate text-left text-[14px] font-medium leading-5",
+                            TABLE_START_ALIGNED_PAD_CLASS,
+                            opColorClass(t.operation),
+                          )}
+                        >
+                          {t.operation}
+                        </div>
+                        <div className={assetTxNumericCellClass}>
+                          {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(sh)}
+                        </div>
+                        <div className={assetTxNumericCellClass}>{formatPortfolioUsdPerUnit(pr)}</div>
+                        <div
+                          className={cn(
+                            "min-w-0 w-full text-right text-[14px] font-medium leading-5 tabular-nums",
+                            TABLE_END_ALIGNED_PAD_CLASS,
+                            sumColorClass(t.sum),
+                          )}
+                        >
+                          {formatSignedUsd(t.sum)}
+                        </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                    {i < tradeRows.length - 1 ? (
+                      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                    ) : null}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

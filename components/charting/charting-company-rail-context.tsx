@@ -14,6 +14,8 @@ import {
   type RefObject,
 } from "react";
 
+import { useStockDetailTabHost } from "@/components/stock/stock-detail-tab-host-context";
+
 const DESKTOP_SHELL_MQ = "(min-width: 768px)";
 
 function subscribeDesktopShell(onStoreChange: () => void): () => void {
@@ -139,7 +141,13 @@ export function useChartingRailPickerAnchors(): {
   const searchParams = useSearchParams();
   const isDesktop = useIsDesktopShell();
   const { metricAddAnchorRef, companyAddAnchorRef } = useChartingCompanyRail();
-  const tab = searchParams.get("tab");
+  const { registration } = useStockDetailTabHost();
+  const urlTab = searchParams.get("tab");
+  // Prefer optimistic stock `displayTab` over lagged `?tab=` so Peers/Charting do not flash the wrong chrome.
+  const tab =
+    pathname.startsWith("/stock/") && registration?.activeTab != null
+      ? registration.activeTab
+      : urlTab;
   const useRailPickers = isDesktop && isCompanyRailPage(pathname, tab);
 
   return { useRailPickers, metricAddAnchorRef, companyAddAnchorRef };

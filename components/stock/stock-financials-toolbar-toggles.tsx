@@ -49,7 +49,7 @@ export function StockFinancialsPeriodToggle({
   );
 }
 
-const FINANCIALS_MOBILE_LISTBOX_TRIGGER_CLASS = `${whiteSurfaceButtonBorderClass} bg-white ${whiteSurfaceButtonShadowClass} hover:bg-[#FAFAFA]`;
+const FINANCIALS_MOBILE_LISTBOX_TRIGGER_CLASS = `${whiteSurfaceButtonBorderClass} bg-button ${whiteSurfaceButtonShadowClass} hover:bg-canvas`;
 
 /** Mobile: statement, range, period, and column-order on one row (compact listboxes). */
 export function StockFinancialsMobileToolbar({

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { textInputShellClassName } from "@/components/design-system/text-input-styles";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
@@ -17,26 +18,28 @@ import { cn } from "@/lib/utils";
  * Do not reuse elsewhere; other auth pages keep static AuthLabel + AuthInput.
  */
 const floatingShellClassName = cn(
-  "relative h-12 w-full rounded-[10px] border border-transparent bg-[#F4F4F5]",
-  "transition-colors duration-100",
-  "focus-within:border-[#D4D4D8] focus-within:bg-[#EBEBEB]",
+  "relative h-12 w-full rounded-[10px]",
+  textInputShellClassName,
+  // Auth cards / form columns use `bg-surface`; field fill matches surface and
+  // the control disappears. Panel well restores the same edge as app inputs on black.
+  "dark:bg-panel",
   "has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60",
 );
 
 const floatingInputClassName = cn(
-  "peer h-full w-full rounded-[10px] border-0 bg-transparent pt-5 pb-1.5 pl-4 text-sm text-[#141414]",
+  "peer h-full w-full rounded-[10px] border-0 bg-transparent pt-5 pb-1.5 pl-4 text-sm text-fg",
   "outline-none ring-0",
   "disabled:cursor-not-allowed",
 );
 
 const floatingIconButtonClassName = cn(
-  "pointer-events-auto absolute inset-y-0 flex items-center text-[#5C5D5F] transition-opacity",
-  "hover:text-[#141414] hover:opacity-80",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/30",
+  "pointer-events-auto absolute inset-y-0 flex items-center text-fg-muted transition-opacity",
+  "hover:text-fg hover:opacity-80",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30",
   "disabled:cursor-not-allowed disabled:opacity-60",
 );
 
-const floatingTrailingIconClassName = "size-[18px] shrink-0 text-[#5C5D5F]";
+const floatingTrailingIconClassName = "size-[18px] shrink-0 text-fg-muted";
 
 function FloatingLabel({
   htmlFor,
@@ -52,7 +55,7 @@ function FloatingLabel({
       htmlFor={htmlFor}
       className={cn(
         "pointer-events-none absolute left-4 top-0 origin-left text-sm leading-5",
-        floated ? "font-medium text-[#5C5D5F]" : "font-normal text-[#A1A1AA]",
+        floated ? "font-medium text-fg-muted" : "font-normal text-fg-subtle",
       )}
       style={{
         // Inline transform so the browser interpolates big→small (Tailwind class swaps can snap).
@@ -128,14 +131,14 @@ export function AuthFloatingInput({
       />
       <FloatingLabel htmlFor={inputId} floated={floated}>
         {label}
-        {requiredMark ? <span className="text-[#DC2626]"> *</span> : null}
+        {requiredMark ? <span className="text-down"> *</span> : null}
       </FloatingLabel>
       {trailingLoading ? (
         <div
           className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4"
           aria-hidden
         >
-          <Spinner className="size-[18px] text-[#5C5D5F]" />
+          <Spinner className="size-[18px] text-fg-muted" />
         </div>
       ) : hasValue ? (
         <button
@@ -200,20 +203,10 @@ export function AuthFloatingPasswordInput({
       />
       <FloatingLabel htmlFor={inputId} floated={floated}>
         {label}
-        {requiredMark ? <span className="text-[#DC2626]"> *</span> : null}
+        {requiredMark ? <span className="text-down"> *</span> : null}
       </FloatingLabel>
       {hasValue ? (
         <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-4">
-          <button
-            type="button"
-            disabled={disabled}
-            className={cn(floatingIconButtonClassName, "relative inset-auto")}
-            aria-label={`Clear ${label}`}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => emitClear(onChange, name)}
-          >
-            <XCircle className={floatingTrailingIconClassName} strokeWidth={2} aria-hidden />
-          </button>
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
@@ -227,6 +220,16 @@ export function AuthFloatingPasswordInput({
             ) : (
               <Eye className={floatingTrailingIconClassName} strokeWidth={2} aria-hidden />
             )}
+          </button>
+          <button
+            type="button"
+            disabled={disabled}
+            className={cn(floatingIconButtonClassName, "relative inset-auto")}
+            aria-label={`Clear ${label}`}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => emitClear(onChange, name)}
+          >
+            <XCircle className={floatingTrailingIconClassName} strokeWidth={2} aria-hidden />
           </button>
         </div>
       ) : null}

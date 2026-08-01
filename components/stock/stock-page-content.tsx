@@ -21,8 +21,8 @@ import { useRegisterStockDetailTabHost } from "./stock-detail-tab-host-context";
 import { MultichartsTabSkeleton } from "@/components/stock/stock-multicharts-tab-skeleton";
 import { StockFinancialsTabSkeleton } from "@/components/stock/stock-financials-tab-skeleton";
 import { StockEarningsTabLoading } from "@/components/stock/stock-earnings-tab-loading";
+import { StockPeersTabSkeleton } from "@/components/stock/stock-peers-tab-skeleton";
 import { StockInsidersTab } from "./stock-insiders-tab";
-import { StockPeersTab } from "./stock-peers-tab";
 import { StockProfileTab } from "./stock-profile-tab";
 import { StockSuperinvestorsTab } from "./stock-superinvestors-tab";
 import { StockBreadcrumbs } from "./stock-breadcrumbs";
@@ -94,8 +94,8 @@ const StockTargetPriceTab = dynamic(
   {
     loading: () => (
       <div className="w-full min-w-0 space-y-3">
-        <div className="h-40 w-full animate-pulse rounded-2xl bg-[#F4F4F5]" />
-        <div className="h-32 w-full animate-pulse rounded-2xl bg-[#F4F4F5]" />
+        <div className="h-40 w-full animate-pulse rounded-2xl bg-surface-muted" />
+        <div className="h-32 w-full animate-pulse rounded-2xl bg-surface-muted" />
       </div>
     ),
   },
@@ -108,9 +108,17 @@ const StockChartingTab = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex min-h-[320px] w-full items-center justify-center">
-        <div className="h-40 w-full animate-pulse rounded-2xl bg-[#F4F4F5]" />
+        <div className="h-40 w-full animate-pulse rounded-2xl bg-surface-muted" />
       </div>
     ),
+  },
+);
+
+const StockPeersTab = dynamic(
+  () => import("./stock-peers-tab").then((m) => m.StockPeersTab),
+  {
+    ssr: false,
+    loading: () => <StockPeersTabSkeleton />,
   },
 );
 
@@ -1471,6 +1479,7 @@ export function StockPageContent({
             initialKeyStatsBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}
             assetDisplayName={headerMeta?.fullName}
             assetLogoUrl={headerMeta?.logoUrl}
+            isActive={displayTab === "charting"}
           />
         </div>
       ) : null}
@@ -1485,6 +1494,7 @@ export function StockPageContent({
           <StockPeersTab
             ticker={ticker}
             initialPageData={initialPageData?.ticker === ticker ? initialPageData : undefined}
+            isActive={displayTab === "peers"}
           />
         </div>
       ) : null}
