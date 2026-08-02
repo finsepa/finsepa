@@ -73,17 +73,17 @@ export function PortfolioQuickAddMenu({
   }> = [
     {
       id: "trade",
-      label: "New Trade / Holding",
+      label: "Add Manual Transaction",
       disabled: selectedPortfolioReadOnly,
     },
     {
       id: "cash",
-      label: "Add Cash",
+      label: "Manage Cash",
       disabled: selectedPortfolioReadOnly,
     },
     {
       id: "import",
-      label: "Import Transactions",
+      label: "Import CSV File",
       disabled: selectedPortfolioReadOnly || selectedPortfolioId == null,
     },
   ];

@@ -577,7 +577,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
     <AppModalOverlay open={open} onClose={onClose} zIndex={100}>
       <AppModalShell
         titleId={titleId}
-        title="New Transaction"
+        title="Add Manual Transaction"
         onClose={onClose}
         bodyClassName="px-5 pb-5 pt-5"
         footer={

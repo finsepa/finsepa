@@ -1,16 +1,135 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useWindowMessage } from "snaptrade-react";
 
-import type { ConnectBrokerageCompletePayload } from "@/components/portfolio/portfolio-types";
-import type { PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
+import type { ConnectBrokerageCompletePayload, PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import { AppModalShell } from "@/components/ui/app-modal-shell";
+import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
-const SnapTradeReact = dynamic(
-  () => import("snaptrade-react").then((m) => m.SnapTradeReact),
-  { ssr: false },
-);
+/** SnapTrade connection portal expects darkMode as a query flag for dark host apps. */
+function withSnapTradePortalParams(loginLink: string): string {
+  try {
+    const url = new URL(loginLink);
+    if (!url.searchParams.has("darkMode")) url.searchParams.set("darkMode", "true");
+    return url.toString();
+  } catch {
+    return loginLink;
+  }
+}
+
+function SnapTradePortalModal({
+  loginLink,
+  open,
+  onClose,
+  onSuccess,
+  onError,
+  onExit,
+}: {
+  loginLink: string;
+  open: boolean;
+  onClose: () => void;
+  onSuccess: (authorizationId: string) => void;
+  onError: (error: { errorCode?: string; detail?: string; statusCode?: string }) => void;
+  onExit: () => void;
+}) {
+  const titleId = useId();
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [iframeTimedOut, setIframeTimedOut] = useState(false);
+  const loadedRef = useRef(false);
+  const closedByHostRef = useRef(false);
+
+  const portalSrc = useMemo(() => withSnapTradePortalParams(loginLink), [loginLink]);
+
+  useWindowMessage({
+    handleSuccess: (authorizationId) => {
+      onSuccess(authorizationId);
+    },
+    handleError: (data) => {
+      onError(data);
+    },
+    handleExit: () => {
+      if (!closedByHostRef.current) onExit();
+    },
+    close: () => {
+      closedByHostRef.current = true;
+      onClose();
+    },
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    loadedRef.current = false;
+    setIframeLoaded(false);
+    setIframeTimedOut(false);
+    closedByHostRef.current = false;
+    const timer = window.setTimeout(() => {
+      if (!loadedRef.current) setIframeTimedOut(true);
+    }, 12_000);
+    return () => window.clearTimeout(timer);
+  }, [open, portalSrc]);
+
+  if (!open) return null;
+
+  return (
+    <AppModalOverlay open onClose={onClose} zIndex={200} closeOnBackdropClick={false}>
+      <AppModalShell
+        titleId={titleId}
+        title="Connect brokerage"
+        onClose={onClose}
+        maxWidthClass="w-full max-w-[min(450px,calc(100vw-2rem))]"
+        maxHeightClass="h-[min(640px,92dvh)] max-h-[min(640px,92dvh)]"
+        dialogClassName="min-h-0 flex-1"
+        cardClassName="min-h-0 flex-1"
+        bodyScroll={false}
+        bodyClassName="!flex min-h-0 flex-1 flex-col !overflow-hidden !p-0"
+      >
+        <div className="relative flex min-h-0 flex-1 flex-col bg-surface">
+          {!iframeLoaded && !iframeTimedOut ? (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-surface">
+              <Spinner className="size-6 text-fg-muted" />
+              <p className="text-sm text-fg-muted">Loading SnapTrade…</p>
+            </div>
+          ) : null}
+          {iframeTimedOut && !iframeLoaded ? (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
+              <p className="text-sm text-fg">SnapTrade portal didn&apos;t load.</p>
+              <p className="text-xs text-fg-muted">
+                Check your connection, then close and try again — or open the portal in a new tab.
+              </p>
+              <a
+                href={portalSrc}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-accent underline-offset-2 hover:underline"
+              >
+                Open SnapTrade in a new tab
+              </a>
+            </div>
+          ) : null}
+          <iframe
+            id="snaptrade-react-connection-portal"
+            title="Connect brokerage via SnapTrade"
+            src={portalSrc}
+            className={cn(
+              "block min-h-0 w-full flex-1 border-0 bg-surface",
+              !iframeLoaded && "opacity-0",
+            )}
+            allow="clipboard-write"
+            onLoad={() => {
+              loadedRef.current = true;
+              setIframeLoaded(true);
+              setIframeTimedOut(false);
+            }}
+          />
+        </div>
+      </AppModalShell>
+    </AppModalOverlay>
+  );
+}
 
 export function useSnapTradeConnectPortal({
   onComplete,
@@ -140,25 +259,27 @@ export function useSnapTradeConnectPortal({
     closeAll();
   }, [closeAll]);
 
-  const onPortalError = useCallback((error: { errorCode?: string; detail?: string }) => {
-    const detail =
-      typeof error.detail === "string" && error.detail.trim()
-        ? error.detail.trim()
-        : "Connection failed. Try again or pick a different brokerage.";
-    toast.error(detail);
-    closeAll();
-  }, [closeAll]);
+  const onPortalError = useCallback(
+    (error: { errorCode?: string; detail?: string }) => {
+      const detail =
+        typeof error.detail === "string" && error.detail.trim()
+          ? error.detail.trim()
+          : "Connection failed. Try again or pick a different brokerage.";
+      toast.error(detail);
+      closeAll();
+    },
+    [closeAll],
+  );
 
   const portalNode =
     portalOpen && portalLink ? (
-      <SnapTradeReact
+      <SnapTradePortalModal
         loginLink={portalLink}
-        isOpen={portalOpen}
-        close={onPortalExit}
+        open={portalOpen}
+        onClose={onPortalExit}
         onSuccess={onPortalSuccess}
         onError={onPortalError}
         onExit={onPortalExit}
-        style={{ overlay: { backgroundColor: "rgba(20, 20, 20, 0.45)", zIndex: 120 } }}
       />
     ) : null;
 

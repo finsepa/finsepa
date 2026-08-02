@@ -448,7 +448,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
       >
         <AppModalShell
           titleId={titleId}
-          title={phase === "success" ? "Import complete" : "Import Transactions"}
+          title={phase === "success" ? "Import complete" : "Import CSV File"}
           onClose={onClose}
           closeDisabled={submitting}
           maxWidthClass={phase === "success" ? "w-full max-w-md" : "w-full max-w-[800px]"}

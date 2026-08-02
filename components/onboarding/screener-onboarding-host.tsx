@@ -24,28 +24,43 @@ import { WelcomeOnboardingModal } from "./welcome-onboarding-modal";
 
 type OnboardingPhase = "idle" | "welcome" | "tour" | "pro";
 
-/** Welcome → 6-step tour → Pro upsell. */
+/** Welcome → 6-step tour → Pro upsell (skip entirely for paid Pro). */
 export function ScreenerOnboardingHost({
   userId,
   serverShouldShow = false,
+  isPro = false,
 }: {
   userId: string;
   serverShouldShow?: boolean;
+  /** Active paid Pro — never show first-run onboarding or the Pro upsell. */
+  isPro?: boolean;
 }) {
   const searchParams = useSearchParams();
   const openedRef = useRef(false);
   const [phase, setPhase] = useState<OnboardingPhase>(() => {
+    if (isPro) return "idle";
     if (serverShouldShow && !hasCompletedOnboardingForUser(userId)) return "welcome";
     return "idle";
   });
 
   const openWelcome = useCallback(() => {
+    if (isPro) return;
     if (openedRef.current) return;
     if (hasCompletedOnboardingForUser(userId)) return;
     openedRef.current = true;
     markOnboardingPending(userId);
     setPhase("welcome");
-  }, [userId]);
+  }, [isPro, userId]);
+
+  // Persist completion for Pro so future logins / other devices don’t re-open the flow.
+  useEffect(() => {
+    if (!isPro) return;
+    if (hasCompletedOnboardingForUser(userId)) return;
+    void markOnboardingCompleteForUser(getSupabaseBrowserClient());
+    stripOnboardingQueryFromUrl();
+    setPhase("idle");
+    openedRef.current = true;
+  }, [isPro, userId]);
 
   useEffect(() => {
     if (phase === "welcome" || phase === "tour") {
@@ -54,6 +69,8 @@ export function ScreenerOnboardingHost({
   }, [phase]);
 
   useEffect(() => {
+    if (isPro) return;
+
     let cancelled = false;
 
     async function resolve() {
@@ -77,7 +94,7 @@ export function ScreenerOnboardingHost({
           return;
         }
 
-        if (shouldShowWelcomeOnboarding()) {
+        if (shouldShowWelcomeOnboarding(undefined, { isPro })) {
           stripOnboardingQueryFromUrl();
           if (!cancelled) openWelcome();
           return;
@@ -89,7 +106,7 @@ export function ScreenerOnboardingHost({
 
         if (user.id !== userId) return;
 
-        if (shouldShowWelcomeOnboarding(user) || userNeedsOnboarding(user)) {
+        if (shouldShowWelcomeOnboarding(user, { isPro }) || userNeedsOnboarding(user, { isPro })) {
           await persistOnboardingPendingOnUser(supabase);
           if (!cancelled) openWelcome();
         }
@@ -108,7 +125,7 @@ export function ScreenerOnboardingHost({
       if (event !== "SIGNED_IN" && event !== "INITIAL_SESSION" && event !== "TOKEN_REFRESHED") return;
       const user = session?.user;
       if (!user || user.id !== userId) return;
-      if (shouldShowWelcomeOnboarding(user) || userNeedsOnboarding(user)) {
+      if (shouldShowWelcomeOnboarding(user, { isPro }) || userNeedsOnboarding(user, { isPro })) {
         void persistOnboardingPendingOnUser(supabase).then(() => {
           if (!cancelled) openWelcome();
         });
@@ -125,7 +142,7 @@ export function ScreenerOnboardingHost({
       subscription.unsubscribe();
       window.removeEventListener(ONBOARDING_AUTH_READY_EVENT, onAuthReady);
     };
-  }, [openWelcome, searchParams, serverShouldShow, userId]);
+  }, [isPro, openWelcome, searchParams, serverShouldShow, userId]);
 
   async function finishOnboarding() {
     const supabase = getSupabaseBrowserClient();
@@ -133,7 +150,12 @@ export function ScreenerOnboardingHost({
     setPhase("idle");
   }
 
-  function showProPromo() {
+  function afterTour() {
+    // Existing Pro subscribers never see the Free→Pro upsell.
+    if (isPro) {
+      void finishOnboarding();
+      return;
+    }
     setPhase("pro");
   }
 
@@ -142,8 +164,8 @@ export function ScreenerOnboardingHost({
       <WelcomeOnboardingModal open={phase === "welcome"} onContinue={() => setPhase("tour")} />
       <ProductTourModal
         open={phase === "tour"}
-        onFinish={showProPromo}
-        onDismiss={showProPromo}
+        onFinish={afterTour}
+        onDismiss={afterTour}
       />
       <OnboardingProPromoModal open={phase === "pro"} onSkip={() => void finishOnboarding()} />
     </>

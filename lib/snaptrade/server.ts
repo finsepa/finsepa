@@ -143,6 +143,7 @@ export async function createSnapTradePortalLink(
     userSecret: credentials.userSecret,
     connectionType: "read",
     connectionPortalVersion: "v4",
+    darkMode: true,
     reconnect: options?.reconnectAuthorizationId ?? undefined,
   });
 

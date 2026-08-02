@@ -80,7 +80,8 @@ export async function ProtectedAppShell({
   const avatarUrl = avatarUrlFromUser(user);
   const userDisplayName = displayNameFromUser(user) ?? user.email?.split("@")[0] ?? "Member";
   const listingOwnerDisplayName = userDisplayName;
-  const serverShouldShowOnboarding = userNeedsOnboarding(user);
+  // Paid Pro: never re-open first-run onboarding (welcome / tour / Pro upsell).
+  const serverShouldShowOnboarding = !gate.isPro && userNeedsOnboarding(user, { isPro: gate.isPro });
 
   const initialSidebarCollapsed = readSidebarCollapsedPreference(
     cookieStore.get(SIDEBAR_COLLAPSED_PREFERENCE_KEY)?.value,
@@ -111,7 +112,11 @@ export async function ProtectedAppShell({
         >
           <OnboardingAuthBootstrap />
           <Suspense fallback={null}>
-            <ScreenerOnboardingHost userId={user.id} serverShouldShow={serverShouldShowOnboarding} />
+            <ScreenerOnboardingHost
+              userId={user.id}
+              isPro={gate.isPro}
+              serverShouldShow={serverShouldShowOnboarding}
+            />
           </Suspense>
           {children}
         </ProtectedAppShellInner>

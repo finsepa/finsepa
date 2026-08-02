@@ -101,7 +101,7 @@ export function OnboardingProPromoModal({
         />
 
         <div className="flex items-end gap-2">
-          <span className="text-[36px] font-bold leading-10 text-[#0A0A0A]">{priceText}</span>
+          <span className="text-[36px] font-bold leading-10 text-fg">{priceText}</span>
           <span className="pb-1 text-sm leading-5 text-fg-muted">{suffixText}</span>
         </div>
 

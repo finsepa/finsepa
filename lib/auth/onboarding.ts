@@ -106,8 +106,12 @@ export function clearOnboardingPendingFlags(userId?: string | null): void {
 }
 
 /** Server + client: should this user see welcome onboarding? */
-export function userNeedsOnboarding(user: User | null): boolean {
+export function userNeedsOnboarding(
+  user: User | null,
+  opts?: { /** Paid Pro never sees first-run welcome / tour / upsell. */ isPro?: boolean },
+): boolean {
   if (!user) return false;
+  if (opts?.isPro) return false;
 
   const meta = userMetadata(user);
   if (metaTruthy(meta[ONBOARDING_META_COMPLETE])) return false;
@@ -122,8 +126,13 @@ export function userNeedsOnboarding(user: User | null): boolean {
 }
 
 /** True when this auth exchange is a fresh signup (email confirm, OAuth, etc.). */
-export function shouldMarkOnboardingAfterAuth(user: User | null, authType: string | null | undefined): boolean {
+export function shouldMarkOnboardingAfterAuth(
+  user: User | null,
+  authType: string | null | undefined,
+  opts?: { isPro?: boolean },
+): boolean {
   if (!user) return false;
+  if (opts?.isPro) return false;
 
   const meta = userMetadata(user);
   if (metaTruthy(meta[ONBOARDING_META_COMPLETE])) return false;
@@ -136,11 +145,12 @@ export function shouldMarkOnboardingAfterAuth(user: User | null, authType: strin
   return Date.now() - createdAt < NEW_ACCOUNT_WINDOW_MS;
 }
 
-export function shouldShowWelcomeOnboarding(user?: User | null): boolean {
+export function shouldShowWelcomeOnboarding(user?: User | null, opts?: { isPro?: boolean }): boolean {
+  if (opts?.isPro) return false;
   if (user && hasCompletedOnboardingForUser(user.id)) return false;
   if (!user && hasCompletedOnboarding()) return false;
   if (isOnboardingPending(user?.id)) return true;
-  if (user) return userNeedsOnboarding(user);
+  if (user) return userNeedsOnboarding(user, opts);
   return false;
 }
 

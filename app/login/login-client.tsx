@@ -17,7 +17,7 @@ import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { SpinnerLabel } from "@/components/ui/spinner";
+import { Spinner, SpinnerLabel } from "@/components/ui/spinner";
 
 const STORAGE_REMEMBER = "finsepa_remember_me";
 
@@ -265,10 +265,12 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
     }
   }
 
+  // Session check runs only in the browser; keep SSR + first client paint identical
+  // (spinner only — no text) so HMR/stale RSC HTML cannot hydrate-mismatch labels.
   if (resumingSession) {
     return (
       <div className="flex justify-center py-6" role="status" aria-label="Checking session">
-        <SpinnerLabel>Checking session…</SpinnerLabel>
+        <Spinner className="size-5 text-fg" />
       </div>
     );
   }

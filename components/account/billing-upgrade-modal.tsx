@@ -93,7 +93,7 @@ export function BillingUpgradeModal({
         />
 
         <div className="flex items-end gap-2">
-          <span className="text-[36px] font-bold leading-[40px] tracking-normal text-[#0A0A0A]">{priceText}</span>
+          <span className="text-[36px] font-bold leading-[40px] tracking-normal text-fg">{priceText}</span>
           <span className="pb-1 text-[14px] font-normal leading-5 tracking-normal text-fg-muted">{suffixText}</span>
         </div>
 
