@@ -40,12 +40,33 @@ function GoogleMark() {
 
 const REDIRECT_AFTER_LOGIN_MS = 900;
 const LOGIN_FETCH_TIMEOUT_MS = 25_000;
+/** Cap session resume so a hung Auth fetch cannot leave the CTA stuck on “Signing you in…”. */
+const RESUME_SESSION_BUDGET_MS = 8_000;
+const RESUME_LOOP_KEY = "finsepa_login_resume_loop";
+const RESUME_LOOP_MAX = 2;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LEN = 8;
 
 function safeNextPath(raw: string | null | undefined): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return PATH_APP_ENTRY;
   return raw;
+}
+
+function readResumeLoopCount(): number {
+  try {
+    return Math.max(0, Number(sessionStorage.getItem(RESUME_LOOP_KEY) || "0") || 0);
+  } catch {
+    return 0;
+  }
+}
+
+function writeResumeLoopCount(n: number) {
+  try {
+    if (n <= 0) sessionStorage.removeItem(RESUME_LOOP_KEY);
+    else sessionStorage.setItem(RESUME_LOOP_KEY, String(n));
+  } catch {
+    /* private mode */
+  }
 }
 
 export function LoginClient({ resetSuccess, authNext }: Props) {
@@ -67,6 +88,13 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
   // If auth cookies survived a tab close but middleware briefly failed, resume without re-login.
   useEffect(() => {
     let cancelled = false;
+
+    const finish = () => {
+      if (!cancelled) setResumingSession(false);
+    };
+
+    const budgetId = window.setTimeout(finish, RESUME_SESSION_BUDGET_MS);
+
     (async () => {
       try {
         const supabase = getSupabaseBrowserClient();
@@ -74,17 +102,57 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
           data: { session },
         } = await supabase.auth.getSession();
         if (cancelled) return;
-        if (session) {
-          window.location.replace(safeNextPath(authNext));
+
+        if (!session) {
+          writeResumeLoopCount(0);
+          finish();
           return;
         }
+
+        // Validate with Auth — a stale local session would bounce through middleware → login forever.
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+        if (cancelled) return;
+
+        if (!user || userError) {
+          writeResumeLoopCount(0);
+          try {
+            await supabase.auth.signOut({ scope: "local" });
+          } catch {
+            /* form will allow re-login */
+          }
+          finish();
+          return;
+        }
+
+        const loops = readResumeLoopCount() + 1;
+        if (loops > RESUME_LOOP_MAX) {
+          // Protected redirect rejected the session cookie path repeatedly — stop looping.
+          writeResumeLoopCount(0);
+          try {
+            await supabase.auth.signOut({ scope: "local" });
+          } catch {
+            /* ignore */
+          }
+          finish();
+          return;
+        }
+        writeResumeLoopCount(loops);
+
+        window.location.replace(safeNextPath(authNext));
+        // Keep spinner until the document unloads.
       } catch {
-        /* show login form */
+        finish();
+      } finally {
+        window.clearTimeout(budgetId);
       }
-      if (!cancelled) setResumingSession(false);
     })();
+
     return () => {
       cancelled = true;
+      window.clearTimeout(budgetId);
     };
   }, [authNext]);
 
@@ -175,6 +243,7 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
       persistRememberMe();
 
       setPasswordLoginSuccess(true);
+      writeResumeLoopCount(0);
       await new Promise((r) => setTimeout(r, REDIRECT_AFTER_LOGIN_MS));
       // Full navigation avoids Turbopack / dev RSC failures from router.refresh + router.push.
       window.location.replace(
@@ -199,7 +268,7 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
   if (resumingSession) {
     return (
       <div className="flex justify-center py-6" role="status" aria-label="Checking session">
-        <SpinnerLabel>Signing you in…</SpinnerLabel>
+        <SpinnerLabel>Checking session…</SpinnerLabel>
       </div>
     );
   }
