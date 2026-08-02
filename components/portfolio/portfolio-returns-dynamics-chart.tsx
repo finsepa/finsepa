@@ -13,6 +13,7 @@ import {
 import { LineChart } from "@/lib/icons";
 
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
@@ -717,7 +718,7 @@ function PortfolioReturnsDynamicsChartInner({
     <section className="mb-10 w-full min-w-0">
       <div className="mb-4 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="flex min-w-0 items-start justify-between gap-3">
-          <h2 className="min-w-0 shrink text-2xl font-semibold leading-9 tracking-tight text-fg">
+          <h2 className={cn("min-w-0 shrink", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
             Dynamics of portfolio returns
           </h2>
         </div>

@@ -37,7 +37,7 @@ export function MobileMarketsTopbarTabs() {
   );
 
   return (
-    <div className="w-full shrink-0 bg-transparent px-4 pb-[var(--mobile-markets-tabs-gap)] md:hidden">
+    <div className="w-full shrink-0 bg-transparent px-4 pt-[var(--mobile-markets-title-tabs-gap)] pb-[var(--mobile-markets-tabs-gap)] md:hidden">
       <UnderlineTabs
         tabs={MARKET_TAB_ITEMS}
         active={activeTab}

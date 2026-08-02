@@ -5,7 +5,7 @@ import {
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
 import type { ChartingMetricKind } from "@/lib/market/stock-charting-metrics";
-import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
+import { chartMarkerDiscFillColor, resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import {
   LastPriceAnimationMode,
@@ -60,7 +60,7 @@ export function chartingFundamentalsLineSeriesOptions(color: string): LineSeries
     crosshairMarkerVisible: true,
     crosshairMarkerRadius: CHARTING_LINE_POINT_MARKER_RADIUS_PX,
     crosshairMarkerBorderColor: color,
-    crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
+    crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
     crosshairMarkerBorderWidth: CHARTING_LINE_POINT_MARKER_BORDER_PX,
     lastPriceAnimation: LastPriceAnimationMode.Disabled,
   };

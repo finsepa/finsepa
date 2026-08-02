@@ -87,11 +87,13 @@ const MORPH_SPRING = { type: "spring" as const, stiffness: 360, damping: 32, mas
 const MORE_CLOSE_TRANSITION = { duration: TAB_MOTION_DURATION, ease: TAB_MOTION_EASE };
 const SEARCH_ICON_MORPH = { duration: 0.2, ease: [0.33, 1, 0.68, 1] as const };
 
+/** Dropdown fill + button stroke (dark uses gradient edge via `.fs-button-gradient-stroke`). */
 const pillSurfaceClass =
-  "border border-[rgba(20,20,20,0.06)] bg-surface/90 shadow-sm backdrop-blur-xl backdrop-saturate-150 supports-[backdrop-filter]:bg-surface/78";
+  "border border-stroke-muted bg-dropdown shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] fs-button-gradient-stroke dark:[--fs-button-face:var(--fs-dropdown)]";
 
-const tabHighlightClass =
-  "mobile-bottom-nav-tab-highlight pointer-events-none absolute inset-[2px] z-0 rounded-full bg-fg/[0.05]";
+/** Same fill as web dropdown rows; fully rounded chip on mobile bottom nav. */
+const tabHighlightSurfaceClass =
+  "pointer-events-none absolute inset-y-[2px] z-0 rounded-full bg-dropdown-item-hover";
 
 type LinkTabConfig = {
   id: Exclude<MobilePrimaryNavTab, "more">;
@@ -333,10 +335,6 @@ export function MobileBottomNav() {
               exit={{ opacity: 0, scale: 0.96, filter: "blur(4px)" }}
               transition={moreOpen ? MORPH_SPRING : MORE_CLOSE_TRANSITION}
               onAnimationComplete={() => {
-                if (moreOpen) {
-                  setMoreMenuAnimating(false);
-                  return;
-                }
                 setMoreMenuAnimating(false);
               }}
             >
@@ -358,15 +356,18 @@ export function MobileBottomNav() {
                 ) : null}
               </AnimatePresence>
 
-              <div
-                className="mobile-bottom-nav-tabs relative flex w-full shrink-0 items-stretch"
-                style={
-                  {
-                    "--mobile-bottom-nav-highlight-index": highlightIndex,
-                    "--mobile-bottom-nav-highlight-count": highlightTabCount,
-                  } as React.CSSProperties
-                }
-              >
+              <div className="mobile-bottom-nav-tabs relative flex w-full shrink-0 items-stretch">
+                {/* Sliding active chip — same bg-dropdown-item-hover + 10px radius as web menus. */}
+                <motion.div
+                  aria-hidden
+                  className={tabHighlightSurfaceClass}
+                  initial={false}
+                  animate={{
+                    left: `calc(${highlightIndex} * (100% / ${highlightTabCount}) + 2px)`,
+                    width: `calc((100% / ${highlightTabCount}) - 4px)`,
+                  }}
+                  transition={{ duration: TAB_MOTION_DURATION, ease: TAB_MOTION_EASE }}
+                />
                 {LINK_TABS.map((tab) => {
                   const visuallyActive = moreOpen ? urlTab === tab.id : displayTab === tab.id;
                   const Icon = tab.Icon;
@@ -378,7 +379,7 @@ export function MobileBottomNav() {
                       <HapticButton
                         className={cn(
                           "mobile-bottom-nav-tab-button flex h-full w-full items-center justify-center rounded-full",
-                          visuallyActive ? "text-fg opacity-100" : "text-fg-subtle opacity-80 active:opacity-100",
+                          visuallyActive ? "text-fg opacity-100" : "text-fg-subtle opacity-80",
                         )}
                         aria-label={tab.label}
                         onClick={() => goToTab(tab.id, tab.href)}
@@ -392,15 +393,12 @@ export function MobileBottomNav() {
                 })}
 
                 <div className="relative z-[1] flex min-w-0 flex-1 flex-col items-stretch self-stretch">
-                  {moreOpen && urlTab !== "more" ? (
-                    <span className={tabHighlightClass} aria-hidden />
-                  ) : null}
                   <HapticButton
                     className={cn(
                       "mobile-bottom-nav-tab-button flex h-full w-full items-center justify-center rounded-full",
                       moreOpen || urlTab === "more"
                         ? "text-fg opacity-100"
-                        : "text-fg-subtle opacity-80 active:opacity-100",
+                        : "text-fg-subtle opacity-80",
                     )}
                     aria-label="More"
                     aria-expanded={moreOpen}

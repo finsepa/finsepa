@@ -1,6 +1,6 @@
 "use client";
 
-import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
+import { chartMarkerDiscFillColor, resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import {
   memo,
   useCallback,
@@ -621,7 +621,7 @@ function PortfolioChartSettingsButton({
           onRequestClose={() => setOpen(false)}
           className="w-[min(280px,calc(100vw-2rem))]"
         >
-          <div className={dropdownMenuPanelClassName("max-md:w-full max-md:!border-0")} role="menu" aria-label="Chart settings">
+          <div className={dropdownMenuPanelClassName("max-md:w-full")} role="menu" aria-label="Chart settings">
             {PORTFOLIO_CHART_SETTINGS_ROWS.map(({ key, label, ariaLabel }) => {
               const rowDisabled =
                 key === "compareSpy" ? benchmarkCompareDisabled
@@ -685,9 +685,6 @@ export const PORTFOLIO_CHART_RANGE_LABELS: readonly SegmentedControlOption<Portf
   { value: "5y", label: "5Y" },
   { value: "all", label: "ALL" },
 ];
-
-/** Mobile range strip omits YTD to fit the narrower control row. */
-const PORTFOLIO_CHART_MOBILE_RANGE_LABELS = PORTFOLIO_CHART_RANGE_LABELS.filter((r) => r.value !== "ytd");
 
 const PORTFOLIO_CHART_METRIC_SEGMENTS: readonly SegmentedControlOption<PortfolioChartMetricMode>[] =
   PORTFOLIO_CHART_METRIC_OPTIONS;
@@ -1328,7 +1325,7 @@ export function PortfolioValueHistoryChartPane({
       crosshairMarkerVisible: true,
       crosshairMarkerRadius: 5,
       crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
-      crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
+      crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
       crosshairMarkerBorderWidth: 2,
     } as const;
 
@@ -1347,7 +1344,7 @@ export function PortfolioValueHistoryChartPane({
           crosshairMarkerVisible: true,
           crosshairMarkerRadius: 5,
           crosshairMarkerBorderColor: resolveFsColor("--fs-accent"),
-          crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
+          crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
           crosshairMarkerBorderWidth: 2,
         });
         })()
@@ -2024,13 +2021,12 @@ function PortfolioOverviewChartInner({
         </div>
       </div>
 
-      <div className="relative z-20 mb-3 mt-2 flex w-full min-w-0 items-center justify-between gap-2 sm:hidden">
+      <div className="relative z-20 mb-3 mt-2 flex w-full min-w-0 max-w-full items-center justify-between gap-2 sm:hidden">
         <FormListboxSelect
           compact
           fitTrigger
           truncateLabel={false}
           aria-label="Chart metric"
-          className="w-auto shrink-0"
           triggerClassName={PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS}
           options={PORTFOLIO_CHART_METRIC_OPTIONS}
           value={metric}
@@ -2090,7 +2086,7 @@ function PortfolioOverviewChartInner({
 
       <div className="relative z-20 mt-3 w-full sm:hidden">
         <SegmentedControl
-          options={PORTFOLIO_CHART_MOBILE_RANGE_LABELS}
+          options={PORTFOLIO_CHART_RANGE_LABELS}
           value={range}
           onChange={setRange}
           fullWidth

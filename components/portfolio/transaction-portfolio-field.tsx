@@ -183,7 +183,7 @@ export function TransactionPortfolioField({
           <div
             role="separator"
             aria-hidden
-            className="-mx-1 my-0.5 h-px shrink-0 bg-stroke"
+            className="-mx-1 my-0.5 h-px shrink-0 bg-dropdown-divider"
           />
           <button
             type="button"
@@ -243,7 +243,7 @@ export function TransactionPortfolioField({
   const containerClassName =
     variant === "compact" || variant === "toolbar" || variant === "titleGhost"
       ? "relative flex shrink-0"
-      : "relative";
+      : "relative w-full";
 
   return (
     <div ref={containerRef} className={containerClassName}>
@@ -262,7 +262,11 @@ export function TransactionPortfolioField({
             titleGhostTriggerClass
           : variant === "compact" ?
             "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-icon transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
-          : cn("flex w-full items-center justify-between gap-2 rounded-[10px] px-3 text-left text-sm", dropdownTriggerFieldClassName)
+          : cn(
+              // Match TransactionDateField / Operation field chrome + hover stroke.
+              "flex w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] px-3 text-left text-sm font-normal text-fg",
+              dropdownTriggerFieldClassName,
+            )
         }
       >
         {variant === "field" ? (

@@ -15,12 +15,18 @@ function rawPanelLooksDark(): boolean {
   if (typeof document === "undefined") return isDarkDocument();
   const raw = getComputedStyle(document.documentElement).getPropertyValue("--fs-panel").trim();
   const hex = raw.match(/^#([0-9a-f]{6})$/i)?.[1];
-  if (!hex) return isDarkDocument();
-  const v = parseInt(hex, 16);
-  const r = (v >> 16) & 255;
-  const g = (v >> 8) & 255;
-  const b = v & 255;
-  return (r + g + b) / 3 < 96;
+  if (hex) {
+    const v = parseInt(hex, 16);
+    const r = (v >> 16) & 255;
+    const g = (v >> 8) & 255;
+    const b = v & 255;
+    return (r + g + b) / 3 < 96;
+  }
+  const rgb = raw.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (rgb) {
+    return (Number(rgb[1]) + Number(rgb[2]) + Number(rgb[3])) / 3 < 96;
+  }
+  return isDarkDocument();
 }
 
 /**

@@ -317,21 +317,19 @@ export function ScreenerTable({
   const headerRow = (
     <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
       <div
-        className={`flex min-h-[44px] max-md:min-h-10 min-w-0 w-full items-center gap-x-1.5 py-0 max-md:py-2 text-[14px] font-medium leading-5 text-fg-muted max-md:gap-x-1.5 sm:gap-x-2`}
+        className={`flex min-h-[44px] min-w-0 w-full items-center gap-x-1.5 py-0 text-[14px] font-medium leading-5 text-fg-muted max-md:gap-x-1.5 sm:gap-x-2`}
       >
         <div className="hidden w-6 shrink-0 sm:block sm:w-10" aria-hidden />
         <div
           className={cn(
             gridClassName,
-            "min-h-[44px] max-md:min-h-0 items-center text-[14px] font-medium leading-5 text-fg-muted",
+            "min-h-[44px] items-center text-[14px] font-medium leading-5 text-fg-muted",
           )}
         >
           <div className={cn(mobileRankCellClass, "text-[14px] font-medium")}>#</div>
           <div className="text-left">Company</div>
           <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS, !useFluidDesktopColumns && "sm:shrink-0 sm:max-w-[8rem] sm:min-w-[5.25rem]")}>
-            <span className="sm:hidden">Price</span>
-            <span className="hidden sm:inline">Price</span>
-            <span className="hidden text-[12px] font-medium leading-4 text-fg-subtle sm:hidden">1D %</span>
+            Price
           </div>
           <div className={cn(desktopNumericCellClass, "truncate")}>1D %</div>
           <div className={cn(desktopNumericCellClass, "truncate")}>1M %</div>

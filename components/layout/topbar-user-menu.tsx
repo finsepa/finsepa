@@ -361,13 +361,10 @@ export function TopbarUserMenu({
         anchorRef={rootRef}
         ref={menuPortalRef}
         onRequestClose={() => setOpen(false)}
-        className={cn(
-          dropdownMenuSurfaceClassName(),
-          "min-w-[240px] overflow-visible max-md:!border-0 max-md:!shadow-none",
-        )}
+        className={cn(dropdownMenuSurfaceClassName(), "min-w-[240px] overflow-visible")}
       >
         <div role="menu">
-          <div className="flex gap-3 border-b border-dropdown-divider px-3 py-3 max-md:border-b-0">
+          <div className="flex gap-3 border-b border-dropdown-divider px-3 py-3">
             <UserAvatar
               imageSrc={avatarUrl}
               initials={userInitials}

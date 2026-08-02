@@ -107,7 +107,7 @@ export function ScreenerCompaniesKeyStatToolbar({
   );
 
   return (
-    <div ref={rootRef} className="flex shrink-0 items-center gap-3 self-end sm:self-center">
+    <div ref={rootRef} className="flex shrink-0 items-center gap-3">
       <div className="relative">
         <button
           type="button"

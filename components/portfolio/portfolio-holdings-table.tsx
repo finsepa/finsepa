@@ -475,39 +475,43 @@ function PortfolioHoldingsTableInner({
             );
 
             return (
-              <div
-                key={h.id}
-                className="group relative flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-surface px-4 py-3 transition-colors duration-75 hover:bg-neutral-50 sm:py-4"
-              >
-                {assetHref ? (
-                  <Link
-                    href={assetHref}
-                    className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
-                    aria-label={`Open ${companyName}`}
-                  />
-                ) : null}
-                <div className="relative z-[1] min-w-0 flex-1">{left}</div>
-                <div className="relative z-[1] shrink-0">{right}</div>
+              <div key={h.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                <div
+                  className="group relative flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-surface px-4 py-3 transition-colors duration-75 hover:bg-table-row-hover sm:py-4"
+                >
+                  {assetHref ? (
+                    <Link
+                      href={assetHref}
+                      className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
+                      aria-label={`Open ${companyName}`}
+                    />
+                  ) : null}
+                  <div className="relative z-[1] min-w-0 flex-1">{left}</div>
+                  <div className="relative z-[1] shrink-0">{right}</div>
+                </div>
+                <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
               </div>
             );
           })}
 
-          <div className="flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-surface px-4 py-3 sm:py-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
-              <div className="min-w-0">
-                <div className="truncate text-[14px] font-semibold leading-5 text-fg">US Dollar</div>
-                <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
-                  USD · {formatSharesDisplay(cashUsd)} USD
+          <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+            <div className="flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-surface px-4 py-3 sm:py-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <CompanyLogo name="US Dollar" logoUrl="" symbol="USD" />
+                <div className="min-w-0">
+                  <div className="truncate text-[14px] font-semibold leading-5 text-fg">US Dollar</div>
+                  <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                    USD · {formatSharesDisplay(cashUsd)} USD
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="min-w-0 text-right">
-              <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
-                {usd0.format(cashUsd)}
-              </div>
-              <div className="mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums text-fg-muted">
-                {EM_DASH}
+              <div className="min-w-0 text-right">
+                <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
+                  {usd0.format(cashUsd)}
+                </div>
+                <div className="mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums text-fg-muted">
+                  {EM_DASH}
+                </div>
               </div>
             </div>
           </div>
@@ -715,7 +719,7 @@ function PortfolioHoldingsTableInner({
                     ) : null}
                   </div>
                   {expanded ? (
-                    <div className="min-w-0 max-w-full overflow-hidden border-y-2 border-solid border-[#EFEFEF] bg-surface">
+                    <div className="min-w-0 max-w-full overflow-hidden border-y border-solid border-table-row-stroke bg-surface">
                       <PortfolioHoldingTransactionsPanel
                         holding={h}
                         transactions={transactions}

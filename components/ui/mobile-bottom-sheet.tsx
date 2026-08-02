@@ -3,13 +3,19 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
+import { dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { cn } from "@/lib/utils";
 
 export const MOBILE_BOTTOM_SHEET_ENTER_CLASS = "mobile-bottom-nav-sheet-enter";
 
-export const MOBILE_BOTTOM_SHEET_PANEL_CLASS =
-  "flex w-full max-h-[min(70vh,560px)] flex-col overflow-y-auto overscroll-contain bg-surface shadow-[0px_10px_16px_-3px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-10)),0px_4px_6px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]";
+/**
+ * Mobile sheet panel chrome — same glass fill, stroke, blur, and elevation as web dropdowns.
+ */
+export const MOBILE_BOTTOM_SHEET_PANEL_CLASS = cn(
+  dropdownMenuSurfaceClassName(),
+  "flex w-full max-h-[min(70vh,560px)] flex-col overflow-y-auto overscroll-contain",
+);
 
 /** 8px horizontal + bottom inset on the overlay so the dimmed backdrop shows around the modal sheet. */
 export const MOBILE_MODAL_SHEET_OVERLAY_BACKDROP_CLASS = "!bg-black/20 !backdrop-blur-none";
@@ -35,7 +41,7 @@ type MobileBottomSheetProps = {
   showDragHandle?: boolean;
 };
 
-/** Mobile modal sheet — dropdown/action surface with 8px inset and dimmed overlay. */
+/** Mobile modal sheet — dropdown-matching surface with 8px inset and dimmed overlay. */
 export function MobileBottomSheet({
   open,
   onClose,
@@ -80,17 +86,12 @@ export function MobileBottomSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={cn(
-          MOBILE_BOTTOM_SHEET_ENTER_CLASS,
-          MOBILE_BOTTOM_SHEET_PANEL_CLASS,
-          "rounded-2xl",
-          className,
-        )}
+        className={cn(MOBILE_BOTTOM_SHEET_ENTER_CLASS, MOBILE_BOTTOM_SHEET_PANEL_CLASS, className)}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {showDragHandle ? (
           <div className="flex shrink-0 justify-center px-4 pb-1 pt-2" aria-hidden>
-            <div className="h-1 w-10 rounded-full bg-[#D9D9D9]" />
+            <div className="h-1 w-10 rounded-full bg-fg-subtle/40" />
           </div>
         ) : null}
         {title ? (

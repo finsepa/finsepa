@@ -1,4 +1,5 @@
 export {
+  CARD_CHROME_CLASS,
   DESKTOP_CARD_CHROME_CLASS,
   MOBILE_CARD_SURFACE_CLASS,
   MOBILE_ELEVATED_CARD_CLASS,
@@ -26,6 +27,7 @@ export {
 export {
   dropdownTriggerFieldClassName,
   fieldChromeClassName,
+  fieldIdleHoverBorderClassName,
   fieldIdleHoverStrokeClassName,
   fieldStrokeOutlineClassName,
   formFieldControlHeightClassName,

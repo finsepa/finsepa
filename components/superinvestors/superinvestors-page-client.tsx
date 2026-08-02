@@ -44,7 +44,7 @@ export function SuperinvestorsPageShell({ children }: { children: ReactNode }) {
   return (
     <SuperinvestorsListViewContext.Provider value={{ view, setView }}>
       <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="hidden text-2xl font-semibold tracking-tight text-fg md:block">
             Superinvestors
           </h1>
@@ -53,6 +53,7 @@ export function SuperinvestorsPageShell({ children }: { children: ReactNode }) {
             value={view}
             onChange={setView}
             aria-label="Superinvestors list"
+            className="w-auto shrink-0 self-start"
           />
         </div>
         {children}

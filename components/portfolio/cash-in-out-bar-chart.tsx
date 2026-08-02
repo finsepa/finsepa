@@ -576,9 +576,9 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
 
   return (
     <div className="mb-5">
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="hidden text-2xl font-semibold leading-9 tracking-tight text-fg sm:block">Cash</h2>
-        <div className="flex w-full min-w-0 flex-nowrap items-center gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3 md:flex-nowrap">
+        <div className="flex w-full min-w-0 flex-nowrap items-center justify-between gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3 md:flex-nowrap">
           {/* Web: compact range toggle (matches portfolio overview / charting). */}
           <SegmentedControl
             aria-label="Cash chart time range"
@@ -588,15 +588,19 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
             onChange={setRange}
           />
 
-          {/* Mobile: full-label range dropdown. */}
-          <div className="relative min-w-0 flex-1 sm:hidden sm:min-w-[180px]" ref={rangeWrapRef}>
+          {/* Mobile: full-label range dropdown — content-sized, left. */}
+          <div className="relative w-auto shrink-0 sm:hidden" ref={rangeWrapRef}>
             <button
               type="button"
               aria-expanded={rangeOpen}
               aria-haspopup="listbox"
               aria-label="Cash chart time range"
               onClick={() => setRangeOpen((o) => !o)}
-              className={cn("flex h-9 w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] px-4 text-left text-sm font-normal leading-5 text-fg focus-visible:ring-2 focus-visible:ring-fg/10", dropdownTriggerFieldClassName, "bg-surface-muted")}
+              className={cn(
+                "flex h-9 w-auto max-w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] px-4 text-left text-sm font-normal leading-5 text-fg focus-visible:ring-2 focus-visible:ring-fg/10",
+                dropdownTriggerFieldClassName,
+                "bg-surface-muted",
+              )}
             >
               <span className="min-w-0 truncate">{rangeLabel}</span>
               <ChevronDown className="h-5 w-5 shrink-0 text-fg" aria-hidden />
@@ -637,9 +641,10 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
             ) : null}
           </div>
 
+          {/* Content-sized, right on mobile (`justify-between` on parent). */}
           <SegmentedControl
             aria-label="Cash chart grouping"
-            className="min-w-0 flex-1 sm:flex-none"
+            className="w-auto shrink-0"
             options={GRANULARITY_OPTIONS}
             value={granularity}
             onChange={setGranularity}

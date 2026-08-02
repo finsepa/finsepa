@@ -1,6 +1,6 @@
 "use client";
 
-import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
+import { chartMarkerDiscFillColor, resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { useChartThemePaintKey } from "@/lib/theme/use-logo-dev-theme";
 import {
   memo,
@@ -672,7 +672,7 @@ function overviewBaselineOptions(
       crosshairMarkerVisible: !lightweight,
       crosshairMarkerRadius: 5,
       crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
-      crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
+      crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
       crosshairMarkerBorderWidth: 2,
     };
   }
@@ -718,6 +718,7 @@ function tradeMarkersForChart(
 
 /**
  * LW series markers are fill-only — paint a stroke ring then a smaller panel-filled disc on top.
+ * Disc fill must match main panel (black on dark), never light-theme white.
  */
 function hollowInBarCircleMarkers(
   time: UTCTimestamp,
@@ -736,7 +737,7 @@ function hollowInBarCircleMarkers(
       time,
       position: "inBar",
       shape: "circle",
-      color: resolveFsColor("--fs-panel"),
+      color: chartMarkerDiscFillColor(),
       size: Math.max(0.35, size * 0.5),
     },
   ];
@@ -1861,7 +1862,7 @@ export function PriceChart({
             crosshairMarkerVisible: true,
             crosshairMarkerRadius: 5,
             crosshairMarkerBorderColor: resolveFsColor("--fs-accent"),
-            crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
+            crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
             crosshairMarkerBorderWidth: 2,
           });
         })()
@@ -1878,7 +1879,7 @@ export function PriceChart({
       crosshairMarkerVisible: true,
       crosshairMarkerRadius: 5,
       crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
-      crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
+      crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
       crosshairMarkerBorderWidth: 2,
           });
         })();
@@ -3135,7 +3136,7 @@ export function PriceChart({
         });
       });
     }
-  }, [chartPoints, liveSpotUsd, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, kind, series, loading, ready, periodAxisSyncOptions, range, fitChartTimeScale, stock1DLiveSession, liveSessionMinute, symbol, screenshotPreviewMode]);
+  }, [chartPoints, liveSpotUsd, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, kind, series, loading, ready, periodAxisSyncOptions, range, fitChartTimeScale, stock1DLiveSession, liveSessionMinute, symbol, screenshotPreviewMode, chartThemePaintKey]);
 
   useEffect(() => {
     if (!stock1DLiveSession || holdingsStyle) return;

@@ -107,32 +107,44 @@ function StatusBadge({ status }: { status: PortfolioDividendScheduleRow["status"
 function DividendRowMobile({
   row,
   companyName,
+  showDivider,
 }: {
   row: PortfolioDividendScheduleRow;
   companyName: string;
+  showDivider: boolean;
 }) {
   const logo = displayLogoUrlForPortfolioSymbol(row.symbol);
   const caption = portfolioAssetSymbolCaption(row.symbol);
 
   return (
-    <div className="group relative flex min-w-0 items-center justify-between gap-3 py-3 transition-colors duration-75 hover:bg-neutral-50 sm:py-4">
-      <div className="relative z-[1] flex min-w-0 flex-1 items-center gap-3">
-        <CompanyLogo name={companyName} logoUrl={logo} symbol={row.symbol} />
-        <div className="min-w-0">
-          <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-          <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
-            {caption} · {formatShortDate(row.paymentDate)}
+    <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div
+          className={cn(
+            "group relative flex min-h-[60px] min-w-0 items-center justify-between gap-3 py-3 transition-colors duration-75 hover:bg-table-row-hover",
+            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+          )}
+        >
+          <div className="relative z-[1] flex min-w-0 flex-1 items-center gap-3">
+            <CompanyLogo name={companyName} logoUrl={logo} symbol={row.symbol} />
+            <div className="min-w-0">
+              <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
+              <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                {caption} · {formatShortDate(row.paymentDate)}
+              </div>
+            </div>
+          </div>
+          <div className="relative z-[1] min-w-0 shrink-0 text-right">
+            <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
+              {usd0.format(row.totalUsd)}
+            </div>
+            <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-fg-muted">
+              {formatSharesQty(row.shares)} × {usd0.format(row.perShareUsd)}
+            </div>
           </div>
         </div>
       </div>
-      <div className="relative z-[1] min-w-0 shrink-0 text-right">
-        <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
-          {usd0.format(row.totalUsd)}
-        </div>
-        <div className="mt-0.5 text-[12px] font-normal leading-4 tabular-nums text-fg-muted">
-          {formatSharesQty(row.shares)} × {usd0.format(row.perShareUsd)}
-        </div>
-      </div>
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );
 }
@@ -230,7 +242,7 @@ function DividendsScheduleTables({
       <div className="space-y-0 sm:hidden">
         {months.map((month) => (
           <section key={month.monthKey} className="mb-5 last:mb-0">
-            <div className="mb-5 flex flex-wrap items-center gap-3">
+            <div className="mb-3 flex flex-wrap items-center gap-3">
               <h3 className="text-xl font-semibold tracking-tight text-fg">{month.label}</h3>
               {month.totalUsd > 0 ? (
                 <span className="rounded-md bg-up-soft px-2 py-0.5 text-[13px] font-semibold tabular-nums leading-5 text-up">
@@ -238,15 +250,19 @@ function DividendsScheduleTables({
                 </span>
               ) : null}
             </div>
-            <div className="divide-y divide-[#EFEFEF] bg-surface">
-              {month.rows.map((row) => (
-                <DividendRowMobile
-                  key={`${row.symbol}-${row.paymentDate}-${row.exDividendDate ?? ""}`}
-                  row={row}
-                  companyName={nameBySymbol.get(row.symbol) ?? row.symbol}
-                />
-              ))}
-            </div>
+            {/* Same card chrome + 16px row inset as holdings / screener tables. */}
+            <ScreenerTableScroll minWidthClassName="min-w-0">
+              <div className="bg-surface">
+                {month.rows.map((row, i) => (
+                  <DividendRowMobile
+                    key={`${row.symbol}-${row.paymentDate}-${row.exDividendDate ?? ""}`}
+                    row={row}
+                    companyName={nameBySymbol.get(row.symbol) ?? row.symbol}
+                    showDivider={i < month.rows.length - 1}
+                  />
+                ))}
+              </div>
+            </ScreenerTableScroll>
           </section>
         ))}
       </div>

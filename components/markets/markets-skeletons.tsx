@@ -18,6 +18,7 @@ import {
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
+import { ScreenerStocksSubTabMobileCard } from "@/components/screener/screener-stocks-sub-tab-mobile-card";
 import { SCREENER_COMPANIES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 import { cn } from "@/lib/utils";
 
@@ -361,15 +362,29 @@ export function StocksGainersLosersSkeleton({
   hideMobileHeader?: boolean;
 }) {
   const tableChrome = { embeddedInMobileCard, hideMobileHeader };
+
+  const section = (title: string, table: ReactNode) => (
+    <div>
+      <div className="mb-3 text-[14px] font-semibold leading-5 text-fg-muted md:mb-5">{title}</div>
+      {embeddedInMobileCard ? (
+        <ScreenerStocksSubTabMobileCard>{table}</ScreenerStocksSubTabMobileCard>
+      ) : (
+        table
+      )}
+    </div>
+  );
+
   return (
     <div className="flex flex-col">
-      <div>
-        <div className="mb-5 hidden h-5 w-36 rounded skeleton md:block" />
-        <StocksTableSkeleton rows={rows} {...tableChrome} />
-      </div>
-      <div className={cn(embeddedInMobileCard ? "max-md:mt-4 md:mt-5" : "mt-5")}>
-        <div className="mb-5 hidden h-5 w-36 rounded skeleton md:block" />
-        <StocksTableSkeleton rows={rows} {...tableChrome} />
+      {section(
+        "Top gainers (1D %)",
+        <StocksTableSkeleton rows={rows} {...tableChrome} />,
+      )}
+      <div className="mt-4 md:mt-5">
+        {section(
+          "Top losers (1D %)",
+          <StocksTableSkeleton rows={rows} {...tableChrome} />,
+        )}
       </div>
     </div>
   );

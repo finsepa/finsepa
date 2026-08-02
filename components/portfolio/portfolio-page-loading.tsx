@@ -129,36 +129,41 @@ function PortfolioHoldingsTableSkeleton() {
 
       <div>
         {[1, 2, 3, 4, 5, 6].map((row) => (
-          <div
-            key={row}
-            className="flex min-h-[60px] items-center justify-between gap-3 px-4 py-3 sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:items-center sm:gap-4 sm:px-0 sm:py-4"
-          >
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-skeleton" />
-              <div className="min-w-0 space-y-2">
-                <Pulse className="h-4 w-[min(100%,10rem)]" />
-                <Pulse className="h-3 w-20 bg-skeleton" />
+          <div key={row}>
+            <div className="flex min-h-[60px] items-center justify-between gap-3 px-4 py-3 sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:items-center sm:gap-4 sm:px-0 sm:py-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-skeleton" />
+                <div className="min-w-0 space-y-2">
+                  <Pulse className="h-4 w-[min(100%,10rem)]" />
+                  <Pulse className="h-3 w-20 bg-skeleton" />
+                </div>
+              </div>
+              <div className="hidden sm:block">
+                <Pulse className="ml-auto h-4 w-14 bg-skeleton" />
+              </div>
+              <div className="hidden sm:block">
+                <Pulse className="ml-auto h-4 w-16 bg-skeleton" />
+              </div>
+              <div className="hidden sm:block">
+                <Pulse className="ml-auto h-4 w-14 bg-skeleton" />
+              </div>
+              <div className="hidden sm:block">
+                <Pulse className="ml-auto h-4 w-16 bg-skeleton" />
+              </div>
+              <div className="hidden sm:block">
+                <Pulse className="ml-auto h-4 w-10 bg-skeleton" />
+              </div>
+              <div className="shrink-0 text-right sm:hidden">
+                <Pulse className="ml-auto h-4 w-16" />
+                <Pulse className="mt-2 ml-auto h-3 w-24 bg-skeleton" />
               </div>
             </div>
-            <div className="hidden sm:block">
-              <Pulse className="ml-auto h-4 w-14 bg-skeleton" />
-            </div>
-            <div className="hidden sm:block">
-              <Pulse className="ml-auto h-4 w-16 bg-skeleton" />
-            </div>
-            <div className="hidden sm:block">
-              <Pulse className="ml-auto h-4 w-14 bg-skeleton" />
-            </div>
-            <div className="hidden sm:block">
-              <Pulse className="ml-auto h-4 w-16 bg-skeleton" />
-            </div>
-            <div className="hidden sm:block">
-              <Pulse className="ml-auto h-4 w-10 bg-skeleton" />
-            </div>
-            <div className="shrink-0 text-right sm:hidden">
-              <Pulse className="ml-auto h-4 w-16" />
-              <Pulse className="mt-2 ml-auto h-3 w-24 bg-skeleton" />
-            </div>
+            {row < 6 ? (
+              <div
+                className="mx-4 border-b border-solid border-table-row-stroke sm:mx-5"
+                aria-hidden
+              />
+            ) : null}
           </div>
         ))}
       </div>

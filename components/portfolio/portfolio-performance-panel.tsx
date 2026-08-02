@@ -6,6 +6,7 @@ import { LineChart } from "@/lib/icons";
 
 import { PortfolioHoldingsPerformanceChart } from "@/components/portfolio/portfolio-holdings-performance-chart";
 import { PortfolioReturnsDynamicsChart } from "@/components/portfolio/portfolio-returns-dynamics-chart";
+import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { SegmentedControl } from "@/components/design-system/segmented-control";
 import {
   earliestBenchmarkCoverYmd,
@@ -142,7 +143,7 @@ function PerformanceChartSection({
   return (
     <section className="mb-10 w-full min-w-0">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="shrink-0 text-2xl font-semibold leading-9 tracking-tight text-fg">{title}</h2>
+        <h2 className={cn("shrink-0", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>{title}</h2>
         <div className="hidden sm:flex">{rangeSwitcherDesktop}</div>
       </div>
 
@@ -291,7 +292,7 @@ function PortfolioPerformancePanelInner({
       <PortfolioReturnsDynamicsChart transactions={transactions} canLoad={canLoad} />
 
       <section className="pt-6">
-        <h2 className="mb-4 text-2xl font-semibold leading-9 tracking-tight text-fg">
+        <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
           Holdings performance
         </h2>
         <PortfolioHoldingsPerformanceChart holdings={holdings} transactions={transactions} />

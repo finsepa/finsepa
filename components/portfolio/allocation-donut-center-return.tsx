@@ -88,7 +88,7 @@ function PeriodTrigger({
         <div
           role="listbox"
           aria-label="Return period"
-          className={dropdownMenuPanelClassName("max-md:w-full max-md:!border-0")}
+          className={dropdownMenuPanelClassName("max-md:w-full")}
         >
           {ALLOCATION_RETURN_PERIODS.map((opt) => {
             const selected = opt.id === period;

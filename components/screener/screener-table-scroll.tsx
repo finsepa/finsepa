@@ -69,20 +69,24 @@ export {
 export const SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS =
   "md:rounded-[10px] md:transition-colors md:duration-75 md:group-hover/row:bg-table-row-hover";
 
+/**
+ * Row separator — same `table-row-stroke` as desktop.
+ * Mobile: 16px side inset (matches row pad). Desktop: 20px (`mx-5`) so the rule sits inside the hover wash.
+ */
 export const SCREENER_TABLE_STROKE_INSET_CLASS =
-  "screener-row-stroke mx-5 hidden border-b border-solid border-table-row-stroke transition-opacity duration-75 md:block";
+  "screener-row-stroke mx-4 border-b border-solid border-table-row-stroke transition-opacity duration-75 md:mx-5";
 
 /** Hide header rule when the first data row is hovered. */
 export const SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS =
   "has-[+*_.screener-data-row:first-child:hover]:[&_.screener-row-stroke]:opacity-0";
 
-/** Full frame on desktop; borderless on mobile (card shadow instead). */
+/** Full frame — same stroke as web cards on mobile and desktop. */
 export const SCREENER_TABLE_OUTER_BORDER_CLASS =
-  "max-md:border-0 md:border md:border-solid md:border-stroke-subtle";
+  "border border-solid border-stroke-subtle";
 
-/** 16px rounded surface — mobile elevation, desktop border + shadow. */
+/** 16px rounded surface + shared card chrome (stroke + shadow). Outer border class is optional when this is used alone. */
 export const SCREENER_TABLE_MOBILE_SURFACE_CLASS = cn(
-  "overflow-hidden rounded-2xl bg-surface md:shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]",
+  "overflow-hidden rounded-2xl bg-surface",
   MOBILE_CARD_SURFACE_CLASS,
 );
 

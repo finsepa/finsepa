@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, startTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Check, ChevronDown } from "@/lib/icons";
 
 import { TabSwitcher } from "@/components/design-system";
 import type { MacroCardModel } from "@/components/macro/macro-card";
@@ -39,6 +40,12 @@ import {
   EARNINGS_CARD_PRIOR_LINE_CLASS,
   EARNINGS_CARD_VALUE_CLASS,
 } from "@/components/stock/earnings-card-styles";
+import {
+  dropdownMenuMobileSheetBodyClassName,
+  dropdownMenuPlainItemRowClassName,
+} from "@/components/design-system/dropdown-menu-styles";
+import { dropdownTriggerFieldClassName } from "@/components/design-system/text-input-styles";
+import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
 import { fearGreedColorForValue } from "@/lib/screener/fear-greed-color";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +70,85 @@ const macroRailBodyClass =
 
 /** Matches Charting Company / Metric divider. */
 const macroRailDividerClass = "mx-3 my-2 h-px shrink-0 bg-stroke-subtle";
+
+/** Mobile macro chart picker — always opens a profile-menu-style bottom sheet (never a floating popover). */
+function MacroChartMobileSelect({
+  sections,
+  value,
+  onChange,
+}: {
+  sections: { id: string; title: string; items: { id: string; title: string }[] }[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const activeLabel =
+    sections.flatMap((s) => s.items).find((item) => item.id === value)?.title ?? "Select chart";
+
+  return (
+    <div className="relative w-full min-w-0">
+      <button
+        type="button"
+        aria-label="Select macro chart"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen((v) => !v)}
+        className={cn(
+          "relative flex w-full cursor-pointer items-center rounded-[10px] text-left text-sm font-normal text-fg",
+          dropdownTriggerFieldClassName,
+        )}
+      >
+        <span className="min-w-0 flex-1 truncate pl-3 pr-11 text-left">{activeLabel}</span>
+        <ChevronDown
+          className={cn(
+            "pointer-events-none absolute right-3 top-1/2 h-5 w-5 shrink-0 -translate-y-1/2 text-fg transition-transform",
+            open && "rotate-180",
+          )}
+          strokeWidth={2}
+          aria-hidden
+        />
+      </button>
+      <MobileBottomSheet open={open} onClose={() => setOpen(false)} title="Chart">
+        <div className={dropdownMenuMobileSheetBodyClassName} role="listbox" aria-label="Select macro chart">
+          {sections.map((section, sectionIndex) => (
+            <div key={section.id}>
+              {sectionIndex > 0 ? (
+                <div className="mx-3 my-1 h-px shrink-0 bg-dropdown-divider" aria-hidden />
+              ) : null}
+              <div className="px-4 pb-1 pt-2 text-[12px] font-medium leading-4 text-fg-muted">
+                {section.title}
+              </div>
+              {section.items.map((item) => {
+                const selected = item.id === value;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => {
+                      onChange(item.id);
+                      setOpen(false);
+                    }}
+                    className={dropdownMenuPlainItemRowClassName({ selected })}
+                  >
+                    <span className="min-w-0 flex-1 truncate text-left">{item.title}</span>
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                      <Check
+                        className={cn("h-4 w-4 text-fg", !selected && "invisible")}
+                        strokeWidth={2}
+                      />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </MobileBottomSheet>
+    </div>
+  );
+}
 
 export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) {
   const router = useRouter();
@@ -191,10 +277,19 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
   return (
     <div className="flex min-w-0 flex-col gap-5 px-4 py-4 sm:px-9 sm:py-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-        <h1 className="min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-fg sm:flex-1">
+        <h1 className="hidden min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-fg md:block sm:flex-1">
           Macro
         </h1>
         <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
+          {sorted.length > 0 ? (
+            <div className="min-w-0 w-full flex-1 basis-full md:hidden sm:basis-auto sm:w-auto">
+              <MacroChartMobileSelect
+                sections={sections}
+                value={selectedId ?? sorted[0]?.id ?? ""}
+                onChange={selectChart}
+              />
+            </div>
+          ) : null}
           <TabSwitcher
             size="sm"
             options={rangeOptions}
@@ -214,28 +309,6 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
 
       <div className="flex items-start gap-5">
         <div className="min-w-0 flex-1 space-y-5">
-          {sorted.length > 0 ? (
-            <label className="flex flex-col gap-1.5 md:hidden">
-              <span className="text-[12px] font-medium leading-4 text-fg-muted">Chart</span>
-              <select
-                className="h-10 w-full rounded-[10px] border border-stroke bg-surface px-3 text-[14px] font-medium text-fg outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
-                value={selectedId ?? ""}
-                onChange={(e) => selectChart(e.target.value)}
-                aria-label="Select macro chart"
-              >
-                {sections.map((section) => (
-                  <optgroup key={section.id} label={section.title}>
-                    {section.items.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.title}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </label>
-          ) : null}
-
           {sorted.length === 0 ? (
             <div className="rounded-2xl border border-stroke bg-surface px-4 py-10 text-center text-sm text-fg-muted">
               No macro data available from EODHD right now.

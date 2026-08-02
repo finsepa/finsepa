@@ -415,7 +415,7 @@ export function PortfolioPageView({
               />
               <PortfolioOverviewMetrics holdings={holdings} transactions={transactions} />
               <div className="pt-0">
-                <div className="mb-5 hidden items-center justify-between gap-3 md:flex">
+                <div className="mb-5 flex items-center justify-between gap-3">
                   <SecondaryTabs
                     className="min-w-0 flex-1"
                     aria-label="Holdings view"
@@ -425,45 +425,41 @@ export function PortfolioPageView({
                   />
                   {allocationDownloadButton}
                 </div>
-                <PortfolioHoldingsSubTabMobileCard
-                  active={overviewHoldingsSubTab}
-                  onChange={onOverviewHoldingsSubTabChange}
-                  trailing={allocationDownloadButton}
-                  assetCount={assetCount}
-                >
-                  {!showOverviewHoldingsBlock ? (
-                    <PortfolioHoldingsEmptyState
-                      readOnly={readOnly}
-                      className={OVERVIEW_HOLDINGS_EMBEDDED_EMPTY_CLASS}
-                    />
-                  ) : overviewHoldingsSubTab === "slices" ? (
-                    <div className="max-md:p-4 md:contents">
-                      <PortfolioSlicesView holdings={holdings} transactions={transactions} readOnly={readOnly} />
-                    </div>
-                  ) : overviewHoldingsSubTab === "earnings" ? (
-                    <PortfolioEarningsTable
-                      holdings={holdings}
-                      className="sm:border-t-0"
-                      assetLinkTab={readOnly ? "overview" : "holdings"}
-                    />
-                  ) : overviewHoldingsSubTab === "assets" ? (
-                    <PortfolioHoldingsTable
-                      holdings={holdings}
-                      transactions={transactions}
-                      className="sm:border-t-0"
-                      assetLinkTab={readOnly ? "overview" : "holdings"}
-                    />
-                  ) : (
-                    <PortfolioAllocationView
-                      holdings={holdings}
-                      transactions={transactions}
-                      readOnly={readOnly}
-                      period={allocationReturnPeriod}
-                      onPeriodChange={setAllocationReturnPeriod}
-                      onReturnMetaChange={handleAllocationReturnMeta}
-                    />
-                  )}
-                </PortfolioHoldingsSubTabMobileCard>
+                {overviewHoldingsSubTab === "slices" ? (
+                  // Slices has its own donut + table cards; skip the outer mobile shell (double nesting).
+                  <PortfolioSlicesView holdings={holdings} transactions={transactions} readOnly={readOnly} />
+                ) : (
+                  <PortfolioHoldingsSubTabMobileCard>
+                    {!showOverviewHoldingsBlock ? (
+                      <PortfolioHoldingsEmptyState
+                        readOnly={readOnly}
+                        className={OVERVIEW_HOLDINGS_EMBEDDED_EMPTY_CLASS}
+                      />
+                    ) : overviewHoldingsSubTab === "earnings" ? (
+                      <PortfolioEarningsTable
+                        holdings={holdings}
+                        className="sm:border-t-0"
+                        assetLinkTab={readOnly ? "overview" : "holdings"}
+                      />
+                    ) : overviewHoldingsSubTab === "assets" ? (
+                      <PortfolioHoldingsTable
+                        holdings={holdings}
+                        transactions={transactions}
+                        className="sm:border-t-0"
+                        assetLinkTab={readOnly ? "overview" : "holdings"}
+                      />
+                    ) : (
+                      <PortfolioAllocationView
+                        holdings={holdings}
+                        transactions={transactions}
+                        readOnly={readOnly}
+                        period={allocationReturnPeriod}
+                        onPeriodChange={setAllocationReturnPeriod}
+                        onReturnMetaChange={handleAllocationReturnMeta}
+                      />
+                    )}
+                  </PortfolioHoldingsSubTabMobileCard>
+                )}
               </div>
             </div>
           ) : null}

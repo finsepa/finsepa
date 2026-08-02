@@ -23,7 +23,7 @@ const KEY_STATS_CARD_CLASS = cn("min-w-0 p-4", MOBILE_INSET_CARD_CLASS);
 
 /** Mobile shell: tabs + body share one inset card (tabs bleed edge-to-edge). */
 const KEY_STATS_MOBILE_SHELL_CLASS = cn(
-  "mb-5 overflow-hidden p-0 max-md:mb-0",
+  "mb-5 overflow-hidden p-0 max-md:mb-4",
   MOBILE_INSET_CARD_CLASS,
 );
 

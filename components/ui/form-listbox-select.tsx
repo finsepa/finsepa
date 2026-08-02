@@ -125,20 +125,24 @@ export function FormListboxSelect<V extends string>({
 
   if (!active) return null;
 
-  const triggerBaseClass = [
+  const triggerBaseClass = cn(
     "relative flex cursor-pointer items-center rounded-[10px] text-left text-sm font-normal text-fg transition-colors focus-visible:ring-2 focus-visible:ring-fg/10",
     dropdownTriggerFieldClassName,
     fitTrigger ? "w-auto gap-2 px-3" : "w-full",
-    disabled ? "cursor-not-allowed opacity-60 hover:bg-surface-subtle" : "",
+    disabled && "cursor-not-allowed opacity-60 hover:bg-surface-subtle",
     triggerClassName,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  );
 
   return (
     <div
       ref={containerRef}
-      className={["relative z-20 min-w-0 w-full", listboxClassName, className].filter(Boolean).join(" ")}
+      className={cn(
+        "relative z-20 min-w-0",
+        // `fitTrigger` must not sit under `w-full` (string-join left both and the full width won).
+        fitTrigger ? "w-auto shrink-0" : "w-full",
+        listboxClassName,
+        className,
+      )}
     >
       <button
         type="button"

@@ -119,7 +119,6 @@ function StocksTabBody({
   companiesSectorFilter,
   companiesIndustryFilter,
   onClearCompaniesSector,
-  onStocksSubTabChange,
   useMobileStocksSubTabCard,
 }: {
   stocksTotalCount: number;
@@ -138,7 +137,6 @@ function StocksTabBody({
   companiesSectorFilter: ScreenerCanonicalSector | null;
   companiesIndustryFilter: ScreenerIndustryDrill | null;
   onClearCompaniesSector: () => void;
-  onStocksSubTabChange: (tab: StocksSubTab) => void;
   useMobileStocksSubTabCard: boolean;
 }) {
   const companiesPageSize = SCREENER_COMPANIES_PAGE_SIZE;
@@ -153,7 +151,7 @@ function StocksTabBody({
   const isIndustriesDrill = stocksSubTab === "Industries" && companiesIndustryFilter != null;
   const isDrill = isSectorsDrill || isIndustriesDrill;
   const mobileTableChrome = useMobileStocksSubTabCard
-    ? ({ hideMobileHeader: true, embeddedInMobileCard: true } as const)
+    ? ({ hideMobileHeader: false, embeddedInMobileCard: true } as const)
     : ({ hideMobileHeader: false, embeddedInMobileCard: false } as const);
 
   if (isDrill) {
@@ -280,30 +278,52 @@ function StocksTabBody({
   } else if (gainersLosersLoading && !gainersLosers) {
     panel = <StocksGainersLosersSkeleton rows={GAINERS_LOSERS_TOP_N} {...mobileTableChrome} />;
   } else if (gainersLosers) {
+    // Mobile: two separate table cards + titles (desktop keeps shared spacing; card is `md:contents`).
+    const gainerTable = (
+      <ScreenerTable rows={gainersLosers.gainers} {...mobileTableChrome} />
+    );
+    const loserTable = (
+      <ScreenerTable rows={gainersLosers.losers} {...mobileTableChrome} />
+    );
     panel = (
       <div className="flex flex-col">
         <div>
-          <div className="mb-5 hidden text-[14px] font-semibold leading-5 text-fg-muted md:block">
+          <div className="mb-3 text-[14px] font-semibold leading-5 text-fg-muted md:mb-5">
             Top gainers (1D %)
           </div>
-          <ScreenerTable rows={gainersLosers.gainers} {...mobileTableChrome} />
+          {useMobileStocksSubTabCard ? (
+            <ScreenerStocksSubTabMobileCard>{gainerTable}</ScreenerStocksSubTabMobileCard>
+          ) : (
+            gainerTable
+          )}
         </div>
-        <div className={useMobileStocksSubTabCard ? "max-md:mt-4 md:mt-5" : "mt-5"}>
-          <div className="mb-5 hidden text-[14px] font-semibold leading-5 text-fg-muted md:block">
+        <div className="mt-4 md:mt-5">
+          <div className="mb-3 text-[14px] font-semibold leading-5 text-fg-muted md:mb-5">
             Top losers (1D %)
           </div>
-          <ScreenerTable rows={gainersLosers.losers} {...mobileTableChrome} />
+          {useMobileStocksSubTabCard ? (
+            <ScreenerStocksSubTabMobileCard>{loserTable}</ScreenerStocksSubTabMobileCard>
+          ) : (
+            loserTable
+          )}
         </div>
       </div>
     );
   }
 
   if (useMobileStocksSubTabCard) {
+    // Gainers & Losers already wraps each list in its own mobile card.
+    if (stocksSubTab === "Gainers & Losers") {
+      return (
+        <>
+          {panel}
+          {pagination}
+        </>
+      );
+    }
     return (
       <>
-        <ScreenerStocksSubTabMobileCard active={stocksSubTab} onChange={onStocksSubTabChange}>
-          {panel}
-        </ScreenerStocksSubTabMobileCard>
+        <ScreenerStocksSubTabMobileCard>{panel}</ScreenerStocksSubTabMobileCard>
         {pagination}
       </>
     );
@@ -1030,23 +1050,21 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
         <ScreenerMarketTabSkeleton tab={displayTab} />
       ) : displayTab === "Stocks" && activePayload.market === "stocks" ? (
         <>
-          <UsMarketsSessionLabel className="mb-3 flex md:hidden" />
+          <UsMarketsSessionLabel className="mb-4 flex md:hidden" />
           <IndexCards
             initialCards={activePayload.indexCards}
             marketCacheSegment={activePayload.companiesMarketCacheSegment}
           />
           {!isStocksDrill ? (
-            <div
-              className={cn(
-                "mb-5 flex min-w-0 w-full max-w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4",
-                useMobileStocksSubTabCard ? "max-md:hidden" : "max-md:mb-3",
-              )}
-            >
-              <ScreenerTabs
-                active={displayStocksSubTab}
-                onChange={setStocksSubTabWithUrl}
-                hideMobileDropdown={useMobileStocksSubTabCard}
-              />
+            <div className="mb-5 flex min-w-0 w-full max-w-full flex-row flex-nowrap items-center justify-between gap-3 max-md:mb-4 sm:gap-4">
+              {/**
+               * Keep sub-tabs + key-stat control on one row at every breakpoint.
+               * `flex-col` on mobile used to stack the toolbar under the pills and add
+               * ~36px + gap-3 on top of the 16px margin (looked like a fat empty band).
+               */}
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <ScreenerTabs active={displayStocksSubTab} onChange={setStocksSubTabWithUrl} />
+              </div>
               {showCompaniesKeyStatToolbar ? (
                 <ScreenerCompaniesKeyStatToolbar
                   selectedMetricIds={companiesKeyStatMetricIdSet}
@@ -1105,7 +1123,6 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
             companiesSectorFilter={stocksSectorFilter}
             companiesIndustryFilter={stocksIndustryFilter}
             onClearCompaniesSector={clearCompaniesSectorFilter}
-            onStocksSubTabChange={setStocksSubTabWithUrl}
             useMobileStocksSubTabCard={useMobileStocksSubTabCard}
           />
         </>

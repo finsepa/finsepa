@@ -66,6 +66,48 @@ export function isDarkDocument(): boolean {
   return document.documentElement.classList.contains("dark");
 }
 
+/** Surface fills that must stay dark when `html.dark` is set (never light/white on dark UI). */
+const DARK_SURFACE_KEYS = new Set([
+  "--fs-panel",
+  "--fs-page",
+  "--fs-canvas",
+  "--fs-nav",
+  "--fs-surface",
+  "--fs-surface-muted",
+  "--fs-surface-subtle",
+  "--fs-button",
+  "--fs-modal",
+  "--fs-modal-title",
+  "--fs-field",
+  "--fs-skeleton",
+]);
+
+function parseCssColorToRgb(value: string): [number, number, number] | null {
+  const hex = value.trim().match(/^#([0-9a-f]{6})$/i);
+  if (hex) {
+    const v = parseInt(hex[1]!, 16);
+    return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+  }
+  const rgb = value.trim().match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (rgb) {
+    return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+  }
+  return null;
+}
+
+function cssColorsEqual(a: string, b: string): boolean {
+  if (a.toLowerCase() === b.toLowerCase()) return true;
+  const ra = parseCssColorToRgb(a);
+  const rb = parseCssColorToRgb(b);
+  return ra != null && rb != null && ra[0] === rb[0] && ra[1] === rb[1] && ra[2] === rb[2];
+}
+
+function cssColorLuminance(value: string): number | null {
+  const rgb = parseCssColorToRgb(value);
+  if (!rgb) return null;
+  return (rgb[0] + rgb[1] + rgb[2]) / 3;
+}
+
 /**
  * Resolve a `--fs-*` custom property to a concrete paint color.
  * Canvas / lightweight-charts cannot parse `var(--fs-*)` (addColorStop throws).
@@ -79,16 +121,30 @@ export function resolveFsColor(cssVar: string): string {
   const value = getComputedStyle(document.documentElement).getPropertyValue(key).trim();
   if (!value) return fallback;
 
-  // Theme boot / HMR edge case: `.dark` is set but cascade still reports light panel/page.
-  // Chart axis pills bake that into a white tag on a black panel.
+  // Theme boot / HMR edge case: `.dark` is set but cascade still reports light panel/page
+  // (hex, rgb(), or near-white). Chart markers / axis pills would otherwise bake in white.
   if (dark) {
+    const darkFb = DARK_FALLBACKS[key];
     const lightTwin = LIGHT_FALLBACKS[key];
-    if (lightTwin && value.toLowerCase() === lightTwin.toLowerCase()) {
-      return DARK_FALLBACKS[key] ?? value;
+    if (darkFb && lightTwin && cssColorsEqual(value, lightTwin)) {
+      return darkFb;
+    }
+    if (darkFb && DARK_SURFACE_KEYS.has(key)) {
+      const lum = cssColorLuminance(value);
+      if (lum != null && lum > 200) {
+        return darkFb;
+      }
     }
   }
 
   return value;
+}
+
+/**
+ * Hollow chart marker / crosshair disc fill — always the main panel, never light white on dark.
+ */
+export function chartMarkerDiscFillColor(): string {
+  return resolveFsColor("--fs-panel");
 }
 
 /** Snapshot of chart-facing semantic colors for the active theme. */

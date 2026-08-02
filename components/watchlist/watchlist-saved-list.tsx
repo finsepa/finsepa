@@ -75,7 +75,7 @@ export function WatchlistSavedList() {
             <li key={row.id}>
               <Link
                 href={`/stock/${encodeURIComponent(row.ticker)}`}
-                className="flex h-[60px] max-h-[60px] items-center gap-3 px-4 transition-colors duration-75 hover:bg-neutral-50"
+                className="flex h-[60px] max-h-[60px] items-center gap-3 px-4 transition-colors duration-75 hover:bg-table-row-hover"
               >
                 <div className={meta.frameClass} aria-hidden>
                   {meta.initials}

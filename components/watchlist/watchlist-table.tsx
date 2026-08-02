@@ -7,7 +7,11 @@ import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-d
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
   SCREENER_TABLE_BODY_DIVIDE_CLASS,
+  SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
@@ -170,112 +174,124 @@ function WatchlistTableRow({
   sectionId,
   onRemove,
   onMoveItem,
+  showDivider = false,
 }: {
   row: WatchlistEnrichedItem;
   globalIndex: number;
   sectionId: string | null;
   onRemove: (ticker: string) => void;
   onMoveItem: (fromIndex: number, target: WatchlistDropTarget) => void;
+  /** Mobile inset stroke under the row (desktop uses parent `divide-y`). */
+  showDivider?: boolean;
 }) {
   const [dragOver, setDragOver] = useState(false);
 
   return (
-    <div
-      draggable={globalIndex >= 0}
-      aria-label={`Reorder ${row.symbol}`}
-      onDragStart={(event) => {
-        if (globalIndex < 0) return;
-        logWatchlistDragStart(row.storageKey, globalIndex, sectionId);
-        writeWatchlistDragData(event.dataTransfer, {
-          globalIndex,
-          storageKey: row.storageKey,
-        });
-      }}
-      onDragEnd={() => {
-        setDragOver(false);
-      }}
-      onDragOver={(event) => {
-        if (globalIndex < 0) return;
-        event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
-        setDragOver(true);
-      }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={(event) => {
-        event.preventDefault();
-        setDragOver(false);
-        if (globalIndex < 0) return;
-        const payload = readWatchlistDragData(event.dataTransfer);
-        if (!payload) return;
-        if (payload.globalIndex === globalIndex) return;
-        logWatchlistDragEnd(payload.storageKey, { kind: "row", toIndex: globalIndex, sectionId });
-        onMoveItem(payload.globalIndex, { kind: "row", toIndex: globalIndex, sectionId });
-      }}
-      className={cn(
-        "group grid min-h-[60px] cursor-grab items-center bg-surface px-4 transition-colors duration-75 active:cursor-grabbing max-md:touch-manipulation",
-        watchlistRowGridClass,
-        globalIndex < 0 && "cursor-default",
-        dragOver ? "bg-stroke" : "hover:bg-neutral-50",
-      )}
-    >
-      <Link
-        href={row.href}
-        draggable={false}
-        className={cn(
-          "col-span-2 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-fg visited:text-fg sm:col-span-7 sm:col-start-1 sm:min-h-[60px]",
-          watchlistRowLinkGridClass,
-        )}
-        aria-label={`Open ${row.name} (${row.symbol})`}
-      >
-        <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left max-md:gap-2">
-          <CompanyLogo name={row.name} logoUrl={row.logoUrl ?? ""} symbol={row.symbol} />
-          <div className="min-w-0">
-            <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
-              {row.name}
+    <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div
+          draggable={globalIndex >= 0}
+          aria-label={`Reorder ${row.symbol}`}
+          onDragStart={(event) => {
+            if (globalIndex < 0) return;
+            logWatchlistDragStart(row.storageKey, globalIndex, sectionId);
+            writeWatchlistDragData(event.dataTransfer, {
+              globalIndex,
+              storageKey: row.storageKey,
+            });
+          }}
+          onDragEnd={() => {
+            setDragOver(false);
+          }}
+          onDragOver={(event) => {
+            if (globalIndex < 0) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragOver(false);
+            if (globalIndex < 0) return;
+            const payload = readWatchlistDragData(event.dataTransfer);
+            if (!payload) return;
+            if (payload.globalIndex === globalIndex) return;
+            logWatchlistDragEnd(payload.storageKey, { kind: "row", toIndex: globalIndex, sectionId });
+            onMoveItem(payload.globalIndex, { kind: "row", toIndex: globalIndex, sectionId });
+          }}
+          className={cn(
+            "group grid min-h-[60px] cursor-grab items-center transition-colors duration-75 active:cursor-grabbing max-md:touch-manipulation",
+            watchlistRowGridClass,
+            SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+            globalIndex < 0 && "cursor-default",
+            // Match screener tables: dark-mode `table-row-hover` (never light `neutral-50`).
+            dragOver ? "bg-stroke" : "max-md:hover:bg-table-row-hover",
+          )}
+        >
+          <Link
+            href={row.href}
+            draggable={false}
+            className={cn(
+              "col-span-2 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-fg visited:text-fg sm:col-span-7 sm:col-start-1 sm:min-h-[60px]",
+              watchlistRowLinkGridClass,
+            )}
+            aria-label={`Open ${row.name} (${row.symbol})`}
+          >
+            <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left max-md:gap-2">
+              <CompanyLogo name={row.name} logoUrl={row.logoUrl ?? ""} symbol={row.symbol} />
+              <div className="min-w-0">
+                <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
+                  {row.name}
+                </div>
+                <div className="text-[12px] font-normal leading-4 text-fg-muted underline-offset-2 decoration-fg-muted group-hover:underline">
+                  {row.kind === "crypto" ? eodhdCryptoSpotTickerDisplay(row.symbol) : row.symbol}
+                </div>
+              </div>
             </div>
-            <div className="text-[12px] font-normal leading-4 text-fg-muted underline-offset-2 decoration-fg-muted group-hover:underline">
-              {row.kind === "crypto" ? eodhdCryptoSpotTickerDisplay(row.symbol) : row.symbol}
+
+            <div className="block sm:hidden">
+              <PriceAndChangeCell price={row.price} change1D={row.pct1d} kind={row.kind} />
             </div>
+
+            <div
+              className={`hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums sm:block ${
+                row.price == null || !Number.isFinite(row.price) ? "text-fg-muted" : "text-fg"
+              }`}
+            >
+              {formatPrice(row.price, row.kind)}
+            </div>
+
+            <div className="hidden min-w-0 w-full sm:block">
+              <ChangeCell value={row.pct1d} />
+            </div>
+            <div className="hidden min-w-0 w-full sm:block">
+              <ChangeCell value={row.pct1m} />
+            </div>
+            <div className="hidden min-w-0 w-full sm:block">
+              <ChangeCell value={row.ytd} />
+            </div>
+            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block">
+              {row.mcapDisplay}
+            </div>
+            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block">
+              {row.peDisplay}
+            </div>
+          </Link>
+
+          <div className="flex justify-center opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover:opacity-100 md:has-[:focus-visible]:opacity-100">
+            <WatchlistRowRemoveButton
+              className="flex items-center justify-center"
+              storageKey={row.storageKey}
+              label={row.symbol}
+              onRemove={onRemove}
+            />
           </div>
         </div>
-
-        <div className="block sm:hidden">
-          <PriceAndChangeCell price={row.price} change1D={row.pct1d} kind={row.kind} />
-        </div>
-
-        <div
-          className={`hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums sm:block ${
-            row.price == null || !Number.isFinite(row.price) ? "text-fg-muted" : "text-fg"
-          }`}
-        >
-          {formatPrice(row.price, row.kind)}
-        </div>
-
-        <div className="hidden min-w-0 w-full sm:block">
-          <ChangeCell value={row.pct1d} />
-        </div>
-        <div className="hidden min-w-0 w-full sm:block">
-          <ChangeCell value={row.pct1m} />
-        </div>
-        <div className="hidden min-w-0 w-full sm:block">
-          <ChangeCell value={row.ytd} />
-        </div>
-        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block">
-          {row.mcapDisplay}
-        </div>
-        <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block">
-          {row.peDisplay}
-        </div>
-      </Link>
-
-      <div className="flex justify-center opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover:opacity-100 md:has-[:focus-visible]:opacity-100">
-        <WatchlistRowRemoveButton
-          className="flex items-center justify-center"
-          storageKey={row.storageKey}
-          label={row.symbol}
-          onRemove={onRemove}
-        />
       </div>
+      {showDivider ? (
+        <div className={cn(SCREENER_TABLE_STROKE_INSET_CLASS, "md:hidden")} aria-hidden />
+      ) : null}
     </div>
   );
 }
@@ -321,7 +337,7 @@ function UserSectionGroup({
       />
 
       {!collapsed &&
-        rows.map((row) => (
+        rows.map((row, i) => (
           <WatchlistTableRow
             key={row.entryId}
             row={row}
@@ -329,6 +345,7 @@ function UserSectionGroup({
             sectionId={sectionId}
             onRemove={onRemove}
             onMoveItem={onMoveItem}
+            showDivider={i < rows.length - 1}
           />
         ))}
     </>
@@ -412,7 +429,7 @@ export function WatchlistTable() {
           <div className="bg-surface">
             <WatchlistTableHeader />
             <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
-              {tableGroups.unsectioned.map((row) => (
+              {tableGroups.unsectioned.map((row, i) => (
                 <WatchlistTableRow
                   key={row.entryId}
                   row={row}
@@ -420,6 +437,7 @@ export function WatchlistTable() {
                   sectionId={null}
                   onRemove={removeFromActiveWatchlist}
                   onMoveItem={moveActiveWatchlistItem}
+                  showDivider={i < tableGroups.unsectioned.length - 1}
                 />
               ))}
               {tableGroups.sections.map(({ section, rows }, sectionIndex) => (

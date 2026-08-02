@@ -346,7 +346,7 @@ export function EarningsEstimatesHeader({
   onMetricChange,
 }: EstimatesHeaderProps) {
   return (
-    <div className="mb-0 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-0 flex flex-col items-start gap-5 sm:flex-row sm:items-center sm:justify-between">
       <SegmentedControl
         aria-label="Estimate metric"
         options={[
@@ -355,6 +355,7 @@ export function EarningsEstimatesHeader({
         ]}
         value={metric}
         onChange={onMetricChange}
+        className="w-auto shrink-0 self-start"
       />
       <SegmentedControl
         aria-label="Statement period"
@@ -364,6 +365,7 @@ export function EarningsEstimatesHeader({
         ]}
         value={period}
         onChange={onPeriodChange}
+        className="w-auto shrink-0 self-start"
       />
     </div>
   );

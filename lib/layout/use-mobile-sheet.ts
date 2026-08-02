@@ -6,7 +6,10 @@ import { useEffect, useState } from "react";
 export const MOBILE_SHEET_MEDIA_QUERY = "(max-width: 767px)";
 
 export function useMobileSheet() {
-  const [isMobileSheet, setIsMobileSheet] = useState(false);
+  const [isMobileSheet, setIsMobileSheet] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(MOBILE_SHEET_MEDIA_QUERY).matches;
+  });
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_SHEET_MEDIA_QUERY);

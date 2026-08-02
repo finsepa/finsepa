@@ -30,11 +30,17 @@ export const formFieldControlHeightClassName = "box-border h-9 min-h-9 max-h-9 s
 export const fieldIdleHoverStrokeClassName =
   "dark:[&:not(:focus-within)]:hover:outline-field-stroke-hover";
 
+/**
+ * Dark idle hover — lighten 1px field stroke (Date, Portfolio, Operation, …).
+ * Applied whether or not the control is focused so triggers stay consistent.
+ */
+export const fieldIdleHoverBorderClassName = "dark:hover:border-field-stroke-hover";
+
 export const textInputShellClassName = [
   fieldChromeClassName,
   "outline-none",
   "transition-[color,background-color,border-color,box-shadow]",
-  "dark:[&:not(:focus-within)]:hover:border-field-stroke-hover",
+  fieldIdleHoverBorderClassName,
   "focus-within:shadow-[0_0_0_2px_var(--fs-field-ring)]",
 ].join(" ");
 
@@ -44,22 +50,24 @@ export const textInputFieldClassName = [
   fieldChromeClassName,
   "py-0 text-fg placeholder:text-fg-muted outline-none",
   "transition-[color,background-color,border-color,box-shadow]",
-  "dark:[&:not(:focus)]:hover:border-field-stroke-hover",
+  fieldIdleHoverBorderClassName,
   // Same active stroke as search — no `focus:ring-*` (causes offset gap / blue UA look).
   "focus:shadow-[0_0_0_2px_var(--fs-field-ring)]",
   "focus-visible:outline-none",
 ].join(" ");
 
 /**
- * Dropdown / listbox triggers (Date, Operation, FormListboxSelect, …).
- * Same field chrome as text inputs.
+ * Dropdown / listbox triggers (Date, Portfolio, Operation, FormListboxSelect, …).
+ * Same field chrome as text inputs — including idle hover stroke.
  */
 export const dropdownTriggerFieldClassName = [
   formFieldControlHeightClassName,
   fieldChromeClassName,
   "outline-none",
   "transition-[color,background-color,border-color,box-shadow]",
-  "dark:[&:not(:focus)]:hover:border-field-stroke-hover",
+  fieldIdleHoverBorderClassName,
   "focus-visible:shadow-[0_0_0_2px_var(--fs-field-ring)]",
   "focus-visible:outline-none",
+  "data-[state=open]:shadow-[0_0_0_2px_var(--fs-field-ring)]",
+  "aria-[expanded=true]:shadow-[0_0_0_2px_var(--fs-field-ring)]",
 ].join(" ");

@@ -1,10 +1,10 @@
 "use client";
 
 import type { CSSProperties, ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { Suspense, useRef, useState } from "react";
 
 import { MainScrollToTop } from "@/components/layout/main-scroll-to-top";
-import { MobileBottomNav } from "@/components/layout/mobile-bottom-nav";
 import { MarketsTabHostProvider } from "@/components/screener/markets-tab-host-context";
 import { StockDetailTabHostProvider } from "@/components/stock/stock-detail-tab-host-context";
 import { MobilePrimaryNavProvider } from "@/components/layout/mobile-primary-nav-context";
@@ -31,6 +31,15 @@ import {
 import { MOBILE_STOCK_TOPBAR_OFFSET_CLASS } from "@/lib/layout/use-mobile-stock-topbar-layout";
 import { useMobileTopbarScrollBlur } from "@/lib/layout/use-mobile-topbar-scroll-blur";
 import { cn } from "@/lib/utils";
+
+/** Client-only — Motion + AnimatePresence cannot safely SSR-hydrate in this tree. */
+const MobileBottomNav = dynamic(
+  () =>
+    import("@/components/layout/mobile-bottom-nav").then((m) => ({
+      default: m.MobileBottomNav,
+    })),
+  { ssr: false },
+);
 
 function ProtectedAppChrome({
   children,

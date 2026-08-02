@@ -15,7 +15,7 @@ import type {
 } from "@/lib/market/stock-key-indicators-types";
 import { cn } from "@/lib/utils";
 
-const KEY_INDICATORS_CARD_CLASS = cn("mb-3 p-4 max-md:mb-0", MOBILE_INSET_CARD_CLASS);
+const KEY_INDICATORS_CARD_CLASS = cn("mb-3 p-4 max-md:mb-4", MOBILE_INSET_CARD_CLASS);
 
 function formatAnalyzedAt(iso: string | null): string | null {
   if (!iso) return null;

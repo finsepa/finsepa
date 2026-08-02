@@ -1,6 +1,6 @@
 "use client";
 
-import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
+import { chartMarkerDiscFillColor, resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   AreaSeries,
@@ -396,7 +396,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       crosshairMarkerVisible: true,
       crosshairMarkerRadius: 5,
       crosshairMarkerBorderColor: resolveFsColor("--fs-accent"),
-      crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
+      crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
       crosshairMarkerBorderWidth: 2,
     });
 
@@ -414,7 +414,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
           crosshairMarkerVisible: true,
           crosshairMarkerRadius: 5,
           crosshairMarkerBorderColor: color,
-          crosshairMarkerBackgroundColor: resolveFsColor("--fs-panel"),
+          crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
           crosshairMarkerBorderWidth: 2,
         }),
       );

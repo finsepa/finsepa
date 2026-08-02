@@ -548,9 +548,12 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
 
               {grouped.map((g) => (
                 <Fragment key={g.key}>
-                  <div className="bg-canvas">
-                    <div className={cn(DEFAULT_TABLE_ROW_HOVER_PAD_CLASS, "py-2.5 md:pl-5")}>
-                      <span className="text-[14px] font-semibold leading-5 text-fg-muted">{g.label}</span>
+                  {/* Full-width section band — same as Industries sector group (“Technology”). */}
+                  <div className="px-0">
+                    <div className="rounded-none bg-surface-section px-[20px] py-2.5 md:px-[20px]">
+                      <div className="font-['Inter'] text-[14px] font-medium leading-5 text-fg-muted">
+                        {g.label}
+                      </div>
                     </div>
                   </div>
                   {g.rows.map((t, rowIndex) => (

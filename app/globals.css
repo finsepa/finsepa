@@ -170,9 +170,13 @@
   );
   /** Mobile topbar chrome + progressive blur below it (Revolut-style). */
   --mobile-markets-tabs-row-height: 41px;
+  /** Space between “Markets” title and the Stocks/Crypto/… tab row. */
+  --mobile-markets-title-tabs-gap: 16px;
   /** Empty chrome below fixed Markets tabs — scroll gradient fades through this band. */
   --mobile-markets-tabs-gap: 16px;
-  --mobile-markets-tabs-height: calc(var(--mobile-markets-tabs-row-height) + var(--mobile-markets-tabs-gap));
+  --mobile-markets-tabs-height: calc(
+    var(--mobile-markets-title-tabs-gap) + var(--mobile-markets-tabs-row-height) + var(--mobile-markets-tabs-gap)
+  );
   /** Compact title row when market tabs sit in the fixed top bar (below “Markets”). */
   --mobile-markets-title-row-height: 44px;
   --mobile-topbar-height: 4rem;
@@ -765,23 +769,8 @@ body {
   }
 
   .mobile-bottom-nav-tabs::before {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    z-index: 0;
-    top: 2px;
-    bottom: 2px;
-    left: calc(
-      var(--mobile-bottom-nav-highlight-index, 0) *
-        (100% / var(--mobile-bottom-nav-highlight-count, 5)) + 2px
-    );
-    width: calc((100% / var(--mobile-bottom-nav-highlight-count, 5)) - 4px);
-    border-radius: 9999px;
-    background: rgba(20, 20, 20, 0.05);
-    transition-property: left;
-    transition-duration: 280ms;
-    transition-timing-function: cubic-bezier(0.33, 1, 0.68, 1);
-    will-change: left;
+    /* Active chip is painted in React (`bg-dropdown-item-hover`); keep legacy pseudo off. */
+    content: none;
   }
 
   .mobile-bottom-nav-tab-button {
@@ -790,8 +779,24 @@ body {
     -webkit-tap-highlight-color: transparent;
     transition:
       color 100ms ease,
-      opacity 100ms ease,
-      background-color 100ms ease;
+      opacity 100ms ease;
+  }
+
+  /**
+   * Touch-only chrome: suppress `.fs-button-gradient-stroke:hover` face lift on the pill
+   * and search morph (sticky :hover after tap, desktop-style hover on simulators).
+   */
+  .dark .mobile-bottom-nav-pill.fs-button-gradient-stroke:hover:not(:disabled),
+  .dark .mobile-bottom-nav-pill.fs-button-gradient-stroke:focus-visible:not(:disabled),
+  .dark .mobile-bottom-nav-search-morph.fs-button-gradient-stroke:hover:not(:disabled),
+  .dark .mobile-bottom-nav-search-morph.fs-button-gradient-stroke:focus-visible:not(:disabled) {
+    --fs-button-face: var(--fs-dropdown);
+  }
+
+  .mobile-bottom-nav-tab-button:hover,
+  .mobile-bottom-nav-search-pill:hover {
+    background-color: transparent;
+    opacity: inherit;
   }
 
   [data-haptic-overlay] {
@@ -842,8 +847,7 @@ body {
   html.mobile-bottom-nav-more-active .mobile-bottom-nav-tab-button,
   html.mobile-bottom-nav-more-active .mobile-bottom-nav-tab-button svg,
   html.mobile-bottom-nav-more-active .mobile-bottom-nav-tab-icon,
-  html.mobile-bottom-nav-more-active .mobile-bottom-nav-tabs,
-  html.mobile-bottom-nav-more-active .mobile-bottom-nav-tabs::before {
+  html.mobile-bottom-nav-more-active .mobile-bottom-nav-tabs {
     transition: none !important;
   }
 
@@ -1005,7 +1009,6 @@ body {
   .mobile-bottom-nav-pill,
   .mobile-bottom-nav-search-morph,
   .mobile-bottom-nav-search-pill,
-  .mobile-bottom-nav-tabs::before,
   .mobile-bottom-nav-blur-fade {
     transition: none;
   }

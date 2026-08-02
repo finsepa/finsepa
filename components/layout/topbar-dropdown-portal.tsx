@@ -11,10 +11,7 @@ import {
   type RefObject,
 } from "react";
 
-import {
-  dropdownMenuMobileSheetBodyClassName,
-  dropdownMenuMobileSheetStripPanelClassName,
-} from "@/components/design-system/dropdown-menu-styles";
+import { dropdownMenuMobileSheetStripPanelClassName } from "@/components/design-system/dropdown-menu-styles";
 import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
 import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
 import { cn } from "@/lib/utils";
@@ -200,15 +197,10 @@ export const TopbarDropdownPortal = forwardRef<HTMLDivElement, TopbarDropdownPor
           title={sheetTitle}
           zIndex={TOPBAR_DROPDOWN_PORTAL_Z}
         >
+          {/* Sheet shell = web dropdown surface; flatten nested panel chrome only. */}
           <div
             ref={ref}
-            className={cn(
-              dropdownMenuMobileSheetBodyClassName,
-              dropdownMenuMobileSheetStripPanelClassName,
-              "!rounded-none !border-0 !bg-transparent !shadow-none",
-              className,
-              "w-full min-w-0 max-w-none",
-            )}
+            className={cn("w-full min-w-0 max-w-none", dropdownMenuMobileSheetStripPanelClassName)}
           >
             {children}
           </div>

@@ -81,18 +81,18 @@ export function dropdownMenuPanelClassName(...extra: (string | undefined | null 
   return cn(dropdownMenuSurfaceClassName(), dropdownMenuPanelBodyClassName, ...extra.filter(Boolean));
 }
 
-/** Body padding when a dropdown panel is rendered inside a mobile bottom sheet. */
-export const dropdownMenuMobileSheetBodyClassName = "flex flex-col gap-1 p-2";
+/** Body padding when a dropdown panel is rendered inside a mobile bottom sheet — same as web panel body. */
+export const dropdownMenuMobileSheetBodyClassName = "flex flex-col gap-1 p-1";
 
 /**
- * Strip floating-menu chrome when nesting `dropdownMenuPanelClassName()` inside a mobile sheet.
- * Apply on the sheet body wrapper around the menu panel.
+ * Flatten a nested `dropdownMenuPanelClassName()` inside a sheet that already has web dropdown chrome.
+ * Keeps padding / gap; removes a second border, fill, shadow, and radius.
  */
 export const dropdownMenuMobileSheetStripPanelClassName =
-  "[&>*]:!rounded-none [&>*]:!border-0 [&>*]:!bg-transparent [&>*]:!p-0 [&>*]:!shadow-none";
+  "[&>*]:!rounded-none [&>*]:!border-0 [&>*]:!bg-transparent [&>*]:!shadow-none [&>*]:!backdrop-blur-none [&>*]:!backdrop-saturate-100";
 
 const plainItemBase =
-  "flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-lg bg-transparent px-4 py-2 text-left text-sm font-normal leading-5 text-fg transition-colors hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10";
+  "flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-lg bg-transparent px-4 py-2 text-left text-sm font-normal leading-5 text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10";
 
 /**
  * Single-line option (~40px): surface row; use `dropdownMenuPlainItemRowClassName` when showing a trailing check.
@@ -119,13 +119,13 @@ export function dropdownMenuPlainItemRowClassName(opts?: { selected?: boolean })
  * Row with split hit targets (e.g. portfolio label + edit icon).
  */
 export const dropdownMenuCompositeRowClassName =
-  "flex min-h-12 w-full items-center gap-0 overflow-hidden rounded-lg bg-transparent text-sm text-fg transition-colors hover:bg-dropdown-item-hover";
+  "flex min-h-12 w-full items-center gap-0 overflow-hidden rounded-lg bg-transparent text-sm text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover";
 
 /**
  * Searchable menus — slightly denser two-line rows (company / metric pickers).
  */
 export function dropdownMenuRichItemClassName() {
   return cn(
-    "flex w-full cursor-pointer items-start gap-2 rounded-lg bg-transparent px-3 py-2 text-left text-[13px] leading-4 text-fg transition-colors hover:bg-dropdown-item-hover",
+    "flex w-full cursor-pointer items-start gap-2 rounded-lg bg-transparent px-3 py-2 text-left text-[13px] leading-4 text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover",
   );
 }

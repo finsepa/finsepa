@@ -60,12 +60,12 @@ function entriesFromCards(cards: IndexCardData[]): IndexEntry[] {
 export const INDEX_CARDS_GRID_CLASS =
   "flex w-max flex-nowrap gap-3 md:grid md:w-full md:max-w-full md:grid-cols-3 md:gap-3 lg:grid-cols-4 xl:grid-cols-5";
 
-/** Outer shell — keeps vertical overflow visible so cards aren’t clipped. */
-export const INDEX_CARDS_SCROLL_OUTER_CLASS = "mb-5 overflow-visible";
+/** Outer shell — keeps vertical overflow visible so cards aren’t clipped. Mobile: 16px stack rhythm. */
+export const INDEX_CARDS_SCROLL_OUTER_CLASS = "mb-5 max-md:mb-4 overflow-visible";
 
-/** Horizontal scroll track — bleed right for peek; keep left inset with page gutter. */
+/** Horizontal scroll track — bleed right for peek; keep left inset with page gutter. No extra top pad (session → cards is 16px). */
 export const INDEX_CARDS_SCROLL_CLASS =
-  "-mr-4 pl-1 pr-4 pt-1 mobile-scroll-x md:mx-0 md:overflow-visible md:pl-0 md:pr-0 md:pb-0 md:pt-0 md:mb-0";
+  "-mr-4 pl-1 pr-4 mobile-scroll-x md:mx-0 md:overflow-visible md:pl-0 md:pr-0 md:pb-0 md:mb-0";
 
 export const INDEX_CARD_SURFACE_CLASS = cn(
   "flex w-[7.25625rem] shrink-0 flex-col items-start gap-0.5 max-md:py-3.5 overflow-hidden px-3 py-3 transition max-md:overflow-visible md:gap-1 sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink",

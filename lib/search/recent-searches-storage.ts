@@ -4,20 +4,15 @@ const STORAGE_KEY_LEGACY = "finsepa-search-recent-v1";
 /** Most recent first; oldest dropped when a new navigation is recorded past this cap. */
 export const MAX_RECENT_SEARCHES = 10;
 
+/** Stored recent row — same shape as search results plus optional sync timestamp. */
+export type RecentSearchStoredItem = SearchAssetItem & {
+  /** Epoch ms when this navigation was recorded (for cross-device merge). */
+  recordedAt?: number;
+};
+
 function storageKeyForUser(userId: string | null): string {
   if (userId && userId.length > 0) return `${STORAGE_KEY_LEGACY}.u.${userId}`;
   return `${STORAGE_KEY_LEGACY}.guest`;
-}
-
-function safeParse(raw: string | null): SearchAssetItem[] {
-  if (!raw) return [];
-  try {
-    const v = JSON.parse(raw) as unknown;
-    if (!Array.isArray(v)) return [];
-    return v.filter(isSearchAssetItem);
-  } catch {
-    return [];
-  }
 }
 
 function isSearchAssetItem(x: unknown): x is SearchAssetItem {
@@ -32,24 +27,93 @@ function isSearchAssetItem(x: unknown): x is SearchAssetItem {
   );
 }
 
-/** Keeps first occurrence of each `id` (list is already newest-first). */
-function dedupeNewestFirst(list: SearchAssetItem[]): SearchAssetItem[] {
-  const seen = new Set<string>();
-  const out: SearchAssetItem[] = [];
-  for (const item of list) {
-    if (seen.has(item.id)) continue;
-    seen.add(item.id);
-    out.push(item);
+function withRecordedAt(item: SearchAssetItem, recordedAt?: number): RecentSearchStoredItem {
+  const at =
+    typeof recordedAt === "number" && Number.isFinite(recordedAt) ? recordedAt : undefined;
+  return at != null ? { ...item, recordedAt: at } : { ...item };
+}
+
+/** Normalize API / localStorage payloads into valid recent-search rows. */
+export function normalizeRecentSearchItems(raw: unknown): RecentSearchStoredItem[] {
+  if (!Array.isArray(raw)) return [];
+  const out: RecentSearchStoredItem[] = [];
+  for (const x of raw) {
+    if (!isSearchAssetItem(x)) continue;
+    const o = x as SearchAssetItem & { recordedAt?: unknown };
+    const recordedAt =
+      typeof o.recordedAt === "number" && Number.isFinite(o.recordedAt) ? o.recordedAt : undefined;
+    out.push(
+      withRecordedAt(
+        {
+          id: o.id,
+          type: o.type,
+          symbol: o.symbol,
+          name: o.name,
+          subtitle: typeof o.subtitle === "string" || o.subtitle === null ? o.subtitle : null,
+          logoUrl: typeof o.logoUrl === "string" || o.logoUrl === null ? o.logoUrl : null,
+          route: o.route,
+          marketLabel:
+            typeof o.marketLabel === "string" || o.marketLabel === null ? o.marketLabel : null,
+        },
+        recordedAt,
+      ),
+    );
   }
   return out;
 }
 
-function readRawFromKey(key: string): SearchAssetItem[] {
-  if (typeof window === "undefined") return [];
-  return safeParse(window.localStorage.getItem(key));
+function recordedAtOf(item: RecentSearchStoredItem, fallbackIndex: number, listLen: number): number {
+  if (typeof item.recordedAt === "number" && Number.isFinite(item.recordedAt)) {
+    return item.recordedAt;
+  }
+  // Legacy rows without timestamps: preserve relative newest-first order.
+  return listLen - fallbackIndex;
 }
 
-function writeRawToKey(key: string, list: SearchAssetItem[]): void {
+/**
+ * Union two newest-first lists without dropping either side's unique entries.
+ * Same `id` keeps the newer `recordedAt` (or first-list relative order for legacy rows).
+ */
+export function mergeRecentSearchLists(
+  primary: readonly RecentSearchStoredItem[],
+  secondary: readonly RecentSearchStoredItem[],
+): RecentSearchStoredItem[] {
+  const byId = new Map<string, RecentSearchStoredItem>();
+
+  const ingest = (list: readonly RecentSearchStoredItem[]) => {
+    list.forEach((item, index) => {
+      const nextAt = recordedAtOf(item, index, list.length);
+      const prev = byId.get(item.id);
+      if (!prev) {
+        byId.set(item.id, { ...item, recordedAt: nextAt });
+        return;
+      }
+      const prevAt = recordedAtOf(prev, 0, 1);
+      if (nextAt >= prevAt) {
+        byId.set(item.id, { ...item, recordedAt: nextAt });
+      }
+    });
+  };
+
+  // Secondary first, then primary wins ties — callers pass local/client as primary.
+  ingest(secondary);
+  ingest(primary);
+
+  return [...byId.values()]
+    .sort((a, b) => (b.recordedAt ?? 0) - (a.recordedAt ?? 0))
+    .slice(0, MAX_RECENT_SEARCHES);
+}
+
+function readRawFromKey(key: string): RecentSearchStoredItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return normalizeRecentSearchItems(JSON.parse(window.localStorage.getItem(key) ?? "null"));
+  } catch {
+    return [];
+  }
+}
+
+function writeRawToKey(key: string, list: RecentSearchStoredItem[]): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(key, JSON.stringify(list));
@@ -61,8 +125,9 @@ function writeRawToKey(key: string, list: SearchAssetItem[]): void {
 /**
  * Recent searches are scoped per signed-in user (same browser, separate accounts).
  * Guest browsing uses a guest key only — never merged into a new account on signup.
+ * Signed-in users also sync via `/api/search/recent` (see {@link useSearchRecentStorage}).
  */
-export function readRecentSearches(userId: string | null = null): SearchAssetItem[] {
+export function readRecentSearches(userId: string | null = null): RecentSearchStoredItem[] {
   if (typeof window === "undefined") return [];
 
   const key = storageKeyForUser(userId);
@@ -82,8 +147,8 @@ export function readRecentSearches(userId: string | null = null): SearchAssetIte
     }
   }
 
-  const next = dedupeNewestFirst(raw).slice(0, MAX_RECENT_SEARCHES);
-  if (next.length !== raw.length) {
+  const next = mergeRecentSearchLists(raw, []).slice(0, MAX_RECENT_SEARCHES);
+  if (JSON.stringify(next) !== JSON.stringify(raw)) {
     writeRawToKey(key, next);
   }
   return next;
@@ -93,16 +158,37 @@ export function readRecentSearches(userId: string | null = null): SearchAssetIte
  * Call when user opens an asset from search (or peers / charting picker).
  * Moves `item` to the front; drops the oldest entry when already at {@link MAX_RECENT_SEARCHES}.
  */
-export function recordSearchNavigation(item: SearchAssetItem, userId: string | null = null): void {
-  if (typeof window === "undefined") return;
+export function recordSearchNavigation(
+  item: SearchAssetItem,
+  userId: string | null = null,
+): RecentSearchStoredItem[] {
+  if (typeof window === "undefined") return [];
+  const stamped = withRecordedAt(item, Date.now());
   const prev = readRecentSearches(userId).filter((r) => r.id !== item.id);
-  const next = [item, ...prev].slice(0, MAX_RECENT_SEARCHES);
+  const next = [stamped, ...prev].slice(0, MAX_RECENT_SEARCHES);
   writeRawToKey(storageKeyForUser(userId), next);
+  return next;
 }
 
 /** Drops one entry from recents only; does not touch watchlist. */
-export function removeRecentSearchById(id: string, userId: string | null = null): void {
-  if (typeof window === "undefined") return;
+export function removeRecentSearchById(
+  id: string,
+  userId: string | null = null,
+): RecentSearchStoredItem[] {
+  if (typeof window === "undefined") return [];
   const next = readRecentSearches(userId).filter((r) => r.id !== id);
   writeRawToKey(storageKeyForUser(userId), next);
+  return next;
+}
+
+/** Replace the local cache after a successful server merge (signed-in only). */
+export function writeRecentSearches(
+  items: RecentSearchStoredItem[],
+  userId: string | null,
+): void {
+  if (typeof window === "undefined" || !userId) return;
+  writeRawToKey(
+    storageKeyForUser(userId),
+    mergeRecentSearchLists(items, []).slice(0, MAX_RECENT_SEARCHES),
+  );
 }

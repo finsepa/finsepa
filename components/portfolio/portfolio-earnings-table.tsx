@@ -64,6 +64,12 @@ function formatDaysLeftLabel(daysLeft: number): string {
   return String(daysLeft);
 }
 
+/** Mobile-only copy: "1 day left" / "79 days left". */
+function formatDaysLeftPhrase(daysLeft: number): string {
+  if (daysLeft === 1) return "1 day left";
+  return `${daysLeft} days left`;
+}
+
 function earningsPreviewItemFromHolding(args: {
   holding: PortfolioHolding;
   companyName: string;
@@ -86,12 +92,18 @@ function DaysLeftCell({
   daysLeft,
   loading,
   align = "left",
+  /** Mobile omits countdown bars and uses “N day(s) left” text. */
+  compact = false,
 }: {
   daysLeft: number | null;
   loading: boolean;
   align?: "left" | "right";
+  compact?: boolean;
 }) {
   if (loading) {
+    if (compact) {
+      return <SkeletonBox className="h-4 w-20 rounded" aria-hidden />;
+    }
     return (
       <div
         className={cn("flex items-center gap-2.5", align === "right" && "justify-end")}
@@ -108,6 +120,13 @@ function DaysLeftCell({
   }
   if (daysLeft == null) {
     return <span className="tabular-nums text-fg">{EM_DASH}</span>;
+  }
+  if (compact) {
+    return (
+      <span className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-fg">
+        {formatDaysLeftPhrase(daysLeft)}
+      </span>
+    );
   }
   return (
     <div
@@ -233,42 +252,66 @@ function PortfolioEarningsTableInner({
   return (
     <div className={cn("w-full max-md:pb-4 sm:pb-2", className)}>
       <div className="sm:hidden">
-        <div>
-          {sortedHoldings.map((h) => {
+        <div className="bg-surface">
+          <div
+            className={cn(
+              SCREENER_TABLE_HEADER_STICKY_CLASS,
+              SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+              SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+              "md:border-b-0",
+            )}
+          >
+            <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+              <div className="flex min-h-[44px] min-w-0 w-full items-end justify-between gap-3 py-0 text-[14px] font-medium leading-5 text-fg-muted">
+                <div className="min-w-0 text-left">Asset</div>
+                <div className="shrink-0 text-right">
+                  <div>Days left</div>
+                  <div className="text-[12px] font-medium leading-4 text-fg-muted">Earnings date</div>
+                </div>
+              </div>
+            </div>
+            <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+          </div>
+
+          {sortedHoldings.map((h, i) => {
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
             const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
             const { earningsLabel, daysLeft, metaLoading } = rowMeta(h.symbol);
 
             return (
-              <div
-                key={h.id}
-                className="group flex min-h-[56px] cursor-pointer items-center justify-between gap-3 border-b border-[#EFEFEF] px-4 py-[10px]"
-                onClick={() => openEarningsPreview(h)}
-                onKeyDown={(e) => {
-                  if (e.key !== "Enter" && e.key !== " ") return;
-                  e.preventDefault();
-                  openEarningsPreview(h);
-                }}
-                tabIndex={0}
-                role="button"
-                aria-label={`Open earnings for ${companyName}`}
-              >
-                <div className="flex min-w-0 flex-1 items-center gap-3">
-                  <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
-                  <div className="min-w-0">
-                    <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                    <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{caption}</div>
+              <div key={h.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                <div
+                  className="group flex min-h-[56px] cursor-pointer items-center justify-between gap-3 px-4 py-[10px] transition-colors duration-75 hover:bg-table-row-hover"
+                  onClick={() => openEarningsPreview(h)}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter" && e.key !== " ") return;
+                    e.preventDefault();
+                    openEarningsPreview(h);
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Open earnings for ${companyName}`}
+                >
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
+                    <div className="min-w-0">
+                      <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
+                      <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{caption}</div>
+                    </div>
+                  </div>
+                  <div className="flex min-w-0 shrink-0 flex-col items-end gap-1">
+                    <DaysLeftCell daysLeft={daysLeft} loading={metaLoading} compact />
+                    <div className="font-['Inter'] text-[12px] font-medium leading-4 tabular-nums text-fg-muted">
+                      {earningsLabel === "…" ?
+                        <SkeletonBox className="ml-auto h-3 w-20 rounded" />
+                      : earningsLabel}
+                    </div>
                   </div>
                 </div>
-                <div className="flex min-w-0 shrink-0 flex-col items-end gap-1">
-                  <DaysLeftCell daysLeft={daysLeft} loading={metaLoading} />
-                  <div className="font-['Inter'] text-[12px] font-medium leading-4 tabular-nums text-fg-muted">
-                    {earningsLabel === "…" ?
-                      <SkeletonBox className="ml-auto h-3 w-20 rounded" />
-                    : earningsLabel}
-                  </div>
-                </div>
+                {i < sortedHoldings.length - 1 ? (
+                  <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                ) : null}
               </div>
             );
           })}
