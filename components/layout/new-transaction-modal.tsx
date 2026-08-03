@@ -42,6 +42,13 @@ import { portfolioSymbolMatchesAssetRoute } from "@/lib/portfolio/portfolio-asse
 import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-transaction";
 import { lotUnrealizedPnL, mergeBuyIntoPosition } from "@/lib/portfolio/holding-position";
 import {
+  CashDirectionSelect,
+  cashOperationLabel,
+  cashSignedAmount,
+  type CashDirection,
+} from "@/components/layout/cash-direction-select";
+import {
+  formatCashToastDescription,
   formatExpenseToastDescription,
   formatIncomeToastDescription,
   formatTradeToastDescription,
@@ -50,7 +57,7 @@ import {
 import { refreshHoldingMarketPrices, replayTradeTransactionsToHoldings } from "@/lib/portfolio/rebuild-holdings-from-trades";
 import { parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
 
-const TABS = ["Trades", "Incomes", "Expenses"] as const;
+const TABS = ["Trades", "Incomes", "Expenses", "Cash"] as const;
 
 const TRADE_ASSET_TABS = [
   { value: "listed" as const, label: "Company / Ticker" },
@@ -124,6 +131,8 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
   const [incomeFees, setIncomeFees] = useState("");
   const [expenseOperation, setExpenseOperation] = useState<ExpenseOperation>("Other expense");
   const [expenseAmount, setExpenseAmount] = useState("");
+  const [cashDirection, setCashDirection] = useState<CashDirection>("in");
+  const [cashAmount, setCashAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [tradeAssetSource, setTradeAssetSource] = useState<TradeAssetSource>("listed");
   const [customAssetName, setCustomAssetName] = useState("");
@@ -222,6 +231,8 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
     setIncomeFees("");
     setExpenseOperation("Other expense");
     setExpenseAmount("");
+    setCashDirection("in");
+    setCashAmount("");
     setSubmitting(false);
     setTradeAssetSource("listed");
     setCustomAssetName("");
@@ -245,6 +256,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
   );
 
   const expenseAmountNum = useMemo(() => parseUsdStyleNumber(expenseAmount), [expenseAmount]);
+  const cashAmountNum = useMemo(() => parseUsdStyleNumber(cashAmount), [cashAmount]);
 
   const canAdd = useMemo(() => {
     if (!hasSelectedPortfolio) return false;
@@ -274,6 +286,9 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
       if (!selectedCompany?.symbol?.trim()) return false;
       return expenseAmountNum > 0;
     }
+    if (transactionTab === "Cash") {
+      return cashAmountNum > 0;
+    }
     return false;
   }, [
     transactionTab,
@@ -289,6 +304,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
     incomeFeeNum,
     incomeNetUsd,
     expenseAmountNum,
+    cashAmountNum,
     selectedHoldingShares,
   ]);
 
@@ -300,6 +316,16 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
   const balanceAfterExpenseUsd = useMemo(
     () => roundUsdForDisplay(currentCashBalanceUsd - expenseAmountNum),
     [currentCashBalanceUsd, expenseAmountNum],
+  );
+
+  const cashDeltaUsd = useMemo(
+    () => (cashAmountNum > 0 ? cashSignedAmount(cashDirection, cashAmountNum) : 0),
+    [cashAmountNum, cashDirection],
+  );
+
+  const balanceAfterCashUsd = useMemo(
+    () => roundUsdForDisplay(currentCashBalanceUsd + cashDeltaUsd),
+    [currentCashBalanceUsd, cashDeltaUsd],
   );
 
   const currentCashBalanceDisplayUsd = useMemo(
@@ -413,6 +439,54 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
     transactionTab,
   ]);
 
+  const handleAddCash = useCallback(() => {
+    if (transactionTab !== "Cash" || !canAdd || !selectedPortfolioId) return;
+    const n = cashAmountNum;
+    if (n <= 0) return;
+
+    setSubmitting(true);
+    try {
+      const dateStr = format(transactionDate, "yyyy-MM-dd");
+      const opLabel = cashOperationLabel(cashDirection);
+      addTransaction(selectedPortfolioId, {
+        id: newTransactionRowId(),
+        portfolioId: selectedPortfolioId,
+        kind: "cash",
+        operation: opLabel,
+        symbol: "USD",
+        name: "US Dollar",
+        logoUrl: null,
+        date: dateStr,
+        shares: n,
+        price: 1,
+        fee: 0,
+        sum: cashSignedAmount(cashDirection, n),
+        profitPct: null,
+        profitUsd: null,
+      });
+      toastTransactionAdded(
+        cashDirection === "in"
+          ? "Cash deposited"
+          : cashDirection === "out"
+            ? "Cash withdrawn"
+            : "Cash recorded",
+        formatCashToastDescription(cashDirection, n),
+      );
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    addTransaction,
+    canAdd,
+    cashAmountNum,
+    cashDirection,
+    onClose,
+    selectedPortfolioId,
+    transactionDate,
+    transactionTab,
+  ]);
+
   const handleAdd = useCallback(async () => {
     if (transactionTab === "Incomes") {
       handleAddIncome();
@@ -420,6 +494,10 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
     }
     if (transactionTab === "Expenses") {
       handleAddExpense();
+      return;
+    }
+    if (transactionTab === "Cash") {
+      handleAddCash();
       return;
     }
     if (transactionTab !== "Trades") return;
@@ -568,6 +646,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
     transactionTab,
     handleAddIncome,
     handleAddExpense,
+    handleAddCash,
     transactionsByPortfolioId,
   ]);
 
@@ -773,6 +852,27 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
               </>
             ) : null}
 
+            {transactionTab === "Cash" ? (
+              <>
+                <Field label="Operation">
+                  <CashDirectionSelect value={cashDirection} onChange={setCashDirection} />
+                </Field>
+
+                <Field label="Date">
+                  <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
+                </Field>
+
+                <Field label="Amount">
+                  <UsdMoneyClearableInput
+                    value={cashAmount}
+                    onChange={setCashAmount}
+                    placeholder="0.00"
+                    clearLabel="Clear amount"
+                  />
+                </Field>
+              </>
+            ) : null}
+
             <div className="pt-1">
               <div className="flex items-center gap-1 border-b border-dashed border-stroke py-2.5 text-sm">
                 <span className="flex-1 font-medium text-fg-muted">Current cash balance</span>
@@ -843,6 +943,38 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                       )}
                     >
                       {usdBalance.format(balanceAfterExpenseUsd)}
+                    </span>
+                  </div>
+                </>
+              ) : null}
+              {transactionTab === "Cash" && cashAmountNum > 0 ? (
+                <>
+                  <div className="flex items-center gap-1 border-b border-dashed border-stroke py-2.5 text-sm">
+                    <span className="flex-1 font-medium text-fg-muted">
+                      {cashDeltaUsd >= 0 ? "Cash in" : "Cash out"}
+                    </span>
+                    <span
+                      className={cn(
+                        "shrink-0 font-semibold tabular-nums",
+                        cashDeltaUsd >= 0 ? "text-up" : "text-down",
+                      )}
+                    >
+                      {usdFormatter.format(cashDeltaUsd)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 py-2.5 text-sm">
+                    <span className="flex-1 font-medium text-fg-muted">Balance after</span>
+                    <span
+                      className={cn(
+                        "shrink-0 font-semibold tabular-nums",
+                        balanceAfterCashUsd < 0
+                          ? "text-down"
+                          : balanceAfterCashUsd > 0
+                            ? "text-up"
+                            : "text-fg",
+                      )}
+                    >
+                      {usdBalance.format(balanceAfterCashUsd)}
                     </span>
                   </div>
                 </>
@@ -928,7 +1060,11 @@ function TransactionTypeTabs({
 
   return (
     <div className={`w-full border-b ${APP_MODAL_RULE_CLASS}`}>
-      <nav ref={navRef} className="relative flex w-full flex-nowrap items-start gap-5 pb-px" aria-label="Transaction type">
+      <nav
+        ref={navRef}
+        className="relative flex w-full flex-nowrap items-start gap-4 overflow-x-auto pb-px sm:gap-5"
+        aria-label="Transaction type"
+      >
         {TABS.map((tab) => {
           const isOn = tab === active;
           return (

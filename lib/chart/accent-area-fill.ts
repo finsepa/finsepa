@@ -53,18 +53,43 @@ export function accentAreaGradientColors(): { top: string; bottom: string } {
 
 /**
  * Opaque underlay under holdings blue fill (masks quarter bars).
- * Light: white (as before). Dark: panel so it doesn’t flash white.
+ * Light: white (as before). Dark: match plot backdrop (`panel` or `surface`).
  */
-export function holdingsAreaUnderlayColors(): { top: string; bottom: string } {
+export function holdingsAreaUnderlayColors(
+  backdrop: "panel" | "surface" = "panel",
+): { top: string; bottom: string } {
   if (rawPanelLooksDark()) {
-    const panel = resolveFsColor("--fs-panel");
-    return { top: panel, bottom: panel };
+    const token = backdrop === "surface" ? "--fs-surface" : "--fs-panel";
+    const fill = resolveFsColor(token);
+    return { top: fill, bottom: fill };
+  }
+  if (backdrop === "surface") {
+    const surface = resolveFsColor("--fs-surface");
+    return { top: surface, bottom: surface };
   }
   return {
     top: "rgba(255, 255, 255, 0.97)",
     bottom: "#ffffff",
   };
 }
+
+/** Soft buy/sell quarter columns (superinvestor / holdings expand). Theme-aware. */
+export function holdingsQuarterBandFill(
+  side: "buy" | "sell",
+  backdrop: "panel" | "surface" = "panel",
+): string {
+  const baseToken = backdrop === "surface" ? "--fs-surface" : "--fs-panel";
+  const base = resolveFsColor(baseToken);
+  const accent = resolveFsColor(side === "buy" ? "--fs-up" : "--fs-down");
+  const accentHex = accent.match(/^#[0-9a-f]{6}$/i)?.[0] ?? (side === "buy" ? "#16a34a" : "#dc2626");
+  if (rawPanelLooksDark()) {
+    return `linear-gradient(180deg, ${hexToRgba(accentHex, 0.22)} 0%, ${hexToRgba(accentHex, 0.1)} 55%, ${hexToRgba(accentHex, 0.03)} 85%, ${base} 100%)`;
+  }
+  // Soft wash fade into white/panel on light.
+  const softTop = side === "buy" ? "#F0FDF4" : "#FEF2F2";
+  return `linear-gradient(180deg, ${softTop} 0%, ${softTop} 90%, ${base} 97%, ${base} 100%)`;
+}
+
 
 /** Baseline series green/red area fills — uses theme `--fs-up` / `--fs-down`. */
 export function baselineUpDownFillColors(variant: "bright" | "dim" = "bright"): {

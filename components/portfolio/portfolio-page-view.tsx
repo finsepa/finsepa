@@ -11,6 +11,7 @@ import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screensho
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
 import { PortfolioAllocationView } from "@/components/portfolio/portfolio-allocation-view";
 import { PortfolioEarningsTable } from "@/components/portfolio/portfolio-earnings-table";
+import { PortfolioEmptySetupTiles } from "@/components/portfolio/portfolio-empty-setup-tiles";
 import { PortfolioHoldingsEmptyState } from "@/components/portfolio/portfolio-holdings-empty-state";
 import { PortfolioHoldingsTable } from "@/components/portfolio/portfolio-holdings-table";
 import { PortfolioSlicesView } from "@/components/portfolio/portfolio-slices-view";
@@ -235,6 +236,8 @@ export function PortfolioPageView({
 
   const hasPortfolioLedger =
     holdings.length > 0 || tradeSymbolsFromHistory(transactions).length > 0;
+  /** Owner portfolio with no ledger — same setup CTAs on every main tab. */
+  const showEmptySetupTiles = !readOnly && transactions.length === 0;
   const showOverviewHoldingsBlock = hasPortfolioLedger;
   const benchmarkInvestedUsd = totalCostBasisInvested(holdings);
   const allocationRows = useMemo(
@@ -343,7 +346,9 @@ export function PortfolioPageView({
         >
           <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
         </button>
-        <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
+        {!showEmptySetupTiles ? (
+          <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
+        ) : null}
       </>
     );
 
@@ -393,120 +398,135 @@ export function PortfolioPageView({
           onClose={() => setAllocationDownloadOpen(false)}
           snapshot={allocationDownloadSnapshot}
         />
-        <PortfolioOverviewCards
-          holdings={holdings}
-          transactions={transactions}
-          mobileToolbarActions={portfolioToolbarActions}
-        />
-
-        <PortfolioPageTabs active={viewTab} onChange={onTabChange} publicView={readOnly} />
+        {showEmptySetupTiles ? (
+          <div className="mb-5 flex sm:hidden min-w-0 shrink-0 flex-nowrap items-center justify-end gap-2">
+            {portfolioToolbarActions}
+          </div>
+        ) : (
+          <>
+            <PortfolioOverviewCards
+              holdings={holdings}
+              transactions={transactions}
+              mobileToolbarActions={portfolioToolbarActions}
+            />
+            <PortfolioPageTabs active={viewTab} onChange={onTabChange} publicView={readOnly} />
+          </>
+        )}
 
         <div className="flex min-h-0 flex-1 flex-col">
-          {tabsVisited.Overview ? (
-            <div
-              className={panelClass("Overview")}
-              role="tabpanel"
-              id="portfolio-tab-overview"
-              aria-hidden={viewTab !== "Overview"}
-            >
-              <PortfolioOverviewChart
-                transactions={transactions}
-                benchmarkInvestedUsd={benchmarkInvestedUsd}
-              />
-              <PortfolioOverviewMetrics holdings={holdings} transactions={transactions} />
-              <div className="pt-0">
-                <div className="mb-5 flex items-center justify-between gap-3">
-                  <SecondaryTabs
-                    className="min-w-0 flex-1"
-                    aria-label="Holdings view"
-                    items={holdingsSubTabItems}
-                    value={overviewHoldingsSubTab}
-                    onValueChange={onOverviewHoldingsSubTabChange}
+          {showEmptySetupTiles ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <PortfolioEmptySetupTiles />
+            </div>
+          ) : (
+            <>
+              {tabsVisited.Overview ? (
+                <div
+                  className={panelClass("Overview")}
+                  role="tabpanel"
+                  id="portfolio-tab-overview"
+                  aria-hidden={viewTab !== "Overview"}
+                >
+                  <PortfolioOverviewChart
+                    transactions={transactions}
+                    benchmarkInvestedUsd={benchmarkInvestedUsd}
                   />
-                  {allocationDownloadButton}
-                </div>
-                {overviewHoldingsSubTab === "slices" ? (
-                  // Slices has its own donut + table cards; skip the outer mobile shell (double nesting).
-                  <PortfolioSlicesView holdings={holdings} transactions={transactions} readOnly={readOnly} />
-                ) : (
-                  <PortfolioHoldingsSubTabMobileCard>
-                    {!showOverviewHoldingsBlock ? (
-                      <PortfolioHoldingsEmptyState
-                        readOnly={readOnly}
-                        className={OVERVIEW_HOLDINGS_EMBEDDED_EMPTY_CLASS}
+                  <PortfolioOverviewMetrics holdings={holdings} transactions={transactions} />
+                  <div className="pt-0">
+                    <div className="mb-5 flex items-center justify-between gap-3">
+                      <SecondaryTabs
+                        className="min-w-0 flex-1"
+                        aria-label="Holdings view"
+                        items={holdingsSubTabItems}
+                        value={overviewHoldingsSubTab}
+                        onValueChange={onOverviewHoldingsSubTabChange}
                       />
-                    ) : overviewHoldingsSubTab === "earnings" ? (
-                      <PortfolioEarningsTable
-                        holdings={holdings}
-                        className="sm:border-t-0"
-                        assetLinkTab={readOnly ? "overview" : "holdings"}
-                      />
-                    ) : overviewHoldingsSubTab === "assets" ? (
-                      <PortfolioHoldingsTable
-                        holdings={holdings}
-                        transactions={transactions}
-                        className="sm:border-t-0"
-                        assetLinkTab={readOnly ? "overview" : "holdings"}
-                      />
+                      {allocationDownloadButton}
+                    </div>
+                    {overviewHoldingsSubTab === "slices" ? (
+                      // Slices has its own donut + table cards; skip the outer mobile shell (double nesting).
+                      <PortfolioSlicesView holdings={holdings} transactions={transactions} readOnly={readOnly} />
                     ) : (
-                      <PortfolioAllocationView
-                        holdings={holdings}
-                        transactions={transactions}
-                        readOnly={readOnly}
-                        period={allocationReturnPeriod}
-                        onPeriodChange={setAllocationReturnPeriod}
-                        onReturnMetaChange={handleAllocationReturnMeta}
-                      />
+                      <PortfolioHoldingsSubTabMobileCard>
+                        {!showOverviewHoldingsBlock ? (
+                          <PortfolioHoldingsEmptyState
+                            readOnly={readOnly}
+                            className={OVERVIEW_HOLDINGS_EMBEDDED_EMPTY_CLASS}
+                          />
+                        ) : overviewHoldingsSubTab === "earnings" ? (
+                          <PortfolioEarningsTable
+                            holdings={holdings}
+                            className="sm:border-t-0"
+                            assetLinkTab={readOnly ? "overview" : "holdings"}
+                          />
+                        ) : overviewHoldingsSubTab === "assets" ? (
+                          <PortfolioHoldingsTable
+                            holdings={holdings}
+                            transactions={transactions}
+                            className="sm:border-t-0"
+                            assetLinkTab={readOnly ? "overview" : "holdings"}
+                          />
+                        ) : (
+                          <PortfolioAllocationView
+                            holdings={holdings}
+                            transactions={transactions}
+                            readOnly={readOnly}
+                            period={allocationReturnPeriod}
+                            onPeriodChange={setAllocationReturnPeriod}
+                            onReturnMetaChange={handleAllocationReturnMeta}
+                          />
+                        )}
+                      </PortfolioHoldingsSubTabMobileCard>
                     )}
-                  </PortfolioHoldingsSubTabMobileCard>
-                )}
-              </div>
-            </div>
-          ) : null}
+                  </div>
+                </div>
+              ) : null}
 
-          {tabsVisited.Performance ? (
-            <div
-              className={panelClass("Performance")}
-              role="tabpanel"
-              id="portfolio-tab-performance"
-              aria-hidden={viewTab !== "Performance"}
-            >
-              <PortfolioPerformancePanel holdings={holdings} transactions={transactions} />
-            </div>
-          ) : null}
+              {tabsVisited.Performance ? (
+                <div
+                  className={panelClass("Performance")}
+                  role="tabpanel"
+                  id="portfolio-tab-performance"
+                  aria-hidden={viewTab !== "Performance"}
+                >
+                  <PortfolioPerformancePanel holdings={holdings} transactions={transactions} />
+                </div>
+              ) : null}
 
-          {tabsVisited.Dividends ? (
-            <div
-              className={panelClass("Dividends")}
-              role="tabpanel"
-              id="portfolio-tab-dividends"
-              aria-hidden={viewTab !== "Dividends"}
-            >
-              <PortfolioDividendsPanel holdings={holdings} publicListingId={publicListingId} />
-            </div>
-          ) : null}
+              {tabsVisited.Dividends ? (
+                <div
+                  className={panelClass("Dividends")}
+                  role="tabpanel"
+                  id="portfolio-tab-dividends"
+                  aria-hidden={viewTab !== "Dividends"}
+                >
+                  <PortfolioDividendsPanel holdings={holdings} publicListingId={publicListingId} />
+                </div>
+              ) : null}
 
-          {!readOnly && tabsVisited.Cash ? (
-            <div
-              className={panelClass("Cash")}
-              role="tabpanel"
-              id="portfolio-tab-cash"
-              aria-hidden={viewTab !== "Cash"}
-            >
-              <PortfolioCashPanel />
-            </div>
-          ) : null}
+              {!readOnly && tabsVisited.Cash ? (
+                <div
+                  className={panelClass("Cash")}
+                  role="tabpanel"
+                  id="portfolio-tab-cash"
+                  aria-hidden={viewTab !== "Cash"}
+                >
+                  <PortfolioCashPanel />
+                </div>
+              ) : null}
 
-          {tabsVisited.Transactions ? (
-            <div
-              className={panelClass("Transactions")}
-              role="tabpanel"
-              id="portfolio-tab-transactions"
-              aria-hidden={viewTab !== "Transactions"}
-            >
-              <PortfolioTransactionsTable transactions={transactions} />
-            </div>
-          ) : null}
+              {tabsVisited.Transactions ? (
+                <div
+                  className={panelClass("Transactions")}
+                  role="tabpanel"
+                  id="portfolio-tab-transactions"
+                  aria-hidden={viewTab !== "Transactions"}
+                >
+                  <PortfolioTransactionsTable transactions={transactions} />
+                </div>
+              ) : null}
+            </>
+          )}
         </div>
       </PortfolioOverviewAthProvider>
       </div>

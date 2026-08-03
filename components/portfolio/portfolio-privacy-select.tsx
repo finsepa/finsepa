@@ -69,11 +69,14 @@ export function PortfolioPrivacySelect({
   id,
   value,
   onChange,
+  disabled = false,
   "aria-label": ariaLabel = "Portfolio privacy",
 }: {
   id?: string;
   value: PortfolioPrivacy;
   onChange: (next: PortfolioPrivacy) => void;
+  /** When true, trigger is non-interactive (e.g. empty portfolio cannot be public). */
+  disabled?: boolean;
   "aria-label"?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -81,6 +84,10 @@ export function PortfolioPrivacySelect({
   const menuPortalRef = useRef<HTMLDivElement>(null);
   const active = optionByValue(value);
   const ActiveIcon = active.Icon;
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
 
   useEffect(() => {
     if (!open) return;
@@ -105,13 +112,19 @@ export function PortfolioPrivacySelect({
       <button
         type="button"
         id={id}
+        disabled={disabled}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
-        onClick={() => setOpen((v) => !v)}
+        title={disabled ? "Add transactions before changing privacy" : undefined}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((v) => !v);
+        }}
         className={cn(
           "relative flex w-full cursor-pointer items-center gap-2 rounded-[10px] py-2 pl-4 pr-10 text-left text-sm font-normal text-fg focus-visible:ring-2 focus-visible:ring-fg/10",
           dropdownTriggerFieldClassName,
+          disabled && "cursor-not-allowed opacity-50",
         )}
       >
         <ActiveIcon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
@@ -121,11 +134,12 @@ export function PortfolioPrivacySelect({
         className={cn(
           "pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-fg transition-transform",
           open && "rotate-180",
+          disabled && "opacity-50",
         )}
         strokeWidth={2}
         aria-hidden
       />
-      {open ? (
+      {open && !disabled ? (
         <TopbarDropdownPortal
           open={open}
           anchorRef={containerRef}

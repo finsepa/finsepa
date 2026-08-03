@@ -46,13 +46,14 @@ export function SuperinvestorHoldingPriceChart({
 
   return (
     <section className="mb-6">
-      <div className="overflow-visible rounded-[12px] bg-white dark:bg-white">
+      <div className="overflow-visible rounded-[12px] bg-surface">
         <PriceChart
           kind="stock"
           symbol={sym}
           range="5Y"
           chartDataCadence="daily"
           holdingsStyle
+          holdingsPlotBackdrop="surface"
           holdingsQuarterBands={holdingsQuarterBands}
           holdingsEarlierSummary={earlierActivitySummary}
           tradeTooltipItems={tradeTooltipItems}

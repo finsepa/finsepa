@@ -20,7 +20,7 @@ export type PortfolioWorkspaceContextValue = {
   transactionsByPortfolioId: Record<string, PortfolioTransaction[]>;
   addTransaction: (portfolioId: string, transaction: PortfolioTransaction) => void;
   openEditPortfolio: (id: string) => void;
-  openCreatePortfolio: () => void;
+  openCreatePortfolio: (options?: { mode?: "manual" | "brokerage" }) => void;
   openCreateCombinedPortfolio: () => void;
   openConnectBrokerage: () => void;
   /** Re-pull holdings and cash from SnapTrade for a linked portfolio (no paid refresh endpoint). */

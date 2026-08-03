@@ -133,6 +133,7 @@ function EditPortfolioModal({
   allPortfolios,
   initialCombinedFromIds,
   snaptradeLink,
+  privacyDisabled = false,
   onClose,
   onSave,
   onRequestDelete,
@@ -143,6 +144,8 @@ function EditPortfolioModal({
   allPortfolios: PortfolioEntry[];
   initialCombinedFromIds?: string[];
   snaptradeLink?: PortfolioSnaptradeLink | null;
+  /** Empty portfolios cannot change privacy until they have transactions. */
+  privacyDisabled?: boolean;
   onClose: () => void;
   onSave: (name: string, privacy: PortfolioPrivacy, combinedSourceIds?: string[]) => void;
   /** Opens delete confirmation; does not delete immediately. */
@@ -237,7 +240,11 @@ function EditPortfolioModal({
           </ModalField>
         ) : null}
         <ModalField label={<PortfolioPrivacyFieldLabel />}>
-          <PortfolioPrivacySelect value={privacy} onChange={setPrivacy} />
+          <PortfolioPrivacySelect
+            value={privacy}
+            onChange={setPrivacy}
+            disabled={privacyDisabled}
+          />
         </ModalField>
         {snaptradeLink ? <PortfolioSnaptradeConnectionInfo snaptrade={snaptradeLink} /> : null}
       </AppModalShell>
@@ -251,13 +258,15 @@ function CreatePortfolioModal({
   onClose,
   onAdd,
   onConnectBrokerageComplete,
+  initialMode = "manual",
 }: {
   onClose: () => void;
   onAdd: (name: string, privacy: PortfolioPrivacy) => void;
   onConnectBrokerageComplete: (payload: ConnectBrokerageCompletePayload) => void | Promise<void>;
+  initialMode?: CreatePortfolioMode;
 }) {
   const titleId = useId();
-  const [mode, setMode] = useState<CreatePortfolioMode>("manual");
+  const [mode, setMode] = useState<CreatePortfolioMode>(initialMode);
   const [name, setName] = useState("");
   const [privacy, setPrivacy] = useState<PortfolioPrivacy>("private");
 
@@ -268,11 +277,11 @@ function CreatePortfolioModal({
 
   const closeAll = useCallback(() => {
     reset();
-    setMode("manual");
+    setMode(initialMode);
     setName("");
     setPrivacy("private");
     onClose();
-  }, [onClose, reset]);
+  }, [initialMode, onClose, reset]);
 
   const canSubmit = name.trim().length > 0 && !portalLoading;
   const isBrokerage = mode === "brokerage";
@@ -397,6 +406,7 @@ export function PortfolioWorkspaceProvider({
   const [editPortfolioId, setEditPortfolioId] = useState<string | null>(null);
   const [deletePortfolioConfirmId, setDeletePortfolioConfirmId] = useState<string | null>(null);
   const [createPortfolioOpen, setCreatePortfolioOpen] = useState(false);
+  const [createPortfolioMode, setCreatePortfolioMode] = useState<CreatePortfolioMode>("manual");
   const [createCombinedOpen, setCreateCombinedOpen] = useState(false);
   const [connectBrokerageOpen, setConnectBrokerageOpen] = useState(false);
   const [snaptradeSyncPortfolioId, setSnaptradeSyncPortfolioId] = useState<string | null>(null);
@@ -1111,10 +1121,11 @@ export function PortfolioWorkspaceProvider({
     setEditPortfolioOpen(true);
   }, []);
 
-  const openCreatePortfolio = useCallback(() => {
+  const openCreatePortfolio = useCallback((options?: { mode?: CreatePortfolioMode }) => {
     setEditPortfolioOpen(false);
     setEditPortfolioId(null);
     setCreateCombinedOpen(false);
+    setCreatePortfolioMode(options?.mode === "brokerage" ? "brokerage" : "manual");
     setCreatePortfolioOpen(true);
   }, []);
 
@@ -1655,6 +1666,9 @@ export function PortfolioWorkspaceProvider({
           allPortfolios={portfolios}
           initialCombinedFromIds={portfolios.find((p) => p.id === editPortfolioId)?.combinedFrom}
           snaptradeLink={portfolios.find((p) => p.id === editPortfolioId)?.snaptrade ?? null}
+          privacyDisabled={
+            (displayTransactionsByPortfolioId[editPortfolioId] ?? []).length === 0
+          }
           onClose={() => {
             setEditPortfolioOpen(false);
             setEditPortfolioId(null);
@@ -1816,6 +1830,8 @@ export function PortfolioWorkspaceProvider({
       />
       {createPortfolioOpen ? (
         <CreatePortfolioModal
+          key={createPortfolioMode}
+          initialMode={createPortfolioMode}
           onClose={() => setCreatePortfolioOpen(false)}
           onConnectBrokerageComplete={async (payload) => {
             await finalizeConnectBrokerage(payload);

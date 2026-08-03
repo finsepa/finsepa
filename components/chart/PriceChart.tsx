@@ -116,6 +116,7 @@ import {
   accentAreaGradientColors,
   baselineUpDownFillColors,
   holdingsAreaUnderlayColors,
+  holdingsQuarterBandFill,
 } from "@/lib/chart/accent-area-fill";
 import {
   computeQuarterBandPixelLayouts,
@@ -358,6 +359,11 @@ type Props = {
    * Does not call `onDisplayChange` (keeps stock/crypto header on overview metrics).
    */
   holdingsStyle?: boolean;
+  /**
+   * Plot backdrop for holdings charts. `surface` matches expanded table chrome (superinvestors);
+   * `panel` matches main app canvas (default).
+   */
+  holdingsPlotBackdrop?: "panel" | "surface";
   /** Trade dates (yyyy-MM-dd) shown as green (buy) / red (sell) dots, snapped to bars in range. */
   tradeMarkers?: readonly HoldingsTradeMarker[];
   /** Superinvestor only: quarterly activity columns (width ≈ one quarter); hides circle markers when set. */
@@ -427,12 +433,8 @@ function applyLiveSessionSeriesPriceLineOptions(
   });
 }
 
-/** Holdings expand chart: panel underlay masks quarter bars; soft-blue → panel gradient on top. */
+/** Holdings expand chart: panel underlay masks quarter bars; soft buy/sell fills on top. */
 const HOLDINGS_QUARTER_BAND_HEIGHT_RATIO = 0.14;
-const HOLDINGS_QUARTER_BAND_BUY_GRADIENT =
-  "linear-gradient(180deg, #F0FDF4 0%, #F0FDF4 90%, #ffffff 97%, #ffffff 100%)";
-const HOLDINGS_QUARTER_BAND_SELL_GRADIENT =
-  "linear-gradient(180deg, #FEF2F2 0%, #FEF2F2 90%, #ffffff 97%, #ffffff 100%)";
 const HOLDINGS_EARLIER_BAND_WIDTH_PX = 58;
 const HOLDINGS_EARLIER_BAND_HEIGHT = "42%";
 const BASELINE_LINE = "rgba(113, 113, 122, 0.55)";
@@ -442,13 +444,13 @@ const Y_AXIS_LABEL_COUNT = 6;
 
 const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
 
-function yAxisLabelOnlyOptions() {
+function yAxisLabelOnlyOptions(backdrop: "panel" | "surface" = "panel") {
   return {
     color: "transparent",
     lineWidth: 1 as const,
     lineStyle: LineStyle.Solid,
     axisLabelVisible: true,
-    axisLabelColor: resolveFsColor("--fs-panel"),
+    axisLabelColor: resolveFsColor(backdrop === "surface" ? "--fs-surface" : "--fs-panel"),
     axisLabelTextColor: resolveFsColor("--fs-fg-muted"),
     lineVisible: false,
     title: "",
@@ -528,6 +530,7 @@ function syncYAxisTickLabels(
   series: MainPriceSeries,
   ticksRef: RefObject<IPriceLine[]>,
   tickCount: number = Y_AXIS_LABEL_COUNT,
+  axisBackdrop: "panel" | "surface" = "panel",
 ) {
   const h = chart.paneSize(0).height;
   if (!Number.isFinite(h) || h <= 0 || tickCount < 2) {
@@ -591,7 +594,7 @@ function syncYAxisTickLabels(
   for (let i = 0; i < prices.length; i++) {
     const price = prices[i]!;
     const existing = ticksRef.current[i];
-    const opts = yAxisLabelOnlyOptions();
+    const opts = yAxisLabelOnlyOptions(axisBackdrop);
     if (existing) {
       existing.applyOptions({ price, ...opts });
     } else {
@@ -775,6 +778,7 @@ type HoldingsBandsOverlayProps = {
   earlierLines: readonly string[];
   plotInsetTop: string;
   plotInsetBottom: string;
+  plotBackdrop: "panel" | "surface";
 };
 
 /** Isolated from PriceChart hover state so crosshair moves do not re-render quarter fills. */
@@ -784,6 +788,7 @@ const HoldingsQuarterBandsOverlay = memo(function HoldingsQuarterBandsOverlay({
   earlierLines,
   plotInsetTop,
   plotInsetBottom,
+  plotBackdrop,
 }: HoldingsBandsOverlayProps) {
   if (layouts.length === 0 && !earlierSummary) return null;
 
@@ -798,7 +803,7 @@ const HoldingsQuarterBandsOverlay = memo(function HoldingsQuarterBandsOverlay({
       >
         {earlierSummary ? (
           <div
-            className="absolute top-0 left-0 rounded-sm border-t-[3px] border-fg-subtle bg-[rgba(113,113,122,0.14)]"
+            className="absolute top-0 left-0 rounded-sm border-t-[3px] border-fg-subtle bg-[rgba(113,113,122,0.14)] dark:bg-[rgba(113,113,122,0.22)]"
             style={{ width: HOLDINGS_EARLIER_BAND_WIDTH_PX, height: HOLDINGS_EARLIER_BAND_HEIGHT }}
           />
         ) : null}
@@ -813,7 +818,7 @@ const HoldingsQuarterBandsOverlay = memo(function HoldingsQuarterBandsOverlay({
               <div
                 className={cn("h-full border-t-[3px]", isBuy ? "border-up" : "border-down")}
                 style={{
-                  background: isBuy ? HOLDINGS_QUARTER_BAND_BUY_GRADIENT : HOLDINGS_QUARTER_BAND_SELL_GRADIENT,
+                  background: holdingsQuarterBandFill(isBuy ? "buy" : "sell", plotBackdrop),
                 }}
               />
             </div>
@@ -848,10 +853,9 @@ const HoldingsQuarterBandsOverlay = memo(function HoldingsQuarterBandsOverlay({
             >
               <div
                 className={cn(
-                  "flex flex-col items-center gap-0 px-0.5 text-center leading-tight",
+                  "flex flex-col items-center gap-0 px-0.5 text-center leading-tight [text-shadow:var(--fs-chart-value-label-shadow)]",
                   isBuy ? "text-up" : "text-down",
                 )}
-                style={{ textShadow: "0 0 4px #fff, 0 0 8px #fff, 0 1px 2px #fff" }}
               >
                 <span className="text-[9px] font-semibold sm:text-[10px]">{band.actionLabel}</span>
                 {band.pctLabel ? (
@@ -905,6 +909,7 @@ export function PriceChart({
   liveQuotedAtSec = null,
   livePostMarketTailTimeUnix = null,
   holdingsStyle = false,
+  holdingsPlotBackdrop = "panel",
   tradeMarkers = EMPTY_TRADE_MARKERS,
   holdingsQuarterBands = EMPTY_HOLDINGS_QUARTER_BANDS,
   holdingsEarlierSummary = null,
@@ -917,6 +922,7 @@ export function PriceChart({
 }: Props) {
   const chartThemePaintKey = useChartThemePaintKey();
   const holdingsStyleRef = useRef(holdingsStyle);
+  const holdingsPlotBackdropRef = useRef(holdingsPlotBackdrop);
   const chartMetricSeriesRef = useRef(series);
   const kindRef = useRef(kind);
   const rangeRef = useRef(range);
@@ -947,6 +953,10 @@ export function PriceChart({
   useEffect(() => {
     holdingsStyleRef.current = holdingsStyle;
   }, [holdingsStyle]);
+
+  useEffect(() => {
+    holdingsPlotBackdropRef.current = holdingsPlotBackdrop;
+  }, [holdingsPlotBackdrop]);
 
   useEffect(() => {
     holdingsQuarterBandsRef.current = holdingsQuarterBands;
@@ -1552,7 +1562,7 @@ export function PriceChart({
       if (hide) {
         removeYAxisTickLabels(series, yAxisTickLinesRef);
       } else if (!screenshotPreviewModeRef.current || screenshotShowVerticalLegendRef.current) {
-        syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
+        syncYAxisTickLabels(chart, series, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
       } else {
         removeYAxisTickLabels(series, yAxisTickLinesRef);
       }
@@ -1576,7 +1586,7 @@ export function PriceChart({
       !shouldHideMobileYAxisLabels(containerWidthRef.current) &&
       (!screenshotPreviewModeRef.current || screenshotShowVerticalLegendRef.current)
     ) {
-      syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
+      syncYAxisTickLabels(chart, series, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
     }
   }, [logPriceScale]);
 
@@ -1836,7 +1846,7 @@ export function PriceChart({
 
     const series = holdingsStyle
       ? (() => {
-          const underlay = holdingsAreaUnderlayColors();
+          const underlay = holdingsAreaUnderlayColors(holdingsPlotBackdropRef.current);
           holdingsFillUnderlayRef.current = chart.addSeries(AreaSeries, {
             lineColor: "rgba(255,255,255,0)",
             topColor: underlay.top,
@@ -2306,7 +2316,7 @@ export function PriceChart({
           !hideMobileYAxisLabelsRef.current &&
           (!screenshotPreviewModeRef.current || screenshotShowVerticalLegendRef.current);
         if (showYAxisLabels) {
-          syncYAxisTickLabels(c2, s2, yAxisTickLinesRef);
+          syncYAxisTickLabels(c2, s2, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
         } else {
           removeYAxisTickLabels(s2, yAxisTickLinesRef);
         }
@@ -2427,7 +2437,7 @@ export function PriceChart({
     if (!chart || !series) return;
     const hide = shouldHideMobileYAxisLabels(containerWidth);
     if (!hide && screenshotShowVerticalLegend) {
-      syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
+      syncYAxisTickLabels(chart, series, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
     } else {
       removeYAxisTickLabels(series, yAxisTickLinesRef);
     }
@@ -2966,7 +2976,7 @@ export function PriceChart({
       // Portfolio chart: hide top/bottom plot border lines (keep right-axis numbers).
       removeScaleBoundsPriceLines(series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
       if (!hideMobileYAxisLabelsRef.current) {
-        syncYAxisTickLabels(chart, series, yAxisTickLinesRef);
+        syncYAxisTickLabels(chart, series, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
       } else {
         removeYAxisTickLabels(series, yAxisTickLinesRef);
       }
@@ -3114,7 +3124,7 @@ export function PriceChart({
     removeScaleBoundsPriceLines(single, scaleTopPriceLineRef, scaleBottomPriceLineRef);
     removeSessionHighLowPriceLines(single, sessionHighPriceLineRef, sessionLowPriceLineRef);
     if (!hideMobileYAxisLabelsRef.current) {
-      syncYAxisTickLabels(chart, single, yAxisTickLinesRef);
+      syncYAxisTickLabels(chart, single, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
     } else {
       removeYAxisTickLabels(single, yAxisTickLinesRef);
     }
@@ -3296,7 +3306,7 @@ export function PriceChart({
       }
     >
       <div className={cn("relative min-h-0", useCustomBottomAxis ? "min-w-0 flex-1" : "absolute inset-0")} style={useCustomBottomAxis ? { height: plotHeight } : undefined}>
-      <div className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)} aria-hidden>
+      <div className={cn("pointer-events-none absolute inset-0 z-0", holdingsStyle && holdingsPlotBackdrop === "surface" ? "bg-surface" : CHART_PLOT_BACKGROUND_CLASS)} aria-hidden>
         {!useMobileOverviewCrosshair ? (
           <div
             className={
@@ -3318,6 +3328,7 @@ export function PriceChart({
           earlierLines={holdingsEarlierLines}
           plotInsetTop={quarterBandPlotInset.top}
           plotInsetBottom={quarterBandPlotInset.bottom}
+          plotBackdrop={holdingsPlotBackdrop}
         />
       ) : null}
       <div
@@ -3328,7 +3339,10 @@ export function PriceChart({
       />
       <div
         ref={dimOverlayRef}
-        className={cn("pointer-events-none absolute inset-y-0 right-0 z-[15]", CHART_PLOT_BACKGROUND_FAINT_CLASS)}
+        className={cn(
+          "pointer-events-none absolute inset-y-0 right-0 z-[15]",
+          holdingsStyle && holdingsPlotBackdrop === "surface" ? "bg-surface/55" : CHART_PLOT_BACKGROUND_FAINT_CLASS,
+        )}
         style={{ display: "none", left: 0 }}
         aria-hidden
       />

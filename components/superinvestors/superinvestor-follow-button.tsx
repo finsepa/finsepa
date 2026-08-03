@@ -51,7 +51,7 @@ export function SuperinvestorFollowButton({
           ? "border-stroke bg-surface text-down shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] hover:bg-surface-muted"
           : showFollowing
             ? "border-stroke bg-surface text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] hover:bg-surface-muted"
-            : "border-fg bg-fg text-surface hover:bg-[#18181B] dark:hover:bg-surface-hover",
+            : "border-fg bg-fg text-surface hover:bg-[#18181B] hover:text-white dark:hover:border-stroke dark:hover:bg-surface-hover dark:hover:text-fg",
         className,
       )}
       {...(mounted && hydrated ? { "aria-pressed": following } : {})}

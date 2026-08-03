@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 type UserAvatarSize = "sm" | "md" | "menu" | "portfolios" | "lg" | "xl";
 
 type UserAvatarProps = {
@@ -6,29 +8,28 @@ type UserAvatarProps = {
   initials: string;
   /** `sm` = 28px, `md` = 32px, `menu` = 40px (topbar profile menu), `portfolios` = 56px, `lg` = 80px, `xl` = 60px donut. */
   size: UserAvatarSize;
-  /** Black circle + white crown at bottom-right (active Pro subscription). */
+  /** Crown badge at bottom-right (active Pro subscription). */
   showProBadge?: boolean;
 };
 
-const smShell =
-  "flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-fg text-[11px] font-semibold text-white";
-/** Public portfolio cards — matches Figma avatar component (32×32). */
-const mdShell =
-  "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-[11px] font-semibold text-fg-muted";
-/** Topbar profile dropdown header — 40×40. */
-const menuShell =
-  "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-[13px] font-semibold text-fg-muted";
-/** `/portfolios` directory — 56×56 per design. */
-const portfoliosShell =
-  "flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-lg font-semibold text-fg-muted ring-1 ring-stroke";
-const lgShell =
-  "flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-lg font-semibold text-fg-muted ring-1 ring-stroke";
-/** Center of portfolio allocation donut — white ring reads on colored slices. */
-const xlShell =
-  "flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-base font-semibold text-fg-muted ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-08))]";
+/** Shared initials shell — muted surface in light + dark (avoids white `bg-fg` disc on dark). */
+const SHELL_BASE =
+  "flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted font-semibold text-fg-muted";
+
+const shellBySize: Record<UserAvatarSize, string> = {
+  sm: cn(SHELL_BASE, "h-7 w-7 text-[11px]"),
+  md: cn(SHELL_BASE, "h-8 w-8 text-[11px]"),
+  menu: cn(SHELL_BASE, "h-10 w-10 text-[13px]"),
+  portfolios: cn(SHELL_BASE, "h-14 w-14 text-lg ring-1 ring-stroke"),
+  lg: cn(SHELL_BASE, "h-20 w-20 text-lg ring-1 ring-stroke"),
+  /** Center of portfolio allocation donut — pale ring on colored slices. */
+  xl: cn(
+    SHELL_BASE,
+    "h-[60px] w-[60px] text-base ring-[1px] ring-white shadow-[0px_1px_4px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-08))]",
+  ),
+};
 
 const proBadgeBySize: Record<UserAvatarSize, { shell: string; icon: string }> = {
-  /** Topbar trigger — keep badge readable on 28px avatar. */
   sm: { shell: "h-4 w-4 -bottom-px -right-px", icon: "h-2.5 w-2.5" },
   md: { shell: "h-4 w-4 -bottom-px -right-px", icon: "h-2.5 w-2.5" },
   menu: { shell: "h-4 w-4 -bottom-px -right-px", icon: "h-2.5 w-2.5" },
@@ -51,19 +52,21 @@ function ProCrownIcon({ className }: { className?: string }) {
 }
 
 export function UserAvatar({ imageSrc, initials, size, showProBadge = false }: UserAvatarProps) {
-  const shell =
-    size === "sm" ? smShell
-    : size === "md" ? mdShell
-    : size === "menu" ? menuShell
-    : size === "portfolios" ? portfoliosShell
-    : size === "xl" ? xlShell
-    : lgShell;
+  const src = typeof imageSrc === "string" && imageSrc.trim() ? imageSrc.trim() : null;
+  const label = (initials || "?").slice(0, 3);
 
   const avatar = (
-    <div className={`${shell} relative`}>
-      <span aria-hidden>{initials}</span>
-      {imageSrc ? (
-        <img src={imageSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
+    <div
+      className={cn(shellBySize[size], "relative")}
+      // Topbar can hydrate with a fresher avatar URL / initials than SSR claims.
+      suppressHydrationWarning
+    >
+      <span aria-hidden suppressHydrationWarning>
+        {label}
+      </span>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element -- remote user avatars + blob previews
+        <img src={src} alt="" className="absolute inset-0 h-full w-full object-cover" suppressHydrationWarning />
       ) : null}
     </div>
   );
@@ -73,12 +76,18 @@ export function UserAvatar({ imageSrc, initials, size, showProBadge = false }: U
   const badge = proBadgeBySize[size];
 
   return (
-    <span className="relative inline-flex shrink-0">
+    <span className="relative inline-flex shrink-0" suppressHydrationWarning>
       {avatar}
       <span
-        className={`absolute z-[1] flex items-center justify-center overflow-hidden rounded-full bg-fg text-white ring-2 ring-white dark:border dark:border-stroke-muted dark:bg-surface dark:text-icon dark:ring-0 ${badge.shell}`}
+        className={cn(
+          "absolute z-[1] flex items-center justify-center overflow-hidden rounded-full",
+          // Theme-safe: muted disc + fg icon (no white-on-hover clash in dark).
+          "border border-stroke bg-surface-muted text-fg shadow-sm",
+          badge.shell,
+        )}
         title="Pro"
         aria-label="Pro"
+        suppressHydrationWarning
       >
         <ProCrownIcon className={badge.icon} />
       </span>
