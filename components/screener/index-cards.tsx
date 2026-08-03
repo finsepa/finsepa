@@ -137,7 +137,7 @@ export function IndexCards({
           const href = symbol ? indexAssetHref(symbol) : null;
           const body = (
             <>
-              <p className="w-full truncate text-left text-[14px] font-medium leading-5 text-fg-muted">
+              <p className="w-full truncate text-left text-[14px] font-medium leading-5 text-fg-muted group-hover:underline group-hover:underline-offset-2">
                 {name}
               </p>
               <FadeIn show={fadeIn}>
@@ -165,7 +165,7 @@ export function IndexCards({
             <Link
               key={name}
               href={href}
-              className={cn(INDEX_CARD_SURFACE_CLASS, "hover:bg-surface-muted/60")}
+              className={cn(INDEX_CARD_SURFACE_CLASS, "group hover:bg-surface-muted/60")}
             >
               {body}
             </Link>

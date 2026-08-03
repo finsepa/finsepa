@@ -5,11 +5,6 @@ import { Suspense, useEffect } from "react";
 
 import { establishAuthSessionFromCurrentUrl } from "@/lib/auth/establish-session-from-url";
 import { postWelcomeTrialStartFromSession } from "@/lib/auth/send-welcome-trial-start-from-session";
-import {
-  appendOnboardingQuery,
-  persistOnboardingPendingOnUser,
-  shouldMarkOnboardingAfterAuth,
-} from "@/lib/auth/onboarding";
 import { consumeOAuthRedirectState } from "@/lib/auth/oauth-redirect-state";
 import {
   parseAuthCallbackParams,
@@ -106,13 +101,6 @@ function AuthCallbackInner() {
       if (established && session) {
         let destination = safeNext;
         try {
-          const supabase = getSupabaseBrowserClient();
-          const user = session.user ?? null;
-          const authType = params.type ?? searchParams.get("type") ?? stored.intent;
-          if (shouldMarkOnboardingAfterAuth(user, authType)) {
-            await persistOnboardingPendingOnUser(supabase);
-            destination = appendOnboardingQuery(safeNext);
-          }
           await postWelcomeTrialStartFromSession();
         } catch {
           /* non-blocking */

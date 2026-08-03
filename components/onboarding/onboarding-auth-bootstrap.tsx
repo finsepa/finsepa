@@ -7,9 +7,7 @@ import {
   replaceUrlPathOnly,
 } from "@/lib/auth/establish-session-from-url";
 import { postWelcomeTrialStartFromSession } from "@/lib/auth/send-welcome-trial-start-from-session";
-import { ONBOARDING_AUTH_READY_EVENT, persistOnboardingPendingOnUser } from "@/lib/auth/onboarding";
 import { parseAuthCallbackParams } from "@/lib/auth/parse-auth-callback-url";
-import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 function urlHasAuthTokens(href: string): boolean {
   const params = parseAuthCallbackParams(href);
@@ -25,9 +23,9 @@ function urlHasAuthTokens(href: string): boolean {
 
 /**
  * Email confirm links sometimes land on `/screener` (or another protected route) with tokens
- * in the hash instead of `/auth/callback`. Exchange them here, then notify onboarding host.
+ * in the hash instead of `/auth/callback`. Exchange them here so the session is established.
  */
-export function OnboardingAuthBootstrap() {
+export function AuthSessionUrlBootstrap() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!urlHasAuthTokens(window.location.href)) return;
@@ -38,11 +36,8 @@ export function OnboardingAuthBootstrap() {
       const result = await establishAuthSessionFromCurrentUrl();
       if (cancelled || result.status !== "established") return;
 
-      const supabase = getSupabaseBrowserClient();
-      await persistOnboardingPendingOnUser(supabase);
       await postWelcomeTrialStartFromSession();
       replaceUrlPathOnly(window.location.pathname + window.location.search);
-      window.dispatchEvent(new Event(ONBOARDING_AUTH_READY_EVENT));
     }
 
     void run();
@@ -53,3 +48,6 @@ export function OnboardingAuthBootstrap() {
 
   return null;
 }
+
+/** @deprecated Use {@link AuthSessionUrlBootstrap}. */
+export const OnboardingAuthBootstrap = AuthSessionUrlBootstrap;

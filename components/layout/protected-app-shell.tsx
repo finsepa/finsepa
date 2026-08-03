@@ -1,4 +1,4 @@
-import { Suspense, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
@@ -7,12 +7,10 @@ import { PATH_ACTIVATE_SUBSCRIPTION, PATH_LOGIN } from "@/lib/auth/routes";
 import { scheduleWelcomeTrialStartEmailFromHeaders } from "@/lib/auth/welcome-trial-start-on-login";
 import { avatarUrlFromUser, displayNameFromUser, initialsFromUser } from "@/lib/auth/user-display";
 import { ProtectedAppShellInner } from "@/components/layout/protected-app-shell-inner";
-import { OnboardingAuthBootstrap } from "@/components/onboarding/onboarding-auth-bootstrap";
-import { ScreenerOnboardingHost } from "@/components/onboarding/screener-onboarding-host";
+import { AuthSessionUrlBootstrap } from "@/components/onboarding/onboarding-auth-bootstrap";
 import { PortfolioWorkspaceProvider } from "@/components/portfolio/portfolio-workspace-provider";
 import { SuperinvestorFollowProvider } from "@/components/superinvestors/superinvestor-follow-provider";
 import { WatchlistProvider } from "@/lib/watchlist/use-watchlist-client";
-import { userNeedsOnboarding } from "@/lib/auth/onboarding";
 import { userFromJwtClaims } from "@/lib/auth/user-from-claims";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -80,8 +78,6 @@ export async function ProtectedAppShell({
   const avatarUrl = avatarUrlFromUser(user);
   const userDisplayName = displayNameFromUser(user) ?? user.email?.split("@")[0] ?? "Member";
   const listingOwnerDisplayName = userDisplayName;
-  // Paid Pro: never re-open first-run onboarding (welcome / tour / Pro upsell).
-  const serverShouldShowOnboarding = !gate.isPro && userNeedsOnboarding(user, { isPro: gate.isPro });
 
   const initialSidebarCollapsed = readSidebarCollapsedPreference(
     cookieStore.get(SIDEBAR_COLLAPSED_PREFERENCE_KEY)?.value,
@@ -110,14 +106,7 @@ export async function ProtectedAppShell({
           initialWatchlistRailCollapsed={initialWatchlistRailCollapsed}
           mobileTopbarVariant={mobileTopbarVariant}
         >
-          <OnboardingAuthBootstrap />
-          <Suspense fallback={null}>
-            <ScreenerOnboardingHost
-              userId={user.id}
-              isPro={gate.isPro}
-              serverShouldShow={serverShouldShowOnboarding}
-            />
-          </Suspense>
+          <AuthSessionUrlBootstrap />
           {children}
         </ProtectedAppShellInner>
         </SuperinvestorFollowProvider>

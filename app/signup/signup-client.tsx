@@ -27,7 +27,6 @@ import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
 import { TURNSTILE_ENABLED } from "@/lib/auth/turnstile-public";
 import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
-import { appendOnboardingQuery, markOnboardingPending } from "@/lib/auth/onboarding";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
 
@@ -205,7 +204,6 @@ export function SignupClient() {
     if (loading) return;
     setLoading(true);
     try {
-      markOnboardingPending();
       const supabase = getSupabaseBrowserClient();
       await startGoogleOAuth(supabase, { next: PATH_APP_ENTRY, intent: "signup" });
     } catch (err) {
@@ -258,7 +256,6 @@ export function SignupClient() {
         turnstileToken: turnstileToken ?? undefined,
       });
       if (loopsFirst.kind === "success") {
-        markOnboardingPending();
         await goToEmailConfirmation();
         return;
       }
@@ -291,7 +288,6 @@ export function SignupClient() {
           data: {
             first_name: firstNorm,
             last_name: lastNorm || "-",
-            onboarding_pending: true,
           },
         },
       });
@@ -346,7 +342,6 @@ export function SignupClient() {
           }
 
           if (loopsRes.ok && loopsJson.ok === true) {
-            markOnboardingPending();
             await goToEmailConfirmation();
             return;
           }
@@ -375,12 +370,10 @@ export function SignupClient() {
       }
 
       if (data?.session) {
-        markOnboardingPending();
-        window.location.replace(appendOnboardingQuery(PATH_APP_ENTRY));
+        window.location.replace(PATH_APP_ENTRY);
         return;
       }
 
-      markOnboardingPending();
       await goToEmailConfirmation();
     } catch (err) {
       setErrorMessage(friendlyNetworkErrorMessage(err));

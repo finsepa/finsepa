@@ -145,7 +145,6 @@ export async function POST(request: Request) {
       data: {
         first_name: firstName,
         last_name: lastName,
-        onboarding_pending: true,
       },
     },
   });

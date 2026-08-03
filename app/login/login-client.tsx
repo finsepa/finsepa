@@ -13,11 +13,12 @@ import {
   AuthFloatingInput,
   AuthFloatingPasswordInput,
 } from "@/components/auth/auth-floating-field";
+import { AuthSessionLoadingScreen } from "@/components/auth/auth-session-loading-screen";
 import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { Spinner, SpinnerLabel } from "@/components/ui/spinner";
+import { SpinnerLabel } from "@/components/ui/spinner";
 
 const STORAGE_REMEMBER = "finsepa_remember_me";
 
@@ -40,12 +41,16 @@ function GoogleMark() {
 
 const REDIRECT_AFTER_LOGIN_MS = 900;
 const LOGIN_FETCH_TIMEOUT_MS = 25_000;
-/** Cap session resume so a hung Auth fetch cannot leave the CTA stuck on “Signing you in…”. */
+/** Cap session resume so a hung Auth fetch cannot leave the cover stuck forever. */
 const RESUME_SESSION_BUDGET_MS = 8_000;
+/** Delay logo on probe so fast anonymous checks never flash a loading screen. */
+const LOGO_AFTER_PROBE_MS = 280;
 const RESUME_LOOP_KEY = "finsepa_login_resume_loop";
 const RESUME_LOOP_MAX = 2;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LEN = 8;
+
+type SessionGate = "probing" | "resuming" | "ready";
 
 function safeNextPath(raw: string | null | undefined): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return PATH_APP_ENTRY;
@@ -76,24 +81,36 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
   const [passwordLoginSuccess, setPasswordLoginSuccess] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [resumingSession, setResumingSession] = useState(true);
+  /** Full-screen cover while restoring a cookie session; form shows only when ready. */
+  const [sessionGate, setSessionGate] = useState<SessionGate>("probing");
+  const [showProbeLogo, setShowProbeLogo] = useState(false);
 
-  const busy = googleLoading || passwordLoading || resumingSession;
+  const busy = googleLoading || passwordLoading || sessionGate !== "ready";
   const formLocked = busy || passwordLoginSuccess;
   const emailNorm = email.trim().toLowerCase();
   const emailReady = emailNorm.length > 0 && EMAIL_RE.test(emailNorm);
   const passwordReady = password.length >= MIN_PASSWORD_LEN;
   const formCanSubmit = emailReady && passwordReady;
 
+  // Soft logo on slow probes only — logged-out visits that resolve fast never see loading chrome.
+  useEffect(() => {
+    if (sessionGate !== "probing") {
+      setShowProbeLogo(false);
+      return;
+    }
+    const id = window.setTimeout(() => setShowProbeLogo(true), LOGO_AFTER_PROBE_MS);
+    return () => window.clearTimeout(id);
+  }, [sessionGate]);
+
   // If auth cookies survived a tab close but middleware briefly failed, resume without re-login.
   useEffect(() => {
     let cancelled = false;
 
-    const finish = () => {
-      if (!cancelled) setResumingSession(false);
+    const finishReady = () => {
+      if (!cancelled) setSessionGate("ready");
     };
 
-    const budgetId = window.setTimeout(finish, RESUME_SESSION_BUDGET_MS);
+    const budgetId = window.setTimeout(finishReady, RESUME_SESSION_BUDGET_MS);
 
     (async () => {
       try {
@@ -105,7 +122,7 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
 
         if (!session) {
           writeResumeLoopCount(0);
-          finish();
+          finishReady();
           return;
         }
 
@@ -123,7 +140,7 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
           } catch {
             /* form will allow re-login */
           }
-          finish();
+          finishReady();
           return;
         }
 
@@ -136,15 +153,17 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
           } catch {
             /* ignore */
           }
-          finish();
+          finishReady();
           return;
         }
         writeResumeLoopCount(loops);
 
+        // Confirmed session — cover login chrome with brand loading until navigation finishes.
+        if (!cancelled) setSessionGate("resuming");
         window.location.replace(safeNextPath(authNext));
-        // Keep spinner until the document unloads.
+        // Keep cover until the document unloads.
       } catch {
-        finish();
+        finishReady();
       } finally {
         window.clearTimeout(budgetId);
       }
@@ -265,13 +284,13 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
     }
   }
 
-  // Session check runs only in the browser; keep SSR + first client paint identical
-  // (spinner only — no text) so HMR/stale RSC HTML cannot hydrate-mismatch labels.
-  if (resumingSession) {
+  // Cover the full login page (title + card) while probing/resuming so signed-in users
+  // never see “Log in” + spinner while the session is restored.
+  if (sessionGate === "probing" || sessionGate === "resuming") {
     return (
-      <div className="flex justify-center py-6" role="status" aria-label="Checking session">
-        <Spinner className="size-5 text-fg" />
-      </div>
+      <AuthSessionLoadingScreen
+        showLogo={sessionGate === "resuming" || showProbeLogo}
+      />
     );
   }
 

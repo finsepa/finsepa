@@ -1348,6 +1348,28 @@ body {
   }
 }
 
+/** Auth session resume / app boot — Finsepa mark opacity breathe. */
+@keyframes finsepa-logo-pulse {
+  0%,
+  100% {
+    opacity: 0.28;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-finsepa-logo-pulse {
+  animation: finsepa-logo-pulse 1.65s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-finsepa-logo-pulse {
+    animation: none;
+    opacity: 0.9;
+  }
+}
+
 /* ── App modal overlay (Figma Web App — scaled shell + blurred backdrop) ── */
 
 @media (min-width: 768px) {
