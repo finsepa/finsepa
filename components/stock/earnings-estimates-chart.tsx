@@ -26,13 +26,6 @@ import {
   sliceLatestAnnualEstimates,
   sliceLatestQuarterlyEstimates,
 } from "@/lib/market/earnings-annual-display";
-import {
-  EARNINGS_FORECAST_BADGE_CLASS,
-  EARNINGS_FORECAST_BAND_BG_STYLE,
-  EARNINGS_FORECAST_BAND_EDGE_STYLE,
-  EARNINGS_FORECAST_OPACITY_CLASS,
-  earningsForecastBarFillStyle,
-} from "@/components/stock/earnings-card-styles";
 import { cn } from "@/lib/utils";
 import {
   formatChartingPeriodAxisLabel,
@@ -43,10 +36,8 @@ import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types"
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { StockEarningsEstimatesChart, StockEarningsEstimatesPoint } from "@/lib/market/stock-earnings-types";
 
-/** Estimates bars are grey (hatched when forecast); actual bars are blue. */
+/** Estimate bars are grey; actual bars are blue. */
 const ESTIMATE_BAR = "#D4D4D8";
-const FORECAST_BAR = "#A1A1AA";
-const FORECAST_BAR_FILL = earningsForecastBarFillStyle(FORECAST_BAR);
 
 const MEET_COLOR = "#5C5D5F";
 
@@ -199,7 +190,7 @@ function EarningsPeriodBars({
             width: widthPx,
             height: `${valueHeightPct(estimate, maxV) * enterProgress}%`,
             minHeight: 2,
-            ...(isForecast ? FORECAST_BAR_FILL : { backgroundColor: ESTIMATE_BAR }),
+            backgroundColor: ESTIMATE_BAR,
           }}
           aria-hidden
         />
@@ -350,8 +341,8 @@ export function EarningsEstimatesHeader({
       <SegmentedControl
         aria-label="Estimate metric"
         options={[
-          { value: "revenue", label: "Revenue" },
           { value: "eps", label: "EPS" },
+          { value: "revenue", label: "Revenue" },
         ]}
         value={metric}
         onChange={onMetricChange}
@@ -378,7 +369,7 @@ type Props = {
 };
 
 /**
- * Revenue / EPS estimate bar chart — grey estimate + blue actual bars, hatched forecast bars,
+ * Revenue / EPS estimate bar chart — grey estimate + blue actual bars.
  * plus beat/miss markers above the actual bar.
  */
 export function EarningsEstimatesChart({ data, period, metric }: Props) {
@@ -410,12 +401,6 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
   }, [periods, metricConfig.axisKind]);
 
   const n = periods.length;
-  /** Left edge (%) of the forecast band — from the first forecast column to the plot's right edge. */
-  const forecastBandLeftPct = useMemo(() => {
-    const firstForecast = periods.findIndex((p) => p.isForecast);
-    if (firstForecast < 0 || n <= 0) return null;
-    return (firstForecast / n) * 100;
-  }, [periods, n]);
   const showChart = n > 0;
   const shouldAnimateBars = showChart && !prefersReducedFundamentalsBarMotion();
   const [barEnterElapsedMs, setBarEnterElapsedMs] = useState(() =>
@@ -458,23 +443,6 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                   aria-hidden
                 >
                   <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
-                  {forecastBandLeftPct != null ? (
-                    <div
-                      className="absolute inset-y-0 overflow-hidden"
-                      style={{ left: `${forecastBandLeftPct}%`, right: 0 }}
-                    >
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          ...EARNINGS_FORECAST_BAND_BG_STYLE,
-                          ...EARNINGS_FORECAST_BAND_EDGE_STYLE,
-                        }}
-                      />
-                      <span className={cn("absolute bottom-2 left-1/2 z-[1] -translate-x-1/2", EARNINGS_FORECAST_BADGE_CLASS)}>
-                        Forecast
-                      </span>
-                    </div>
-                  ) : null}
                   <div
                     className="absolute inset-x-0 bottom-0 border-t"
                     style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
@@ -638,10 +606,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                       title={p.title}
                     >
                       <span
-                        className={cn(
-                          "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
-                          p.isForecast && EARNINGS_FORECAST_OPACITY_CLASS,
-                        )}
+                        className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]"
                         style={{
                           transform: axisLabelRotateDeg === 0 ? undefined : `rotate(${axisLabelRotateDeg}deg)`,
                           transformOrigin: horizontalAxisLabels ? undefined : "center bottom",

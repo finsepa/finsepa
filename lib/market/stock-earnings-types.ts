@@ -71,4 +71,6 @@ export type StockEarningsTabPayload = {
   estimatesChart: StockEarningsEstimatesChart | null;
   /** From same fundamentals JSON as earnings — IR + CIK for external resource buttons */
   documentHub: StockEarningsDocumentHub;
+  /** Approx last price (market cap ÷ shares) for Future periods Forward P/E. */
+  lastPrice: number | null;
 };

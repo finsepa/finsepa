@@ -143,9 +143,26 @@ function periodEndYmdForQuarterLabel(
   return null;
 }
 
+function estimatePointScore(p: StockEarningsEstimatesPoint): number {
+  return (p.revenueEstimateUsd != null ? 2 : 0) + (p.epsEstimate != null ? 1 : 0);
+}
+
+/** Prefer the chart point with both revenue + EPS when duplicate labels exist. */
+function richestEstimatePoint(
+  points: readonly StockEarningsEstimatesPoint[],
+): StockEarningsEstimatesPoint | null {
+  if (!points.length) return null;
+  return [...points].sort((a, b) => {
+    const byScore = estimatePointScore(b) - estimatePointScore(a);
+    if (byScore !== 0) return byScore;
+    return a.sortKey.localeCompare(b.sortKey);
+  })[0]!;
+}
+
 /**
  * When `Earnings.History` has no future report row, derive the next quarter from forward
- * consensus on the estimates chart (Earnings.Trend).
+ * consensus on the estimates chart (Earnings.Trend). Also fill missing EPS / revenue on a
+ * partial History upcoming (e.g. EPS present, revenue null).
  */
 export function resolveUpcomingFromEstimates(
   upcoming: StockEarningsUpcoming | null,
@@ -162,13 +179,18 @@ export function resolveUpcomingFromEstimates(
     if (end && reportedEnds.has(end)) base = null;
   }
 
-  const forward = [...quarterly]
-    .filter((p) => isAnnualForecastPoint(p))
-    .filter((p) => !reportedLabels.has(p.label) && !reportedEnds.has(p.sortKey))
-    .filter((p) => p.revenueEstimateUsd != null || p.epsEstimate != null)
-    .sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  const isForwardUsable = (p: StockEarningsEstimatesPoint): boolean =>
+    isAnnualForecastPoint(p) &&
+    !reportedLabels.has(p.label) &&
+    !reportedEnds.has(p.sortKey) &&
+    (p.revenueEstimateUsd != null || p.epsEstimate != null);
 
-  const next = forward[0] ?? null;
+  const forward = [...quarterly].filter(isForwardUsable).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+
+  const labeled = base?.fiscalPeriodLabel
+    ? quarterly.filter((p) => p.label === base!.fiscalPeriodLabel && isForwardUsable(p))
+    : [];
+  const next = richestEstimatePoint(labeled) ?? forward[0] ?? null;
 
   if (!base && !next) return null;
 
@@ -187,8 +209,6 @@ export function resolveUpcomingFromEstimates(
   }
 
   if (!base) return null;
-
-  if (upcomingHasEstimates(base) && base.fiscalPeriodLabel) return base;
 
   if (!next) return upcomingHasEstimates(base) ? base : null;
 
@@ -317,7 +337,10 @@ export function enrichReportedHistoryRevenueFromEstimatesChart(
   });
 }
 
-/** Enrich unreleased rows, resolve upcoming from trend if needed, and pin it to the top of Reports. */
+/**
+ * Enrich history for the Reports table. Upcoming / unreleased rows are kept out of Reports
+ * (they still surface via `upcoming` countdown cards).
+ */
 export function buildReportsTableRows(
   history: StockEarningsHistoryRow[],
   quarterly: StockEarningsEstimatesPoint[],
@@ -325,5 +348,5 @@ export function buildReportsTableRows(
 ): StockEarningsHistoryRow[] {
   const resolved = resolveUpcomingFromEstimates(upcoming, history, quarterly);
   const enriched = enrichUnreportedHistoryEstimates(history, quarterly, resolved);
-  return prependUpcomingReportRow(enriched, resolved, quarterly);
+  return enriched.filter((row) => row.reported);
 }

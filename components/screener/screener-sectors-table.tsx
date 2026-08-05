@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
@@ -19,7 +20,12 @@ import {
 import { cn } from "@/lib/utils";
 
 const colLayoutMobile = "grid-cols-[28px_minmax(0,1fr)_72px] gap-x-2";
-const colLayoutDesktop = "sm:grid-cols-[48px_minmax(0,1.6fr)_1fr_1fr_1fr] sm:gap-x-2";
+const colLayoutDesktop = "sm:grid-cols-[48px_minmax(0,1.6fr)_1fr_1fr_1fr_1fr] sm:gap-x-2";
+
+function formatMarketWeightPct(value: number | null) {
+  if (value == null || !Number.isFinite(value)) return "-";
+  return `${value.toFixed(1)}%`;
+}
 
 function formatPctValue(value: number) {
   return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
@@ -61,6 +67,23 @@ export function ScreenerSectorsTable({
   hideMobileHeader?: boolean;
   embeddedInMobileCard?: boolean;
 }) {
+  const weightBySector = useMemo(() => {
+    const total = rows.reduce((sum, row) => {
+      const cap = row.marketCapUsd;
+      return sum + (Number.isFinite(cap) && cap > 0 ? cap : 0);
+    }, 0);
+    const map = new Map<string, number | null>();
+    for (const row of rows) {
+      const cap = row.marketCapUsd;
+      if (!(total > 0) || !Number.isFinite(cap) || cap <= 0) {
+        map.set(row.sector, null);
+        continue;
+      }
+      map.set(row.sector, (cap / total) * 100);
+    }
+    return map;
+  }, [rows]);
+
   if (rows.length === 0) {
     return (
       <div
@@ -94,6 +117,9 @@ export function ScreenerSectorsTable({
               <div className="text-center">#</div>
               <div className="text-left">Sector</div>
               <div className={cn("hidden min-w-0 w-full text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>Market Cap</div>
+              <div className={cn("hidden min-w-0 w-full text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+                Market Weight
+              </div>
               <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>1D %</div>
               <div className={cn("hidden min-w-0 w-full text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>YTD %</div>
             </div>
@@ -101,7 +127,9 @@ export function ScreenerSectorsTable({
           <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
         </div>
 
-        {rows.map((row, index) => (
+        {rows.map((row, index) => {
+          const weightPct = weightBySector.get(row.sector) ?? null;
+          return (
           <div key={row.sector} className={SCREENER_TABLE_DATA_ROW_CLASS}>
             <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
               <Link
@@ -121,6 +149,7 @@ export function ScreenerSectorsTable({
                   </span>
                   <span className="mt-0.5 block truncate text-left text-[12px] font-normal leading-4 text-fg-muted sm:hidden">
                     {row.marketCapDisplay}
+                    {weightPct != null ? ` · ${formatMarketWeightPct(weightPct)}` : ""}
                   </span>
                 </div>
                 <div
@@ -130,6 +159,14 @@ export function ScreenerSectorsTable({
                   )}
                 >
                   {row.marketCapDisplay}
+                </div>
+                <div
+                  className={cn(
+                    "hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block",
+                    TABLE_END_ALIGNED_PAD_CLASS,
+                  )}
+                >
+                  {formatMarketWeightPct(weightPct)}
                 </div>
                 <PctCell value={row.change1D} />
                 <div className="hidden sm:contents">
@@ -141,7 +178,8 @@ export function ScreenerSectorsTable({
               <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
             ) : null}
           </div>
-        ))}
+          );
+        })}
       </div>
     </ScreenerTableScroll>
   );

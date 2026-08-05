@@ -1,3 +1,4 @@
+import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { SkeletonBox } from "@/components/markets/skeleton";
 
 /**
@@ -35,7 +36,7 @@ export function StockEarningsTabLoading() {
         ))}
       </div>
       <SkeletonBox className="h-[320px] w-full rounded" />
-      <h3 className="text-[18px] font-semibold leading-7 tracking-tight text-fg">Reports</h3>
+      <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Earnings history</h2>
       <div className="space-y-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <SkeletonBox key={i} className="h-12 w-full rounded" />

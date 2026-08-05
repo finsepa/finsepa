@@ -19,20 +19,29 @@ export const EARNINGS_FORECAST_LABEL_COLOR = fundamentalsBarSolidAtIndex(0);
 /** 3 years × 4 quarters — Estimates quarterly chart history cap. */
 export const EARNINGS_QUARTERLY_HISTORY_MAX = 12;
 
-/** Forward consensus quarters on the Estimates chart (1 year). */
-export const EARNINGS_QUARTERLY_FORWARD_MAX = 4;
+/** Forward consensus quarters on the Estimates chart / Future periods table (2 years). */
+export const EARNINGS_QUARTERLY_FORWARD_MAX = 8;
 
-/** Forward consensus fiscal years on the Estimates chart (1 year). */
-export const EARNINGS_ANNUAL_FORWARD_MAX = 1;
+/** Forward consensus fiscal years on the Estimates chart / Future periods table (2 years). */
+export const EARNINGS_ANNUAL_FORWARD_MAX = 2;
+
+export function partitionEstimatePoints(points: StockEarningsEstimatesPoint[]): {
+  historical: StockEarningsEstimatesPoint[];
+  forward: StockEarningsEstimatesPoint[];
+} {
+  const todayYmd = todayYmdUtc();
+  const sorted = [...points].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  return {
+    historical: sorted.filter((p) => !isAnnualForecastPoint(p, todayYmd)),
+    forward: sorted.filter((p) => isAnnualForecastPoint(p, todayYmd)),
+  };
+}
 
 /** Last `EARNINGS_QUARTERLY_HISTORY_MAX` reported/historical quarters, then forward consensus quarters. */
 export function sliceLatestQuarterlyEstimates(
   points: StockEarningsEstimatesPoint[],
 ): StockEarningsEstimatesPoint[] {
-  const todayYmd = todayYmdUtc();
-  const sorted = [...points].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-  const historical = sorted.filter((p) => !isAnnualForecastPoint(p, todayYmd));
-  const forward = sorted.filter((p) => isAnnualForecastPoint(p, todayYmd));
+  const { historical, forward } = partitionEstimatePoints(points);
 
   const historySlice =
     historical.length <= EARNINGS_QUARTERLY_HISTORY_MAX
@@ -45,6 +54,15 @@ export function sliceLatestQuarterlyEstimates(
     .slice(0, EARNINGS_QUARTERLY_FORWARD_MAX);
 
   return [...historySlice, ...forwardExtra];
+}
+
+/** Upcoming quarters only — up to {@link EARNINGS_QUARTERLY_FORWARD_MAX} (Future periods table). */
+export function sliceForwardQuarterlyEstimates(
+  points: StockEarningsEstimatesPoint[],
+): StockEarningsEstimatesPoint[] {
+  const { historical, forward } = partitionEstimatePoints(points);
+  const historyKeys = new Set(historical.map((p) => p.sortKey));
+  return forward.filter((p) => !historyKeys.has(p.sortKey)).slice(0, EARNINGS_QUARTERLY_FORWARD_MAX);
 }
 
 function fiscalYearFromHistoryRow(row: StockEarningsHistoryRow): number | null {
@@ -115,10 +133,7 @@ export function isAnnualForecastPoint(
 export function sliceLatestAnnualEstimates(
   points: StockEarningsEstimatesPoint[],
 ): StockEarningsEstimatesPoint[] {
-  const todayYmd = todayYmdUtc();
-  const sorted = [...points].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-  const historical = sorted.filter((p) => !isAnnualForecastPoint(p, todayYmd));
-  const forward = sorted.filter((p) => isAnnualForecastPoint(p, todayYmd));
+  const { historical, forward } = partitionEstimatePoints(points);
 
   const historySlice =
     historical.length <= EARNINGS_ANNUAL_HISTORY_MAX
@@ -131,6 +146,15 @@ export function sliceLatestAnnualEstimates(
     .slice(0, EARNINGS_ANNUAL_FORWARD_MAX);
 
   return [...historySlice, ...forwardExtra];
+}
+
+/** Upcoming fiscal years only — up to {@link EARNINGS_ANNUAL_FORWARD_MAX} (Future periods table). */
+export function sliceForwardAnnualEstimates(
+  points: StockEarningsEstimatesPoint[],
+): StockEarningsEstimatesPoint[] {
+  const { historical, forward } = partitionEstimatePoints(points);
+  const historyLabels = new Set(historical.map((p) => p.label));
+  return forward.filter((p) => !historyLabels.has(p.label)).slice(0, EARNINGS_ANNUAL_FORWARD_MAX);
 }
 
 export function displayRevenueUsd(p: StockEarningsEstimatesPoint): number | null {

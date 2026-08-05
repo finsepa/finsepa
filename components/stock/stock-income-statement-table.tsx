@@ -8,10 +8,13 @@ import type {
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import { resolveFinancialsRowChartMetric } from "@/lib/market/stock-financials-row-chart";
 import {
+  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
   SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
   TABLE_END_ALIGNED_PAD_CLASS,
@@ -287,34 +290,39 @@ export function StockIncomeStatementTable({
               ? SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS
               : SCREENER_TABLE_HEADER_STICKY_CLASS,
             SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+            SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
             "border-b-0 md:border-b-0",
           )}
         >
-          <div
-            className={cn(
-              "grid items-stretch gap-x-2 bg-surface py-0 pr-0",
-              incomeHeaderBorderClass,
-              incomeHeaderRowClass,
-            )}
-            style={{ gridTemplateColumns }}
-          >
-            <div className={cn(stickyLabelHeadClass, labelRule)}>{periodHeaderLabel}</div>
-            {ttmLeading ? ttmYearHeader : null}
-            {yearHeaders}
-            {!ttmLeading ? ttmYearHeader : null}
-          </div>
-          {showPeriodEndingRow ? (
+          <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
             <div
               className={cn(
                 "grid items-stretch gap-x-2 bg-surface py-0 pr-0",
+                incomeHeaderBorderClass,
                 incomeHeaderRowClass,
               )}
               style={{ gridTemplateColumns }}
             >
-              <div className={cn(stickyLabelHeadClass, labelRule)}>Period Ending</div>
-              {ttmLeading ? ttmPeriodHeader : null}
-              {periodHeaders}
-              {!ttmLeading ? ttmPeriodHeader : null}
+              <div className={cn(stickyLabelHeadClass, labelRule)}>{periodHeaderLabel}</div>
+              {ttmLeading ? ttmYearHeader : null}
+              {yearHeaders}
+              {!ttmLeading ? ttmYearHeader : null}
+            </div>
+          </div>
+          {showPeriodEndingRow ? (
+            <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+              <div
+                className={cn(
+                  "grid items-stretch gap-x-2 bg-surface py-0 pr-0",
+                  incomeHeaderRowClass,
+                )}
+                style={{ gridTemplateColumns }}
+              >
+                <div className={cn(stickyLabelHeadClass, labelRule)}>Period Ending</div>
+                {ttmLeading ? ttmPeriodHeader : null}
+                {periodHeaders}
+                {!ttmLeading ? ttmPeriodHeader : null}
+              </div>
             </div>
           ) : null}
           <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
@@ -435,31 +443,34 @@ function IncomeRow({
   });
 
   const rowSurfaceClass = cn(
-    "group/row relative z-0 grid w-full items-stretch gap-x-2 border-0 bg-surface py-0 pr-0 text-left font-inherit transition-colors duration-75 hover:bg-table-row-hover",
+    "relative z-0 grid w-full items-stretch gap-x-2 border-0 bg-transparent py-0 pr-0 text-left font-inherit",
     incomeDataRowClass,
+    SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   );
 
   return (
     <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
-      {rowInteractive ? (
-        <button
-          type="button"
-          className={cn(
-            rowSurfaceClass,
-            "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300",
-          )}
-          style={{ gridTemplateColumns }}
-          onClick={() => onMetricClick?.(metricId)}
-        >
-          {labelCell}
-          {valueCells}
-        </button>
-      ) : (
-        <div className={rowSurfaceClass} style={{ gridTemplateColumns }}>
-          {labelCell}
-          {valueCells}
-        </div>
-      )}
+      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+        {rowInteractive ? (
+          <button
+            type="button"
+            className={cn(
+              rowSurfaceClass,
+              "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300",
+            )}
+            style={{ gridTemplateColumns }}
+            onClick={() => onMetricClick?.(metricId)}
+          >
+            {labelCell}
+            {valueCells}
+          </button>
+        ) : (
+          <div className={rowSurfaceClass} style={{ gridTemplateColumns }}>
+            {labelCell}
+            {valueCells}
+          </div>
+        )}
+      </div>
       {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );

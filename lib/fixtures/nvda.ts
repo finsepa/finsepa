@@ -264,6 +264,7 @@ function nvdaEstimatesChartFixture(): StockEarningsEstimatesChart {
 export function getNvdaStockEarningsTabPayload(): StockEarningsTabPayload {
   return {
     ticker: NVDA,
+    lastPrice: null,
     documentHub: {
       irWebsite: "https://investor.nvidia.com",
       cik: "0001045810",
