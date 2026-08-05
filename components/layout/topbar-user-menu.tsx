@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -273,7 +280,7 @@ export function TopbarUserMenu({
 
   useEffect(() => {
     if (!open) return;
-    function onDocMouseDown(e: MouseEvent) {
+    function onDocMouseDown(e: globalThis.MouseEvent) {
       const t = e.target as Node;
       if (
         rootRef.current?.contains(t) ||
@@ -389,7 +396,7 @@ export function TopbarUserMenu({
     setHelpModalOpen(true);
   }
 
-  function gateLiveChatOrAllow(e: MouseEvent, channel: "WhatsApp" | "Telegram") {
+  function gateLiveChatOrAllow(e: ReactMouseEvent, channel: "WhatsApp" | "Telegram") {
     if (canUseLiveChat) {
       setHelpOpen(false);
       setOpen(false);
