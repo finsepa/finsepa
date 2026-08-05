@@ -6,6 +6,7 @@ import { ActivateSubscriptionClient } from "./activate-subscription-client";
 
 export { authMetadata as metadata, authViewport as viewport } from "@/lib/auth/auth-viewport";
 
+/** Optional upgrade marketing; Pro/trial already have full access and skip here. */
 export default async function ActivateSubscriptionPage() {
   const supabase = await getSupabaseServerClient();
   const {
@@ -17,7 +18,7 @@ export default async function ActivateSubscriptionPage() {
   }
 
   const gate = await getSubscriptionGateContext(supabase, user.id);
-  if (!gate.needsPaywall) {
+  if (gate.isPro || gate.isTrial) {
     redirect(PATH_APP_ENTRY);
   }
 

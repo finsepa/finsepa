@@ -28,7 +28,34 @@ type MacroCardSnap = {
   kind: string;
   latest?: { time: string; value: number } | null;
   change?: { abs: number; pct: number | null } | null;
+  points?: Array<{ time: string; value: number }>;
 };
+
+const MACRO_KIND_SET = new Set(["percent", "usd", "index", "number"]);
+
+function normalizeMacroKind(kind: string): "percent" | "usd" | "index" | "number" {
+  return MACRO_KIND_SET.has(kind) ? (kind as "percent" | "usd" | "index" | "number") : "number";
+}
+
+function hasChartablePoints(points: MacroCardSnap["points"]): boolean {
+  if (!points?.length) return false;
+  let n = 0;
+  for (const p of points) {
+    if (typeof p?.time === "string" && p.time.trim() && Number.isFinite(p.value)) {
+      n += 1;
+      if (n >= 2) return true;
+    }
+  }
+  return false;
+}
+
+async function readMacroHubSnapshot() {
+  const segment = macroHubSegment();
+  return readHubSnapshot<{ country?: string; items?: MacroCardSnap[] }>(
+    HUB_SNAPSHOT_KEY.macroDashboard,
+    segment,
+  );
+}
 
 function resolveWeekMondayYmd(weekOffset = 0): { monday: Date; ymd: string } {
   const base = mondayOfWeekUtc(new Date());
@@ -165,14 +192,10 @@ export async function loadAgentEconomyWeek(args?: {
   };
 }
 
-/** Macro dashboard cards from hub snapshot only (latest + change; no full series). */
+/** Macro dashboard cards from hub snapshot only (latest + change; no full series in tool). */
 export async function loadAgentMacroDashboard(args?: { limit?: number }) {
   const limit = Math.min(Math.max(args?.limit ?? 24, 1), 40);
-  const segment = macroHubSegment();
-  const snap = await readHubSnapshot<{ country?: string; items?: MacroCardSnap[] }>(
-    HUB_SNAPSHOT_KEY.macroDashboard,
-    segment,
-  );
+  const snap = await readMacroHubSnapshot();
 
   if (!snap?.items?.length) {
     return {
@@ -190,6 +213,7 @@ export async function loadAgentMacroDashboard(args?: { limit?: number }) {
     latestTime: c.latest?.time ?? null,
     changeAbs: c.change?.abs ?? null,
     changePct: c.change?.pct ?? null,
+    hasChart: hasChartablePoints(c.points),
   }));
 
   return {
@@ -198,6 +222,61 @@ export async function loadAgentMacroDashboard(args?: { limit?: number }) {
     openInApp: "/macro" as const,
     cardCount: snap.items.length,
     cards,
-    note: "From Finsepa macro hub cache only — latest values, not a live EODHD pull. Full chart history is in /macro.",
+    chartableIds: cards.filter((c) => c.hasChart).map((c) => c.id),
+    chartEmbedFormat:
+      "After macro numbers, embed Finsepa charts by putting each series on its own line as [[macro-chart:CARD_ID]] using ids from chartableIds / cards with hasChart:true. Example: [[macro-chart:inflation_consumer_prices_annual]]. Max 4 charts per reply. Do not invent ids or paste raw series data.",
+    note: "From Finsepa macro hub cache only — latest values, not a live EODHD pull. Charts render in-chat from the same hub snapshot when you emit [[macro-chart:id]]; full page remains /macro.",
+  };
+}
+
+/**
+ * Full macro cards for agent chat embeds — hub snapshot only.
+ * Never cold-builds; returns ok:false when missing.
+ */
+export async function loadAgentMacroHubCards(args?: { ids?: string[] }) {
+  const snap = await readMacroHubSnapshot();
+  if (!snap?.items?.length) {
+    return {
+      ok: false as const,
+      openInApp: "/macro" as const,
+      items: [] as Array<{
+        id: string;
+        title: string;
+        kind: "percent" | "usd" | "index" | "number";
+        points: Array<{ time: string; value: number }>;
+        latest: { time: string; value: number } | null;
+        change: { abs: number; pct: number | null } | null;
+      }>,
+      note: "Macro hub snapshot is not warm. Open Macro in Finsepa — no cold-fetch.",
+    };
+  }
+
+  const allowed = args?.ids?.length
+    ? new Set(args.ids.map((id) => id.trim()).filter(Boolean).slice(0, 8))
+    : null;
+
+  const items = snap.items
+    .filter((c) => (allowed ? allowed.has(c.id) : true))
+    .filter((c) => hasChartablePoints(c.points))
+    .map((c) => {
+      const points = (c.points ?? []).filter(
+        (p) => typeof p?.time === "string" && p.time.trim() && Number.isFinite(p.value),
+      );
+      return {
+        id: c.id,
+        title: c.title,
+        kind: normalizeMacroKind(c.kind),
+        points,
+        latest: c.latest ?? null,
+        change: c.change ?? null,
+      };
+    });
+
+  return {
+    ok: true as const,
+    country: snap.country ?? "USA",
+    openInApp: "/macro" as const,
+    items,
+    note: "From Finsepa macro hub cache only — not a live EODHD pull.",
   };
 }

@@ -208,7 +208,8 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
           if (t.date <= ymd) continue;
           splitFactor *= ratio;
         }
-        const adj = splitFactor > 1 && Number.isFinite(splitFactor) ? p / splitFactor : p;
+        const adj =
+          splitFactor > 0 && Number.isFinite(splitFactor) && splitFactor !== 1 ? p / splitFactor : p;
         setPrice(formatPriceInputFromApi(adj));
       } else {
         setPrice("");

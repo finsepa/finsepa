@@ -1,9 +1,10 @@
 "use client";
 
 import { memo, useEffect, useMemo, useState, Suspense } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, Briefcase } from "@/lib/icons";
+import { Briefcase } from "@/lib/icons";
 import { TOPBAR_SHOW_NOTIFICATIONS } from "@/lib/features/topbar-flags";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -41,6 +42,18 @@ import { useMobileMarketsTopbarLayout } from "@/lib/layout/use-mobile-markets-to
 import { useMobileStockTopbarLayout } from "@/lib/layout/use-mobile-stock-topbar-layout";
 import { SHELL_DESKTOP_PANEL_BG_MD_CLASS } from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
+
+/** lottie-react markup is client-only — avoids hydration mismatch on the always-visible topbar bell. */
+const TopbarNotificationsLottieIcon = dynamic(
+  () =>
+    import("@/components/icons/topbar-notifications-lottie-icon").then(
+      (m) => m.TopbarNotificationsLottieIcon,
+    ),
+  {
+    ssr: false,
+    loading: () => <span className="inline-flex h-5 w-5 shrink-0" aria-hidden />,
+  },
+);
 
 const usdTopbar = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -217,7 +230,7 @@ export function Topbar({
                     : `${topbarSquircleIconClass} relative`
                 }
               >
-                <Bell className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+                <TopbarNotificationsLottieIcon alerting={unreadNotifications > 0} />
                 {unreadNotifications > 0 ? (
                   <span
                     suppressHydrationWarning

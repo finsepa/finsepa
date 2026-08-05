@@ -46,14 +46,14 @@ import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { TABLE_PAGE_SIZE, TablePaginationBar, tablePageCount } from "@/components/ui/table-pagination";
-import { buildSplitAdjustedTradeIndex } from "@/lib/portfolio/split-adjusted-trades";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   dropdownMenuPanelBodyClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
-import type { PortfolioTransaction, PortfolioTransactionKind } from "@/components/portfolio/portfolio-types";
+import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import { portfolioIsCombined } from "@/components/portfolio/portfolio-types";
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 const usd0 = new Intl.NumberFormat("en-US", {
@@ -79,6 +79,14 @@ const txGridEditable = [
   txGridBase,
 ].join(" ");
 
+/** Combined view: Type (Manual / broker) after Asset. */
+const txGridEditableWithType = [
+  "grid-cols-[minmax(0,1fr)_minmax(0,auto)]",
+  "sm:grid-cols-[36px_minmax(180px,2.1fr)_minmax(96px,1fr)_minmax(88px,1fr)_minmax(108px,1.1fr)_minmax(80px,1fr)_minmax(96px,1.1fr)_minmax(64px,0.85fr)_minmax(96px,1.1fr)_minmax(120px,1.25fr)_40px]",
+  "sm:min-w-[1060px]",
+  txGridBase,
+].join(" ");
+
 /** Public / read-only: no checkbox or actions column — same horizontal padding as screener rows. */
 const txGridReadOnly = [
   "grid-cols-[minmax(0,1fr)_minmax(0,auto)]",
@@ -87,19 +95,50 @@ const txGridReadOnly = [
   txGridBase,
 ].join(" ");
 
-function transactionTableGrid(readOnly: boolean): string {
+const txGridReadOnlyWithType = [
+  "grid-cols-[minmax(0,1fr)_minmax(0,auto)]",
+  "sm:grid-cols-[minmax(180px,2.1fr)_minmax(96px,1fr)_minmax(88px,1fr)_minmax(108px,1.1fr)_minmax(80px,1fr)_minmax(96px,1.1fr)_minmax(64px,0.85fr)_minmax(96px,1.1fr)_minmax(120px,1.25fr)]",
+  "sm:min-w-[1060px]",
+  txGridBase,
+].join(" ");
+
+function transactionTableGrid(readOnly: boolean, showSourceType: boolean): string {
+  if (showSourceType) {
+    return readOnly ? txGridReadOnlyWithType : txGridEditableWithType;
+  }
   return readOnly ? txGridReadOnly : txGridEditable;
 }
 
-const FILTERS = ["All", "Trades", "Income", "Expenses", "Cash"] as const;
+/** Combined ledger: Manual / Demo / broker name from the row's source book. */
+function transactionSourceTypeLabel(
+  source: { snaptrade?: { brokerageName?: string | null } | null; isDemo?: boolean | null; kind?: string | null } | undefined,
+): string {
+  if (!source) return "—";
+  if (source.isDemo === true || source.kind === "demo") return "Demo";
+  if (source.snaptrade) {
+    const name = source.snaptrade.brokerageName?.trim();
+    return name || "Brokerage";
+  }
+  return "Manual";
+}
+
+const FILTERS = ["All", "Trades", "Income", "Expenses", "Cash", "Split"] as const;
 type TxFilter = (typeof FILTERS)[number];
 
-function filterMatches(kind: PortfolioTransactionKind, f: TxFilter): boolean {
+function isSplitOperation(operation: string): boolean {
+  return operation.trim().toLowerCase() === "split";
+}
+
+function filterMatches(
+  t: Pick<PortfolioTransaction, "kind" | "operation">,
+  f: TxFilter,
+): boolean {
   if (f === "All") return true;
-  if (f === "Trades") return kind === "trade";
-  if (f === "Income") return kind === "income";
-  if (f === "Expenses") return kind === "expense";
-  if (f === "Cash") return kind === "cash";
+  if (f === "Trades") return t.kind === "trade" && !isSplitOperation(t.operation);
+  if (f === "Split") return t.kind === "trade" && isSplitOperation(t.operation);
+  if (f === "Income") return t.kind === "income";
+  if (f === "Expenses") return t.kind === "expense";
+  if (f === "Cash") return t.kind === "cash";
   return true;
 }
 
@@ -205,7 +244,24 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
     selectedPortfolioReadOnly,
     selectedPortfolioId,
     holdingsByPortfolioId,
+    portfolios,
   } = usePortfolioWorkspace();
+
+  const showSourceType = useMemo(() => {
+    const selected = portfolios.find((p) => p.id === selectedPortfolioId);
+    return portfolioIsCombined(selected);
+  }, [portfolios, selectedPortfolioId]);
+
+  const portfolioById = useMemo(() => {
+    const m = new Map(portfolios.map((p) => [p.id, p]));
+    return m;
+  }, [portfolios]);
+
+  const typeLabelForTx = useCallback(
+    (t: PortfolioTransaction) => transactionSourceTypeLabel(portfolioById.get(t.portfolioId)),
+    [portfolioById],
+  );
+
   const [filter, setFilter] = useState<TxFilter>("All");
   const [txSearch, setTxSearch] = useState("");
   const searchParams = useSearchParams();
@@ -268,12 +324,11 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
   }, [holdingsByPortfolioId, selectedPortfolioId]);
 
   const filtered = useMemo(() => {
-    const byKind = transactions.filter((t) => filterMatches(t.kind, filter));
+    const byKind = transactions.filter((t) => filterMatches(t, filter));
     const bySearch = byKind.filter((t) => transactionMatchesAssetSearch(t, txSearch));
     // Corporate actions: only show Split rows if the user currently holds the asset.
     return bySearch.filter((t) => {
-      if (t.kind !== "trade") return true;
-      if (t.operation.trim().toLowerCase() !== "split") return true;
+      if (t.kind !== "trade" || !isSplitOperation(t.operation)) return true;
       return heldSymbolSet.has(t.symbol.trim().toUpperCase());
     });
   }, [transactions, filter, txSearch, heldSymbolSet]);
@@ -348,8 +403,6 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
 
   const selectedCount = selectedIds.size;
   const showBulkBar = !selectedPortfolioReadOnly && selectedCount > 0;
-
-  const splitAdjusted = useMemo(() => buildSplitAdjustedTradeIndex(transactions), [transactions]);
 
   return (
     <div>
@@ -475,7 +528,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                 <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
                   <div
                     className={cn(
-                      transactionTableGrid(selectedPortfolioReadOnly),
+                      transactionTableGrid(selectedPortfolioReadOnly, showSourceType),
                       "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
                     )}
                   >
@@ -503,6 +556,9 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                     >
                       Asset
                     </div>
+                    {showSourceType ? (
+                      <div className="hidden min-w-0 text-left sm:block">Type</div>
+                    ) : null}
                     <div className={cn("hidden text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
                       Operation
                     </div>
@@ -561,7 +617,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                       <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
                         <div
                           className={cn(
-                            transactionTableGrid(selectedPortfolioReadOnly),
+                            transactionTableGrid(selectedPortfolioReadOnly, showSourceType),
                             "min-h-[60px] text-[14px] font-normal leading-5",
                             SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                           )}
@@ -609,6 +665,12 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                                 </div>
                                 <div className="text-[12px] font-normal leading-4 text-fg-muted">
                                   {portfolioAssetSymbolCaption(t.symbol)}
+                                  {showSourceType ? (
+                                    <span className="sm:hidden">
+                                      {" · "}
+                                      {typeLabelForTx(t)}
+                                    </span>
+                                  ) : null}
                                 </div>
                               </div>
                             </div>
@@ -627,6 +689,12 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                               {formatSignedUsd(t.sum)}
                             </div>
                           </div>
+
+                          {showSourceType ? (
+                            <div className="hidden min-w-0 truncate px-1 text-left text-[14px] font-normal leading-5 text-fg align-middle sm:block">
+                              {typeLabelForTx(t)}
+                            </div>
+                          ) : null}
 
                           <div
                             className={cn(
@@ -652,7 +720,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                             )}
                           >
                             {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(
-                              splitAdjusted.get(t.id)?.shares ?? t.shares,
+                              t.shares,
                             )}
                           </div>
                           <div
@@ -661,7 +729,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                               TABLE_END_ALIGNED_PAD_CLASS,
                             )}
                           >
-                            {formatPortfolioUsdPerUnit(splitAdjusted.get(t.id)?.price ?? t.price)}
+                            {formatPortfolioUsdPerUnit(t.price)}
                           </div>
                           <div
                             className={cn(

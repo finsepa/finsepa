@@ -73,18 +73,72 @@ function hubMacroSnapshotHasFreshCpiGdp(snap: { items?: MacroDashboardCard[] }):
   return true;
 }
 
-function hubMacroSnapshotHasBtcEtfFlows(snap: { items?: MacroDashboardCard[] }): boolean {
-  const series = snap.items?.find((i) => i.id === "btc_etf_net_flow");
-  return (series?.points?.length ?? 0) >= 30;
-}
-
+/**
+ * Reject hub only when core macro sets are stale.
+ * BTC ETF flows are merged/live-fetched separately so a Farside blip never drops the whole hub
+ * (and never hides the chart from the rail).
+ */
 function hubMacroSnapshotIsUsable(snap: { items?: MacroDashboardCard[] }): boolean {
   return (
     hubMacroSnapshotHasFreshShiller(snap) &&
     hubMacroSnapshotHasLongTreasuryHistory(snap) &&
-    hubMacroSnapshotHasFreshCpiGdp(snap) &&
-    hubMacroSnapshotHasBtcEtfFlows(snap)
+    hubMacroSnapshotHasFreshCpiGdp(snap)
   );
+}
+
+function emptyMacroCard(def: MacroSeriesDef): MacroDashboardCard {
+  return {
+    id: def.id,
+    title: def.title,
+    kind: def.kind,
+    points: [],
+    latest: null,
+    change: null,
+  };
+}
+
+function cardFromPoints(def: MacroSeriesDef, points: Array<{ time: string; value: number }>): MacroDashboardCard {
+  const l = latest(points);
+  if (!l) return emptyMacroCard(def);
+  const prev = points.length >= 2 ? points[points.length - 2]! : null;
+  const abs = prev ? l.value - prev.value : null;
+  const pct = prev && prev.value !== 0 && abs != null ? (abs / Math.abs(prev.value)) * 100 : null;
+  return {
+    id: def.id,
+    title: def.title,
+    kind: def.kind,
+    points,
+    latest: l,
+    change: abs == null ? null : { abs, pct },
+  };
+}
+
+/** Keep every known series in the payload so the Macro rail never drops charts (e.g. BTC ETF). */
+function ensureAllMacroSeriesPresent(items: MacroDashboardCard[]): MacroDashboardCard[] {
+  const byId = new Map(items.map((item) => [item.id, item]));
+  return MACRO_SERIES.map((def) => {
+    const existing = byId.get(def.id);
+    if (existing) {
+      return { ...existing, title: def.title, kind: def.kind };
+    }
+    return emptyMacroCard(def);
+  });
+}
+
+async function maybeRefreshBtcEtfCard(items: MacroDashboardCard[]): Promise<MacroDashboardCard[]> {
+  const def = MACRO_SERIES.find((d) => d.id === "btc_etf_net_flow");
+  if (!def) return items;
+  const current = items.find((i) => i.id === "btc_etf_net_flow");
+  if ((current?.points.length ?? 0) >= 30) return items;
+
+  const points = await fetchMacroSeriesAll("USA", def);
+  if (!points.length) {
+    // Still keep an empty slot so the chart stays listed.
+    return ensureAllMacroSeriesPresent(items);
+  }
+  const card = cardFromPoints(def, points);
+  const without = items.filter((i) => i.id !== "btc_etf_net_flow");
+  return ensureAllMacroSeriesPresent([...without, card]);
 }
 
 async function buildMacroDashboardPayloadUncached(): Promise<{ country: string; items: MacroDashboardCard[] }> {
@@ -94,19 +148,7 @@ async function buildMacroDashboardPayloadUncached(): Promise<{ country: string; 
     MACRO_SERIES.map(async (def: MacroSeriesDef): Promise<MacroDashboardCard | null> => {
       const points = await fetchMacroSeriesAll(country, def);
       if (!points.length) return null;
-      const l = latest(points);
-      if (!l) return null;
-      const prev = points.length >= 2 ? points[points.length - 2]! : null;
-      const abs = prev ? l.value - prev.value : null;
-      const pct = prev && prev.value !== 0 ? (abs! / Math.abs(prev.value)) * 100 : null;
-      return {
-        id: def.id,
-        title: def.title,
-        kind: def.kind,
-        points,
-        latest: l,
-        change: abs == null ? null : { abs, pct },
-      };
+      return cardFromPoints(def, points);
     }),
   );
 
@@ -115,7 +157,7 @@ async function buildMacroDashboardPayloadUncached(): Promise<{ country: string; 
     if (s.status === "fulfilled" && s.value) items.push(s.value);
   }
 
-  return { country, items };
+  return { country, items: ensureAllMacroSeriesPresent(items) };
 }
 
 /** Cron / hub ingest — bypasses Supabase read path. */
@@ -129,7 +171,7 @@ export async function buildMacroDashboardPayloadForIngest(): Promise<{
 async function getMacroDashboardPayloadCachedInner(): Promise<{ country: string; items: MacroDashboardCard[] }> {
   return unstable_cache(
     buildMacroDashboardPayloadUncached,
-    ["macro-dashboard-payload-v46-btc-etf-flows"],
+    ["macro-dashboard-payload-v47-btc-etf-always"],
     { revalidate: 300 },
   )();
 }
@@ -145,9 +187,13 @@ export async function getMacroDashboardPayloadCached(): Promise<{ country: strin
   );
   if (snap && hubMacroSnapshotIsUsable(snap)) {
     const allowed = new Set(MACRO_SERIES.map((d) => d.id));
+    const hubItems = ensureAllMacroSeriesPresent(
+      (snap.items ?? []).filter((i) => allowed.has(i.id)),
+    );
+    const items = await maybeRefreshBtcEtfCard(hubItems);
     return {
       country: snap.country ?? "USA",
-      items: (snap.items ?? []).filter((i) => allowed.has(i.id)),
+      items,
     };
   }
   return getMacroDashboardPayloadCachedInner();

@@ -12,7 +12,7 @@ import {
   resolvePlanCode,
   resolveStripeInvoiceRecipientEmail,
   resolveUserEmailById,
-  setSubscriptionTrial,
+  setSubscriptionFreeAfterPro,
   upsertBillingCustomer,
   stripeInvoiceUiDescription,
   trySendLoopsProRenewalEmailForPaidInvoice,
@@ -21,6 +21,11 @@ import {
 } from "@/lib/account/billing-db";
 import { getLoopsApiKey } from "@/lib/env/loops";
 import { sendLoopsProActivatedEmail } from "@/lib/loops/send-pro-activated";
+import {
+  stripeSubscriptionCancelJustScheduled,
+  trySendLoopsProCanceledEmail,
+} from "@/lib/loops/send-pro-canceled-on-cancel";
+import { trySendLoopsProEndedFreeEmail } from "@/lib/loops/send-pro-ended-free-on-end";
 import { getStripeAccountConfig, getStripeClient } from "@/lib/stripe/server";
 
 function normalizeCustomerId(value: string | Stripe.Customer | Stripe.DeletedCustomer | null): string | null {
@@ -196,11 +201,30 @@ export async function POST(req: Request) {
       case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription;
+        const previousAttributes = event.data.previous_attributes as
+          | Partial<Stripe.Subscription>
+          | undefined;
         await syncSubscriptionFromStripe({
           stripe,
           stripeAccountKey: account.key,
           subscription,
         });
+
+        if (
+          event.type === "customer.subscription.updated" &&
+          stripeSubscriptionCancelJustScheduled(subscription, previousAttributes)
+        ) {
+          const customerId = normalizeCustomerId(subscription.customer);
+          const userId = customerId
+            ? await findUserIdByStripeCustomer({
+                stripeAccountKey: account.key,
+                stripeCustomerId: customerId,
+              })
+            : null;
+          if (userId) {
+            await trySendLoopsProCanceledEmail({ userId, subscription });
+          }
+        }
         break;
       }
 
@@ -213,7 +237,9 @@ export async function POST(req: Request) {
           stripeCustomerId: customerId,
         });
         if (!userId) break;
-        await setSubscriptionTrial({ userId });
+        // Paid Pro ended (cancel at period end completed, or immediate cancel) → Free + notify.
+        await setSubscriptionFreeAfterPro({ userId });
+        await trySendLoopsProEndedFreeEmail({ userId });
         break;
       }
 

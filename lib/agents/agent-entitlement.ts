@@ -5,18 +5,18 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export type AgentAccessResult =
   | { ok: true }
-  | { ok: false; code: "PAYWALL" | "UNAUTHENTICATED"; message: string };
+  | { ok: false; code: "PAYWALL" | "UNAUTHENTICATED" | "FREE_PLAN"; message: string };
 
-/** Agent is available to any user who can use the main app (Pro or active platform trial). */
+/** Agent is Pro or active platform trial only — not Free plan. */
 export async function assertAgentEntitlement(userId: string): Promise<AgentAccessResult> {
   const supabase = await getSupabaseServerClient();
   const gate = await getSubscriptionGateContext(supabase, userId);
-  if (gate.needsPaywall) {
-    return {
-      ok: false,
-      code: "PAYWALL",
-      message: "Activate your subscription to use Finsepa Agent.",
-    };
+  if (gate.canUseAgent) {
+    return { ok: true };
   }
-  return { ok: true };
+  return {
+    ok: false,
+    code: "FREE_PLAN",
+    message: "Upgrade to Finsepa Pro to use Finsepa Agent.",
+  };
 }

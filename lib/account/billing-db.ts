@@ -93,7 +93,10 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
 
   const platformTrialEndsAtIso = effectivePlatformTrialEndsAtIso(subscription);
   if (!isPro && accessState === "trial" && isPlatformTrialPast(platformTrialEndsAtIso)) {
-    accessState = "trial_expired";
+    accessState = "free";
+  }
+  if (!isPro && accessState === "expired") {
+    accessState = "free";
   }
 
   let platformTrialDaysRemaining: number | null = null;
@@ -107,14 +110,14 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
   }
 
   return {
-    plan: isPro ? "pro" : "trial",
+    plan: isPro ? "pro" : accessState === "free" ? "free" : "trial",
     accessState,
     accessEndsAt: subscription.cancel_at_period_end ? subscription.current_period_end : null,
     cancelAtPeriodEnd: !!subscription.cancel_at_period_end,
     billingResumeAt: null,
     subscriptionMeta:
-      accessState === "trial_expired"
-        ? "Free trial ended - subscribe to continue"
+      accessState === "free"
+        ? "Active subscription"
         : accessState === "trial"
           ? platformTrialEndsMetaLabel(platformTrialEndsAtIso) ??
             subscriptionMeta(subscription.status, subscription.cancel_at_period_end, false)
@@ -475,6 +478,38 @@ export async function clearWelcomeTrialEmailClaim(userId: string): Promise<void>
     .eq("user_id", userId);
 }
 
+/**
+ * Atomically claim the Pro cancel-at-period-end email slot.
+ * Cleared when cancel is undone so a later cancel can notify again.
+ */
+export async function claimProCancelEmailSend(userId: string): Promise<boolean> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return false;
+  const { data: claimedRows, error } = await admin
+    .from("billing_subscriptions")
+    .update({
+      loops_pro_cancel_email_sent_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .is("loops_pro_cancel_email_sent_at", null)
+    .select("user_id");
+  if (error || !claimedRows?.length) return false;
+  return true;
+}
+
+export async function clearProCancelEmailClaim(userId: string): Promise<void> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return;
+  await admin
+    .from("billing_subscriptions")
+    .update({
+      loops_pro_cancel_email_sent_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId);
+}
+
 /** @deprecated Prefer {@link claimProWelcomeEmailSend}. */
 export async function markProWelcomeEmailSent(userId: string): Promise<void> {
   await claimProWelcomeEmailSend(userId);
@@ -492,7 +527,13 @@ export async function patchBillingSubscriptionFromStripeReconcile(args: {
   if (!admin) return;
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (typeof args.status === "string") patch.status = args.status;
-  if (typeof args.cancelAtPeriodEnd === "boolean") patch.cancel_at_period_end = args.cancelAtPeriodEnd;
+  if (typeof args.cancelAtPeriodEnd === "boolean") {
+    patch.cancel_at_period_end = args.cancelAtPeriodEnd;
+    // Allow a later cancel to notify again after the user undoes cancellation.
+    if (args.cancelAtPeriodEnd === false) {
+      patch.loops_pro_cancel_email_sent_at = null;
+    }
+  }
   if (args.currentPeriodEnd !== undefined) patch.current_period_end = args.currentPeriodEnd;
   if (typeof args.recurringAmountUsd === "number") patch.recurring_amount_usd = args.recurringAmountUsd;
   await admin.from("billing_subscriptions").update(patch).eq("user_id", args.userId);
@@ -545,8 +586,24 @@ export async function upsertBillingSubscription(args: {
     { onConflict: "user_id" },
   );
 
+  if (!(args.subscription.cancel_at_period_end ?? false)) {
+    await admin
+      .from("billing_subscriptions")
+      .update({ loops_pro_cancel_email_sent_at: null, updated_at: new Date().toISOString() })
+      .eq("user_id", args.userId)
+      .not("loops_pro_cancel_email_sent_at", "is", null);
+  }
+
   if (isPaidProWindow) {
-    await admin.from("billing_subscriptions").update({ platform_trial_ends_at: null }).eq("user_id", args.userId);
+    await admin
+      .from("billing_subscriptions")
+      .update({
+        platform_trial_ends_at: null,
+        // Allow Pro→Free email again after a later Pro period ends.
+        loops_pro_ended_free_email_sent_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", args.userId);
   }
 }
 
@@ -589,6 +646,63 @@ export async function setSubscriptionTrial(args: { userId: string }) {
     },
     { onConflict: "user_id" },
   );
+}
+
+/**
+ * Paid Pro fully ended (Stripe subscription deleted). Move to Free — not Trial —
+ * so young accounts that bought Pro don't get another free trial window.
+ */
+export async function setSubscriptionFreeAfterPro(args: { userId: string }): Promise<void> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return;
+
+  await admin.from("billing_subscriptions").upsert(
+    {
+      user_id: args.userId,
+      plan_code: "free",
+      status: "free",
+      recurring_amount_usd: 0,
+      current_period_end: null,
+      cancel_at_period_end: false,
+      stripe_subscription_id: null,
+      stripe_price_id: null,
+      // Trial already consumed / not applicable after paid Pro.
+      platform_trial_ends_at: new Date(0).toISOString(),
+      pro_welcome_email_sent_at: null,
+      loops_pro_cancel_email_sent_at: null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+}
+
+/** Atomically claim the Pro→Free ended email slot. */
+export async function claimProEndedFreeEmailSend(userId: string): Promise<boolean> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return false;
+  const { data: claimedRows, error } = await admin
+    .from("billing_subscriptions")
+    .update({
+      loops_pro_ended_free_email_sent_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .is("loops_pro_ended_free_email_sent_at", null)
+    .select("user_id");
+  if (error || !claimedRows?.length) return false;
+  return true;
+}
+
+export async function clearProEndedFreeEmailClaim(userId: string): Promise<void> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return;
+  await admin
+    .from("billing_subscriptions")
+    .update({
+      loops_pro_ended_free_email_sent_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId);
 }
 
 /** Best-effort label for billing UI / webhooks. */

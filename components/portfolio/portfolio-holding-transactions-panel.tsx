@@ -26,8 +26,7 @@ import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-
 import {
   portfolioHoldingDisplayName,
 } from "@/lib/portfolio/use-portfolio-holding-display-names";
-import { buildSplitAdjustedTradeIndexForAsset } from "@/lib/portfolio/split-adjusted-trades";
-import { assetRouteKeyForHolding, tradeTransactionsForHolding } from "@/lib/portfolio/trade-transactions-for-holding";
+import { tradeTransactionsForHolding } from "@/lib/portfolio/trade-transactions-for-holding";
 import { cn } from "@/lib/utils";
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -85,16 +84,10 @@ function PortfolioHoldingTransactionsPanelInner({
 }) {
   const router = useRouter();
   const companyName = portfolioHoldingDisplayName(holding, resolvedCompanyNames);
-  const { routeKey, kind } = assetRouteKeyForHolding(holding);
 
   const recentRows = useMemo(
     () => tradeTransactionsForHolding(transactions, holding, 5),
     [transactions, holding],
-  );
-
-  const splitAdjusted = useMemo(
-    () => buildSplitAdjustedTradeIndexForAsset(transactions, routeKey, kind),
-    [transactions, routeKey, kind],
   );
 
   const assetSearch = portfolioAssetSymbolCaption(holding.symbol) || holding.symbol.trim().toUpperCase();
@@ -144,7 +137,6 @@ function PortfolioHoldingTransactionsPanelInner({
             </div>
 
             {recentRows.map((t, i) => {
-              const adjusted = splitAdjusted.get(t.id);
               return (
                 <div key={t.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
                   <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
@@ -185,12 +177,10 @@ function PortfolioHoldingTransactionsPanelInner({
                         {format(parseISO(t.date), "MMM d, yyyy")}
                       </div>
                       <div className={numericCellClass}>
-                        {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(
-                          adjusted?.shares ?? t.shares,
-                        )}
+                        {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(t.shares)}
                       </div>
                       <div className={numericCellClass}>
-                        {formatPortfolioUsdPerUnit(adjusted?.price ?? t.price)}
+                        {formatPortfolioUsdPerUnit(t.price)}
                       </div>
                       <div className={numericCellClass}>
                         {t.fee > 0 ? usd.format(t.fee) : "—"}

@@ -125,7 +125,10 @@ export async function PUT(request: Request) {
 
     if (error) {
       console.error("[portfolio/workspace PUT]", error.message);
-      return NextResponse.json({ ok: false, warning: "db_unavailable" as const }, { status: 200 });
+      return NextResponse.json(
+        { ok: false, warning: "db_unavailable" as const, message: error.message },
+        { status: 503 },
+      );
     }
 
     return NextResponse.json({

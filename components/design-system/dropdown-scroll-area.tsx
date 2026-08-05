@@ -53,7 +53,8 @@ export function DropdownScrollArea({
     if (!el) return;
 
     const update = () => {
-      setFade(el.scrollHeight > el.clientHeight + 1);
+      const next = el.scrollHeight > el.clientHeight + 1;
+      setFade((prev) => (prev === next ? prev : next));
     };
 
     update();

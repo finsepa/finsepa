@@ -3,9 +3,11 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
-import { PATH_ACTIVATE_SUBSCRIPTION, PATH_LOGIN } from "@/lib/auth/routes";
+import { PATH_LOGIN } from "@/lib/auth/routes";
 import { scheduleWelcomeTrialStartEmailFromHeaders } from "@/lib/auth/welcome-trial-start-on-login";
 import { avatarUrlFromUser, displayNameFromUser, initialsFromUser } from "@/lib/auth/user-display";
+import { FreePlanLimitsIntroModal } from "@/components/account/free-plan-modals";
+import { PlanAccessProvider } from "@/components/account/plan-access-provider";
 import { ProtectedAppShellInner } from "@/components/layout/protected-app-shell-inner";
 import { AuthSessionUrlBootstrap } from "@/components/onboarding/onboarding-auth-bootstrap";
 import { PortfolioWorkspaceProvider } from "@/components/portfolio/portfolio-workspace-provider";
@@ -70,9 +72,6 @@ export async function ProtectedAppShell({
   scheduleWelcomeTrialStartEmailFromHeaders(user, requestHeaders);
 
   const gate = await getSubscriptionGateContextCached(supabase, user.id);
-  if (gate.needsPaywall) {
-    redirect(PATH_ACTIVATE_SUBSCRIPTION);
-  }
 
   const userInitials = initialsFromUser(user);
   const avatarUrl = avatarUrlFromUser(user);
@@ -88,6 +87,7 @@ export async function ProtectedAppShell({
 
   /* Sidebar width: 240px expanded / 72px collapsed (see sidebar-layout-context). */
   return (
+    <PlanAccessProvider initial={gate}>
     <PortfolioWorkspaceProvider
       userId={user.id}
       listingOwnerDisplayName={listingOwnerDisplayName}
@@ -107,10 +107,12 @@ export async function ProtectedAppShell({
           mobileTopbarVariant={mobileTopbarVariant}
         >
           <AuthSessionUrlBootstrap />
+          <FreePlanLimitsIntroModal />
           {children}
         </ProtectedAppShellInner>
         </SuperinvestorFollowProvider>
       </WatchlistProvider>
     </PortfolioWorkspaceProvider>
+    </PlanAccessProvider>
   );
 }

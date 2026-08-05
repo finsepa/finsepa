@@ -14,16 +14,19 @@ export function PortfolioSnaptradeConnectionInfo({
 }: {
   snaptrade: PortfolioSnaptradeLink;
 }) {
+  const offline = snaptrade.offline === true;
   const [isRealTimeConnection, setIsRealTimeConnection] = useState<boolean | null>(
-    snaptrade.isRealTimeConnection ?? null,
+    offline ? false : (snaptrade.isRealTimeConnection ?? null),
   );
 
   useEffect(() => {
-    setIsRealTimeConnection(snaptrade.isRealTimeConnection ?? null);
-  }, [snaptrade.authorizationId, snaptrade.isRealTimeConnection]);
+    setIsRealTimeConnection(offline ? false : (snaptrade.isRealTimeConnection ?? null));
+  }, [offline, snaptrade.authorizationId, snaptrade.isRealTimeConnection]);
 
   useEffect(() => {
-    if (!snaptrade.authorizationId || snaptrade.isRealTimeConnection !== undefined) return;
+    if (offline) return;
+    if (!snaptrade.authorizationId || snaptrade.authorizationId === "offline") return;
+    if (snaptrade.isRealTimeConnection !== undefined) return;
     const ac = new AbortController();
     void fetch(
       `/api/snaptrade/brokerage-logo?authorizationId=${encodeURIComponent(snaptrade.authorizationId)}`,
@@ -39,23 +42,33 @@ export function PortfolioSnaptradeConnectionInfo({
         /* ignore */
       });
     return () => ac.abort();
-  }, [snaptrade.authorizationId, snaptrade.isRealTimeConnection]);
+  }, [offline, snaptrade.authorizationId, snaptrade.isRealTimeConnection]);
 
   const brokerageName = snaptrade.brokerageName?.trim() || "Connected brokerage";
   const accountCount = snaptrade.accountIds.length;
   const explanation = useMemo(
-    () => brokerageSyncExplanationBullets(isRealTimeConnection),
-    [isRealTimeConnection],
+    () =>
+      offline
+        ? [
+            "This is a frozen offline copy — positions are not live.",
+            "SnapTrade was disconnected to stop ongoing connection charges on Free.",
+            "Upgrade to Pro to reconnect and sync again.",
+          ]
+        : brokerageSyncExplanationBullets(isRealTimeConnection),
+    [isRealTimeConnection, offline],
   );
 
   const accountLine =
-    accountCount === 0 ? "Account linked"
+    offline ? "Disconnected · offline snapshot"
+    : accountCount === 0 ? "Account linked"
     : accountCount === 1 ? "1 account linked"
     : `${accountCount} accounts linked`;
 
   return (
     <div className="flex w-full flex-col gap-2">
-      <span className="text-sm font-medium leading-5 text-fg">Brokerage connection</span>
+      <span className="text-sm font-medium leading-5 text-fg">
+        {offline ? "Brokerage (offline)" : "Brokerage connection"}
+      </span>
       <div className="rounded-[10px] border border-stroke bg-canvas px-3 py-3">
         <div className="flex items-start gap-3">
           <PortfolioBrokerageLogo snaptrade={snaptrade} className="mt-0.5" />
@@ -68,7 +81,9 @@ export function PortfolioSnaptradeConnectionInfo({
           </div>
         </div>
         <div className="mt-3 border-t border-stroke pt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-fg-muted">How sync works</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-fg-muted">
+            {offline ? "Frozen on Free" : "How sync works"}
+          </p>
           <ul className="mt-2 list-disc space-y-1.5 pl-4 text-xs leading-relaxed text-fg-muted">
             {explanation.map((line) => (
               <li key={line}>{line}</li>

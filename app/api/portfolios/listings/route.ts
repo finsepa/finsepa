@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
 import { avatarUrlFromUser, displayNameFromUser } from "@/lib/auth/user-display";
 import { enrichPublicListingCardMetricsLive } from "@/lib/portfolio/public-listing-metrics-server";
 import { sanitizePublicListingSnapshot } from "@/lib/portfolio/public-listing-snapshot";
@@ -126,6 +127,19 @@ export async function PUT(request: Request) {
     }
 
     const publish = body.publish === true;
+
+    if (publish) {
+      const gate = await getSubscriptionGateContext(supabase, user.id);
+      if (!gate.canPublishPublicPortfolio) {
+        return NextResponse.json(
+          {
+            error: "Public portfolios are available on Pro only.",
+            code: "FREE_PLAN",
+          },
+          { status: 403 },
+        );
+      }
+    }
 
     if (!publish) {
       const { error } = await supabase

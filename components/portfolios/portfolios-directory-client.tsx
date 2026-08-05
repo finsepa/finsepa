@@ -193,7 +193,7 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
                       className="-ml-1 first:ml-0"
                       style={{ zIndex: topSyms.length - i }}
                     >
-                      <div className="overflow-hidden rounded-full ring-2 ring-white">
+                      <div className="overflow-hidden rounded-full ring-2 ring-stroke-subtle">
                         <CompanyLogo
                           name={sym}
                           logoUrl={displayLogoUrlForPortfolioSymbol(sym)}

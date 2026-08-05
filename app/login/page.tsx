@@ -10,11 +10,17 @@ import {
 import { Check } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
-import { LOGIN_SIGNED_OUT_VALUE } from "@/lib/auth/routes";
+import { LOGIN_ACCOUNT_DELETED_VALUE, LOGIN_SIGNED_OUT_VALUE } from "@/lib/auth/routes";
 
 import { LoginClient } from "./login-client";
 
-type SearchParams = { reset?: string; error?: string; next?: string; signed_out?: string };
+type SearchParams = {
+  reset?: string;
+  error?: string;
+  next?: string;
+  signed_out?: string;
+  account_deleted?: string;
+};
 
 const CALLBACK_ERROR_MESSAGES: Record<string, string> = {
   session:
@@ -30,11 +36,14 @@ export { authMetadata as metadata, authViewport as viewport } from "@/lib/auth/a
 export default async function LoginPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = await searchParams;
   const signedOut = sp.signed_out === LOGIN_SIGNED_OUT_VALUE;
+  const accountDeleted = sp.account_deleted === LOGIN_ACCOUNT_DELETED_VALUE;
   const callbackHint = sp.error
     ? (CALLBACK_ERROR_MESSAGES[sp.error] ?? "Something went wrong. Please try again.")
     : null;
   const sessionExpiredHint =
-    !callbackHint && !signedOut && sp.next ? "Please sign in to continue." : null;
+    !callbackHint && !signedOut && !accountDeleted && sp.next
+      ? "Please sign in to continue."
+      : null;
   const bannerHint = callbackHint ?? sessionExpiredHint;
 
   return (
@@ -51,7 +60,15 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         </>
       }
       preCard={
-        signedOut ? (
+        accountDeleted ? (
+          <div
+            role="status"
+            className={cn(authSuccessBannerClassName, "flex items-center gap-2")}
+          >
+            <Check className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
+            Your account was deleted.
+          </div>
+        ) : signedOut ? (
           <div
             role="status"
             className={cn(authSuccessBannerClassName, "flex items-center gap-2")}

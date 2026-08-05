@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DetectedEarningsRelease } from "@/lib/notifications/earnings-release-detect";
 import type { TickerInterestMap } from "@/lib/notifications/earnings-notify-universe";
 import type { UserNotificationRow } from "@/lib/notifications/earnings-notify-types";
+import { filterUserIdsWithActivityAlerts } from "@/lib/account/activity-alerts-entitlement";
 import { loadEarningsNotificationsDisabledUserIds } from "@/lib/notifications/notification-preferences-store";
 
 export async function insertEarningsReleaseNotifications(
@@ -14,7 +15,15 @@ export async function insertEarningsReleaseNotifications(
 ): Promise<number> {
   if (releases.length === 0) return 0;
 
-  const disabledUserIds = await loadEarningsNotificationsDisabledUserIds(admin);
+  const interestedUserIds = new Set<string>();
+  for (const users of interest.values()) {
+    for (const userId of users) interestedUserIds.add(userId);
+  }
+
+  const [disabledUserIds, eligibleUserIds] = await Promise.all([
+    loadEarningsNotificationsDisabledUserIds(admin),
+    filterUserIdsWithActivityAlerts(admin, [...interestedUserIds]),
+  ]);
 
   const rows: {
     user_id: string;
@@ -31,7 +40,10 @@ export async function insertEarningsReleaseNotifications(
     const users = interest.get(release.row.ticker);
     if (!users || users.size === 0) continue;
     for (const userId of users) {
+      // UI toggle opted out.
       if (disabledUserIds.has(userId)) continue;
+      // Free plan: no new activity alerts (prefs may still be "on" in DB after downgrade).
+      if (!eligibleUserIds.has(userId)) continue;
       rows.push({
         user_id: userId,
         kind: "earnings_released",

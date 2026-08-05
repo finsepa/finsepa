@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown, Globe, Info, Lock } from "@/lib/icons";
 
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
+import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
@@ -27,9 +29,18 @@ export const PORTFOLIO_PRIVACY_TOOLTIP =
 
 /** Privacy field label with info tooltip (Create / Edit / Connect brokerage modals). */
 export function PortfolioPrivacyFieldLabel() {
+  const plan = usePlanAccessOptional();
+  const showProBadge = plan != null && !plan.canPublishPublicPortfolio;
+
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       <span className="text-sm font-medium leading-5 text-fg">Privacy</span>
+      {showProBadge ? (
+        <ProFeatureBadge
+          label="Public portfolios are available on Pro only"
+          zIndex={350}
+        />
+      ) : null}
       <TopbarDelayedTooltip
         label={PORTFOLIO_PRIVACY_TOOLTIP}
         multiline
@@ -70,13 +81,16 @@ export function PortfolioPrivacySelect({
   value,
   onChange,
   disabled = false,
+  disabledValues,
   "aria-label": ariaLabel = "Portfolio privacy",
 }: {
   id?: string;
   value: PortfolioPrivacy;
   onChange: (next: PortfolioPrivacy) => void;
-  /** When true, trigger is non-interactive (e.g. empty portfolio cannot be public). */
+  /** When true, trigger is non-interactive (e.g. empty portfolio cannot be public; Free plan). */
   disabled?: boolean;
+  /** Options that cannot be selected (e.g. Public on Free plan). */
+  disabledValues?: readonly PortfolioPrivacy[];
   "aria-label"?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -153,17 +167,28 @@ export function PortfolioPrivacySelect({
             {OPTIONS.map((opt) => {
               const OptIcon = opt.Icon;
               const selected = value === opt.value;
+              const optDisabled = disabledValues?.includes(opt.value) ?? false;
               return (
                 <button
                   key={opt.value}
                   type="button"
                   role="option"
                   aria-selected={selected}
+                  disabled={optDisabled}
+                  title={
+                    optDisabled
+                      ? "Public portfolios are available on Pro only"
+                      : undefined
+                  }
                   onClick={() => {
+                    if (optDisabled) return;
                     onChange(opt.value);
                     setOpen(false);
                   }}
-                  className={dropdownMenuPlainItemRowClassName({ selected })}
+                  className={cn(
+                    dropdownMenuPlainItemRowClassName({ selected }),
+                    optDisabled && "cursor-not-allowed opacity-50",
+                  )}
                 >
                   <span className="flex min-w-0 flex-1 items-center gap-2">
                     <OptIcon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />

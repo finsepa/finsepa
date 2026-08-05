@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles } from "@/lib/icons";
 
-import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import type { BillingSummary } from "@/lib/account/billing";
 import {
@@ -13,12 +12,12 @@ import {
   readBillingSummaryMenuCache,
   writeBillingSummaryMenuCache,
 } from "@/lib/account/billing-summary-menu-cache";
+import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { cn } from "@/lib/utils";
 
 /**
- * Upgrade CTA for non-Pro users.
- * Default is hidden until Pro/non-Pro is confirmed — avoids flashing Upgrade for paid users
- * when server gate lags Stripe or local cache is stale.
+ * Upgrade CTA for non-Pro users — opens Billing → Plans.
+ * Hidden until Pro/non-Pro is confirmed to avoid flashing Upgrade for paid users.
  */
 export function TopbarUpgradeButton({
   userId,
@@ -30,9 +29,7 @@ export function TopbarUpgradeButton({
   isPro?: boolean;
 }) {
   const router = useRouter();
-  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [isPro, setIsPro] = useState(isProFromServer);
-  /** False until we know plan (server Pro, cache, or network). Never show Upgrade while false. */
   const [planReady, setPlanReady] = useState(isProFromServer);
 
   const applyPro = useCallback((next: boolean) => {
@@ -62,8 +59,6 @@ export function TopbarUpgradeButton({
     }
 
     const hit = readBillingSummaryMenuCache(userId);
-    // Optimistic hide only when cache already says Pro — never unlock Upgrade from a trial cache
-    // (billing summary may have been written before Stripe webhook / status catch-up).
     if (hit?.summary.plan === "pro") {
       applyPro(true);
       if (!isBillingSummaryMenuCacheFresh(hit.fetchedAt)) {
@@ -75,37 +70,25 @@ export function TopbarUpgradeButton({
     void fetchBillingSummary();
   }, [userId, isProFromServer, applyPro, fetchBillingSummary]);
 
-  // Paid (server or confirmed client) — never show.
   if (isProFromServer || isPro) return null;
-
-  // Unknown — render nothing (not Upgrade). Paid users must never see the CTA flash.
   if (!planReady) return null;
 
   return (
-    <>
-      <TopbarDelayedTooltip label="Upgrade" className="hidden shrink-0 md:block">
-        <button
-          type="button"
-          onClick={() => setUpgradeModalOpen(true)}
-          className={cn(
-            "inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-accent px-3.5 text-[13px] font-semibold text-white",
-            "shadow-[0px_1px_2px_0px_rgba(37,99,235,0.2)] transition-colors hover:bg-accent-hover",
-          )}
-        >
-          <Sparkles className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
-          Upgrade
-        </button>
-      </TopbarDelayedTooltip>
-
-      <BillingUpgradeModal
-        open={upgradeModalOpen}
-        onClose={() => {
-          setUpgradeModalOpen(false);
+    <TopbarDelayedTooltip label="Upgrade" className="hidden shrink-0 md:block">
+      <button
+        type="button"
+        onClick={() => {
           invalidateBillingSummaryMenuCache(userId);
-          void fetchBillingSummary();
-          router.refresh();
+          router.push(PATH_ACCOUNT_PLANS);
         }}
-      />
-    </>
+        className={cn(
+          "inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-accent px-3.5 text-[13px] font-semibold text-white",
+          "shadow-[0px_1px_2px_0px_rgba(37,99,235,0.2)] transition-colors hover:bg-accent-hover",
+        )}
+      >
+        <Sparkles className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
+        Upgrade
+      </button>
+    </TopbarDelayedTooltip>
   );
 }

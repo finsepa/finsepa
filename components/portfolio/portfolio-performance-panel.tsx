@@ -6,6 +6,7 @@ import { LineChart } from "@/lib/icons";
 
 import { PortfolioHoldingsPerformanceChart } from "@/components/portfolio/portfolio-holdings-performance-chart";
 import { PortfolioReturnsDynamicsChart } from "@/components/portfolio/portfolio-returns-dynamics-chart";
+import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { SegmentedControl } from "@/components/design-system/segmented-control";
 import {
@@ -26,10 +27,39 @@ import { totalCostBasisInvested } from "@/lib/portfolio/overview-metrics";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 import type { PortfolioChartRange, PortfolioValueHistoryPoint } from "@/lib/portfolio/portfolio-chart-types";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import { portfolioIsCombined } from "@/components/portfolio/portfolio-types";
 import { cn } from "@/lib/utils";
 
 const SPY_SWATCH = "#EA580C";
 const SPY_LABEL = "S&P 500";
+
+/** Distinct line colors for combined source portfolios (not accent / SPY orange). */
+const COMBINED_SOURCE_SWATCHES = [
+  "#0d9488",
+  "#7c3aed",
+  "#db2777",
+  "#0891b2",
+  "#ca8a04",
+  "#4f46e5",
+] as const;
+
+async function fetchValueHistory(
+  range: PortfolioChartRange,
+  transactions: readonly PortfolioTransaction[],
+  signal?: AbortSignal,
+): Promise<PortfolioValueHistoryPoint[]> {
+  if (transactions.length === 0) return [];
+  const res = await fetch("/api/portfolio/value-history", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    signal,
+    body: JSON.stringify({ range, transactions }),
+  });
+  if (!res.ok) throw new Error("Failed to load chart");
+  const json = (await res.json()) as { points?: PortfolioValueHistoryPoint[] };
+  return Array.isArray(json.points) ? json.points : [];
+}
 
 /** Clickable legend badge — same pattern as Dynamics of portfolio returns. */
 function PerformanceLegendBadge({
@@ -59,6 +89,12 @@ function PerformanceLegendBadge({
   );
 }
 
+type CombinedSourceDef = {
+  id: string;
+  name: string;
+  color: string;
+};
+
 function PerformanceChartSection({
   title,
   metric,
@@ -71,6 +107,8 @@ function PerformanceChartSection({
   transactions,
   spyPricePoints,
   benchmarkInvestedUsd,
+  combinedSources,
+  sourcePointsById,
 }: {
   title: string;
   metric: "value" | "profit";
@@ -83,23 +121,67 @@ function PerformanceChartSection({
   transactions: PortfolioTransaction[];
   spyPricePoints: StockChartPoint[] | null;
   benchmarkInvestedUsd: number | null;
+  /** Empty when not a combined portfolio. */
+  combinedSources: readonly CombinedSourceDef[];
+  sourcePointsById: ReadonlyMap<string, PortfolioValueHistoryPoint[]>;
 }) {
+  const isCombined = combinedSources.length > 0;
+  const portfolioLabel = isCombined ? "Combined" : "Portfolio";
+  const portfolioSwatch = resolveFsColor("--fs-accent");
+
   const [showPortfolio, setShowPortfolio] = useState(true);
   const [compareSpy, setCompareSpy] = useState(false);
+  const [sourceVisible, setSourceVisible] = useState<Record<string, boolean>>({});
+
+  const sourceIdsKey = combinedSources.map((s) => s.id).join("|");
+
+  // Reset source toggles when combined composition changes; Combined stays on.
+  useEffect(() => {
+    setShowPortfolio(true);
+    setCompareSpy(false);
+    setSourceVisible({});
+  }, [sourceIdsKey]);
+
+  const anySourceOn = combinedSources.some((s) => sourceVisible[s.id]);
 
   const togglePortfolio = useCallback(() => {
     setShowPortfolio((cur) => {
-      if (cur && !compareSpy) return cur;
+      if (cur && !compareSpy && !anySourceOn) return cur;
       return !cur;
     });
-  }, [compareSpy]);
+  }, [compareSpy, anySourceOn]);
 
   const toggleSpy = useCallback(() => {
     setCompareSpy((cur) => {
-      if (cur && !showPortfolio) return cur;
+      if (cur && !showPortfolio && !anySourceOn) return cur;
       return !cur;
     });
-  }, [showPortfolio]);
+  }, [showPortfolio, anySourceOn]);
+
+  const toggleSource = useCallback(
+    (id: string) => {
+      setSourceVisible((prev) => {
+        const nextOn = !prev[id];
+        if (!nextOn) {
+          const othersOn = combinedSources.some((s) => s.id !== id && prev[s.id]);
+          if (!othersOn && !showPortfolio && !compareSpy) return prev;
+        }
+        return { ...prev, [id]: nextOn };
+      });
+    },
+    [combinedSources, showPortfolio, compareSpy],
+  );
+
+  const overlaySeries = useMemo(
+    () =>
+      combinedSources.map((s) => ({
+        id: s.id,
+        color: s.color,
+        visible: Boolean(sourceVisible[s.id]),
+        points: sourcePointsById.get(s.id) ?? [],
+      })),
+    [combinedSources, sourceVisible, sourcePointsById],
+  );
 
   const rangeSwitcherDesktop = (
     <SegmentedControl
@@ -126,11 +208,20 @@ function PerformanceChartSection({
   const legend = hasChart ? (
     <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
       <PerformanceLegendBadge
-        label="Portfolio"
-        swatch={resolveFsColor("--fs-accent")}
+        label={portfolioLabel}
+        swatch={portfolioSwatch}
         pressed={showPortfolio}
         onToggle={togglePortfolio}
       />
+      {combinedSources.map((s) => (
+        <PerformanceLegendBadge
+          key={s.id}
+          label={s.name}
+          swatch={s.color}
+          pressed={Boolean(sourceVisible[s.id])}
+          onToggle={() => toggleSource(s.id)}
+        />
+      ))}
       <PerformanceLegendBadge
         label={SPY_LABEL}
         swatch={SPY_SWATCH}
@@ -188,6 +279,7 @@ function PerformanceChartSection({
             compareSpy={compareSpy}
             spyPricePoints={spyPricePoints}
             benchmarkInvestedUsd={benchmarkInvestedUsd}
+            overlaySeries={overlaySeries}
           />
         )}
       </div>
@@ -206,11 +298,33 @@ function PortfolioPerformancePanelInner({
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
 }) {
+  const { portfolios, selectedPortfolioId, transactionsByPortfolioId } = usePortfolioWorkspace();
   const [range, setRange] = useState<PortfolioChartRange>("ytd");
   const [points, setPoints] = useState<PortfolioValueHistoryPoint[]>([]);
+  const [sourcePointsById, setSourcePointsById] = useState<
+    Map<string, PortfolioValueHistoryPoint[]>
+  >(() => new Map());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [spyPoints, setSpyPoints] = useState<StockChartPoint[] | null>(null);
+
+  const selected = useMemo(
+    () => portfolios.find((p) => p.id === selectedPortfolioId) ?? null,
+    [portfolios, selectedPortfolioId],
+  );
+
+  const combinedSources = useMemo((): CombinedSourceDef[] => {
+    if (!selected || !portfolioIsCombined(selected)) return [];
+    const from = selected.combinedFrom ?? [];
+    return from.map((id, i) => {
+      const entry = portfolios.find((p) => p.id === id);
+      return {
+        id,
+        name: entry?.name?.trim() || `Portfolio ${i + 1}`,
+        color: COMBINED_SOURCE_SWATCHES[i % COMBINED_SOURCE_SWATCHES.length]!,
+      };
+    });
+  }, [selected, portfolios]);
 
   const canLoad = transactions.length > 0;
   const benchmarkInvestedUsd = useMemo(() => totalCostBasisInvested(holdings), [holdings]);
@@ -218,27 +332,40 @@ function PortfolioPerformancePanelInner({
   const load = useCallback(async () => {
     if (!canLoad) {
       setPoints([]);
+      setSourcePointsById(new Map());
       return;
     }
     setLoading(true);
     setError(null);
+    const ac = new AbortController();
     try {
-      const res = await fetch("/api/portfolio/value-history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ range, transactions }),
-      });
-      if (!res.ok) throw new Error("Failed to load chart");
-      const json = (await res.json()) as { points?: PortfolioValueHistoryPoint[] };
-      setPoints(Array.isArray(json.points) ? json.points : []);
+      const combinedPts = await fetchValueHistory(range, transactions, ac.signal);
+      setPoints(combinedPts);
+
+      if (combinedSources.length > 0) {
+        const next = new Map<string, PortfolioValueHistoryPoint[]>();
+        await Promise.all(
+          combinedSources.map(async (s) => {
+            const txs = transactionsByPortfolioId[s.id] ?? [];
+            try {
+              next.set(s.id, await fetchValueHistory(range, txs, ac.signal));
+            } catch {
+              next.set(s.id, []);
+            }
+          }),
+        );
+        setSourcePointsById(next);
+      } else {
+        setSourcePointsById(new Map());
+      }
     } catch {
       setError("Could not load history");
       setPoints([]);
+      setSourcePointsById(new Map());
     } finally {
       setLoading(false);
     }
-  }, [canLoad, range, transactions]);
+  }, [canLoad, range, transactions, combinedSources, transactionsByPortfolioId]);
 
   useEffect(() => {
     void load();
@@ -273,6 +400,8 @@ function PortfolioPerformancePanelInner({
         transactions={transactions}
         spyPricePoints={spyPoints}
         benchmarkInvestedUsd={benchmarkInvestedUsd}
+        combinedSources={combinedSources}
+        sourcePointsById={sourcePointsById}
       />
 
       <PerformanceChartSection
@@ -287,6 +416,8 @@ function PortfolioPerformancePanelInner({
         transactions={transactions}
         spyPricePoints={spyPoints}
         benchmarkInvestedUsd={benchmarkInvestedUsd}
+        combinedSources={combinedSources}
+        sourcePointsById={sourcePointsById}
       />
 
       <PortfolioReturnsDynamicsChart transactions={transactions} canLoad={canLoad} />

@@ -57,7 +57,7 @@ export function PublicPortfolioCardSkeleton() {
                       className="-ml-1 first:ml-0"
                       style={{ zIndex: 5 - j }}
                     >
-                      <SkeletonBox className="h-5 w-5 shrink-0 rounded-full ring-2 ring-white" />
+                      <SkeletonBox className="h-5 w-5 shrink-0 rounded-full ring-2 ring-stroke-subtle" />
                     </div>
                   ))}
                 </div>

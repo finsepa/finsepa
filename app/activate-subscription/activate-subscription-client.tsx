@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
+import { useRouter } from "next/navigation";
 import { AuthBrandMark } from "@/components/auth/auth-brand-mark";
 import { AuthCornerActions } from "@/components/auth/auth-corner-actions";
-import { loginSignedOutUrl } from "@/lib/auth/routes";
+import { loginSignedOutUrl, PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { useState } from "react";
 
 export function ActivateSubscriptionClient() {
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
 
   async function signOut() {
@@ -35,7 +35,7 @@ export function ActivateSubscriptionClient() {
           </p>
           <button
             type="button"
-            onClick={() => setUpgradeOpen(true)}
+            onClick={() => router.push(PATH_ACCOUNT_PLANS)}
             className="mt-8 h-11 w-full rounded-[10px] bg-fg text-sm font-semibold text-surface transition-colors hover:bg-[#18181B] dark:hover:bg-fg/90"
           >
             Upgrade to Pro
@@ -55,7 +55,6 @@ export function ActivateSubscriptionClient() {
       </div>
 
       <AuthCornerActions />
-      <BillingUpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </main>
   );
 }

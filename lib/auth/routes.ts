@@ -16,12 +16,24 @@ export const PATH_APP_ENTRY = "/screener";
 /** Query flag on `/login` after an explicit sign-out. */
 export const LOGIN_SIGNED_OUT_VALUE = "1";
 
+/** Query flag on `/login` after self-serve account deletion. */
+export const LOGIN_ACCOUNT_DELETED_VALUE = "1";
+
 export function loginSignedOutUrl(): string {
   return `${PATH_LOGIN}?signed_out=${LOGIN_SIGNED_OUT_VALUE}`;
 }
 
+export function loginAccountDeletedUrl(): string {
+  return `${PATH_LOGIN}?account_deleted=${LOGIN_ACCOUNT_DELETED_VALUE}`;
+}
+
 /** Full-screen subscribe prompt when the platform trial (or paid grace) has ended */
 export const PATH_ACTIVATE_SUBSCRIPTION = "/activate-subscription";
+
+/** Account · Plans (Free vs Pro comparison + checkout). */
+export const PATH_ACCOUNT = "/account";
+export const PATH_ACCOUNT_PLANS = "/account/plans";
+export const PATH_ACCOUNT_BILLING = "/account?tab=billing";
 
 export function isProtectedPath(pathname: string): boolean {
   if (pathname === "/screener" || pathname.startsWith("/screener/")) return true;

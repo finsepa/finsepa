@@ -373,6 +373,13 @@ function returnWindowForChartRange(
   return { startYmd: start, vStartZero: false };
 }
 
+/**
+ * Stamps range-relative Return % and Total profit $ on history points.
+ * - Period ranges (6M, 1Y, …): Modified Dietz from window start through each sample
+ *   (`gainUsd` / `pct`) — same definition as Overview Total profit cards / dietz-returns.
+ * - ALL (or window before first activity): keep inception equity P/L from point build;
+ *   ensure returnPct is inception Dietz.
+ */
 function applyRangeReturnPcts(
   points: PortfolioValueHistoryPoint[],
   transactions: PortfolioTransaction[],
@@ -386,7 +393,7 @@ function applyRangeReturnPcts(
   const { startYmd: windowStart, vStartZero } = returnWindowForChartRange(range, now, firstTxYmd);
 
   if (vStartZero) {
-    // Inception Dietz — already stamped in portfolioPointAtSession.
+    // Inception Dietz — profit already lifetime equity P/L from portfolioPointAtSession.
     return points.map((p) => {
       if (p.returnPct != null) return p;
       if (!firstTxYmd || p.t < firstTxYmd) return { ...p, returnPct: null };
@@ -408,16 +415,22 @@ function applyRangeReturnPcts(
   const vStart = portfolioNetWorthOnDate(transactions, barsBySymbol, d0);
   return points.map((p) => {
     if (p.t <= d0) {
-      return { ...p, returnPct: 0 };
+      return { ...p, returnPct: 0, profit: 0 };
     }
-    const pct = portfolioPeriodReturnDietz({
+    const period = portfolioPeriodReturnDietz({
       transactions,
       vStart,
       vEnd: p.value,
       startYmd: d0,
       endYmd: p.t,
-    }).pct;
-    return { ...p, returnPct: pct };
+    });
+    return {
+      ...p,
+      returnPct: period.pct,
+      // Prefer Dietz period gain; fall back to prior equity P/L only if gain is unavailable.
+      profit:
+        period.gainUsd != null && Number.isFinite(period.gainUsd) ? period.gainUsd : p.profit,
+    };
   });
 }
 
@@ -448,8 +461,9 @@ function portfolioPointAtSession(
   const value = equity + cash;
   const unrealized = equity - cost;
   const realized = cumulativeRealizedGainUsdUpTo(transactions, sessionYmd);
+  /** Lifetime equity P/L as-of session; period ranges rewrite `profit` in `applyRangeReturnPcts`. */
   const profit = unrealized + realized;
-  /** Modified Dietz — overwritten for the selected chart range in `applyRangeReturnPcts`. */
+  /** Inception Dietz; period ranges overwrite returnPct in `applyRangeReturnPcts`. */
   const returnPct =
     firstTxYmd != null && sessionYmd >= firstTxYmd ?
       dietzReturnPctFromInceptionNav({
@@ -547,7 +561,13 @@ export async function computePortfolioValueHistory(
       toYmd,
       firstTx,
     );
-    return applyRangeReturnPcts(ytdPoints, transactions, barsBySymbol, range, now, firstTx);
+    const withReturns = applyRangeReturnPcts(ytdPoints, transactions, barsBySymbol, range, now, firstTx);
+    if (withReturns.length === 0 && transactions.length > 0) {
+      return [
+        portfolioPointAtSession(transactions, toYmd, barsBySymbol, new Map(), null, firstTx),
+      ];
+    }
+    return withReturns;
   }
 
   const dateSet = new Set<string>();
@@ -588,7 +608,15 @@ export async function computePortfolioValueHistory(
     );
   }
 
-  return applyRangeReturnPcts(points, transactions, barsBySymbol, range, now, firstTx);
+  const withReturns = applyRangeReturnPcts(points, transactions, barsBySymbol, range, now, firstTx);
+  // Always emit at least one mark when the ledger has activity (e.g. same-day first trade
+  // or provider gaps) so Overview can draw a chart whenever holdings exist.
+  if (withReturns.length === 0 && transactions.length > 0) {
+    return [
+      portfolioPointAtSession(transactions, toYmd, barsBySymbol, new Map(), null, firstTx),
+    ];
+  }
+  return withReturns;
 }
 
 export function parsePortfolioValueHistoryBody(body: unknown): {

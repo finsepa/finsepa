@@ -15,6 +15,8 @@ export type PortfolioWorkspaceContextValue = {
   portfolios: PortfolioEntry[];
   selectedPortfolioId: string | null;
   setSelectedPortfolioId: Dispatch<SetStateAction<string | null>>;
+  /** Free: whether this portfolio can be opened (active manual, brokerage offline, demo). */
+  isFreePortfolioAccessible: (portfolioId: string | null) => boolean;
   holdingsByPortfolioId: Record<string, PortfolioHolding[]>;
   addHolding: (portfolioId: string, holding: PortfolioHolding) => void;
   transactionsByPortfolioId: Record<string, PortfolioTransaction[]>;
@@ -23,16 +25,26 @@ export type PortfolioWorkspaceContextValue = {
   openCreatePortfolio: (options?: { mode?: "manual" | "brokerage" }) => void;
   openCreateCombinedPortfolio: () => void;
   openConnectBrokerage: () => void;
+  /**
+   * Pro: open SnapTrade portal and re-link into an existing offline (or linked) brokerage portfolio.
+   * Free: sends the user to Plans.
+   */
+  openReconnectBrokerage: (portfolioId: string) => void;
+  /** Seed (or focus) the Free demo portfolio — does not count toward Free portfolio quota. */
+  openTryDemoPortfolio: () => void;
   /** Re-pull holdings and cash from SnapTrade for a linked portfolio (no paid refresh endpoint). */
   resyncLinkedPortfolio: (
     portfolioId: string,
-    options?: { silent?: boolean; updateFromYmd?: string | null },
+    options?: { silent?: boolean; updateFromYmd?: string | null; authorizationIdOverride?: string },
   ) => Promise<void>;
   /** Open the manual brokerage sync modal (update-from date + sync settings link). */
   openSnaptradeSyncModal: (portfolioId: string) => void;
   /** Updates visibility for a portfolio and syncs the public listing (same behavior as Edit → Save). */
   updatePortfolioPrivacy: (portfolioId: string, nextPrivacy: PortfolioPrivacy) => void;
-  /** True when the selected portfolio is a read-only combined view (no trades / imports). */
+  /**
+   * True when the selected portfolio is a read-only combined view, or a Free offline/brokerage freeze
+   * (no trades / imports / sync).
+   */
   selectedPortfolioReadOnly: boolean;
   newTransactionOpen: boolean;
   openNewTransaction: () => void;
@@ -62,6 +74,8 @@ export type PortfolioWorkspaceContextValue = {
    * showing totals from last trade prices before refreshed `currentValue`, especially crypto).
    */
   portfolioDisplayReady: boolean;
+  /** True after local bootstrap and/or server merge — portfolio list is trustworthy. */
+  portfolioListReady: boolean;
 };
 
 export const PortfolioWorkspaceContext = createContext<PortfolioWorkspaceContextValue | null>(null);

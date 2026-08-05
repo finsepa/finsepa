@@ -22,7 +22,7 @@ function isBillingSummary(x: unknown): x is BillingSummary {
   if (!x || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
   return (
-    (o.plan === "pro" || o.plan === "trial") &&
+    (o.plan === "pro" || o.plan === "trial" || o.plan === "free") &&
     typeof o.accessState === "string" &&
     Array.isArray(o.paymentHistory)
   );

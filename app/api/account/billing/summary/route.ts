@@ -12,10 +12,18 @@ import {
   isPlatformTrialPast,
   platformTrialDaysRemaining as computePlatformTrialDaysRemaining,
 } from "@/lib/account/platform-trial";
+import { trySendLoopsProCanceledEmail } from "@/lib/loops/send-pro-canceled-on-cancel";
 import { getStripeClient } from "@/lib/stripe/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-type BillingAccessState = "trial" | "trial_expired" | "pro" | "canceled" | "expired" | "paused";
+type BillingAccessState =
+  | "trial"
+  | "trial_expired"
+  | "free"
+  | "pro"
+  | "canceled"
+  | "expired"
+  | "paused";
 
 type BillingSubscriptionRow = {
   plan_code: string;
@@ -173,6 +181,15 @@ export async function GET() {
     const isActivePaidState = stripeStatus === "active" || stripeStatus === "trialing";
     const isPro = isStripeProPlan && isActivePaidState;
 
+    // Local + webhook-miss fallback: Account → Billing reconcile can send the cancel email
+    // (claim-deduped) even when Stripe CLI isn't forwarding webhooks to localhost.
+    if (isPro && stripeCancelAtPeriodEnd && !stripeCollectionPaused && stripeSubscription) {
+      await trySendLoopsProCanceledEmail({
+        userId: user.id,
+        subscription: stripeSubscription,
+      });
+    }
+
     // Next billing/access end date. Paused subs have no scheduled invoice.
     // cancel_at_period_end: do not use retrieveUpcoming / anchor math — it can imply a renewal "next payment".
     let recurringDueDate = isPro && !stripeCollectionPaused ? stripeCurrentPeriodEndIso ?? null : null;
@@ -276,11 +293,22 @@ export async function GET() {
     const platformTrialEndsAtIso = effectivePlatformTrialEndsAtIso(subscription ?? null);
 
     if (!isPro && accessState === "trial" && isPlatformTrialPast(platformTrialEndsAtIso)) {
-      accessState = "trial_expired";
+      accessState = "free";
+    }
+    if (!isPro && accessState === "expired") {
+      accessState = "free";
+    }
+    // Stripe plan no longer active (canceled Pro after period) → Free.
+    if (!isPro && isStripeProPlan && accessState !== "pro" && accessState !== "canceled" && accessState !== "paused") {
+      accessState = "free";
     }
 
-    const plan: "pro" | "trial" =
-      accessState === "pro" || accessState === "canceled" || accessState === "paused" ? "pro" : "trial";
+    const plan: "pro" | "trial" | "free" =
+      accessState === "pro" || accessState === "canceled" || accessState === "paused"
+        ? "pro"
+        : accessState === "trial"
+          ? "trial"
+          : "free";
 
     const cancelAtPeriodEndActive = isPro && stripeCancelAtPeriodEnd && !stripeCollectionPaused;
 
@@ -324,11 +352,9 @@ export async function GET() {
     }
 
     const subscriptionMetaOut =
-      accessState === "trial_expired"
-        ? "Free trial ended — subscribe to continue"
-        : accessState === "expired"
-          ? "No active subscription"
-          : accessState === "trial"
+      accessState === "free"
+        ? "Active subscription"
+        : accessState === "trial"
             ? platformTrialEndsMetaLabel(platformTrialEndsAtIso) ?? "Trial is active"
             : subscription
               ? subscriptionMeta(stripeStatus, stripeCancelAtPeriodEnd, stripeCollectionPaused)

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { brokerageProRequiredError } from "@/lib/account/brokerage-plan-gate";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   isSnapTradeConfigured,
@@ -22,6 +23,11 @@ export async function POST(request: Request) {
 
     const supabase = await getSupabaseServerClient();
     const user = await requireAuthUser(supabase);
+
+    const blocked = await brokerageProRequiredError(supabase, user.id);
+    if (blocked) {
+      return NextResponse.json(blocked, { status: 403 });
+    }
 
     let body: { authorizationId?: unknown; syncSettings?: unknown; updateFromYmd?: unknown } = {};
     try {

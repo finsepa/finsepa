@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { unstable_cache } from "next/cache";
-
 import { CACHE_CONTROL_PRIVATE_WARM } from "@/lib/data/cache-policy";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -10,16 +8,10 @@ import {
   parsePortfolioValueHistoryBody,
 } from "@/lib/portfolio/portfolio-value-history.server";
 
-function txFingerprint(transactions: { id: string; date: string; kind: string; operation?: string; symbol?: string; shares?: number; price?: number; fee?: number }[]): string {
-  const parts = transactions.map((t) => `${t.id}|${t.date}|${t.kind}|${t.operation ?? ""}|${t.symbol ?? ""}|${t.shares ?? ""}|${t.price ?? ""}|${t.fee ?? ""}`);
-  parts.sort();
-  return parts.join(";");
-}
-
 export async function POST(request: Request) {
   try {
     const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    await requireAuthUser(supabase);
 
     let body: unknown;
     try {
@@ -33,18 +25,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid body" }, { status: 400 });
     }
 
-    const fp = txFingerprint(parsed.transactions);
-    const getCached = unstable_cache(
-      async (userId: string, range: string, txFp: string) => {
-        // parsed.transactions can be large; fingerprint is used only for the cache key.
-        // We still compute from the raw transactions payload.
-        void txFp;
-        return computePortfolioValueHistory(parsed.range, parsed.transactions);
-      },
-      ["portfolio-value-history-v1"],
-      { revalidate: 300 },
-    );
-    const points = await getCached(user.id, parsed.range, fp);
+    // Do not use unstable_cache here: it previously closed over request txs and could
+    // serve empty results for 5 minutes after a transient provider miss.
+    const points = await computePortfolioValueHistory(parsed.range, parsed.transactions);
 
     return NextResponse.json(
       { points },

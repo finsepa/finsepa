@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { Landmark, Layers2, LineChart, Pencil, Upload } from "@/lib/icons";
 
 import { CARD_CHROME_CLASS } from "@/components/design-system/card-surface-styles";
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
+import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import {
   Empty,
@@ -21,6 +23,7 @@ type SetupTile = {
   description: string;
   icon: ReactNode;
   disabled?: boolean;
+  showProBadge?: boolean;
   onClick?: () => void;
 };
 
@@ -38,15 +41,21 @@ export function PortfolioEmptySetupTiles({ className }: { className?: string }) 
     openCreatePortfolio,
     openNewTransaction,
     openImportTransactions,
+    openTryDemoPortfolio,
     selectedPortfolioReadOnly,
   } = usePortfolioWorkspace();
+  const plan = usePlanAccessOptional();
+  const canBrokerage = plan?.canConnectBrokerage !== false;
 
   const tiles: SetupTile[] = [
     {
       id: "brokerage",
       title: "Connect brokerage",
-      description: "Link an account via SnapTrade — new trades sync automatically.",
+      description: canBrokerage
+        ? "Link an account via SnapTrade — new trades sync automatically."
+        : "Available on Pro — link an account so positions stay synced.",
       icon: <Landmark className="size-5" strokeWidth={1.75} aria-hidden />,
+      showProBadge: !canBrokerage,
       onClick: () => openCreatePortfolio({ mode: "brokerage" }),
     },
     {
@@ -70,7 +79,7 @@ export function PortfolioEmptySetupTiles({ className }: { className?: string }) 
       title: "Try a demo portfolio",
       description: "Explore with sample holdings before adding your own.",
       icon: <Layers2 className="size-5" strokeWidth={1.75} aria-hidden />,
-      disabled: true,
+      onClick: () => openTryDemoPortfolio(),
     },
   ];
 
@@ -107,8 +116,11 @@ export function PortfolioEmptySetupTiles({ className }: { className?: string }) 
                 >
                   {tile.icon}
                 </span>
-                <span className="text-[15px] font-semibold leading-6 text-fg sm:text-base">
+                <span className="inline-flex flex-wrap items-center gap-1.5 text-[15px] font-semibold leading-6 text-fg sm:text-base">
                   {tile.title}
+                  {tile.showProBadge ? (
+                    <ProFeatureBadge label="Brokerage sync is available on Pro only" />
+                  ) : null}
                 </span>
                 <span className="text-[13px] font-normal leading-5 text-fg-muted sm:text-sm">
                   {tile.description}

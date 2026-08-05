@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Check, ChevronDown } from "@/lib/icons";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Check, ChevronDown, Lock } from "@/lib/icons";
 
 import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 
@@ -16,6 +18,7 @@ import {
   dropdownMenuPlainItemClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import {
   AppModalFooter,
@@ -25,12 +28,14 @@ import {
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
 import type { WatchlistCollection } from "@/lib/watchlist/collections";
+import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
 import {
   addSectionMenuIconAnimation,
   addWatchlistMenuIconAnimation,
   deleteMenuIconAnimation,
   renameMenuIconAnimation,
 } from "@/lib/lottie/watchlist-menu-animations";
+import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { cn } from "@/lib/utils";
 
 const titleGhostTriggerClass =
@@ -67,6 +72,8 @@ export function WatchlistOptionsMenu({
   className,
   ready = true,
 }: WatchlistOptionsMenuProps) {
+  const plan = usePlanAccessOptional();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [addWatchlistIconPlaying, setAddWatchlistIconPlaying] = useState(false);
   const [addSectionIconPlaying, setAddSectionIconPlaying] = useState(false);
@@ -131,6 +138,15 @@ export function WatchlistOptionsMenu({
 
   const openCreate = () => {
     setMenuOpen(false);
+    // Free: one watchlist only — same as portfolio create (toast + Upgrade → Plans, no name modal).
+    if (plan?.isFree && !plan.canCreateWatchlist) {
+      toastProUpgrade({
+        title: "Free plan limit",
+        description: "Free includes 1 watchlist. Upgrade to Pro to add more.",
+        onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
+      });
+      return;
+    }
     setStep("create");
   };
 
@@ -236,29 +252,43 @@ export function WatchlistOptionsMenu({
             className="w-max min-w-[13rem]"
           >
             <div className={dropdownMenuPanelClassName()} role="menu">
-              {watchlists.map((list) => (
-                <button
-                  key={list.id}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    onSwitch(list.id);
-                    setMenuOpen(false);
-                  }}
-                  className={dropdownMenuPlainItemRowClassName({
-                    selected: list.id === activeWatchlistId,
-                  })}
-                >
-                  <span className="min-w-0 truncate text-sm font-medium leading-5 text-fg">
-                    {list.name}
-                  </span>
-                  {list.id === activeWatchlistId ? (
-                    <Check className="h-4 w-4 shrink-0 text-fg" strokeWidth={2} aria-hidden />
-                  ) : (
-                    <span className="h-4 w-4 shrink-0" aria-hidden />
-                  )}
-                </button>
-              ))}
+              {watchlists.map((list) => {
+                const isActive = list.id === activeWatchlistId;
+                const isLockedOnFree =
+                  plan?.isFree === true &&
+                  plan.selection.free_watchlist_selection_locked === true &&
+                  Boolean(plan.freeActiveWatchlistId) &&
+                  list.id !== plan.freeActiveWatchlistId;
+                return (
+                  <button
+                    key={list.id}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      onSwitch(list.id);
+                      setMenuOpen(false);
+                    }}
+                    className={dropdownMenuPlainItemRowClassName({
+                      selected: isActive,
+                    })}
+                  >
+                    <span className="min-w-0 truncate text-sm font-medium leading-5 text-fg">
+                      {list.name}
+                    </span>
+                    {isActive ? (
+                      <Check className="h-4 w-4 shrink-0 text-fg" strokeWidth={2} aria-hidden />
+                    ) : isLockedOnFree ? (
+                      <Lock
+                        className="h-3.5 w-3.5 shrink-0 text-fg-muted"
+                        strokeWidth={2}
+                        aria-hidden
+                      />
+                    ) : (
+                      <span className="h-4 w-4 shrink-0" aria-hidden />
+                    )}
+                  </button>
+                );
+              })}
               <div role="separator" aria-hidden className="-mx-1 my-0.5 h-px shrink-0 bg-stroke" />
               <button
                 type="button"

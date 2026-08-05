@@ -1,13 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Check, ChevronRight, Menu, Sparkles, User } from "@/lib/icons";
 
-import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
 import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 import { HelpFeedbackModal } from "@/components/layout/help-feedback-modal";
 import {
@@ -23,11 +22,19 @@ import { UserAvatar } from "@/components/user/user-avatar";
 import {
   appearanceMenuIconAnimation,
   billingMenuIconAnimation,
+  emailMenuIconAnimation,
   helpMenuIconAnimation,
   logoutMenuIconAnimation,
   profileMenuIconAnimation,
+  telegramMenuIconAnimation,
+  themeDarkMenuIconAnimation,
+  themeLightMenuIconAnimation,
+  themeSystemMenuIconAnimation,
+  whatsappMenuIconAnimation,
 } from "@/lib/lottie/menu-icon-animations";
-import { loginSignedOutUrl } from "@/lib/auth/routes";
+import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
+import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
+import { loginSignedOutUrl, PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import {
   EMPTY_BILLING_SUMMARY,
   subscriptionTitleFromBillingSummary,
@@ -45,10 +52,14 @@ import { cn } from "@/lib/utils";
 
 type ThemeChoice = "light" | "dark" | "system";
 
-const THEME_OPTIONS: { value: ThemeChoice; label: string }[] = [
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-  { value: "system", label: "System" },
+const THEME_OPTIONS: {
+  value: ThemeChoice;
+  label: string;
+  animationData: unknown;
+}[] = [
+  { value: "light", label: "Light", animationData: themeLightMenuIconAnimation },
+  { value: "dark", label: "Dark", animationData: themeDarkMenuIconAnimation },
+  { value: "system", label: "System", animationData: themeSystemMenuIconAnimation },
 ];
 
 function themeChoiceLabel(theme: string | undefined): string {
@@ -56,6 +67,11 @@ function themeChoiceLabel(theme: string | undefined): string {
   if (theme === "dark") return "Dark";
   return "System";
 }
+
+/** Support WhatsApp (international, no + in wa.me path). */
+const HELP_WHATSAPP_E164 = "447568222195";
+const HELP_WHATSAPP_URL = `https://wa.me/${HELP_WHATSAPP_E164}`;
+const HELP_TELEGRAM_URL = "https://t.me/finsepa_support";
 
 type TopbarUserMenuProps = {
   userId: string;
@@ -85,17 +101,24 @@ export function TopbarUserMenu({
   const [themeReady, setThemeReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
-  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [helpModalOpen, setHelpModalOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [planLabel, setPlanLabel] = useState<string>(() =>
     isProFromServer ? "Pro" : subscriptionTitleFromBillingSummary(EMPTY_BILLING_SUMMARY),
+  );
+  const [billingPlan, setBillingPlan] = useState<BillingSummary["plan"]>(() =>
+    isProFromServer ? "pro" : EMPTY_BILLING_SUMMARY.plan,
   );
   const [isPro, setIsPro] = useState(isProFromServer);
   const [profileIconPlaying, setProfileIconPlaying] = useState(false);
   const [billingIconPlaying, setBillingIconPlaying] = useState(false);
   const [helpIconPlaying, setHelpIconPlaying] = useState(false);
   const [appearanceIconPlaying, setAppearanceIconPlaying] = useState(false);
+  const [hoveredTheme, setHoveredTheme] = useState<ThemeChoice | null>(null);
+  const [hoveredHelpOption, setHoveredHelpOption] = useState<"whatsapp" | "telegram" | "email" | null>(
+    null,
+  );
   const [logoutIconPlaying, setLogoutIconPlaying] = useState(false);
   const [planLoading, setPlanLoading] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -104,12 +127,17 @@ export function TopbarUserMenu({
   const appearancePortalRef = useRef<HTMLDivElement>(null);
   const appearanceLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [appearancePos, setAppearancePos] = useState<{ top: number; right: number } | null>(null);
+  const helpTriggerRef = useRef<HTMLButtonElement>(null);
+  const helpPortalRef = useRef<HTMLDivElement>(null);
+  const helpLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [helpPos, setHelpPos] = useState<{ top: number; right: number } | null>(null);
 
   useEffect(() => {
     setThemeReady(true);
   }, []);
 
   const applyBillingSummary = useCallback((summary: BillingSummary) => {
+    setBillingPlan(summary.plan);
     setPlanLabel(subscriptionTitleFromBillingSummary(summary));
     // Never let a stale "trial" cache clear a server-known Pro badge.
     setIsPro((prev) => isProFromServer || prev || summary.plan === "pro");
@@ -137,7 +165,10 @@ export function TopbarUserMenu({
   /** Warm label + Pro badge from local cache so the menu rarely flashes a skeleton on open. */
   useEffect(() => {
     setIsPro(isProFromServer);
-    if (isProFromServer) setPlanLabel("Pro");
+    if (isProFromServer) {
+      setPlanLabel("Pro");
+      setBillingPlan("pro");
+    }
   }, [isProFromServer]);
 
   useEffect(() => {
@@ -181,13 +212,16 @@ export function TopbarUserMenu({
       setHelpIconPlaying(false);
       setAppearanceIconPlaying(false);
       setLogoutIconPlaying(false);
+      setHoveredHelpOption(null);
       setAppearanceOpen(false);
+      setHelpOpen(false);
     }
   }, [open]);
 
   useEffect(() => {
     return () => {
       if (appearanceLeaveTimerRef.current) clearTimeout(appearanceLeaveTimerRef.current);
+      if (helpLeaveTimerRef.current) clearTimeout(helpLeaveTimerRef.current);
     };
   }, []);
 
@@ -214,6 +248,29 @@ export function TopbarUserMenu({
     };
   }, [appearanceOpen, isMobileSheet]);
 
+  useLayoutEffect(() => {
+    if (!helpOpen || isMobileSheet) {
+      setHelpPos(null);
+      return;
+    }
+    function updatePos() {
+      const el = helpTriggerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setHelpPos({
+        top: rect.top,
+        right: window.innerWidth - rect.left + 4,
+      });
+    }
+    updatePos();
+    window.addEventListener("scroll", updatePos, true);
+    window.addEventListener("resize", updatePos);
+    return () => {
+      window.removeEventListener("scroll", updatePos, true);
+      window.removeEventListener("resize", updatePos);
+    };
+  }, [helpOpen, isMobileSheet]);
+
   useEffect(() => {
     if (!open) return;
     function onDocMouseDown(e: MouseEvent) {
@@ -221,7 +278,8 @@ export function TopbarUserMenu({
       if (
         rootRef.current?.contains(t) ||
         menuPortalRef.current?.contains(t) ||
-        appearancePortalRef.current?.contains(t)
+        appearancePortalRef.current?.contains(t) ||
+        helpPortalRef.current?.contains(t)
       ) {
         return;
       }
@@ -229,6 +287,10 @@ export function TopbarUserMenu({
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
+        if (helpOpen) {
+          setHelpOpen(false);
+          return;
+        }
         if (appearanceOpen) {
           setAppearanceOpen(false);
           return;
@@ -242,7 +304,7 @@ export function TopbarUserMenu({
       document.removeEventListener("mousedown", onDocMouseDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open, appearanceOpen]);
+  }, [open, appearanceOpen, helpOpen]);
 
   const showTrialCountdown =
     !isProFromServer &&
@@ -255,6 +317,15 @@ export function TopbarUserMenu({
     !isPro &&
     planLabel !== "Pro" &&
     (showTrialCountdown || (open && !planLoading));
+
+  /** Live chat: Pro + Trial. Free only sees Pro badge + upgrade gate. */
+  const canUseLiveChat =
+    isProFromServer ||
+    isPro ||
+    billingPlan === "pro" ||
+    billingPlan === "trial" ||
+    showTrialCountdown;
+  const showLiveChatProBadge = !canUseLiveChat;
 
   const menuTriggerLabel = "Profile";
   const activeTheme = (themeReady ? theme : "system") as ThemeChoice | undefined;
@@ -276,8 +347,17 @@ export function TopbarUserMenu({
     }
   }
 
+  function clearHelpLeaveTimer() {
+    if (helpLeaveTimerRef.current) {
+      clearTimeout(helpLeaveTimerRef.current);
+      helpLeaveTimerRef.current = null;
+    }
+  }
+
   function openAppearanceSubmenu() {
     clearAppearanceLeaveTimer();
+    clearHelpLeaveTimer();
+    setHelpOpen(false);
     setAppearanceOpen(true);
   }
 
@@ -286,10 +366,46 @@ export function TopbarUserMenu({
     appearanceLeaveTimerRef.current = setTimeout(() => setAppearanceOpen(false), 120);
   }
 
+  function openHelpSubmenu() {
+    clearHelpLeaveTimer();
+    clearAppearanceLeaveTimer();
+    setAppearanceOpen(false);
+    setHelpOpen(true);
+  }
+
+  function scheduleCloseHelpSubmenu() {
+    clearHelpLeaveTimer();
+    helpLeaveTimerRef.current = setTimeout(() => setHelpOpen(false), 120);
+  }
+
   function selectTheme(next: ThemeChoice) {
     setTheme(next);
     setAppearanceOpen(false);
   }
+
+  function openHelpEmail() {
+    setHelpOpen(false);
+    setOpen(false);
+    setHelpModalOpen(true);
+  }
+
+  function gateLiveChatOrAllow(e: MouseEvent, channel: "WhatsApp" | "Telegram") {
+    if (canUseLiveChat) {
+      setHelpOpen(false);
+      setOpen(false);
+      return;
+    }
+    e.preventDefault();
+    setHelpOpen(false);
+    setOpen(false);
+    toastProUpgrade({
+      title: "Pro feature",
+      description: `${channel} chat support is available on Pro only.`,
+      onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
+    });
+  }
+
+  const proMenuBadge = <ProFeatureBadge label="Available on Pro only" />;
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -316,13 +432,92 @@ export function TopbarUserMenu({
             role="menuitemradio"
             aria-checked={selected}
             className={cn(dropdownMenuPlainItemRowClassName({ selected }), "font-medium")}
+            onMouseEnter={() => setHoveredTheme(opt.value)}
+            onMouseLeave={() => setHoveredTheme(null)}
+            onFocus={() => setHoveredTheme(opt.value)}
+            onBlur={() => setHoveredTheme(null)}
             onClick={() => selectTheme(opt.value)}
           >
-            <span className="min-w-0 truncate text-left">{opt.label}</span>
+            <span className="flex min-w-0 items-center gap-2">
+              <DropdownMenuLottieIcon
+                animationData={opt.animationData}
+                playing={hoveredTheme === opt.value}
+              />
+              <span className="min-w-0 truncate text-left">{opt.label}</span>
+            </span>
             {selected ? <Check className="size-4 shrink-0 text-fg" strokeWidth={2} aria-hidden /> : <span className="size-4" />}
           </button>
         );
       })}
+    </>
+  );
+
+  const helpOptionButtons = (
+    <>
+      <a
+        href={canUseLiveChat ? HELP_WHATSAPP_URL : undefined}
+        target={canUseLiveChat ? "_blank" : undefined}
+        rel={canUseLiveChat ? "noopener noreferrer" : undefined}
+        role="menuitem"
+        aria-label={
+          canUseLiveChat
+            ? "Chat on WhatsApp"
+            : "Chat on WhatsApp (Pro)"
+        }
+        className={cn(itemClass, "no-underline", showLiveChatProBadge && "opacity-40")}
+        onMouseEnter={() => setHoveredHelpOption("whatsapp")}
+        onMouseLeave={() => setHoveredHelpOption(null)}
+        onFocus={() => setHoveredHelpOption("whatsapp")}
+        onBlur={() => setHoveredHelpOption(null)}
+        onClick={(e) => gateLiveChatOrAllow(e, "WhatsApp")}
+      >
+        <DropdownMenuLottieIcon
+          animationData={whatsappMenuIconAnimation}
+          playing={hoveredHelpOption === "whatsapp"}
+        />
+        <span className="min-w-0 flex-1 truncate text-left">Chat on WhatsApp</span>
+        {showLiveChatProBadge ? proMenuBadge : null}
+      </a>
+      <a
+        href={canUseLiveChat ? HELP_TELEGRAM_URL : undefined}
+        target={canUseLiveChat ? "_blank" : undefined}
+        rel={canUseLiveChat ? "noopener noreferrer" : undefined}
+        role="menuitem"
+        aria-label={
+          canUseLiveChat
+            ? "Chat on Telegram"
+            : "Chat on Telegram (Pro)"
+        }
+        className={cn(itemClass, "no-underline", showLiveChatProBadge && "opacity-40")}
+        onMouseEnter={() => setHoveredHelpOption("telegram")}
+        onMouseLeave={() => setHoveredHelpOption(null)}
+        onFocus={() => setHoveredHelpOption("telegram")}
+        onBlur={() => setHoveredHelpOption(null)}
+        onClick={(e) => gateLiveChatOrAllow(e, "Telegram")}
+      >
+        <DropdownMenuLottieIcon
+          animationData={telegramMenuIconAnimation}
+          playing={hoveredHelpOption === "telegram"}
+        />
+        <span className="min-w-0 flex-1 truncate text-left">Chat on Telegram</span>
+        {showLiveChatProBadge ? proMenuBadge : null}
+      </a>
+      <button
+        type="button"
+        role="menuitem"
+        className={itemClass}
+        onMouseEnter={() => setHoveredHelpOption("email")}
+        onMouseLeave={() => setHoveredHelpOption(null)}
+        onFocus={() => setHoveredHelpOption("email")}
+        onBlur={() => setHoveredHelpOption(null)}
+        onClick={openHelpEmail}
+      >
+        <DropdownMenuLottieIcon
+          animationData={emailMenuIconAnimation}
+          playing={hoveredHelpOption === "email"}
+        />
+        <span className="min-w-0 flex-1 truncate text-left">Send Email</span>
+      </button>
     </>
   );
 
@@ -416,22 +611,49 @@ export function TopbarUserMenu({
               />
               <span className="min-w-0 flex-1 truncate text-left">Billing</span>
             </Link>
-            <button
-              type="button"
-              role="menuitem"
-              className={itemClass}
-              onMouseEnter={() => setHelpIconPlaying(true)}
-              onMouseLeave={() => setHelpIconPlaying(false)}
-              onFocus={() => setHelpIconPlaying(true)}
-              onBlur={() => setHelpIconPlaying(false)}
-              onClick={() => {
-                setOpen(false);
-                setHelpModalOpen(true);
+            <div
+              className="relative"
+              onMouseEnter={() => {
+                if (!isMobileSheet) openHelpSubmenu();
+              }}
+              onMouseLeave={() => {
+                if (!isMobileSheet) scheduleCloseHelpSubmenu();
               }}
             >
-              <DropdownMenuLottieIcon animationData={helpMenuIconAnimation} playing={helpIconPlaying} />
-              <span className="min-w-0 flex-1 truncate text-left">Help</span>
-            </button>
+              <button
+                ref={helpTriggerRef}
+                type="button"
+                role="menuitem"
+                aria-haspopup="menu"
+                aria-expanded={helpOpen}
+                className={cn(itemClass, helpOpen && "bg-dropdown-item-hover")}
+                onMouseEnter={() => setHelpIconPlaying(true)}
+                onMouseLeave={() => setHelpIconPlaying(false)}
+                onFocus={() => setHelpIconPlaying(true)}
+                onBlur={() => setHelpIconPlaying(false)}
+                onClick={() => {
+                  if (isMobileSheet) {
+                    setAppearanceOpen(false);
+                    setHelpOpen((v) => !v);
+                    return;
+                  }
+                  openHelpSubmenu();
+                }}
+              >
+                <DropdownMenuLottieIcon
+                  animationData={helpMenuIconAnimation}
+                  playing={helpIconPlaying || helpOpen}
+                />
+                <span className="min-w-0 flex-1 truncate text-left">Help</span>
+                <ChevronRight className="size-4 shrink-0 text-fg-muted" strokeWidth={2} aria-hidden />
+              </button>
+
+              {helpOpen && isMobileSheet ? (
+                <div role="group" aria-label="Help" className="flex flex-col gap-1 pb-1 pl-2">
+                  {helpOptionButtons}
+                </div>
+              ) : null}
+            </div>
 
             <div
               className="relative"
@@ -455,10 +677,11 @@ export function TopbarUserMenu({
                 onBlur={() => setAppearanceIconPlaying(false)}
                 onClick={() => {
                   if (isMobileSheet) {
+                    setHelpOpen(false);
                     setAppearanceOpen((v) => !v);
                     return;
                   }
-                  setAppearanceOpen(true);
+                  openAppearanceSubmenu();
                 }}
               >
                 <DropdownMenuLottieIcon
@@ -506,7 +729,7 @@ export function TopbarUserMenu({
                   role="menuitem"
                   onClick={() => {
                     setOpen(false);
-                    setUpgradeModalOpen(true);
+                    router.push(PATH_ACCOUNT_PLANS);
                   }}
                   className="flex h-9 w-full items-center justify-center gap-1.5 rounded-[10px] bg-accent px-3.5 text-[13px] font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.2)] transition-colors hover:bg-accent-hover"
                 >
@@ -540,15 +763,26 @@ export function TopbarUserMenu({
           )
         : null}
 
-      <BillingUpgradeModal
-        open={upgradeModalOpen}
-        onClose={() => {
-          setUpgradeModalOpen(false);
-          invalidateBillingSummaryMenuCache(userId);
-          void fetchBillingSummaryForMenu({ showSkeleton: false });
-          router.refresh();
-        }}
-      />
+      {helpOpen && !isMobileSheet && helpPos && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              ref={helpPortalRef}
+              role="menu"
+              aria-label="Help"
+              className={cn(
+                dropdownMenuSurfaceClassName(),
+                dropdownMenuPanelBodyClassName,
+                "fixed z-[221] w-[min(calc(100vw-24px),280px)]",
+              )}
+              style={{ top: helpPos.top, right: helpPos.right }}
+              onMouseEnter={openHelpSubmenu}
+              onMouseLeave={scheduleCloseHelpSubmenu}
+            >
+              {helpOptionButtons}
+            </div>,
+            document.body,
+          )
+        : null}
 
       <HelpFeedbackModal open={helpModalOpen} onClose={() => setHelpModalOpen(false)} />
     </div>

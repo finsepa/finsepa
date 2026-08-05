@@ -133,7 +133,7 @@ function extractRedirectUri(data: unknown): string {
 
 export async function createSnapTradePortalLink(
   userId: string,
-  options?: { reconnectAuthorizationId?: string | null },
+  options?: { reconnectAuthorizationId?: string | null; darkMode?: boolean },
 ): Promise<string> {
   const credentials = await ensureSnapTradeUser(userId);
   const snaptrade = getSnaptradeSdk();
@@ -143,7 +143,8 @@ export async function createSnapTradePortalLink(
     userSecret: credentials.userSecret,
     connectionType: "read",
     connectionPortalVersion: "v4",
-    darkMode: true,
+    // Match Finsepa appearance (class-based dark on `html`); default light for host apps.
+    darkMode: options?.darkMode === true,
     reconnect: options?.reconnectAuthorizationId ?? undefined,
   });
 

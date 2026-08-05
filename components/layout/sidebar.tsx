@@ -26,6 +26,7 @@ import {
   useSidebarLayout,
 } from "@/components/layout/sidebar-layout-context";
 import { requestAgentHomeIfAlreadyThere } from "@/lib/agents/agent-home-nav";
+import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { cn } from "@/lib/utils";
 
 const soonBadgeClass =
@@ -357,11 +358,14 @@ function SidebarChromeHeader() {
       suppressHydrationWarning
       className="relative mb-3 shrink-0 md:mb-3 md:h-[var(--shell-chrome-header-height)] md:py-3"
     >
-      <FinsepaLogo
-        size={LOGO_SIZE_PX}
-        className="absolute top-1/2 h-8 w-8 -translate-y-1/2"
+      <Link
+        href={PATH_APP_ENTRY}
+        aria-label="Finsepa home — Screener"
+        className="absolute top-1/2 h-8 w-8 -translate-y-1/2 rounded-md text-fg outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
         style={{ left: leftPx }}
-      />
+      >
+        <FinsepaLogo size={LOGO_SIZE_PX} className="h-8 w-8" title="" />
+      </Link>
     </div>
   );
 }

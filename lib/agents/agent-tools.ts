@@ -380,7 +380,7 @@ export function createCheapAgentTools(userId: string) {
 
     get_macro_dashboard: tool({
       description:
-        "Macro dashboard latest readings from the warm Finsepa hub cache (rates, CAPE, CPI-like series, etc.). Use for 'where is the 10Y' or macro snapshot questions. If cold, tell the user to open /macro — do not invent numbers.",
+        "Macro dashboard latest readings from the warm Finsepa hub cache (rates, CAPE, CPI, inflation, etc.). Use for macro / inflation / rates questions. Includes chartableIds — when answering series the user asks about, emit [[macro-chart:CARD_ID]] on its own line so the UI shows Finsepa charts (hub only). If cold, tell the user to open /macro — do not invent numbers.",
       inputSchema: z.object({
         limit: z.number().int().min(1).max(40).default(24),
       }),

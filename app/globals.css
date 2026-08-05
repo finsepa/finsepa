@@ -1348,7 +1348,7 @@ body {
   }
 }
 
-/** Auth session resume / app boot — Finsepa mark opacity breathe. */
+/** Auth session resume / app boot — Finsepa mark gently pulses via opacity. */
 @keyframes finsepa-logo-pulse {
   0%,
   100% {
@@ -1367,6 +1367,65 @@ body {
   .animate-finsepa-logo-pulse {
     animation: none;
     opacity: 0.9;
+  }
+}
+
+/** Pro plan card — short accent segment that travels the rounded perimeter. */
+@keyframes plan-card-border-spin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.plan-card-border-trace {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.plan-card-border-trace::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 220%;
+  height: 220%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 300deg,
+    color-mix(in srgb, var(--fs-accent) 35%, transparent) 325deg,
+    var(--fs-accent) 345deg,
+    #7b8cff 352deg,
+    var(--fs-accent) 358deg,
+    transparent 360deg
+  );
+  animation: plan-card-border-spin 14.4s linear infinite;
+  will-change: transform;
+}
+
+/* Inner hole — only the rim stays visible as the traveling stroke. */
+.plan-card-border-trace::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: calc(1rem - 2px); /* match rounded-2xl (16px) */
+  background: var(--fs-surface);
+  /* Keep inner fill off the static card stroke so grey + traveling accent both read. */
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-card-border-trace::before {
+    animation: none;
+    transform: translate(-50%, -50%);
+    background: color-mix(in srgb, var(--fs-accent) 55%, transparent);
   }
 }
 

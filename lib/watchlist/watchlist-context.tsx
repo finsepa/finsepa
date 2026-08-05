@@ -12,6 +12,8 @@ import {
 } from "react";
 import { toast } from "sonner";
 
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
+import { FreeWatchlistPickModal } from "@/components/account/free-plan-modals";
 import { toastWatchlistCreated } from "@/lib/watchlist/watchlist-created-toast";
 import {
   toastWatchlistAddFailed,
@@ -22,9 +24,12 @@ import {
   toastWatchlistSyncFailed,
 } from "@/lib/watchlist/watchlist-mutation-toast";
 import type { User } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { readSupabaseSession } from "@/lib/supabase/safe-auth";
+import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
+import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
 import {
   addTickerToSnapshot,
   clearDuplicateWatchlistTickerCopies,
@@ -171,6 +176,12 @@ type WatchlistContextValue = {
 const WatchlistContext = createContext<WatchlistContextValue | null>(null);
 
 export function WatchlistProvider({ children }: { children: ReactNode }) {
+  const plan = usePlanAccessOptional();
+  const router = useRouter();
+  const openUpgradePlans = useCallback(() => {
+    router.push(PATH_ACCOUNT_PLANS);
+  }, [router]);
+  const [freeWatchlistPickOpen, setFreeWatchlistPickOpen] = useState(false);
   const [watched, setWatched] = useState<Set<string>>(() => new Set());
   const [watchedTickers, setWatchedTickers] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -1119,6 +1130,15 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       const trimmed = name.trim();
       if (!trimmed) return;
 
+      if (plan?.isFree && !plan.canCreateWatchlist) {
+        toastProUpgrade({
+          title: "Free plan limit",
+          description: "Free includes 1 watchlist. Upgrade to Pro to add more.",
+          onUpgrade: openUpgradePlans,
+        });
+        return;
+      }
+
       const previous = collectionsRef.current;
       const base = persistActiveListTickers(previous, [...watched]);
 
@@ -1151,7 +1171,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         }
       })();
     },
-    [applyCollections, nextMutationGeneration, persistSnapshotToServer, watched],
+    [plan, watched, nextMutationGeneration, applyCollections, persistSnapshotToServer, persistActiveListTickers, openUpgradePlans],
   );
 
   const persistSectionLayout = useCallback(
@@ -1368,6 +1388,26 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       const targetList = previous.lists.find((list) => list.id === id);
       if (!targetList) return;
 
+      if (plan?.isFree) {
+        const lists = previous.lists;
+        if (lists.length > 1) {
+          const locked = plan.selection.free_watchlist_selection_locked;
+          const active = plan.freeActiveWatchlistId;
+          if (!locked || !active) {
+            setFreeWatchlistPickOpen(true);
+            return;
+          }
+          if (id !== active) {
+            toastProUpgrade({
+              title: "Watchlist locked",
+              description: "This watchlist is locked on Free. Upgrade to Pro to open it.",
+              onUpgrade: openUpgradePlans,
+            });
+            return;
+          }
+        }
+      }
+
       const next = prepareWatchlistSwitch(previous, [...watched], id);
       if (!next) return;
 
@@ -1406,7 +1446,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         }
       })();
     },
-    [applyCollections, applyCollectionsIfCurrent, nextMutationGeneration, watched],
+    [applyCollections, applyCollectionsIfCurrent, nextMutationGeneration, watched, plan, openUpgradePlans],
   );
 
   const deleteActiveWatchlist = useCallback(async () => {
@@ -1519,7 +1559,49 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     ],
   );
 
-  return <WatchlistContext.Provider value={value}>{children}</WatchlistContext.Provider>;
+  const setOverLimitCounts = plan?.setOverLimitCounts;
+  const planIsFree = plan?.isFree === true;
+  const planSelectionReady = plan?.selectionReady === true;
+  const freeWatchlistId = plan?.freeActiveWatchlistId ?? null;
+  const freeWatchlistLocked = plan?.selection.free_watchlist_selection_locked === true;
+
+  useEffect(() => {
+    if (!setOverLimitCounts) return;
+    setOverLimitCounts({
+      watchlists: collections.lists.length,
+    });
+  }, [collections.lists.length, setOverLimitCounts]);
+
+  // Snap Free user to free active watchlist when locked
+  useEffect(() => {
+    if (!planIsFree || !planSelectionReady) return;
+    if (!freeWatchlistLocked || !freeWatchlistId) return;
+    if (collections.activeId === freeWatchlistId) return;
+    if (!collections.lists.some((l) => l.id === freeWatchlistId)) return;
+    const next = prepareWatchlistSwitch(collections, [...watched], freeWatchlistId);
+    if (next && next.activeId !== collections.activeId) {
+      applyCollections(next);
+    }
+  }, [
+    planIsFree,
+    planSelectionReady,
+    freeWatchlistLocked,
+    freeWatchlistId,
+    collections,
+    watched,
+    applyCollections,
+  ]);
+
+  return (
+    <WatchlistContext.Provider value={value}>
+      {children}
+      <FreeWatchlistPickModal
+        open={freeWatchlistPickOpen}
+        watchlists={collections.lists.map((l) => ({ id: l.id, name: l.name }))}
+        onClose={() => setFreeWatchlistPickOpen(false)}
+      />
+    </WatchlistContext.Provider>
+  );
 }
 
 export function useWatchlist(): WatchlistContextValue {

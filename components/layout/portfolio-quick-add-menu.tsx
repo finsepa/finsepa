@@ -17,6 +17,8 @@ import {
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
+import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import {
   createCombinedPortfolioMenuIconAnimation,
   createPortfolioMenuIconAnimation,
@@ -60,6 +62,7 @@ export function PortfolioQuickAddMenu({
     selectedPortfolioReadOnly,
     selectedPortfolioId,
   } = usePortfolioWorkspace();
+  const plan = usePlanAccessOptional();
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
 
@@ -93,19 +96,28 @@ export function PortfolioQuickAddMenu({
     label: string;
     disabled: boolean;
     title?: string;
+    showProBadge?: boolean;
   }> = [
     {
       id: "createPortfolio",
       label: "Create New Portfolio",
-      disabled: false,
+      disabled: Boolean(plan?.isFree && !plan.canCreatePortfolio),
+      title:
+        plan?.isFree && !plan.canCreatePortfolio
+          ? "Free includes 1 manual portfolio — upgrade to Pro to add more"
+          : undefined,
     },
     {
       id: "createCombined",
       label: "Create Combined Portfolio",
-      disabled: !canCreateCombinedPortfolio,
-      title: canCreateCombinedPortfolio
-        ? undefined
-        : "Create at least two portfolios to combine them",
+      disabled: !canCreateCombinedPortfolio || Boolean(plan && !plan.canCreateCombinedPortfolio),
+      showProBadge: Boolean(plan && !plan.canCreateCombinedPortfolio),
+      title:
+        plan && !plan.canCreateCombinedPortfolio
+          ? "Combined portfolios are available on Pro only"
+          : canCreateCombinedPortfolio
+            ? undefined
+            : "Create at least two portfolios to combine them",
     },
   ];
 
@@ -167,14 +179,15 @@ export function PortfolioQuickAddMenu({
     );
   }
 
-  function renderItem(item: (typeof activityItems)[number]) {
+  function renderItem(item: (typeof activityItems)[number] | (typeof createItems)[number]) {
     const { id, label, disabled, title } = item;
+    const showProBadge = "showProBadge" in item && item.showProBadge;
     return (
       <button
         key={id}
         type="button"
         role="menuitem"
-        disabled={disabled}
+        aria-disabled={disabled}
         title={title}
         onMouseEnter={() => setPlayingId(id)}
         onMouseLeave={() => setPlayingId(null)}
@@ -188,11 +201,14 @@ export function PortfolioQuickAddMenu({
         className={cn(
           dropdownMenuPlainItemClassName(),
           "font-medium whitespace-nowrap",
-          disabled ? "cursor-not-allowed text-fg-subtle hover:bg-surface" : null,
+          disabled ? "cursor-not-allowed opacity-40 hover:bg-surface" : null,
         )}
       >
         {itemIcon(id)}
         <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+        {showProBadge ? (
+          <ProFeatureBadge label="Combined portfolios are available on Pro only" />
+        ) : null}
       </button>
     );
   }

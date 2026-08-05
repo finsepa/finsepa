@@ -39,6 +39,7 @@ export function PublicPortfolioViewProvider({
       portfolios: [{ id: pid, name: portfolioName, privacy: "public" }],
       selectedPortfolioId: pid,
       setSelectedPortfolioId: noop as PortfolioWorkspaceContextValue["setSelectedPortfolioId"],
+      isFreePortfolioAccessible: () => true,
       holdingsByPortfolioId: { [pid]: holdings },
       addHolding: noop,
       transactionsByPortfolioId: { [pid]: normalizedTx },
@@ -47,6 +48,8 @@ export function PublicPortfolioViewProvider({
       openCreatePortfolio: noop,
       openCreateCombinedPortfolio: noop,
       openConnectBrokerage: noop,
+      openReconnectBrokerage: noop,
+      openTryDemoPortfolio: noop,
       openSnaptradeSyncModal: noop,
       resyncLinkedPortfolio: async () => {},
       updatePortfolioPrivacy: noop,
@@ -68,6 +71,7 @@ export function PublicPortfolioViewProvider({
       removePortfolioTransactions: noopAsync,
       restorePortfolioTransaction: noopAsync,
       portfolioDisplayReady: true,
+      portfolioListReady: true,
     };
   }, [holdings, normalizedTx, portfolioName]);
 

@@ -10,11 +10,17 @@ import { AppModalShell } from "@/components/ui/app-modal-shell";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
-/** SnapTrade connection portal expects darkMode as a query flag for dark host apps. */
-function withSnapTradePortalParams(loginLink: string): string {
+/** Match SnapTrade portal chrome to Finsepa (class `dark` on `html`). */
+function isAppDarkMode(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.documentElement.classList.contains("dark");
+}
+
+/** Align iframe URL query with the theme requested when the session was created. */
+function withSnapTradePortalParams(loginLink: string, darkMode: boolean): string {
   try {
     const url = new URL(loginLink);
-    if (!url.searchParams.has("darkMode")) url.searchParams.set("darkMode", "true");
+    url.searchParams.set("darkMode", darkMode ? "true" : "false");
     return url.toString();
   } catch {
     return loginLink;
@@ -23,6 +29,7 @@ function withSnapTradePortalParams(loginLink: string): string {
 
 function SnapTradePortalModal({
   loginLink,
+  darkMode,
   open,
   onClose,
   onSuccess,
@@ -30,6 +37,7 @@ function SnapTradePortalModal({
   onExit,
 }: {
   loginLink: string;
+  darkMode: boolean;
   open: boolean;
   onClose: () => void;
   onSuccess: (authorizationId: string) => void;
@@ -42,7 +50,10 @@ function SnapTradePortalModal({
   const loadedRef = useRef(false);
   const closedByHostRef = useRef(false);
 
-  const portalSrc = useMemo(() => withSnapTradePortalParams(loginLink), [loginLink]);
+  const portalSrc = useMemo(
+    () => withSnapTradePortalParams(loginLink, darkMode),
+    [loginLink, darkMode],
+  );
 
   useWindowMessage({
     handleSuccess: (authorizationId) => {
@@ -140,6 +151,7 @@ export function useSnapTradeConnectPortal({
 }) {
   const [portalOpen, setPortalOpen] = useState(false);
   const [portalLink, setPortalLink] = useState<string | null>(null);
+  const [portalDarkMode, setPortalDarkMode] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const pendingRef = useRef<{
     name: string;
@@ -154,6 +166,7 @@ export function useSnapTradeConnectPortal({
   const reset = useCallback(() => {
     setPortalOpen(false);
     setPortalLink(null);
+    setPortalDarkMode(false);
     setPortalLoading(false);
     pendingRef.current = null;
   }, []);
@@ -172,20 +185,23 @@ export function useSnapTradeConnectPortal({
     }) => {
       pendingRef.current = pending;
       setPortalLoading(true);
+      const darkMode = isAppDarkMode();
       try {
         const res = await fetch("/api/snaptrade/portal", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            pending.reconnectAuthorizationId
+          body: JSON.stringify({
+            darkMode,
+            ...(pending.reconnectAuthorizationId
               ? { reconnectAuthorizationId: pending.reconnectAuthorizationId }
-              : {},
-          ),
+              : {}),
+          }),
         });
         const data = (await res.json()) as { redirectUri?: string; error?: string };
         if (!res.ok || !data.redirectUri) {
           throw new Error(data.error ?? "Could not open SnapTrade connection portal.");
         }
+        setPortalDarkMode(darkMode);
         setPortalLink(data.redirectUri);
         setPortalOpen(true);
       } catch (e) {
@@ -275,6 +291,7 @@ export function useSnapTradeConnectPortal({
     portalOpen && portalLink ? (
       <SnapTradePortalModal
         loginLink={portalLink}
+        darkMode={portalDarkMode}
         open={portalOpen}
         onClose={onPortalExit}
         onSuccess={onPortalSuccess}

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { loginSignedOutUrl } from "@/lib/auth/routes";
+import { loginAccountDeletedUrl, loginSignedOutUrl } from "@/lib/auth/routes";
 import {
   EMPTY_BILLING_SUMMARY,
   platformTrialEndsMetaLabel,
@@ -26,9 +26,11 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { CreditCard } from "@/lib/icons";
-import { BillingUpgradeModal } from "@/components/account/billing-upgrade-modal";
+import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
+import { openStripeBillingPortalWithToast } from "@/lib/account/billing-client";
 import { AccountPasswordPlaceholder } from "@/components/account/account-password-placeholder";
 import { ChangePasswordModal } from "@/components/account/change-password-modal";
+import { DeleteAccountModal } from "@/components/account/delete-account-modal";
 import {
   accentFillButtonClassName,
   invertedFillButtonClassName,
@@ -96,8 +98,8 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const [avatarRemoved, setAvatarRemoved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [deleteAccountModalOpen, setDeleteAccountModalOpen] = useState(false);
   const [billingSummary, setBillingSummary] = useState<BillingSummary>(EMPTY_BILLING_SUMMARY);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingHydrated, setBillingHydrated] = useState(false);
@@ -252,6 +254,20 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
     }
   }
 
+  async function handleAccountDeleted() {
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user?.id) invalidateBillingSummaryMenuCache(user.id);
+      await supabase.auth.signOut();
+    } catch {
+      /* session may already be invalid after server-side delete */
+    }
+    window.location.replace(loginAccountDeletedUrl());
+  }
+
   async function loadBillingSummary({ silent = false }: { silent?: boolean } = {}) {
     if (!silent) setBillingLoading(true);
     try {
@@ -275,15 +291,9 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   async function openManageSubscriptionPortal() {
     setPortalLoading(true);
     try {
-      const res = await fetch("/api/account/billing/portal", { method: "POST" });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || "Unable to open subscription portal.");
-      }
-      window.location.href = data.url;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to open subscription portal.";
-      toast.error(message);
+      await openStripeBillingPortalWithToast();
+    } catch {
+      /* toasted */
     } finally {
       setPortalLoading(false);
     }
@@ -330,21 +340,24 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
           Number.isFinite(new Date(billingSummary.recurringDueDate).getTime())
         ? billingSummary.recurringDueDate
         : null;
-  const activeUntilShortLabel =
+  const periodEndLabel =
     effectivePeriodEndIso && Number.isFinite(new Date(effectivePeriodEndIso).getTime())
       ? new Date(effectivePeriodEndIso).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
+          year: "numeric",
         })
       : null;
   const trialEndsLabel = platformTrialEndsMetaLabel(billingSummary.platformTrialEndsAt);
   const subscriptionStatusBelowTitle =
-    isProScheduledCancellation && activeUntilShortLabel
-      ? `Active until ${activeUntilShortLabel}`
+    isProScheduledCancellation && periodEndLabel
+      ? `Active until ${periodEndLabel}`
       : billingAccessState === "trial" && trialEndsLabel
         ? trialEndsLabel
         : subscriptionMeta;
   const actionLabel = billingPlan === "pro" ? "Manage Subscription" : "Upgrade to Pro";
+  const showManageOnPaymentCard = billingPlan === "pro";
+  const showUpgradeOnPaymentCard = billingPlan !== "pro";
   const recurringAmount =
     billingPlan === "pro"
       ? billingAccessState === "paused"
@@ -352,24 +365,11 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
         : `$${billingSummary.recurringAmountUsd.toFixed(2)}`
       : "$0.00";
 
-  const accessEndsAtLabel =
-    effectivePeriodEndIso && Number.isFinite(new Date(effectivePeriodEndIso).getTime())
-      ? new Date(effectivePeriodEndIso).toLocaleDateString()
-      : null;
-  const serviceEndLabel =
-    effectivePeriodEndIso && Number.isFinite(new Date(effectivePeriodEndIso).getTime())
-      ? new Date(effectivePeriodEndIso).toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      : null;
-
   const billingResumeLabel =
     billingSummary.billingResumeAt && Number.isFinite(new Date(billingSummary.billingResumeAt).getTime())
-      ? new Date(billingSummary.billingResumeAt).toLocaleDateString("en-GB", {
+      ? new Date(billingSummary.billingResumeAt).toLocaleDateString("en-US", {
+          month: "short",
           day: "numeric",
-          month: "long",
           year: "numeric",
         })
       : null;
@@ -388,14 +388,16 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
         ? billingResumeLabel
           ? `Billing is paused — no payment is due. Invoicing is scheduled to resume on ${billingResumeLabel}.`
           : "Billing is paused — no upcoming payment is scheduled."
-        : isEndingAfterPeriod && serviceEndLabel
-          ? `Your service will end on ${serviceEndLabel}.`
-          : isEndingAfterPeriod && accessEndsAtLabel
-            ? `Your service will end on ${accessEndsAtLabel}.`
-            : isEndingAfterPeriod
-              ? "Your subscription is set to end after the current period — no further payment is scheduled."
+        : isEndingAfterPeriod && periodEndLabel
+          ? `You'll be switched to Free plan after ${periodEndLabel}.`
+          : isEndingAfterPeriod
+              ? "You'll be switched to Free plan after the current period — no further payment is scheduled."
               : billingSummary.recurringDueDate
-                ? `Next payment on ${new Date(billingSummary.recurringDueDate).toLocaleDateString()}`
+                ? `Next payment on ${new Date(billingSummary.recurringDueDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}`
                 : "Next payment date will appear soon."
       : billingAccessState === "trial_expired"
         ? "Your free trial has ended. Choose a plan to restore full access."
@@ -518,6 +520,27 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
               </div>
             </section>
 
+            <section className="rounded-xl border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold leading-5 text-fg">Delete account</div>
+                  <p className="mt-1 text-sm leading-5 text-fg-muted">
+                    Permanently remove your account, portfolios, watchlists, and billing.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDeleteAccountModalOpen(true)}
+                  className={cn(
+                    secondaryOutlineButtonClassName,
+                    "w-full shrink-0 text-down hover:bg-down-soft hover:text-down sm:w-auto",
+                  )}
+                >
+                  Delete account
+                </button>
+              </div>
+            </section>
+
             <div className="flex flex-col-reverse gap-3 border-t border-stroke pt-8 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
@@ -546,12 +569,12 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
               billingSummary.cancelAtPeriodEnd ||
               subscriptionMeta === "Cancellation scheduled" ||
               subscriptionMeta === "Subscription ending") &&
-            accessEndsAtLabel ? (
+            periodEndLabel ? (
               <div className="rounded-xl border border-[#FDBA74] bg-[#FFF7ED] px-4 py-3 text-[#9A3412] shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
                 <div className="text-[14px] font-semibold leading-5">Pro subscription canceled</div>
                 <div className="mt-1 text-[13px] leading-5">
-                  You&apos;ve canceled your Pro subscription. Your access to Finsepa will be lost after{" "}
-                  <span className="font-semibold">{accessEndsAtLabel}</span>.
+                  You&apos;ve canceled your Pro subscription. You&apos;ll be switched to Free after{" "}
+                  <span className="font-semibold">{periodEndLabel}</span>.
                 </div>
               </div>
             ) : null}
@@ -584,7 +607,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     </div>
                     <button
                       type="button"
-                      onClick={() => setUpgradeModalOpen(true)}
+                      onClick={() => router.push(PATH_ACCOUNT_PLANS)}
                       className="mt-6 h-10 w-full rounded-[10px] bg-fg px-6 text-sm font-semibold text-surface transition-colors hover:bg-[#18181B]"
                     >
                       Buy Pro
@@ -619,23 +642,35 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     <p className="mt-2 text-[22px] font-semibold leading-7 text-fg">{subscriptionTitle}</p>
                     <button
                       type="button"
-                      onClick={() => {
-                        if (billingPlan === "pro") {
-                          void openManageSubscriptionPortal();
-                          return;
-                        }
-                        setUpgradeModalOpen(true);
-                      }}
-                      disabled={portalLoading}
-                      className="mt-4 h-10 rounded-[10px] bg-accent px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => router.push(PATH_ACCOUNT_PLANS)}
+                      className="mt-4 h-10 rounded-[10px] border border-stroke bg-surface px-4 text-sm font-semibold text-fg transition-colors hover:bg-surface-muted"
                     >
-                      {portalLoading ? <SpinnerLabel>Opening…</SpinnerLabel> : actionLabel}
+                      View plans
                     </button>
                   </article>
 
                   <article className="rounded-xl border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
                     <p className="text-[13px] font-medium text-fg-muted">{recurringMeta}</p>
                     <p className="mt-2 text-[22px] font-semibold leading-7 text-fg">{recurringAmount}</p>
+                    {showManageOnPaymentCard ? (
+                      <button
+                        type="button"
+                        onClick={() => void openManageSubscriptionPortal()}
+                        disabled={portalLoading}
+                        className="mt-4 h-10 rounded-[10px] bg-accent px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {portalLoading ? <SpinnerLabel>Opening…</SpinnerLabel> : "Manage Subscription"}
+                      </button>
+                    ) : null}
+                    {showUpgradeOnPaymentCard ? (
+                      <button
+                        type="button"
+                        onClick={() => router.push(PATH_ACCOUNT_PLANS)}
+                        className="mt-4 h-10 rounded-[10px] bg-accent px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-accent-hover"
+                      >
+                        {actionLabel}
+                      </button>
+                    ) : null}
                   </article>
                 </>
               )}
@@ -802,16 +837,14 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
           </div>
         )}
       </div>
-      <BillingUpgradeModal
-        open={upgradeModalOpen}
-        onClose={() => {
-          setUpgradeModalOpen(false);
-          void loadBillingSummary({ silent: true });
-        }}
-      />
       <ChangePasswordModal
         open={changePasswordModalOpen}
         onClose={() => setChangePasswordModalOpen(false)}
+      />
+      <DeleteAccountModal
+        open={deleteAccountModalOpen}
+        onClose={() => setDeleteAccountModalOpen(false)}
+        onDeleted={() => void handleAccountDeleted()}
       />
     </div>
   );

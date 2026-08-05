@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { brokerageProRequiredError } from "@/lib/account/brokerage-plan-gate";
 import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   createSnapTradePortalLink,
@@ -18,17 +19,30 @@ export async function POST(request: Request) {
     const supabase = await getSupabaseServerClient();
     const user = await requireAuthUser(supabase);
 
+    const blocked = await brokerageProRequiredError(supabase, user.id);
+    if (blocked) {
+      return NextResponse.json(blocked, { status: 403 });
+    }
+
     let reconnectAuthorizationId: string | null = null;
+    let darkMode = false;
     try {
-      const body = (await request.json()) as { reconnectAuthorizationId?: unknown };
+      const body = (await request.json()) as {
+        reconnectAuthorizationId?: unknown;
+        darkMode?: unknown;
+      };
       if (typeof body.reconnectAuthorizationId === "string" && body.reconnectAuthorizationId.trim()) {
         reconnectAuthorizationId = body.reconnectAuthorizationId.trim();
       }
+      darkMode = body.darkMode === true;
     } catch {
       // Empty body is fine for a fresh connection.
     }
 
-    const redirectUri = await createSnapTradePortalLink(user.id, { reconnectAuthorizationId });
+    const redirectUri = await createSnapTradePortalLink(user.id, {
+      reconnectAuthorizationId,
+      darkMode,
+    });
     return NextResponse.json({ redirectUri });
   } catch (e) {
     if (e instanceof AuthRequiredError) {

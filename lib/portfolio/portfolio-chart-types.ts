@@ -9,8 +9,11 @@ export type PortfolioValueHistoryPoint = {
   /** Equity at mark + cash (net worth). */
   value: number;
   /**
-   * Realized + unrealized equity P/L through this date (`profit` in value-history server),
-   * i.e. same components as {@link lifetimeEquityProfitUsd} at “now”, evaluated as-of `t`.
+   * Total profit $ through `t` for the **selected chart range window**:
+   * - Period ranges (6M, 1Y, …): Modified Dietz gain over that window
+   *   (`vEnd − vStart − external net flows`) — same $ as Overview Total profit cards.
+   * - `all` (or windows that start before inception): realized + unrealized equity P/L
+   *   as-of `t` (lifetime / inception path).
    */
   profit: number;
   /**

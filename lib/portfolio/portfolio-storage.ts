@@ -76,7 +76,8 @@ function isRawPortfolioEntry(x: unknown): x is { id: string; name: string; priva
   const pr = x.privacy;
   if (pr !== undefined && pr !== "private" && pr !== "public") return false;
   const k = x.kind;
-  if (k !== undefined && k !== "standard" && k !== "combined") return false;
+  if (k !== undefined && k !== "standard" && k !== "combined" && k !== "demo") return false;
+  if (x.isDemo !== undefined && typeof x.isDemo !== "boolean") return false;
   const cf = x.combinedFrom;
   if (cf !== undefined && (!Array.isArray(cf) || !cf.every((t): t is string => typeof t === "string"))) {
     return false;

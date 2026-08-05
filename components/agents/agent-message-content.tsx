@@ -12,6 +12,10 @@ import {
   type AgentHoldingRef,
   type AgentTickerRef,
 } from "@/components/agents/agent-ticker-chip";
+import {
+  AgentMacroChartEmbed,
+  parseAgentMacroChartMarker,
+} from "@/components/agents/agent-macro-chart";
 import { ChevronRight } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +32,7 @@ type Block =
         worthLabel: string | null;
       }>;
     }
+  | { type: "macro-chart"; seriesId: string }
   | { type: "paragraph"; text: string };
 
 const HEADING_RE = /^(?:\*\*(.+?)\*\*|#{1,3}\s+(.+))\s*:?\s*$/;
@@ -170,6 +175,14 @@ function parseAgentBlocks(content: string): Block[] {
       continue;
     }
 
+    const macroChartId = parseAgentMacroChartMarker(trimmed);
+    if (macroChartId) {
+      flushLists();
+      flushPara();
+      blocks.push({ type: "macro-chart", seriesId: macroChartId });
+      continue;
+    }
+
     const heading = trimmed.match(HEADING_RE);
     if (heading) {
       flushLists();
@@ -221,6 +234,13 @@ function parseAgentBlocks(content: string): Block[] {
     const bullet = trimmed.match(BULLET_RE);
     if (bullet) {
       const body = (bullet[1] ?? "").trim();
+      const macroInBullet = parseAgentMacroChartMarker(body);
+      if (macroInBullet) {
+        flushLists();
+        flushPara();
+        blocks.push({ type: "macro-chart", seriesId: macroInBullet });
+        continue;
+      }
       // "- Best performance:" → section heading above a holdings table card
       if (/^.+:\s*$/.test(body) && !isHoldingOrTickerBullet(body)) {
         flushLists();
@@ -420,6 +440,7 @@ export function AgentMessageContent({
       b.type === "tickers" ||
       b.type === "holdings" ||
       b.type === "allocation" ||
+      b.type === "macro-chart" ||
       b.type === "heading" ||
       b.type === "list",
   );
@@ -470,6 +491,9 @@ export function AgentMessageContent({
         }
         if (b.type === "allocation") {
           return <AgentAllocationList key={`alloc-${i}`} rows={b.rows} />;
+        }
+        if (b.type === "macro-chart") {
+          return <AgentMacroChartEmbed key={`mc-${i}-${b.seriesId}`} seriesId={b.seriesId} />;
         }
         return (
           <p key={`p-${i}`} className="whitespace-pre-wrap">

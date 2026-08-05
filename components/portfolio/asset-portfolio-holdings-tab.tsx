@@ -42,7 +42,6 @@ import {
   cumulativeRealizedGainUsdForAsset,
   totalTradeFeesUsdForAsset,
 } from "@/lib/portfolio/realized-pnl-from-trades";
-import { buildSplitAdjustedTradeIndexForAsset } from "@/lib/portfolio/split-adjusted-trades";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
 import { cn } from "@/lib/utils";
 
@@ -185,11 +184,6 @@ export function AssetPortfolioHoldingsTab({
     });
   }, [transactions, route, assetKind]);
 
-  const splitAdjusted = useMemo(
-    () => buildSplitAdjustedTradeIndexForAsset(tradeRows, route, assetKind),
-    [tradeRows, route, assetKind],
-  );
-
   const tradeMarkersForChart = useMemo(() => {
     const chronological = [...tradeRows].sort((a, b) => a.date.localeCompare(b.date));
     return chronological
@@ -207,15 +201,14 @@ export function AssetPortfolioHoldingsTab({
     for (const t of tradeRows) {
       const op = t.operation.toLowerCase();
       if (op !== "buy" && op !== "sell") continue;
-      const adj = splitAdjusted.get(t.id);
-      const sh = adj?.shares ?? t.shares;
-      const pr = adj?.price ?? t.price;
       const lines = out.get(t.date) ?? [];
-      lines.push(`${t.operation} · ${formatSharesDisplay(sh)} @ ${formatPortfolioUsdPerUnit(pr)}`);
+      lines.push(
+        `${t.operation} · ${formatSharesDisplay(t.shares)} @ ${formatPortfolioUsdPerUnit(t.price)}`,
+      );
       out.set(t.date, lines);
     }
     return [...out.entries()].map(([date, lines]) => ({ date, lines }));
-  }, [tradeRows, splitAdjusted]);
+  }, [tradeRows]);
 
   if (!portfolioDisplayReady) {
     return (
@@ -469,9 +462,6 @@ export function AssetPortfolioHoldingsTab({
               </div>
 
               {tradeRows.map((t, i) => {
-                const adj = splitAdjusted.get(t.id);
-                const sh = adj?.shares ?? t.shares;
-                const pr = adj?.price ?? t.price;
                 return (
                   <div key={t.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
                     <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
@@ -500,9 +490,9 @@ export function AssetPortfolioHoldingsTab({
                           {t.operation}
                         </div>
                         <div className={assetTxNumericCellClass}>
-                          {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(sh)}
+                          {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(t.shares)}
                         </div>
-                        <div className={assetTxNumericCellClass}>{formatPortfolioUsdPerUnit(pr)}</div>
+                        <div className={assetTxNumericCellClass}>{formatPortfolioUsdPerUnit(t.price)}</div>
                         <div
                           className={cn(
                             "min-w-0 w-full text-right text-[14px] font-medium leading-5 tabular-nums",

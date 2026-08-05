@@ -1,8 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Bell, ChevronLeft, Settings, X } from "@/lib/icons";
 
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
+import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import { EarningsPreviewModal } from "@/components/earnings/earnings-preview-modal";
 import {
   APP_PANEL_MODAL_EXIT_CLASS,
@@ -26,6 +29,7 @@ import {
 import type { NotificationItem, NotificationsClient } from "@/lib/notifications/use-notifications-client";
 import { useNotificationPreferences } from "@/lib/notifications/use-notification-preferences";
 import type { EarningsCalendarItem } from "@/lib/market/earnings-calendar-types";
+import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { readScreenerCompanyIdentity } from "@/lib/screener/screener-company-identity-storage";
 import { cn } from "@/lib/utils";
 
@@ -62,11 +66,13 @@ function NotificationPillSwitch({
   pressed,
   onPressedChange,
   disabled,
+  className,
   "aria-label": ariaLabel,
 }: {
   pressed: boolean;
   onPressedChange: (next: boolean) => void;
   disabled?: boolean;
+  className?: string;
   "aria-label": string;
 }) {
   return (
@@ -76,11 +82,15 @@ function NotificationPillSwitch({
       aria-checked={pressed}
       aria-label={ariaLabel}
       disabled={disabled}
-      onClick={() => onPressedChange(!pressed)}
+      onClick={(e) => {
+        e.stopPropagation();
+        onPressedChange(!pressed);
+      }}
       className={cn(
         "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
         pressed ? "bg-accent" : "bg-stroke",
         disabled && "cursor-not-allowed opacity-50",
+        className,
       )}
     >
       <span
@@ -104,6 +114,9 @@ export function NotificationsPanelModal({
   client: NotificationsClient;
 }) {
   const titleId = useId();
+  const router = useRouter();
+  const plan = usePlanAccessOptional();
+  const canUseActivityAlerts = plan?.canUseActivityAlerts !== false;
   const [view, setView] = useState<PanelView>("list");
   const [previewItem, setPreviewItem] = useState<EarningsCalendarItem | null>(null);
   const [previewNotificationId, setPreviewNotificationId] = useState<string | null>(null);
@@ -118,6 +131,11 @@ export function NotificationsPanelModal({
     setEarningsResults,
     refresh: refreshPreferences,
   } = useNotificationPreferences({ enabled: open });
+
+  const openUpgradePlans = useCallback(() => {
+    onClose();
+    router.push(PATH_ACCOUNT_PLANS);
+  }, [onClose, router]);
 
   useEffect(() => {
     if (open) void refresh({ full: true });
@@ -250,18 +268,60 @@ export function NotificationsPanelModal({
                 </div>
               ) : (
                 <div className="flex min-h-0 flex-1 flex-col">
-                  <div className="flex items-center justify-between gap-4 py-1">
+                  <div
+                    className={cn(
+                      "flex items-center justify-between gap-4 rounded-[12px] py-1",
+                      !canUseActivityAlerts && "cursor-pointer",
+                    )}
+                    onClick={
+                      !canUseActivityAlerts
+                        ? () => {
+                            openUpgradePlans();
+                          }
+                        : undefined
+                    }
+                    onKeyDown={
+                      !canUseActivityAlerts
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              openUpgradePlans();
+                            }
+                          }
+                        : undefined
+                    }
+                    role={!canUseActivityAlerts ? "button" : undefined}
+                    tabIndex={!canUseActivityAlerts ? 0 : undefined}
+                  >
                     <div className="min-w-0">
-                      <p className="text-[14px] font-medium leading-5 text-fg">Earning results</p>
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <p className="text-[14px] font-medium leading-5 text-fg">Earning results</p>
+                        {!canUseActivityAlerts ? (
+                          <ProFeatureBadge />
+                        ) : null}
+                      </div>
                       <p className="mt-0.5 text-[13px] leading-5 text-fg-muted">
-                        Earnings result for companies you follow
+                        {canUseActivityAlerts
+                          ? "Earnings result for companies you follow"
+                          : "Earnings alerts for companies you follow — available on Pro"}
                       </p>
                     </div>
                     <NotificationPillSwitch
-                      pressed={earningsResultsEnabled}
-                      onPressedChange={(next) => void setEarningsResults(next)}
-                      disabled={preferencesSaving}
-                      aria-label="Earning results notifications"
+                      pressed={canUseActivityAlerts ? earningsResultsEnabled : false}
+                      onPressedChange={(next) => {
+                        if (!canUseActivityAlerts) {
+                          openUpgradePlans();
+                          return;
+                        }
+                        void setEarningsResults(next);
+                      }}
+                      disabled={canUseActivityAlerts ? preferencesSaving : true}
+                      className={!canUseActivityAlerts ? "pointer-events-none" : undefined}
+                      aria-label={
+                        canUseActivityAlerts
+                          ? "Earning results notifications"
+                          : "Earning results notifications (Pro)"
+                      }
                     />
                   </div>
                 </div>

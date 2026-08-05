@@ -38,7 +38,7 @@ const proBadgeBySize: Record<UserAvatarSize, { shell: string; icon: string }> = 
   xl: { shell: "h-4 w-4 bottom-0 right-0", icon: "h-2.5 w-2.5" },
 };
 
-/** Three-peak crown — white on light badge; icon token on dark badge. */
+/** Three-peak crown — uses `currentColor` (white on light theme badge, dark on dark theme). */
 function ProCrownIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 12 12" className={className} aria-hidden>
@@ -81,8 +81,9 @@ export function UserAvatar({ imageSrc, initials, size, showProBadge = false }: U
       <span
         className={cn(
           "absolute z-[1] flex items-center justify-center overflow-hidden rounded-full",
-          // Theme-safe: muted disc + fg icon (no white-on-hover clash in dark).
-          "border border-stroke bg-surface-muted text-fg shadow-sm",
+          // Light: black disc + white crown; dark: inverted (fg/surface swap).
+          // Ring matches secondary button fill (`--fs-button`).
+          "border-2 border-button bg-fg text-surface shadow-sm",
           badge.shell,
         )}
         title="Pro"

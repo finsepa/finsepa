@@ -36,9 +36,11 @@ import {
 import { PortfolioHoldingsSubTabMobileCard } from "@/components/portfolio/portfolio-holdings-sub-tab-mobile-card";
 import { useAllocationCenterAvatar } from "@/components/portfolio/use-allocation-center-avatar";
 import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
+import { PortfolioBrokerageOfflineBanner } from "@/components/portfolio/portfolio-brokerage-offline-banner";
 import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-status-icon";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadcrumbs";
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { totalCostBasisInvested } from "@/lib/portfolio/overview-metrics";
@@ -176,10 +178,28 @@ export function PortfolioPageView({
     selectedPortfolioId,
     openEditPortfolio,
     portfolioDisplayReady,
+    selectedPortfolioReadOnly,
+    openReconnectBrokerage,
   } = usePortfolioWorkspace();
 
+  const plan = usePlanAccessOptional();
   const selectedPortfolio =
     portfolios.find((p) => p.id === selectedPortfolioId) ?? portfolios[0] ?? null;
+  const canReconnectOffline =
+    plan?.canConnectBrokerage === true && selectedPortfolio?.snaptrade?.offline === true;
+
+  /** Public community view — no owner tools. */
+  const isPublicView = readOnly;
+  /**
+   * Ledger / trade actions locked (combined aggregate, Free brokerage offline).
+   * Portfolio settings (rename / delete / privacy) stay available for owners.
+   */
+  const ledgerActionsLocked = isPublicView || selectedPortfolioReadOnly;
+  const showOfflineBrokerageBanner =
+    !isPublicView &&
+    selectedPortfolio != null &&
+    (selectedPortfolio.snaptrade?.offline === true ||
+      (selectedPortfolioReadOnly && selectedPortfolio.snaptrade != null));
 
   useEffect(() => {
     setViewTab(tabFromUrl(searchParams.get("tab")));
@@ -237,7 +257,11 @@ export function PortfolioPageView({
   const hasPortfolioLedger =
     holdings.length > 0 || tradeSymbolsFromHistory(transactions).length > 0;
   /** Owner portfolio with no ledger — same setup CTAs on every main tab. */
-  const showEmptySetupTiles = !readOnly && transactions.length === 0;
+  /** Owner portfolio with no ledger — same setup CTAs on every main tab (not for offline brokerage freezes). */
+  const showEmptySetupTiles =
+    !isPublicView &&
+    !selectedPortfolioReadOnly &&
+    transactions.length === 0;
   const showOverviewHoldingsBlock = hasPortfolioLedger;
   const benchmarkInvestedUsd = totalCostBasisInvested(holdings);
   const allocationRows = useMemo(
@@ -321,10 +345,12 @@ export function PortfolioPageView({
   const panelClass = (tab: PortfolioViewTab) =>
     cn(viewTab === tab ? "flex min-h-0 flex-1 flex-col" : "hidden");
 
-  const portfolioToolbarActions =
-    readOnly ? null : (
+  const portfolioToolbarActions = isPublicView ? null : (
       <>
-        {selectedPortfolioId != null && selectedPortfolio?.snaptrade ? (
+        {selectedPortfolioId != null &&
+        selectedPortfolio?.snaptrade &&
+        !selectedPortfolio.snaptrade.offline &&
+        !ledgerActionsLocked ? (
           <PortfolioSyncStatusIcon
             portfolioId={selectedPortfolioId}
             snaptrade={selectedPortfolio.snaptrade}
@@ -346,7 +372,7 @@ export function PortfolioPageView({
         >
           <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
         </button>
-        {!showEmptySetupTiles ? (
+        {!ledgerActionsLocked && !showEmptySetupTiles ? (
           <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
         ) : null}
       </>
@@ -385,12 +411,24 @@ export function PortfolioPageView({
           </div>
         </div>
 
-        {!readOnly ? (
+        {!isPublicView ? (
           <div className="flex min-w-0 shrink-0 flex-nowrap items-center justify-end gap-2">
             {portfolioToolbarActions}
           </div>
         ) : null}
       </div>
+
+      {showOfflineBrokerageBanner && selectedPortfolio ? (
+        <PortfolioBrokerageOfflineBanner
+          brokerageName={selectedPortfolio.snaptrade?.brokerageName}
+          canReconnect={canReconnectOffline}
+          onReconnect={
+            selectedPortfolioId != null ?
+              () => openReconnectBrokerage(selectedPortfolioId)
+            : undefined
+          }
+        />
+      ) : null}
 
       <PortfolioOverviewAthProvider>
         <ChartScreenshotDownloadModal

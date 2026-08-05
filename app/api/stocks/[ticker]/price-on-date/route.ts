@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_NO_STORE } from "@/lib/data/cache-policy";
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
 
@@ -23,14 +24,14 @@ export async function GET(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Missing or invalid date (use YYYY-MM-DD)." }, { status: 400 });
   }
 
-  // Use EOD adjusted close (split-adjusted) so portfolio transactions match the chart scale.
-  // EODHD provides `adjusted_close` for US equities; our fetcher prefers it when present.
+  // Chart-scale / continuous close (split-adjusted when EODHD provides it).
+  // Shares stay as the user entered them — no ledger corporate-action re-base on autofill.
   const from = (() => {
     const d = new Date(`${date}T00:00:00.000Z`);
     d.setUTCDate(d.getUTCDate() - 28);
     return d.toISOString().slice(0, 10);
   })();
-  const bars = await fetchEodhdEodDaily(routeTicker, from, date);
+  const bars = await fetchEodhdEodDaily(routeTicker, from, date, "adjusted");
   const pick = bars && bars.length ? bars[bars.length - 1]! : null;
   if (!pick || !Number.isFinite(pick.close) || pick.close <= 0) {
     return NextResponse.json({ price: null, barDate: null, source: null }, { status: 404 });

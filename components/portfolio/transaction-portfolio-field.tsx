@@ -9,6 +9,8 @@ import {
   ChevronsUpDownIcon,
   type ChevronsUpDownIconHandle,
 } from "@/components/chevrons-up-down-icon";
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
+import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import {
   dropdownMenuCompositeRowClassName,
   dropdownMenuPanelClassName,
@@ -65,10 +67,12 @@ export function TransactionPortfolioField({
     portfolios,
     selectedPortfolioId,
     setSelectedPortfolioId,
+    isFreePortfolioAccessible,
     openEditPortfolio,
     openCreatePortfolio,
     openCreateCombinedPortfolio,
   } = usePortfolioWorkspace();
+  const plan = usePlanAccessOptional();
 
   const [open, setOpen] = useState(false);
   const [createPortfolioIconPlaying, setCreatePortfolioIconPlaying] = useState(false);
@@ -79,8 +83,10 @@ export function TransactionPortfolioField({
   const selected =
     portfolios.find((p) => p.id === selectedPortfolioId) ?? portfolios[0] ?? null;
   const hasPortfolio = selected != null;
-  const canCreateCombinedPortfolio =
+  const hasEnoughSourcesForCombined =
     portfolios.filter((p) => p.kind !== "combined").length >= 2;
+  const combinedLockedOnFree = Boolean(plan && !plan.canCreateCombinedPortfolio);
+  const canCreateCombinedPortfolio = hasEnoughSourcesForCombined && !combinedLockedOnFree;
 
   useEffect(() => {
     if (!open) {
@@ -120,64 +126,74 @@ export function TransactionPortfolioField({
       {portfolios.length > 0 ? (
         <div className="px-3 py-1.5 text-xs font-medium leading-4 text-fg-muted">My portfolios</div>
       ) : null}
-      {portfolios.map((p) => (
-        <div
-          key={p.id}
-          className={cn(
-            dropdownMenuCompositeRowClassName,
-            "group",
-            p.id === selectedPortfolioId && "bg-surface-muted",
-          )}
-        >
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedPortfolioId(p.id);
-              setOpen(false);
-            }}
+      {portfolios.map((p) => {
+        const isSelected = p.id === selectedPortfolioId;
+        const isLockedOnFree = !isFreePortfolioAccessible(p.id);
+        return (
+          <div
+            key={p.id}
             className={cn(
-              "flex min-w-0 flex-1 items-center gap-3 py-2 pl-3 pr-4 text-left transition-colors hover:bg-transparent",
-              portfoliosOnly && "pr-10",
+              dropdownMenuCompositeRowClassName,
+              "group",
+              isSelected && "bg-surface-muted",
             )}
           >
-            <PortfolioListLogo portfolio={p} />
-            <span className="flex min-w-0 flex-1 flex-col items-start gap-0">
-              <span className="w-full truncate text-sm font-medium leading-5 text-fg">{p.name}</span>
-              <span className="text-xs leading-4 text-fg-muted">{portfolioKindSubtext(p)}</span>
-            </span>
-          </button>
-          {portfoliosOnly ? (
-            <span className="flex h-4 w-4 shrink-0 items-center justify-center self-center" aria-hidden>
-              {p.id === selectedPortfolioId ? (
-                <Check className="h-4 w-4 text-fg" strokeWidth={2} />
-              ) : null}
-            </span>
-          ) : (
-            <span className="relative mr-1 flex h-9 w-9 shrink-0 items-center justify-center self-center">
-              {p.id === selectedPortfolioId ? (
-                <Check
-                  className="h-4 w-4 text-fg group-hover:invisible group-focus-within:invisible"
-                  strokeWidth={2}
-                  aria-hidden
-                />
-              ) : null}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpen(false);
-                  openEditPortfolio(p.id);
-                }}
-                className="absolute inset-0 flex items-center justify-center rounded-lg text-fg opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-surface-hover focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
-                aria-label={`Edit ${p.name}`}
-              >
-                <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
-              </button>
-            </span>
-          )}
-        </div>
-      ))}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedPortfolioId(p.id);
+                setOpen(false);
+              }}
+              className={cn(
+                "flex min-w-0 flex-1 items-center gap-3 py-2 pl-3 pr-4 text-left transition-colors hover:bg-transparent",
+                portfoliosOnly && "pr-10",
+              )}
+            >
+              <PortfolioListLogo portfolio={p} />
+              <span className="flex min-w-0 flex-1 flex-col items-start gap-0">
+                <span className="w-full truncate text-sm font-medium leading-5 text-fg">{p.name}</span>
+                <span className="text-xs leading-4 text-fg-muted">{portfolioKindSubtext(p)}</span>
+              </span>
+            </button>
+            {portfoliosOnly ? (
+              <span className="mr-3 flex h-4 w-4 shrink-0 items-center justify-center self-center" aria-hidden>
+                {isSelected ? (
+                  <Check className="h-4 w-4 text-fg" strokeWidth={2} />
+                ) : isLockedOnFree ? (
+                  <Lock className="h-3.5 w-3.5 text-fg-muted" strokeWidth={2} />
+                ) : null}
+              </span>
+            ) : isLockedOnFree ? (
+              <span className="mr-1 flex h-9 w-9 shrink-0 items-center justify-center self-center" aria-hidden>
+                <Lock className="h-3.5 w-3.5 text-fg-muted" strokeWidth={2} />
+              </span>
+            ) : (
+              <span className="relative mr-1 flex h-9 w-9 shrink-0 items-center justify-center self-center">
+                {isSelected ? (
+                  <Check
+                    className="h-4 w-4 text-fg group-hover:invisible group-focus-within:invisible"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                ) : null}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(false);
+                    openEditPortfolio(p.id);
+                  }}
+                  className="absolute inset-0 flex items-center justify-center rounded-lg text-fg opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-surface-hover focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
+                  aria-label={`Edit ${p.name}`}
+                >
+                  <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
+                </button>
+              </span>
+            )}
+          </div>
+        );
+      })}
       {!portfoliosOnly ? (
         <>
           <div
@@ -206,11 +222,13 @@ export function TransactionPortfolioField({
           </button>
           <button
             type="button"
-            disabled={!canCreateCombinedPortfolio}
+            aria-disabled={!canCreateCombinedPortfolio}
             title={
-              canCreateCombinedPortfolio ?
-                undefined
-              : "Create at least two portfolios to combine them"
+              combinedLockedOnFree
+                ? "Combined portfolios are available on Pro only"
+                : hasEnoughSourcesForCombined
+                  ? undefined
+                  : "Create at least two portfolios to combine them"
             }
             onMouseEnter={() => setCombinedPortfolioIconPlaying(true)}
             onMouseLeave={() => setCombinedPortfolioIconPlaying(false)}
@@ -224,15 +242,17 @@ export function TransactionPortfolioField({
             }}
             className={cn(
               dropdownMenuPlainItemClassName(),
-              !canCreateCombinedPortfolio &&
-                "cursor-not-allowed opacity-40 hover:bg-surface disabled:pointer-events-none",
+              !canCreateCombinedPortfolio && "cursor-not-allowed opacity-40 hover:bg-surface",
             )}
           >
             <DropdownMenuLottieIcon
               animationData={createCombinedPortfolioMenuIconAnimation}
               playing={combinedPortfolioIconPlaying}
             />
-            <span>Create Combined Portfolio</span>
+            <span className="min-w-0 flex-1 truncate text-left">Create Combined Portfolio</span>
+            {combinedLockedOnFree ? (
+              <ProFeatureBadge label="Combined portfolios are available on Pro only" />
+            ) : null}
           </button>
         </>
       ) : null}

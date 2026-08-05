@@ -82,12 +82,14 @@ function TopFiveHoldingsLogos({ symbols }: { symbols: string[] }) {
     <div className="flex flex-row items-center justify-end">
       {symbols.map((sym, i) => (
         <div key={`${sym}-${i}`} className="-ml-1 first:ml-0" style={{ zIndex: symbols.length - i }}>
-          <CompanyLogo
-            name={sym}
-            logoUrl={displayLogoUrlForPortfolioSymbol(sym)}
-            symbol={sym}
-            size="28"
-          />
+          <div className="overflow-hidden rounded-full ring-2 ring-stroke-subtle">
+            <CompanyLogo
+              name={sym}
+              logoUrl={displayLogoUrlForPortfolioSymbol(sym)}
+              symbol={sym}
+              size="28"
+            />
+          </div>
         </div>
       ))}
     </div>

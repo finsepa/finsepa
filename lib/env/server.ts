@@ -148,6 +148,34 @@ export function getLoopsTransactionalTrialExpiredId(): string {
   return v?.trim() || LOOPS_TRANSACTIONAL_ID_TRIAL_EXPIRED_DEFAULT;
 }
 
+/** “Pro subscription canceled” — cancel at period end while Pro days remain. */
+const LOOPS_TRANSACTIONAL_ID_PRO_CANCELED_DEFAULT = "cmsfq6s890yad0i0i357y0cne";
+
+/**
+ * Loops transactional ID for Pro cancel-at-period-end.
+ * Template variables: firstName, daysRemaining, accessEndsAt, billingLink.
+ */
+export function getLoopsTransactionalProCanceledId(): string {
+  const v = pickProcessEnv(
+    "LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "PRO" + "_" + "CANCELED",
+  );
+  return v?.trim() || LOOPS_TRANSACTIONAL_ID_PRO_CANCELED_DEFAULT;
+}
+
+/** “Pro ended — switched to Free” after paid Pro access fully ends. */
+const LOOPS_TRANSACTIONAL_ID_PRO_ENDED_FREE_DEFAULT = "cmsfr2lg000up0jy6jlcff829";
+
+/**
+ * Loops transactional ID when Pro finishes and the account moves to Free.
+ * Template variables: firstName, upgradeLink.
+ */
+export function getLoopsTransactionalProEndedFreeId(): string {
+  const v = pickProcessEnv(
+    "LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "PRO" + "_" + "ENDED" + "_" + "FREE",
+  );
+  return v?.trim() || LOOPS_TRANSACTIONAL_ID_PRO_ENDED_FREE_DEFAULT;
+}
+
 /** SnapTrade partner client ID (server-only). */
 export function getSnapTradeClientId(): string | undefined {
   const v = pickProcessEnv("SNAPTRADE" + "_" + "CLIENT" + "_" + "ID");

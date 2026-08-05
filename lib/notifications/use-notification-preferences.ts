@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 type PreferencesResponse = {
   earningsResultsEnabled?: boolean;
@@ -40,9 +41,19 @@ export function useNotificationPreferences(options?: { enabled?: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ earningsResultsEnabled: next }),
       });
-      if (!res.ok) setEarningsResultsEnabled(prev);
+      if (!res.ok) {
+        setEarningsResultsEnabled(prev);
+        toast.error("Could not update notification preference. Try again.");
+        return;
+      }
+      toast.success(
+        next
+          ? "Earning results alerts turned on."
+          : "Earning results alerts turned off.",
+      );
     } catch {
       setEarningsResultsEnabled(prev);
+      toast.error("Could not update notification preference. Try again.");
     } finally {
       setSaving(false);
     }

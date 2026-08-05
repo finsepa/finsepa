@@ -1,6 +1,13 @@
-export type BillingPlan = "trial" | "pro";
+export type BillingPlan = "trial" | "free" | "pro";
 
-export type BillingAccessState = "trial" | "trial_expired" | "pro" | "canceled" | "expired" | "paused";
+export type BillingAccessState =
+  | "trial"
+  | "trial_expired"
+  | "free"
+  | "pro"
+  | "canceled"
+  | "expired"
+  | "paused";
 
 export type BillingHistoryRow = {
   id: string;
@@ -56,15 +63,13 @@ export function platformTrialEndsMetaLabel(platformTrialEndsAt: string | null | 
   return `Trial ends on ${label}`;
 }
 
-/** Same plan line as Account → Billing (e.g. “Free Trial”, “Pro”). */
+/** Same plan line as Account → Billing (e.g. “Free Trial”, “Pro”, “Free”). */
 export function subscriptionTitleFromBillingSummary(summary: BillingSummary): string {
   const billingPlan = summary.plan;
   const billingAccessState = summary.accessState;
-  return billingPlan === "pro"
-    ? "Pro"
-    : billingAccessState === "trial_expired"
-      ? "Free trial ended"
-      : billingAccessState === "expired"
-        ? "Free plan"
-        : "Free Trial";
+  if (billingPlan === "pro") return "Pro";
+  if (billingPlan === "free" || billingAccessState === "free" || billingAccessState === "trial_expired") {
+    return "Free";
+  }
+  return "Free Trial";
 }
