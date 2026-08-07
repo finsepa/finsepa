@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -26,6 +27,8 @@ type Body = {
   token?: unknown;
   code?: unknown;
   next?: unknown;
+  /** When `"ios"`, return tokens only — no Set-Cookie (keeps web sessions independent). */
+  client?: unknown;
 };
 
 type SessionCookie = { name: string; value: string; options?: CookieOptions };
@@ -37,6 +40,19 @@ function getSupabasePublicConfig(): { url: string; anonKey: string } | null {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
   if (!url || !anonKey) return null;
   return { url, anonKey };
+}
+
+/** Ephemeral Auth client for native verify — never reads/writes browser cookies. */
+function createMemoryAuthClient(): SupabaseClient | null {
+  const config = getSupabasePublicConfig();
+  if (!config) return null;
+  return createClient(config.url, config.anonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
 }
 
 async function createCookieSessionClient() {
@@ -65,9 +81,32 @@ async function createCookieSessionClient() {
   return { supabase, sessionCookies };
 }
 
+async function verifyOtpWithFallback(
+  supabase: SupabaseClient,
+  email: string,
+  token: string,
+) {
+  let result = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "email",
+  });
+
+  if (result.error) {
+    result = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: "magiclink",
+    });
+  }
+
+  return result;
+}
+
 /**
- * Verify email OTP and establish a web session (cookies).
- * Confirms previously unconfirmed emails. Web-only for now (no `client: "ios"`).
+ * Verify email OTP.
+ * - Web: cookie session (default)
+ * - Native (`client: "ios"`): access/refresh tokens only — no Set-Cookie
  */
 export async function POST(request: Request) {
   if (!isEmailOtpEnabledServer()) {
@@ -91,6 +130,7 @@ export async function POST(request: Request) {
     .trim()
     .replace(/\s+/g, "");
   const next = typeof body.next === "string" ? body.next : null;
+  const isNative = body.client === "ios";
 
   if (!EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "invalid_email", message: "Enter a valid email." }, { status: 400 });
@@ -114,6 +154,10 @@ export async function POST(request: Request) {
     );
   }
 
+  if (isNative) {
+    return verifyOtpNative(email, token, next, request);
+  }
+
   const sessionClient = await createCookieSessionClient();
   if (!sessionClient) {
     return NextResponse.json(
@@ -123,23 +167,7 @@ export async function POST(request: Request) {
   }
 
   const { supabase, sessionCookies } = sessionClient;
-
-  let verifyError = (
-    await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: "email",
-    })
-  ).error;
-
-  if (verifyError) {
-    const retry = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: "magiclink",
-    });
-    verifyError = retry.error;
-  }
+  const { error: verifyError } = await verifyOtpWithFallback(supabase, email, token);
 
   if (verifyError) {
     recordOtpVerifyFailure(email);
@@ -167,4 +195,51 @@ export async function POST(request: Request) {
     response.cookies.set(name, value, withDurableAuthCookieOptions(cookieOptions));
   });
   return response;
+}
+
+async function verifyOtpNative(
+  email: string,
+  token: string,
+  next: string | null,
+  request: Request,
+): Promise<NextResponse> {
+  const supabase = createMemoryAuthClient();
+  if (!supabase) {
+    return NextResponse.json(
+      { error: "config", message: "Authentication is not configured." },
+      { status: 503 },
+    );
+  }
+
+  const { data, error: verifyError } = await verifyOtpWithFallback(supabase, email, token);
+
+  if (verifyError) {
+    recordOtpVerifyFailure(email);
+    return NextResponse.json(
+      { error: "invalid_code", message: "That code is invalid or expired. Try again." },
+      { status: 401 },
+    );
+  }
+
+  clearOtpVerifyFailures(email);
+
+  const session = data.session;
+  if (!session?.access_token || !session.refresh_token) {
+    return NextResponse.json(
+      { error: "session_failed", message: "Could not start your session. Try again." },
+      { status: 500 },
+    );
+  }
+
+  if (data.user) {
+    scheduleWelcomeTrialStartEmailFromHeaders(data.user, request.headers);
+  }
+
+  const redirectTo = await resolvePostLoginPath(supabase, next);
+  return NextResponse.json({
+    ok: true as const,
+    redirectTo,
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  });
 }

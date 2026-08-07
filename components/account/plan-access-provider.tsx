@@ -58,6 +58,8 @@ export function PlanAccessProvider({
   const [entitlements, setEntitlements] = useState<PlanEntitlements>(initial);
   const [selection, setSelection] = useState<FreePlanSelectionRow>(EMPTY_FREE_PLAN_SELECTION);
   const [selectionReady, setSelectionReady] = useState(false);
+  /** True only after /api/account/plan succeeds — blocks Free intro on a stale/wrong SSR tier. */
+  const [planFetchOk, setPlanFetchOk] = useState(false);
   const [counts, setCounts] = useState({
     realPortfolios: 0,
     watchlists: 0,
@@ -73,6 +75,8 @@ export function PlanAccessProvider({
     try {
       const res = await fetch("/api/account/plan", { method: "GET", cache: "no-store" });
       if (!res.ok) {
+        // Keep selectionReady for pick modals that already rely on SSR tier, but do not
+        // mark planFetchOk — Free-limits intro must not open on a failed plan refresh.
         setSelectionReady(true);
         return;
       }
@@ -83,6 +87,7 @@ export function PlanAccessProvider({
       };
       applyGate(data.tier, data.topbarTrialDaysLeft);
       if (data.selection) setSelection(data.selection);
+      setPlanFetchOk(true);
       setSelectionReady(true);
     } catch {
       setSelectionReady(true);
@@ -205,6 +210,7 @@ export function PlanAccessProvider({
     const shouldShowFreeLimitsIntro =
       entitlements.isFree &&
       selectionReady &&
+      planFetchOk &&
       !selection.free_plan_limits_acked_at &&
       (overPortfolios || overWatchlists || counts.brokeragePortfolios > 0);
 
@@ -231,6 +237,7 @@ export function PlanAccessProvider({
     entitlements,
     selection,
     selectionReady,
+    planFetchOk,
     counts,
     refreshPlan,
     ackFreeLimits,
