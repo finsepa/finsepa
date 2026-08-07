@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_HOT } from "@/lib/data/cache-policy";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { getStockExtendedHoursQuoteForApi } from "@/lib/market/stock-extended-hours-header";
 import { isUsListedStockHeaderMeta } from "@/lib/market/stock-header-meta";
 
 type Ctx = { params: Promise<{ ticker: string }> };
 
+/** Auth: Bearer or cookie via `resolveAuthUserFromRequest` (native iOS clients). */
 export async function GET(request: Request, { params }: Ctx) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await resolveAuthUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

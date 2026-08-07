@@ -4,7 +4,7 @@ import {
   CACHE_CONTROL_PRIVATE_HOT,
   CACHE_CONTROL_PRIVATE_NO_STORE,
 } from "@/lib/data/cache-policy";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { getStockSpotQuoteForApi } from "@/lib/market/stock-chart-data";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { getNvdaChartPoints } from "@/lib/fixtures/nvda";
@@ -12,12 +12,9 @@ import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session"
 
 type Ctx = { params: Promise<{ ticker: string }> };
 
-export async function GET(_request: Request, { params }: Ctx) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+/** Auth: Bearer or cookie via `resolveAuthUserFromRequest` (native iOS clients). */
+export async function GET(request: Request, { params }: Ctx) {
+  const user = await resolveAuthUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
