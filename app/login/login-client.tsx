@@ -17,6 +17,7 @@ import { AuthSessionLoadingScreen } from "@/components/auth/auth-session-loading
 import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
+import { signOutLocalSession } from "@/lib/auth/sign-out-local";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { SpinnerLabel } from "@/components/ui/spinner";
 
@@ -136,7 +137,7 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
         if (!user || userError) {
           writeResumeLoopCount(0);
           try {
-            await supabase.auth.signOut({ scope: "local" });
+            await signOutLocalSession(supabase);
           } catch {
             /* form will allow re-login */
           }
@@ -149,7 +150,7 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
           // Protected redirect rejected the session cookie path repeatedly — stop looping.
           writeResumeLoopCount(0);
           try {
-            await supabase.auth.signOut({ scope: "local" });
+            await signOutLocalSession(supabase);
           } catch {
             /* ignore */
           }

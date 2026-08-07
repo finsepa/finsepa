@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -17,7 +18,7 @@ type Body = {
   email?: unknown;
   password?: unknown;
   next?: unknown;
-  /** When `"ios"`, include access/refresh tokens in JSON for the native client. */
+  /** When `"ios"`, return tokens only — no Set-Cookie (keeps web sessions independent). */
   client?: unknown;
 };
 
@@ -31,6 +32,19 @@ function getSupabasePublicConfig(): { url: string; anonKey: string } | null {
 }
 
 type SessionCookie = { name: string; value: string; options?: CookieOptions };
+
+/** Ephemeral Auth client for native login — never reads/writes browser cookies. */
+function createMemoryAuthClient(): SupabaseClient | null {
+  const config = getSupabasePublicConfig();
+  if (!config) return null;
+  return createClient(config.url, config.anonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
 
 async function createCookieSessionClient() {
   const config = getSupabasePublicConfig();
@@ -58,25 +72,13 @@ async function createCookieSessionClient() {
   return { supabase, sessionCookies };
 }
 
-function buildLoginSuccessResponse(
+function buildWebLoginSuccessResponse(
   redirectTo: string,
   sessionCookies: SessionCookie[],
-  options?: {
-    session?: { access_token: string; refresh_token: string } | null;
-    includeTokens?: boolean;
-  },
 ) {
-  const includeTokens = options?.includeTokens === true;
-  const session = options?.session;
   const response = NextResponse.json({
     ok: true as const,
     redirectTo,
-    ...(includeTokens && session?.access_token && session?.refresh_token
-      ? {
-          access_token: session.access_token,
-          refresh_token: session.refresh_token,
-        }
-      : {}),
   });
   sessionCookies.forEach(({ name, value, options: cookieOptions }) => {
     response.cookies.set(name, value, withDurableAuthCookieOptions(cookieOptions));
@@ -84,63 +86,55 @@ function buildLoginSuccessResponse(
   return response;
 }
 
-async function loginWithPasswordGrant(
-  email: string,
-  password: string,
-  next?: string | null,
-  includeTokens = false,
-): Promise<NextResponse> {
-  const sessionClient = await createCookieSessionClient();
-  if (!sessionClient) {
-    return NextResponse.json({ error: "config", message: "Authentication is not configured." }, { status: 503 });
-  }
-
-  const { supabase, sessionCookies } = sessionClient;
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    const lower = error.message.toLowerCase();
-    if (lower.includes("invalid login credentials") || lower.includes("invalid credentials")) {
-      return NextResponse.json(
-        { error: "invalid_credentials", message: "Invalid email or password." },
-        { status: 401 },
-      );
-    }
-    if (lower.includes("captcha")) {
-      return NextResponse.json(
-        {
-          error: "login_unavailable",
-          message:
-            "Email sign-in is not configured on production yet. Add SUPABASE_POOLER_URL in Vercel (Supabase → Connect → Session pooler), redeploy, and try again.",
-        },
-        { status: 503 },
-      );
-    }
-    return NextResponse.json(
-      { error: "login_failed", message: "Could not sign in. Try again." },
-      { status: 400 },
-    );
-  }
-
-  const redirectTo = await resolvePostLoginPath(supabase, next);
-  const { data: sessionData } = await supabase.auth.getSession();
-  return buildLoginSuccessResponse(redirectTo, sessionCookies, {
-    session: sessionData.session,
-    includeTokens,
+function buildNativeLoginSuccessResponse(
+  redirectTo: string,
+  session: { access_token: string; refresh_token: string },
+) {
+  return NextResponse.json({
+    ok: true as const,
+    redirectTo,
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
   });
 }
 
-async function loginWithVerifiedEmail(
-  email: string,
-  next?: string | null,
-  includeTokens = false,
-): Promise<NextResponse> {
-  const admin = getSupabaseAdminClient();
-  if (!admin) {
+function passwordGrantErrorResponse(error: { message: string }): NextResponse {
+  const lower = error.message.toLowerCase();
+  if (lower.includes("invalid login credentials") || lower.includes("invalid credentials")) {
     return NextResponse.json(
-      { error: "config", message: "Authentication is not configured." },
+      { error: "invalid_credentials", message: "Invalid email or password." },
+      { status: 401 },
+    );
+  }
+  if (lower.includes("captcha")) {
+    return NextResponse.json(
+      {
+        error: "login_unavailable",
+        message:
+          "Email sign-in is not configured on production yet. Add SUPABASE_POOLER_URL in Vercel (Supabase → Connect → Session pooler), redeploy, and try again.",
+      },
       { status: 503 },
     );
+  }
+  return NextResponse.json(
+    { error: "login_failed", message: "Could not sign in. Try again." },
+    { status: 400 },
+  );
+}
+
+async function establishVerifiedEmailSession(
+  supabase: SupabaseClient,
+  email: string,
+): Promise<{ ok: true } | { ok: false; response: NextResponse }> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "config", message: "Authentication is not configured." },
+        { status: 503 },
+      ),
+    };
   }
 
   const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
@@ -150,24 +144,49 @@ async function loginWithVerifiedEmail(
 
   const tokenHash = linkData?.properties?.hashed_token;
   if (linkError || !tokenHash) {
-    return NextResponse.json(
-      { error: "session_failed", message: "Could not start your session. Try again." },
-      { status: 500 },
-    );
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "session_failed", message: "Could not start your session. Try again." },
+        { status: 500 },
+      ),
+    };
   }
 
-  const sessionClient = await createCookieSessionClient();
-  if (!sessionClient) {
-    return NextResponse.json({ error: "config", message: "Authentication is not configured." }, { status: 503 });
-  }
-
-  const { supabase, sessionCookies } = sessionClient;
   const { error: sessionError } = await supabase.auth.verifyOtp({
     token_hash: tokenHash,
     type: "magiclink",
   });
 
   if (sessionError) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "session_failed", message: "Could not start your session. Try again." },
+        { status: 500 },
+      ),
+    };
+  }
+
+  return { ok: true };
+}
+
+/** Native (iOS): independent session + tokens only — does not Set-Cookie on the browser. */
+async function loginNativeWithPasswordGrant(
+  email: string,
+  password: string,
+  next?: string | null,
+): Promise<NextResponse> {
+  const supabase = createMemoryAuthClient();
+  if (!supabase) {
+    return NextResponse.json({ error: "config", message: "Authentication is not configured." }, { status: 503 });
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return passwordGrantErrorResponse(error);
+
+  const session = data.session;
+  if (!session?.access_token || !session.refresh_token) {
     return NextResponse.json(
       { error: "session_failed", message: "Could not start your session. Try again." },
       { status: 500 },
@@ -175,11 +194,67 @@ async function loginWithVerifiedEmail(
   }
 
   const redirectTo = await resolvePostLoginPath(supabase, next);
+  return buildNativeLoginSuccessResponse(redirectTo, session);
+}
+
+async function loginNativeWithVerifiedEmail(
+  email: string,
+  next?: string | null,
+): Promise<NextResponse> {
+  const supabase = createMemoryAuthClient();
+  if (!supabase) {
+    return NextResponse.json({ error: "config", message: "Authentication is not configured." }, { status: 503 });
+  }
+
+  const established = await establishVerifiedEmailSession(supabase, email);
+  if (!established.ok) return established.response;
+
   const { data: sessionData } = await supabase.auth.getSession();
-  return buildLoginSuccessResponse(redirectTo, sessionCookies, {
-    session: sessionData.session,
-    includeTokens,
-  });
+  const session = sessionData.session;
+  if (!session?.access_token || !session.refresh_token) {
+    return NextResponse.json(
+      { error: "session_failed", message: "Could not start your session. Try again." },
+      { status: 500 },
+    );
+  }
+
+  const redirectTo = await resolvePostLoginPath(supabase, next);
+  return buildNativeLoginSuccessResponse(redirectTo, session);
+}
+
+async function loginWebWithPasswordGrant(
+  email: string,
+  password: string,
+  next?: string | null,
+): Promise<NextResponse> {
+  const sessionClient = await createCookieSessionClient();
+  if (!sessionClient) {
+    return NextResponse.json({ error: "config", message: "Authentication is not configured." }, { status: 503 });
+  }
+
+  const { supabase, sessionCookies } = sessionClient;
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) return passwordGrantErrorResponse(error);
+
+  const redirectTo = await resolvePostLoginPath(supabase, next);
+  return buildWebLoginSuccessResponse(redirectTo, sessionCookies);
+}
+
+async function loginWebWithVerifiedEmail(
+  email: string,
+  next?: string | null,
+): Promise<NextResponse> {
+  const sessionClient = await createCookieSessionClient();
+  if (!sessionClient) {
+    return NextResponse.json({ error: "config", message: "Authentication is not configured." }, { status: 503 });
+  }
+
+  const { supabase, sessionCookies } = sessionClient;
+  const established = await establishVerifiedEmailSession(supabase, email);
+  if (!established.ok) return established.response;
+
+  const redirectTo = await resolvePostLoginPath(supabase, next);
+  return buildWebLoginSuccessResponse(redirectTo, sessionCookies);
 }
 
 export async function POST(request: Request) {
@@ -193,7 +268,7 @@ export async function POST(request: Request) {
   const email = typeof body.email === "string" ? body.email.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";
   const next = typeof body.next === "string" ? body.next : null;
-  const includeTokens = body.client === "ios";
+  const isNative = body.client === "ios";
 
   if (!email || !password) {
     return NextResponse.json(
@@ -231,8 +306,12 @@ export async function POST(request: Request) {
     }
 
     // Local dev usually has SUPABASE_POOLER_URL; production may not — fall back to Supabase password grant.
-    return loginWithPasswordGrant(email, password, next, includeTokens);
+    return isNative
+      ? loginNativeWithPasswordGrant(email, password, next)
+      : loginWebWithPasswordGrant(email, password, next);
   }
 
-  return loginWithVerifiedEmail(verified.email, next, includeTokens);
+  return isNative
+    ? loginNativeWithVerifiedEmail(verified.email, next)
+    : loginWebWithVerifiedEmail(verified.email, next);
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { loginAccountDeletedUrl, loginSignedOutUrl } from "@/lib/auth/routes";
+import { signOutLocalSession } from "@/lib/auth/sign-out-local";
 import {
   EMPTY_BILLING_SUMMARY,
   platformTrialEndsMetaLabel,
@@ -247,7 +248,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
     setSigningOut(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      await supabase.auth.signOut();
+      await signOutLocalSession(supabase);
       window.location.replace(loginSignedOutUrl());
     } finally {
       setSigningOut(false);
@@ -261,7 +262,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
         data: { user },
       } = await supabase.auth.getUser();
       if (user?.id) invalidateBillingSummaryMenuCache(user.id);
-      await supabase.auth.signOut();
+      await signOutLocalSession(supabase);
     } catch {
       /* session may already be invalid after server-side delete */
     }

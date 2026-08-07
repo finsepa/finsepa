@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { AuthBrandMark } from "@/components/auth/auth-brand-mark";
 import { AuthCornerActions } from "@/components/auth/auth-corner-actions";
 import { loginSignedOutUrl, PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
+import { signOutLocalSession } from "@/lib/auth/sign-out-local";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useState } from "react";
 
@@ -15,7 +16,7 @@ export function ActivateSubscriptionClient() {
     setSigningOut(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      await supabase.auth.signOut();
+      await signOutLocalSession(supabase);
       window.location.replace(loginSignedOutUrl());
     } finally {
       setSigningOut(false);

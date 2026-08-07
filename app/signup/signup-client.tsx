@@ -8,6 +8,7 @@ import {
   messageWhenLoopsApiNotConfiguredOnServer,
   shouldAttemptLoopsSignupFallback,
 } from "@/lib/auth/supabase-error-message";
+import { signOutLocalSession } from "@/lib/auth/sign-out-local";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import {
   AuthDivider,
@@ -243,7 +244,7 @@ export function SignupClient() {
       /** Sign out before leaving `/signup` so middleware does not treat the user as logged-in and redirect to `/screener`. */
       async function goToEmailConfirmation() {
         const { data: sess } = await supabase.auth.getSession();
-        if (sess.session) await supabase.auth.signOut();
+        if (sess.session) await signOutLocalSession(supabase);
         window.location.replace(`/check-email?email=${encodeURIComponent(emailNorm)}`);
       }
 

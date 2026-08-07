@@ -42,6 +42,7 @@ import {
 import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
 import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import { loginSignedOutUrl, PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
+import { signOutLocalSession } from "@/lib/auth/sign-out-local";
 import {
   EMPTY_BILLING_SUMMARY,
   subscriptionTitleFromBillingSummary,
