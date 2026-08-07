@@ -9,8 +9,7 @@ import { parsePortfolioValueHistoryBody } from "@/lib/portfolio/portfolio-value-
 import { sortPortfolioTransactionsCanonical } from "@/lib/portfolio/ledger/portfolio-ledger-order";
 import { migratePortfolioTransactionSequences } from "@/lib/portfolio/ledger/portfolio-ledger-migrate";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { AuthRequiredError, requireAuthUser } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { AuthRequiredError, requireAuthUserFromRequest } from "@/lib/watchlist/api-auth";
 
 /**
  * Repair portfolio ledger for continuous (chart-scale) prices:
@@ -21,8 +20,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
 
     let body: unknown;
     try {

@@ -2,15 +2,13 @@ import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_NO_STORE } from "@/lib/data/cache-policy";
 import { fetchPortfolioLivePricesUsdCached } from "@/lib/portfolio/portfolio-live-quotes-server";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 
 type Body = { symbols?: unknown };
 
 export async function POST(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
 
     let body: Body;
     try {

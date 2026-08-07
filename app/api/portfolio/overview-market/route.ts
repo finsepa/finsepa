@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_OVERVIEW_MARKET } from "@/lib/data/cache-policy";
 import { getPortfolioOverviewMarketPayload } from "@/lib/portfolio/portfolio-overview-market-server";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 
 type Body = {
   symbols?: unknown;
@@ -17,8 +16,7 @@ type Body = {
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
 
     let body: Body;
     try {

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_WARM } from "@/lib/data/cache-policy";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   computePortfolioValueHistory,
   parsePortfolioValueHistoryBody,
@@ -10,8 +9,7 @@ import {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
 
     let body: unknown;
     try {

@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_DIVIDENDS_SCHEDULE } from "@/lib/data/cache-policy";
 import { buildPortfolioDividendsSchedule } from "@/lib/portfolio/portfolio-dividends-schedule-server";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 
 type Body = {
   holdings?: unknown;
@@ -11,8 +10,7 @@ type Body = {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
 
     let body: Body;
     try {

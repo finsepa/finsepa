@@ -6,8 +6,7 @@ import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_WARM } from "@/lib/data/cache-policy";
 import { loadPortfolioBenchmarkEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 
 const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -17,8 +16,7 @@ function parseYmdToUnixSeconds(ymd: string): number {
 
 export async function GET(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
 
     const url = new URL(request.url);
     const from = url.searchParams.get("from")?.trim() ?? "";

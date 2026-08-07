@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   type PersistedPortfolioState,
   parsePersistedPortfolioUnknown,
 } from "@/lib/portfolio/portfolio-storage";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 import { isPortfolioLedgerStrictPersistEnabled } from "@/lib/features/portfolio-correctness";
 import { prepareWorkspaceLedgerForPersist } from "@/lib/portfolio/ledger/portfolio-ledger-prepare";
 import { validateWorkspaceState } from "@/lib/portfolio/ledger/portfolio-ledger-validate";
@@ -20,10 +20,11 @@ function summarizeState(s: PersistedPortfolioState): { portfolioCount: number; h
   return { portfolioCount: s.portfolios.length, holdingCount, txCount };
 }
 
-export async function GET() {
+/** Auth: Bearer or cookie via `requireAuthUserFromRequest` (native iOS clients). */
+export async function GET(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
 
     const { data, error } = await supabase
       .from("portfolio_workspace")
@@ -61,8 +62,8 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
 
     let body: unknown;
     try {

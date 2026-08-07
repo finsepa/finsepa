@@ -2,15 +2,13 @@ import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_WARM_CHART } from "@/lib/data/cache-policy";
 import { getStockHeaderIdentityForTicker } from "@/lib/market/stock-header-meta-server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { AuthRequiredError, requireAuthUser } from "@/lib/watchlist/api-auth";
+import { AuthRequiredError, requireAuthUserFromRequest } from "@/lib/watchlist/api-auth";
 
 type Body = { symbols?: unknown };
 
 export async function POST(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
 
     let body: Body;
     try {

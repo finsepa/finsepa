@@ -3,8 +3,7 @@ import { NextResponse } from "next/server";
 import { BENCHMARK_DEFAULT_TICKER } from "@/lib/portfolio/benchmark/benchmark-engine";
 import { computeInceptionBenchmarkCompare } from "@/lib/portfolio/benchmark/benchmark-compare.server";
 import { parseBodyTransactions } from "@/lib/portfolio/portfolio-value-history.server";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 
 const MAX_TX = 4000;
 
@@ -14,8 +13,7 @@ const MAX_TX = 4000;
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
 
     let body: unknown;
     try {

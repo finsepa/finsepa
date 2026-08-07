@@ -4,8 +4,7 @@ import {
   computePortfolioAnalyticsSnapshot,
   parsePortfolioAnalyticsBody,
 } from "@/lib/portfolio/analytics/portfolio-analytics.server";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 
 /**
  * Manual Portfolio Key Stats analytics (Phase 4).
@@ -13,8 +12,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
 
     let body: unknown;
     try {
