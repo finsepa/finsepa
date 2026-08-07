@@ -68,6 +68,16 @@ export function getLoopsTransactionalPasswordResetId(): string {
   return v || LOOPS_TRANSACTIONAL_ID_PASSWORD_RESET_DEFAULT;
 }
 
+/**
+ * Loops transactional ID for email login OTP (`firstName`, `otpCode` in template).
+ * Required when `AUTH_EMAIL_OTP=1` — create the template in Loops (MoonPay-style code box).
+ */
+export function getLoopsTransactionalEmailOtpId(): string {
+  return (
+    pickProcessEnv("LOOPS" + "_" + "TRANSACTIONAL" + "_" + "ID" + "_" + "EMAIL" + "_" + "OTP") ?? ""
+  );
+}
+
 /** Default “Finsepa Pro is now active” transactional in Loops (override with `LOOPS_TRANSACTIONAL_ID_PRO_ACTIVATED`). */
 const LOOPS_TRANSACTIONAL_ID_PRO_ACTIVATED_DEFAULT = "cmoo8ezzr0qrb0i2mhrw29zlx";
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { resolveAuthAppOriginForServer } from "@/lib/auth/app-origin";
 import { buildBrandedRecoveryLink } from "@/lib/auth/branded-auth-link";
+import { isEmailOtpEnabledServer } from "@/lib/auth/email-otp-enabled";
 import { PATH_AUTH_RESET_PASSWORD } from "@/lib/auth/routes";
 import { getLoopsApiKey } from "@/lib/env/loops";
 import { getLoopsTransactionalPasswordResetId } from "@/lib/env/server";
@@ -62,6 +63,13 @@ type Body = {
  * (same `firstName` / `confirmationLink` variables as sign-up email).
  */
 export async function POST(request: Request) {
+  if (isEmailOtpEnabledServer()) {
+    return NextResponse.json(
+      { error: "otp_enabled", message: "Password reset is disabled. Sign in with an email code." },
+      { status: 404 },
+    );
+  }
+
   let body: Body;
   try {
     body = (await request.json()) as Body;

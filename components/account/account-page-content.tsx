@@ -48,7 +48,10 @@ import {
   TABLE_END_ALIGNED_PAD_CLASS,
   TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
+import { isEmailOtpEnabledClient } from "@/lib/auth/email-otp-public";
 import { cn } from "@/lib/utils";
+
+const EMAIL_OTP_ENABLED = isEmailOtpEnabledClient();
 
 export type AccountPageInitial = {
   email: string | null;
@@ -504,21 +507,23 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                   autoComplete="email"
                 />
               </div>
-              <div className="sm:col-span-2">
-                <FieldLabel htmlFor="acct-password">Password</FieldLabel>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <AccountPasswordPlaceholder id="acct-password" />
-                  {initial.canChangePassword ? (
-                    <button
-                      type="button"
-                      onClick={() => setChangePasswordModalOpen(true)}
-                      className={cn(secondaryOutlineButtonClassName, "shrink-0 sm:w-auto")}
-                    >
-                      Change Password
-                    </button>
-                  ) : null}
+              {!EMAIL_OTP_ENABLED ? (
+                <div className="sm:col-span-2">
+                  <FieldLabel htmlFor="acct-password">Password</FieldLabel>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <AccountPasswordPlaceholder id="acct-password" />
+                    {initial.canChangePassword ? (
+                      <button
+                        type="button"
+                        onClick={() => setChangePasswordModalOpen(true)}
+                        className={cn(secondaryOutlineButtonClassName, "shrink-0 sm:w-auto")}
+                      >
+                        Change Password
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </section>
 
             <section className="rounded-xl border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
@@ -838,10 +843,12 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
           </div>
         )}
       </div>
-      <ChangePasswordModal
-        open={changePasswordModalOpen}
-        onClose={() => setChangePasswordModalOpen(false)}
-      />
+      {!EMAIL_OTP_ENABLED ? (
+        <ChangePasswordModal
+          open={changePasswordModalOpen}
+          onClose={() => setChangePasswordModalOpen(false)}
+        />
+      ) : null}
       <DeleteAccountModal
         open={deleteAccountModalOpen}
         onClose={() => setDeleteAccountModalOpen(false)}

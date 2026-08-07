@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { isEmailOtpEnabledServer } from "@/lib/auth/email-otp-enabled";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password-rules";
 import { verifyCurrentPasswordForUser } from "@/lib/auth/verify-current-password";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -14,6 +15,13 @@ type Body = {
 };
 
 export async function POST(request: Request) {
+  if (isEmailOtpEnabledServer()) {
+    return NextResponse.json(
+      { error: "otp_enabled", message: "Password changes are disabled. Sign in with an email code." },
+      { status: 404 },
+    );
+  }
+
   const supabase = await getSupabaseServerClient();
   const {
     data: { user },

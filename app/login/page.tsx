@@ -10,6 +10,7 @@ import {
 import { Check } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
+import { isEmailOtpEnabledServer } from "@/lib/auth/email-otp-enabled";
 import { LOGIN_ACCOUNT_DELETED_VALUE, LOGIN_SIGNED_OUT_VALUE } from "@/lib/auth/routes";
 
 import { LoginClient } from "./login-client";
@@ -22,23 +23,26 @@ type SearchParams = {
   account_deleted?: string;
 };
 
-const CALLBACK_ERROR_MESSAGES: Record<string, string> = {
-  session:
-    "Google sign-in could not finish (session expired or was already used). Close other Finsepa tabs, try again from https://app.finsepa.com/login, or use email and password.",
-  missing_code: "That sign-in link is incomplete. Open the link from your email again.",
-  oauth:
-    "Google sign-in was cancelled or blocked. Try again, or use email and password if the problem continues.",
-  config: "Authentication isn’t configured correctly. Please try again later.",
-};
+function callbackErrorMessages(otpEnabled: boolean): Record<string, string> {
+  const emailHint = otpEnabled ? "email code" : "email and password";
+  return {
+    session: `Google sign-in could not finish (session expired or was already used). Close other Finsepa tabs, try again from https://app.finsepa.com/login, or use ${emailHint}.`,
+    missing_code: "That sign-in link is incomplete. Open the link from your email again.",
+    oauth: `Google sign-in was cancelled or blocked. Try again, or use ${emailHint} if the problem continues.`,
+    config: "Authentication isn’t configured correctly. Please try again later.",
+  };
+}
 
 export { authMetadata as metadata, authViewport as viewport } from "@/lib/auth/auth-viewport";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = await searchParams;
+  const otpEnabled = isEmailOtpEnabledServer();
   const signedOut = sp.signed_out === LOGIN_SIGNED_OUT_VALUE;
   const accountDeleted = sp.account_deleted === LOGIN_ACCOUNT_DELETED_VALUE;
+  const messages = callbackErrorMessages(otpEnabled);
   const callbackHint = sp.error
-    ? (CALLBACK_ERROR_MESSAGES[sp.error] ?? "Something went wrong. Please try again.")
+    ? (messages[sp.error] ?? "Something went wrong. Please try again.")
     : null;
   const sessionExpiredHint =
     !callbackHint && !signedOut && !accountDeleted && sp.next
@@ -50,14 +54,16 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     <AuthCenteredLayout
       split={false}
       cornerActions
-      title="Log in to your account"
+      title={otpEnabled ? "Welcome to Finsepa" : "Log in to your account"}
       subtitle={
-        <>
-          <span className="text-fg-muted">Not a member yet? </span>
-          <Link href="/signup" className={authAccentLinkClassName}>
-            Get a free trial
-          </Link>
-        </>
+        otpEnabled ? null : (
+          <>
+            <span className="text-fg-muted">Not a member yet? </span>
+            <Link href="/signup" className={authAccentLinkClassName}>
+              Get a free trial
+            </Link>
+          </>
+        )
       }
       preCard={
         accountDeleted ? (
@@ -83,14 +89,16 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         ) : null
       }
       belowCard={
-        <div className="mt-3 text-center text-[12px] leading-4">
-          <Link
-            href="/forgot-password"
-            className="text-fg-muted transition-colors hover:text-fg"
-          >
-            Forgot password?
-          </Link>
-        </div>
+        otpEnabled ? null : (
+          <div className="mt-3 text-center text-[12px] leading-4">
+            <Link
+              href="/forgot-password"
+              className="text-fg-muted transition-colors hover:text-fg"
+            >
+              Forgot password?
+            </Link>
+          </div>
+        )
       }
       footer={<AuthLegalFooterLinks />}
     >

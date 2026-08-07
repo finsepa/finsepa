@@ -8,6 +8,7 @@ import {
   messageWhenLoopsApiNotConfiguredOnServer,
   shouldAttemptLoopsSignupFallback,
 } from "@/lib/auth/supabase-error-message";
+import { EmailOtpAuthForm } from "@/components/auth/email-otp-auth-form";
 import { signOutLocalSession } from "@/lib/auth/sign-out-local";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import {
@@ -26,10 +27,13 @@ import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
 import { SpinnerLabel } from "@/components/ui/spinner";
 import { TurnstileField } from "@/components/auth/turnstile-field";
 import { getAuthAppOriginForClient } from "@/lib/auth/app-origin";
+import { isEmailOtpEnabledClient } from "@/lib/auth/email-otp-public";
 import { TURNSTILE_ENABLED } from "@/lib/auth/turnstile-public";
 import { useTurnstileConfig } from "@/lib/auth/use-turnstile-config";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { PATH_APP_ENTRY, PATH_AUTH_CALLBACK } from "@/lib/auth/routes";
+
+const EMAIL_OTP_ENABLED = isEmailOtpEnabledClient();
 
 const MIN_PASSWORD_LEN = 8;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -111,6 +115,13 @@ function GoogleMark() {
 }
 
 export function SignupClient() {
+  if (EMAIL_OTP_ENABLED) {
+    return <EmailOtpAuthForm intent="signup" signupPaused={SIGNUP_DISABLED} />;
+  }
+  return <SignupPasswordClient />;
+}
+
+function SignupPasswordClient() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isDuplicateEmail, setIsDuplicateEmail] = useState(false);
   const [loading, setLoading] = useState(false);

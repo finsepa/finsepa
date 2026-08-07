@@ -59,9 +59,20 @@ export async function middleware(request: NextRequest) {
   const PATH_LOGIN = "/login";
   const PATH_SIGNUP = "/signup";
   const PATH_FORGOT_PASSWORD = "/forgot-password";
+  const PATH_AUTH_RESET_PASSWORD = "/auth/reset-password";
   const PATH_ACTIVATE_SUBSCRIPTION = "/activate-subscription";
 
   const path = request.nextUrl.pathname;
+
+  // Passwordless OTP: legacy password-reset URLs go to login (same flag as UI).
+  const otpFlag = process.env.NEXT_PUBLIC_AUTH_EMAIL_OTP?.trim();
+  const emailOtpEnabled = otpFlag === "1" || otpFlag?.toLowerCase() === "true";
+  if (
+    emailOtpEnabled &&
+    (path === PATH_FORGOT_PASSWORD || path === PATH_AUTH_RESET_PASSWORD)
+  ) {
+    return NextResponse.redirect(new URL(PATH_LOGIN, request.url));
+  }
 
   /**
    * Avatar files live in `public/superinvestors/*.png`. `next/image` loads the source URL from the
@@ -193,6 +204,7 @@ export const config = {
     "/login",
     "/signup",
     "/forgot-password",
+    "/auth/reset-password",
     "/activate-subscription",
   ],
 };

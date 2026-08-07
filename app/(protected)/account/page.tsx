@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AccountPageContent } from "@/components/account/account-page-content";
+import { isEmailOtpEnabledServer } from "@/lib/auth/email-otp-enabled";
 import { PATH_LOGIN } from "@/lib/auth/routes";
 import { userHasPasswordIdentity } from "@/lib/auth/password-identity";
 import { avatarUrlFromUser, initialsFromUser } from "@/lib/auth/user-display";
@@ -28,7 +29,8 @@ export default async function AccountPage() {
         lastName,
         avatarUrl,
         userInitials: initialsFromUser(user),
-        canChangePassword: userHasPasswordIdentity(user),
+        canChangePassword:
+          !isEmailOtpEnabledServer() && userHasPasswordIdentity(user),
       }}
     />
   );

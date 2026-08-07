@@ -1,10 +1,17 @@
+import { redirect } from "next/navigation";
 import { ResetPasswordClient } from "./reset-password-client";
+import { isEmailOtpEnabledServer } from "@/lib/auth/email-otp-enabled";
+import { PATH_LOGIN } from "@/lib/auth/routes";
 
 type ResetPasswordPageProps = {
   searchParams: Promise<{ token_hash?: string; type?: string }>;
 };
 
 export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
+  if (isEmailOtpEnabledServer()) {
+    redirect(PATH_LOGIN);
+  }
+
   const params = await searchParams;
   const hasRecoveryToken =
     params.type === "recovery" &&

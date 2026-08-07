@@ -15,11 +15,15 @@ import {
 } from "@/components/auth/auth-floating-field";
 import { AuthSessionLoadingScreen } from "@/components/auth/auth-session-loading-screen";
 import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
+import { EmailOtpAuthForm } from "@/components/auth/email-otp-auth-form";
+import { isEmailOtpEnabledClient } from "@/lib/auth/email-otp-public";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { signOutLocalSession } from "@/lib/auth/sign-out-local";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { SpinnerLabel } from "@/components/ui/spinner";
+
+const EMAIL_OTP_ENABLED = isEmailOtpEnabledClient();
 
 const STORAGE_REMEMBER = "finsepa_remember_me";
 
@@ -201,7 +205,8 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
     return null;
   }, [errorMessage, passwordLoginSuccess, resetSuccess]);
 
-  useAuthPreCardBanner(preCardBanner);
+  // OTP form owns the pre-card banner when enabled.
+  useAuthPreCardBanner(EMAIL_OTP_ENABLED ? null : preCardBanner);
 
   function persistRememberMe() {
     try {
@@ -292,6 +297,12 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
       <AuthSessionLoadingScreen
         showLogo={sessionGate === "resuming" || showProbeLogo}
       />
+    );
+  }
+
+  if (EMAIL_OTP_ENABLED) {
+    return (
+      <EmailOtpAuthForm intent="login" authNext={authNext} resetSuccess={resetSuccess} />
     );
   }
 
