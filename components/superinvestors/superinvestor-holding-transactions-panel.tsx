@@ -18,7 +18,7 @@ import {
 } from "@/components/screener/screener-table-scroll";
 import {
   formatSuperinvestorPortfolioWeightChange,
-  formatSuperinvestorTxPrice,
+  formatSuperinvestorSharesDelta,
   SuperinvestorTransactionActivityCell,
   superinvestorTxTdActivity,
   superinvestorTxTdNum,
@@ -111,7 +111,7 @@ function SuperinvestorHoldingTransactionsPanelInner({
                 <div className={panelHeaderGrid}>
                   <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Period</div>
                   <div className={cn("text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Recent Activity</div>
-                  <div className={cn("text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Avg closing price</div>
+                  <div className={cn("text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Shares</div>
                   <div className={cn("text-right", TABLE_END_ALIGNED_PAD_CLASS)}>% of change to portfolio</div>
                 </div>
               </div>
@@ -137,7 +137,7 @@ function SuperinvestorHoldingTransactionsPanelInner({
                       <SuperinvestorTransactionActivityCell tx={tx} />
                     </div>
                     <div className={cn(superinvestorTxTdNum, TABLE_END_ALIGNED_PAD_CLASS)}>
-                      {formatSuperinvestorTxPrice(tx.avgClosingPriceUsd)}
+                      {formatSuperinvestorSharesDelta(tx.sharesDelta)}
                     </div>
                     <div className={cn(superinvestorTxTdNum, TABLE_END_ALIGNED_PAD_CLASS)}>
                       {formatSuperinvestorPortfolioWeightChange(tx.portfolioWeightChangePct)}

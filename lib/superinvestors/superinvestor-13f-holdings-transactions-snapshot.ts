@@ -9,6 +9,10 @@ import {
   parseSuperinvestorTransactionsSnapshotData,
   type SuperinvestorTransactionsPayloadSlim,
 } from "@/lib/superinvestors/superinvestor-13f-transactions-slim";
+import {
+  traceSuperinvestorProfileSnapshotLatestRead,
+  traceSuperinvestorProfileSnapshotRead,
+} from "@/lib/superinvestors/superinvestor-readpath-trace";
 
 export { slimSuperinvestorProfileForSnapshot } from "@/lib/superinvestors/superinvestor-13f-snapshot-slim";
 
@@ -132,8 +136,23 @@ export async function readSuperinvestor13fProfileSnapshot(
   if (!accessionSegment || accessionSegment === "none") return null;
   if (!marketSnapshotReadEnabled()) return null;
 
+  traceSuperinvestorProfileSnapshotRead();
   const row = await readMarketSnapshotRow(superinvestor13fProfileSnapshotKey(cikPadded));
   if (!row || row.segment !== accessionSegment) return null;
+  return parseProfilePayload(row.data);
+}
+
+/**
+ * Current durable profile snapshot for a CIK — ignore accession segment.
+ * User SSR warm path: return immediately with no SEC head probe.
+ */
+export async function readSuperinvestor13fProfileSnapshotLatest(
+  cikPadded: string,
+): Promise<Superinvestor13fProfilePageData | null> {
+  if (!cikPadded.trim() || !marketSnapshotReadEnabled()) return null;
+  traceSuperinvestorProfileSnapshotLatestRead();
+  const row = await readMarketSnapshotRow(superinvestor13fProfileSnapshotKey(cikPadded));
+  if (!row) return null;
   return parseProfilePayload(row.data);
 }
 
@@ -187,6 +206,18 @@ export async function readSuperinvestorFullTransactionsSnapshotSlim(
   return payload;
 }
 
+/** Current durable full-tx snapshot for a CIK — ignore accession (user warm path, no SEC). */
+export async function readSuperinvestorFullTransactionsSnapshotLatestSlim(
+  cikPadded: string,
+): Promise<SuperinvestorTransactionsPayloadSlim | null> {
+  if (!cikPadded.trim() || !marketSnapshotReadEnabled()) return null;
+  const row = await readMarketSnapshotRow(superinvestor13fFullTransactionsSnapshotKey(cikPadded));
+  if (!row) return null;
+  const payload = row.data as SuperinvestorTransactionsPayloadSlim | null;
+  if (!payload?.quarters || !Array.isArray(payload.quarters)) return null;
+  return payload;
+}
+
 export async function readSuperinvestorFullTransactionsSnapshot(
   cikPadded: string,
   accessionSegment: string,
@@ -222,16 +253,14 @@ export async function upsertSuperinvestorFullTransactionsSnapshot(
   return { ok: true, bytes };
 }
 
-/** Drop persisted 13F profile + tx rows so the next load re-fetches SEC. */
-export async function deleteSuperinvestor13fSnapshotsForCik(cikPadded: string): Promise<boolean> {
-  const admin = getSupabaseAdminClient();
-  if (!admin || !cikPadded.trim()) return false;
-
-  const keys = [
-    superinvestor13fProfileSnapshotKey(cikPadded),
-    superinvestor13fHoldingsTxSnapshotKey(cikPadded),
-    superinvestor13fFullTransactionsSnapshotKey(cikPadded),
-  ];
-  const { error } = await admin.from("market_snapshot").delete().in("key", keys);
-  return !error;
+/**
+ * Intentionally a no-op.
+ * Existing snapshots must never be deleted before a successful replacement upsert.
+ * Cron/ops rebuilds replace atomically via upsert on the same key.
+ */
+export async function deleteSuperinvestor13fSnapshotsForCik(_cikPadded: string): Promise<boolean> {
+  console.warn(
+    "[superinvestor-13f] deleteSuperinvestor13fSnapshotsForCik ignored — snapshots are replaced only by successful upsert",
+  );
+  return false;
 }

@@ -314,7 +314,6 @@ export function AssetPortfolioHoldingsTab({
   const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, route, assetKind);
   const feesUsd = totalTradeFeesUsdForAsset(transactions, route, assetKind);
   const totalProfitUsd = retUsd + realizedUsd;
-  const totalProfitPct = holding.costBasis > 0 ? (totalProfitUsd / holding.costBasis) * 100 : 0;
 
   const sharesLabel = (() => {
     const num = new Intl.NumberFormat("en-US", {
@@ -380,7 +379,7 @@ export function AssetPortfolioHoldingsTab({
               <div className="grid grid-cols-2 gap-4 border-b border-dotted border-stroke pb-4">
                 <PositionStat label="Total profit">
                   <span className={cn("font-semibold tabular-nums", profitTone(totalProfitUsd))}>
-                    {formatSignedUsd(totalProfitUsd)} ({formatSignedPct(totalProfitPct)})
+                    {formatSignedUsd(totalProfitUsd)}
                   </span>
                 </PositionStat>
                 <PositionStat label="Capital gain">

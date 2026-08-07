@@ -8,6 +8,7 @@ import { secondaryOutlineButtonClassName } from "@/components/design-system";
 import { authAlertBannerClassName } from "@/components/auth/auth-form-ui";
 import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { Spinner } from "@/components/ui/spinner";
+import { TextShimmer } from "@/components/ui/text-shimmer";
 import { deriveAgentThreadTitle } from "@/lib/agents/agent-thread-title";
 import type { AgentThreadSummary } from "@/lib/agents/agent-thread-types";
 import { AGENT_HOME_NAV_EVENT } from "@/lib/agents/agent-home-nav";
@@ -36,19 +37,14 @@ function newId() {
 }
 
 function ThinkingLabel() {
-  const [step, setStep] = useState(0);
   const [elapsedSec, setElapsedSec] = useState(0);
 
   useEffect(() => {
-    const dotsId = window.setInterval(() => {
-      setStep((s) => (s + 1) % 4);
-    }, 400);
     const startedAt = Date.now();
     const clockId = window.setInterval(() => {
       setElapsedSec(Math.floor((Date.now() - startedAt) / 1000));
     }, 250);
     return () => {
-      window.clearInterval(dotsId);
       window.clearInterval(clockId);
     };
   }, []);
@@ -60,12 +56,9 @@ function ThinkingLabel() {
       aria-label={`Thinking, ${elapsedSec} seconds`}
     >
       <Spinner className="size-4 shrink-0 text-fg-muted" aria-hidden />
-      <span className="inline-flex">
+      <TextShimmer className="text-fg-muted" aria-hidden>
         Thinking
-        <span className="inline-block w-[1.25em] text-left" aria-hidden>
-          {".".repeat(step)}
-        </span>
-      </span>
+      </TextShimmer>
       <span className="tabular-nums" aria-hidden>
         {elapsedSec}s
       </span>

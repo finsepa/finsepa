@@ -8,6 +8,7 @@ import {
   cikPad10,
 } from "@/lib/superinvestors/superinvestor-13f-freshness";
 import {
+  readSuperinvestorFullTransactionsSnapshotLatestSlim,
   readSuperinvestorFullTransactionsSnapshotSlim,
   upsertSuperinvestorFullTransactionsSnapshot,
 } from "@/lib/superinvestors/superinvestor-13f-holdings-transactions-snapshot";
@@ -16,6 +17,7 @@ import {
   slimSuperinvestorTransactionsForApi,
   slimSuperinvestorTransactionsPayload,
 } from "@/lib/superinvestors/superinvestor-13f-transactions-slim";
+import { isSuperinvestorSecRebuildAllowed } from "@/lib/superinvestors/superinvestor-sec-rebuild-gate";
 import type { SuperinvestorTransactionsPayload } from "@/lib/superinvestors/types";
 
 export type SuperinvestorFullTransactionsLoadMeta = {
@@ -35,9 +37,19 @@ export function peekSuperinvestorFullTransactionsLoadMeta(
   return lastLoadMeta.get(cikPad10(cik)) ?? null;
 }
 
+function unavailablePayload(cikPadded: string): SuperinvestorTransactionsPayload {
+  return {
+    filerDisplayName: "Institutional investment manager",
+    cik: cikPadded,
+    quarters: [],
+    source: "unavailable",
+  };
+}
+
 /**
- * Durable full 13F transaction history (~85 filings). Warm path: read market_snapshot → return JSON.
- * Cold path: SEC rebuild → slim persist → return.
+ * Durable full 13F transaction history (~85 filings).
+ * User/API warm path: latest market_snapshot only — never SEC.
+ * Cron/ops (inside {@link withSuperinvestorSecRebuildAllowed}): head probe + rebuild + upsert.
  */
 export async function loadSuperinvestorFullTransactions(
   cik: string,
@@ -49,6 +61,32 @@ export async function loadSuperinvestorFullTransactions(
   let buildMs = 0;
   let persistMs = 0;
   let cache: SuperinvestorFullTransactionsLoadMeta["cache"] = "miss";
+
+  const allowSec = isSuperinvestorSecRebuildAllowed();
+
+  if (!allowSec) {
+    const readStarted = performance.now();
+    const cached = await readSuperinvestorFullTransactionsSnapshotLatestSlim(paddedCik);
+    readMs = performance.now() - readStarted;
+    if (cached) {
+      cache = "hit";
+      const totalMs = performance.now() - started;
+      const payloadBytes = JSON.stringify(cached).length;
+      lastLoadMeta.set(paddedCik, { cache, totalMs, readMs, buildMs, persistMs, payloadBytes });
+      return cached as unknown as SuperinvestorTransactionsPayload;
+    }
+    const unavailable = unavailablePayload(paddedCik);
+    const totalMs = performance.now() - started;
+    lastLoadMeta.set(paddedCik, {
+      cache: "miss",
+      totalMs,
+      readMs,
+      buildMs,
+      persistMs,
+      payloadBytes: JSON.stringify(unavailable).length,
+    });
+    return unavailable;
+  }
 
   const head = await getLatest13fFilingHeadCached(paddedCik);
   const accKey = thirteenFilingHeadCacheKey(head);
@@ -65,6 +103,15 @@ export async function loadSuperinvestorFullTransactions(
       return cached as unknown as SuperinvestorTransactionsPayload;
     }
     cache = "stale";
+  } else {
+    const latest = await readSuperinvestorFullTransactionsSnapshotLatestSlim(paddedCik);
+    if (latest) {
+      cache = "hit";
+      const totalMs = performance.now() - started;
+      const payloadBytes = JSON.stringify(latest).length;
+      lastLoadMeta.set(paddedCik, { cache, totalMs, readMs, buildMs, persistMs, payloadBytes });
+      return latest as unknown as SuperinvestorTransactionsPayload;
+    }
   }
 
   const buildStarted = performance.now();

@@ -7,8 +7,8 @@ import {
 } from "@/lib/superinvestors/superinvestor-holdings-page";
 import { clearSuperinvestor13fInMemoryCaches } from "@/lib/superinvestors/berkshire-13f";
 import {
-  deleteSuperinvestor13fSnapshotsForCik,
   hasSuperinvestor13fProfileSnapshot,
+  readSuperinvestor13fProfileSnapshotLatest,
 } from "@/lib/superinvestors/superinvestor-13f-holdings-transactions-snapshot";
 import {
   clearSuperinvestor13fDevMemoCaches,
@@ -23,6 +23,11 @@ import { SUPERINVESTOR_SLUG_CIK } from "@/lib/superinvestors/superinvestor-slug-
 import { writeSuperinvestor13fHealthFromCron } from "@/lib/superinvestors/superinvestor-13f-health";
 import { finalizeSuperinvestorProfileIngest } from "@/lib/superinvestors/superinvestor-13f-ingest";
 import { validateSuperinvestorProfilePage } from "@/lib/superinvestors/superinvestor-13f-validate";
+import { refreshSuperinvestorListSnapshot } from "@/lib/superinvestors/superinvestor-list-snapshot";
+import {
+  withSuperinvestorForceSnapshotRebuild,
+  withSuperinvestorSecRebuildAllowed,
+} from "@/lib/superinvestors/superinvestor-sec-rebuild-gate";
 
 export type SuperinvestorProfilePageData = Superinvestor13fProfilePageData & {
   /** Full book rows for allocation donut (server-side top-N). */
@@ -50,6 +55,8 @@ export type Superinvestor13fRefreshSummary = {
   durationMs: number;
   averageProcessingTimeMs: number;
   okCount: number;
+  listSnapshotOk?: boolean;
+  listRowCount?: number;
   results: Superinvestor13fRefreshResult[];
 };
 
@@ -66,16 +73,53 @@ function devMemoProfilePage<T>(slug: string, fn: () => Promise<T>): Promise<T> {
   if (hit && hit.exp > now) return hit.v as Promise<T>;
   const v = fn();
   g.__finsepaDevMemo.set(key, { exp: now + ttlMs, v });
-  void v.catch(() => {
-    const cur = g.__finsepaDevMemo?.get(key);
-    if (cur?.v === v) g.__finsepaDevMemo?.delete(key);
-  });
+  // Do not keep misses / rejections — cron may write the snapshot seconds later.
+  void v.then(
+    (value) => {
+      if (value == null) {
+        const cur = g.__finsepaDevMemo?.get(key);
+        if (cur?.v === v) g.__finsepaDevMemo?.delete(key);
+      }
+    },
+    () => {
+      const cur = g.__finsepaDevMemo?.get(key);
+      if (cur?.v === v) g.__finsepaDevMemo?.delete(key);
+    },
+  );
   return v;
 }
 
+function toProfilePageData(
+  page: Superinvestor13fProfilePageData,
+  holdingsPage: number,
+): SuperinvestorProfilePageData {
+  const paginated = paginateSuperinvestorHoldingsComparison(page.comparison, holdingsPage);
+  return {
+    comparison: paginated.comparison,
+    transactions: page.transactions,
+    allocationRows: paginated.allocationRows,
+    holdingsPage: paginated.page,
+    holdingsTotalPages: paginated.totalPages,
+  };
+}
+
+function toFullProfilePageData(page: Superinvestor13fProfilePageData): SuperinvestorProfilePageData {
+  const totalPages = Math.max(
+    1,
+    Math.ceil((page.comparison.positionCount || page.comparison.rows.length) / 50),
+  );
+  return {
+    comparison: page.comparison,
+    transactions: page.transactions,
+    allocationRows: page.comparison.rows,
+    holdingsPage: 1,
+    holdingsTotalPages: totalPages,
+  };
+}
+
 /**
- * Match the superinvestors list page: probe SEC for the latest 13F-HR and reload when
- * cached profile data is behind (Supabase snapshot / dev memo).
+ * Cron / ops only: probe SEC for a newer 13F-HR and rebuild when behind.
+ * Never deletes the live durable snapshot first — rebuild then upsert replaces atomically.
  */
 async function loadProfilePageMatchingLatestFilingHead(
   load: () => Promise<Superinvestor13fProfilePageData>,
@@ -84,18 +128,16 @@ async function loadProfilePageMatchingLatestFilingHead(
   const cikPadded = cikPad10(page.comparison.cik);
   if (!cikPadded) return page;
 
-  /**
-   * If SEC already failed (unavailable / fixture), don't wipe snapshots and re-hit EDGAR —
-   * that doubles hang time and keeps the skeleton up.
-   */
   if (page.comparison.source !== "edgar") return page;
 
   const head = await getLatest13fFilingHeadCached(cikPadded);
+  // SEC unavailable — keep the durable snapshot; never wipe on a failed probe.
+  if (!head) return page;
   if (filingHeadMatchesComparison(head, page.comparison)) return page;
 
+  // Keep serving the prior snapshot until the rebuild upserts successfully.
   clearSuperinvestor13fDevMemoCaches();
   clearSuperinvestor13fInMemoryCaches();
-  await deleteSuperinvestor13fSnapshotsForCik(cikPadded);
 
   page = await load();
   return page;
@@ -104,6 +146,8 @@ async function loadProfilePageMatchingLatestFilingHead(
 /**
  * Full unpaginated profile bundle for ingest / cron / force-refresh.
  * SSR UI must use {@link loadSuperinvestorProfilePageData} (paginated holdings).
+ *
+ * Cron/ops only — probes SEC for newer filings. Never deletes the live snapshot first.
  */
 export async function loadSuperinvestorProfilePageDataFull(
   slug: string,
@@ -111,26 +155,19 @@ export async function loadSuperinvestorProfilePageDataFull(
   const item = SUPERINVESTOR_REGISTRY.find((entry) => entry.slug === slug);
   if (!item) return null;
 
-  return devMemoProfilePage(`${slug}:full`, async () => {
-    const page = await loadProfilePageMatchingLatestFilingHead(() => item.loadProfilePage());
-    const totalPages = Math.max(
-      1,
-      Math.ceil((page.comparison.positionCount || page.comparison.rows.length) / 50),
-    );
-    return {
-      comparison: page.comparison,
-      transactions: page.transactions,
-      allocationRows: page.comparison.rows,
-      holdingsPage: 1,
-      holdingsTotalPages: totalPages,
-    };
-  });
+  return withSuperinvestorSecRebuildAllowed(() =>
+    devMemoProfilePage(`${slug}:full`, async () => {
+      const page = await loadProfilePageMatchingLatestFilingHead(() => item.loadProfilePage());
+      // Warm Activity full-tx while SEC rebuild is still allowed (await so gate covers the work).
+      await item.loadTransactions().catch(() => undefined);
+      return toFullProfilePageData(page);
+    }),
+  );
 }
 
 /**
- * One SEC snapshot pass per profile (comparison + transactions share filings via `getInstitutional13fSnapshots`).
- * Cached by latest 13F accession — repeat visits only probe SEC submissions JSON (~1 req/hr per filer).
- * Berkshire also persists the full page + holdings-scoped tx history in `market_snapshot` (incremental on new 13F).
+ * User SSR: durable profile snapshot only — never calls SEC.
+ * Missing snapshot → null (UI notFound); cron/ops own freshness + rebuilds.
  */
 export async function loadSuperinvestorProfilePageData(
   slug: string,
@@ -144,41 +181,39 @@ export async function loadSuperinvestorProfilePageData(
   );
 
   return devMemoProfilePage(`${slug}:p${holdingsPage}`, async () => {
-    const page = await loadProfilePageMatchingLatestFilingHead(() => item.loadProfilePage());
-    const paginated = paginateSuperinvestorHoldingsComparison(page.comparison, holdingsPage);
-    return {
-      comparison: paginated.comparison,
-      transactions: page.transactions,
-      allocationRows: paginated.allocationRows,
-      holdingsPage: paginated.page,
-      holdingsTotalPages: paginated.totalPages,
-    };
+    const cikPadded = cikPad10(SUPERINVESTOR_SLUG_CIK[slug] ?? "");
+    if (!cikPadded) return null;
+    const snap = await readSuperinvestor13fProfileSnapshotLatest(cikPadded);
+    if (!snap) return null;
+    return toProfilePageData(snap, holdingsPage);
   });
 }
 
-/** Bust dev memo + Supabase 13F snapshots, then reload from SEC (new filing detection). */
+/**
+ * Cron / authenticated ops: bust in-memory caches and reload from SEC.
+ * Does not delete the durable snapshot first — successful rebuild upserts atomically.
+ */
 export async function forceRefreshSuperinvestorProfilePage(
   slug: string,
 ): Promise<SuperinvestorProfilePageData | null> {
   const item = SUPERINVESTOR_REGISTRY.find((entry) => entry.slug === slug);
   if (!item) return null;
 
-  clearSuperinvestor13fDevMemoCaches();
-  clearSuperinvestor13fInMemoryCaches();
+  return withSuperinvestorForceSnapshotRebuild(async () => {
+    clearSuperinvestor13fDevMemoCaches();
+    clearSuperinvestor13fInMemoryCaches();
 
-  const cikPadded = cikPad10((await item.loadProfilePage()).comparison.cik);
-  if (cikPadded) await deleteSuperinvestor13fSnapshotsForCik(cikPadded);
-
-  clearSuperinvestor13fDevMemoCaches();
-  clearSuperinvestor13fInMemoryCaches();
-
-  // Full book — never paginate here (cron validates + persists the complete portfolio).
-  return loadSuperinvestorProfilePageDataFull(slug);
+    // Full book — never paginate here (cron validates + persists the complete portfolio).
+    const page = await item.loadProfilePage();
+    await item.loadTransactions().catch(() => undefined);
+    return toFullProfilePageData(page);
+  });
 }
 
 /**
  * Cron: ensure every manager has a durable snapshot; re-enrich unresolved tickers;
- * validate; write health blob. Soft-loads when snapshot exists (head probe still catches new filings).
+ * validate; write health blob; rebuild aggregate list snapshot.
+ * Soft-loads when snapshot exists (head probe still catches new filings).
  */
 export async function refreshAllSuperinvestor13fPortfolios(): Promise<Superinvestor13fRefreshSummary> {
   const started = Date.now();
@@ -264,6 +299,8 @@ export async function refreshAllSuperinvestor13fPortfolios(): Promise<Superinves
     }
   }
 
+  const listRefresh = await refreshSuperinvestorListSnapshot();
+
   const okTimes = results.filter((r) => r.ok && r.ingestMs != null).map((r) => r.ingestMs!);
   const averageProcessingTimeMs =
     okTimes.length > 0 ? Math.round(okTimes.reduce((a, b) => a + b, 0) / okTimes.length) : 0;
@@ -280,6 +317,8 @@ export async function refreshAllSuperinvestor13fPortfolios(): Promise<Superinves
     durationMs: Date.now() - started,
     averageProcessingTimeMs,
     okCount: results.filter((r) => r.ok).length,
+    listSnapshotOk: listRefresh.ok,
+    listRowCount: listRefresh.rowCount,
     results,
   };
 }

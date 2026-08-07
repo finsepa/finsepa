@@ -200,6 +200,9 @@ function HoldingsPerformanceBarChart({
               )}
             >
               {formatSignedUsd(hovered.unrealizedUsd)}
+              {hovered.totalProfitPct != null ? (
+                <span className="font-normal text-fg-muted"> · {formatSignedPct(hovered.totalProfitPct)}</span>
+              ) : null}
             </div>
             <div className="text-fg-muted">Realized</div>
             <div
@@ -218,9 +221,6 @@ function HoldingsPerformanceBarChart({
               )}
             >
               {formatSignedUsd(hovered.totalProfitUsd)}
-              {hovered.totalProfitPct != null ? (
-                <span className="font-normal text-fg-muted"> · {formatSignedPct(hovered.totalProfitPct)}</span>
-              ) : null}
             </div>
           </div>
         </div>,
@@ -406,7 +406,8 @@ function PortfolioHoldingsPerformanceChartInner({
       const assetKind: "stock" | "crypto" = isSupportedCryptoAssetSymbol(routeKey) ? "crypto" : "stock";
       const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, routeKey, assetKind);
       const totalProfitUsd = unrealizedUsd + realizedUsd;
-      const totalProfitPct = h.costBasis > 0 ? (totalProfitUsd / h.costBasis) * 100 : null;
+      // % is open-position only — don't divide lifetime (incl. realized) by remaining cost basis.
+      const totalProfitPct = h.costBasis > 0 ? (unrealizedUsd / h.costBasis) * 100 : null;
       return {
         h,
         unrealizedUsd,

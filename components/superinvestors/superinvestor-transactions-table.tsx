@@ -7,7 +7,7 @@ import type { SuperinvestorQuarterlyTransaction, SuperinvestorTransactionsPayloa
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
   SuperinvestorTransactionActivityCell,
-  formatSuperinvestorTxPrice,
+  formatSuperinvestorSharesDelta,
   formatSuperinvestorPortfolioWeightChange,
 } from "@/components/superinvestors/superinvestor-transaction-display";
 import { SegmentedControl } from "@/components/design-system";
@@ -56,7 +56,7 @@ const tdActivity =
 const tdNum =
   "whitespace-nowrap py-0 text-right align-middle font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg";
 
-/** Company | Recent activity | Avg closing price | % of change to portfolio. */
+/** Company | Recent activity | Shares | % of change to portfolio. */
 const rowGridFour =
   "grid w-full min-w-[800px] grid-cols-[minmax(180px,2.05fr)_minmax(140px,1.15fr)_minmax(96px,0.9fr)_minmax(120px,1.05fr)] gap-x-4";
 
@@ -182,10 +182,10 @@ function CompanyTickerCell({ companyName, ticker }: { companyName: string; ticke
   );
 }
 
-function MobilePricesCell({ tx }: { tx: SuperinvestorQuarterlyTransaction }) {
+function MobileSharesWeightCell({ tx }: { tx: SuperinvestorQuarterlyTransaction }) {
   return (
     <div className="flex flex-col items-end justify-center gap-1 text-right">
-      <span className={cn(tdNum, "block font-medium")}>{formatSuperinvestorTxPrice(tx.avgClosingPriceUsd)}</span>
+      <span className={cn(tdNum, "block font-medium")}>{formatSuperinvestorSharesDelta(tx.sharesDelta)}</span>
       <span className="text-[12px] font-normal leading-4 tabular-nums text-fg-muted">
         {formatSuperinvestorPortfolioWeightChange(tx.portfolioWeightChangePct)}
       </span>
@@ -244,7 +244,7 @@ function DesktopTransactionRow({ row }: { row: FlatTransactionRow }) {
       <div className={cn(tdActivity, TABLE_END_ALIGNED_PAD_CLASS)}>
         <SuperinvestorTransactionActivityCell tx={row.tx} />
       </div>
-      <div className={cn(tdNum, TABLE_END_ALIGNED_PAD_CLASS)}>{formatSuperinvestorTxPrice(row.tx.avgClosingPriceUsd)}</div>
+      <div className={cn(tdNum, TABLE_END_ALIGNED_PAD_CLASS)}>{formatSuperinvestorSharesDelta(row.tx.sharesDelta)}</div>
       <div className={cn(tdNum, TABLE_END_ALIGNED_PAD_CLASS)}>{formatSuperinvestorPortfolioWeightChange(row.tx.portfolioWeightChangePct)}</div>
     </TransactionRowShell>
   );
@@ -262,7 +262,7 @@ function MobileTransactionRow({ row }: { row: FlatTransactionRow }) {
         <SuperinvestorTransactionActivityCell tx={row.tx} />
       </div>
       <div className={TABLE_END_ALIGNED_PAD_CLASS}>
-        <MobilePricesCell tx={row.tx} />
+        <MobileSharesWeightCell tx={row.tx} />
       </div>
     </TransactionRowShell>
   );
@@ -363,7 +363,7 @@ export function SuperinvestorTransactionsTable({
                 <div className={cn(mobileRowGrid, "h-11 min-h-[44px] items-center bg-surface")}>
                   <div className={cn(thCompany, TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
                   <div className={thRight}>Recent Activity</div>
-                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>Price</div>
+                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>Shares</div>
                 </div>
               </div>
               <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
@@ -411,7 +411,7 @@ export function SuperinvestorTransactionsTable({
                 <div className={cn(headerGrid, "text-[14px] font-medium leading-5 text-fg-muted")}>
                   <div className={cn(thCompany, TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
                   <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>Recent Activity</div>
-                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>Avg closing price</div>
+                  <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>Shares</div>
                   <div className={cn(thRight, TABLE_END_ALIGNED_PAD_CLASS)}>% of change to portfolio</div>
                 </div>
               </div>

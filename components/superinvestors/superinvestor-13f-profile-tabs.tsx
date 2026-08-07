@@ -3,14 +3,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { UnderlineTabs, type UnderlineTabOption } from "@/components/screener/market-tabs";
 import { Berkshire13fComparisonTable } from "@/components/superinvestors/berkshire-13f-comparison-table";
+import { SuperinvestorPerformanceChart } from "@/components/superinvestors/superinvestor-performance-chart";
 import { SuperinvestorTransactionsTable } from "@/components/superinvestors/superinvestor-transactions-table";
+import { isSuperinvestorPerformanceEnabled } from "@/lib/superinvestors/superinvestor-performance-types";
 import type { Berkshire13fComparisonPayload, SuperinvestorTransactionsPayload } from "@/lib/superinvestors/types";
 
 const FULL_HISTORY_SEARCH_DEBOUNCE_MS = 500;
 
-type ProfileTab = "holdings" | "activity";
+type ProfileTab = "holdings" | "performance" | "activity";
 
-const TAB_OPTIONS: readonly UnderlineTabOption<ProfileTab>[] = [
+const BASE_TAB_OPTIONS: readonly UnderlineTabOption<ProfileTab>[] = [
   { value: "holdings", label: "Holdings" },
   { value: "activity", label: "Activity" },
 ];
@@ -44,8 +46,22 @@ export function Superinvestor13fProfileTabs({
   const [fullHistory, setFullHistory] = useState<SuperinvestorTransactionsPayload | null>(null);
   const [txHistoryLoading, setTxHistoryLoading] = useState(false);
   const fullHistoryFetchStartedRef = useRef(false);
+  const showPerformance = isSuperinvestorPerformanceEnabled(profileSlug);
+
+  const tabOptions = useMemo((): readonly UnderlineTabOption<ProfileTab>[] => {
+    if (!showPerformance) return BASE_TAB_OPTIONS;
+    return [
+      { value: "holdings", label: "Holdings" },
+      { value: "performance", label: "Performance" },
+      { value: "activity", label: "Activity" },
+    ];
+  }, [showPerformance]);
 
   const debouncedCompanySearch = useDebouncedValue(txCompanySearch, FULL_HISTORY_SEARCH_DEBOUNCE_MS);
+
+  useEffect(() => {
+    if (tab === "performance" && !showPerformance) setTab("holdings");
+  }, [tab, showPerformance]);
 
   useEffect(() => {
     setFullHistory(null);
@@ -103,7 +119,7 @@ export function Superinvestor13fProfileTabs({
   return (
     <div className="mt-5">
       <UnderlineTabs<ProfileTab>
-        tabs={TAB_OPTIONS}
+        tabs={tabOptions}
         active={tab}
         onChange={setTab}
         ariaLabel="Portfolio view"
@@ -111,23 +127,25 @@ export function Superinvestor13fProfileTabs({
       />
 
       {tab === "holdings" ? (
-          <>
-            {!data.hasPriorFiling && data.source !== "unavailable" ? (
-              <p className="mb-4 max-w-3xl text-sm text-fg-muted">
-                Only one 13F-HR filing appears in the SEC feed; change badges and prior columns are hidden until a
-                second filing is available.
-              </p>
-            ) : null}
-            <Berkshire13fComparisonTable
-              key={profileName}
-              rows={data.rows}
-              hasPriorFiling={data.hasPriorFiling}
-              transactions={holdingsTransactions}
-              onViewAllTransactions={handleViewAllTransactions}
-              holdingsPage={holdingsPage}
-              totalPages={holdingsTotalPages}
-            />
-          </>
+        <>
+          {!data.hasPriorFiling && data.source !== "unavailable" ? (
+            <p className="mb-4 max-w-3xl text-sm text-fg-muted">
+              Only one 13F-HR filing appears in the SEC feed; change badges and prior columns are hidden until a
+              second filing is available.
+            </p>
+          ) : null}
+          <Berkshire13fComparisonTable
+            key={profileName}
+            rows={data.rows}
+            hasPriorFiling={data.hasPriorFiling}
+            transactions={holdingsTransactions}
+            onViewAllTransactions={handleViewAllTransactions}
+            holdingsPage={holdingsPage}
+            totalPages={holdingsTotalPages}
+          />
+        </>
+      ) : tab === "performance" && showPerformance ? (
+        <SuperinvestorPerformanceChart profileSlug={profileSlug} />
       ) : (
         <SuperinvestorTransactionsTable
           data={activityData}

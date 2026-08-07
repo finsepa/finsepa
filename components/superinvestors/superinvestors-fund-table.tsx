@@ -2,7 +2,7 @@
 
 import { memo, useState } from "react";
 import Link from "next/link";
-import { UserRound } from "@/lib/icons";
+import { ArrowDown, ArrowUp, UserRound } from "@/lib/icons";
 import { format, isValid, parseISO } from "date-fns";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
@@ -102,14 +102,79 @@ function formatFilingDate(ymd: string | null): string {
   if (!ymd?.trim()) return "—";
   const d = parseISO(ymd.trim());
   if (!isValid(d)) return "—";
-  return format(d, "d MMM yyyy");
+  return format(d, "MMM d, yyyy");
 }
 
-function stocksLabel(count: number) {
-  return `${count.toLocaleString("en-US")} ${count === 1 ? "stock" : "stocks"}`;
+function stocksCountLabel(count: number) {
+  return count.toLocaleString("en-US");
+}
+
+type SuperinvestorsSortKey = "size" | "updated";
+
+function compareFundRows(
+  a: SuperinvestorsFundRowModel,
+  b: SuperinvestorsFundRowModel,
+  key: SuperinvestorsSortKey,
+  dir: "asc" | "desc",
+): number {
+  const mul = dir === "asc" ? 1 : -1;
+  if (key === "size") return (a.totalValueUsd - b.totalValueUsd) * mul;
+
+  const ad = a.filingDate?.trim() ?? "";
+  const bd = b.filingDate?.trim() ?? "";
+  if (!ad && !bd) return 0;
+  if (!ad) return 1;
+  if (!bd) return -1;
+  return ad.localeCompare(bd) * mul;
+}
+
+function FundSortHeader({
+  label,
+  sortKey,
+  activeKey,
+  dir,
+  onSort,
+}: {
+  label: string;
+  sortKey: SuperinvestorsSortKey;
+  activeKey: SuperinvestorsSortKey;
+  dir: "asc" | "desc";
+  onSort: (key: SuperinvestorsSortKey) => void;
+}) {
+  const active = activeKey === sortKey;
+  return (
+    <div className={numericHeaderClass}>
+      <button
+        type="button"
+        className="inline-flex w-full items-center justify-end gap-1 rounded text-[14px] font-medium leading-5 text-fg-muted hover:text-fg"
+        onClick={() => onSort(sortKey)}
+        aria-label={`Sort by ${label}`}
+      >
+        {label}
+        {active ?
+          dir === "desc" ?
+            <ArrowDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          : <ArrowUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        : null}
+      </button>
+    </div>
+  );
 }
 
 function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowModel[] }) {
+  const [sort, setSort] = useState<{ key: SuperinvestorsSortKey; dir: "asc" | "desc" }>({
+    key: "size",
+    dir: "desc",
+  });
+
+  const onSort = (key: SuperinvestorsSortKey) => {
+    setSort((s) =>
+      s.key === key ? { key, dir: s.dir === "desc" ? "asc" : "desc" } : { key, dir: "desc" },
+    );
+  };
+
+  const sortedRows = [...rows].sort((a, b) => compareFundRows(a, b, sort.key, sort.dir));
+
   return (
     <ScreenerTableScroll>
       <div
@@ -128,7 +193,13 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
             )}
           >
             <div className="min-w-0 text-left">Fund</div>
-            <div className={numericHeaderClass}>Last updated</div>
+            <FundSortHeader
+              label="Last updated"
+              sortKey="updated"
+              activeKey={sort.key}
+              dir={sort.dir}
+              onSort={onSort}
+            />
           </div>
           <div
             className={cn(
@@ -139,16 +210,28 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
             <div className="hidden sm:block" aria-hidden />
             {/* Span avatar + name columns so "Fund" lines up with the left edge of centered 40px avatars (48px track → 4px inset). */}
             <div className="col-span-2 col-start-2 self-center pl-1 text-left">Fund</div>
-            <div className={numericHeaderClass}>Size</div>
+            <FundSortHeader
+              label="Size"
+              sortKey="size"
+              activeKey={sort.key}
+              dir={sort.dir}
+              onSort={onSort}
+            />
             <div className={numericHeaderClass}>No. of stocks</div>
-            <div className={numericHeaderClass}>Last updated</div>
+            <FundSortHeader
+              label="Last updated"
+              sortKey="updated"
+              activeKey={sort.key}
+              dir={sort.dir}
+              onSort={onSort}
+            />
             <div className={numericHeaderClass}>Top 5 holdings</div>
           </div>
         </div>
         <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
       </div>
 
-      {rows.map((r, rowIdx) => (
+      {sortedRows.map((r, rowIdx) => (
         <div key={r.href} className={SCREENER_TABLE_DATA_ROW_CLASS}>
           <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
             {/* Mobile row */}
@@ -182,7 +265,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                     <div className={screenerTickerSublineClass}>
                       <span className="tabular-nums">{formatUsdCompact(r.totalValueUsd)}</span>
                       <span> · </span>
-                      <span className="tabular-nums">{stocksLabel(r.positionCount)}</span>
+                      <span className="tabular-nums">{stocksCountLabel(r.positionCount)}</span>
                     </div>
                   </div>
                 </Link>
@@ -224,9 +307,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
 
                 <div className={numericCellClass}>{formatUsdCompact(r.totalValueUsd)}</div>
 
-                <div className={numericCellClass}>
-                  {r.positionCount.toLocaleString("en-US")} {r.positionCount === 1 ? "Stock" : "Stocks"}
-                </div>
+                <div className={numericCellClass}>{stocksCountLabel(r.positionCount)}</div>
 
                 <div className={numericCellClass}>{formatFilingDate(r.filingDate)}</div>
 
@@ -253,7 +334,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
               </Link>
             </div>
           </div>
-          {rowIdx < rows.length - 1 ? (
+          {rowIdx < sortedRows.length - 1 ? (
             <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
           ) : null}
         </div>

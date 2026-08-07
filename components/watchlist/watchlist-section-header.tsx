@@ -19,6 +19,11 @@ import {
   appModalDangerButtonClass,
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
+import {
+  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
+  SCREENER_TABLE_STROKE_INSET_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
+} from "@/components/screener/screener-table-scroll";
 import { cn } from "@/lib/utils";
 import { deleteMenuIconAnimation, renameMenuIconAnimation } from "@/lib/lottie/watchlist-menu-animations";
 import type { WatchlistDropTarget } from "@/lib/watchlist/watchlist-drag";
@@ -241,7 +246,10 @@ export function WatchlistSectionHeader({
         </div>
       ) : variant === "card" ? (
         <div className={dragSurfaceClassName} {...dragHandlers}>
-          <div className="px-4 py-2">{headerContent}</div>
+          <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+            <div className={cn("py-2", TABLE_START_ALIGNED_PAD_CLASS)}>{headerContent}</div>
+          </div>
+          <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
         </div>
       ) : (
         <tr className={dragSurfaceClassName} {...dragHandlers}>

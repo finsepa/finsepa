@@ -3,7 +3,7 @@
 Living guide for the Finsepa Superinvestors 13F data engine.  
 UI/UX is treated as **final** — this doc covers data, caching, ingest, APIs, and ops only.
 
-**Related:** [Phase 0 audit](./SUPERINVESTORS-PHASE-0-SYSTEM-AUDIT.md) · [Phase 1 report](./SUPERINVESTORS-PHASE-1-REPORT.md) · [Phase 3 parity](./SUPERINVESTORS-PHASE-3-REPORT.md)
+**Related:** [Phase 0 audit](./SUPERINVESTORS-PHASE-0-SYSTEM-AUDIT.md) · [Phase 1 report](./SUPERINVESTORS-PHASE-1-REPORT.md) · [Phase 3 parity](./SUPERINVESTORS-PHASE-3-REPORT.md) · [Performance tab](./SUPERINVESTORS-PERFORMANCE.md)
 
 ---
 
@@ -49,7 +49,7 @@ flowchart TB
 
 ---
 
-## 3. Registry (18 managers)
+## 3. Registry (29 managers)
 
 | Slug | Manager | CIK |
 |------|---------|-----|
@@ -71,6 +71,17 @@ flowchart TB
 | `first-eagle` | First Eagle | `0001325447` |
 | `chris-hohn` | Chris Hohn | `0001647251` |
 | `jeremy-grantham` | Jeremy Grantham | `0001352662` |
+| `seth-klarman` | Seth Klarman | `0001061768` |
+| `carl-icahn` | Carl Icahn | `0000921669` |
+| `david-tepper` | David Tepper | `0001656456` |
+| `david-einhorn` | David Einhorn (DME Capital) | `0001489933` |
+| `stanley-druckenmiller` | Stanley Druckenmiller | `0001536411` |
+| `bill-gates` | Bill Gates | `0001166559` |
+| `tiger-global` | Chase Coleman | `0001167483` |
+| `chuck-akre` | Chuck Akre | `0001112520` |
+| `mohnish-pabrai` | Mohnish Pabrai | `0001549575` |
+| `tom-gayner` | Tom Gayner | `0001096343` |
+| `guy-spier` | Guy Spier (Aquamarine Zurich AG) | `0001953324` |
 
 - Registry loaders: `lib/superinvestors/superinvestor-registry.ts`
 - Slug → CIK (no `server-only`): `lib/superinvestors/superinvestor-slug-cik.ts`
@@ -277,6 +288,6 @@ npm run superinvestors:metrics
 
 ## 15. Confidence baseline (post–Phase 3)
 
-- **18/18** profile snapshots match independent SEC equity re-parse (accession, count, value, weights, top holdings).
-- Automated gate: `npm run superinvestors:phase3-validate` → expect `PASS=18 FAIL=0`.
+- Profile snapshots should match independent SEC equity re-parse (accession, count, value, weights, top holdings) after force-refresh for new slugs.
+- Automated gate: `npm run superinvestors:phase3-validate` → expect `PASS=<registry size> FAIL=0` once snapshots are warm.
 - Re-run after any parse or key-version change and after mass force-refresh.

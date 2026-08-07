@@ -122,15 +122,15 @@ function pnlBreakdownTooltipNearPointer(clientX: number, clientY: number): { lef
 
 function PortfolioPnlBreakdownTooltip({
   totalUsd,
-  totalPct,
   unrealizedUsd,
+  unrealizedPct,
   realizedUsd,
 }: {
-  /** Unrealized + realized (matches tooltip Total line). */
+  /** Unrealized + realized (tooltip Total line only). */
   totalUsd: number;
-  /** Total return % vs current position cost basis (same as asset detail “Total profit”). */
-  totalPct: number;
+  /** Open-position P&L — primary cell (matches avg price → mark). */
   unrealizedUsd: number;
+  unrealizedPct: number;
   realizedUsd: number;
 }) {
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -212,18 +212,18 @@ function PortfolioPnlBreakdownTooltip({
         <div
           className={cn(
             "font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums",
-            totalUsd >= 0 ? "text-up" : "text-down",
+            unrealizedUsd >= 0 ? "text-up" : "text-down",
           )}
         >
-          {formatSignedUsd(totalUsd)}
+          {formatSignedUsd(unrealizedUsd)}
         </div>
         <div
           className={cn(
             "text-[12px] font-medium leading-4 tabular-nums",
-            totalPct >= 0 ? "text-up" : "text-down",
+            unrealizedPct >= 0 ? "text-up" : "text-down",
           )}
         >
-          {formatSignedPct(totalPct)}
+          {formatSignedPct(unrealizedPct)}
         </div>
       </div>
       {mounted && tooltip ? createPortal(tooltip, document.body) : null}
@@ -277,13 +277,12 @@ type HoldingsSortKey = "holdings" | "pnl" | "weight";
 type HoldingTableRow = {
   holding: PortfolioHolding;
   retUsd: number;
-  totalPnlUsd: number;
   weightPct: number;
 };
 
 function compareHoldingTableRows(a: HoldingTableRow, b: HoldingTableRow, key: HoldingsSortKey, dir: number): number {
   if (key === "holdings") return (a.holding.currentValue - b.holding.currentValue) * dir;
-  if (key === "pnl") return (a.totalPnlUsd - b.totalPnlUsd) * dir;
+  if (key === "pnl") return (a.retUsd - b.retUsd) * dir;
   return (a.weightPct - b.weightPct) * dir;
 }
 
@@ -411,12 +410,11 @@ function PortfolioHoldingsTableInner({
       const cryptoKey = cryptoRouteBase(h.symbol);
       const assetKind: "stock" | "crypto" =
         isSupportedCryptoAssetSymbol(cryptoKey) ? "crypto" : "stock";
-      const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, cryptoKey, assetKind);
       const weightRaw = allocationDenomUsd > 0 ? (h.currentValue / allocationDenomUsd) * 100 : 0;
       const weightPct = Math.min(100, Math.max(0, weightRaw));
-      return { holding: h, retUsd, totalPnlUsd: retUsd + realizedUsd, weightPct };
+      return { holding: h, retUsd, weightPct };
     });
-  }, [holdings, transactions, allocationDenomUsd]);
+  }, [holdings, allocationDenomUsd]);
 
   const sorted = useMemo(() => {
     const dir = sort.dir === "desc" ? -1 : 1;
@@ -434,13 +432,8 @@ function PortfolioHoldingsTableInner({
       <div className="sm:hidden">
         <div>
           {sorted.map(({ holding: h, retUsd }) => {
-            const cryptoKey = cryptoRouteBase(h.symbol);
-            const assetKind: "stock" | "crypto" =
-              isSupportedCryptoAssetSymbol(cryptoKey) ? "crypto" : "stock";
-            const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, cryptoKey, assetKind);
             const unrealizedUsd = retUsd;
-            const totalUsd = unrealizedUsd + realizedUsd;
-            const totalPct = h.costBasis > 0 ? (totalUsd / h.costBasis) * 100 : 0;
+            const unrealizedPct = h.costBasis > 0 ? (unrealizedUsd / h.costBasis) * 100 : 0;
             const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: assetLinkTab });
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
@@ -466,10 +459,10 @@ function PortfolioHoldingsTableInner({
                 <div
                   className={cn(
                     "mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums",
-                    totalUsd >= 0 ? "text-up" : "text-down",
+                    unrealizedUsd >= 0 ? "text-up" : "text-down",
                   )}
                 >
-                  {formatSignedUsd(totalUsd)} ({formatSignedPct(totalPct)})
+                  {formatSignedUsd(unrealizedUsd)} ({formatSignedPct(unrealizedPct)})
                 </div>
               </div>
             );
@@ -578,8 +571,8 @@ function PortfolioHoldingsTableInner({
                 isSupportedCryptoAssetSymbol(cryptoKey) ? "crypto" : "stock";
               const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, cryptoKey, assetKind);
               const unrealizedUsd = retUsd;
+              const unrealizedPct = h.costBasis > 0 ? (unrealizedUsd / h.costBasis) * 100 : 0;
               const totalUsd = unrealizedUsd + realizedUsd;
-              const totalPct = h.costBasis > 0 ? (totalUsd / h.costBasis) * 100 : 0;
               const assetHref = portfolioHoldingAssetHref(h.symbol, { tab: assetLinkTab });
               const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
               const caption = portfolioAssetSymbolCaption(h.symbol);
@@ -682,8 +675,8 @@ function PortfolioHoldingsTableInner({
                         >
                           <PortfolioPnlBreakdownTooltip
                             totalUsd={totalUsd}
-                            totalPct={totalPct}
                             unrealizedUsd={unrealizedUsd}
+                            unrealizedPct={unrealizedPct}
                             realizedUsd={realizedUsd}
                           />
                         </div>

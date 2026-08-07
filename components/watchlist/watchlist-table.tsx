@@ -6,13 +6,16 @@ import { useState } from "react";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
-  SCREENER_TABLE_BODY_DIVIDE_CLASS,
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
+  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
   SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
+  TABLE_END_ALIGNED_PAD_CLASS,
+  TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
 import { WatchlistHeaderActions } from "@/components/watchlist/watchlist-header-actions";
@@ -107,48 +110,76 @@ function WatchlistTableHeader() {
   return (
     <div
       className={cn(
-        "grid min-h-[44px] items-center px-4 py-0 text-[14px] font-medium leading-5 text-fg-muted max-md:hidden",
-        watchlistRowGridClass,
         SCREENER_TABLE_HEADER_STICKY_CLASS,
+        SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+        SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+        "max-md:hidden md:border-b-0",
       )}
     >
-      <div className="text-left">Asset</div>
-      <div className="min-w-0 w-full text-right">
-        <span className="sm:hidden">Price</span>
-        <span className="hidden sm:inline">Price</span>
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div
+          className={cn(
+            "grid min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted",
+            watchlistRowGridClass,
+          )}
+        >
+          <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Asset</div>
+          <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Price</div>
+          <div className={cn("hidden min-w-0 w-full text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+            1D %
+          </div>
+          <div className={cn("hidden min-w-0 w-full text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+            1M %
+          </div>
+          <div className={cn("hidden min-w-0 w-full text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+            YTD %
+          </div>
+          <div className={cn("hidden min-w-0 w-full text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+            M.Cap
+          </div>
+          <div className={cn("hidden min-w-0 w-full text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+            PE
+          </div>
+          <div className={TABLE_END_ALIGNED_PAD_CLASS} aria-label="Remove from watchlist" />
+        </div>
       </div>
-      <div className="hidden min-w-0 w-full text-right sm:block">1D %</div>
-      <div className="hidden min-w-0 w-full text-right sm:block">1M %</div>
-      <div className="hidden min-w-0 w-full text-right sm:block">YTD %</div>
-      <div className="hidden min-w-0 w-full text-right sm:block">M.Cap</div>
-      <div className="hidden min-w-0 w-full text-right sm:block">PE</div>
-      <div aria-label="Remove from watchlist" />
+      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
     </div>
   );
 }
 
-function WatchlistTableSkeletonRow() {
+function WatchlistTableSkeletonRow({ showDivider }: { showDivider: boolean }) {
   return (
-    <div className={cn("grid min-h-[60px] items-center bg-surface px-4", watchlistRowGridClass)}>
-      <div className="flex min-w-0 items-center gap-3 pr-4 max-md:gap-2">
-        <div className="h-8 w-8 shrink-0 animate-pulse rounded-lg bg-skeleton" />
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="h-4 w-32 animate-pulse rounded bg-skeleton" />
-          <div className="h-3 w-14 animate-pulse rounded bg-skeleton" />
+    <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+        <div className={cn("grid min-h-[60px] items-center bg-surface", watchlistRowGridClass)}>
+          <div
+            className={cn(
+              "flex min-w-0 items-center gap-3 pr-4 max-md:gap-2",
+              TABLE_START_ALIGNED_PAD_CLASS,
+            )}
+          >
+            <div className="h-8 w-8 shrink-0 animate-pulse rounded-lg bg-skeleton" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-4 w-32 animate-pulse rounded bg-skeleton" />
+              <div className="h-3 w-14 animate-pulse rounded bg-skeleton" />
+            </div>
+          </div>
+          <div className={cn("space-y-1.5 text-right sm:space-y-0", TABLE_END_ALIGNED_PAD_CLASS)}>
+            <div className="ml-auto h-4 w-14 animate-pulse rounded bg-skeleton sm:mx-0 sm:ml-auto sm:w-12" />
+            <div className="ml-auto h-3 w-10 animate-pulse rounded bg-skeleton sm:hidden" />
+          </div>
+          {Array.from({ length: 5 }).map((_, j) => (
+            <div key={j} className={cn("hidden text-right sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
+              <div className="ml-auto h-4 w-12 animate-pulse rounded bg-skeleton" />
+            </div>
+          ))}
+          <div className={cn("flex justify-center", TABLE_END_ALIGNED_PAD_CLASS)}>
+            <div className="h-5 w-5 max-w-[1.25rem] animate-pulse rounded bg-skeleton" />
+          </div>
         </div>
       </div>
-      <div className="space-y-1.5 text-right sm:space-y-0">
-        <div className="ml-auto h-4 w-14 animate-pulse rounded bg-skeleton sm:mx-0 sm:ml-auto sm:w-12" />
-        <div className="ml-auto h-3 w-10 animate-pulse rounded bg-skeleton sm:hidden" />
-      </div>
-      {Array.from({ length: 5 }).map((_, j) => (
-        <div key={j} className="hidden text-right sm:block">
-          <div className="ml-auto h-4 w-12 animate-pulse rounded bg-skeleton" />
-        </div>
-      ))}
-      <div className="flex justify-center">
-        <div className="h-5 w-5 max-w-[1.25rem] animate-pulse rounded bg-skeleton" />
-      </div>
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );
 }
@@ -158,11 +189,9 @@ function WatchlistTableSkeleton() {
     <ScreenerTableScroll>
       <div className="bg-surface">
         <WatchlistTableHeader />
-        <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
-          {[0, 1, 2].map((i) => (
-            <WatchlistTableSkeletonRow key={i} />
-          ))}
-        </div>
+        {[0, 1, 2].map((i) => (
+          <WatchlistTableSkeletonRow key={i} showDivider={i < 2} />
+        ))}
       </div>
     </ScreenerTableScroll>
   );
@@ -238,7 +267,12 @@ function WatchlistTableRow({
             )}
             aria-label={`Open ${row.name} (${row.symbol})`}
           >
-            <div className="flex min-w-0 items-center justify-start gap-3 pr-4 text-left max-md:gap-2">
+            <div
+              className={cn(
+                "flex min-w-0 items-center justify-start gap-3 pr-4 text-left max-md:gap-2",
+                TABLE_START_ALIGNED_PAD_CLASS,
+              )}
+            >
               <CompanyLogo name={row.name} logoUrl={row.logoUrl ?? ""} symbol={row.symbol} />
               <div className="min-w-0">
                 <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
@@ -250,36 +284,53 @@ function WatchlistTableRow({
               </div>
             </div>
 
-            <div className="block sm:hidden">
+            <div className={cn("block sm:hidden", TABLE_END_ALIGNED_PAD_CLASS)}>
               <PriceAndChangeCell price={row.price} change1D={row.pct1d} kind={row.kind} />
             </div>
 
             <div
-              className={`hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums sm:block ${
-                row.price == null || !Number.isFinite(row.price) ? "text-fg-muted" : "text-fg"
-              }`}
+              className={cn(
+                "hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums sm:block",
+                TABLE_END_ALIGNED_PAD_CLASS,
+                row.price == null || !Number.isFinite(row.price) ? "text-fg-muted" : "text-fg",
+              )}
             >
               {formatPrice(row.price, row.kind)}
             </div>
 
-            <div className="hidden min-w-0 w-full sm:block">
+            <div className={cn("hidden min-w-0 w-full sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
               <ChangeCell value={row.pct1d} />
             </div>
-            <div className="hidden min-w-0 w-full sm:block">
+            <div className={cn("hidden min-w-0 w-full sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
               <ChangeCell value={row.pct1m} />
             </div>
-            <div className="hidden min-w-0 w-full sm:block">
+            <div className={cn("hidden min-w-0 w-full sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>
               <ChangeCell value={row.ytd} />
             </div>
-            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block">
+            <div
+              className={cn(
+                "hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block",
+                TABLE_END_ALIGNED_PAD_CLASS,
+              )}
+            >
               {row.mcapDisplay}
             </div>
-            <div className="hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block">
+            <div
+              className={cn(
+                "hidden min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg sm:block",
+                TABLE_END_ALIGNED_PAD_CLASS,
+              )}
+            >
               {row.peDisplay}
             </div>
           </Link>
 
-          <div className="flex justify-center opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover:opacity-100 md:has-[:focus-visible]:opacity-100">
+          <div
+            className={cn(
+              "flex justify-center opacity-100 transition-opacity duration-150 md:opacity-0 md:group-hover:opacity-100 md:has-[:focus-visible]:opacity-100",
+              TABLE_END_ALIGNED_PAD_CLASS,
+            )}
+          >
             <WatchlistRowRemoveButton
               className="flex items-center justify-center"
               storageKey={row.storageKey}
@@ -289,9 +340,7 @@ function WatchlistTableRow({
           </div>
         </div>
       </div>
-      {showDivider ? (
-        <div className={cn(SCREENER_TABLE_STROKE_INSET_CLASS, "md:hidden")} aria-hidden />
-      ) : null}
+      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );
 }
@@ -307,6 +356,7 @@ function UserSectionGroup({
   onRenameSection,
   onDeleteSection,
   onReorderSection,
+  showTrailingSectionStroke,
 }: {
   label: string;
   sectionId: string;
@@ -318,6 +368,8 @@ function UserSectionGroup({
   onRenameSection: (sectionId: string, name: string) => void;
   onDeleteSection: (sectionId: string) => void;
   onReorderSection: (fromSectionIndex: number, toSectionIndex: number) => void;
+  /** Inset rule after this section when another section follows. */
+  showTrailingSectionStroke: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -337,17 +389,21 @@ function UserSectionGroup({
       />
 
       {!collapsed &&
-        rows.map((row, i) => (
-          <WatchlistTableRow
-            key={row.entryId}
-            row={row}
-            globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
-            sectionId={sectionId}
-            onRemove={onRemove}
-            onMoveItem={onMoveItem}
-            showDivider={i < rows.length - 1}
-          />
-        ))}
+        rows.map((row, i) => {
+          const isLastInSection = i === rows.length - 1;
+          const showDivider = !isLastInSection || showTrailingSectionStroke;
+          return (
+            <WatchlistTableRow
+              key={row.entryId}
+              row={row}
+              globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
+              sectionId={sectionId}
+              onRemove={onRemove}
+              onMoveItem={onMoveItem}
+              showDivider={showDivider}
+            />
+          );
+        })}
     </>
   );
 }
@@ -375,7 +431,7 @@ export function WatchlistTable() {
     storageHydrated,
     watchedUnion,
   } = useWatchlist();
-  const { items, loading, ready, error } = useWatchlistEnrichedItems({ enabled: true });
+  const { items, ready, error } = useWatchlistEnrichedItems({ enabled: true });
 
   const tableGroups = partitionEnrichedItemsBySections(
     items,
@@ -387,7 +443,6 @@ export function WatchlistTable() {
   const hasUsableRows = watched.size > 0 && items.length > 0;
   const empty = storageHydrated && watched.size === 0 && !error;
   const showBlockingSkeleton = storageHydrated && watched.size > 0 && !hasUsableRows && !error && !ready;
-  const refreshing = loading && hasUsableRows;
 
   return (
     <div className="flex min-w-0 flex-col gap-5 max-md:gap-0 sm:gap-5">
@@ -403,11 +458,6 @@ export function WatchlistTable() {
           onSwitch={switchWatchlist}
           storageHydrated={storageHydrated}
         />
-        {refreshing ? (
-          <span className="shrink-0 text-[12px] font-medium text-fg-subtle" aria-live="polite">
-            Updating…
-          </span>
-        ) : null}
       </div>
 
       {!storageHydrated ? <WatchlistTableSkeleton /> : null}
@@ -428,8 +478,10 @@ export function WatchlistTable() {
         <ScreenerTableScroll>
           <div className="bg-surface">
             <WatchlistTableHeader />
-            <div className={SCREENER_TABLE_BODY_DIVIDE_CLASS}>
-              {tableGroups.unsectioned.map((row, i) => (
+            {tableGroups.unsectioned.map((row, i) => {
+              const isLastUnsectioned = i === tableGroups.unsectioned.length - 1;
+              const showDivider = !isLastUnsectioned || tableGroups.sections.length > 0;
+              return (
                 <WatchlistTableRow
                   key={row.entryId}
                   row={row}
@@ -437,25 +489,26 @@ export function WatchlistTable() {
                   sectionId={null}
                   onRemove={removeFromActiveWatchlist}
                   onMoveItem={moveActiveWatchlistItem}
-                  showDivider={i < tableGroups.unsectioned.length - 1}
+                  showDivider={showDivider}
                 />
-              ))}
-              {tableGroups.sections.map(({ section, rows }, sectionIndex) => (
-                <UserSectionGroup
-                  key={section.id}
-                  sectionId={section.id}
-                  sectionIndex={sectionIndex}
-                  label={section.name}
-                  rows={rows}
-                  watchedTickers={watchedTickers}
-                  onRemove={removeFromActiveWatchlist}
-                  onMoveItem={moveActiveWatchlistItem}
-                  onRenameSection={renameActiveSection}
-                  onDeleteSection={deleteActiveSection}
-                  onReorderSection={reorderActiveSection}
-                />
-              ))}
-            </div>
+              );
+            })}
+            {tableGroups.sections.map(({ section, rows }, sectionIndex) => (
+              <UserSectionGroup
+                key={section.id}
+                sectionId={section.id}
+                sectionIndex={sectionIndex}
+                label={section.name}
+                rows={rows}
+                watchedTickers={watchedTickers}
+                onRemove={removeFromActiveWatchlist}
+                onMoveItem={moveActiveWatchlistItem}
+                onRenameSection={renameActiveSection}
+                onDeleteSection={deleteActiveSection}
+                onReorderSection={reorderActiveSection}
+                showTrailingSectionStroke={sectionIndex < tableGroups.sections.length - 1}
+              />
+            ))}
           </div>
         </ScreenerTableScroll>
       ) : null}

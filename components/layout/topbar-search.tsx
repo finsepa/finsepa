@@ -33,8 +33,8 @@ const SEARCH_INPUT_COLLAPSED_PL_PX =
   SEARCH_ICON_INSET_PX + SEARCH_ICON_SIZE_PX + SEARCH_ICON_GAP_PX;
 /** Active: icon animates out — text aligns with shell `pl-3`. */
 const SEARCH_INPUT_OPEN_PL_PX = SEARCH_ICON_INSET_PX;
-/** Collapsed: reserve the trailing shortcut chip (`right-3` + 28px control). */
-const SEARCH_SHORTCUT_RESERVE_PX = 44;
+/** Open: reserve the trailing close control (`right-3` + 28px). */
+const SEARCH_CLOSE_RESERVE_PX = 40;
 
 export function TopbarSearch() {
   const [open, setOpen] = useState(false);
@@ -174,10 +174,7 @@ export function TopbarSearch() {
           style={{
             ...motionStyle,
             paddingLeft: open ? SEARCH_INPUT_OPEN_PL_PX : SEARCH_INPUT_COLLAPSED_PL_PX,
-            paddingRight: open ? 40 : SEARCH_SHORTCUT_RESERVE_PX,
-            clipPath: open
-              ? undefined
-              : `inset(-1px ${SEARCH_SHORTCUT_RESERVE_PX}px -1px 0)`,
+            paddingRight: open ? SEARCH_CLOSE_RESERVE_PX : SEARCH_ICON_INSET_PX,
           }}
           autoComplete="off"
           autoCorrect="off"
@@ -201,40 +198,27 @@ export function TopbarSearch() {
           />
         ) : null}
 
-        <div className="pointer-events-none absolute right-3 top-1/2 z-[3] flex h-7 w-7 -translate-y-1/2 items-center justify-center">
-          <button
-            type="button"
-            data-topbar-search-close
-            tabIndex={open ? 0 : -1}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              close();
-            }}
-            className={cn(
-              "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-fg-muted",
-              "transition-opacity motion-reduce:transition-none",
-              "hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10",
-              open ? "opacity-100" : "opacity-0",
-            )}
-            style={motionStyle}
-            aria-label="Close search"
-            aria-hidden={!open}
-          >
-            <X className="h-4 w-4" strokeWidth={2} aria-hidden />
-          </button>
-          <kbd
-            className={cn(
-              "hidden rounded border border-stroke bg-surface px-1.5 py-0.5 font-sans text-[10px] font-medium text-fg-subtle md:inline-flex",
-              "transition-opacity motion-reduce:transition-none",
-              open ? "opacity-0" : "opacity-100",
-            )}
-            style={motionStyle}
-            aria-hidden={open}
-          >
-            S
-          </kbd>
-        </div>
+        {open ? (
+          <div className="pointer-events-none absolute right-3 top-1/2 z-[3] flex h-7 w-7 -translate-y-1/2 items-center justify-center">
+            <button
+              type="button"
+              data-topbar-search-close
+              tabIndex={0}
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                close();
+              }}
+              className={cn(
+                "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-fg-muted",
+                "hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10",
+              )}
+              aria-label="Close search"
+            >
+              <X className="h-4 w-4" strokeWidth={2} aria-hidden />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <TopbarDropdownPortal open={open} anchorRef={anchorRef} align="leading">

@@ -219,14 +219,15 @@ export function NotificationsPanelModal({
             headerActions={
               inSettings ? null : (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => void clearAll()}
-                    disabled={!hasItems}
-                    className={cn(panelHeaderActionButtonClass, "px-2.5 text-[13px] font-medium")}
-                  >
-                    Clear all
-                  </button>
+                  {hasItems ? (
+                    <button
+                      type="button"
+                      onClick={() => void clearAll()}
+                      className={cn(panelHeaderActionButtonClass, "px-2.5 text-[13px] font-medium")}
+                    >
+                      Clear all
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     aria-label="Notification settings"

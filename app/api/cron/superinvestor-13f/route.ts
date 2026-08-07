@@ -11,6 +11,10 @@ import { finalizeSuperinvestorProfileIngest } from "@/lib/superinvestors/superin
 import { validateSuperinvestorProfilePage } from "@/lib/superinvestors/superinvestor-13f-validate";
 import { hasSuperinvestor13fProfileSnapshot } from "@/lib/superinvestors/superinvestor-13f-holdings-transactions-snapshot";
 import { cikPad10 } from "@/lib/superinvestors/superinvestor-13f-freshness";
+import { refreshSuperinvestorListSnapshot } from "@/lib/superinvestors/superinvestor-list-snapshot";
+import { rebuildSuperinvestorPerformanceSeries } from "@/lib/superinvestors/superinvestor-performance-series";
+import { isSuperinvestorPerformanceEnabled } from "@/lib/superinvestors/superinvestor-performance-types";
+import { withSuperinvestorSecRebuildAllowed } from "@/lib/superinvestors/superinvestor-sec-rebuild-gate";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -92,21 +96,34 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "unknown_slug", slug }, { status: 404 });
       }
       const one = await refreshOneSlug(slug, enrichOnly);
+      const listRefresh = await refreshSuperinvestorListSnapshot();
+      let performanceOk: boolean | undefined;
+      if (isSuperinvestorPerformanceEnabled(slug) && !enrichOnly) {
+        const perf = await withSuperinvestorSecRebuildAllowed(() =>
+          rebuildSuperinvestorPerformanceSeries(slug),
+        );
+        performanceOk = Boolean(perf);
+      }
       return NextResponse.json({
         at: new Date().toISOString(),
         mode: enrichOnly ? "enrich" : "single",
         okCount: one.ok ? 1 : 0,
+        listSnapshotOk: listRefresh.ok,
+        listRowCount: listRefresh.rowCount,
+        performanceOk,
         results: [one],
       });
     }
 
-    const { at, durationMs, averageProcessingTimeMs, okCount, results } =
+    const { at, durationMs, averageProcessingTimeMs, okCount, listSnapshotOk, listRowCount, results } =
       await refreshAllSuperinvestor13fPortfolios();
     return NextResponse.json({
       at,
       durationMs,
       averageProcessingTimeMs,
       okCount,
+      listSnapshotOk,
+      listRowCount,
       results,
     });
   } catch (e) {

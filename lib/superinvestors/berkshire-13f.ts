@@ -12,6 +12,7 @@ import {
 } from "@/lib/superinvestors/superinvestor-13f-freshness";
 import {
   readSuperinvestor13fProfileSnapshot,
+  readSuperinvestor13fProfileSnapshotLatest,
   readSuperinvestorHoldingsTransactionsSnapshot,
   readSuperinvestorHoldingsTransactionsSnapshotRow,
   upsertSuperinvestorHoldingsTransactionsSnapshot,
@@ -19,6 +20,10 @@ import {
 import { finalizeSuperinvestorProfileIngest } from "@/lib/superinvestors/superinvestor-13f-ingest";
 import { loadSuperinvestorFullTransactions } from "@/lib/superinvestors/superinvestor-13f-full-transactions";
 import { filingHeadMatchesComparison } from "@/lib/superinvestors/superinvestor-13f-cache-utils";
+import {
+  isSuperinvestorForceSnapshotRebuild,
+  isSuperinvestorSecRebuildAllowed,
+} from "@/lib/superinvestors/superinvestor-sec-rebuild-gate";
 import {
   filterSuperinvestorTransactionsToCurrentHoldings,
   prependSuperinvestorQuarterGroups,
@@ -172,6 +177,39 @@ export const TCI_FUND_MANAGEMENT_LTD_CIK = "0001647251";
 
 /** Grantham, Mayo, Van Otterloo & Co. LLC (GMO; Jeremy Grantham). */
 export const GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK = "0001352662";
+
+/** Baupost Group LLC/MA (Seth Klarman). */
+export const BAUPOST_GROUP_LLC_CIK = "0001061768";
+
+/** Carl C. Icahn (Icahn Capital). */
+export const ICAHN_CARL_C_CIK = "0000921669";
+
+/** Appaloosa LP (David Tepper). */
+export const APPALOOSA_LP_CIK = "0001656456";
+
+/** DME Capital Management, LP (David Einhorn — current Greenlight 13F filer). */
+export const DME_CAPITAL_MANAGEMENT_LP_CIK = "0001489933";
+
+/** Duquesne Family Office LLC (Stanley Druckenmiller). */
+export const DUQUESNE_FAMILY_OFFICE_LLC_CIK = "0001536411";
+
+/** Gates Foundation Trust (Bill Gates). */
+export const GATES_FOUNDATION_TRUST_CIK = "0001166559";
+
+/** Tiger Global Management LLC (Chase Coleman). */
+export const TIGER_GLOBAL_MANAGEMENT_LLC_CIK = "0001167483";
+
+/** Akre Capital Management LLC (Chuck Akre). */
+export const AKRE_CAPITAL_MANAGEMENT_LLC_CIK = "0001112520";
+
+/** Dalal Street, LLC (Mohnish Pabrai). */
+export const DALAL_STREET_LLC_CIK = "0001549575";
+
+/** Markel Group Inc. (Tom Gayner). */
+export const MARKEL_GROUP_INC_CIK = "0001096343";
+
+/** Aquamarine Zurich AG (Guy Spier — current Aquamarine Capital 13F filer). */
+export const AQUAMARINE_ZURICH_AG_CIK = "0001953324";
 
 /** Optional display tickers for common 13F CUSIPs (SEC filings do not include symbols). */
 const KNOWN_CUSIP_TICKER: Record<string, string> = {
@@ -559,10 +597,15 @@ function inferSec13fValueFieldUnit(rows: readonly { rawValue: number; shares: nu
     if (pxIfThousands > maxPxIfThousands) maxPxIfThousands = pxIfThousands;
     const dollarsPlausible = pxIfDollars >= 0.05 && pxIfDollars <= 800_000;
     const thousandsPlausible = pxIfThousands >= 0.05 && pxIfThousands <= 800_000;
-    if (dollarsPlausible && pxIfThousands > pxIfDollars * 200) {
-      dollarsVotes++;
-    } else if (thousandsPlausible && pxIfDollars < 0.5) {
+    /**
+     * Prefer SEC-default thousands when both units look plausible.
+     * Do not treat `pxIfThousands ≈ 1000 × pxIfDollars` as evidence of dollars — that ratio
+     * is exactly what a correct thousands-denominated filing produces.
+     */
+    if (thousandsPlausible && !dollarsPlausible) {
       thousandsVotes++;
+    } else if (dollarsPlausible && !thousandsPlausible) {
+      dollarsVotes++;
     } else if (thousandsPlausible) {
       thousandsVotes++;
     } else if (dollarsPlausible) {
@@ -1279,6 +1322,9 @@ function buildComparisonRows(
 /** Default profile + holdings tab: ~5 years, one lightweight SEC pass. */
 export const SUPERINVESTOR_TRANSACTIONS_STANDARD_QUARTER_PAIRS = 20;
 
+/** Performance chart target window (calendar years). */
+export const SUPERINVESTOR_PERFORMANCE_LOOKBACK_YEARS = 5;
+
 /** Match deep history when user searches a company (e.g. BAC since Q2 2007). */
 const SUPERINVESTOR_TRANSACTIONS_HISTORY_START_YEAR = 2007;
 
@@ -1293,6 +1339,20 @@ function superinvestorTransactionsQuarterPairsLimit(): number {
 
 function superinvestorStandardFilingCount(): number {
   return SUPERINVESTOR_TRANSACTIONS_STANDARD_QUARTER_PAIRS + 1;
+}
+
+/**
+ * Extra filings beyond N quarters so 13F-HR/A duplicates still leave ≥ lookback years
+ * of unique report dates after dedupe.
+ */
+function superinvestorPerformanceFilingCount(): number {
+  // ~5y of unique quarters + small amendment buffer (keep SEC walk short).
+  const quarters = SUPERINVESTOR_PERFORMANCE_LOOKBACK_YEARS * 4 + 1;
+  const amendmentBuffer = 4;
+  return Math.min(
+    superinvestorTransactionsFilingCount(),
+    quarters + amendmentBuffer,
+  );
 }
 
 function superinvestorTransactionsFilingCount(): number {
@@ -1687,6 +1747,7 @@ async function fetchInstitutional13fSnapshotsUncached(
       if (!got) break;
       filerName = got.filerName;
       const agg = aggregateInfoRowsByCusip(parseInfoTableRows(got.xml));
+      // Stop on empty parse — continuing through every ordinal made cold SEC loads much slower.
       if (agg.length === 0) break;
       snapshots.push({
         reportDate: got.reportDate,
@@ -1785,18 +1846,36 @@ function createSuperinvestorProfilePageLoader(
   },
 ): () => Promise<Superinvestor13fProfilePageData> {
   const paddedCik = cikPad10(cik);
+  const snapshotOnly = async (): Promise<Superinvestor13fProfilePageData> => {
+    const latest = await readSuperinvestor13fProfileSnapshotLatest(paddedCik);
+    if (latest) return latest;
+    return {
+      comparison: fallbacks.comparisonFallback(),
+      transactions: fallbacks.transactionsFallback(),
+    };
+  };
   const uncached = async (): Promise<Superinvestor13fProfilePageData> => {
     const head = await getLatest13fFilingHeadCached(paddedCik);
     const accKey = thirteenFilingHeadCacheKey(head);
 
     /** Same path as Berkshire — avoid re-pulling ~20 SEC infotables on every cold visit. */
-    const profileCached = await readSuperinvestor13fProfileSnapshot(paddedCik, accKey);
-    if (profileCached && filingHeadMatchesComparison(head, profileCached.comparison)) {
-      return profileCached;
+    if (!isSuperinvestorForceSnapshotRebuild()) {
+      const profileCached = await readSuperinvestor13fProfileSnapshot(paddedCik, accKey);
+      if (profileCached && filingHeadMatchesComparison(head, profileCached.comparison)) {
+        return profileCached;
+      }
+    }
+
+    // Keep serving the durable snapshot when SEC head/infotable is unavailable.
+    if (!head || accKey === "none") {
+      const latest = await readSuperinvestor13fProfileSnapshotLatest(paddedCik);
+      if (latest) return latest;
     }
 
     const got = await fetchInstitutional13fSnapshotsUncached(paddedCik, superinvestorStandardFilingCount());
     if (!got) {
+      const latest = await readSuperinvestor13fProfileSnapshotLatest(paddedCik);
+      if (latest) return latest;
       return {
         comparison: fallbacks.comparisonFallback(),
         transactions: fallbacks.transactionsFallback(),
@@ -1825,9 +1904,14 @@ function createSuperinvestorProfilePageLoader(
   };
 
   return () =>
-    devMemoAsync(`13f:profile-page-v2:${paddedCik}`, () =>
-      withAccessionKeyed13fCache("superinvestor-13f-profile-page-v11-no-options", paddedCik, uncached),
-    );
+    devMemoAsync(`13f:profile-page-v2:${paddedCik}`, () => {
+      if (!isSuperinvestorSecRebuildAllowed()) return snapshotOnly();
+      return withAccessionKeyed13fCache(
+        "superinvestor-13f-profile-page-v11-no-options",
+        paddedCik,
+        uncached,
+      );
+    });
 }
 
 async function fetchInstitutionalTransactionsUncached(cik: string): Promise<SuperinvestorTransactionsPayload | null> {
@@ -2271,15 +2355,42 @@ async function fetchBerkshireHoldingsScopedTransactionsUncached(): Promise<Super
 
 async function fetchBerkshireProfilePageUncached(): Promise<Superinvestor13fProfilePageData> {
   const paddedCik = cikPad10(BERKSHIRE_CIK);
+
+  if (!isSuperinvestorSecRebuildAllowed()) {
+    const latest = await readSuperinvestor13fProfileSnapshotLatest(paddedCik);
+    if (latest) return latest;
+    const j = berkshireFallback as { filerDisplayName: string; cik: string };
+    return {
+      comparison: loadFixtureComparisonPayload(),
+      transactions: loadFixtureTransactionsPayload(
+        j.filerDisplayName,
+        j.cik,
+        fixtureCurrentAggregated(),
+        BERKSHIRE_FIXTURE_CURRENT_REPORT_DATE,
+      ),
+    };
+  }
+
   const head = await getLatest13fFilingHeadCached(paddedCik);
   const accKey = thirteenFilingHeadCacheKey(head);
 
-  const profileCached = await readSuperinvestor13fProfileSnapshot(paddedCik, accKey);
-  if (profileCached && filingHeadMatchesComparison(head, profileCached.comparison)) {
-    return profileCached;
+  if (!isSuperinvestorForceSnapshotRebuild()) {
+    const profileCached = await readSuperinvestor13fProfileSnapshot(paddedCik, accKey);
+    if (profileCached && filingHeadMatchesComparison(head, profileCached.comparison)) {
+      return profileCached;
+    }
+  }
+
+  if (!head || accKey === "none") {
+    const latest = await readSuperinvestor13fProfileSnapshotLatest(paddedCik);
+    if (latest) return latest;
   }
 
   const comparison = await fetchBerkshireComparisonUncached();
+  if (comparison.source !== "edgar") {
+    const latest = await readSuperinvestor13fProfileSnapshotLatest(paddedCik);
+    if (latest) return latest;
+  }
   const transactions = await loadBerkshireHoldingsScopedTransactionsForComparison(comparison, accKey);
   const pageRaw = { comparison, transactions };
   const finalized = await finalizeSuperinvestorProfileIngest(pageRaw);
@@ -2338,6 +2449,41 @@ function loadInstitutionalQuarterlyTransactions(
   fetchUncached: () => Promise<SuperinvestorTransactionsPayload>,
 ): Promise<SuperinvestorTransactionsPayload> {
   return loadSuperinvestorFullTransactions(cik, fetchUncached);
+}
+
+/** Shared holdings / comparison / tx / profile loaders for plain institutional 13F filers. */
+function createInstitutionalFilerBundle(
+  cik: string,
+  filerDisplayName: string,
+  memoKey: string,
+): {
+  getHoldings: () => Promise<InstitutionalHoldingsPayload>;
+  getHoldingsComparison: () => Promise<Berkshire13fComparisonPayload>;
+  getQuarterlyTransactions: () => Promise<SuperinvestorTransactionsPayload>;
+  getProfilePage: () => Promise<Superinvestor13fProfilePageData>;
+} {
+  const fetchHoldingsUncached = async (): Promise<InstitutionalHoldingsPayload> =>
+    (await fetchInstitutionalHoldingsUncached(cik)) ?? unavailableInstitutionalPayload(cik, filerDisplayName);
+  const fetchComparisonUncached = async (): Promise<Berkshire13fComparisonPayload> =>
+    (await fetchInstitutionalComparisonUncached(cik)) ?? unavailableComparisonPayload(cik, filerDisplayName);
+  const fetchTransactionsUncached = async (): Promise<SuperinvestorTransactionsPayload> =>
+    fetchInstitutionalTransactionsOrUnavailable(cik, filerDisplayName);
+
+  return {
+    getHoldings: () =>
+      devMemoAsync(`13f:${memoKey}:holdings`, () =>
+        withAccessionKeyed13fCache("superinvestor-13f-holdings-v8-no-options", cik, fetchHoldingsUncached),
+      ),
+    getHoldingsComparison: () =>
+      devMemoAsync(`13f:${memoKey}:comparison`, () =>
+        withAccessionKeyed13fCache("superinvestor-13f-comparison-v10-no-options", cik, fetchComparisonUncached),
+      ),
+    getQuarterlyTransactions: () => loadInstitutionalQuarterlyTransactions(cik, fetchTransactionsUncached),
+    getProfilePage: createSuperinvestorProfilePageLoader(cik, {
+      comparisonFallback: () => unavailableComparisonPayload(cik, filerDisplayName),
+      transactionsFallback: () => unavailableTransactionsPayload(cik, filerDisplayName),
+    }),
+  };
 }
 
 async function fetchScionHoldingsUncached(): Promise<InstitutionalHoldingsPayload> {
@@ -2617,13 +2763,14 @@ async function fetchGmoTransactionsUncached(): Promise<SuperinvestorTransactions
 }
 
 export const getBerkshireProfilePage = () =>
-  devMemoAsync(`13f:profile-page:${BERKSHIRE_CIK}`, () =>
-    withAccessionKeyed13fCache(
+  devMemoAsync(`13f:profile-page:${BERKSHIRE_CIK}`, () => {
+    if (!isSuperinvestorSecRebuildAllowed()) return fetchBerkshireProfilePageUncached();
+    return withAccessionKeyed13fCache(
       "superinvestor-13f-profile-page-v14-berkshire-no-options",
       BERKSHIRE_CIK,
       fetchBerkshireProfilePageUncached,
-    ),
-  );
+    );
+  });
 
 export const getPershingSquareProfilePage = createSuperinvestorProfilePageLoader(PERSHING_SQUARE_CIK, {
   comparisonFallback: loadPershingFixtureComparisonPayload,
@@ -2750,52 +2897,95 @@ export const getGmoProfilePage = createSuperinvestorProfilePageLoader(GRANTHAM_M
     unavailableTransactionsPayload(GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK, "Grantham, Mayo, Van Otterloo & Co. LLC"),
 });
 
+const baupostFiler = createInstitutionalFilerBundle(BAUPOST_GROUP_LLC_CIK, "BAUPOST GROUP LLC/MA", "baupost");
+export const getBaupostHoldings = baupostFiler.getHoldings;
+export const getBaupostHoldingsComparison = baupostFiler.getHoldingsComparison;
+export const getBaupostQuarterlyTransactions = baupostFiler.getQuarterlyTransactions;
+export const getBaupostProfilePage = baupostFiler.getProfilePage;
 
+const icahnFiler = createInstitutionalFilerBundle(ICAHN_CARL_C_CIK, "ICAHN CARL C", "icahn");
+export const getIcahnHoldings = icahnFiler.getHoldings;
+export const getIcahnHoldingsComparison = icahnFiler.getHoldingsComparison;
+export const getIcahnQuarterlyTransactions = icahnFiler.getQuarterlyTransactions;
+export const getIcahnProfilePage = icahnFiler.getProfilePage;
 
+const appaloosaFiler = createInstitutionalFilerBundle(APPALOOSA_LP_CIK, "Appaloosa LP", "appaloosa");
+export const getAppaloosaHoldings = appaloosaFiler.getHoldings;
+export const getAppaloosaHoldingsComparison = appaloosaFiler.getHoldingsComparison;
+export const getAppaloosaQuarterlyTransactions = appaloosaFiler.getQuarterlyTransactions;
+export const getAppaloosaProfilePage = appaloosaFiler.getProfilePage;
 
+const dmeCapitalFiler = createInstitutionalFilerBundle(
+  DME_CAPITAL_MANAGEMENT_LP_CIK,
+  "DME Capital Management, LP",
+  "dme-capital",
+);
+export const getDmeCapitalHoldings = dmeCapitalFiler.getHoldings;
+export const getDmeCapitalHoldingsComparison = dmeCapitalFiler.getHoldingsComparison;
+export const getDmeCapitalQuarterlyTransactions = dmeCapitalFiler.getQuarterlyTransactions;
+export const getDmeCapitalProfilePage = dmeCapitalFiler.getProfilePage;
 
+const duquesneFiler = createInstitutionalFilerBundle(
+  DUQUESNE_FAMILY_OFFICE_LLC_CIK,
+  "Duquesne Family Office LLC",
+  "duquesne",
+);
+export const getDuquesneHoldings = duquesneFiler.getHoldings;
+export const getDuquesneHoldingsComparison = duquesneFiler.getHoldingsComparison;
+export const getDuquesneQuarterlyTransactions = duquesneFiler.getQuarterlyTransactions;
+export const getDuquesneProfilePage = duquesneFiler.getProfilePage;
 
+const gatesTrustFiler = createInstitutionalFilerBundle(
+  GATES_FOUNDATION_TRUST_CIK,
+  "Gates Foundation Trust",
+  "gates-trust",
+);
+export const getGatesTrustHoldings = gatesTrustFiler.getHoldings;
+export const getGatesTrustHoldingsComparison = gatesTrustFiler.getHoldingsComparison;
+export const getGatesTrustQuarterlyTransactions = gatesTrustFiler.getQuarterlyTransactions;
+export const getGatesTrustProfilePage = gatesTrustFiler.getProfilePage;
 
+const tigerGlobalFiler = createInstitutionalFilerBundle(
+  TIGER_GLOBAL_MANAGEMENT_LLC_CIK,
+  "Tiger Global Management LLC",
+  "tiger-global",
+);
+export const getTigerGlobalHoldings = tigerGlobalFiler.getHoldings;
+export const getTigerGlobalHoldingsComparison = tigerGlobalFiler.getHoldingsComparison;
+export const getTigerGlobalQuarterlyTransactions = tigerGlobalFiler.getQuarterlyTransactions;
+export const getTigerGlobalProfilePage = tigerGlobalFiler.getProfilePage;
 
+const akreFiler = createInstitutionalFilerBundle(
+  AKRE_CAPITAL_MANAGEMENT_LLC_CIK,
+  "Akre Capital Management LLC",
+  "akre",
+);
+export const getAkreHoldings = akreFiler.getHoldings;
+export const getAkreHoldingsComparison = akreFiler.getHoldingsComparison;
+export const getAkreQuarterlyTransactions = akreFiler.getQuarterlyTransactions;
+export const getAkreProfilePage = akreFiler.getProfilePage;
 
+const dalalStreetFiler = createInstitutionalFilerBundle(DALAL_STREET_LLC_CIK, "Dalal Street, LLC", "dalal-street");
+export const getDalalStreetHoldings = dalalStreetFiler.getHoldings;
+export const getDalalStreetHoldingsComparison = dalalStreetFiler.getHoldingsComparison;
+export const getDalalStreetQuarterlyTransactions = dalalStreetFiler.getQuarterlyTransactions;
+export const getDalalStreetProfilePage = dalalStreetFiler.getProfilePage;
 
+const markelFiler = createInstitutionalFilerBundle(MARKEL_GROUP_INC_CIK, "Markel Group Inc.", "markel");
+export const getMarkelHoldings = markelFiler.getHoldings;
+export const getMarkelHoldingsComparison = markelFiler.getHoldingsComparison;
+export const getMarkelQuarterlyTransactions = markelFiler.getQuarterlyTransactions;
+export const getMarkelProfilePage = markelFiler.getProfilePage;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+const aquamarineFiler = createInstitutionalFilerBundle(
+  AQUAMARINE_ZURICH_AG_CIK,
+  "Aquamarine Zurich AG",
+  "aquamarine",
+);
+export const getAquamarineHoldings = aquamarineFiler.getHoldings;
+export const getAquamarineHoldingsComparison = aquamarineFiler.getHoldingsComparison;
+export const getAquamarineQuarterlyTransactions = aquamarineFiler.getQuarterlyTransactions;
+export const getAquamarineProfilePage = aquamarineFiler.getProfilePage;
 
 /** In development, skip `unstable_cache` so layout/component edits and SEC responses are not masked by a warm cache. */
 export async function getBerkshireHoldings() {
@@ -3086,4 +3276,100 @@ export async function getGmoHoldingsComparison() {
 
 export async function getGmoQuarterlyTransactions() {
   return loadInstitutionalQuarterlyTransactions(GRANTHAM_MAYO_VAN_OTTERLOO_LLC_CIK, fetchGmoTransactionsUncached);
+}
+
+/** Absolute 13F books for performance MTM (oldest → newest). */
+export type SuperinvestorPerformanceBook = {
+  reportDate: string;
+  filingDate: string | null;
+  accession: string | null;
+  positions: { ticker: string; shares: number; issuer: string }[];
+};
+
+/**
+ * Performance-only SEC walk: skip empty/unreadable filings and pace requests so a
+ * transient miss does not abort the whole lookback (profile path still early-exits).
+ */
+async function fetchPerformance13fSnapshots(
+  cik: string,
+  maxFilings: number,
+): Promise<Institutional13fSnapshotsResult | null> {
+  const ua = getSecEdgarUserAgent();
+  const cikPadded = cikPad10(cik);
+  try {
+    const snapshots: FilingSnapshot[] = [];
+    let filerName = "";
+    const limit = Math.max(1, Math.min(maxFilings, superinvestorTransactionsFilingCount()));
+    for (let ordinal = 0; ordinal < limit; ordinal++) {
+      if (ordinal > 0) {
+        await new Promise((r) => setTimeout(r, 120));
+      }
+      const got = await fetchNth13fInfotableXml(cikPadded, ua, ordinal);
+      if (!got) break;
+      filerName = got.filerName;
+      const agg = aggregateInfoRowsByCusip(parseInfoTableRows(got.xml));
+      if (agg.length === 0) continue;
+      snapshots.push({
+        reportDate: got.reportDate,
+        filingDate: got.filingDate,
+        accession: got.accession,
+        holdings: agg,
+      });
+      // Enough unique quarters for the lookback — stop early.
+      if (dedupeFilingSnapshotsByReportDate(snapshots).length >= SUPERINVESTOR_PERFORMANCE_LOOKBACK_YEARS * 4 + 1) {
+        break;
+      }
+    }
+    if (snapshots.length === 0) return null;
+    return { filerDisplayName: filerName || "Institutional investment manager", snapshots };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Load ≥{@link SUPERINVESTOR_PERFORMANCE_LOOKBACK_YEARS} of 13F absolute holdings
+ * with resolved tickers for performance charting.
+ * Snapshots are newest-first from SEC; returned books are oldest → newest.
+ *
+ * Uses a dedicated SEC fetch (not {@link getInstitutional13fSnapshots}) so a Performance
+ * warm does not inflate concurrent profile/transaction snapshot coalescing.
+ */
+export async function loadSuperinvestorPerformanceBooks(
+  cik: string,
+): Promise<SuperinvestorPerformanceBook[]> {
+  const cikPadded = cikPad10(cik);
+  if (!cikPadded) return [];
+
+  const got = await fetchPerformance13fSnapshots(cikPadded, superinvestorPerformanceFilingCount());
+  if (!got?.snapshots.length) return [];
+
+  const deduped = dedupeFilingSnapshotsByReportDate(got.snapshots);
+  const books: SuperinvestorPerformanceBook[] = [];
+
+  for (const snap of [...deduped].reverse()) {
+    const reportDate = snap.reportDate?.trim();
+    if (!reportDate) continue;
+    const positions: SuperinvestorPerformanceBook["positions"] = [];
+    for (const h of snap.holdings) {
+      if (h.shares == null || !Number.isFinite(h.shares) || h.shares <= 0) continue;
+      const ticker = tickerFor13fRow(h.cusip, h.issuer, h.title);
+      if (!ticker) continue;
+      positions.push({ ticker: ticker.toUpperCase(), shares: h.shares, issuer: h.issuer });
+    }
+    if (positions.length === 0) continue;
+    books.push({
+      reportDate,
+      filingDate: snap.filingDate,
+      accession: snap.accession,
+      positions,
+    });
+  }
+
+  return books;
+}
+
+/** @deprecated Prefer {@link loadSuperinvestorPerformanceBooks}. */
+export async function loadBerkshirePerformanceBooks(): Promise<SuperinvestorPerformanceBook[]> {
+  return loadSuperinvestorPerformanceBooks(BERKSHIRE_CIK);
 }

@@ -23,24 +23,15 @@ export const superinvestorTxTdNum =
 export const superinvestorTxRowGridThree =
   "grid w-full min-w-[520px] grid-cols-[minmax(140px,1.15fr)_minmax(96px,0.9fr)_minmax(120px,1.05fr)] gap-x-4";
 
-const tickerSublineClass = "text-[12px] font-normal leading-4 tabular-nums text-fg-muted";
-
-function formatSharesDeltaLine(n: number | null): string | null {
-  if (n == null || n === 0 || !Number.isFinite(n)) return null;
+/** Signed share delta for the Shares column (header already says “Shares”). */
+export function formatSuperinvestorSharesDelta(n: number | null): string {
+  if (n == null || n === 0 || !Number.isFinite(n)) return "—";
   const sign = n < 0 ? "-" : "+";
   const abs = Math.abs(n);
-  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(1)}B shares`;
-  if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M shares`;
-  if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(1)}K shares`;
-  return `${sign}${abs.toLocaleString("en-US")} shares`;
-}
-
-function activityLines(tx: SuperinvestorQuarterlyTransaction): { line1: string; line2: string | null } {
-  const shares = formatSharesDeltaLine(tx.sharesDelta);
-  return {
-    line1: superinvestorTransactionActivityHeadline(tx.kind, tx.sharesChangePct, tx.sharesDelta),
-    line2: shares,
-  };
+  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(1)}K`;
+  return `${sign}${abs.toLocaleString("en-US")}`;
 }
 
 function activityTextColor(kind: SuperinvestorQuarterlyTransactionKind): string {
@@ -70,22 +61,24 @@ export function formatSuperinvestorPortfolioWeightChange(pct: number | null): st
   return portfolioWeightFmt.format(Math.abs(pct));
 }
 
+/** Action + % only (share delta lives in the Shares column). */
 export function SuperinvestorTransactionActivityCell({ tx }: { tx: SuperinvestorQuarterlyTransaction }) {
-  const { line1, line2 } = activityLines(tx);
+  const line1 = superinvestorTransactionActivityHeadline(tx.kind, tx.sharesChangePct, tx.sharesDelta);
   const color = activityTextColor(tx.kind);
 
   return (
-    <div className="flex flex-col items-end gap-0.5">
-      <span className={cn("text-[14px] font-semibold leading-5 tabular-nums", color)}>{line1}</span>
-      {line2 ? <span className={tickerSublineClass}>{line2}</span> : null}
-    </div>
+    <span className={cn("text-[14px] font-semibold leading-5 tabular-nums", color)}>{line1}</span>
   );
 }
 
-export function SuperinvestorTransactionPriceCells({ tx }: { tx: SuperinvestorQuarterlyTransaction }) {
+export function SuperinvestorTransactionSharesAndWeightCells({
+  tx,
+}: {
+  tx: SuperinvestorQuarterlyTransaction;
+}) {
   return (
     <>
-      <div className={superinvestorTxTdNum}>{formatSuperinvestorTxPrice(tx.avgClosingPriceUsd)}</div>
+      <div className={superinvestorTxTdNum}>{formatSuperinvestorSharesDelta(tx.sharesDelta)}</div>
       <div className={superinvestorTxTdNum}>
         {formatSuperinvestorPortfolioWeightChange(tx.portfolioWeightChangePct)}
       </div>

@@ -40,6 +40,17 @@ const MANAGERS = [
   { slug: "first-eagle", name: "First Eagle", cik: "0001325447", dataroma: "FE" },
   { slug: "chris-hohn", name: "Chris Hohn", cik: "0001647251", dataroma: "tci" },
   { slug: "jeremy-grantham", name: "Jeremy Grantham", cik: "0001352662", dataroma: null },
+  { slug: "seth-klarman", name: "Seth Klarman", cik: "0001061768", dataroma: null },
+  { slug: "carl-icahn", name: "Carl Icahn", cik: "0000921669", dataroma: null },
+  { slug: "david-tepper", name: "David Tepper", cik: "0001656456", dataroma: null },
+  { slug: "david-einhorn", name: "David Einhorn", cik: "0001489933", dataroma: null },
+  { slug: "stanley-druckenmiller", name: "Stanley Druckenmiller", cik: "0001536411", dataroma: null },
+  { slug: "bill-gates", name: "Bill Gates", cik: "0001166559", dataroma: null },
+  { slug: "tiger-global", name: "Chase Coleman", cik: "0001167483", dataroma: null },
+  { slug: "chuck-akre", name: "Chuck Akre", cik: "0001112520", dataroma: null },
+  { slug: "mohnish-pabrai", name: "Mohnish Pabrai", cik: "0001549575", dataroma: null },
+  { slug: "tom-gayner", name: "Tom Gayner", cik: "0001096343", dataroma: null },
+  { slug: "guy-spier", name: "Guy Spier", cik: "0001953324", dataroma: null },
 ];
 
 const WEIGHT_TOL = 0.05;

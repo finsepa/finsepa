@@ -25,7 +25,7 @@
   --fs-modal-title-stroke: transparent;
   /** Switch knob on accent track — white for contrast. */
   --fs-switch-thumb: #ffffff;
-  /** Switch knob idle (off) — white on light; placeholder grey on dark. */
+  /** Switch knob idle (off) — white on light and dark. */
   --fs-switch-thumb-off: #ffffff;
   /**
    * Soft halo behind chart bar value labels — follows panel so light stays white,
@@ -295,8 +295,8 @@
   --fs-modal-title-stroke: rgb(255 255 255 / 0.12);
   /** Switch knob on accent track — white for contrast (surface is too dark). */
   --fs-switch-thumb: #ffffff;
-  /** Idle knob — match placeholder so off state reads on stroke track. */
-  --fs-switch-thumb-off: #5d5d5f;
+  /** Idle knob — white on dark stroke track (same as on-state thumb). */
+  --fs-switch-thumb-off: #ffffff;
   --fs-surface-muted: #242424;
   /** Year / sector bands in table cards. */
   --fs-surface-section: #191919;
@@ -1024,6 +1024,44 @@ body {
   }
   100% {
     transform: translateX(100%);
+  }
+}
+
+/** HeroUI-style text shimmer — uses currentColor so `text-fg-muted` etc. tint the base. */
+@keyframes text-shimmer {
+  0% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+
+.text-shimmer {
+  display: inline-block;
+  /* Keep `color` from utilities so gradient `currentColor` resolves; hide fill via webkit. */
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, currentColor 55%, transparent) 0%,
+    color-mix(in srgb, currentColor 55%, transparent) 35%,
+    currentColor 50%,
+    color-mix(in srgb, currentColor 55%, transparent) 65%,
+    color-mix(in srgb, currentColor 55%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: text-shimmer 1.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-shimmer {
+    animation: none;
+    background-image: none;
+    background-clip: border-box;
+    -webkit-background-clip: border-box;
+    -webkit-text-fill-color: currentColor;
   }
 }
 

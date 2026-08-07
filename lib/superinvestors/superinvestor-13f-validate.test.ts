@@ -183,7 +183,7 @@ test("slimSuperinvestorProfileForSnapshot drops price fields when oversized", ()
 
 test("every manager slug has a CIK mapping entry (coverage precondition)", () => {
   const registrySlugs = Object.keys(SUPERINVESTOR_SLUG_CIK);
-  assert.equal(registrySlugs.length, 18);
+  assert.equal(registrySlugs.length, 29);
   for (const slug of registrySlugs) {
     assert.ok(/^\d{10}$/.test(SUPERINVESTOR_SLUG_CIK[slug]!), `bad CIK for ${slug}`);
   }

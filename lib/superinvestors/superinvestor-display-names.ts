@@ -11,14 +11,35 @@ const SUPERINVESTOR_PROFILE_DISPLAY_NAMES: Record<string, string> = {
   "primecap-management": "PRIMECAP Management",
   "ken-griffin": "Ken Griffin",
   "charlie-munger": "Charlie Munger",
-  "blackrock": "BlackRock",
+  blackrock: "BlackRock",
   "baillie-gifford": "Baillie Gifford",
   "renaissance-technologies": "Jim Simons",
   point72: "Steven Cohen",
   "first-eagle": "First Eagle Investments",
   "chris-hohn": "Chris Hohn",
   "jeremy-grantham": "Jeremy Grantham",
+  "seth-klarman": "Seth Klarman",
+  "carl-icahn": "Carl Icahn",
+  "david-tepper": "David Tepper",
+  "david-einhorn": "David Einhorn",
+  "stanley-druckenmiller": "Stanley Druckenmiller",
+  "bill-gates": "Bill Gates",
+  "tiger-global": "Chase Coleman",
+  "chuck-akre": "Chuck Akre",
+  "mohnish-pabrai": "Mohnish Pabrai",
+  "tom-gayner": "Tom Gayner",
+  "guy-spier": "Guy Spier",
 };
+
+export function superinvestorDisplayNameForSlug(slug: string): string {
+  const known = SUPERINVESTOR_PROFILE_DISPLAY_NAMES[slug];
+  if (known) return known;
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
 
 export function superinvestorDisplayNameFromProfilePath(
   profilePath: string,
@@ -28,12 +49,5 @@ export function superinvestorDisplayNameFromProfilePath(
   if (trimmed) return trimmed;
 
   const slug = profilePath.replace(/^\/superinvestors\//i, "").replace(/\/+$/, "");
-  const known = SUPERINVESTOR_PROFILE_DISPLAY_NAMES[slug];
-  if (known) return known;
-
-  return slug
-    .split("-")
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+  return superinvestorDisplayNameForSlug(slug);
 }
