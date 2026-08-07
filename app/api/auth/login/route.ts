@@ -56,8 +56,21 @@ async function createCookieSessionClient() {
   return { supabase, sessionCookies };
 }
 
-function buildLoginSuccessResponse(redirectTo: string, sessionCookies: SessionCookie[]) {
-  const response = NextResponse.json({ ok: true as const, redirectTo });
+function buildLoginSuccessResponse(
+  redirectTo: string,
+  sessionCookies: SessionCookie[],
+  session?: { access_token: string; refresh_token: string } | null,
+) {
+  const response = NextResponse.json({
+    ok: true as const,
+    redirectTo,
+    ...(session?.access_token && session?.refresh_token
+      ? {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        }
+      : {}),
+  });
   sessionCookies.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, withDurableAuthCookieOptions(options));
   });
@@ -102,7 +115,8 @@ async function loginWithPasswordGrant(
   }
 
   const redirectTo = await resolvePostLoginPath(supabase, next);
-  return buildLoginSuccessResponse(redirectTo, sessionCookies);
+  const { data: sessionData } = await supabase.auth.getSession();
+  return buildLoginSuccessResponse(redirectTo, sessionCookies, sessionData.session);
 }
 
 async function loginWithVerifiedEmail(email: string, next?: string | null): Promise<NextResponse> {
@@ -146,7 +160,8 @@ async function loginWithVerifiedEmail(email: string, next?: string | null): Prom
   }
 
   const redirectTo = await resolvePostLoginPath(supabase, next);
-  return buildLoginSuccessResponse(redirectTo, sessionCookies);
+  const { data: sessionData } = await supabase.auth.getSession();
+  return buildLoginSuccessResponse(redirectTo, sessionCookies, sessionData.session);
 }
 
 export async function POST(request: Request) {
