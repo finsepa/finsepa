@@ -1,4 +1,5 @@
 import type { MacroCardModel } from "@/components/macro/macro-card";
+import { indexOfLatestMeaningfulDailyFlow } from "@/lib/macro/macro-chart-points";
 
 /** Long-history Macro charts (valuation, rates, inflation, economy, fear & greed). */
 export type MacroLongRangeId = "5y" | "10y" | "20y" | "all";
@@ -39,6 +40,7 @@ export {
   aggregateMacroPointsWeeklySum,
   downsampleMacroPointsMonthly,
   formatMacroAxisLabel,
+  indexOfLatestMeaningfulDailyFlow,
   macroAxisLabelIndices,
   macroAxisLabelIndicesForTimes,
   macroChartAxisGranularity,
@@ -54,8 +56,15 @@ export function macroModelForWindow(model: MacroCardModel, windowPoints: MacroCa
   if (!windowPoints.length) {
     return { ...model, points: [], latest: null, change: null };
   }
-  const latest = windowPoints[windowPoints.length - 1]!;
-  const prev = windowPoints.length >= 2 ? windowPoints[windowPoints.length - 2]! : null;
+  const latestIdx =
+    model.id === "btc_etf_net_flow" ?
+      indexOfLatestMeaningfulDailyFlow(windowPoints)
+    : windowPoints.length - 1;
+  if (latestIdx < 0) {
+    return { ...model, points: windowPoints, latest: null, change: null };
+  }
+  const latest = windowPoints[latestIdx]!;
+  const prev = latestIdx >= 1 ? windowPoints[latestIdx - 1]! : null;
   const abs = prev ? latest.value - prev.value : null;
   const pct = prev && prev.value !== 0 && abs != null ? (abs / Math.abs(prev.value)) * 100 : null;
   return {

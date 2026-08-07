@@ -2,6 +2,19 @@ import type { MacroRangeId } from "@/components/macro/macro-range";
 
 export type MacroChartPoint = { time: string; value: number };
 
+/**
+ * Index of the latest daily-flow point that should drive the headline.
+ * Farside often publishes a $0 tip before the session is finalized — skip those
+ * for "As on" / delta so we show the previous real day (chart still keeps the bar).
+ */
+export function indexOfLatestMeaningfulDailyFlow(
+  points: readonly MacroChartPoint[],
+): number {
+  let i = points.length - 1;
+  while (i >= 0 && points[i]!.value === 0) i -= 1;
+  return i;
+}
+
 const RANGE_YEARS: Partial<Record<MacroRangeId, number>> = {
   "5y": 5,
   "10y": 10,

@@ -2,6 +2,7 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
+import { indexOfLatestMeaningfulDailyFlow } from "@/lib/macro/macro-chart-points";
 import { fetchMacroSeriesAll, MACRO_SERIES, type MacroSeriesDef } from "@/lib/market/eodhd-macro";
 import { HUB_SNAPSHOT_KEY, macroHubSegment } from "@/lib/market/hub-snapshot-keys";
 import { readHubSnapshot } from "@/lib/market/hub-snapshot-store";
@@ -98,9 +99,12 @@ function emptyMacroCard(def: MacroSeriesDef): MacroDashboardCard {
 }
 
 function cardFromPoints(def: MacroSeriesDef, points: Array<{ time: string; value: number }>): MacroDashboardCard {
-  const l = latest(points);
+  const latestIdx =
+    def.id === "btc_etf_net_flow" ? indexOfLatestMeaningfulDailyFlow(points) : points.length - 1;
+  if (latestIdx < 0) return emptyMacroCard(def);
+  const l = points[latestIdx] ?? latest(points);
   if (!l) return emptyMacroCard(def);
-  const prev = points.length >= 2 ? points[points.length - 2]! : null;
+  const prev = latestIdx >= 1 ? points[latestIdx - 1]! : null;
   const abs = prev ? l.value - prev.value : null;
   const pct = prev && prev.value !== 0 && abs != null ? (abs / Math.abs(prev.value)) * 100 : null;
   return {
@@ -171,7 +175,7 @@ export async function buildMacroDashboardPayloadForIngest(): Promise<{
 async function getMacroDashboardPayloadCachedInner(): Promise<{ country: string; items: MacroDashboardCard[] }> {
   return unstable_cache(
     buildMacroDashboardPayloadUncached,
-    ["macro-dashboard-payload-v47-btc-etf-always"],
+    ["macro-dashboard-payload-v48-btc-etf-skip-zero-tip"],
     { revalidate: 300 },
   )();
 }
