@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
 import { platformTrialEndsMetaLabel } from "@/lib/account/billing";
@@ -13,8 +14,10 @@ import {
   platformTrialDaysRemaining as computePlatformTrialDaysRemaining,
 } from "@/lib/account/platform-trial";
 import { trySendLoopsProCanceledEmail } from "@/lib/loops/send-pro-canceled-on-cancel";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { getStripeClient } from "@/lib/stripe/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { supabaseAuthTimedFetch } from "@/lib/supabase/auth-fetch-timeout";
 
 type BillingAccessState =
   | "trial"
@@ -84,18 +87,40 @@ function addRecurringInterval(args: {
   return d.toISOString();
 }
 
+/** Cookie session or Bearer JWT client (native iOS). */
+async function getSupabaseForAccountRequest(request: Request) {
+  const authHeader = request.headers.get("authorization");
+  const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  if (bearer) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+    const key =
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
+    if (!url || !key) {
+      throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    }
+    return createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        headers: { Authorization: `Bearer ${bearer}` },
+        fetch: supabaseAuthTimedFetch,
+      },
+    });
+  }
+  return getSupabaseServerClient();
+}
+
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+/** Auth: Bearer or cookie via `resolveAuthUserFromRequest` (native iOS clients). */
+export async function GET(request: Request) {
+  const user = await resolveAuthUserFromRequest(request);
   if (!user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    const supabase = await getSupabaseForAccountRequest(request);
     // Read invoices from DB only — Stripe invoice sync + Loops renewals are webhook-owned
     // so opening Account → Billing never triggers renewal emails or multi-page Stripe lists.
     const [{ data: subscription }, firstInvoices] = await Promise.all([

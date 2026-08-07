@@ -697,6 +697,13 @@ function isPercentMetric(m: MetricMode): boolean {
   return m === "return" || m === "drawdown";
 }
 
+/** Crosshair disc border — match baseline sparkline (green ≥ 0 / red < 0); Value stays accent. */
+function overviewCrosshairMarkerBorderColor(metric: MetricMode, value: number): string {
+  if (metric === "value") return resolveFsColor("--fs-accent");
+  if (metric === "drawdown") return resolveFsColor("--fs-down");
+  return value >= 0 ? resolveFsColor("--fs-up") : resolveFsColor("--fs-down");
+}
+
 /** Equity return % (same units as overview “Total profit” ATH line). */
 function formatReturnPctAxis(n: number): string {
   if (!Number.isFinite(n)) return "0%";
@@ -1356,6 +1363,13 @@ export function PortfolioValueHistoryChartPane({
       handleScale: false,
     });
 
+    const markerBorderColorRef = { current: "" as string };
+    const applyCrosshairMarkerBorder = (borderColor: string) => {
+      if (borderColor === markerBorderColorRef.current) return;
+      markerBorderColorRef.current = borderColor;
+      seriesRef.current?.applyOptions({ crosshairMarkerBorderColor: borderColor });
+    };
+
     const baselineOpts = {
       relativeGradient: false,
       ...baselineUpDownFillColors("bright"),
@@ -1493,6 +1507,7 @@ export function PortfolioValueHistoryChartPane({
       });
 
       const raw = (data as { value: number }).value;
+      applyCrosshairMarkerBorder(overviewCrosshairMarkerBorderColor(metric, raw));
       const valueLabel =
         isPercentMetric(metric) ?
           formatReturnPctAxis(raw)
@@ -1669,6 +1684,13 @@ export function PortfolioValueHistoryChartPane({
     }
 
     series.setData(data);
+
+    const lastY = data[data.length - 1]?.value;
+    if (typeof lastY === "number" && Number.isFinite(lastY)) {
+      series.applyOptions({
+        crosshairMarkerBorderColor: overviewCrosshairMarkerBorderColor(metric, lastY),
+      });
+    }
 
     tradeDotsConfigRef.current = { show: showTrades, txs: transactions, lineData: data, sessionYmds };
 

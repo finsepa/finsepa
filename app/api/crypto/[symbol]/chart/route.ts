@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { cryptoMarketCapPointsFromPricePoints, getCryptoChartPoints } from "@/lib/market/crypto-chart-data";
 import { loadCryptoLive1DMinuteChartPoints } from "@/lib/market/crypto-1d-live-minute-chart";
 import { isCryptoLive1DSymbol, normalizeCryptoBaseSymbol } from "@/lib/market/crypto-live-1d-tickers";
 import { pricePointsToReturnIndexPoints } from "@/lib/market/stock-chart-data";
 import { CACHE_CONTROL_PRIVATE_NO_STORE } from "@/lib/data/cache-policy";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { isStockChartSeries, STOCK_CHART_RANGES, type StockChartRange, type StockChartSeries } from "@/lib/market/stock-chart-types";
 
 function isRange(v: string | null): v is StockChartRange {
@@ -14,12 +14,9 @@ function isRange(v: string | null): v is StockChartRange {
 
 type Ctx = { params: Promise<{ symbol: string }> };
 
+/** Auth: Bearer or cookie via `resolveAuthUserFromRequest` (native iOS clients). */
 export async function GET(request: Request, { params }: Ctx) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await resolveAuthUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
