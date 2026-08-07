@@ -12,7 +12,27 @@ export type HubSnapshotRow = {
   updated_at: string;
 };
 
-export async function readHubSnapshot<T>(key: HubSnapshotKey, segment: string): Promise<T | null> {
+/** Prior-segment hub rows remain usable for user reads (news prefers stale over cold rebuild). */
+export const HUB_SNAPSHOT_STALE_MAX_MS = 7 * 24 * 60 * 60 * 1000;
+
+export async function readHubSnapshot<T>(
+  key: HubSnapshotKey,
+  segment: string,
+  opts?: { allowStale?: boolean; maxStaleMs?: number },
+): Promise<T | null> {
+  const hit = await readHubSnapshotForPage<T>(key, segment, opts);
+  return hit?.payload ?? null;
+}
+
+/**
+ * Exact segment match, or — when `allowStale` — last row for this key within max age.
+ * Used so hub pages (news) never cold-rebuild from user traffic on day-segment roll.
+ */
+export async function readHubSnapshotForPage<T>(
+  key: HubSnapshotKey,
+  segment: string,
+  opts?: { allowStale?: boolean; maxStaleMs?: number },
+): Promise<{ payload: T; exactSegment: boolean; updatedAt: string } | null> {
   if (!marketSnapshotReadEnabled()) return null;
 
   const admin = getSupabaseAdminClient();
@@ -24,9 +44,20 @@ export async function readHubSnapshot<T>(key: HubSnapshotKey, segment: string): 
     .eq("key", key)
     .maybeSingle();
 
-  if (error || !data) return null;
-  if (data.segment !== segment) return null;
-  return data.data as T;
+  if (error || !data || data.data === null || data.data === undefined) return null;
+
+  const updatedAt = typeof data.updated_at === "string" ? data.updated_at : "";
+  if (data.segment === segment) {
+    return { payload: data.data as T, exactSegment: true, updatedAt };
+  }
+
+  if (!opts?.allowStale) return null;
+
+  const maxStale = opts.maxStaleMs ?? HUB_SNAPSHOT_STALE_MAX_MS;
+  const updatedMs = Date.parse(updatedAt);
+  if (!Number.isFinite(updatedMs) || Date.now() - updatedMs > maxStale) return null;
+
+  return { payload: data.data as T, exactSegment: false, updatedAt };
 }
 
 export async function readHubSnapshotRow(key: HubSnapshotKey): Promise<HubSnapshotRow | null> {

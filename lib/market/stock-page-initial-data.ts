@@ -40,6 +40,18 @@ import {
   stripAssetSnapshotHotFields,
 } from "@/lib/market/asset-snapshot-payload";
 import { readAssetSnapshotForPage, upsertAssetSnapshot } from "@/lib/market/asset-snapshot-store";
+import { assetSnapshotKey } from "@/lib/market/asset-snapshot-keys";
+import {
+  ASSET_REBUILD_LEASE_TTL_SEC,
+  ASSET_REBUILD_WAITER_MAX_MS,
+  ASSET_REBUILD_WAITER_POLL_MS,
+  failAssetRebuildLease,
+  newAssetRebuildLeaseOwner,
+  releaseAssetRebuildLease,
+  sleepMs,
+  tryAcquireAssetRebuildLease,
+} from "@/lib/market/asset-rebuild-lease";
+import { runAssetColdMissSingleFlight } from "@/lib/market/asset-rebuild-single-flight";
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 
 export type StockPageInitialChart = {
@@ -193,6 +205,20 @@ function scheduleAssetSnapshotWrite(
       console.warn("[asset-snapshot] upsert failed", { ticker, reason: res.reason });
     }
   });
+}
+
+async function persistAssetSnapshotAwaited(
+  ticker: string,
+  segment: string,
+  data: StockPageInitialData,
+  mode: ReturnType<typeof getScreenerUsMarketCacheEpoch>["mode"],
+): Promise<{ ok: boolean; reason?: string }> {
+  const payload = stripAssetSnapshotHotFields(data, mode);
+  const res = await upsertAssetSnapshot(ticker, segment, payload);
+  if (!res.ok && process.env.NODE_ENV === "development") {
+    console.warn("[asset-snapshot] awaited upsert failed", { ticker, reason: res.reason });
+  }
+  return res.ok ? { ok: true } : { ok: false, reason: res.reason };
 }
 
 function positiveUsd(n: unknown): number | null {
@@ -365,7 +391,8 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
 
 /**
  * P5: shared per-ticker snapshot in Supabase (`market_snapshot` key `asset_{TICKER}`).
- * Miss → full EODHD fan-out once per segment; hit → refresh 1D chart + live spot only (live session).
+ * Miss → distributed single-flight rebuild (one uncached load per ticker/segment); hit →
+ * refresh 1D chart + live spot only (live session).
  */
 export async function loadStockPageInitialData(routeTicker: string): Promise<StockPageInitialData | null> {
   const ticker = routeTicker.trim().toUpperCase();
@@ -413,9 +440,30 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
     return merged;
   }
 
-  const fresh = await loadStockPageInitialDataUncached(ticker);
-  if (fresh) {
-    scheduleAssetSnapshotWrite(ticker, epoch.segment, fresh, epoch.mode);
-  }
-  return fresh;
+  const snapKey = assetSnapshotKey(ticker);
+  if (!snapKey) return fallbackStockPageInitialData(ticker, new Date());
+
+  return runAssetColdMissSingleFlight<StockPageInitialData>({
+    snapshotKey: snapKey,
+    ticker,
+    segment: epoch.segment,
+    mode: epoch.mode,
+    tryAcquire: (ownerId) =>
+      tryAcquireAssetRebuildLease(snapKey, epoch.segment, ownerId, ASSET_REBUILD_LEASE_TTL_SEC),
+    release: (ownerId) => releaseAssetRebuildLease(snapKey, epoch.segment, ownerId),
+    markFailed: (ownerId) => failAssetRebuildLease(snapKey, epoch.segment, ownerId),
+    newOwnerId: newAssetRebuildLeaseOwner,
+    loadUncached: () => loadStockPageInitialDataUncached(ticker),
+    persistSnapshot: (page) => persistAssetSnapshotAwaited(ticker, epoch.segment, page, epoch.mode),
+    readSnapshot: () => readAssetSnapshotForPage(ticker, epoch.segment, { allowStale: true }),
+    pageFromSnapshot: async (hit) => {
+      // Waiter / coalesced path — no EODHD hot refresh.
+      return assetSnapshotPayloadToPageData(hit.payload);
+    },
+    fallbackPage: () => fallbackStockPageInitialData(ticker, new Date()),
+    sleep: sleepMs,
+    now: () => Date.now(),
+    waiterMaxMs: ASSET_REBUILD_WAITER_MAX_MS,
+    pollMs: ASSET_REBUILD_WAITER_POLL_MS,
+  });
 }

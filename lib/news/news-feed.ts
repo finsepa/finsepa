@@ -1,9 +1,6 @@
 import "server-only";
 
 import { cache } from "react";
-import { unstable_cache } from "next/cache";
-
-import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
@@ -144,20 +141,20 @@ async function buildNewsFeedUncached(tab: NewsTab): Promise<NewsItem[]> {
   return items;
 }
 
-/** Cron / hub ingest — bypasses Supabase read path. */
+/** Cron / hub ingest — bypasses Supabase read path. User reads must never call this. */
 export async function buildNewsFeedForHubIngest(tab: NewsTab): Promise<NewsItem[]> {
   return buildNewsFeedUncached(tab);
 }
 
-const getNewsFeedData = unstable_cache(buildNewsFeedUncached, ["news-feed-v3-hub-snapshot"], {
-  revalidate: REVALIDATE_HOT,
-});
-
+/**
+ * Snapshot-only user read: exact hub segment, else prior valid row, else empty.
+ * Never cold-rebuilds EODHD from request traffic (ingest/cron only).
+ */
 export const getNewsFeed = cache(async (tab: NewsTab) => {
   const segment = newsHubSegment(tab);
-  const snap = await readHubSnapshot<NewsItem[]>(hubNewsKey(tab), segment);
-  if (snap) return snap;
-  return getNewsFeedData(tab);
+  const snap = await readHubSnapshot<NewsItem[]>(hubNewsKey(tab), segment, { allowStale: true });
+  if (Array.isArray(snap)) return snap;
+  return [];
 });
 
 export async function getNewsPage(tab: NewsTab, page: number): Promise<{ total: number; items: NewsItem[] }> {

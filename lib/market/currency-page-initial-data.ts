@@ -1,8 +1,16 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
-
-import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+import {
+  ASSET_REBUILD_LEASE_TTL_SEC,
+  ASSET_REBUILD_WAITER_MAX_MS,
+  ASSET_REBUILD_WAITER_POLL_MS,
+  failAssetRebuildLease,
+  newAssetRebuildLeaseOwner,
+  releaseAssetRebuildLease,
+  sleepMs,
+  tryAcquireAssetRebuildLease,
+} from "@/lib/market/asset-rebuild-lease";
+import { runColdMissSingleFlight } from "@/lib/market/asset-rebuild-single-flight";
 import { stockChartPointsFromDailyBars } from "@/lib/market/crypto-chart-data";
 import {
   currencyDisplayCode,
@@ -13,6 +21,12 @@ import {
   type CurrencyPageInitialData,
 } from "@/lib/market/currency-page-shared";
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
+import {
+  getRouteAssetPageCacheSegment,
+  readRouteAssetPageSnapshot,
+  routeAssetPageSnapshotKey,
+  upsertRouteAssetPageSnapshot,
+} from "@/lib/market/route-asset-page-snapshot-store";
 import { emptyAnnualReturns } from "@/lib/market/stock-annual-returns";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
@@ -89,7 +103,9 @@ export async function getCurrencyChartPoints(
   return stockChartPointsFromDailyBars(sorted, range, now);
 }
 
-async function loadCurrencyPageInitialDataUncached(routeSymbol: string): Promise<CurrencyPageInitialData> {
+export async function loadCurrencyPageInitialDataUncached(
+  routeSymbol: string,
+): Promise<CurrencyPageInitialData> {
   const sym = routeSymbol.trim().toUpperCase();
   if (!sym || !isCurrencyPageSymbol(sym)) return emptyPayload(sym);
   if (isSingleAssetMode()) return emptyPayload(sym);
@@ -114,8 +130,54 @@ async function loadCurrencyPageInitialDataUncached(routeSymbol: string): Promise
   };
 }
 
-export const loadCurrencyPageInitialData = unstable_cache(
-  loadCurrencyPageInitialDataUncached,
-  ["currency-page-initial-v1"],
-  { revalidate: REVALIDATE_HOT },
-);
+/**
+ * Durable `asset_currency_{SYM}` + single-flight cold miss.
+ * `getCurrencyChartPoints` remains on-demand (out of this pass).
+ */
+export async function loadCurrencyPageInitialData(
+  routeSymbol: string,
+): Promise<CurrencyPageInitialData> {
+  const sym = routeSymbol.trim().toUpperCase();
+  if (!sym) return emptyPayload("");
+  if (isSingleAssetMode()) return emptyPayload(sym);
+
+  const segment = getRouteAssetPageCacheSegment("currency");
+  const cachedHit = await readRouteAssetPageSnapshot<CurrencyPageInitialData>("currency", sym, segment, {
+    allowStale: true,
+  });
+
+  if (cachedHit?.payload?.routeSymbol?.trim().toUpperCase() === sym) {
+    return cachedHit.payload;
+  }
+
+  const snapKey = routeAssetPageSnapshotKey("currency", sym);
+  if (!snapKey) return emptyPayload(sym);
+
+  type Hit = { payload: CurrencyPageInitialData; exactSegment: boolean };
+
+  const page = await runColdMissSingleFlight<CurrencyPageInitialData, Hit>({
+    tryAcquire: (ownerId) =>
+      tryAcquireAssetRebuildLease(snapKey, segment, ownerId, ASSET_REBUILD_LEASE_TTL_SEC),
+    release: (ownerId) => releaseAssetRebuildLease(snapKey, segment, ownerId),
+    markFailed: (ownerId) => failAssetRebuildLease(snapKey, segment, ownerId),
+    newOwnerId: newAssetRebuildLeaseOwner,
+    loadUncached: () => loadCurrencyPageInitialDataUncached(sym),
+    persistSnapshot: async (fresh) => {
+      const res = await upsertRouteAssetPageSnapshot("currency", sym, segment, fresh);
+      return res.ok ? { ok: true } : { ok: false, reason: res.reason };
+    },
+    readSnapshot: () =>
+      readRouteAssetPageSnapshot<CurrencyPageInitialData>("currency", sym, segment, {
+        allowStale: true,
+      }),
+    isUsableHit: (hit) => hit?.payload?.routeSymbol?.trim().toUpperCase() === sym,
+    pageFromSnapshot: async (hit) => hit.payload,
+    fallbackPage: () => emptyPayload(sym),
+    sleep: sleepMs,
+    now: () => Date.now(),
+    waiterMaxMs: ASSET_REBUILD_WAITER_MAX_MS,
+    pollMs: ASSET_REBUILD_WAITER_POLL_MS,
+  });
+
+  return page ?? emptyPayload(sym);
+}

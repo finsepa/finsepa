@@ -7,6 +7,8 @@ export const MARKET_SNAPSHOT_KEY = {
   cryptoDerived: "crypto_derived",
   indicesTab: "indices_tab",
   indicesDerived: "indices_derived",
+  /** Screener ETFs tab quotes — hot tier; request-path single-flight backstop (cron optional). */
+  etfsTab: "etfs_tab",
   /** Screener Currencies tab — EOD majors (slow tier; not US live quotes). */
   currenciesTab: "currencies_tab",
   /** Screener stocks tab index strip — hot tier, built during cron. */

@@ -14,6 +14,7 @@ import {
 } from "@/lib/market/simple-market-layer";
 import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
 import { readMarketSnapshot } from "@/lib/market/market-snapshot-store";
+import { rebuildMarketSnapshotBlobSingleFlight } from "@/lib/market/market-snapshot-rebuild";
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
 
@@ -290,7 +291,14 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
 export async function getSimpleIndexCards(): Promise<IndexCardData[]> {
   const fromSnapshot = await readMarketSnapshot<IndexCardData[]>(MARKET_SNAPSHOT_KEY.indexCards);
   if (fromSnapshot?.length) return fromSnapshot;
-  return withScreenerUsMarketCache("simple-index-cards-v10-frozen-close", () => loadSimpleIndexCardsUncached());
+  return rebuildMarketSnapshotBlobSingleFlight<IndexCardData[]>({
+    key: MARKET_SNAPSHOT_KEY.indexCards,
+    tier: "hot",
+    loadUncached: () =>
+      withScreenerUsMarketCache("simple-index-cards-v10-frozen-close", () => loadSimpleIndexCardsUncached()),
+    emptyFallback: () => [],
+    isUsable: (cards) => Array.isArray(cards) && cards.length > 0,
+  });
 }
 
 /** Cron ingest — uses tab + derived snapshots when present. */

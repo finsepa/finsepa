@@ -1,8 +1,16 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
-
-import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+import {
+  ASSET_REBUILD_LEASE_TTL_SEC,
+  ASSET_REBUILD_WAITER_MAX_MS,
+  ASSET_REBUILD_WAITER_POLL_MS,
+  failAssetRebuildLease,
+  newAssetRebuildLeaseOwner,
+  releaseAssetRebuildLease,
+  sleepMs,
+  tryAcquireAssetRebuildLease,
+} from "@/lib/market/asset-rebuild-lease";
+import { runColdMissSingleFlight } from "@/lib/market/asset-rebuild-single-flight";
 import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 import { buildCryptoAssetRowFromDailyBars } from "@/lib/market/crypto-asset";
 import { stockChartPointsFromDailyBars } from "@/lib/market/crypto-chart-data";
@@ -10,11 +18,13 @@ import { loadCryptoLive1DMinuteChartPoints } from "@/lib/market/crypto-1d-live-m
 import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
 import { getCryptoNewsForPage } from "@/lib/market/crypto-news";
 import {
+  cryptoPageSnapshotKey,
   cryptoPageSnapshotToPageData,
   getCryptoPageCacheSegment,
   readCryptoPageSnapshot,
   stripCryptoPageSnapshotHotFields,
   upsertCryptoPageSnapshot,
+  type CryptoPageSnapshotPayload,
 } from "@/lib/market/crypto-page-snapshot-store";
 import {
   fetchEodhdCryptoDailyBarsForMeta,
@@ -90,6 +100,19 @@ function scheduleCryptoPageSnapshotWrite(
       console.warn("[crypto-page-snapshot] upsert failed", { symbol, reason: res.reason });
     }
   });
+}
+
+async function persistCryptoPageSnapshotAwaited(
+  symbol: string,
+  segment: string,
+  data: CryptoPageInitialData,
+): Promise<{ ok: boolean; reason?: string }> {
+  const payload = stripCryptoPageSnapshotHotFields(data);
+  const res = await upsertCryptoPageSnapshot(symbol, segment, payload);
+  if (!res.ok && process.env.NODE_ENV === "development") {
+    console.warn("[crypto-page-snapshot] awaited upsert failed", { symbol, reason: res.reason });
+  }
+  return res.ok ? { ok: true } : { ok: false, reason: res.reason };
 }
 
 /** BTC: refresh minute/live 1D for header. Others: keep session empty (client live-price). */
@@ -186,15 +209,10 @@ export async function loadCryptoPageInitialDataUncached(routeSymbol: string): Pr
   };
 }
 
-const getCryptoPageInitialDataCached = unstable_cache(
-  async (routeSymbol: string) => loadCryptoPageInitialDataUncached(routeSymbol),
-  ["crypto-page-initial-v3-snapshot"],
-  { revalidate: REVALIDATE_HOT },
-);
-
 /**
  * Prefer Supabase `asset_crypto_{SYM}` (stale OK up to 6h) so mid-traffic coins skip a cold
- * EODHD fan-out every 15m — same pattern as equity `asset_{TICKER}` for NVDA.
+ * EODHD fan-out every 15m — same pattern as equity `asset_{TICKER}`.
+ * Cold miss: distributed single-flight (persist before lease release).
  */
 export async function loadCryptoPageInitialData(routeSymbol: string): Promise<CryptoPageInitialData | null> {
   const raw = routeSymbol.trim();
@@ -242,9 +260,26 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
     return merged;
   }
 
-  const fresh = await getCryptoPageInitialDataCached(sym);
-  if (fresh?.asset || fresh?.chart.points.length) {
-    scheduleCryptoPageSnapshotWrite(sym, segment, fresh);
-  }
-  return fresh;
+  const snapKey = cryptoPageSnapshotKey(sym);
+  if (!snapKey) return emptyPayload(raw);
+
+  type CryptoHit = { payload: CryptoPageSnapshotPayload; exactSegment: boolean };
+
+  return runColdMissSingleFlight<CryptoPageInitialData, CryptoHit>({
+    tryAcquire: (ownerId) =>
+      tryAcquireAssetRebuildLease(snapKey, segment, ownerId, ASSET_REBUILD_LEASE_TTL_SEC),
+    release: (ownerId) => releaseAssetRebuildLease(snapKey, segment, ownerId),
+    markFailed: (ownerId) => failAssetRebuildLease(snapKey, segment, ownerId),
+    newOwnerId: newAssetRebuildLeaseOwner,
+    loadUncached: () => loadCryptoPageInitialDataUncached(sym),
+    persistSnapshot: (page) => persistCryptoPageSnapshotAwaited(sym, segment, page),
+    readSnapshot: () => readCryptoPageSnapshot(sym, segment, { allowStale: true }),
+    isUsableHit: (hit) => hit?.payload?.routeSymbol?.trim().toUpperCase() === sym,
+    pageFromSnapshot: async (hit) => cryptoPageSnapshotToPageData(hit.payload),
+    fallbackPage: () => emptyPayload(raw),
+    sleep: sleepMs,
+    now: () => Date.now(),
+    waiterMaxMs: ASSET_REBUILD_WAITER_MAX_MS,
+    pollMs: ASSET_REBUILD_WAITER_POLL_MS,
+  });
 }

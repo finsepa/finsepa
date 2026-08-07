@@ -39,6 +39,7 @@ import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
 import { readMarketSnapshot, readMarketSnapshotSlow } from "@/lib/market/market-snapshot-store";
+import { rebuildMarketSnapshotBlobSingleFlight } from "@/lib/market/market-snapshot-rebuild";
 import { readCryptoDerivedSnapshot, upsertCryptoDerivedSnapshot } from "@/lib/market/crypto-derived-snapshot";
 import {
   mergeWatchlistStockMarketSlice,
@@ -400,17 +401,6 @@ async function loadSimpleMarketDataSlimUncached(): Promise<SimpleMarketData> {
   });
 }
 
-/** Stocks tab: TOP10 + index benchmarks — no crypto symbols in the realtime batch. */
-async function loadSimpleMarketDataScreenerStocksUncached(): Promise<SimpleMarketData> {
-  return loadSimpleMarketDataBatch({
-    includeTop10Stocks: true,
-    page2Tickers: [],
-    includeCrypto: false,
-    cryptoBatch: "all",
-    includeIndices: false,
-  });
-}
-
 /** Crypto tab: crypto quotes only (US stocks + indices empty). */
 async function loadSimpleMarketDataCryptoTabUncached(): Promise<SimpleMarketData> {
   return loadSimpleMarketDataBatch({
@@ -454,22 +444,14 @@ export async function getSimpleMarketDataForScreenerPage2Slice(page2Tickers: str
   const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
   if (fromSnapshot) return sliceSimpleMarketDataForStockTickers(fromSnapshot, page2Tickers);
 
-  const tickersKey = [...page2Tickers]
-    .map((t) => t.trim().toUpperCase())
-    .sort()
-    .join(",");
-  return withScreenerUsMarketCache(
-    "simple-market-data-page2-slice-v1",
-    () =>
-      loadSimpleMarketDataBatch({
-        includeTop10Stocks: false,
-        page2Tickers,
-        includeCrypto: false,
-        cryptoBatch: "all",
-        includeIndices: false,
-      }),
-    [tickersKey],
-  );
+  const full = await rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
+    key: MARKET_SNAPSHOT_KEY.stocksAllPages,
+    tier: "hot",
+    loadUncached: () => loadSimpleMarketDataScreenerStocksAllPagesUncached(),
+    emptyFallback: () => buildEmptyMarketData(),
+    isUsable: (d) => !!d && Object.keys(d.stocks ?? {}).length > 0,
+  });
+  return sliceSimpleMarketDataForStockTickers(full, page2Tickers);
 }
 
 /** Watchlist rail/page: quotes for saved stock tickers only (top-10 batch + page-2 slice). */
@@ -530,12 +512,18 @@ export async function getSimpleMarketDataForWatchlistStocks(stockTickers: string
 export async function getSimpleMarketDataCryptoScreenerPage2(): Promise<SimpleMarketData> {
   const snap = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.cryptoPage2);
   if (snap) return snap;
-  return loadSimpleMarketDataBatch({
-    includeTop10Stocks: false,
-    page2Tickers: [],
-    includeCrypto: true,
-    cryptoBatch: "page2",
-    includeIndices: false,
+  return rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
+    key: MARKET_SNAPSHOT_KEY.cryptoPage2,
+    tier: "hot",
+    loadUncached: () =>
+      loadSimpleMarketDataBatch({
+        includeTop10Stocks: false,
+        page2Tickers: [],
+        includeCrypto: true,
+        cryptoBatch: "page2",
+        includeIndices: false,
+      }),
+    emptyFallback: () => buildEmptyMarketData(),
   });
 }
 
@@ -551,10 +539,15 @@ export async function getSimpleMarketDataSlim(): Promise<SimpleMarketData> {
 export async function getSimpleMarketDataScreenerStocks(): Promise<SimpleMarketData> {
   const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
   if (fromSnapshot) return sliceSimpleMarketDataScreenerStocksPage1(fromSnapshot);
-  return withScreenerUsMarketCache(
-    "simple-market-data-v17-screener-stocks-session",
-    () => loadSimpleMarketDataScreenerStocksUncached(),
-  );
+  // Rebuild full durable blob (not page1-only) so heatmap/watchlist share one single-flight.
+  const full = await rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
+    key: MARKET_SNAPSHOT_KEY.stocksAllPages,
+    tier: "hot",
+    loadUncached: () => loadSimpleMarketDataScreenerStocksAllPagesUncached(),
+    emptyFallback: () => buildEmptyMarketData(),
+    isUsable: (d) => !!d && Object.keys(d.stocks ?? {}).length > 0,
+  });
+  return sliceSimpleMarketDataScreenerStocksPage1(full);
 }
 
 async function getSimpleMarketDataCryptoTabCached(): Promise<SimpleMarketData> {
@@ -568,29 +561,59 @@ async function getSimpleMarketDataCryptoTabCached(): Promise<SimpleMarketData> {
 export async function getSimpleMarketDataCryptoTab(): Promise<SimpleMarketData> {
   const snap = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.cryptoTab);
   if (snap) return snap;
-  return getSimpleMarketDataCryptoTabCached();
+  return rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
+    key: MARKET_SNAPSHOT_KEY.cryptoTab,
+    tier: "hot",
+    loadUncached: () => getSimpleMarketDataCryptoTabCached(),
+    emptyFallback: () => buildEmptyMarketData(),
+    isUsable: (d) => !!d && Object.keys(d.crypto ?? {}).length > 0,
+  });
 }
 
 export async function getSimpleMarketDataIndicesTab(): Promise<SimpleMarketData> {
   const snap = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.indicesTab);
   if (snap) return snap;
-  return withScreenerUsMarketCache(
-    "simple-market-data-v17-indices-tab-session",
-    () => loadSimpleMarketDataIndicesTabUncached(),
-  );
+  return rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
+    key: MARKET_SNAPSHOT_KEY.indicesTab,
+    tier: "hot",
+    loadUncached: () =>
+      withScreenerUsMarketCache(
+        "simple-market-data-v17-indices-tab-session",
+        () => loadSimpleMarketDataIndicesTabUncached(),
+      ),
+    emptyFallback: () => buildEmptyMarketData(),
+    isUsable: (d) => !!d && Object.keys(d.indices ?? {}).length > 0,
+  });
 }
 
 export async function getSimpleMarketDataEtfsTab(): Promise<SimpleMarketData> {
-  return withScreenerUsMarketCache("simple-market-data-v2-etfs-tab-session", () => loadSimpleMarketDataEtfsTabUncached());
+  // No durable ETF blob yet — session cache only; still coalesce via lease on a synthetic key
+  // so concurrent cold opens do not unbounded-fan-out. Persist under etfs_tab when keyed.
+  const snap = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.etfsTab);
+  if (snap) return snap;
+  return rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
+    key: MARKET_SNAPSHOT_KEY.etfsTab,
+    tier: "hot",
+    loadUncached: () =>
+      withScreenerUsMarketCache("simple-market-data-v2-etfs-tab-session", () => loadSimpleMarketDataEtfsTabUncached()),
+    emptyFallback: () => buildEmptyMarketData(),
+  });
 }
 
 export async function getSimpleMarketDataScreenerStocksAllPages(): Promise<SimpleMarketData> {
   const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
   if (fromSnapshot) return fromSnapshot;
-  return withScreenerUsMarketCache(
-    "simple-market-data-v3-screener-stocks-all-pages-session",
-    () => loadSimpleMarketDataScreenerStocksAllPagesUncached(),
-  );
+  return rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
+    key: MARKET_SNAPSHOT_KEY.stocksAllPages,
+    tier: "hot",
+    loadUncached: () =>
+      withScreenerUsMarketCache(
+        "simple-market-data-v3-screener-stocks-all-pages-session",
+        () => loadSimpleMarketDataScreenerStocksAllPagesUncached(),
+      ),
+    emptyFallback: () => buildEmptyMarketData(),
+    isUsable: (d) => !!d && Object.keys(d.stocks ?? {}).length > 0,
+  });
 }
 
 /** Use live quote as "current" price when valid so 1M/YTD match the same snapshot as the Price column. */
@@ -646,35 +669,32 @@ async function loadSimpleScreenerDerivedUncached(): Promise<SimpleScreenerDerive
   return { top10, page2 };
 }
 
-/** Screener Stocks tab first paint: TOP10 EOD metrics only (no page-2 bar fan-out). */
-async function loadSimpleScreenerDerivedTop10Uncached(): Promise<SimpleScreenerDerived> {
-  const [marketStocks, barsPerTicker] = await Promise.all([
-    getSimpleMarketDataScreenerStocks(),
-    getCachedScreenerEodBarsForTickers([...TOP10_TICKERS]),
-  ]);
-  const top10 = {} as Record<Top10Ticker, SimpleScreenerStockDerived>;
-  TOP10_TICKERS.forEach((t, i) => {
-    const raw = barsPerTicker[i];
-    const bars = Array.isArray(raw) ? raw : [];
-    const live = marketStocks.stocks[t]?.price ?? null;
-    top10[t] = barsToStockDerived(bars, live);
-  });
-  return { top10, page2: {} };
-}
-
 export async function getSimpleScreenerDerived(): Promise<SimpleScreenerDerived> {
   const snap = await readMarketSnapshotSlow<SimpleScreenerDerived>(MARKET_SNAPSHOT_KEY.screenerDerived);
   if (snap) return snap;
-  return withScreenerUsMarketCache("simple-screener-derived-v12-session", () => loadSimpleScreenerDerivedUncached());
+  return rebuildMarketSnapshotBlobSingleFlight<SimpleScreenerDerived>({
+    key: MARKET_SNAPSHOT_KEY.screenerDerived,
+    tier: "slow",
+    loadUncached: () =>
+      withScreenerUsMarketCache("simple-screener-derived-v12-session", () => loadSimpleScreenerDerivedUncached()),
+    emptyFallback: () => ({ top10: {} as Record<Top10Ticker, SimpleScreenerStockDerived>, page2: {} }),
+    isUsable: (d) => !!d && Object.keys(d.top10 ?? {}).length > 0,
+  });
 }
 
 export async function getSimpleScreenerDerivedTop10(): Promise<SimpleScreenerDerived> {
   const snap = await readMarketSnapshotSlow<SimpleScreenerDerived>(MARKET_SNAPSHOT_KEY.screenerDerived);
   if (snap) return { top10: snap.top10, page2: {} };
-  return withScreenerUsMarketCache(
-    "simple-screener-derived-top10-v2-session",
-    () => loadSimpleScreenerDerivedTop10Uncached(),
-  );
+  // Full durable rebuild (not top10-only) so heatmap shares one single-flight.
+  const full = await rebuildMarketSnapshotBlobSingleFlight<SimpleScreenerDerived>({
+    key: MARKET_SNAPSHOT_KEY.screenerDerived,
+    tier: "slow",
+    loadUncached: () =>
+      withScreenerUsMarketCache("simple-screener-derived-v12-session", () => loadSimpleScreenerDerivedUncached()),
+    emptyFallback: () => ({ top10: {} as Record<Top10Ticker, SimpleScreenerStockDerived>, page2: {} }),
+    isUsable: (d) => !!d && Object.keys(d.top10 ?? {}).length > 0,
+  });
+  return { top10: full.top10, page2: {} };
 }
 
 async function fetchScreenerEodBarsOnce(tickers: string[]): Promise<(EodhdDailyBar[] | null)[]> {
@@ -844,35 +864,39 @@ async function getSimpleCryptoDerivedCached(): Promise<SimpleCryptoDerived> {
 export async function getSimpleCryptoDerived(): Promise<SimpleCryptoDerived> {
   const snap = await readMarketSnapshotSlow<SimpleCryptoDerived>(MARKET_SNAPSHOT_KEY.cryptoDerived);
   if (snap) return snap;
-  return getSimpleCryptoDerivedCached();
+  return rebuildMarketSnapshotBlobSingleFlight<SimpleCryptoDerived>({
+    key: MARKET_SNAPSHOT_KEY.cryptoDerived,
+    tier: "slow",
+    loadUncached: () => getSimpleCryptoDerivedCached(),
+    emptyFallback: () => ({}),
+    isUsable: (d) => !!d && Object.keys(d).length > 0,
+  });
 }
 
-/** Screener Crypto tab page 1 — daily bars for {@link CRYPTO_TOP10} only. */
-async function loadSimpleCryptoDerivedTop10Uncached(): Promise<SimpleCryptoDerived> {
-  const window = eodFetchWindowUtc();
-  const derivedList = await runWithConcurrencyLimit(
-    CRYPTO_TOP10,
-    SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY,
-    (c) => cryptoDerivedForMeta(c, window.from, window.to),
-  );
-  const mcList = await runWithConcurrencyLimit(CRYPTO_TOP10, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c, i) => {
-    const d = derivedList[i];
-    const lastClose = d?.last5DailyCloses?.length ? d.last5DailyCloses[d.last5DailyCloses.length - 1]! : null;
-    return fetchCryptoMarketCapUsdForMeta(c, typeof lastClose === "number" ? lastClose : null);
+export async function getSimpleCryptoDerivedTop10(): Promise<SimpleCryptoDerived> {
+  const snap = await readMarketSnapshotSlow<SimpleCryptoDerived>(MARKET_SNAPSHOT_KEY.cryptoDerived);
+  if (snap) {
+    const out: SimpleCryptoDerived = {};
+    for (const c of CRYPTO_TOP10) {
+      const row = snap[c.symbol];
+      if (row) out[c.symbol] = row;
+    }
+    if (Object.keys(out).length) return out;
+  }
+  const full = await rebuildMarketSnapshotBlobSingleFlight<SimpleCryptoDerived>({
+    key: MARKET_SNAPSHOT_KEY.cryptoDerived,
+    tier: "slow",
+    loadUncached: () => getSimpleCryptoDerivedCached(),
+    emptyFallback: () => ({}),
+    isUsable: (d) => !!d && Object.keys(d).length > 0,
   });
   const out: SimpleCryptoDerived = {};
-  CRYPTO_TOP10.forEach((c, i) => {
-    const mc = typeof mcList[i] === "number" && Number.isFinite(mcList[i]!) ? mcList[i]! : null;
-    out[c.symbol] = { ...(derivedList[i] ?? emptyCryptoDerived()), marketCapUsd: mc };
-  });
+  for (const c of CRYPTO_TOP10) {
+    const row = full[c.symbol];
+    if (row) out[c.symbol] = row;
+  }
   return out;
 }
-
-export const getSimpleCryptoDerivedTop10 = unstable_cache(
-  loadSimpleCryptoDerivedTop10Uncached,
-  ["simple-crypto-derived-top10-v6-ton-pol-eodhd"],
-  { revalidate: REVALIDATE_TIER_SCREENER_DERIVED },
-);
 
 /** Daily-bar metrics for an arbitrary crypto meta list (e.g. screener page 2). */
 export async function getSimpleCryptoDerivedForMetas(metas: readonly CryptoMeta[]): Promise<SimpleCryptoDerived> {
@@ -921,7 +945,14 @@ async function loadSimpleIndicesDerivedUncached(): Promise<SimpleIndicesDerived>
 export async function getSimpleIndicesDerived(): Promise<SimpleIndicesDerived> {
   const snap = await readMarketSnapshotSlow<SimpleIndicesDerived>(MARKET_SNAPSHOT_KEY.indicesDerived);
   if (snap) return snap;
-  return withScreenerUsMarketCache("simple-indices-derived-v3-session", () => loadSimpleIndicesDerivedUncached());
+  return rebuildMarketSnapshotBlobSingleFlight<SimpleIndicesDerived>({
+    key: MARKET_SNAPSHOT_KEY.indicesDerived,
+    tier: "slow",
+    loadUncached: () =>
+      withScreenerUsMarketCache("simple-indices-derived-v3-session", () => loadSimpleIndicesDerivedUncached()),
+    emptyFallback: () => ({}),
+    isUsable: (d) => !!d && Object.keys(d).length > 0,
+  });
 }
 
 async function loadSimpleEtfsDerivedUncached(): Promise<SimpleEtfsDerived> {

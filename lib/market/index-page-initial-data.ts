@@ -1,8 +1,16 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
-
-import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+import {
+  ASSET_REBUILD_LEASE_TTL_SEC,
+  ASSET_REBUILD_WAITER_MAX_MS,
+  ASSET_REBUILD_WAITER_POLL_MS,
+  failAssetRebuildLease,
+  newAssetRebuildLeaseOwner,
+  releaseAssetRebuildLease,
+  sleepMs,
+  tryAcquireAssetRebuildLease,
+} from "@/lib/market/asset-rebuild-lease";
+import { runColdMissSingleFlight } from "@/lib/market/asset-rebuild-single-flight";
 import { stockChartPointsFromDailyBars } from "@/lib/market/crypto-chart-data";
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { loadIndexComponentsLimited } from "@/lib/market/index-page-meta";
@@ -16,6 +24,12 @@ import {
   type IndexComponentRow,
   type IndexPageInitialData,
 } from "@/lib/market/index-page-shared";
+import {
+  getRouteAssetPageCacheSegment,
+  readRouteAssetPageSnapshot,
+  routeAssetPageSnapshotKey,
+  upsertRouteAssetPageSnapshot,
+} from "@/lib/market/route-asset-page-snapshot-store";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import {
@@ -95,7 +109,7 @@ export async function getIndexChartPoints(
   return stockChartPointsFromDailyBars(sorted, range, now);
 }
 
-async function loadIndexPageInitialDataUncached(routeSymbol: string): Promise<IndexPageInitialData> {
+export async function loadIndexPageInitialDataUncached(routeSymbol: string): Promise<IndexPageInitialData> {
   const sym = routeSymbol.trim().toUpperCase();
   if (!sym || !isIndexPageSymbol(sym)) return emptyPayload(sym);
   if (isSingleAssetMode()) return emptyPayload(sym);
@@ -129,8 +143,50 @@ async function loadIndexPageInitialDataUncached(routeSymbol: string): Promise<In
   };
 }
 
-export const loadIndexPageInitialData = unstable_cache(
-  loadIndexPageInitialDataUncached,
-  ["index-page-initial-v1"],
-  { revalidate: REVALIDATE_HOT },
-);
+/**
+ * Durable `asset_index_{SYM}` + single-flight cold miss. Warm hit unchanged (serve snapshot).
+ * Chart range APIs (`getIndexChartPoints`) remain on-demand and are out of this pass.
+ */
+export async function loadIndexPageInitialData(routeSymbol: string): Promise<IndexPageInitialData> {
+  const sym = routeSymbol.trim().toUpperCase();
+  if (!sym) return emptyPayload("");
+  if (isSingleAssetMode()) return emptyPayload(sym);
+
+  const segment = getRouteAssetPageCacheSegment("index");
+  const cachedHit = await readRouteAssetPageSnapshot<IndexPageInitialData>("index", sym, segment, {
+    allowStale: true,
+  });
+
+  if (cachedHit?.payload?.routeSymbol?.trim().toUpperCase() === sym) {
+    return cachedHit.payload;
+  }
+
+  const snapKey = routeAssetPageSnapshotKey("index", sym);
+  if (!snapKey) return emptyPayload(sym);
+
+  type Hit = { payload: IndexPageInitialData; exactSegment: boolean };
+
+  const page = await runColdMissSingleFlight<IndexPageInitialData, Hit>({
+    tryAcquire: (ownerId) =>
+      tryAcquireAssetRebuildLease(snapKey, segment, ownerId, ASSET_REBUILD_LEASE_TTL_SEC),
+    release: (ownerId) => releaseAssetRebuildLease(snapKey, segment, ownerId),
+    markFailed: (ownerId) => failAssetRebuildLease(snapKey, segment, ownerId),
+    newOwnerId: newAssetRebuildLeaseOwner,
+    loadUncached: () => loadIndexPageInitialDataUncached(sym),
+    persistSnapshot: async (fresh) => {
+      const res = await upsertRouteAssetPageSnapshot("index", sym, segment, fresh);
+      return res.ok ? { ok: true } : { ok: false, reason: res.reason };
+    },
+    readSnapshot: () =>
+      readRouteAssetPageSnapshot<IndexPageInitialData>("index", sym, segment, { allowStale: true }),
+    isUsableHit: (hit) => hit?.payload?.routeSymbol?.trim().toUpperCase() === sym,
+    pageFromSnapshot: async (hit) => hit.payload,
+    fallbackPage: () => emptyPayload(sym),
+    sleep: sleepMs,
+    now: () => Date.now(),
+    waiterMaxMs: ASSET_REBUILD_WAITER_MAX_MS,
+    pollMs: ASSET_REBUILD_WAITER_POLL_MS,
+  });
+
+  return page ?? emptyPayload(sym);
+}
