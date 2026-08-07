@@ -6,7 +6,7 @@ import {
   CACHE_CONTROL_PRIVATE_SUPERINVESTOR_HOLDING_CHART,
   CACHE_CONTROL_PRIVATE_WARM_CHART,
 } from "@/lib/data/cache-policy";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import {
   getStockChartPointsForApi,
   getSuperinvestorHoldingStockChartPoints,
@@ -28,11 +28,7 @@ const CHART_API_DEBUG_TICKERS = new Set(["AAPL", "NVDA"]);
 type Ctx = { params: Promise<{ ticker: string }> };
 
 export async function GET(request: Request, { params }: Ctx) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await resolveAuthUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
