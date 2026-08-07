@@ -17,6 +17,8 @@ type Body = {
   email?: unknown;
   password?: unknown;
   next?: unknown;
+  /** When `"ios"`, include access/refresh tokens in JSON for the native client. */
+  client?: unknown;
 };
 
 function getSupabasePublicConfig(): { url: string; anonKey: string } | null {
@@ -59,20 +61,25 @@ async function createCookieSessionClient() {
 function buildLoginSuccessResponse(
   redirectTo: string,
   sessionCookies: SessionCookie[],
-  session?: { access_token: string; refresh_token: string } | null,
+  options?: {
+    session?: { access_token: string; refresh_token: string } | null;
+    includeTokens?: boolean;
+  },
 ) {
+  const includeTokens = options?.includeTokens === true;
+  const session = options?.session;
   const response = NextResponse.json({
     ok: true as const,
     redirectTo,
-    ...(session?.access_token && session?.refresh_token
+    ...(includeTokens && session?.access_token && session?.refresh_token
       ? {
           access_token: session.access_token,
           refresh_token: session.refresh_token,
         }
       : {}),
   });
-  sessionCookies.forEach(({ name, value, options }) => {
-    response.cookies.set(name, value, withDurableAuthCookieOptions(options));
+  sessionCookies.forEach(({ name, value, options: cookieOptions }) => {
+    response.cookies.set(name, value, withDurableAuthCookieOptions(cookieOptions));
   });
   return response;
 }
@@ -81,6 +88,7 @@ async function loginWithPasswordGrant(
   email: string,
   password: string,
   next?: string | null,
+  includeTokens = false,
 ): Promise<NextResponse> {
   const sessionClient = await createCookieSessionClient();
   if (!sessionClient) {
@@ -116,10 +124,17 @@ async function loginWithPasswordGrant(
 
   const redirectTo = await resolvePostLoginPath(supabase, next);
   const { data: sessionData } = await supabase.auth.getSession();
-  return buildLoginSuccessResponse(redirectTo, sessionCookies, sessionData.session);
+  return buildLoginSuccessResponse(redirectTo, sessionCookies, {
+    session: sessionData.session,
+    includeTokens,
+  });
 }
 
-async function loginWithVerifiedEmail(email: string, next?: string | null): Promise<NextResponse> {
+async function loginWithVerifiedEmail(
+  email: string,
+  next?: string | null,
+  includeTokens = false,
+): Promise<NextResponse> {
   const admin = getSupabaseAdminClient();
   if (!admin) {
     return NextResponse.json(
@@ -161,7 +176,10 @@ async function loginWithVerifiedEmail(email: string, next?: string | null): Prom
 
   const redirectTo = await resolvePostLoginPath(supabase, next);
   const { data: sessionData } = await supabase.auth.getSession();
-  return buildLoginSuccessResponse(redirectTo, sessionCookies, sessionData.session);
+  return buildLoginSuccessResponse(redirectTo, sessionCookies, {
+    session: sessionData.session,
+    includeTokens,
+  });
 }
 
 export async function POST(request: Request) {
@@ -175,6 +193,7 @@ export async function POST(request: Request) {
   const email = typeof body.email === "string" ? body.email.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";
   const next = typeof body.next === "string" ? body.next : null;
+  const includeTokens = body.client === "ios";
 
   if (!email || !password) {
     return NextResponse.json(
@@ -212,8 +231,8 @@ export async function POST(request: Request) {
     }
 
     // Local dev usually has SUPABASE_POOLER_URL; production may not — fall back to Supabase password grant.
-    return loginWithPasswordGrant(email, password, next);
+    return loginWithPasswordGrant(email, password, next, includeTokens);
   }
 
-  return loginWithVerifiedEmail(verified.email, next);
+  return loginWithVerifiedEmail(verified.email, next, includeTokens);
 }

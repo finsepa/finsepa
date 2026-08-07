@@ -418,7 +418,7 @@ export function TopbarUserMenu({
     setSigningOut(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      await supabase.auth.signOut();
+      await signOutLocalSession(supabase);
       window.location.replace(loginSignedOutUrl());
     } finally {
       setSigningOut(false);

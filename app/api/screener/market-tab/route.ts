@@ -4,7 +4,7 @@ import {
   CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_FROZEN,
   CACHE_CONTROL_PRIVATE_SCREENER_COMPANIES_PAGE,
 } from "@/lib/data/cache-policy";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { buildScreenerMarketTabApiResponse } from "@/lib/screener/screener-page-payload";
 import { marketCacheSegmentFromPayload, type ScreenerMarketTab } from "@/lib/screener/screener-page-payload-types";
 import { parseScreenerMarketTab, SCREENER_MARKET_QUERY } from "@/lib/screener/screener-market-url";
@@ -17,10 +17,7 @@ import { parseScreenerSectorParam, SCREENER_SECTOR_QUERY } from "@/lib/screener/
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 
 export async function GET(request: Request) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await resolveAuthUserFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(request.url);
