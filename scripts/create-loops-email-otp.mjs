@@ -11,7 +11,10 @@ const LOOPS_BASE = "https://app.loops.so/api/v1";
 const DEFAULT_GROUP_ID = "cm2u88vy600nejd26m8s14h2d";
 const NAME = "Email login code";
 
-const SHARED_STYLE = `<Style backgroundColor="" backgroundXPadding="0" backgroundYPadding="0" bodyColor="" bodyXPadding="0" bodyYPadding="0" bodyFontFamily="Default" bodyFontCategory="sans-serif" borderColor="" borderWidth="0" borderRadius="4" buttonBodyColor="" buttonBodyXPadding="16" buttonBodyYPadding="12" buttonBorderColor="" buttonBorderWidth="0" buttonBorderRadius="4" buttonTextColor="" buttonTextFormat="0" buttonTextFontSize="16" dividerColor="#18181B" dividerBorderWidth="2" textBaseColor="" textBaseFontSize="14" textBaseLineHeight="150" textBaseLetterSpacing="0" textLinkColor="" heading1Color="#18181B" heading1FontSize="32" heading1LineHeight="120" heading1LetterSpacing="2" heading2Color="" heading2FontSize="24" heading2LineHeight="125" heading2LetterSpacing="0" heading3Color="" heading3FontSize="20" heading3LineHeight="125" heading3LetterSpacing="0" />`;
+// Leave body/background colors empty so Loops can auto-adapt light vs dark.
+// Code box: light grey + black digits (MoonPay-style) for light theme; reads as a
+// light card on dark mail backgrounds too (LMX has no dual theme tokens).
+const SHARED_STYLE = `<Style backgroundColor="" backgroundXPadding="0" backgroundYPadding="28" bodyColor="" bodyXPadding="0" bodyYPadding="28" bodyFontFamily="Default" bodyFontCategory="sans-serif" borderColor="" borderWidth="0" borderRadius="4" buttonBodyColor="" buttonBodyXPadding="16" buttonBodyYPadding="12" buttonBorderColor="" buttonBorderWidth="0" buttonBorderRadius="4" buttonTextColor="" buttonTextFormat="0" buttonTextFontSize="16" dividerColor="" dividerBorderWidth="1" textBaseColor="" textBaseFontSize="14" textBaseLineHeight="150" textBaseLetterSpacing="0" textLinkColor="" heading1Color="#18181B" heading1FontSize="32" heading1LineHeight="120" heading1LetterSpacing="2" heading2Color="" heading2FontSize="24" heading2LineHeight="125" heading2LetterSpacing="0" heading3Color="" heading3FontSize="20" heading3LineHeight="125" heading3LetterSpacing="0" />`;
 
 const TEMPLATE = {
   name: NAME,
@@ -20,12 +23,12 @@ const TEMPLATE = {
   dataVariables: ["firstName", "otpCode"],
   lmx: [
     SHARED_STYLE,
-    `<Paragraph>Hi {data.firstName},</Paragraph>`,
+    `<Paragraph paddingTop="8">Hi {data.firstName},</Paragraph>`,
     `<Paragraph paddingBottom="8"></Paragraph>`,
     `<Paragraph fontSize="16" paddingBottom="16"><Text format="1">Your login code for Finsepa is:</Text></Paragraph>`,
-    // MoonPay-style code card: gray rounded container, slight digit tracking.
-    `<Section blockColor="#F3F4F6" blockBorderRadius="12" paddingTop="20" paddingBottom="20" paddingLeft="20" paddingRight="20">`,
-    `<H1 align="center" fontSize="32" lineHeight="120">{data.otpCode}</H1>`,
+    // Grey panel + black code for light theme.
+    `<Section blockColor="#F4F4F5" blockBorderRadius="12" paddingTop="22" paddingBottom="22" paddingLeft="20" paddingRight="20">`,
+    `<H1 align="center" fontSize="32" lineHeight="120"><Text textColor="#18181B" format="1">{data.otpCode}</Text></H1>`,
     `</Section>`,
     `<Paragraph paddingBottom="16"></Paragraph>`,
     `<Paragraph fontSize="14" paddingBottom="12">This code is valid for the next 5 minutes. You should never share this code with anyone.</Paragraph>`,

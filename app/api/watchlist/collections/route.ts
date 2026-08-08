@@ -5,12 +5,12 @@ import {
   getWatchlistSnapshot,
   WatchlistValidationError,
 } from "@/lib/watchlist/operations";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
 export async function POST(request: Request) {
   try {
     const user = await requireAuthUserFromRequest(request);
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseClientForRequest(request);
 
     let body: unknown;
     try {

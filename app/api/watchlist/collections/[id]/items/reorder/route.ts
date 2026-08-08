@@ -5,14 +5,14 @@ import {
   reorderWatchlistCollectionItemsOnServer,
   WatchlistValidationError,
 } from "@/lib/watchlist/operations";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
     const user = await requireAuthUserFromRequest(request);
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseClientForRequest(request);
     const { id } = await context.params;
 
     let body: unknown;

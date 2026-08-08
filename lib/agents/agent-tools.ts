@@ -331,7 +331,7 @@ export function createCheapAgentTools(userId: string) {
 
     get_news_headlines: tool({
       description:
-        "Load recent Finsepa news hub headlines from the warm cache (stocks, crypto, or indices). Use for 'what's in the news'. If the cache is cold, tell the user to open News — do not invent headlines.",
+        "Load recent Finsepa news hub headlines from the warm cache (stocks, crypto, or indices). Match by intent — e.g. headlines, market news, what's happening (user need not say News page). If cold, tell them to open /news — do not invent headlines.",
       inputSchema: z.object({
         tab: z.enum(["stocks", "crypto", "indices"]).default("stocks"),
         limit: z.number().int().min(1).max(15).default(8),
@@ -341,7 +341,7 @@ export function createCheapAgentTools(userId: string) {
 
     get_earnings_week: tool({
       description:
-        "This week's (or nearby week's) earnings calendar from the warm Finsepa hub cache — tickers by weekday with timing and estimates when present. Use for 'who reports this week'. If cold, tell the user to open /earnings — do not invent reports.",
+        "This week's (or nearby week's) earnings calendar from the warm Finsepa hub cache — tickers by weekday with timing and estimates when present. Match by intent — who reports, earnings this week, EPS calendar (user need not say Earnings page). If cold, tell them to open /earnings — do not invent reports.",
       inputSchema: z.object({
         weekOffset: z
           .number()
@@ -358,7 +358,7 @@ export function createCheapAgentTools(userId: string) {
 
     get_economy_week: tool({
       description:
-        "This week's (or nearby week's) economic calendar from the warm Finsepa hub cache — events by weekday (CPI, NFP, FOMC, etc.). Use for 'what's on the economy calendar'. If cold, tell the user to open /economy — do not invent events.",
+        "This week's (or nearby week's) economic calendar from the warm Finsepa hub cache — events by weekday (CPI, NFP, FOMC, etc.). Match by intent — econ calendar, FOMC, NFP week (user need not say Economy page). If cold, tell them to open /economy — do not invent events.",
       inputSchema: z.object({
         weekOffset: z
           .number()
@@ -380,7 +380,7 @@ export function createCheapAgentTools(userId: string) {
 
     get_macro_dashboard: tool({
       description:
-        "Macro dashboard latest readings from the warm Finsepa hub cache (rates, CAPE, CPI, inflation, etc.). Use for macro / inflation / rates questions. Includes chartableIds — when answering series the user asks about, emit [[macro-chart:CARD_ID]] on its own line so the UI shows Finsepa charts (hub only). If cold, tell the user to open /macro — do not invent numbers.",
+        "Macro dashboard latest readings from the warm Finsepa hub cache: rates, CAPE, CPI/inflation, GDP, unemployment, crypto fear & greed, BTC ETF net flow / Bitcoin inflows (card id btc_etf_net_flow), etc. Match by intent — short asks like \"btc inflow\" or \"show inflation\" count; user need not say \"macro\". Includes chartableIds — emit [[macro-chart:CARD_ID]] on its own line for series they ask about (e.g. [[macro-chart:btc_etf_net_flow]]). If cold, tell them to open /macro — do not invent numbers; do not claim you lack the data until this tool returns cold.",
       inputSchema: z.object({
         limit: z.number().int().min(1).max(40).default(24),
       }),

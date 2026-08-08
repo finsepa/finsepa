@@ -6,7 +6,7 @@ import {
   NEW_ACCOUNT_WATCHLIST_RESET_WINDOW_MS,
 } from "@/lib/watchlist/new-account-reset";
 import { getWatchlistSnapshot, resetWatchlistForNewAccount } from "@/lib/watchlist/operations";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseClientForRequest(request);
     await resetWatchlistForNewAccount(supabase, user.id);
     const snapshot = await getWatchlistSnapshot(supabase, user.id);
     return NextResponse.json(snapshot, { status: 200 });

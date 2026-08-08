@@ -10,7 +10,7 @@ import {
   normalizeTickerSections,
 } from "@/lib/watchlist/sections";
 import type { WatchlistSyncCollectionInput } from "@/lib/watchlist/types";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
 function parseSyncCollectionEntry(entry: unknown): WatchlistSyncCollectionInput | null {
   if (!entry || typeof entry !== "object" || !("name" in entry) || !("tickers" in entry)) {
@@ -43,7 +43,7 @@ function parseSyncCollectionEntry(entry: unknown): WatchlistSyncCollectionInput 
 export async function POST(request: Request) {
   try {
     const user = await requireAuthUserFromRequest(request);
-    const supabase = await getSupabaseServerClient();
+    const supabase = await getSupabaseClientForRequest(request);
 
     let body: unknown;
     try {
