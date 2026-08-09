@@ -62,7 +62,20 @@ export async function ProtectedAppShell({
       }
     }
   } catch {
-    redirect(PATH_LOGIN);
+    // Claims read threw — still try a short getUser before bouncing to login.
+    try {
+      const {
+        data: { user: networkUser },
+      } = await Promise.race([
+        supabase.auth.getUser(),
+        new Promise<{ data: { user: null } }>((resolve) => {
+          setTimeout(() => resolve({ data: { user: null } }), 1_500);
+        }),
+      ]);
+      user = networkUser;
+    } catch {
+      /* fall through */
+    }
   }
 
   if (!user) {

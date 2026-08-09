@@ -18,8 +18,10 @@ import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
 import { EmailOtpAuthForm } from "@/components/auth/email-otp-auth-form";
 import { isEmailOtpEnabledClient } from "@/lib/auth/email-otp-public";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
+import { isDefinitiveSessionInvalid } from "@/lib/auth/session-invalid";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { signOutLocalSession } from "@/lib/auth/sign-out-local";
+import { userFromJwtClaims } from "@/lib/auth/user-from-claims";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { SpinnerLabel } from "@/components/ui/spinner";
 
@@ -107,12 +109,26 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
     return () => window.clearTimeout(id);
   }, [sessionGate]);
 
-  // If auth cookies survived a tab close but middleware briefly failed, resume without re-login.
+  // If auth cookies survived a tab close / deploy, resume without re-login.
+  // Only clear the session for definitive Auth invalidation — never for network blips.
   useEffect(() => {
     let cancelled = false;
 
     const finishReady = () => {
       if (!cancelled) setSessionGate("ready");
+    };
+
+    const resumeToApp = () => {
+      const loops = readResumeLoopCount() + 1;
+      if (loops > RESUME_LOOP_MAX) {
+        // Stop middleware ↔ login bounce without destroying cookies (transient shell/Auth issues).
+        writeResumeLoopCount(0);
+        finishReady();
+        return;
+      }
+      writeResumeLoopCount(loops);
+      if (!cancelled) setSessionGate("resuming");
+      window.location.replace(safeNextPath(authNext));
     };
 
     const budgetId = window.setTimeout(finishReady, RESUME_SESSION_BUDGET_MS);
@@ -131,14 +147,32 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
           return;
         }
 
-        // Validate with Auth — a stale local session would bounce through middleware → login forever.
+        // Prefer local JWT claims (no network) — matches middleware / protected shell.
+        try {
+          const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
+          if (!claimsError) {
+            const fromClaims = userFromJwtClaims(claimsData?.claims ?? null);
+            if (fromClaims) {
+              resumeToApp();
+              return;
+            }
+          }
+        } catch {
+          /* fall through to getUser */
+        }
+
         const {
           data: { user },
           error: userError,
         } = await supabase.auth.getUser();
         if (cancelled) return;
 
-        if (!user || userError) {
+        if (user) {
+          resumeToApp();
+          return;
+        }
+
+        if (userError && isDefinitiveSessionInvalid(userError)) {
           writeResumeLoopCount(0);
           try {
             await signOutLocalSession(supabase);
@@ -149,25 +183,10 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
           return;
         }
 
-        const loops = readResumeLoopCount() + 1;
-        if (loops > RESUME_LOOP_MAX) {
-          // Protected redirect rejected the session cookie path repeatedly — stop looping.
-          writeResumeLoopCount(0);
-          try {
-            await signOutLocalSession(supabase);
-          } catch {
-            /* ignore */
-          }
-          finishReady();
-          return;
-        }
-        writeResumeLoopCount(loops);
-
-        // Confirmed session — cover login chrome with brand loading until navigation finishes.
-        if (!cancelled) setSessionGate("resuming");
-        window.location.replace(safeNextPath(authNext));
-        // Keep cover until the document unloads.
+        // Transient Auth/network failure with cookies still present — keep signed in, show form.
+        finishReady();
       } catch {
+        // Keep cookies on unexpected probe failures.
         finishReady();
       } finally {
         window.clearTimeout(budgetId);
