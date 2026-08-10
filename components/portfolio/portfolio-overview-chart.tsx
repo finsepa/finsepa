@@ -49,6 +49,7 @@ import {
   CHART_PLOT_DOTS_PATTERN_CLASS,
   formatOverviewCrosshairBottomDate,
   overviewAxisLabelsEqual,
+  overviewChartAxisRowPx,
   resolveOverviewBottomAxisMode,
   syncOverviewPeriodAxisLabels,
   periodAxisLabelLayoutStyle,
@@ -79,10 +80,10 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { netCashUsdUpTo, normalizeUsdForDisplay } from "@/lib/portfolio/overview-metrics";
-import { whiteSurfaceButtonBorderClass, whiteSurfaceButtonShadowClass } from "@/components/design-system";
 import {
   topbarSquircleActiveClass,
   topbarSquircleIconClass,
+  topbarSquircleTextButtonClass,
 } from "@/components/design-system/topbar-control-classes";
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import {
@@ -722,10 +723,19 @@ export const PORTFOLIO_CHART_RANGE_LABELS: readonly SegmentedControlOption<Portf
   { value: "all", label: "ALL" },
 ];
 
+/** Mobile range row omits YTD — same as asset `ChartControls`. */
+const PORTFOLIO_CHART_MOBILE_RANGE_LABELS = PORTFOLIO_CHART_RANGE_LABELS.filter(
+  (option) => option.value !== "ytd",
+);
+
 const PORTFOLIO_CHART_METRIC_SEGMENTS: readonly SegmentedControlOption<PortfolioChartMetricMode>[] =
   PORTFOLIO_CHART_METRIC_OPTIONS;
 
-const PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS = `w-auto ${whiteSurfaceButtonBorderClass} bg-button font-medium ${whiteSurfaceButtonShadowClass} hover:bg-canvas`;
+/** Match asset chart metric listbox trigger (`ChartControls`). */
+const PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS = cn(
+  topbarSquircleTextButtonClass,
+  "w-auto bg-surface font-semibold hover:bg-surface-muted",
+);
 
 /** One-decimal truncation (e.g. 7616 → 7.6) so axis + last-price badge stay distinct. */
 function truncOneDecimalUnit(abs: number, unit: number): string {
@@ -1025,8 +1035,6 @@ function isFiniteNumber(v: unknown): v is number {
 
 const PORTFOLIO_CHART_HEIGHT_DESKTOP_PX = 320;
 const PORTFOLIO_CHART_HEIGHT_MOBILE_PX = 240;
-const PORTFOLIO_CHART_AXIS_ROW_DESKTOP_PX = 44;
-const PORTFOLIO_CHART_AXIS_ROW_MOBILE_PX = 26;
 
 type PortfolioOverviewChartLayout = {
   chartHeightPx: number;
@@ -1038,7 +1046,8 @@ type PortfolioOverviewChartLayout = {
 function resolvePortfolioOverviewChartLayout(viewportWidthPx: number): PortfolioOverviewChartLayout {
   const compact = viewportWidthPx < 640;
   const chartHeightPx = compact ? PORTFOLIO_CHART_HEIGHT_MOBILE_PX : PORTFOLIO_CHART_HEIGHT_DESKTOP_PX;
-  const axisRowPx = compact ? PORTFOLIO_CHART_AXIS_ROW_MOBILE_PX : PORTFOLIO_CHART_AXIS_ROW_DESKTOP_PX;
+  /** Same axis-row heights as asset `PriceChart` (`overviewChartAxisRowPx`). */
+  const axisRowPx = overviewChartAxisRowPx(viewportWidthPx);
   return {
     chartHeightPx,
     axisRowPx,
@@ -2019,7 +2028,7 @@ export function PortfolioValueHistoryChartPane({
             <span
               key={lab.key}
               className={cn(
-                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
+                "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
                 periodAxisLabelMaxWidthClass(anchor),
                 periodAxisLabelTransformClass(anchor),
               )}
@@ -2111,6 +2120,19 @@ function PortfolioOverviewChartInner({
     void load();
   }, [load]);
 
+  /** Mobile range row omits YTD — match asset `ChartControls`. */
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const syncMobileRange = () => {
+      if (mq.matches && range === "ytd") {
+        setRange("6m");
+      }
+    };
+    syncMobileRange();
+    mq.addEventListener("change", syncMobileRange);
+    return () => mq.removeEventListener("change", syncMobileRange);
+  }, [range]);
+
   const fetchSpy = compareSpy && (metric === "value" || metric === "return") && canLoad;
   const fetchNasdaq = compareNasdaq && metric === "value" && canLoad;
   const coverFromYmd = earliestBenchmarkCoverYmd(transactions);
@@ -2144,42 +2166,56 @@ function PortfolioOverviewChartInner({
   }, [fetchNasdaq, range, canLoad, coverFromYmd]);
 
   return (
-    <section className="mb-6 w-full min-w-0 max-md:mb-4">
-      {/* Web/desktop controls row. */}
-      <div className="relative z-20 mb-5 hidden w-full min-w-0 flex-wrap items-center justify-between gap-3 sm:flex">
-        <div className="flex min-w-0 items-center gap-3">
-          <SegmentedControl
-            options={PORTFOLIO_CHART_METRIC_SEGMENTS}
-            value={metric}
-            onChange={setMetric}
-            aria-label="Chart metric"
-          />
-        </div>
-
-        <div className="flex min-w-0 items-center justify-end gap-3">
-          <PortfolioChartSettingsButton {...chartSettingsProps} />
-
-          <SegmentedControl
-            options={PORTFOLIO_CHART_RANGE_LABELS}
-            value={range}
-            onChange={setRange}
-            aria-label="Chart range"
-          />
-        </div>
-      </div>
-
-      <div className="relative z-20 mb-3 mt-2 flex w-full min-w-0 max-w-full items-center justify-between gap-2 sm:hidden">
+    <section className="relative z-10 mb-6 w-full min-w-0 max-md:mb-4">
+      {/* Mobile: metric + settings above chart (asset ChartControls layout). */}
+      <div className="mb-2 flex w-full min-w-0 items-center justify-between gap-2 sm:hidden">
         <FormListboxSelect
           compact
           fitTrigger
           truncateLabel={false}
+          className="w-auto shrink-0"
+          listboxClassName="w-auto"
           aria-label="Chart metric"
           triggerClassName={PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS}
           options={PORTFOLIO_CHART_METRIC_OPTIONS}
           value={metric}
           onChange={(v) => setMetric(v as PortfolioChartMetricMode)}
         />
-        <PortfolioChartSettingsButton {...chartSettingsProps} />
+        <div className="shrink-0">
+          <PortfolioChartSettingsButton {...chartSettingsProps} />
+        </div>
+      </div>
+
+      {/* Desktop controls — same structure/spacing as asset ChartControls. */}
+      <div className="mb-0 hidden sm:mb-4 sm:block">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+          <div className="min-w-0 shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
+            <SegmentedControl
+              options={PORTFOLIO_CHART_METRIC_SEGMENTS}
+              value={metric}
+              onChange={setMetric}
+              size="sm"
+              aria-label="Chart metric"
+              className="min-w-min flex-nowrap"
+            />
+          </div>
+
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-2">
+            <div className="hidden shrink-0 sm:block">
+              <PortfolioChartSettingsButton {...chartSettingsProps} />
+            </div>
+            <div className="shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
+              <SegmentedControl
+                options={PORTFOLIO_CHART_RANGE_LABELS}
+                value={range}
+                onChange={setRange}
+                size="sm"
+                aria-label="Chart time range"
+                className="min-w-min flex-nowrap"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="w-full min-w-0">
@@ -2231,13 +2267,16 @@ function PortfolioOverviewChartInner({
         )}
       </div>
 
-      <div className="relative z-20 mt-3 w-full sm:hidden">
+      {/* Mobile range under chart — omit YTD like asset pages. */}
+      <div className="mt-3 w-full min-w-0 pt-0.5 sm:hidden">
         <SegmentedControl
-          options={PORTFOLIO_CHART_RANGE_LABELS}
-          value={range}
+          options={PORTFOLIO_CHART_MOBILE_RANGE_LABELS}
+          value={range === "ytd" ? "6m" : range}
           onChange={setRange}
+          size="sm"
           fullWidth
-          aria-label="Chart range"
+          aria-label="Chart time range"
+          className="min-w-0 flex-1"
         />
       </div>
     </section>

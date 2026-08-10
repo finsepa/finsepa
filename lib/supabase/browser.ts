@@ -1,8 +1,14 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { installSupabaseAuthConsoleErrorFilter } from "@/lib/auth/suppress-stale-auth-console-errors";
 import { supabaseAuthTimedFetch, SUPABASE_AUTH_BROWSER_FETCH_TIMEOUT_MS } from "@/lib/supabase/auth-fetch-timeout";
 import { supabaseAuthCookieOptions } from "@/lib/supabase/auth-cookie-options";
+
+/** Before GoTrue auto-refresh can `console.error` a stale refresh token into the Next overlay. */
+if (typeof window !== "undefined") {
+  installSupabaseAuthConsoleErrorFilter();
+}
 
 let injected: { url: string; anonKey: string } | null = null;
 

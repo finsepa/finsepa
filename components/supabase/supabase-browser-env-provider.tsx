@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { installSupabaseAuthConsoleErrorFilter } from "@/lib/auth/suppress-stale-auth-console-errors";
 import { setSupabaseBrowserEnv } from "@/lib/supabase/browser";
 
 /**
@@ -19,6 +20,7 @@ export function SupabaseBrowserEnvProvider({
   children: ReactNode;
 }) {
   if (typeof window !== "undefined") {
+    installSupabaseAuthConsoleErrorFilter();
     setSupabaseBrowserEnv(url, anonKey);
   }
   return children;
