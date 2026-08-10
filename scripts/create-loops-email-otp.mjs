@@ -18,7 +18,7 @@ const SHARED_STYLE = `<Style backgroundColor="" backgroundXPadding="0" backgroun
 
 const TEMPLATE = {
   name: NAME,
-  subject: "Your Finsepa login code",
+  subject: "Your code is {data.otpCode}",
   previewText: "Use this code to sign in to Finsepa.",
   dataVariables: ["firstName", "otpCode"],
   lmx: [
