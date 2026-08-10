@@ -6,8 +6,7 @@ import {
   filterEarningsCalendarItems,
   parseAllowedScopeKeysParam,
 } from "@/lib/market/earnings-scope-filter";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { AuthRequiredError, requireAuthUser } from "@/lib/watchlist/api-auth";
+import { AuthRequiredError, requireAuthUserFromRequest } from "@/lib/watchlist/api-auth";
 
 function parseWeekMonday(week: string | null): Date | null {
   if (!week?.trim()) return null;
@@ -18,11 +17,11 @@ function parseWeekMonday(week: string | null): Date | null {
 
 /**
  * Lazy-loaded earnings list rows for one weekday (fallback when SSR `listItems` is missing).
+ * Auth: Bearer or cookie via `requireAuthUserFromRequest` (native iOS clients).
  */
 export async function GET(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
   } catch (e) {
     if (e instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

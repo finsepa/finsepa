@@ -7,8 +7,7 @@ import {
   filterEarningsCalendarItems,
   parseAllowedScopeKeysParam,
 } from "@/lib/market/earnings-scope-filter";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { AuthRequiredError, requireAuthUser } from "@/lib/watchlist/api-auth";
+import { AuthRequiredError, requireAuthUserFromRequest } from "@/lib/watchlist/api-auth";
 
 const BUCKET_IDS: readonly EarningsTimingBucketId[] = ["bmo", "amc", "unknown"];
 
@@ -32,11 +31,11 @@ function isDayInWeek(monday: Date, dayYmd: string): boolean {
 
 /**
  * Lazy-loaded earnings cards for one timing bucket (same cached week package as the SSR grid).
+ * Auth: Bearer or cookie via `requireAuthUserFromRequest` (native iOS clients).
  */
 export async function GET(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
   } catch (e) {
     if (e instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
