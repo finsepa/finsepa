@@ -36,7 +36,8 @@ export function AuthSessionUrlBootstrap() {
       const result = await establishAuthSessionFromCurrentUrl();
       if (cancelled || result.status !== "established") return;
 
-      await postWelcomeTrialStartFromSession();
+      // Do not await Loops — must not block the protected shell on mobile.
+      void postWelcomeTrialStartFromSession();
       replaceUrlPathOnly(window.location.pathname + window.location.search);
     }
 

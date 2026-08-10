@@ -14,25 +14,43 @@ import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { Spinner } from "@/components/ui/spinner";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-const REDIRECT_AFTER_SUCCESS_MS = 1500;
-const REDIRECT_AFTER_ERROR_MS = 1500;
+const REDIRECT_AFTER_SUCCESS_MS = 400;
+const REDIRECT_AFTER_ERROR_MS = 1200;
 const SESSION_RETRY_MS = 200;
 const SESSION_RETRY_COUNT = 8;
+/** Never block "You're in" on Loops / redirect helper forever (mobile Safari hangs). */
+const POST_LOGIN_HELPER_TIMEOUT_MS = 2500;
 
 function safeNextPath(raw: string | null | undefined): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return PATH_APP_ENTRY;
   return raw;
 }
 
+async function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function resolveSignInDestination(next: string): Promise<string> {
   try {
-    const res = await fetch(`/api/auth/post-login-redirect?next=${encodeURIComponent(next)}`);
+    const res = await fetch(`/api/auth/post-login-redirect?next=${encodeURIComponent(next)}`, {
+      signal: AbortSignal.timeout(POST_LOGIN_HELPER_TIMEOUT_MS),
+    });
     const data = (await res.json().catch(() => ({}))) as { redirectTo?: string };
     if (typeof data.redirectTo === "string" && data.redirectTo.startsWith("/")) {
       return data.redirectTo;
     }
   } catch {
-    /* non-blocking */
+    /* non-blocking — continue to `next` */
   }
   return next;
 }
@@ -83,6 +101,8 @@ function AuthCallbackInner() {
       if (!urlHasAuthCallbackParams(href)) {
         const session = await waitForSession();
         if (session) {
+          // Welcome email is best-effort — never block leaving this screen.
+          void postWelcomeTrialStartFromSession();
           await finishSignIn(await resolveSignInDestination(safeNext));
           return;
         }
@@ -92,21 +112,21 @@ function AuthCallbackInner() {
         return;
       }
 
-      const result = await establishAuthSessionFromCurrentUrl();
+      const result = await withTimeout(
+        establishAuthSessionFromCurrentUrl(),
+        12_000,
+        { status: "failed" as const, reason: "session_error" as const },
+      );
       if (cancelled) return;
 
       const session = await waitForSession();
       const established = result.status === "established" || Boolean(session);
 
       if (established && session) {
-        let destination = safeNext;
-        try {
-          await postWelcomeTrialStartFromSession();
-        } catch {
-          /* non-blocking */
-        }
+        // Fire-and-forget: Loops/admin can hang on mobile; protected shell also sends this.
+        void postWelcomeTrialStartFromSession();
 
-        destination = await resolveSignInDestination(destination);
+        const destination = await resolveSignInDestination(safeNext);
         await finishSignIn(destination);
         return;
       }

@@ -7,13 +7,13 @@ import {
   listUserNotifications,
   markAllNotificationsRead,
 } from "@/lib/notifications/user-notifications-store";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
 export async function GET(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
 
     const url = new URL(request.url);
     const countOnly = url.searchParams.get("count") === "1";
@@ -41,10 +41,10 @@ export async function GET(request: Request) {
   }
 }
 
-export async function PATCH() {
+export async function PATCH(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
     await markAllNotificationsRead(supabase, user.id);
     return NextResponse.json({ ok: true });
   } catch (e) {
@@ -56,10 +56,10 @@ export async function PATCH() {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
     await deleteAllNotifications(supabase, user.id);
     return NextResponse.json({ ok: true });
   } catch (e) {

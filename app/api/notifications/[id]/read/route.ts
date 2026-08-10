@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 
 import { markNotificationRead } from "@/lib/notifications/user-notifications-store";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function POST(_request: Request, context: RouteContext) {
+export async function POST(request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
     await markNotificationRead(supabase, user.id, id);
     return NextResponse.json({ ok: true });
   } catch (e) {

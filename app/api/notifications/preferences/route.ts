@@ -5,13 +5,13 @@ import {
   getNotificationPreferences,
   setEarningsResultsEnabled,
 } from "@/lib/notifications/notification-preferences-store";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
     const [preferences, gate] = await Promise.all([
       getNotificationPreferences(supabase, user.id),
       getSubscriptionGateContext(supabase, user.id),
@@ -33,8 +33,8 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
     const gate = await getSubscriptionGateContext(supabase, user.id);
     if (!gate.canUseActivityAlerts) {
       return NextResponse.json(
