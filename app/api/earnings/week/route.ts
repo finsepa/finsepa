@@ -39,12 +39,14 @@ export async function GET(request: Request) {
 
   const pack = await getEarningsWeekPageData(monday);
   const days = pack.payload.days.map((day) => {
-    const items = sortEarningsCalendarItemsByMarketCap(earningsDayListItems(day)).slice(0, safeLimit);
+    const all = sortEarningsCalendarItemsByMarketCap(earningsDayListItems(day));
+    const items = all.slice(0, safeLimit);
     return {
       date: day.date,
       weekdayLabel: day.weekdayLabel,
       dayNumber: day.dayNumber,
       items,
+      total: all.length,
     };
   });
 
