@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_SCREENER_ROW } from "@/lib/data/cache-policy";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { buildCryptoScreenerApiResponse } from "@/lib/screener/screener-page-payload";
 import { SCREENER_CRYPTO_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 
 export async function GET(request: Request) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await resolveAuthUserFromRequest(request);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(request.url);
