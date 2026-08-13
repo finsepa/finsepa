@@ -38,6 +38,8 @@ export type BillingPlansViewState = {
   planLabel: string;
   /** Active Pro billing cycle (`null` when not paid Pro). */
   activeCycle: BillingCycle | null;
+  /** Pro is billed via App Store — manage/cancel on iOS, not Stripe. */
+  billedByApple?: boolean;
 };
 
 const breadcrumbLinkClass =
@@ -156,12 +158,13 @@ export function BillingPlansPageClient({ plan }: { plan: BillingPlansViewState }
 
   const proPrimaryAction: ProPrimaryAction = useMemo(() => {
     if (!plan.isPro) return "checkout";
+    if (plan.billedByApple) return "current";
     const active = plan.activeCycle;
     if (!active || active === cycle) return "current";
     if (active === "monthly" && cycle === "annually") return "upgrade-cycle";
     if (active === "annually" && cycle === "monthly") return "downgrade-cycle";
     return "current";
-  }, [plan.isPro, plan.activeCycle, cycle]);
+  }, [plan.isPro, plan.billedByApple, plan.activeCycle, cycle]);
 
   const proPrimaryLabel =
     proPrimaryAction === "upgrade-cycle"

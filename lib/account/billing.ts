@@ -34,6 +34,8 @@ export type BillingSummary = {
   platformTrialEndsAt: string | null;
   /** Days left in the app trial for the top bar; null when not in an active countdown. */
   platformTrialDaysRemaining: number | null;
+  /** Who bills Pro: Apple IAP or Stripe. Null on trial/free. */
+  billingProvider?: "apple" | "stripe" | null;
 };
 
 export const EMPTY_BILLING_SUMMARY: BillingSummary = {
@@ -48,6 +50,7 @@ export const EMPTY_BILLING_SUMMARY: BillingSummary = {
   paymentHistory: [],
   platformTrialEndsAt: null,
   platformTrialDaysRemaining: null,
+  billingProvider: null,
 };
 
 /** e.g. "Trial ends on Jun 30, 2026" — null when the end date is unknown. */

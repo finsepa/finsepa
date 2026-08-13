@@ -38,6 +38,7 @@ type BillingSubscriptionRow = {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   platform_trial_ends_at: string | null;
+  billing_provider?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -385,6 +386,13 @@ export async function GET(request: Request) {
               ? subscriptionMeta(stripeStatus, stripeCancelAtPeriodEnd, stripeCollectionPaused)
               : platformTrialEndsMetaLabel(platformTrialEndsAtIso) ?? "Trial is active";
 
+    const billingProvider: "apple" | "stripe" | null =
+      subscription?.billing_provider === "apple" || subscription?.billing_provider === "stripe"
+        ? subscription.billing_provider
+        : isPro
+          ? "stripe"
+          : null;
+
     return NextResponse.json({
       plan,
       accessState,
@@ -397,6 +405,7 @@ export async function GET(request: Request) {
       recurringDueDate: plan === "pro" && !cancelAtPeriodEndActive ? recurringDueDate : null,
       platformTrialEndsAt: isPro ? null : platformTrialEndsAtIso,
       platformTrialDaysRemaining,
+      billingProvider,
       paymentHistory: (invoices ?? []).map((row) => ({
         id: row.id,
         date: row.paid_at,

@@ -293,6 +293,10 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   }
 
   async function openManageSubscriptionPortal() {
+    if (billingSummary.billingProvider === "apple") {
+      toast.message("This Pro plan is billed through Apple. Manage or cancel it in iOS Settings → Apple ID → Subscriptions.");
+      return;
+    }
     setPortalLoading(true);
     try {
       await openStripeBillingPortalWithToast();

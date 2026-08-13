@@ -25,6 +25,7 @@ type BillingSubscriptionRow = {
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   platform_trial_ends_at: string | null;
+  billing_provider?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -126,6 +127,12 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
     recurringDueDate: subscription.current_period_end,
     platformTrialEndsAt: isPro ? null : platformTrialEndsAtIso,
     platformTrialDaysRemaining,
+    billingProvider:
+      subscription.billing_provider === "apple" || subscription.billing_provider === "stripe"
+        ? subscription.billing_provider
+        : isPro
+          ? "stripe"
+          : null,
     paymentHistory: (invoices ?? []).map((row) => ({
       id: row.id,
       date: row.paid_at,
@@ -552,6 +559,16 @@ export async function upsertBillingSubscription(args: {
 }) {
   const admin = getSupabaseAdminClient();
   if (!admin) return;
+
+  const { data: existing } = await admin
+    .from("billing_subscriptions")
+    .select("billing_provider,plan_code,status")
+    .eq("user_id", args.userId)
+    .maybeSingle<{ billing_provider: string | null; plan_code: string | null; status: string | null }>();
+  if (existing?.billing_provider === "apple" && hasActivePaidProSubscription(existing)) {
+    return;
+  }
+
   const priceId = args.subscription.items.data[0]?.price?.id ?? null;
   const currentPeriodEnd = (args.subscription as unknown as { current_period_end?: unknown })
     .current_period_end;
@@ -569,6 +586,7 @@ export async function upsertBillingSubscription(args: {
   await admin.from("billing_subscriptions").upsert(
     {
       user_id: args.userId,
+      billing_provider: "stripe",
       stripe_account_key: args.stripeAccountKey,
       stripe_customer_id: args.stripeCustomerId,
       stripe_subscription_id: args.subscription.id,
@@ -655,6 +673,14 @@ export async function setSubscriptionTrial(args: { userId: string }) {
 export async function setSubscriptionFreeAfterPro(args: { userId: string }): Promise<void> {
   const admin = getSupabaseAdminClient();
   if (!admin) return;
+
+  const { data: existing } = await admin
+    .from("billing_subscriptions")
+    .select("billing_provider")
+    .eq("user_id", args.userId)
+    .maybeSingle<{ billing_provider: string | null }>();
+  // Stripe ended — do not wipe an active (or recently synced) Apple subscription.
+  if (existing?.billing_provider === "apple") return;
 
   await admin.from("billing_subscriptions").upsert(
     {
