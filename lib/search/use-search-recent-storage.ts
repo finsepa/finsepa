@@ -14,12 +14,37 @@ import {
   type RecentSearchStoredItem,
 } from "@/lib/search/recent-searches-storage";
 
-async function fetchServerRecent(): Promise<RecentSearchStoredItem[] | null> {
+type ServerRecentSnapshot = {
+  items: RecentSearchStoredItem[];
+  clearedAt: string | null;
+};
+
+function recordedAtMs(item: RecentSearchStoredItem): number {
+  if (typeof item.recordedAt === "number" && Number.isFinite(item.recordedAt)) {
+    return item.recordedAt;
+  }
+  return 0;
+}
+
+function filterLocalAfterClear(
+  local: RecentSearchStoredItem[],
+  clearedAt: string | null,
+): RecentSearchStoredItem[] {
+  if (!clearedAt) return local;
+  const clearedMs = Date.parse(clearedAt);
+  if (!Number.isFinite(clearedMs)) return local;
+  return local.filter((item) => recordedAtMs(item) >= clearedMs);
+}
+
+async function fetchServerRecent(): Promise<ServerRecentSnapshot | null> {
   try {
     const res = await fetch("/api/search/recent", { credentials: "include", cache: "no-store" });
     if (!res.ok) return null;
-    const data = (await res.json()) as { items?: unknown };
-    return Array.isArray(data.items) ? (data.items as RecentSearchStoredItem[]) : [];
+    const data = (await res.json()) as { items?: unknown; clearedAt?: unknown };
+    const items = Array.isArray(data.items) ? (data.items as RecentSearchStoredItem[]) : [];
+    const clearedAt =
+      typeof data.clearedAt === "string" && data.clearedAt.trim() ? data.clearedAt : null;
+    return { items, clearedAt };
   } catch {
     return null;
   }
@@ -28,13 +53,14 @@ async function fetchServerRecent(): Promise<RecentSearchStoredItem[] | null> {
 async function putServerRecent(
   items: RecentSearchStoredItem[],
   removedIds: string[] = [],
+  clear = false,
 ): Promise<RecentSearchStoredItem[] | null> {
   try {
     const res = await fetch("/api/search/recent", {
       method: "PUT",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items, removedIds }),
+      body: JSON.stringify({ items, removedIds, clear }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { items?: unknown };
@@ -82,9 +108,28 @@ export function useSearchRecentStorage() {
       try {
         const server = await fetchServerRecent();
         if (cancelled || server == null) return;
+
         const local = readRecentSearches(userId);
-        const merged = mergeRecentSearchLists(local, server);
+        const localAfterClear = filterLocalAfterClear(local, server.clearedAt);
+
+        // Authoritative empty after clear — never re-upload stale localStorage.
+        if (server.items.length === 0 && server.clearedAt) {
+          writeRecentSearches([], userId);
+          setSyncEpoch((n) => n + 1);
+          return;
+        }
+
+        const merged = mergeRecentSearchLists(localAfterClear, server.items);
         writeRecentSearches(merged, userId);
+
+        // Only PUT when this device has newer/local-only entries to share.
+        const serverIds = new Set(server.items.map((i) => i.id));
+        const hasLocalOnly = localAfterClear.some((i) => !serverIds.has(i.id));
+        if (!hasLocalOnly) {
+          setSyncEpoch((n) => n + 1);
+          return;
+        }
+
         const saved = await putServerRecent(merged);
         if (cancelled) return;
         if (saved) writeRecentSearches(saved, userId);
@@ -134,5 +179,19 @@ export function useSearchRecentStorage() {
     [authReady, userId],
   );
 
-  return { userId, authReady, readRecent, recordRecent, removeRecent };
+  const clearRecent = useCallback(() => {
+    if (!authReady) return;
+    const prev = readRecentSearches(userId);
+    const removedIds = prev.map((i) => i.id);
+    writeRecentSearches([], userId);
+    setSyncEpoch((n) => n + 1);
+    if (!userId) return;
+    void putServerRecent([], removedIds, true).then((saved) => {
+      if (saved == null) return;
+      writeRecentSearches(saved, userId);
+      setSyncEpoch((n) => n + 1);
+    });
+  }, [authReady, userId]);
+
+  return { userId, authReady, readRecent, recordRecent, removeRecent, clearRecent };
 }

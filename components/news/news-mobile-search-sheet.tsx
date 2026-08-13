@@ -43,7 +43,7 @@ export function NewsMobileSearchSheet({
   const inputRef = useRef<HTMLInputElement>(null);
   const { watchedUnion, loaded, storageHydrated, toggleTicker, watchlists, activeWatchlistId } =
     useWatchlist();
-  const { readRecent, removeRecent, userId, authReady } = useSearchRecentStorage();
+  const { readRecent, removeRecent, clearRecent, userId, authReady } = useSearchRecentStorage();
 
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -249,8 +249,7 @@ export function NewsMobileSearchSheet({
                           <button
                             type="button"
                             onClick={() => {
-                              const cur = readRecent();
-                              cur.forEach((r) => removeRecent(r.id));
+                              clearRecent();
                               setRecent([]);
                               setHighlight(0);
                             }}
