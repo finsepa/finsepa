@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "google_only",
-        message: "This account uses Google sign-in. Continue with Google instead.",
+        message: "This account uses Apple or Google sign-in. Continue with Apple or Google instead.",
       },
       { status: 400 },
     );

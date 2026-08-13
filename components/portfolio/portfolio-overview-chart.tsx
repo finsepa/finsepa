@@ -95,6 +95,7 @@ import type {
   PortfolioChartRange,
   PortfolioValueHistoryPoint,
 } from "@/lib/portfolio/portfolio-chart-types";
+import { effectiveSamplingRange } from "@/lib/portfolio/portfolio-chart-sampling";
 
 const BENCHMARK_SPY_LINE = "#EA580C";
 const BENCHMARK_NASDAQ_LINE = "#9333EA";
@@ -219,6 +220,16 @@ export async function fetchSpyBenchmarkChartPoints(
   coverFromYmd?: string | null,
 ): Promise<StockChartPoint[] | null> {
   return fetchBenchmarkChartPoints("SPY", range, signal, coverFromYmd);
+}
+
+function portfolioSamplingRange(
+  requested: PortfolioChartRange,
+  points: readonly StockChartPoint[],
+): PortfolioChartRange {
+  const from = points[0]?.sessionDate;
+  const to = points[points.length - 1]?.sessionDate;
+  if (!from || !to) return requested;
+  return effectiveSamplingRange(requested, from, to);
 }
 
 function portfolioRangeToStockRange(r: PortfolioChartRange): StockChartRange {
@@ -1023,10 +1034,19 @@ type TradeDotHoverApi = {
   onLeave: () => void;
 };
 
-function portfolioCrosshairBottomLabel(hoverTime: Time, range: PortfolioChartRange): string {
+function portfolioCrosshairBottomLabel(
+  hoverTime: Time,
+  range: PortfolioChartRange,
+  points: readonly StockChartPoint[] = [],
+): string {
   const sec = horzTimeToUnixSeconds(hoverTime);
   if (sec == null) return "";
-  return formatOverviewCrosshairBottomDate(sec, PORTFOLIO_CHART_TIME_ZONE, portfolioRangeToStockRange(range));
+  const axisRange = portfolioSamplingRange(range, points);
+  return formatOverviewCrosshairBottomDate(
+    sec,
+    PORTFOLIO_CHART_TIME_ZONE,
+    portfolioRangeToStockRange(axisRange),
+  );
 }
 
 function isFiniteNumber(v: unknown): v is number {
@@ -1115,7 +1135,7 @@ function syncPortfolioPeriodAxisLabels(
   // Before the pane has a real width, coordinates are unreliable — skip rather than
   // paint a stacked right-edge pile (intermittent on first load).
   if (!(plotWidthPx > 0)) return [];
-  const stockRange = portfolioRangeToStockRange(range);
+  const stockRange = portfolioRangeToStockRange(portfolioSamplingRange(range, chartPoints));
   const axisMode = resolveOverviewBottomAxisMode(stockRange, chartPoints);
   const raw = syncOverviewPeriodAxisLabels(
     chart,
@@ -1512,7 +1532,7 @@ export function PortfolioValueHistoryChartPane({
       hoverTimeRef.current = hoverTime;
       setHoverAxisLabel({
         leftPx: param.point.x,
-        label: portfolioCrosshairBottomLabel(hoverTime, chartRangeRef.current),
+        label: portfolioCrosshairBottomLabel(hoverTime, chartRangeRef.current, chartPointsRef.current),
       });
 
       const raw = (data as { value: number }).value;
@@ -1586,7 +1606,7 @@ export function PortfolioValueHistoryChartPane({
           if (x != null && Number.isFinite(x)) {
             setHoverAxisLabel({
               leftPx: x,
-              label: portfolioCrosshairBottomLabel(hoverTime, chartRangeRef.current),
+              label: portfolioCrosshairBottomLabel(hoverTime, chartRangeRef.current, chartPointsRef.current),
             });
           }
         } else {
@@ -1847,7 +1867,7 @@ export function PortfolioValueHistoryChartPane({
           if (x != null && Number.isFinite(x)) {
             setHoverAxisLabel({
               leftPx: x,
-              label: portfolioCrosshairBottomLabel(hoverTime, range),
+              label: portfolioCrosshairBottomLabel(hoverTime, range, chartPointsRef.current),
             });
           }
         } else {

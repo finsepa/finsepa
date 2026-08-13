@@ -16,7 +16,9 @@ import { AuthOtpCodeInput } from "@/components/auth/auth-otp-code-input";
 import { useAuthCardHeader } from "@/components/auth/auth-card-header";
 import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
 import { Spinner, SpinnerLabel } from "@/components/ui/spinner";
+import { AppleMark, GoogleMark } from "@/components/auth/auth-social-marks";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
+import { startAppleOAuth } from "@/lib/auth/start-apple-oauth";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { ChevronLeft, Mail } from "@/lib/icons";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -26,17 +28,6 @@ const OTP_RE = /^\d{6}$/;
 const REDIRECT_AFTER_LOGIN_MS = 900;
 const FETCH_TIMEOUT_MS = 25_000;
 const STORAGE_REMEMBER = "finsepa_remember_me";
-
-function GoogleMark() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-      <path
-        fill="#EA4335"
-        d="M12 10.2v3.9h5.4c-.2 1.3-1.6 3.8-5.4 3.8-3.2 0-5.9-2.7-5.9-5.9S8.8 6.1 12 6.1c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.8 3.8 14.7 3 12 3 7 3 3 7 3 12s4 9 9 9c5.2 0 8.6-3.7 8.6-8.9 0-.6-.1-1-.1-1.4H12z"
-      />
-    </svg>
-  );
-}
 
 function safeNextPath(raw: string | null | undefined): string {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return PATH_APP_ENTRY;
@@ -63,13 +54,14 @@ export function EmailOtpAuthForm({
   const [code, setCode] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [cooldownSec, setCooldownSec] = useState(0);
 
-  const busy = googleLoading || sending || verifying || loginSuccess;
+  const busy = appleLoading || googleLoading || sending || verifying || loginSuccess;
   const emailNorm = email.trim().toLowerCase();
   const emailReady = emailNorm.length > 0 && EMAIL_RE.test(emailNorm);
   const codeReady = OTP_RE.test(code.trim());
@@ -181,6 +173,23 @@ export function EmailOtpAuthForm({
     }
   }
 
+  async function handleApple() {
+    setErrorMessage(null);
+    if (busy) return;
+    setAppleLoading(true);
+    try {
+      persistRememberMe();
+      const supabase = getSupabaseBrowserClient();
+      await startAppleOAuth(supabase, {
+        next: safeNextPath(authNext),
+        intent,
+      });
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setAppleLoading(false);
+    }
+  }
+
   async function handleGoogle() {
     setErrorMessage(null);
     if (busy) return;
@@ -223,7 +232,10 @@ export function EmailOtpAuthForm({
       };
 
       if (res.status === 400 && data.error === "google_only") {
-        setErrorMessage(data.message?.trim() || "This account uses Google sign-in. Continue with Google instead.");
+        setErrorMessage(
+          data.message?.trim() ||
+            "This account uses Apple or Google sign-in. Continue with Apple or Google instead.",
+        );
         return;
       }
       if (!res.ok) {
@@ -377,6 +389,14 @@ export function EmailOtpAuthForm({
       </form>
 
       <AuthDivider />
+      <AuthSecondaryButton
+        className={authEntryCtaClassName}
+        onClick={() => void handleApple()}
+        disabled={busy}
+      >
+        <AppleMark />
+        {appleLoading ? <SpinnerLabel>Redirecting…</SpinnerLabel> : "Continue with Apple"}
+      </AuthSecondaryButton>
       <AuthSecondaryButton
         className={authEntryCtaClassName}
         onClick={() => void handleGoogle()}

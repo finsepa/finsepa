@@ -23,6 +23,7 @@ import {
 } from "@/lib/market/stock-chart-data";
 import { loadPortfolioEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { netCashUsdUpTo } from "@/lib/portfolio/overview-metrics";
+import { effectiveSamplingRange } from "@/lib/portfolio/portfolio-chart-sampling";
 import type { PortfolioChartRange, PortfolioValueHistoryPoint } from "@/lib/portfolio/portfolio-chart-types";
 import { replayTradeTransactionsToHoldingsUpTo } from "@/lib/portfolio/rebuild-holdings-from-trades";
 import { cumulativeRealizedGainUsdUpTo } from "@/lib/portfolio/realized-pnl-from-trades";
@@ -117,7 +118,7 @@ function subsampleSortedYmd(dates: string[], maxPoints: number): string[] {
   return [...new Set(out)];
 }
 
-/** One sample every 7 days (5Y / ALL charts); uses last trading day on or before each week anchor when bars exist. */
+/** One sample every 7 days (native 5Y cadence; ALL inherits this only when span ≥ 5Y). */
 function oneSamplePerWeekInRange(
   fromYmd: string,
   toYmd: string,
@@ -546,13 +547,16 @@ export async function computePortfolioValueHistory(
       returnStartDt ? subDays(returnStartDt, 14) : now,
     ]),
   );
-  const maxPts = maxPointsForRange(range);
+  // Dietz still uses `range`. Sampling follows how long the clamped window actually is
+  // (young ALL/5Y inherit 1D/5D/1Y cadence instead of weekly).
+  const samplingRange = effectiveSamplingRange(range, fromYmd, toYmd);
+  const maxPts = maxPointsForRange(samplingRange);
   const symbols = tradeSymbols(transactions);
 
   const barsBySymbol = await loadPortfolioEodBars(symbols, barFromYmd, toYmd);
   const barPairs = [...barsBySymbol.entries()];
 
-  if (range === "ytd") {
+  if (samplingRange === "ytd") {
     const ytdPoints = await computePortfolioValueHistoryYtd(
       transactions,
       symbols,
@@ -578,16 +582,13 @@ export async function computePortfolioValueHistory(
   }
 
   let sampleDates: string[];
-  if (range === "1y") {
+  if (samplingRange === "1y") {
     const trading =
       dateSet.size > 0 ?
         [...dateSet].filter((d) => d >= fromYmd && d <= toYmd).sort((a, b) => a.localeCompare(b))
       : everyCalendarDayInRange(fromYmd, toYmd);
     sampleDates = [...new Set([fromYmd, ...trading, toYmd])].sort((a, b) => a.localeCompare(b));
-  } else if (range === "5y") {
-    const trading = [...dateSet].sort((a, b) => a.localeCompare(b));
-    sampleDates = oneSamplePerWeekInRange(fromYmd, toYmd, trading);
-  } else if (range === "all") {
+  } else if (samplingRange === "5y") {
     const trading = [...dateSet].sort((a, b) => a.localeCompare(b));
     sampleDates = oneSamplePerWeekInRange(fromYmd, toYmd, trading);
   } else {

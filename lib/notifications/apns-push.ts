@@ -27,7 +27,7 @@ type ApnsConfig = {
 function loadApnsConfig(): ApnsConfig | null {
   const keyId = pickProcessEnv("APNS_KEY_ID");
   const teamId = pickProcessEnv("APNS_TEAM_ID");
-  const bundleId = pickProcessEnv("APNS_BUNDLE_ID") ?? "finsepa.finsepa-ios";
+  const bundleId = pickProcessEnv("APNS_BUNDLE_ID") ?? "com.finsepa.app";
   const privateKeyRaw =
     pickProcessEnv("APNS_PRIVATE_KEY") ?? pickProcessEnv("APNS_AUTH_KEY_P8");
   if (!keyId || !teamId || !privateKeyRaw) return null;

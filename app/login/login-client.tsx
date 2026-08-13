@@ -17,8 +17,10 @@ import { AuthSessionLoadingScreen } from "@/components/auth/auth-session-loading
 import { useAuthPreCardBanner } from "@/components/auth/auth-pre-card-banner";
 import { EmailOtpAuthForm } from "@/components/auth/email-otp-auth-form";
 import { isEmailOtpEnabledClient } from "@/lib/auth/email-otp-public";
+import { AppleMark, GoogleMark } from "@/components/auth/auth-social-marks";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { isDefinitiveSessionInvalid } from "@/lib/auth/session-invalid";
+import { startAppleOAuth } from "@/lib/auth/start-apple-oauth";
 import { startGoogleOAuth } from "@/lib/auth/start-google-oauth";
 import { signOutLocalSession } from "@/lib/auth/sign-out-local";
 import { userFromJwtClaims } from "@/lib/auth/user-from-claims";
@@ -33,18 +35,6 @@ type Props = {
   resetSuccess?: boolean;
   authNext?: string | null;
 };
-
-function GoogleMark() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
-      <path
-        fill="#EA4335"
-        d="M12 10.2v3.9h5.4c-.2 1.3-1.6 3.8-5.4 3.8-3.2 0-5.9-2.7-5.9-5.9S8.8 6.1 12 6.1c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.8 3.8 14.7 3 12 3 7 3 3 7 3 12s4 9 9 9c5.2 0 8.6-3.7 8.6-8.9 0-.6-.1-1-.1-1.4H12z"
-      />
-      <path fill="#34A853" d="M3.9 7.3l3.2 2.3C7.9 7.8 9.8 6.1 12 6.1c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.8 3.8 14.7 3 12 3c-3.5 0-6.5 2-8.1 4.3z" opacity=".001" />
-    </svg>
-  );
-}
 
 const REDIRECT_AFTER_LOGIN_MS = 900;
 const LOGIN_FETCH_TIMEOUT_MS = 25_000;
@@ -83,6 +73,7 @@ function writeResumeLoopCount(n: number) {
 
 export function LoginClient({ resetSuccess, authNext }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordLoginSuccess, setPasswordLoginSuccess] = useState(false);
@@ -92,7 +83,7 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
   const [sessionGate, setSessionGate] = useState<SessionGate>("probing");
   const [showProbeLogo, setShowProbeLogo] = useState(false);
 
-  const busy = googleLoading || passwordLoading || sessionGate !== "ready";
+  const busy = appleLoading || googleLoading || passwordLoading || sessionGate !== "ready";
   const formLocked = busy || passwordLoginSuccess;
   const emailNorm = email.trim().toLowerCase();
   const emailReady = emailNorm.length > 0 && EMAIL_RE.test(emailNorm);
@@ -235,6 +226,21 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
     }
   }
 
+  async function handleApple() {
+    setErrorMessage(null);
+    if (formLocked) return;
+    setAppleLoading(true);
+    try {
+      persistRememberMe();
+      const supabase = getSupabaseBrowserClient();
+      await startAppleOAuth(supabase, { next: PATH_APP_ENTRY, intent: "login" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setErrorMessage(message);
+      setAppleLoading(false);
+    }
+  }
+
   async function handleGoogle() {
     setErrorMessage(null);
     if (formLocked) return;
@@ -329,7 +335,15 @@ export function LoginClient({ resetSuccess, authNext }: Props) {
     <div className="space-y-4">
       <AuthSecondaryButton
         className={authEntryCtaClassName}
-        onClick={handleGoogle}
+        onClick={() => void handleApple()}
+        disabled={formLocked}
+      >
+        <AppleMark />
+        {appleLoading ? <SpinnerLabel>Redirecting…</SpinnerLabel> : "Continue with Apple"}
+      </AuthSecondaryButton>
+      <AuthSecondaryButton
+        className={authEntryCtaClassName}
+        onClick={() => void handleGoogle()}
         disabled={formLocked}
       >
         <GoogleMark />
