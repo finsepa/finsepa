@@ -4,7 +4,10 @@ import { createClient, type User } from "@supabase/supabase-js";
 
 import { userFromJwtClaims } from "@/lib/auth/user-from-claims";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { supabaseAuthTimedFetch } from "@/lib/supabase/auth-fetch-timeout";
+import {
+  SUPABASE_AUTH_BROWSER_FETCH_TIMEOUT_MS,
+  supabaseAuthTimedFetch,
+} from "@/lib/supabase/auth-fetch-timeout";
 
 /**
  * Resolve the signed-in user from `Authorization: Bearer <access_token>` or session cookies.
@@ -15,15 +18,22 @@ import { supabaseAuthTimedFetch } from "@/lib/supabase/auth-fetch-timeout";
  */
 export async function resolveAuthUserFromRequest(request: Request): Promise<User | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  // Match middleware — publishable key is the new name for anon on some projects.
+  const anonKey =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
 
   const authHeader = request.headers.get("authorization");
   const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
 
   if (bearer && url && anonKey) {
+    // Native clients (iOS) only send Bearer — give Auth/JWKS enough time (4s default is tight).
+    const bearerFetch: typeof fetch = (input, init) =>
+      supabaseAuthTimedFetch(input, init, SUPABASE_AUTH_BROWSER_FETCH_TIMEOUT_MS);
+
     const jwtClient = createClient(url, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false },
-      global: { fetch: supabaseAuthTimedFetch },
+      global: { fetch: bearerFetch },
     });
     try {
       const { data, error } = await jwtClient.auth.getClaims(bearer);

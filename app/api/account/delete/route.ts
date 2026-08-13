@@ -4,7 +4,7 @@ import {
   deleteFinsepaAccount,
   isDeleteAccountConfirmPhrase,
 } from "@/lib/account/delete-account";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,10 +14,7 @@ type Body = {
 };
 
 export async function POST(request: Request) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await resolveAuthUserFromRequest(request);
 
   if (!user?.id) {
     return NextResponse.json({ error: "not_authenticated", message: "Not signed in." }, { status: 401 });
