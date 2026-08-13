@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { subscriptionGateFromBillingRow } from "@/lib/account/resolve-plan-tier";
 import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
 import { PATH_LOGIN } from "@/lib/auth/routes";
 import { scheduleWelcomeTrialStartEmailFromHeaders } from "@/lib/auth/welcome-trial-start-on-login";
@@ -26,6 +27,9 @@ import {
 
 /** Re-read sidebar/watchlist cookies on each navigation (separate route-group layouts). */
 export const dynamic = "force-dynamic";
+
+/** Billing SELECT must not freeze screener/shell first paint on a cold pooler. */
+const SUBSCRIPTION_GATE_BUDGET_MS = 3_000;
 
 const getSubscriptionGateContextCached = cache(getSubscriptionGateContext);
 
@@ -84,7 +88,18 @@ export async function ProtectedAppShell({
 
   scheduleWelcomeTrialStartEmailFromHeaders(user, requestHeaders);
 
-  const gate = await getSubscriptionGateContextCached(supabase, user.id);
+  let gate = subscriptionGateFromBillingRow(null);
+  try {
+    const resolved = await Promise.race([
+      getSubscriptionGateContextCached(supabase, user.id),
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), SUBSCRIPTION_GATE_BUDGET_MS);
+      }),
+    ]);
+    if (resolved) gate = resolved;
+  } catch {
+    /* keep Free fallback — PlanAccessProvider can refresh client-side */
+  }
 
   const userInitials = initialsFromUser(user);
   const avatarUrl = avatarUrlFromUser(user);

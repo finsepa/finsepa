@@ -523,6 +523,51 @@ function stocksMarketTabCacheKey(opts?: ScreenerMarketTabFetchOpts): string {
   return "stocks:all";
 }
 
+/** Empty tab shell so SSR can stream when the cold market snapshot is slow. */
+export function emptyScreenerMarketTabPayload(
+  market: ScreenerMarketTab,
+  opts?: ScreenerMarketTabFetchOpts,
+): ScreenerPagePayload {
+  const marketCacheSegment = getScreenerUsMarketCacheEpoch().segment;
+  const stocksSector = opts?.stocksSector ?? null;
+  const stocksIndustry = opts?.stocksIndustry ?? null;
+
+  switch (market) {
+    case "crypto":
+      return {
+        market: "crypto",
+        cryptoRows: [],
+        cryptoTotalCount: 0,
+        fearGreed: null,
+        marketCacheSegment,
+      };
+    case "indices":
+      return { market: "indices", indicesRows: [], marketCacheSegment };
+    case "etfs":
+      return { market: "etfs", etfsRows: [], marketCacheSegment };
+    case "currencies":
+      return {
+        market: "currencies",
+        currenciesRows: [],
+        marketCacheSegment: marketSnapshotSlowSegment(getScreenerUsMarketCacheEpoch()),
+      };
+    case "stocks":
+    default:
+      return {
+        market: "stocks",
+        stockRows: [],
+        stocksTotalCount: 0,
+        stocksSectorFilter: stocksSector,
+        stocksIndustryFilter: stocksIndustry,
+        indexCards: [],
+        companiesMarketCacheSegment: marketCacheSegment,
+      };
+  }
+}
+
+/** Cap SSR wait so first /screener paint cannot freeze on a cold snapshot rebuild. */
+export const SCREENER_SSR_PAYLOAD_DEADLINE_MS = 8_000;
+
 /** Lazy market-tab payload — shared across users per US session segment (15m live / frozen close). */
 export async function buildScreenerMarketTabApiResponse(
   market: ScreenerMarketTab,
@@ -538,5 +583,26 @@ export async function buildScreenerMarketTabApiResponse(
     () => buildScreenerPagePayload(market, opts),
     [market, listKey],
   );
+}
+
+/**
+ * Same as {@link buildScreenerMarketTabApiResponse}, but returns an empty shell after
+ * {@link SCREENER_SSR_PAYLOAD_DEADLINE_MS} so the client can finish loading.
+ */
+export async function buildScreenerMarketTabApiResponseForSsr(
+  market: ScreenerMarketTab,
+  opts?: ScreenerMarketTabFetchOpts,
+  deadlineMs: number = SCREENER_SSR_PAYLOAD_DEADLINE_MS,
+): Promise<ScreenerPagePayload> {
+  try {
+    return await Promise.race([
+      buildScreenerMarketTabApiResponse(market, opts),
+      new Promise<ScreenerPagePayload>((resolve) => {
+        setTimeout(() => resolve(emptyScreenerMarketTabPayload(market, opts)), deadlineMs);
+      }),
+    ]);
+  } catch {
+    return emptyScreenerMarketTabPayload(market, opts);
+  }
 }
 

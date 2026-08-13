@@ -9,7 +9,10 @@ import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { IndexTableRow } from "@/lib/market/indices-top10";
 import type { EtfTableRow } from "@/lib/screener/screener-etfs-universe";
 import type { CurrencyTableRow } from "@/lib/screener/screener-currencies-universe";
-import type { ScreenerPagePayload } from "@/lib/screener/screener-page-payload-types";
+import {
+  isEmptyScreenerMarketTabPayload,
+  type ScreenerPagePayload,
+} from "@/lib/screener/screener-page-payload-types";
 import { buildScreenerMarketTabApiUrl } from "@/lib/screener/build-screener-market-tab-url";
 import {
   buildScreenerMarketTabCacheKey,
@@ -468,11 +471,14 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   const tabFromPayload = screenerMarketTabLabelFromParam(payload.market);
   const [displayTab, setDisplayTab] = useState<MarketTab>(tabFromPayload);
   const [activePayload, setActivePayload] = useState<ScreenerPagePayload>(payload);
-  const [tabLoading, setTabLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(() => isEmptyScreenerMarketTabPayload(payload));
   const [, startTransition] = useTransition();
 
   useEffect(() => {
     setActivePayload(payload);
+    if (isEmptyScreenerMarketTabPayload(payload)) {
+      setTabLoading(true);
+    }
   }, [payload]);
 
   useEffect(() => {
@@ -491,12 +497,16 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   );
 
   const ensureMarketTabPayload = useCallback(
-    async (market: ScreenerMarketTabParam, params: URLSearchParams) => {
+    async (
+      market: ScreenerMarketTabParam,
+      params: URLSearchParams,
+      opts?: { force?: boolean },
+    ) => {
       const { stocksSector, stocksIndustry } = stocksFiltersFromUrl(params);
       const cacheKey = buildScreenerMarketTabCacheKey(market, stocksSector, stocksIndustry);
       const url = buildScreenerMarketTabApiUrl(market, { stocksSector, stocksIndustry });
 
-      if (activePayload.market === market) {
+      if (!opts?.force && activePayload.market === market) {
         if (market !== "stocks") return;
         if (activePayload.market === "stocks") {
           const p = activePayload;
@@ -525,6 +535,15 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     },
     [activePayload, stocksFiltersFromUrl],
   );
+
+  // Cold SSR deadline shell — finish loading via the same API path as tab switches.
+  useEffect(() => {
+    if (!isEmptyScreenerMarketTabPayload(payload)) return;
+    const params = new URLSearchParams(searchParams.toString());
+    void ensureMarketTabPayload(payload.market, params, { force: true });
+    // Only bootstrap once per empty SSR payload identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount/bootstrap
+  }, [payload]);
 
   const displayMarket = screenerMarketTabParamFromLabel(displayTab);
   const contentReady = displayMarket === activePayload.market && !tabLoading;
@@ -777,7 +796,8 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
         if (!cancelled) setFetchedCompanyPages((m) => ({ ...m, [companiesPage]: [] }));
       })
       .finally(() => {
-        if (!cancelled) setCompaniesRemoteLoading(false);
+        // Always clear — cancel must not leave the page-1→N skeleton stuck.
+        setCompaniesRemoteLoading(false);
       });
     return () => {
       cancelled = true;
@@ -820,7 +840,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
         if (!cancelled) setGainersLosers({ gainers: [], losers: [] });
       })
       .finally(() => {
-        if (!cancelled) setGainersLosersLoading(false);
+        setGainersLosersLoading(false);
       });
     return () => {
       cancelled = true;
@@ -853,7 +873,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
         if (!cancelled) setSectorsRows([]);
       })
       .finally(() => {
-        if (!cancelled) setSectorsLoading(false);
+        setSectorsLoading(false);
       });
     return () => {
       cancelled = true;
@@ -886,7 +906,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
         if (!cancelled) setIndustriesRows([]);
       })
       .finally(() => {
-        if (!cancelled) setIndustriesLoading(false);
+        setIndustriesLoading(false);
       });
     return () => {
       cancelled = true;
@@ -921,7 +941,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
         setFetchedCryptoPages((m) => ({ ...m, [cryptoPage]: data.rows ?? [] }));
       })
       .finally(() => {
-        if (!cancelled) setCryptoRemoteLoading(false);
+        setCryptoRemoteLoading(false);
       });
     return () => {
       cancelled = true;
@@ -991,7 +1011,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
         if (!cancelled) setCompaniesKeyStatValuesByMetric({});
       })
       .finally(() => {
-        if (!cancelled) setCompaniesKeyStatLoading(false);
+        setCompaniesKeyStatLoading(false);
       });
     return () => {
       cancelled = true;

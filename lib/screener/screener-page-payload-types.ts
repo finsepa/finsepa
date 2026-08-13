@@ -80,3 +80,21 @@ export function marketCacheSegmentFromPayload(payload: ScreenerPagePayload): str
   if (payload.market === "stocks") return payload.companiesMarketCacheSegment;
   return payload.marketCacheSegment;
 }
+
+/** True when SSR returned an empty deadline shell (client must refetch). */
+export function isEmptyScreenerMarketTabPayload(payload: ScreenerPagePayload): boolean {
+  switch (payload.market) {
+    case "stocks":
+      return payload.stockRows.length === 0 && payload.indexCards.length === 0;
+    case "crypto":
+      return payload.cryptoRows.length === 0;
+    case "indices":
+      return payload.indicesRows.length === 0;
+    case "etfs":
+      return payload.etfsRows.length === 0;
+    case "currencies":
+      return payload.currenciesRows.length === 0;
+    default:
+      return true;
+  }
+}
