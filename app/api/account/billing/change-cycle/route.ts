@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 
 import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
 import { upsertBillingSubscription } from "@/lib/account/billing-db";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import type { BillingCycle } from "@/lib/account/plan-pricing";
 import { resolveBillingPriceIdForCycle } from "@/lib/stripe/resolve-billing-price";
 import { getStripeAccountConfig, getStripeClient } from "@/lib/stripe/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+
+export const runtime = "nodejs";
 
 function resolveCycle(input: unknown): BillingCycle {
   return input === "annually" ? "annually" : "monthly";
@@ -23,26 +26,29 @@ function cycleFromPlanCode(planCode: string | null | undefined): BillingCycle | 
  * Switch an active Pro subscription between monthly and annual prices (no new Checkout).
  */
 export async function POST(req: Request) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await resolveAuthUserFromRequest(req);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const admin = getSupabaseAdminClient();
+  if (!admin) {
+    return NextResponse.json({ error: "Server is not configured." }, { status: 500 });
   }
 
   const body = (await req.json().catch(() => ({}))) as { cycle?: string };
   const targetCycle = resolveCycle(body?.cycle);
 
-  const { data: subRow } = await supabase
+  const { data: subRow } = await admin
     .from("billing_subscriptions")
     .select(
-      "plan_code,status,stripe_customer_id,stripe_subscription_id,stripe_account_key,stripe_price_id",
+      "plan_code,status,billing_provider,stripe_customer_id,stripe_subscription_id,stripe_account_key,stripe_price_id",
     )
     .eq("user_id", user.id)
     .maybeSingle<{
       plan_code: string;
       status: string;
+      billing_provider: string | null;
       stripe_customer_id: string | null;
       stripe_subscription_id: string | null;
       stripe_account_key: string | null;
@@ -53,6 +59,13 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { error: "An active Pro subscription is required to change billing cycle." },
       { status: 400 },
+    );
+  }
+
+  if (subRow?.billing_provider === "apple") {
+    return NextResponse.json(
+      { error: "This Pro plan is billed through Apple. Change monthly or yearly in the iOS app." },
+      { status: 409 },
     );
   }
 

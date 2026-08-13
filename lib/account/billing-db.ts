@@ -2,6 +2,7 @@ import "server-only";
 
 import type Stripe from "stripe";
 import { EMPTY_BILLING_SUMMARY, platformTrialEndsMetaLabel, type BillingSummary } from "@/lib/account/billing";
+import { billingCycleFromPlanCode } from "@/lib/account/plan-pricing";
 import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
 import {
   effectivePlatformTrialEndsAtIso,
@@ -133,6 +134,7 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
         : isPro
           ? "stripe"
           : null,
+    billingCycle: isPro ? billingCycleFromPlanCode(subscription.plan_code) : null,
     paymentHistory: (invoices ?? []).map((row) => ({
       id: row.id,
       date: row.paid_at,

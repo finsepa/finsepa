@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
 import { platformTrialEndsMetaLabel } from "@/lib/account/billing";
+import { billingCycleFromPlanCode } from "@/lib/account/plan-pricing";
 import { patchBillingSubscriptionFromStripeReconcile } from "@/lib/account/billing-db";
 import {
   previewSubscriptionPeriodEndSeconds,
@@ -406,6 +407,7 @@ export async function GET(request: Request) {
       platformTrialEndsAt: isPro ? null : platformTrialEndsAtIso,
       platformTrialDaysRemaining,
       billingProvider,
+      billingCycle: isPro ? billingCycleFromPlanCode(subscription?.plan_code) : null,
       paymentHistory: (invoices ?? []).map((row) => ({
         id: row.id,
         date: row.paid_at,

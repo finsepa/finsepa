@@ -36,6 +36,8 @@ export type BillingSummary = {
   platformTrialDaysRemaining: number | null;
   /** Who bills Pro: Apple IAP or Stripe. Null on trial/free. */
   billingProvider?: "apple" | "stripe" | null;
+  /** Paid Pro cadence. Null when not on Pro. */
+  billingCycle?: "monthly" | "annually" | null;
 };
 
 export const EMPTY_BILLING_SUMMARY: BillingSummary = {
@@ -51,6 +53,7 @@ export const EMPTY_BILLING_SUMMARY: BillingSummary = {
   platformTrialEndsAt: null,
   platformTrialDaysRemaining: null,
   billingProvider: null,
+  billingCycle: null,
 };
 
 /** e.g. "Trial ends on Jun 30, 2026" — null when the end date is unknown. */
