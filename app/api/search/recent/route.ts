@@ -17,6 +17,7 @@ export async function GET(request: Request) {
       items: snapshot.items,
       clearedAt: snapshot.clearedAt,
       updatedAt: snapshot.updatedAt,
+      removed: snapshot.removed,
     });
   } catch (e) {
     if (e instanceof AuthRequiredError) {

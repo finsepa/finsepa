@@ -8,12 +8,22 @@ import {
   normalizeRecentSearchItems,
   type RecentSearchStoredItem,
 } from "@/lib/search/recent-searches-storage";
+import {
+  filterAfterRemoved,
+  normalizeRemovedMap,
+  pruneRemovedAgainstItems,
+  type RecentSearchRemovedMap,
+} from "@/lib/search/recent-searches-removed";
+
+export type { RecentSearchRemovedMap };
 
 export type UserRecentSearchesSnapshot = {
   items: RecentSearchStoredItem[];
   /** ISO timestamp when the user last cleared the full list (authoritative empty). */
   clearedAt: string | null;
   updatedAt: string | null;
+  /** Per-id tombstones so stale clients cannot resurrect single deletes. */
+  removed: RecentSearchRemovedMap;
 };
 
 function recordedAtMs(item: RecentSearchStoredItem): number {
@@ -39,7 +49,7 @@ export async function getUserRecentSearchesSnapshot(
 ): Promise<UserRecentSearchesSnapshot> {
   const { data, error } = await supabase
     .from("user_recent_searches")
-    .select("items, cleared_at, updated_at")
+    .select("items, cleared_at, updated_at, removed")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -49,12 +59,16 @@ export async function getUserRecentSearchesSnapshot(
     typeof data?.cleared_at === "string" && data.cleared_at.trim() ? data.cleared_at : null;
   const updatedAt =
     typeof data?.updated_at === "string" && data.updated_at.trim() ? data.updated_at : null;
-  const items = filterAfterClearedAt(
-    normalizeRecentSearchItems(data?.items).slice(0, MAX_RECENT_SEARCHES),
-    clearedAt,
+  const removed = normalizeRemovedMap(data?.removed);
+  const items = filterAfterRemoved(
+    filterAfterClearedAt(
+      normalizeRecentSearchItems(data?.items).slice(0, MAX_RECENT_SEARCHES),
+      clearedAt,
+    ),
+    removed,
   );
 
-  return { items, clearedAt, updatedAt };
+  return { items, clearedAt, updatedAt, removed };
 }
 
 export async function getUserRecentSearches(
@@ -72,9 +86,8 @@ export type UpsertUserRecentSearchesOptions = {
 
 /**
  * Upserts the client's list after merging with the server copy so concurrent
- * local/prod edits do not drop items. Pass `removedIds` so deletions stick.
- * Pass `clear: true` (or empty items + removedIds covering the server list) for
- * an authoritative clear that other devices must not resurrect from stale local.
+ * local/prod edits do not drop items. Pass `removedIds` so deletions stick
+ * (persisted as tombstones). Pass `clear: true` for an authoritative clear.
  */
 export async function upsertUserRecentSearches(
   supabase: SupabaseClient,
@@ -104,6 +117,7 @@ export async function upsertUserRecentSearches(
         items: [],
         cleared_at: nowIso,
         updated_at: nowIso,
+        removed: {},
       },
       { onConflict: "user_id" },
     );
@@ -111,20 +125,30 @@ export async function upsertUserRecentSearches(
     return [];
   }
 
-  const merged = filterAfterClearedAt(
-    mergeRecentSearchLists(incoming, existing)
-      .filter((item) => !drop.has(item.id))
-      .slice(0, MAX_RECENT_SEARCHES),
-    snapshot.clearedAt,
+  const removed: RecentSearchRemovedMap = { ...snapshot.removed };
+  for (const id of drop) {
+    removed[id] = nowIso;
+  }
+
+  const merged = filterAfterRemoved(
+    filterAfterClearedAt(
+      mergeRecentSearchLists(incoming, existing)
+        .filter((item) => !drop.has(item.id))
+        .slice(0, MAX_RECENT_SEARCHES),
+      snapshot.clearedAt,
+    ),
+    removed,
   );
+
+  const removedPruned = pruneRemovedAgainstItems(removed, merged);
 
   const { error } = await supabase.from("user_recent_searches").upsert(
     {
       user_id: userId,
       items: merged,
       updated_at: nowIso,
-      // Keep prior cleared_at so stale clients cannot reintroduce pre-clear rows.
       cleared_at: snapshot.clearedAt,
+      removed: removedPruned,
     },
     { onConflict: "user_id" },
   );

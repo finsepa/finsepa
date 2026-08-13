@@ -13,10 +13,12 @@ import {
   writeRecentSearches,
   type RecentSearchStoredItem,
 } from "@/lib/search/recent-searches-storage";
+import { filterAfterRemoved, type RecentSearchRemovedMap } from "@/lib/search/recent-searches-removed";
 
 type ServerRecentSnapshot = {
   items: RecentSearchStoredItem[];
   clearedAt: string | null;
+  removed: RecentSearchRemovedMap;
 };
 
 function recordedAtMs(item: RecentSearchStoredItem): number {
@@ -40,11 +42,19 @@ async function fetchServerRecent(): Promise<ServerRecentSnapshot | null> {
   try {
     const res = await fetch("/api/search/recent", { credentials: "include", cache: "no-store" });
     if (!res.ok) return null;
-    const data = (await res.json()) as { items?: unknown; clearedAt?: unknown };
+    const data = (await res.json()) as {
+      items?: unknown;
+      clearedAt?: unknown;
+      removed?: unknown;
+    };
     const items = Array.isArray(data.items) ? (data.items as RecentSearchStoredItem[]) : [];
     const clearedAt =
       typeof data.clearedAt === "string" && data.clearedAt.trim() ? data.clearedAt : null;
-    return { items, clearedAt };
+    const removed =
+      data.removed && typeof data.removed === "object" && !Array.isArray(data.removed)
+        ? (data.removed as RecentSearchRemovedMap)
+        : {};
+    return { items, clearedAt, removed };
   } catch {
     return null;
   }
@@ -110,7 +120,10 @@ export function useSearchRecentStorage() {
         if (cancelled || server == null) return;
 
         const local = readRecentSearches(userId);
-        const localAfterClear = filterLocalAfterClear(local, server.clearedAt);
+        const localAfterClear = filterAfterRemoved(
+          filterLocalAfterClear(local, server.clearedAt),
+          server.removed,
+        );
 
         // Authoritative empty after clear — never re-upload stale localStorage.
         if (server.items.length === 0 && server.clearedAt) {
@@ -123,6 +136,7 @@ export function useSearchRecentStorage() {
         writeRecentSearches(merged, userId);
 
         // Only PUT when this device has newer/local-only entries to share.
+        // Tombstoned ids are already filtered out of localAfterClear.
         const serverIds = new Set(server.items.map((i) => i.id));
         const hasLocalOnly = localAfterClear.some((i) => !serverIds.has(i.id));
         if (!hasLocalOnly) {
