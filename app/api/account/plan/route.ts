@@ -7,19 +7,18 @@ import {
   freeActiveManualPortfolioExists,
 } from "@/lib/account/free-plan-selection";
 import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
 export const dynamic = "force-dynamic";
 
 /** GET free-plan selection + plan entitlements (for client Free limits UI). */
-export async function GET() {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export async function GET(request: Request) {
+  const user = await resolveAuthUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const supabase = await getSupabaseClientForRequest(request);
 
   const [gate, selection] = await Promise.all([
     getSubscriptionGateContext(supabase, user.id),
@@ -59,13 +58,11 @@ type PatchBody = {
 
 /** POST free-plan selection (pick / ack). Cannot re-pick once locked while still Free. */
 export async function POST(request: Request) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await resolveAuthUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const supabase = await getSupabaseClientForRequest(request);
 
   const gate = await getSubscriptionGateContext(supabase, user.id);
   let body: PatchBody;
