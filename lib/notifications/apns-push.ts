@@ -15,6 +15,7 @@ export type ApnsPushPayload = {
   ticker?: string;
   kind?: string;
   notificationId?: string;
+  logoUrl?: string;
 };
 
 type ApnsConfig = {
@@ -84,10 +85,12 @@ async function sendOneApns(
         body: payload.body,
       },
       sound: "default",
+      "mutable-content": 1,
     },
     kind: payload.kind ?? "earnings_released",
     ticker: payload.ticker ?? null,
     notificationId: payload.notificationId ?? null,
+    logoUrl: payload.logoUrl ?? null,
   });
 
   return await new Promise((resolve) => {

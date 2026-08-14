@@ -64,7 +64,7 @@ export async function insertEarningsReleaseNotifications(
   const { data, error } = await admin
     .from("user_notifications")
     .upsert(rows, { onConflict: "user_id,kind,dedupe_key", ignoreDuplicates: true })
-    .select("id,user_id,ticker,title,body,kind");
+    .select("id,user_id,ticker,title,body,kind,payload");
 
   if (error) throw new Error(`user_notifications_insert_failed: ${error.message}`);
 
@@ -75,6 +75,7 @@ export async function insertEarningsReleaseNotifications(
     title: string;
     body: string;
     kind: string;
+    payload: Record<string, unknown> | null;
   }[];
 
   // Push only newly inserted rows (ignoreDuplicates means updates aren't returned).
@@ -92,12 +93,17 @@ export async function insertEarningsReleaseNotifications(
         inserted.map(async (row) => {
           const userDevices = devicesByUser.get(row.user_id) ?? [];
           if (userDevices.length === 0) return;
+          const logoUrl =
+            typeof row.payload?.logoUrl === "string" && row.payload.logoUrl.trim()
+              ? row.payload.logoUrl.trim()
+              : undefined;
           await sendEarningsApnsToDevices(admin, userDevices, {
             title: row.title,
             body: row.body,
             ticker: row.ticker,
             kind: row.kind,
             notificationId: row.id,
+            logoUrl,
           });
         }),
       );
