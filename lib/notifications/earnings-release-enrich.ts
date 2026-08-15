@@ -4,7 +4,7 @@ import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { logoUrlFromFundamentalsRoot } from "@/lib/market/stock-logo-url";
 import { resolveEarningsPeriodMetricsFromFundamentals } from "@/lib/market/stock-earnings-tab-data";
 import type { DetectedEarningsRelease } from "@/lib/notifications/earnings-release-detect";
-import { quarterLabelFromPeriodEndYmd } from "@/lib/notifications/earnings-notification-model";
+import { formatEarningsPushCopy, quarterLabelFromPeriodEndYmd } from "@/lib/notifications/earnings-notification-model";
 
 function companyNameFromRoot(root: Record<string, unknown>, fallback: string): string {
   const general = root.General && typeof root.General === "object" ? (root.General as Record<string, unknown>) : null;
@@ -27,19 +27,29 @@ function enrichFromRoot(
   const metrics = resolveEarningsPeriodMetricsFromFundamentals(root, fiscalPeriodEndYmd);
 
   const periodLabel = quarterLabelFromPeriodEndYmd(fiscalPeriodEndYmd);
+  const epsActual = metrics?.epsActual ?? row.epsActual;
+  const epsEstimate = metrics?.epsEstimate ?? row.epsEstimate;
+  const surprisePct = metrics?.surprisePct ?? row.surprisePct;
+  const { title, body } = formatEarningsPushCopy({
+    ticker: row.ticker,
+    periodLabel,
+    epsActual,
+    epsEstimate,
+    surprisePct,
+  });
 
   return {
     ...release,
-    title: `${companyName} reported earnings`,
-    body: periodLabel,
+    title,
+    body,
     payload: {
       ...release.payload,
       companyName,
       logoUrl: logoUrl || undefined,
       fiscalPeriodLabel: periodLabel,
-      epsActual: metrics?.epsActual ?? row.epsActual,
-      epsEstimate: metrics?.epsEstimate ?? row.epsEstimate,
-      surprisePct: metrics?.surprisePct ?? row.surprisePct,
+      epsActual: epsActual,
+      epsEstimate: epsEstimate,
+      surprisePct: surprisePct,
       revenueActual: metrics?.revenueActual ?? null,
       revenueEstimate: metrics?.revenueEstimate ?? null,
       revenueSurprisePct: metrics?.revenueSurprisePct ?? null,

@@ -50,6 +50,28 @@ export function formatPeriodLabelForDisplay(
   return raw;
 }
 
+/** Lock-screen copy — title is ticker; body is `Q2 2026 - EPS $1.03 vs $1.20 (−14.2%)`. */
+export function formatEarningsPushCopy(args: {
+  ticker: string;
+  periodLabel: string;
+  epsActual?: number | null;
+  epsEstimate?: number | null;
+  surprisePct?: number | null;
+}): { title: string; body: string } {
+  const title = args.ticker.trim().toUpperCase();
+  const period = args.periodLabel.replace(/\s*[·•]\s*/g, " ").trim();
+  if (args.epsActual == null || !Number.isFinite(args.epsActual)) {
+    return { title, body: period };
+  }
+  let eps = `EPS ${formatEpsUsd(args.epsActual)}`;
+  if (args.epsEstimate != null && Number.isFinite(args.epsEstimate)) {
+    eps += ` vs ${formatEpsUsd(args.epsEstimate)}`;
+  }
+  const surprise = formatSurprisePct(args.surprisePct);
+  if (surprise) eps += ` ${surprise}`;
+  return { title, body: period ? `${period} - ${eps}` : eps };
+}
+
 /** Listing symbol for notification UI — row, payload, or legacy `AAPL reported earnings` title. */
 export function resolveNotificationTicker(input: {
   ticker?: string | null;

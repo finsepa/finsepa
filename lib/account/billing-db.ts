@@ -2,7 +2,13 @@ import "server-only";
 
 import type Stripe from "stripe";
 import { EMPTY_BILLING_SUMMARY, platformTrialEndsMetaLabel, type BillingSummary } from "@/lib/account/billing";
-import { billingCycleFromPlanCode } from "@/lib/account/plan-pricing";
+import {
+  appleProPriceForCycle,
+  billingCycleFromPlanCode,
+  displayAppleBilledUsd,
+  remapStripeListPriceToAppleUsd,
+} from "@/lib/account/plan-pricing";
+import { appleAmountUsdForProductId } from "@/lib/apple/products";
 import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
 import {
   effectivePlatformTrialEndsAtIso,
@@ -27,6 +33,7 @@ type BillingSubscriptionRow = {
   cancel_at_period_end: boolean;
   platform_trial_ends_at: string | null;
   billing_provider?: string | null;
+  apple_product_id?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -36,7 +43,18 @@ type BillingInvoiceRow = {
   paid_at: string;
   amount_usd: number;
   description: string;
+  stripe_account_key?: string | null;
 };
+
+function mapInvoiceHistoryRow(row: BillingInvoiceRow): BillingSummary["paymentHistory"][number] {
+  return {
+    id: row.id,
+    date: row.paid_at,
+    amountUsd:
+      row.stripe_account_key === "apple" ? remapStripeListPriceToAppleUsd(row.amount_usd) : row.amount_usd,
+    description: row.description || "Finsepa Pro",
+  };
+}
 
 function subscriptionMeta(status: string, cancelAtPeriodEnd: boolean, collectionPaused = false): string {
   if (collectionPaused) return "Billing paused";
@@ -60,7 +78,7 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
       .maybeSingle<BillingSubscriptionRow>(),
     admin
       .from("billing_invoices")
-      .select("id, paid_at, amount_usd, description")
+      .select("id, paid_at, amount_usd, description, stripe_account_key")
       .eq("user_id", userId)
       .order("paid_at", { ascending: false })
       .limit(100)
@@ -72,17 +90,18 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
       ...EMPTY_BILLING_SUMMARY,
       platformTrialEndsAt: null,
       platformTrialDaysRemaining: null,
-      paymentHistory: (invoices ?? []).map((row) => ({
-        id: row.id,
-        date: row.paid_at,
-        amountUsd: row.amount_usd,
-        description: row.description || "Finsepa Pro",
-      })),
+      paymentHistory: (invoices ?? []).map(mapInvoiceHistoryRow),
     };
   }
 
   const isPro = hasActivePaidProSubscription(subscription);
-  const recurringAmountUsd = subscription.recurring_amount_usd ?? 0;
+  let recurringAmountUsd = subscription.recurring_amount_usd ?? 0;
+  if (isPro && subscription.billing_provider === "apple") {
+    const listed = subscription.apple_product_id
+      ? appleAmountUsdForProductId(subscription.apple_product_id)
+      : appleProPriceForCycle(billingCycleFromPlanCode(subscription.plan_code) ?? "monthly");
+    recurringAmountUsd = displayAppleBilledUsd(recurringAmountUsd, listed);
+  }
   const dueMs = subscription.current_period_end ? new Date(subscription.current_period_end).getTime() : null;
   let accessState: BillingSummary["accessState"] =
     isPro && subscription.cancel_at_period_end
@@ -135,12 +154,7 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
           ? "stripe"
           : null,
     billingCycle: isPro ? billingCycleFromPlanCode(subscription.plan_code) : null,
-    paymentHistory: (invoices ?? []).map((row) => ({
-      id: row.id,
-      date: row.paid_at,
-      amountUsd: row.amount_usd,
-      description: row.description || "Finsepa Pro",
-    })),
+    paymentHistory: (invoices ?? []).map(mapInvoiceHistoryRow),
   };
 }
 

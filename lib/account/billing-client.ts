@@ -2,6 +2,13 @@ import { toast } from "sonner";
 
 import type { BillingCycle } from "@/lib/account/plan-pricing";
 
+export const APPLE_BILLED_MANAGE_TOAST =
+  "This Pro plan is billed through Apple. Manage or cancel it in iOS Settings → Apple ID → Subscriptions.";
+
+export function toastAppleManageSubscription(): void {
+  toast.message(APPLE_BILLED_MANAGE_TOAST);
+}
+
 /** Start Stripe Checkout for Pro. Throws on failure (after toast). */
 export async function startStripeCheckout(cycle: BillingCycle): Promise<void> {
   const res = await fetch("/api/account/billing/checkout", {

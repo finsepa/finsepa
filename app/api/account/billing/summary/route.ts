@@ -3,7 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
 import { platformTrialEndsMetaLabel } from "@/lib/account/billing";
-import { billingCycleFromPlanCode } from "@/lib/account/plan-pricing";
+import {
+  appleProPriceForCycle,
+  billingCycleFromPlanCode,
+  displayAppleBilledUsd,
+  remapStripeListPriceToAppleUsd,
+} from "@/lib/account/plan-pricing";
+import { appleAmountUsdForProductId } from "@/lib/apple/products";
 import { patchBillingSubscriptionFromStripeReconcile } from "@/lib/account/billing-db";
 import {
   previewSubscriptionPeriodEndSeconds,
@@ -40,6 +46,7 @@ type BillingSubscriptionRow = {
   stripe_subscription_id: string | null;
   platform_trial_ends_at: string | null;
   billing_provider?: string | null;
+  apple_product_id?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -49,6 +56,7 @@ type BillingInvoiceRow = {
   paid_at: string;
   amount_usd: number;
   description: string;
+  stripe_account_key?: string | null;
 };
 
 function subscriptionMeta(status: string, cancelAtPeriodEnd: boolean, collectionPaused: boolean): string {
@@ -129,7 +137,7 @@ export async function GET(request: Request) {
       supabase.from("billing_subscriptions").select("*").eq("user_id", user.id).maybeSingle<BillingSubscriptionRow>(),
       supabase
         .from("billing_invoices")
-        .select("id, paid_at, amount_usd, description")
+        .select("id, paid_at, amount_usd, description, stripe_account_key")
         .eq("user_id", user.id)
         .order("paid_at", { ascending: false })
         .limit(100)
@@ -340,7 +348,13 @@ export async function GET(request: Request) {
     const cancelAtPeriodEndActive = isPro && stripeCancelAtPeriodEnd && !stripeCollectionPaused;
 
     let recurringAmountUsd = plan === "pro" ? subscription?.recurring_amount_usd ?? 0 : 0;
-    if (
+    if (plan === "pro" && subscription?.billing_provider === "apple") {
+      const listed = subscription.apple_product_id
+        ? appleAmountUsdForProductId(subscription.apple_product_id)
+        : appleProPriceForCycle(billingCycleFromPlanCode(subscription.plan_code) ?? "monthly");
+      const stored = subscription.recurring_amount_usd ?? 0;
+      recurringAmountUsd = displayAppleBilledUsd(stored, listed);
+    } else if (
       plan === "pro" &&
       !cancelAtPeriodEndActive &&
       !stripeCollectionPaused &&
@@ -411,7 +425,8 @@ export async function GET(request: Request) {
       paymentHistory: (invoices ?? []).map((row) => ({
         id: row.id,
         date: row.paid_at,
-        amountUsd: row.amount_usd,
+        amountUsd:
+          row.stripe_account_key === "apple" ? remapStripeListPriceToAppleUsd(row.amount_usd) : row.amount_usd,
         description: row.description || "Finsepa Pro",
       })),
     });

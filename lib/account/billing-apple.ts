@@ -5,7 +5,7 @@ import { AutoRenewStatus, type JWSRenewalInfoDecodedPayload, type JWSTransaction
 import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
 import { cancelOtherLiveSubscriptionsForUser } from "@/lib/account/billing-db";
 import {
-  appleAmountUsdForProductId,
+  appleAmountUsdFromTransaction,
   appleInvoiceDescription,
   applePlanCodeForProductId,
   isAppleProProductId,
@@ -109,7 +109,11 @@ export async function applyAppleTransaction(args: {
     !revoked && typeof expiresMs === "number" && Number.isFinite(expiresMs) && expiresMs > Date.now();
   const autoRenew = isAutoRenewOn(args.renewal ?? null);
   const planCode = applePlanCodeForProductId(productId);
-  const amountUsd = appleAmountUsdForProductId(productId);
+  const amountUsd = appleAmountUsdFromTransaction({
+    productId,
+    priceMilliunits: args.transaction.price,
+    currency: args.transaction.currency,
+  });
 
   if (stillActive) {
     await cancelLiveStripeForUser(args.userId);

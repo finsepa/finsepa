@@ -15,6 +15,7 @@ import {
   changeStripeBillingCycleWithToast,
   openStripeBillingPortalWithToast,
   startStripeCheckoutWithToast,
+  toastAppleManageSubscription,
 } from "@/lib/account/billing-client";
 import {
   FREE_PLAN_CARD_FEATURES,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/account/plan-comparison";
 import {
   type BillingCycle,
+  appleProPriceForCycle,
   proPriceForCycle,
   proPriceSuffix,
 } from "@/lib/account/plan-pricing";
@@ -152,7 +154,10 @@ export function BillingPlansPageClient({ plan }: { plan: BillingPlansViewState }
     if (plan.activeCycle) setCycle(plan.activeCycle);
   }, [plan.activeCycle]);
 
-  const priceText = useMemo(() => `$${proPriceForCycle(cycle).toFixed(2)}`, [cycle]);
+  const priceText = useMemo(() => {
+    const amount = plan.billedByApple ? appleProPriceForCycle(cycle) : proPriceForCycle(cycle);
+    return `$${amount.toFixed(2)}`;
+  }, [cycle, plan.billedByApple]);
   const suffixText = proPriceSuffix(cycle);
   const billedYearly = cycle === "annually";
 
@@ -187,6 +192,10 @@ export function BillingPlansPageClient({ plan }: { plan: BillingPlansViewState }
   }
 
   async function onManage() {
+    if (plan.billedByApple) {
+      toastAppleManageSubscription();
+      return;
+    }
     setPortalLoading(true);
     try {
       await openStripeBillingPortalWithToast();

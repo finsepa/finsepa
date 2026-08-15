@@ -1,6 +1,6 @@
 import "server-only";
 
-import { PRO_ANNUAL_USD, PRO_MONTHLY_USD, type BillingCycle } from "@/lib/account/plan-pricing";
+import { APPLE_PRO_ANNUAL_USD, APPLE_PRO_MONTHLY_USD, type BillingCycle } from "@/lib/account/plan-pricing";
 
 export const APPLE_BUNDLE_ID = "com.finsepa.app";
 
@@ -22,7 +22,20 @@ export function applePlanCodeForProductId(productId: string): "pro_monthly" | "p
 }
 
 export function appleAmountUsdForProductId(productId: string): number {
-  return appleCycleForProductId(productId) === "annually" ? PRO_ANNUAL_USD : PRO_MONTHLY_USD;
+  return appleCycleForProductId(productId) === "annually" ? APPLE_PRO_ANNUAL_USD : APPLE_PRO_MONTHLY_USD;
+}
+
+/** Apple `price` is milliunits (17990 → 17.99). Falls back to App Store list price. */
+export function appleAmountUsdFromTransaction(args: {
+  productId: string;
+  priceMilliunits?: number | null;
+  currency?: string | null;
+}): number {
+  const milli = args.priceMilliunits;
+  if (typeof milli === "number" && Number.isFinite(milli) && milli > 0) {
+    return Math.round(milli) / 1000;
+  }
+  return appleAmountUsdForProductId(args.productId);
 }
 
 export function appleInvoiceDescription(productId: string): string {

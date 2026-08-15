@@ -2,7 +2,7 @@ import type {
   EarningsNotifyCalendarRow,
   EarningsReleaseSnapshotRow,
 } from "@/lib/notifications/earnings-notify-types";
-import { quarterLabelFromPeriodEndYmd } from "@/lib/notifications/earnings-notification-model";
+import { formatEarningsPushCopy, quarterLabelFromPeriodEndYmd } from "@/lib/notifications/earnings-notification-model";
 
 export const MAX_REPORT_AGE_DAYS = 14;
 export const FIRST_SEEN_MAX_AGE_DAYS = 7;
@@ -65,12 +65,19 @@ export function buildEarningsReleaseNotification(
   const periodLabel = quarterLabelFromPeriodEndYmd(row.fiscalPeriodEndYmd!);
   const dedupeKey = `${row.ticker}:${row.fiscalPeriodEndYmd}`;
   const href = `/stock/${encodeURIComponent(row.ticker)}?tab=earnings`;
+  const { title, body } = formatEarningsPushCopy({
+    ticker: row.ticker,
+    periodLabel,
+    epsActual: row.epsActual,
+    epsEstimate: row.epsEstimate,
+    surprisePct: row.surprisePct,
+  });
 
   return {
     row,
     dedupeKey,
-    title: `${row.ticker} reported earnings`,
-    body: periodLabel,
+    title,
+    body,
     href,
     payload: {
       ticker: row.ticker,

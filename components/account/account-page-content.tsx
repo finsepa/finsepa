@@ -28,7 +28,10 @@ import {
 } from "@/components/ui/empty";
 import { CreditCard } from "@/lib/icons";
 import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
-import { openStripeBillingPortalWithToast } from "@/lib/account/billing-client";
+import {
+  openStripeBillingPortalWithToast,
+  toastAppleManageSubscription,
+} from "@/lib/account/billing-client";
 import { AccountPasswordPlaceholder } from "@/components/account/account-password-placeholder";
 import { ChangePasswordModal } from "@/components/account/change-password-modal";
 import { DeleteAccountModal } from "@/components/account/delete-account-modal";
@@ -294,7 +297,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
 
   async function openManageSubscriptionPortal() {
     if (billingSummary.billingProvider === "apple") {
-      toast.message("This Pro plan is billed through Apple. Manage or cancel it in iOS Settings → Apple ID → Subscriptions.");
+      toastAppleManageSubscription();
       return;
     }
     setPortalLoading(true);
