@@ -90,13 +90,13 @@ export async function notifySuperinvestorActivityIfFilingChanged(
     quarterLabel: newestQuarter?.quarterLabel ?? quarterLabel,
     activityCount,
   });
-  const avatarSrc = registry.avatarSrc;
-  const logoUrl = absoluteAssetUrl(avatarSrc);
+  const avatarSrc = registry.avatarSrc ?? "";
+  const logoUrl = avatarSrc ? absoluteAssetUrl(avatarSrc) : undefined;
   const dedupeKey = `${slug}:${newAccession}`;
   const payload = {
     slug,
     managerName: registry.managerName,
-    avatarSrc,
+    avatarSrc: avatarSrc || undefined,
     logoUrl,
     quarterLabel,
     activityCount,
