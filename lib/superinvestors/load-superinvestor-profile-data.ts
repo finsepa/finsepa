@@ -28,6 +28,8 @@ import {
   withSuperinvestorForceSnapshotRebuild,
   withSuperinvestorSecRebuildAllowed,
 } from "@/lib/superinvestors/superinvestor-sec-rebuild-gate";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { notifySuperinvestorActivityIfFilingChanged } from "@/lib/notifications/superinvestor-activity-notify";
 
 export type SuperinvestorProfilePageData = Superinvestor13fProfilePageData & {
   /** Full book rows for allocation donut (server-side top-N). */
@@ -224,6 +226,10 @@ export async function refreshAllSuperinvestor13fPortfolios(): Promise<Superinves
     try {
       const cikHint = cikPad10(SUPERINVESTOR_SLUG_CIK[item.slug] ?? "");
       const hasSnap = cikHint ? await hasSuperinvestor13fProfileSnapshot(cikHint) : false;
+      const priorSnap = hasSnap && cikHint
+        ? await readSuperinvestor13fProfileSnapshotLatest(cikHint)
+        : null;
+      const priorAccession = priorSnap?.comparison.current.accessionNumber ?? null;
 
       let page: Superinvestor13fProfilePageData | null = null;
       if (!hasSnap) {
@@ -268,6 +274,22 @@ export async function refreshAllSuperinvestor13fPortfolios(): Promise<Superinves
         validation = finalized.validation;
         unresolved = finalized.enrich.afterUnresolved;
         persisted = finalized.persisted;
+      }
+
+      // New 13F accession → activity alerts for Pro/Trial followers.
+      if (validation.ok && priorAccession) {
+        const admin = getSupabaseAdminClient();
+        if (admin) {
+          try {
+            await notifySuperinvestorActivityIfFilingChanged(admin, {
+              slug: item.slug,
+              page,
+              priorAccession,
+            });
+          } catch {
+            // Don't fail the cron on notify errors.
+          }
+        }
       }
 
       results.push({

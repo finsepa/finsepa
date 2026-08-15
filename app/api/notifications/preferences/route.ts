@@ -4,6 +4,7 @@ import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
 import {
   getNotificationPreferences,
   setEarningsResultsEnabled,
+  setSuperinvestorActivityEnabled,
 } from "@/lib/notifications/notification-preferences-store";
 import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
@@ -20,6 +21,8 @@ export async function GET(request: Request) {
     // Effective: Free always sees/receives off even if DB preference is still on after cancel.
     return NextResponse.json({
       earningsResultsEnabled: canUseActivityAlerts && preferences.earningsResultsEnabled,
+      superinvestorActivityEnabled:
+        canUseActivityAlerts && preferences.superinvestorActivityEnabled,
       canUseActivityAlerts,
     });
   } catch (e) {
@@ -46,17 +49,39 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const body = (await request.json()) as { earningsResultsEnabled?: unknown };
-    if (typeof body.earningsResultsEnabled !== "boolean") {
-      return NextResponse.json({ error: "Invalid earningsResultsEnabled" }, { status: 400 });
+    const body = (await request.json()) as {
+      earningsResultsEnabled?: unknown;
+      superinvestorActivityEnabled?: unknown;
+    };
+
+    const hasEarnings = typeof body.earningsResultsEnabled === "boolean";
+    const hasSuperinvestor = typeof body.superinvestorActivityEnabled === "boolean";
+    if (!hasEarnings && !hasSuperinvestor) {
+      return NextResponse.json(
+        { error: "Provide earningsResultsEnabled and/or superinvestorActivityEnabled" },
+        { status: 400 },
+      );
     }
-    const preferences = await setEarningsResultsEnabled(
-      supabase,
-      user.id,
-      body.earningsResultsEnabled,
-    );
+
+    let preferences = await getNotificationPreferences(supabase, user.id);
+    if (hasEarnings) {
+      preferences = await setEarningsResultsEnabled(
+        supabase,
+        user.id,
+        body.earningsResultsEnabled as boolean,
+      );
+    }
+    if (hasSuperinvestor) {
+      preferences = await setSuperinvestorActivityEnabled(
+        supabase,
+        user.id,
+        body.superinvestorActivityEnabled as boolean,
+      );
+    }
+
     return NextResponse.json({
       earningsResultsEnabled: preferences.earningsResultsEnabled,
+      superinvestorActivityEnabled: preferences.superinvestorActivityEnabled,
       canUseActivityAlerts: true,
     });
   } catch (e) {

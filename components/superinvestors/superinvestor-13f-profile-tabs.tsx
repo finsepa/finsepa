@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { UnderlineTabs, type UnderlineTabOption } from "@/components/screener/market-tabs";
 import { Berkshire13fComparisonTable } from "@/components/superinvestors/berkshire-13f-comparison-table";
 import { SuperinvestorPerformanceChart } from "@/components/superinvestors/superinvestor-performance-chart";
@@ -16,6 +17,11 @@ const BASE_TAB_OPTIONS: readonly UnderlineTabOption<ProfileTab>[] = [
   { value: "holdings", label: "Holdings" },
   { value: "activity", label: "Activity" },
 ];
+
+function parseProfileTab(raw: string | null): ProfileTab | null {
+  if (raw === "holdings" || raw === "performance" || raw === "activity") return raw;
+  return null;
+}
 
 function useDebouncedValue<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -41,12 +47,31 @@ export function Superinvestor13fProfileTabs({
   holdingsPage: number;
   holdingsTotalPages: number;
 }) {
-  const [tab, setTab] = useState<ProfileTab>("holdings");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const showPerformance = isSuperinvestorPerformanceEnabled(profileSlug);
+  const initialTab = parseProfileTab(searchParams.get("tab"));
+  const [tab, setTabState] = useState<ProfileTab>(() => {
+    if (initialTab === "performance" && !showPerformance) return "holdings";
+    return initialTab ?? "holdings";
+  });
   const [txCompanySearch, setTxCompanySearch] = useState("");
   const [fullHistory, setFullHistory] = useState<SuperinvestorTransactionsPayload | null>(null);
   const [txHistoryLoading, setTxHistoryLoading] = useState(false);
   const fullHistoryFetchStartedRef = useRef(false);
-  const showPerformance = isSuperinvestorPerformanceEnabled(profileSlug);
+
+  const setTab = useCallback(
+    (next: ProfileTab) => {
+      setTabState(next);
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === "holdings") params.delete("tab");
+      else params.set("tab", next);
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
 
   const tabOptions = useMemo((): readonly UnderlineTabOption<ProfileTab>[] => {
     if (!showPerformance) return BASE_TAB_OPTIONS;
@@ -114,7 +139,7 @@ export function Superinvestor13fProfileTabs({
     fullHistoryFetchStartedRef.current = false;
     setTxCompanySearch(searchQuery);
     setTab("activity");
-  }, []);
+  }, [setTab]);
 
   return (
     <div className="mt-5">

@@ -15,6 +15,9 @@ import { refreshSuperinvestorListSnapshot } from "@/lib/superinvestors/superinve
 import { rebuildSuperinvestorPerformanceSeries } from "@/lib/superinvestors/superinvestor-performance-series";
 import { isSuperinvestorPerformanceEnabled } from "@/lib/superinvestors/superinvestor-performance-types";
 import { withSuperinvestorSecRebuildAllowed } from "@/lib/superinvestors/superinvestor-sec-rebuild-gate";
+import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { notifySuperinvestorActivityIfFilingChanged } from "@/lib/notifications/superinvestor-activity-notify";
+import { readSuperinvestor13fProfileSnapshotLatest } from "@/lib/superinvestors/superinvestor-13f-holdings-transactions-snapshot";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -28,6 +31,11 @@ function authorizeCron(request: Request): boolean {
 
 async function refreshOneSlug(slug: string, enrichOnly: boolean) {
   const started = Date.now();
+  const cikHint = cikPad10(SUPERINVESTOR_SLUG_CIK[slug] ?? "");
+  const priorSnap =
+    !enrichOnly && cikHint ? await readSuperinvestor13fProfileSnapshotLatest(cikHint) : null;
+  const priorAccession = priorSnap?.comparison.current.accessionNumber ?? null;
+
   const page = enrichOnly
     ? await loadSuperinvestorProfilePageDataFull(slug)
     : await forceRefreshSuperinvestorProfilePage(slug);
@@ -51,6 +59,21 @@ async function refreshOneSlug(slug: string, enrichOnly: boolean) {
     validation = finalized.validation;
     unresolved = finalized.enrich.afterUnresolved;
     persisted = finalized.persisted;
+  }
+
+  if (!enrichOnly && validation.ok && priorAccession) {
+    const admin = getSupabaseAdminClient();
+    if (admin) {
+      try {
+        await notifySuperinvestorActivityIfFilingChanged(admin, {
+          slug,
+          page,
+          priorAccession,
+        });
+      } catch {
+        // Don't fail the cron on notify errors.
+      }
+    }
   }
 
   return {

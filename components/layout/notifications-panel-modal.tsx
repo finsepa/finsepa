@@ -21,11 +21,13 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { EarningsNotificationCard } from "@/components/layout/earnings-notification-card";
+import { SuperinvestorActivityNotificationCard } from "@/components/layout/superinvestor-activity-notification-card";
 import { Spinner } from "@/components/ui/spinner";
 import {
   parseEarningsNotificationPayload,
   resolveNotificationTicker,
 } from "@/lib/notifications/earnings-notification-model";
+import { SUPERINVESTOR_ACTIVITY_KIND } from "@/lib/notifications/superinvestor-activity-model";
 import type { NotificationItem, NotificationsClient } from "@/lib/notifications/use-notifications-client";
 import { useNotificationPreferences } from "@/lib/notifications/use-notification-preferences";
 import type { EarningsCalendarItem } from "@/lib/market/earnings-calendar-types";
@@ -126,9 +128,11 @@ export function NotificationsPanelModal({
     client;
   const {
     earningsResultsEnabled,
+    superinvestorActivityEnabled,
     loading: preferencesLoading,
     saving: preferencesSaving,
     setEarningsResults,
+    setSuperinvestorActivity,
     refresh: refreshPreferences,
   } = useNotificationPreferences({ enabled: open });
 
@@ -184,6 +188,23 @@ export function NotificationsPanelModal({
       }, PANEL_TRANSITION_MS);
     },
     [markRead, onClose],
+  );
+
+  const openNotification = useCallback(
+    (item: NotificationItem) => {
+      if (item.kind === SUPERINVESTOR_ACTIVITY_KIND) {
+        void markRead(item.id);
+        onClose();
+        const href =
+          typeof item.href === "string" && item.href.trim()
+            ? item.href.trim()
+            : `/superinvestors/${encodeURIComponent(item.ticker)}?tab=activity`;
+        router.push(href);
+        return;
+      }
+      openEarningsPreview(item);
+    },
+    [markRead, onClose, openEarningsPreview, router],
   );
 
   useEffect(() => {
@@ -268,7 +289,7 @@ export function NotificationsPanelModal({
                   <Spinner className="size-6 text-fg-muted" />
                 </div>
               ) : (
-                <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex min-h-0 flex-1 flex-col gap-5">
                   <div
                     className={cn(
                       "flex items-center justify-between gap-4 rounded-[12px] py-1",
@@ -325,6 +346,65 @@ export function NotificationsPanelModal({
                       }
                     />
                   </div>
+
+                  <div
+                    className={cn(
+                      "flex items-center justify-between gap-4 rounded-[12px] py-1",
+                      !canUseActivityAlerts && "cursor-pointer",
+                    )}
+                    onClick={
+                      !canUseActivityAlerts
+                        ? () => {
+                            openUpgradePlans();
+                          }
+                        : undefined
+                    }
+                    onKeyDown={
+                      !canUseActivityAlerts
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              openUpgradePlans();
+                            }
+                          }
+                        : undefined
+                    }
+                    role={!canUseActivityAlerts ? "button" : undefined}
+                    tabIndex={!canUseActivityAlerts ? 0 : undefined}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <p className="text-[14px] font-medium leading-5 text-fg">
+                          Superinvestor activity
+                        </p>
+                        {!canUseActivityAlerts ? (
+                          <ProFeatureBadge />
+                        ) : null}
+                      </div>
+                      <p className="mt-0.5 text-[13px] leading-5 text-fg-muted">
+                        {canUseActivityAlerts
+                          ? "New 13F activity for managers you follow"
+                          : "13F activity for managers you follow — available on Pro"}
+                      </p>
+                    </div>
+                    <NotificationPillSwitch
+                      pressed={canUseActivityAlerts ? superinvestorActivityEnabled : false}
+                      onPressedChange={(next) => {
+                        if (!canUseActivityAlerts) {
+                          openUpgradePlans();
+                          return;
+                        }
+                        void setSuperinvestorActivity(next);
+                      }}
+                      disabled={canUseActivityAlerts ? preferencesSaving : true}
+                      className={!canUseActivityAlerts ? "pointer-events-none" : undefined}
+                      aria-label={
+                        canUseActivityAlerts
+                          ? "Superinvestor activity notifications"
+                          : "Superinvestor activity notifications (Pro)"
+                      }
+                    />
+                  </div>
                 </div>
               )
             ) : loading && items.length === 0 ? (
@@ -345,7 +425,7 @@ export function NotificationsPanelModal({
                   </EmptyMedia>
                   <EmptyTitle>No notifications yet</EmptyTitle>
                   <EmptyDescription className="max-w-[260px]">
-                    Alerts for companies in your watchlist and portfolio will appear here.
+                    Alerts for watchlist earnings and followed superinvestors will appear here.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
@@ -356,10 +436,14 @@ export function NotificationsPanelModal({
                     <div className="group relative rounded-[12px] p-3 transition-colors hover:bg-surface-muted">
                       <button
                         type="button"
-                        onClick={() => openEarningsPreview(item)}
+                        onClick={() => openNotification(item)}
                         className="w-full min-w-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
                       >
-                        <EarningsNotificationCard item={item} />
+                        {item.kind === SUPERINVESTOR_ACTIVITY_KIND ? (
+                          <SuperinvestorActivityNotificationCard item={item} />
+                        ) : (
+                          <EarningsNotificationCard item={item} />
+                        )}
                       </button>
                       <div className="pointer-events-none absolute right-2 top-2 flex h-7 w-7 items-center justify-center">
                         {!item.readAt ? (
