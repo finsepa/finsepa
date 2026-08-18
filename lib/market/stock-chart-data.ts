@@ -364,8 +364,11 @@ export function stockChartPointsFromDailyBars(bars: EodhdDailyBar[]): StockChart
   return dedupeAndSort(points);
 }
 
+/** Target bar spacing when downsampling native 1m intraday to overview 1D (~1m). */
+export const STOCK_1D_INTRADAY_CHART_BAR_GAP_SEC = 60;
+
 /** Target bar spacing for Overview 5D intraday charts (EODHD 1m → ~4m). */
-const SESSION_INTRADAY_CHART_BAR_GAP_SEC = 4 * 60;
+export const SESSION_INTRADAY_CHART_BAR_GAP_SEC = 4 * 60;
 
 /** Closed 1D historical session: thin EODHD 1m to ~2m between points. */
 export const STOCK_1D_CLOSED_SESSION_BAR_GAP_SEC = 2 * 60;
@@ -918,7 +921,8 @@ export function synthesize1DSessionChartFromDailyBars(
   return resampleStock1DLiveSession(anchors, sessionYmd, STOCK_DISPLAY_TZ, openValue, now);
 }
 
-const ONE_MONTH_BAR_GAP_SEC = 30 * 60;
+/** Target bar spacing for Overview 1M intraday charts (~30m). */
+export const ONE_MONTH_BAR_GAP_SEC = 30 * 60;
 
 /**
  * 5D: same ~4m intraday spacing as 1D over the last 5 US sessions; hourly only if finer data missing.
