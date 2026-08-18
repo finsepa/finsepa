@@ -21,8 +21,8 @@ import {
   intradayBarsToTwoPerDaySamples,
   minGapDownsampleChartPoints,
   type IntradayTwoPerDaySample,
-  type StockChartPoint,
 } from "@/lib/market/stock-chart-data";
+import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 import { loadPortfolioEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { netCashUsdUpTo } from "@/lib/portfolio/overview-metrics";
 import { effectiveSamplingRange } from "@/lib/portfolio/portfolio-chart-sampling";
