@@ -1143,6 +1143,7 @@ function syncPortfolioPeriodAxisLabels(
     PORTFOLIO_CHART_TIME_ZONE,
     axisMode,
     plotWidthPx,
+    range === "7d" ? { weekdayLabelMax: 7 } : undefined,
   );
   return thinOverlappingPeriodAxisLabels(raw, plotWidthPx);
 }

@@ -202,8 +202,12 @@ function overviewAxisShows5DWeekdayLabel(
 
 const MOBILE_5D_WEEKDAY_LABEL_MAX = 5;
 
-/** Mobile 5D: up to five weekday names in range order (e.g. Fri Mon Tue Wed Thu). */
-function collectMobile5DWeekdayLabels(data: readonly StockChartPoint[], timeZone: string): string[] {
+/** Mobile 5D / portfolio 7D: weekday names in range order (e.g. Fri Mon Tue Wed Thu). */
+function collectMobileWeekdayLabels(
+  data: readonly StockChartPoint[],
+  timeZone: string,
+  maxLabels: number,
+): string[] {
   const labels: string[] = [];
   const seenWeekdays = new Set<string>();
   for (let i = 0; i < data.length; i++) {
@@ -214,19 +218,25 @@ function collectMobile5DWeekdayLabels(data: readonly StockChartPoint[], timeZone
     if (!label || seenWeekdays.has(label)) continue;
     seenWeekdays.add(label);
     labels.push(label);
-    if (labels.length >= MOBILE_5D_WEEKDAY_LABEL_MAX) break;
+    if (labels.length >= maxLabels) break;
   }
   return labels;
 }
 
-/** Mobile 5D: spread weekday labels evenly across the plot (same as mobile 1D hour row). */
-function buildMobile5DWeekdayAxisLabels(
+/** @deprecated Use collectMobileWeekdayLabels with maxLabels=5 */
+function collectMobile5DWeekdayLabels(data: readonly StockChartPoint[], timeZone: string): string[] {
+  return collectMobileWeekdayLabels(data, timeZone, MOBILE_5D_WEEKDAY_LABEL_MAX);
+}
+
+/** Mobile 5D / portfolio 7D: spread weekday labels evenly across the plot (same as mobile 1D hour row). */
+function buildMobileWeekdayAxisLabels(
   chart: IChartApi,
   data: readonly StockChartPoint[],
   timeZone: string,
   plotWidthPx: number,
+  weekdayLabelMax: number,
 ): OverviewAxisLabel[] {
-  const weekdayLabels = collectMobile5DWeekdayLabels(data, timeZone);
+  const weekdayLabels = collectMobileWeekdayLabels(data, timeZone, weekdayLabelMax);
   if (!weekdayLabels.length) return [];
   const plotW = plotWidthPx > 0 ? plotWidthPx : chart.paneSize(0).width;
   if (plotW <= 0) return [];
@@ -237,12 +247,21 @@ function buildMobile5DWeekdayAxisLabels(
     const leftPx =
       n <= 1 ? plotW / 2 : MOBILE_ONE_D_AXIS_EDGE_PAD_PX + (inner * i) / (n - 1);
     out.push({
-      key: `mobile-5d-${weekdayLabels[i]}-${i}`,
+      key: `mobile-wd-${weekdayLabels[i]}-${i}`,
       leftPx,
       label: weekdayLabels[i]!,
     });
   }
   return out;
+}
+
+function buildMobile5DWeekdayAxisLabels(
+  chart: IChartApi,
+  data: readonly StockChartPoint[],
+  timeZone: string,
+  plotWidthPx: number,
+): OverviewAxisLabel[] {
+  return buildMobileWeekdayAxisLabels(chart, data, timeZone, plotWidthPx, MOBILE_5D_WEEKDAY_LABEL_MAX);
 }
 
 /** Mobile 6M / YTD: at most six month ticks (e.g. Dec–May), evenly spaced — no Nov/Dec overlap. */
@@ -937,6 +956,8 @@ export type OverviewPeriodAxisSyncOptions = {
   liveSessionMinute?: boolean;
   /** Live 24/7 crypto 1D (BTC): rolling-24h nice-interval hour axis (Google-Finance style). */
   cryptoLive1D?: boolean;
+  /** Portfolio 7D / extended weekday rows — default 5 for stock 5D. */
+  weekdayLabelMax?: number;
 };
 
 export function syncOverviewPeriodAxisLabels(
@@ -975,7 +996,8 @@ export function syncOverviewPeriodAxisLabels(
   }
   const mobile5DWeekdayAxis = axisMode === "weekday" && shouldHideMobileYAxisLabels(plotWidthPx);
   if (mobile5DWeekdayAxis) {
-    return buildMobile5DWeekdayAxisLabels(chart, data, timeZone, plotWidthPx);
+    const weekdayLabelMax = options?.weekdayLabelMax ?? MOBILE_5D_WEEKDAY_LABEL_MAX;
+    return buildMobileWeekdayAxisLabels(chart, data, timeZone, plotWidthPx, weekdayLabelMax);
   }
   const mobileMonthlyAxis = axisMode === "monthly" && shouldHideMobileYAxisLabels(plotWidthPx);
   if (mobileMonthlyAxis) {

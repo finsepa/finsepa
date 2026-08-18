@@ -19,7 +19,9 @@ import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-in
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
 import {
   intradayBarsToTwoPerDaySamples,
+  minGapDownsampleChartPoints,
   type IntradayTwoPerDaySample,
+  type StockChartPoint,
 } from "@/lib/market/stock-chart-data";
 import { loadPortfolioEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { netCashUsdUpTo } from "@/lib/portfolio/overview-metrics";
@@ -34,11 +36,14 @@ import {
 import { portfolioPeriodReturnDietz } from "@/lib/portfolio/returns/portfolio-return-engine";
 
 const MAX_TX = 4000;
+/** Same ~4m spacing as stock overview 5D intraday charts. */
+const PORTFOLIO_7D_BAR_GAP_SEC = 4 * 60;
+const PORTFOLIO_7D_CALENDAR_DAYS = 7;
 
 function maxPointsForRange(r: PortfolioChartRange): number {
   switch (r) {
     case "1d":
-      return 12;
+      return 48;
     case "7d":
       return 16;
     case "1m":
@@ -190,10 +195,10 @@ function rangeToFromTo(
 
   switch (range) {
     case "1d":
-      fromD = subDays(now, 10);
+      fromD = subDays(now, 1);
       break;
     case "7d":
-      fromD = subDays(now, 21);
+      fromD = subDays(now, PORTFOLIO_7D_CALENDAR_DAYS);
       break;
     case "1m":
       fromD = subMonths(now, 1);
@@ -295,6 +300,162 @@ export function parseBodyTransactions(raw: unknown): PortfolioTransaction[] | nu
     });
   }
   return out;
+}
+
+async function fetchSymbolIntraday1d(
+  sym: string,
+  fromSec: number,
+  nowSec: number,
+): Promise<EodhdIntradayBar[] | null> {
+  const eodhd = toEodhdCryptoSymbol(sym) ?? toEodhdSymbol(sym);
+  for (const interval of ["5m", "1h"] as const) {
+    const bars = await fetchEodhdIntraday(eodhd, fromSec, nowSec, interval);
+    if (bars?.length) return bars;
+  }
+  return null;
+}
+
+function subsampleSortedUnix(times: number[], maxPoints: number): number[] {
+  if (times.length <= maxPoints) return times;
+  const out: number[] = [];
+  const n = times.length;
+  const step = (n - 1) / (maxPoints - 1);
+  for (let i = 0; i < maxPoints; i++) {
+    const idx = Math.min(n - 1, Math.round(i * step));
+    out.push(times[idx]!);
+  }
+  return [...new Set(out)].sort((a, b) => a - b);
+}
+
+/** Last 24h NAV at 5m/1h marks — same cadence as a BTC 1D chart, not 10 daily EOD bars. */
+function minGapDownsampleUnixTimes(times: number[], minGapSec: number): number[] {
+  if (times.length === 0) return [];
+  const stub: StockChartPoint[] = times.map((t) => ({
+    time: t,
+    value: 0,
+    sessionDate: ymd(new Date(t * 1000)),
+  }));
+  return minGapDownsampleChartPoints(stub, minGapSec).map((p) => p.time);
+}
+
+async function computePortfolioValueHistory7d(
+  transactions: PortfolioTransaction[],
+  symbols: string[],
+  barsBySymbol: Map<string, EodhdDailyBar[]>,
+  firstTxYmd: string | null,
+  now: Date,
+): Promise<PortfolioValueHistoryPoint[]> {
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const fromSec = nowSec - PORTFOLIO_7D_CALENDAR_DAYS * 86400;
+  const fromYmd = ymd(new Date(fromSec * 1000));
+  const toYmd = ymd(now);
+
+  const intradayBySymbol = new Map<string, EodhdIntradayBar[]>();
+  await Promise.all(
+    symbols.map(async (sym) => {
+      const bars = await fetchSymbolIntraday1d(sym, fromSec, nowSec);
+      if (bars?.length) intradayBySymbol.set(sym.toUpperCase(), bars);
+    }),
+  );
+
+  const tsSet = new Set<number>();
+  for (const bars of intradayBySymbol.values()) {
+    for (const b of bars) {
+      if (b.timestamp >= fromSec && b.timestamp <= nowSec) tsSet.add(b.timestamp);
+    }
+  }
+  let times = minGapDownsampleUnixTimes([...tsSet].sort((a, b) => a - b), PORTFOLIO_7D_BAR_GAP_SEC);
+
+  if (times.length < 3) {
+    const eodDates =
+      [...barsBySymbol.values()]
+        .flatMap((bars) => bars.map((b) => b.date))
+        .filter((d) => d >= fromYmd && d <= toYmd)
+        .sort((a, b) => a.localeCompare(b));
+    const unique = [...new Set(eodDates)];
+    times = unique.flatMap((d) => {
+      const base = parseYmdToUnixSeconds(d);
+      return base == null ? [] : [base];
+    });
+  }
+
+  if (times.length === 0) return [];
+
+  const points: PortfolioValueHistoryPoint[] = [];
+  for (const ts of times) {
+    const sessionDate = ymd(new Date(ts * 1000));
+    const hasIntraday = intradayBySymbol.size > 0;
+    const base = portfolioPointAtSession(
+      transactions,
+      sessionDate,
+      barsBySymbol,
+      hasIntraday ? intradayBySymbol : new Map(),
+      hasIntraday ? ts : null,
+      firstTxYmd,
+    );
+    points.push({ ...base, time: ts });
+  }
+  return points;
+}
+
+async function computePortfolioValueHistory1d(
+  transactions: PortfolioTransaction[],
+  symbols: string[],
+  barsBySymbol: Map<string, EodhdDailyBar[]>,
+  firstTxYmd: string | null,
+  now: Date,
+): Promise<PortfolioValueHistoryPoint[]> {
+  const nowSec = Math.floor(now.getTime() / 1000);
+  const fromSec = nowSec - 24 * 3600;
+  const fromYmd = ymd(new Date(fromSec * 1000));
+  const toYmd = ymd(now);
+
+  const intradayBySymbol = new Map<string, EodhdIntradayBar[]>();
+  await Promise.all(
+    symbols.map(async (sym) => {
+      const bars = await fetchSymbolIntraday1d(sym, fromSec, nowSec);
+      if (bars?.length) intradayBySymbol.set(sym.toUpperCase(), bars);
+    }),
+  );
+
+  const tsSet = new Set<number>();
+  for (const bars of intradayBySymbol.values()) {
+    for (const b of bars) {
+      if (b.timestamp >= fromSec && b.timestamp <= nowSec) tsSet.add(b.timestamp);
+    }
+  }
+  let times = subsampleSortedUnix([...tsSet].sort((a, b) => a - b), maxPointsForRange("1d"));
+
+  if (times.length < 3) {
+    const eodDates =
+      [...barsBySymbol.values()]
+        .flatMap((bars) => bars.map((b) => b.date))
+        .filter((d) => d >= fromYmd && d <= toYmd)
+        .sort((a, b) => a.localeCompare(b));
+    const unique = [...new Set(eodDates)];
+    times = unique.flatMap((d) => {
+      const base = parseYmdToUnixSeconds(d);
+      return base == null ? [] : [base];
+    });
+  }
+
+  if (times.length === 0) return [];
+
+  const points: PortfolioValueHistoryPoint[] = [];
+  for (const ts of times) {
+    const sessionDate = ymd(new Date(ts * 1000));
+    const hasIntraday = intradayBySymbol.size > 0;
+    const base = portfolioPointAtSession(
+      transactions,
+      sessionDate,
+      barsBySymbol,
+      hasIntraday ? intradayBySymbol : new Map(),
+      hasIntraday ? ts : null,
+      firstTxYmd,
+    );
+    points.push({ ...base, time: ts });
+  }
+  return points;
 }
 
 async function fetchSymbolIntradayYtd(
@@ -452,7 +613,8 @@ function portfolioPointAtSession(
     const intraday = intradayBySymbol.get(sym);
     const px =
       markTs != null && intraday?.length ?
-        lastIntradayCloseOnOrBefore(intraday, markTs)
+        lastIntradayCloseOnOrBefore(intraday, markTs) ??
+          lastCloseOnOrBefore(barsBySymbol.get(sym) ?? [], sessionYmd)
       : lastCloseOnOrBefore(barsBySymbol.get(sym) ?? [], sessionYmd);
     if (px != null && Number.isFinite(px) && h.shares > 0) {
       equity += h.shares * px;
@@ -555,6 +717,54 @@ export async function computePortfolioValueHistory(
 
   const barsBySymbol = await loadPortfolioEodBars(symbols, barFromYmd, toYmd);
   const barPairs = [...barsBySymbol.entries()];
+
+  if (range === "1d") {
+    const oneDayPoints = await computePortfolioValueHistory1d(
+      transactions,
+      symbols,
+      barsBySymbol,
+      firstTx,
+      now,
+    );
+    const withReturns = applyRangeReturnPcts(
+      oneDayPoints,
+      transactions,
+      barsBySymbol,
+      range,
+      now,
+      firstTx,
+    );
+    if (withReturns.length === 0 && transactions.length > 0) {
+      return [
+        portfolioPointAtSession(transactions, toYmd, barsBySymbol, new Map(), null, firstTx),
+      ];
+    }
+    return withReturns;
+  }
+
+  if (range === "7d") {
+    const sevenDayPoints = await computePortfolioValueHistory7d(
+      transactions,
+      symbols,
+      barsBySymbol,
+      firstTx,
+      now,
+    );
+    const withReturns = applyRangeReturnPcts(
+      sevenDayPoints,
+      transactions,
+      barsBySymbol,
+      range,
+      now,
+      firstTx,
+    );
+    if (withReturns.length === 0 && transactions.length > 0) {
+      return [
+        portfolioPointAtSession(transactions, toYmd, barsBySymbol, new Map(), null, firstTx),
+      ];
+    }
+    return withReturns;
+  }
 
   if (samplingRange === "ytd") {
     const ytdPoints = await computePortfolioValueHistoryYtd(

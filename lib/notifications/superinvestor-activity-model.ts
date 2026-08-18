@@ -20,13 +20,13 @@ export type SuperinvestorActivityPayload = {
   href: string;
 };
 
-/** `Q2 2026` / `Q2 2026` → `Q2 · 2026`. */
+/** `Q2 2026` → `Q2 · 2026` (single middle dot; idempotent if already formatted). */
 export function formatSuperinvestorQuarterLabel(raw: string | null | undefined): string {
   const trimmed = (raw ?? "").trim();
   if (!trimmed) return "";
-  const m = /^Q([1-4])\s+(\d{4})$/i.exec(trimmed);
+  const m = /^Q([1-4])(?:\s*[·.•⋯…]?\s*|\s+)(\d{4})$/i.exec(trimmed);
   if (m) return `Q${m[1]} · ${m[2]}`;
-  return trimmed.replace(/\s+/g, " · ");
+  return trimmed;
 }
 
 export function formatSuperinvestorActivitySummary(activityCount: number): string {

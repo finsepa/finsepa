@@ -18,6 +18,7 @@ import {
 } from "@/components/design-system/dropdown-menu-styles";
 import { whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
+import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { portfolioKindSubtext, type PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
@@ -25,6 +26,8 @@ import {
   createCombinedPortfolioMenuIconAnimation,
   createPortfolioMenuIconAnimation,
 } from "@/lib/lottie/portfolio-menu-animations";
+import { FREE_MAX_REAL_PORTFOLIOS } from "@/lib/account/plan-entitlements";
+import { isManualPortfolioForFreeQuota } from "@/lib/account/free-plan-quota";
 import { dropdownTriggerFieldClassName } from "@/components/design-system/text-input-styles";
 import { cn } from "@/lib/utils";
 
@@ -87,6 +90,8 @@ export function TransactionPortfolioField({
     portfolios.filter((p) => p.kind !== "combined").length >= 2;
   const combinedLockedOnFree = Boolean(plan && !plan.canCreateCombinedPortfolio);
   const canCreateCombinedPortfolio = hasEnoughSourcesForCombined && !combinedLockedOnFree;
+  const freePortfolioQuotaMax =
+    plan?.isFree === true ? (plan.maxRealPortfolios ?? FREE_MAX_REAL_PORTFOLIOS) : null;
 
   useEffect(() => {
     if (!open) {
@@ -129,6 +134,26 @@ export function TransactionPortfolioField({
       {portfolios.map((p) => {
         const isSelected = p.id === selectedPortfolioId;
         const isLockedOnFree = !isFreePortfolioAccessible(p.id);
+        const showFreeQuotaBadge =
+          freePortfolioQuotaMax != null &&
+          !isLockedOnFree &&
+          isManualPortfolioForFreeQuota(p);
+        const freeQuotaLabel = showFreeQuotaBadge ? `1/${freePortfolioQuotaMax}` : null;
+
+        const freeQuotaBadge = freeQuotaLabel ? (
+          <TopbarDelayedTooltip
+            label="Unlock more on Pro"
+            className="flex shrink-0 items-center justify-center self-center"
+          >
+            <span
+              className="px-1 font-sans text-[12px] font-medium tabular-nums leading-4 text-fg-muted"
+              aria-label={`${freeQuotaLabel} portfolios on Free`}
+            >
+              {freeQuotaLabel}
+            </span>
+          </TopbarDelayedTooltip>
+        ) : null;
+
         return (
           <div
             key={p.id}
@@ -157,16 +182,34 @@ export function TransactionPortfolioField({
               </span>
             </button>
             {portfoliosOnly ? (
-              <span className="mr-3 flex h-4 w-4 shrink-0 items-center justify-center self-center" aria-hidden>
-                {isSelected ? (
-                  <Check className="h-4 w-4 text-fg" strokeWidth={2} />
+              <span className="mr-3 flex h-4 min-w-4 shrink-0 items-center justify-center self-center">
+                {freeQuotaBadge ? (
+                  freeQuotaBadge
+                ) : isSelected ? (
+                  <Check className="h-4 w-4 text-fg" strokeWidth={2} aria-hidden />
                 ) : isLockedOnFree ? (
-                  <Lock className="h-3.5 w-3.5 text-fg-muted" strokeWidth={2} />
+                  <Lock className="h-3.5 w-3.5 text-fg-muted" strokeWidth={2} aria-hidden />
                 ) : null}
               </span>
             ) : isLockedOnFree ? (
               <span className="mr-1 flex h-9 w-9 shrink-0 items-center justify-center self-center" aria-hidden>
                 <Lock className="h-3.5 w-3.5 text-fg-muted" strokeWidth={2} />
+              </span>
+            ) : freeQuotaBadge ? (
+              <span className="relative mr-1 flex h-9 min-w-9 shrink-0 items-center justify-center self-center px-0.5">
+                <span className="group-hover:invisible group-focus-within:invisible">{freeQuotaBadge}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpen(false);
+                    openEditPortfolio(p.id);
+                  }}
+                  className="absolute inset-0 flex items-center justify-center rounded-lg text-fg opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-surface-hover focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
+                  aria-label={`Edit ${p.name}`}
+                >
+                  <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden />
+                </button>
               </span>
             ) : (
               <span className="relative mr-1 flex h-9 w-9 shrink-0 items-center justify-center self-center">
