@@ -33,9 +33,9 @@ import { cn } from "@/lib/utils";
 export type BillingPlansViewState = {
   /** User is on paid Pro. */
   isPro: boolean;
-  /** Platform trial (not paid Pro). */
+  /** Paid Pro (not Free). */
   isTrial: boolean;
-  /** Post-trial / free limited. */
+  /** Free limited plan. */
   isFree: boolean;
   planLabel: string;
   /** Active Pro billing cycle (`null` when not paid Pro). */

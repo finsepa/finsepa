@@ -41,12 +41,12 @@ export type BillingSummary = {
 };
 
 export const EMPTY_BILLING_SUMMARY: BillingSummary = {
-  plan: "trial",
-  accessState: "trial",
+  plan: "free",
+  accessState: "free",
   accessEndsAt: null,
   cancelAtPeriodEnd: false,
   billingResumeAt: null,
-  subscriptionMeta: "Trial is active",
+  subscriptionMeta: "Active subscription",
   recurringAmountUsd: 0,
   recurringDueDate: null,
   paymentHistory: [],
@@ -69,13 +69,8 @@ export function platformTrialEndsMetaLabel(platformTrialEndsAt: string | null | 
   return `Trial ends on ${label}`;
 }
 
-/** Same plan line as Account → Billing (e.g. “Free Trial”, “Pro”, “Free”). */
+/** Same plan line as Account → Billing (e.g. “Pro”, “Free”). */
 export function subscriptionTitleFromBillingSummary(summary: BillingSummary): string {
-  const billingPlan = summary.plan;
-  const billingAccessState = summary.accessState;
-  if (billingPlan === "pro") return "Pro";
-  if (billingPlan === "free" || billingAccessState === "free" || billingAccessState === "trial_expired") {
-    return "Free";
-  }
-  return "Free Trial";
+  if (summary.plan === "pro") return "Pro";
+  return "Free";
 }

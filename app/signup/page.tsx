@@ -11,7 +11,7 @@ export default function SignupPage() {
     <AuthCenteredLayout
       split={false}
       cornerActions
-      title="Start your free trial"
+      title="Create your account"
       subtitle={
         <>
           <span className="text-fg-muted">Already have an account? </span>

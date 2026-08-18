@@ -5,11 +5,6 @@ import {
   type PlanEntitlements,
   type PlanTier,
 } from "@/lib/account/plan-entitlements";
-import {
-  effectivePlatformTrialEndsAtIso,
-  isPlatformTrialPast,
-  platformTrialDaysRemaining,
-} from "@/lib/account/platform-trial";
 
 export type SubscriptionGateRow = {
   plan_code?: string | null;
@@ -21,27 +16,19 @@ export type SubscriptionGateRow = {
 
 /**
  * Resolve product tier from billing_subscriptions row.
- * - Pro: active/trialing paid Stripe plan
- * - Trial: platform trial still valid
- * - Free: everyone else (expired trial, canceled Pro after period, missing row)
+ * - Pro: active/trialing paid Stripe (or Apple) plan
+ * - Free: everyone else (new signups, canceled Pro after period, missing row)
+ * Platform 7-day trial is retired; `trial` remains in PlanTier for API compatibility only.
  */
 export function resolvePlanTier(row: SubscriptionGateRow | null | undefined): PlanTier {
   if (hasActivePaidProSubscription(row)) return "pro";
-
-  const platformEnd = effectivePlatformTrialEndsAtIso(row);
-  if (platformEnd && !isPlatformTrialPast(platformEnd)) return "trial";
-
   return "free";
 }
 
 export function planEntitlementsFromBillingRow(
   row: SubscriptionGateRow | null | undefined,
 ): PlanEntitlements {
-  const tier = resolvePlanTier(row);
-  const platformEnd = effectivePlatformTrialEndsAtIso(row);
-  const daysLeft =
-    tier === "trial" ? platformTrialDaysRemaining(platformEnd) : null;
-  return entitlementsForTier(tier, daysLeft);
+  return entitlementsForTier(resolvePlanTier(row), null);
 }
 
 export type SubscriptionGateContext = PlanEntitlements & {

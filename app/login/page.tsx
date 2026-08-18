@@ -60,7 +60,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <>
             <span className="text-fg-muted">Not a member yet? </span>
             <Link href="/signup" className={authAccentLinkClassName}>
-              Get a free trial
+              Sign up
             </Link>
           </>
         )

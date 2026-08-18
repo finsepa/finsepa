@@ -1,9 +1,10 @@
 /**
- * Finsepa plan tiers after platform trial.
- * Pro/trial = unlimited product surface; Free = hard product caps.
+ * Finsepa plan tiers.
+ * Pro = unlimited product surface; Free = hard product caps.
+ * `trial` is unused (legacy API); new users start on Free.
  *
  * Free portfolio surface: 1 **manual** portfolio, no brokerage connect/sync.
- * Brokerage is Pro/trial only (connection + resync).
+ * Brokerage is Pro only (connection + resync).
  */
 export type PlanTier = "pro" | "trial" | "free";
 
@@ -14,16 +15,16 @@ export type PlanEntitlements = {
   tier: PlanTier;
   /** Paid Pro (Stripe active/trialing). */
   isPro: boolean;
-  /** Platform trial still running. */
+  /** @deprecated Platform trial retired; always false for new resolution. */
   isTrial: boolean;
-  /** Post-trial free limited plan. */
+  /** Free limited plan. */
   isFree: boolean;
   /** Days left in platform trial (top bar). */
   topbarTrialDaysLeft: number | null;
   /**
    * Free: max **manual** (non-brokerage) real portfolios.
-   * Brokerage books do not use this slot — they freeze unless Pro/trial.
-   * `null` = unlimited (Pro/trial).
+   * Brokerage books do not use this slot — they freeze unless Pro.
+   * `null` = unlimited (Pro).
    */
   maxRealPortfolios: number | null;
   maxWatchlists: number | null;
@@ -36,26 +37,25 @@ export type PlanEntitlements = {
   canConnectBrokerage: boolean;
   /**
    * Activity alerts (earnings results + superinvestor 13F activity).
-   * Pro + Trial only — Free can follow but does not receive new push/inbox items.
+   * Pro only — Free can follow but does not receive new push/inbox items.
    */
   canUseActivityAlerts: boolean;
 };
 
 export function entitlementsForTier(
   tier: PlanTier,
-  topbarTrialDaysLeft: number | null = null,
+  _topbarTrialDaysLeft: number | null = null,
 ): PlanEntitlements {
-  const isPro = tier === "pro";
-  const isTrial = tier === "trial";
-  const isFree = tier === "free";
-  const unlimited = isPro || isTrial;
+  const resolved: PlanTier = tier === "pro" ? "pro" : "free";
+  const isPro = resolved === "pro";
+  const unlimited = isPro;
 
   return {
-    tier,
+    tier: resolved,
     isPro,
-    isTrial,
-    isFree,
-    topbarTrialDaysLeft: isTrial ? topbarTrialDaysLeft : null,
+    isTrial: false,
+    isFree: !isPro,
+    topbarTrialDaysLeft: null,
     maxRealPortfolios: unlimited ? null : FREE_MAX_REAL_PORTFOLIOS,
     maxWatchlists: unlimited ? null : FREE_MAX_WATCHLISTS,
     canUseAgent: unlimited,
@@ -68,7 +68,7 @@ export function entitlementsForTier(
   };
 }
 
-/** Pro never hard-paywalled; Free/Trial keep app access. Hard paywall removed. */
+/** Pro never hard-paywalled; Free keeps app access. Hard paywall removed. */
 export function needsHardPaywall(_tier: PlanTier): boolean {
   return false;
 }

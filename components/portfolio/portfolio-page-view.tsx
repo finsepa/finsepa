@@ -18,7 +18,6 @@ import { PortfolioSlicesView } from "@/components/portfolio/portfolio-slices-vie
 import { SecondaryTabs } from "@/components/ui/secondary-tabs";
 import { PortfolioOverviewAthProvider } from "@/components/portfolio/portfolio-overview-ath-context";
 import { PortfolioOverviewCards } from "@/components/portfolio/portfolio-overview-cards";
-import { PortfolioOverviewMetrics } from "@/components/portfolio/portfolio-overview-metrics";
 import {
   PortfolioPageLoadingShell,
   PortfolioTabPanelSkeleton,
@@ -469,7 +468,6 @@ export function PortfolioPageView({
                     transactions={transactions}
                     benchmarkInvestedUsd={benchmarkInvestedUsd}
                   />
-                  <PortfolioOverviewMetrics holdings={holdings} transactions={transactions} />
                   <div className="pt-0">
                     <div className="mb-5 flex items-center justify-between gap-3">
                       <SecondaryTabs

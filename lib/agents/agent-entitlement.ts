@@ -7,7 +7,7 @@ export type AgentAccessResult =
   | { ok: true }
   | { ok: false; code: "PAYWALL" | "UNAUTHENTICATED" | "FREE_PLAN"; message: string };
 
-/** Agent is Pro or active platform trial only — not Free plan. */
+/** Agent is Pro only — not Free plan. */
 export async function assertAgentEntitlement(userId: string): Promise<AgentAccessResult> {
   const supabase = await getSupabaseServerClient();
   const gate = await getSubscriptionGateContext(supabase, userId);

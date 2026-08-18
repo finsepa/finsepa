@@ -18,8 +18,8 @@ export default async function AccountPlansPage() {
 
   const summary = await getBillingSummaryForUser(user.id);
   const isPro = summary.plan === "pro";
-  const isTrial = !isPro && (summary.plan === "trial" || summary.accessState === "trial");
-  const isFree = !isPro && !isTrial;
+  const isTrial = false;
+  const isFree = !isPro;
 
   let activeCycle: "monthly" | "annually" | null = null;
   if (isPro) {
@@ -37,7 +37,7 @@ export default async function AccountPlansPage() {
         isPro,
         isTrial,
         isFree,
-        planLabel: isPro ? "Pro" : isTrial ? "Trial" : "Free",
+        planLabel: isPro ? "Pro" : "Free",
         activeCycle,
         billedByApple: summary.billingProvider === "apple",
       }}

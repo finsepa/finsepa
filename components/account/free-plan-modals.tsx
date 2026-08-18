@@ -164,7 +164,7 @@ export function FreePlanLimitsIntroModal() {
     <AppModalOverlay open closeOnBackdropClick={false} zIndex={240}>
       <AppModalShell
         titleId={titleId}
-        title="Your free trial ended"
+        title="You're on the Free plan"
         showClose={false}
         bodyClassName="space-y-4 px-5 py-5"
         footer={
@@ -197,9 +197,9 @@ export function FreePlanLimitsIntroModal() {
               <span className="text-fg">1 manual portfolio</span> and{" "}
               <span className="text-fg">1 watchlist</span> stay active
             </li>
-            <li>If you made more in trial, pick which ones to keep below</li>
+            <li>If you made more than the Free limits, pick which ones to keep below</li>
             <li>Brokerage portfolios stay saved but freeze (no sync) on Free</li>
-            <li className="text-fg">Upgrade to Pro to unlock everything again</li>
+            <li className="text-fg">Upgrade to Pro to unlock everything</li>
           </ul>
         </div>
 

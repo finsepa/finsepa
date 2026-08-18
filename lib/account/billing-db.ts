@@ -1,7 +1,7 @@
 import "server-only";
 
 import type Stripe from "stripe";
-import { EMPTY_BILLING_SUMMARY, platformTrialEndsMetaLabel, type BillingSummary } from "@/lib/account/billing";
+import { EMPTY_BILLING_SUMMARY, type BillingSummary } from "@/lib/account/billing";
 import {
   appleProPriceForCycle,
   billingCycleFromPlanCode,
@@ -10,11 +10,7 @@ import {
 } from "@/lib/account/plan-pricing";
 import { appleAmountUsdForProductId } from "@/lib/apple/products";
 import { hasActivePaidProSubscription } from "@/lib/account/billing-guard";
-import {
-  effectivePlatformTrialEndsAtIso,
-  isPlatformTrialPast,
-  platformTrialDaysRemaining as computePlatformTrialDaysRemaining,
-} from "@/lib/account/platform-trial";
+import { effectivePlatformTrialEndsAtIso } from "@/lib/account/platform-trial";
 import { subscriptionUnitAmountUsdAfterDiscounts } from "@/lib/account/billing-stripe-amounts";
 import { sendLoopsProRenewedEmail } from "@/lib/loops/send-pro-renewed";
 import { getStripeClient } from "@/lib/stripe/server";
@@ -63,7 +59,7 @@ function subscriptionMeta(status: string, cancelAtPeriodEnd: boolean, collection
   if (status === "past_due") return "Payment past due";
   if (status === "active") return "Active subscription";
   if (status === "unpaid") return "Payment required";
-  return "Trial is active";
+  return "Active subscription";
 }
 
 export async function getBillingSummaryForUser(userId: string): Promise<BillingSummary> {
@@ -110,28 +106,15 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
         : "expired"
       : isPro
         ? "pro"
-        : "trial";
+        : "free";
 
   const platformTrialEndsAtIso = effectivePlatformTrialEndsAtIso(subscription);
-  if (!isPro && accessState === "trial" && isPlatformTrialPast(platformTrialEndsAtIso)) {
-    accessState = "free";
-  }
   if (!isPro && accessState === "expired") {
     accessState = "free";
   }
 
-  let platformTrialDaysRemaining: number | null = null;
-  if (
-    !isPro &&
-    accessState === "trial" &&
-    platformTrialEndsAtIso &&
-    !isPlatformTrialPast(platformTrialEndsAtIso)
-  ) {
-    platformTrialDaysRemaining = computePlatformTrialDaysRemaining(platformTrialEndsAtIso);
-  }
-
   return {
-    plan: isPro ? "pro" : accessState === "free" ? "free" : "trial",
+    plan: isPro ? "pro" : "free",
     accessState,
     accessEndsAt: subscription.cancel_at_period_end ? subscription.current_period_end : null,
     cancelAtPeriodEnd: !!subscription.cancel_at_period_end,
@@ -139,14 +122,11 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
     subscriptionMeta:
       accessState === "free"
         ? "Active subscription"
-        : accessState === "trial"
-          ? platformTrialEndsMetaLabel(platformTrialEndsAtIso) ??
-            subscriptionMeta(subscription.status, subscription.cancel_at_period_end, false)
-          : subscriptionMeta(subscription.status, subscription.cancel_at_period_end, false),
+        : subscriptionMeta(subscription.status, subscription.cancel_at_period_end, false),
     recurringAmountUsd: isPro ? recurringAmountUsd : 0,
     recurringDueDate: subscription.current_period_end,
     platformTrialEndsAt: isPro ? null : platformTrialEndsAtIso,
-    platformTrialDaysRemaining,
+    platformTrialDaysRemaining: null,
     billingProvider:
       subscription.billing_provider === "apple" || subscription.billing_provider === "stripe"
         ? subscription.billing_provider
@@ -464,12 +444,12 @@ export async function claimWelcomeTrialEmailSend(userId: string): Promise<boolea
   if (!admin) return false;
 
   // Ensure a billing row exists so the claim UPDATE can match (OAuth / race before trigger).
-  const trialEnds = new Date(Date.now() + 7 * 86_400_000).toISOString();
+  const trialEnds = new Date(Date.now() - 86_400_000).toISOString();
   await admin.from("billing_subscriptions").upsert(
     {
       user_id: userId,
-      plan_code: "trial",
-      status: "trial",
+      plan_code: "free",
+      status: "free",
       platform_trial_ends_at: trialEnds,
       updated_at: new Date().toISOString(),
     },
@@ -641,40 +621,22 @@ export async function upsertBillingSubscription(args: {
   }
 }
 
+/** @deprecated Platform trial retired — writes Free so leftover callers cannot re-grant trial. */
 export async function setSubscriptionTrial(args: { userId: string }) {
   const admin = getSupabaseAdminClient();
   if (!admin) return;
 
-  const { data: existing } = await admin
-    .from("billing_subscriptions")
-    .select("platform_trial_ends_at, created_at")
-    .eq("user_id", args.userId)
-    .maybeSingle<Pick<BillingSubscriptionRow, "platform_trial_ends_at" | "created_at">>();
-
-  let platformEnds =
-    typeof existing?.platform_trial_ends_at === "string" ? existing.platform_trial_ends_at.trim() : "";
-  if (!platformEnds && existing?.created_at) {
-    const created = new Date(existing.created_at);
-    if (Number.isFinite(created.getTime())) {
-      platformEnds = new Date(created.getTime() + 7 * 86_400_000).toISOString();
-    }
-  }
-  if (!platformEnds) {
-    platformEnds = new Date(0).toISOString();
-  }
-
   await admin.from("billing_subscriptions").upsert(
     {
       user_id: args.userId,
-      plan_code: "trial",
-      status: "trial",
+      plan_code: "free",
+      status: "free",
       recurring_amount_usd: 0,
       current_period_end: null,
       cancel_at_period_end: false,
       stripe_subscription_id: null,
       stripe_price_id: null,
-      platform_trial_ends_at: platformEnds,
-      // Allow Pro activated email again on a later purchase after cancel.
+      platform_trial_ends_at: new Date(Date.now() - 86_400_000).toISOString(),
       pro_welcome_email_sent_at: null,
       updated_at: new Date().toISOString(),
     },

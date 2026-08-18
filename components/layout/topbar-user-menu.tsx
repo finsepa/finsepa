@@ -326,13 +326,11 @@ export function TopbarUserMenu({
     planLabel !== "Pro" &&
     (showTrialCountdown || (open && !planLoading));
 
-  /** Live chat: Pro + Trial. Free only sees Pro badge + upgrade gate. */
+  /** Live chat: Pro. Free only sees Pro badge + upgrade gate. */
   const canUseLiveChat =
     isProFromServer ||
     isPro ||
-    billingPlan === "pro" ||
-    billingPlan === "trial" ||
-    showTrialCountdown;
+    billingPlan === "pro";
   const showLiveChatProBadge = !canUseLiveChat;
 
   const menuTriggerLabel = "Profile";

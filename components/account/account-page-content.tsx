@@ -7,7 +7,6 @@ import { loginAccountDeletedUrl, loginSignedOutUrl } from "@/lib/auth/routes";
 import { signOutLocalSession } from "@/lib/auth/sign-out-local";
 import {
   EMPTY_BILLING_SUMMARY,
-  platformTrialEndsMetaLabel,
   subscriptionTitleFromBillingSummary,
   type BillingSummary,
 } from "@/lib/account/billing";
@@ -359,13 +358,10 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
           year: "numeric",
         })
       : null;
-  const trialEndsLabel = platformTrialEndsMetaLabel(billingSummary.platformTrialEndsAt);
   const subscriptionStatusBelowTitle =
     isProScheduledCancellation && periodEndLabel
       ? `Active until ${periodEndLabel}`
-      : billingAccessState === "trial" && trialEndsLabel
-        ? trialEndsLabel
-        : subscriptionMeta;
+      : subscriptionMeta;
   const actionLabel = billingPlan === "pro" ? "Manage Subscription" : "Upgrade to Pro";
   const showManageOnPaymentCard = billingPlan === "pro";
   const showUpgradeOnPaymentCard = billingPlan !== "pro";
@@ -410,9 +406,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     year: "numeric",
                   })}`
                 : "Next payment date will appear soon."
-      : billingAccessState === "trial_expired"
-        ? "Your free trial has ended. Choose a plan to restore full access."
-        : "No upcoming payment while on free trial.";
+      : "No upcoming payment on Free. Upgrade to Pro anytime.";
 
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">

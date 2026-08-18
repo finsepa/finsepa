@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
-import { platformTrialEndsMetaLabel } from "@/lib/account/billing";
 import {
   appleProPriceForCycle,
   billingCycleFromPlanCode,
@@ -15,11 +14,7 @@ import {
   previewSubscriptionPeriodEndSeconds,
   resolveNextRecurringChargeUsd,
 } from "@/lib/account/billing-stripe-amounts";
-import {
-  effectivePlatformTrialEndsAtIso,
-  isPlatformTrialPast,
-  platformTrialDaysRemaining as computePlatformTrialDaysRemaining,
-} from "@/lib/account/platform-trial";
+import { effectivePlatformTrialEndsAtIso } from "@/lib/account/platform-trial";
 import { trySendLoopsProCanceledEmail } from "@/lib/loops/send-pro-canceled-on-cancel";
 import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { getStripeClient } from "@/lib/stripe/server";
@@ -68,7 +63,7 @@ function subscriptionMeta(status: string, cancelAtPeriodEnd: boolean, collection
   if (status === "past_due") return "Payment past due";
   if (status === "active") return "Active subscription";
   if (status === "unpaid") return "Payment required";
-  return "Trial is active";
+  return "Active subscription";
 }
 
 function addRecurringInterval(args: {
@@ -293,7 +288,7 @@ export async function GET(request: Request) {
 
     const nowMs = Date.now();
 
-    let accessState: BillingAccessState = "trial";
+    let accessState: BillingAccessState = "free";
     let accessEndsAt: string | null = null;
 
     if (isPro) {
@@ -327,9 +322,6 @@ export async function GET(request: Request) {
 
     const platformTrialEndsAtIso = effectivePlatformTrialEndsAtIso(subscription ?? null);
 
-    if (!isPro && accessState === "trial" && isPlatformTrialPast(platformTrialEndsAtIso)) {
-      accessState = "free";
-    }
     if (!isPro && accessState === "expired") {
       accessState = "free";
     }
@@ -341,9 +333,7 @@ export async function GET(request: Request) {
     const plan: "pro" | "trial" | "free" =
       accessState === "pro" || accessState === "canceled" || accessState === "paused"
         ? "pro"
-        : accessState === "trial"
-          ? "trial"
-          : "free";
+        : "free";
 
     const cancelAtPeriodEndActive = isPro && stripeCancelAtPeriodEnd && !stripeCollectionPaused;
 
@@ -382,24 +372,14 @@ export async function GET(request: Request) {
       }
     }
 
-    let platformTrialDaysRemaining: number | null = null;
-    if (
-      !isPro &&
-      accessState === "trial" &&
-      platformTrialEndsAtIso &&
-      !isPlatformTrialPast(platformTrialEndsAtIso)
-    ) {
-      platformTrialDaysRemaining = computePlatformTrialDaysRemaining(platformTrialEndsAtIso);
-    }
+    const platformTrialDaysRemaining: number | null = null;
 
     const subscriptionMetaOut =
       accessState === "free"
         ? "Active subscription"
-        : accessState === "trial"
-            ? platformTrialEndsMetaLabel(platformTrialEndsAtIso) ?? "Trial is active"
-            : subscription
-              ? subscriptionMeta(stripeStatus, stripeCancelAtPeriodEnd, stripeCollectionPaused)
-              : platformTrialEndsMetaLabel(platformTrialEndsAtIso) ?? "Trial is active";
+        : subscription
+          ? subscriptionMeta(stripeStatus, stripeCancelAtPeriodEnd, stripeCollectionPaused)
+          : "Active subscription";
 
     const billingProvider: "apple" | "stripe" | null =
       subscription?.billing_provider === "apple" || subscription?.billing_provider === "stripe"

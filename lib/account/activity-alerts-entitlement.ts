@@ -5,7 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { subscriptionGateFromBillingRow } from "@/lib/account/resolve-plan-tier";
 
 /**
- * Among {@link userIds}, returns those entitled to activity alerts (Pro/Trial).
+ * Among {@link userIds}, returns those entitled to activity alerts (Pro).
  * Missing billing row ⇒ Free ⇒ not eligible.
  *
  * Used by notification fan-out so Free users never get new inbox rows even if prefs stay on.
