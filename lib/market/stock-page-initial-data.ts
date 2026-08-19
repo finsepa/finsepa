@@ -17,7 +17,7 @@ import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-
 import { buildStockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle";
 import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
 import { stockKeyIndicatorsServerEnabled } from "@/lib/features/key-indicators";
-import { getStockKeyIndicators } from "@/lib/market/stock-key-indicators-service";
+import { getStockKeyIndicators, type StockKeyIndicatorsLoadOpts } from "@/lib/market/stock-key-indicators-service";
 import type { StockKeyIndicatorsResponse } from "@/lib/market/stock-key-indicators-types";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
@@ -180,10 +180,13 @@ function fallbackStockPageInitialData(ticker: string, now: Date): StockPageIniti
   };
 }
 
-async function loadKeyIndicatorsForPage(ticker: string): Promise<StockKeyIndicatorsResponse | null> {
+async function loadKeyIndicatorsForPage(
+  ticker: string,
+  opts?: StockKeyIndicatorsLoadOpts,
+): Promise<StockKeyIndicatorsResponse | null> {
   if (!stockKeyIndicatorsServerEnabled()) return null;
   try {
-    return await getStockKeyIndicators(ticker);
+    return await getStockKeyIndicators(ticker, opts);
   } catch (err) {
     warnSettledFailure("keyIndicators", err);
     return null;
@@ -308,6 +311,9 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
     const sortedBarsPromise = barsPromise.then((barsRaw) =>
       barsRaw.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [],
     );
+    const performancePromise = sortedBarsPromise.then((sorted) =>
+      computeStockPerformanceFromSortedDailyBars(sorted, ticker, now),
+    );
     const annualFromBars = sortedBarsPromise.then((sorted) =>
       fetchChartingSeriesWithDailyBars(ticker, "annual", sorted),
     );
@@ -332,7 +338,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       barsPromise,
       getStockChartPointsForApi(ticker, range, "price"),
       buildStockKeyStatsBundle(ticker),
-      loadKeyIndicatorsForPage(ticker),
+      loadKeyIndicatorsForPage(ticker, { stockPerformance: performancePromise }),
       getStockNews(ticker),
       fetchEodhdStockProfile(ticker),
       annualFromBars,
@@ -358,7 +364,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       range === "1D" ? isStock1DLiveSessionMinuteChart(ticker, now) : false;
 
     const sorted = barsRaw.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
-    const performance = computeStockPerformanceFromSortedDailyBars(sorted, ticker, now);
+    const performance = await performancePromise;
     const points = resolveOverviewChartPoints(range, chartPointsRaw, sorted, now);
 
     return {

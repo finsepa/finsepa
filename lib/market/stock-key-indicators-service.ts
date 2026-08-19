@@ -4,6 +4,7 @@ import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { stockKeyIndicatorsServerEnabled } from "@/lib/features/key-indicators";
 import { isEarningsNotifiableTicker } from "@/lib/notifications/ticker-notify-eligibility";
 import { getStockPerformance } from "@/lib/market/stock-performance";
+import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import {
   buildSlowKeyIndicators,
   buildVsSp500YtdIndicator,
@@ -44,9 +45,25 @@ function emptyResponse(ticker: string): StockKeyIndicatorsResponse {
 
 const inflight = new Map<string, Promise<StockKeyIndicatorsResponse>>();
 
-async function computeHotTier(ticker: string, now = new Date()) {
+export type StockKeyIndicatorsLoadOpts = {
+  /**
+   * When the caller already computed performance from the same daily bars window
+   * (e.g. stock page SSR), pass it here to skip a redundant `getStockPerformance` fetch.
+   */
+  stockPerformance?: Promise<StockPerformance> | StockPerformance;
+};
+
+async function resolveStockPerformance(
+  ticker: string,
+  prefetched?: Promise<StockPerformance> | StockPerformance,
+): Promise<StockPerformance> {
+  if (prefetched != null) return prefetched;
+  return getStockPerformance(ticker);
+}
+
+async function computeHotTier(ticker: string, now = new Date(), opts?: StockKeyIndicatorsLoadOpts) {
   const [stockPerf, benchPerf] = await Promise.all([
-    getStockPerformance(ticker),
+    resolveStockPerformance(ticker, opts?.stockPerformance),
     getStockPerformance(KEY_INDICATORS_BENCHMARK_SYMBOL),
   ]);
   const stockYtd = stockPerf.ytd;
@@ -60,13 +77,13 @@ async function computeHotTier(ticker: string, now = new Date()) {
   };
 }
 
-async function computeSlowTier(ticker: string, now = new Date()) {
+async function computeSlowTier(ticker: string, now = new Date(), opts?: StockKeyIndicatorsLoadOpts) {
   const root = await fetchEodhdFundamentalsJson(ticker);
   if (!root || !isKeyIndicatorsEligibleFundamentalsRoot(root)) {
     return null;
   }
 
-  const perf = await getStockPerformance(ticker);
+  const perf = await resolveStockPerformance(ticker, opts?.stockPerformance);
   const price = perf.price;
   const indicators = buildSlowKeyIndicators({ root, price, now });
   return {
@@ -88,7 +105,10 @@ function mergeSnapshotResponse(ticker: string, snapshot: StockKeyIndicatorsSnaps
   };
 }
 
-async function refreshStockKeyIndicatorsUncached(ticker: string): Promise<StockKeyIndicatorsResponse> {
+async function refreshStockKeyIndicatorsUncached(
+  ticker: string,
+  opts?: StockKeyIndicatorsLoadOpts,
+): Promise<StockKeyIndicatorsResponse> {
   const sym = ticker.trim().toUpperCase();
   if (!sym || !isEarningsNotifiableTicker(sym)) return emptyResponse(sym);
 
@@ -105,7 +125,7 @@ async function refreshStockKeyIndicatorsUncached(ticker: string): Promise<StockK
 
   if (!slowFresh) {
     tasks.push(
-      computeSlowTier(sym, now).then((slow) => {
+      computeSlowTier(sym, now, opts).then((slow) => {
         if (slow) snapshot = { ...snapshot, slow };
       }),
     );
@@ -113,7 +133,7 @@ async function refreshStockKeyIndicatorsUncached(ticker: string): Promise<StockK
 
   if (!hotFresh) {
     tasks.push(
-      computeHotTier(sym, now).then((hot) => {
+      computeHotTier(sym, now, opts).then((hot) => {
         if (hot.indicator != null || hot.stockYtd != null || hot.benchYtd != null) {
           snapshot = { ...snapshot, hot };
         }
@@ -131,7 +151,10 @@ async function refreshStockKeyIndicatorsUncached(ticker: string): Promise<StockK
   return mergeSnapshotResponse(sym, snapshot);
 }
 
-export async function getStockKeyIndicators(ticker: string): Promise<StockKeyIndicatorsResponse> {
+export async function getStockKeyIndicators(
+  ticker: string,
+  opts?: StockKeyIndicatorsLoadOpts,
+): Promise<StockKeyIndicatorsResponse> {
   if (!stockKeyIndicatorsEnabled()) return emptyResponse(ticker.trim().toUpperCase());
 
   const sym = ticker.trim().toUpperCase();
@@ -152,7 +175,7 @@ export async function getStockKeyIndicators(ticker: string): Promise<StockKeyInd
   const pending = inflight.get(sym);
   if (pending) return pending;
 
-  const work = refreshStockKeyIndicatorsUncached(sym).finally(() => {
+  const work = refreshStockKeyIndicatorsUncached(sym, opts).finally(() => {
     inflight.delete(sym);
   });
   inflight.set(sym, work);
