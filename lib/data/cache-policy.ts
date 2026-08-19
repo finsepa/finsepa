@@ -62,7 +62,7 @@ export const REVALIDATE_STOCK_1D_LIVE_SPOT = 15;
 
 /**
  * ~30s — 1D chart during US regular session (minute store + live tail).
- * Client chart poll aligns to this window.
+ * Client chart poll aligns to this window (see stock-live-poll-intervals).
  */
 export const REVALIDATE_STOCK_1D_LIVE_CHART = REVALIDATE_HOT_FAST;
 

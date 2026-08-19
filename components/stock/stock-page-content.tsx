@@ -60,8 +60,12 @@ import {
   isUsEquityHeaderAtCloseMode,
   isUsEquityLiveRegularSession,
 } from "@/lib/market/us-equity-live-session";
-import { STOCK_1D_LIVE_PRICE_POLL_MS } from "@/lib/chart/stock-1d-live-session-chart";
+import { STOCK_1D_LIVE_PRICE_POLL_MS } from "@/lib/chart/stock-live-poll-intervals";
 import { usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
+import {
+  stockPageSsrHas1DChartSeed,
+  stockPageSsrHasLiveSpotSeed,
+} from "@/lib/market/stock-page-ssr-live-seed";
 import {
   formatAssetChartTimestamp,
   formatStockHeaderAtClosePeriodLabel,
@@ -644,28 +648,52 @@ export function StockPageContent({
         /* ignore */
       }
     };
-    void tick();
-    const id = window.setInterval(tick, STOCK_1D_LIVE_PRICE_POLL_MS);
+    const ssrSpotSeed =
+      stockPageSsrHasLiveSpotSeed(initialPageData, ticker) &&
+      getUsEquityMarketSession(new Date()) === "regular";
+
+    let id: number;
+    if (ssrSpotSeed) {
+      // P1-1: SSR hot fields already loaded spot — wait for first poll interval (matches 15s cache).
+      id = window.setInterval(tick, STOCK_1D_LIVE_PRICE_POLL_MS);
+    } else {
+      void tick();
+      id = window.setInterval(tick, STOCK_1D_LIVE_PRICE_POLL_MS);
+    }
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [ticker, liveRegularSessionActive, regularSessionClock]);
+  }, [ticker, liveRegularSessionActive, regularSessionClock, initialPageData]);
 
-  // Prime minute-bar worker watch + live chart path as soon as the page opens in regular session.
+  // Prime minute-bar worker watch + live chart path when SSR did not already seed hot fields.
   useEffect(() => {
     if (!liveRegularSessionActive) return;
-    void Promise.all([
-      fetch(`/api/stocks/${encodeURIComponent(ticker)}/live-price`, {
-        credentials: "include",
-        cache: "no-store",
-      }),
-      fetch(`/api/stocks/${encodeURIComponent(ticker)}/chart?range=1D&series=price`, {
-        credentials: "include",
-        cache: "no-store",
-      }),
-    ]).catch(() => {});
-  }, [ticker, liveRegularSessionActive]);
+
+    const hasSpot = stockPageSsrHasLiveSpotSeed(initialPageData, ticker);
+    const hasChart = stockPageSsrHas1DChartSeed(initialPageData, ticker);
+    if (hasSpot && hasChart) return;
+
+    const enc = encodeURIComponent(ticker);
+    const fetches: Promise<Response>[] = [];
+    if (!hasSpot) {
+      fetches.push(
+        fetch(`/api/stocks/${enc}/live-price`, {
+          credentials: "include",
+          cache: "no-store",
+        }),
+      );
+    }
+    if (!hasChart) {
+      fetches.push(
+        fetch(`/api/stocks/${enc}/chart?range=1D&series=price`, {
+          credentials: "include",
+          cache: "no-store",
+        }),
+      );
+    }
+    if (fetches.length) void Promise.all(fetches).catch(() => {});
+  }, [ticker, liveRegularSessionActive, initialPageData]);
 
   useEffect(() => {
     setPerformanceClient(null);

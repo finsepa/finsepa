@@ -2489,6 +2489,8 @@ export function PriceChart({
 
         const now = new Date();
         const regularSession = getUsEquityMarketSession(now) === "regular";
+        const ssrLive1DReady =
+          initialChart.points.length >= 2 && initialChart.liveSessionMinute === true;
         // Live reference tickers (AAPL/NVDA/SPY/QQQ) always refetch 1D when not in the regular
         // WS session — the no-store API is authoritative and replaces any stale SSR/RSC payload
         // (post + closed + pre-market). Non-allowlist keep the prior-session SSR when present.
@@ -2499,7 +2501,7 @@ export function PriceChart({
           series === "price" &&
           !holdingsStyle &&
           (regularSession
-            ? usesStock1DLiveWsMinutePipeline(symbol, now)
+            ? usesStock1DLiveWsMinutePipeline(symbol, now) && !ssrLive1DReady
             : referenceTicker ||
               usesStock1DLiveWsPostMarketChart(symbol, now) ||
               !(
@@ -2667,6 +2669,11 @@ export function PriceChart({
     if (!liveSessionMinute || getUsEquityMarketSession(new Date()) !== "regular") return;
     let cancelled = false;
     const pollMs = STOCK_1D_LIVE_CHART_POLL_MS;
+    const hasSsr1DSeed =
+      initialChart?.range === "1D" &&
+      Array.isArray(initialChart.points) &&
+      initialChart.points.length >= 2;
+
     const poll = async () => {
       const path = `/api/stocks/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`;
       try {
@@ -2689,13 +2696,19 @@ export function PriceChart({
         /* ignore */
       }
     };
-    void poll();
-    const id = window.setInterval(() => void poll(), pollMs);
+    let id: number;
+    if (hasSsr1DSeed) {
+      // P1-1: SSR chart seed — defer first poll to cache TTL (P1-2 aligned interval).
+      id = window.setInterval(() => void poll(), pollMs);
+    } else {
+      void poll();
+      id = window.setInterval(() => void poll(), pollMs);
+    }
     return () => {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, [holdingsStyle, kind, range, series, symbol, screenshotPreviewMode, liveSessionMinute]);
+  }, [holdingsStyle, kind, range, series, symbol, screenshotPreviewMode, liveSessionMinute, initialChart]);
 
   // Live crypto 1D (BTC only) — rolling last 24h, refresh ~60s. Separate from stock session logic:
   // crypto is 24/7, so no market-session gating. Full-replace the series each poll.
