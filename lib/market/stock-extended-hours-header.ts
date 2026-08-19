@@ -386,7 +386,7 @@ export async function buildStockExtendedHoursHeaderQuote(
   };
 }
 
-/** ~60s client poll — always fetch a fresh provider row (no cross-user quote cache). */
+/** Client poll — {@link REVALIDATE_STOCK_1D_LIVE_SPOT} server cache on delayed quote coalesces provider GETs. */
 export async function getStockExtendedHoursQuoteForApi(
   ticker: string,
   meta: Pick<StockDetailHeaderMeta, "exchange" | "countryIso"> | null,

@@ -1,5 +1,8 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
+import { REVALIDATE_STOCK_1D_LIVE_SPOT } from "@/lib/data/cache-policy";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
@@ -52,7 +55,7 @@ function parseRow(raw: unknown): EodhdUsQuoteDelayedRow | null {
  * US extended-hours quote (Live v2) — `ethPrice` / `ethTime` for pre- and post-market.
  * @see https://eodhd.com/financial-apis/live-realtime-stocks-api
  */
-export async function fetchEodhdUsQuoteDelayed(ticker: string): Promise<EodhdUsQuoteDelayedRow | null> {
+async function fetchEodhdUsQuoteDelayedUncached(ticker: string): Promise<EodhdUsQuoteDelayedRow | null> {
   const key = getEodhdApiKey();
   if (!key) return null;
 
@@ -76,4 +79,32 @@ export async function fetchEodhdUsQuoteDelayed(ticker: string): Promise<EodhdUsQ
   } catch {
     return null;
   }
+}
+
+const getCachedUsQuoteDelayed = unstable_cache(
+  async (_cacheKey: string, ticker: string) => fetchEodhdUsQuoteDelayedUncached(ticker),
+  ["eodhd-us-quote-delayed-v1"],
+  { revalidate: REVALIDATE_STOCK_1D_LIVE_SPOT },
+);
+
+/** In-flight coalesce for identical tickers in one isolate (parallel SSR + poll bursts). */
+const inflight = new Map<string, Promise<EodhdUsQuoteDelayedRow | null>>();
+
+/**
+ * Cached US delayed quote — pre/post extended hours and regular-session fallback.
+ * {@link REVALIDATE_STOCK_1D_LIVE_SPOT} (15s) aligns with client extended-hours poll interval.
+ */
+export async function fetchEodhdUsQuoteDelayed(ticker: string): Promise<EodhdUsQuoteDelayedRow | null> {
+  const sym = ticker.trim().toUpperCase();
+  if (!sym) return null;
+
+  const cacheKey = `eodhd-us-quote-delayed-v1|${sym}`;
+  const existing = inflight.get(cacheKey);
+  if (existing) return existing;
+
+  const p = getCachedUsQuoteDelayed(cacheKey, sym).finally(() => {
+    inflight.delete(cacheKey);
+  });
+  inflight.set(cacheKey, p);
+  return p;
 }

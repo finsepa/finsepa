@@ -52,7 +52,7 @@ type Props = {
   headerMetaLoading: boolean;
   /** Overview chart metric — formats the large header number as price vs market cap. */
   headerChartMetric?: StockChartSeries;
-  /** US pre/post extended-hours quote (polled ~60s). */
+  /** US pre/post extended-hours quote (polled ~15s). */
   extendedHours?: StockExtendedHoursHeader | null;
   extendedHoursLoading?: boolean;
   showExtendedHours?: boolean;

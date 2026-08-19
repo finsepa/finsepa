@@ -12,6 +12,8 @@ import type { HealthReport, HealthStatus } from "@/lib/admin-health/types";
 import { SpinnerLabel } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
+import { OpsEodhdTracePanel } from "@/app/ops/[slug]/ops-eodhd-trace-panel";
+
 type Props = {
   slug: string;
   authenticated: boolean;
@@ -180,7 +182,7 @@ function Dashboard({
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
+    <main className="mx-auto max-w-4xl px-4 py-10">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-fg">System status</h1>
@@ -216,6 +218,8 @@ function Dashboard({
           <CheckCard key={check.id} {...check} />
         ))}
       </div>
+
+      <OpsEodhdTracePanel slug={slug} />
     </main>
   );
 }
