@@ -111,41 +111,6 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
   const [billingHydrated, setBillingHydrated] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [paymentHistoryPage, setPaymentHistoryPage] = useState(1);
-  const stripeCheckoutSuccessToastRef = useRef(false);
-
-  useEffect(() => {
-    const checkout = searchParams.get("checkout");
-    if (checkout !== "success") return;
-
-    const sessionId = searchParams.get("session_id");
-
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("checkout");
-    params.delete("session_id");
-    const qs = params.toString();
-    router.replace(qs ? `/account?${qs}` : "/account", { scroll: false });
-
-    let shouldToast = false;
-    if (sessionId) {
-      const key = `finsepa_stripe_checkout_success:${sessionId}`;
-      if (typeof window !== "undefined" && !sessionStorage.getItem(key)) {
-        sessionStorage.setItem(key, "1");
-        shouldToast = true;
-      }
-    } else if (!stripeCheckoutSuccessToastRef.current) {
-      stripeCheckoutSuccessToastRef.current = true;
-      shouldToast = true;
-    }
-
-    if (shouldToast) {
-      toast.success("Congratulations! Your Pro access was activated.");
-    }
-
-    void (async () => {
-      const { data } = await getSupabaseBrowserClient().auth.getUser();
-      if (data.user) invalidateBillingSummaryMenuCache(data.user.id);
-    })();
-  }, [searchParams, router]);
 
   useEffect(() => {
     const tab = (searchParams.get("tab") ?? "").trim().toLowerCase();

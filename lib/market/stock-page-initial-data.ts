@@ -1,6 +1,7 @@
 import "server-only";
 
-import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
+import { type EodhdDailyBar } from "@/lib/market/eodhd-eod";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
 import {
   getStockSpotQuoteForApi,
@@ -303,9 +304,9 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
   }
 
   try {
-    const barsPromise = fetchEodhdEodDaily(ticker, from, to);
+    const barsPromise = loadPortfolioSymbolEodBars(ticker, from, to);
     const sortedBarsPromise = barsPromise.then((barsRaw) =>
-      barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [],
+      barsRaw.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [],
     );
     const annualFromBars = sortedBarsPromise.then((sorted) =>
       fetchChartingSeriesWithDailyBars(ticker, "annual", sorted),
@@ -341,7 +342,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
     ]);
 
     const headerMeta = fromSettled(headerMetaResult, "headerMeta") ?? headerMetaShell(ticker);
-    const barsRaw = fromSettled(barsResult, "eodDaily");
+    const barsRaw = fromSettled(barsResult, "eodDaily") ?? [];
     const chartPointsRaw = fromSettled(chartPointsResult, "chart1D");
     const keyStatsBundle = fromSettled(keyStatsResult, "keyStats") ?? { ...EMPTY_KEY_STATS };
     const keyIndicators = fromSettled(keyIndicatorsResult, "keyIndicators");
@@ -356,7 +357,7 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
     const liveSessionMinute =
       range === "1D" ? isStock1DLiveSessionMinuteChart(ticker, now) : false;
 
-    const sorted = barsRaw?.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
+    const sorted = barsRaw.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
     const performance = computeStockPerformanceFromSortedDailyBars(sorted, ticker, now);
     const points = resolveOverviewChartPoints(range, chartPointsRaw, sorted, now);
 

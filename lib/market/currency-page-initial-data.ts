@@ -20,7 +20,7 @@ import {
   type CurrencyChartRange,
   type CurrencyPageInitialData,
 } from "@/lib/market/currency-page-shared";
-import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import {
   getRouteAssetPageCacheSegment,
   readRouteAssetPageSnapshot,
@@ -97,7 +97,7 @@ export async function getCurrencyChartPoints(
     fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 2);
   }
   const from = ymdUtc(fromDate);
-  const bars = await fetchEodhdEodDaily(sym, from, to);
+  const bars = await loadPortfolioSymbolEodBars(sym, from, to);
   if (!bars?.length) return [];
   const sorted = [...bars].sort((a, b) => a.date.localeCompare(b.date));
   return stockChartPointsFromDailyBars(sorted, range, now);
@@ -116,8 +116,8 @@ export async function loadCurrencyPageInitialDataUncached(
   fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 6);
   const from = ymdUtc(fromDate);
 
-  const bars = await fetchEodhdEodDaily(sym, from, to);
-  const sorted = bars?.length ? [...bars].sort((a, b) => a.date.localeCompare(b.date)) : [];
+  const bars = await loadPortfolioSymbolEodBars(sym, from, to);
+  const sorted = bars.length ? [...bars].sort((a, b) => a.date.localeCompare(b.date)) : [];
   const performance = computeStockPerformanceFromSortedDailyBars(sorted, sym, now);
   const chartPoints = stockChartPointsFromDailyBars(sorted, DEFAULT_RANGE, now);
 

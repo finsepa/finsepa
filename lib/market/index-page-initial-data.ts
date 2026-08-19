@@ -12,7 +12,7 @@ import {
 } from "@/lib/market/asset-rebuild-lease";
 import { runColdMissSingleFlight } from "@/lib/market/asset-rebuild-single-flight";
 import { stockChartPointsFromDailyBars } from "@/lib/market/crypto-chart-data";
-import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { loadIndexComponentsLimited } from "@/lib/market/index-page-meta";
 import {
   indexDisplayCode,
@@ -103,7 +103,7 @@ export async function getIndexChartPoints(
     fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 2);
   }
   const from = ymdUtc(fromDate);
-  const bars = await fetchEodhdEodDaily(sym, from, to);
+  const bars = await loadPortfolioSymbolEodBars(sym, from, to);
   if (!bars?.length) return [];
   const sorted = [...bars].sort((a, b) => a.date.localeCompare(b.date));
   return stockChartPointsFromDailyBars(sorted, range, now);
@@ -123,11 +123,11 @@ export async function loadIndexPageInitialDataUncached(routeSymbol: string): Pro
   const showComponents = indexSupportsComponents(sym);
 
   const [bars, components] = await Promise.all([
-    fetchEodhdEodDaily(sym, from, to),
+    loadPortfolioSymbolEodBars(sym, from, to),
     showComponents ? loadIndexComponentsLimited(sym, 50) : Promise.resolve([] as IndexComponentRow[]),
   ]);
 
-  const sorted = bars?.length ? [...bars].sort((a, b) => a.date.localeCompare(b.date)) : [];
+  const sorted = bars.length ? [...bars].sort((a, b) => a.date.localeCompare(b.date)) : [];
   const performance = computeStockPerformanceFromSortedDailyBars(sorted, sym, now);
   const chartPoints = stockChartPointsFromDailyBars(sorted, DEFAULT_RANGE, now);
 

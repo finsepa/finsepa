@@ -4,7 +4,7 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 
-import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { deriveMetricsFromDailyBars, eodFetchWindowUtc, formatDecimalTrim } from "@/lib/screener/eod-derived-metrics";
 
 export type IndexTableRow = {
@@ -32,8 +32,8 @@ export const INDEX_TOP10: { name: string; symbol: string; fallbackValue: number;
 
 async function buildIndexRow(entry: (typeof INDEX_TOP10)[number]): Promise<IndexTableRow> {
   const { from, to } = eodFetchWindowUtc();
-  const bars = await fetchEodhdEodDaily(entry.symbol, from, to);
-  if (!bars || bars.length < 2) {
+  const bars = await loadPortfolioSymbolEodBars(entry.symbol, from, to);
+  if (bars.length < 2) {
     return {
       name: entry.name,
       symbol: entry.symbol,

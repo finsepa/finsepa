@@ -6,7 +6,8 @@ import { REVALIDATE_HOT, REVALIDATE_STOCK_1D_LIVE_SPOT, REVALIDATE_STATIC_DAY } 
 
 import { resampleStock1DLiveSession } from "@/lib/chart/stock-1d-live-session-chart";
 import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-intraday";
-import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
+import { type EodhdDailyBar } from "@/lib/market/eodhd-eod";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { fetchEodhdUsRealtime } from "@/lib/market/eodhd-realtime";
 import {
   isEodhdUsQuoteDelayedAcceptableForDisplay,
@@ -336,7 +337,7 @@ async function loadDailyLastNCloses(ticker: string, now: Date, n: number, calend
   fromDate.setUTCDate(fromDate.getUTCDate() - calendarLookbackDays);
   const fromStr = ymdUtc(fromDate);
   const toStr = ymdUtc(now);
-  const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
+  const daily = await loadPortfolioSymbolEodBars(ticker, fromStr, toStr);
   if (!daily?.length) return [];
   const sorted = [...daily].sort((a, b) => a.date.localeCompare(b.date));
   const slice = sorted.slice(-n);
@@ -1009,7 +1010,7 @@ async function load1MChartPoints(ticker: string, now: Date, nowSec: number): Pro
   const fromDate = new Date(now);
   fromDate.setUTCDate(fromDate.getUTCDate() - 45);
   const fromStr = ymdUtc(fromDate);
-  const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
+  const daily = await loadPortfolioSymbolEodBars(ticker, fromStr, toStr);
   if (!daily?.length) return [];
   const points = daily
     .map((b) => {
@@ -1048,7 +1049,7 @@ async function load6MDailyFallback(ticker: string, now: Date): Promise<StockChar
   const fromDate = new Date(now);
   fromDate.setUTCDate(fromDate.getUTCDate() - 210);
   const fromStr = ymdUtc(fromDate);
-  const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
+  const daily = await loadPortfolioSymbolEodBars(ticker, fromStr, toStr);
   if (!daily?.length) return [];
   return dailyBarsToTwoPointsPerSessionDay(daily);
 }
@@ -1090,7 +1091,7 @@ async function loadYTDDailyFallback(ticker: string, now: Date): Promise<StockCha
   const toStr = ymdUtc(now);
   const fromDate = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
   const fromStr = ymdUtc(fromDate);
-  const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
+  const daily = await loadPortfolioSymbolEodBars(ticker, fromStr, toStr);
   if (!daily?.length) return [];
   return dailyBarsToTwoPointsPerSessionDay(daily);
 }
@@ -1132,7 +1133,7 @@ async function load1YDailyFallback(ticker: string, now: Date): Promise<StockChar
   const fromDate = new Date(now);
   fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 1);
   const fromStr = ymdUtc(fromDate);
-  const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
+  const daily = await loadPortfolioSymbolEodBars(ticker, fromStr, toStr);
   if (!daily?.length) return [];
   return dailyBarsToTwoPointsPerSessionDay(daily);
 }
@@ -1176,7 +1177,7 @@ async function load5YChartPoints(ticker: string, now: Date): Promise<StockChartP
   const fromDate = new Date(now);
   fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 5);
   const fromStr = ymdUtc(fromDate);
-  const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
+  const daily = await loadPortfolioSymbolEodBars(ticker, fromStr, toStr);
   if (!daily?.length) return [];
   const pts = stockChartPointsFromDailyBars(daily);
   return oneSamplePerWeekByKey(pts, (p) => usSessionWeekKeyFromUnixSeconds(p.time));
@@ -1190,7 +1191,7 @@ async function loadALLChartPoints(ticker: string, now: Date): Promise<StockChart
   const fromDate = new Date(now);
   fromDate.setUTCFullYear(fromDate.getUTCFullYear() - STOCK_CHART_ALL_LOOKBACK_YEARS);
   const fromStr = ymdUtc(fromDate);
-  const daily = await fetchEodhdEodDaily(ticker, fromStr, toStr);
+  const daily = await loadPortfolioSymbolEodBars(ticker, fromStr, toStr);
   if (!daily?.length) return [];
   const pts = stockChartPointsFromDailyBars(daily);
   return oneSamplePerMonthByKey(pts, (p) => usSessionMonthKeyFromUnixSeconds(p.time));

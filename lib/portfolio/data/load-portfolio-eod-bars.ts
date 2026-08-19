@@ -1,9 +1,10 @@
 /**
- * Canonical Portfolio historical daily EOD loader.
+ * Canonical app-wide historical daily EOD loader (equity + crypto).
  *
  * Data only — no Dietz / benchmark / analytics math.
- * All Portfolio compute routes should load bars through this module so identical
- * (symbol, from, to, retry) requests share one EODHD fetch via `unstable_cache`.
+ * Portfolio, stock/index pages, charts, screener misses, and performance should load
+ * bars through this module so identical (symbol, from, to, retry) requests share one
+ * EODHD fetch via `unstable_cache` + in-flight dedupe.
  */
 import "server-only";
 
@@ -187,3 +188,6 @@ export async function loadPortfolioSpyEodBars(
 ): Promise<EodhdDailyBar[]> {
   return loadPortfolioBenchmarkEodBars("SPY", fromYmd, toYmd, opts);
 }
+
+/** Greppable alias — same cache namespace as {@link loadPortfolioSymbolEodBars}. */
+export { loadPortfolioSymbolEodBars as loadCanonicalEodDailyBars };

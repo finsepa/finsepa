@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_NO_STORE } from "@/lib/data/cache-policy";
-import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
 
 type Ctx = { params: Promise<{ ticker: string }> };
@@ -31,8 +31,8 @@ export async function GET(request: Request, { params }: Ctx) {
     d.setUTCDate(d.getUTCDate() - 28);
     return d.toISOString().slice(0, 10);
   })();
-  const bars = await fetchEodhdEodDaily(routeTicker, from, date, "adjusted");
-  const pick = bars && bars.length ? bars[bars.length - 1]! : null;
+  const bars = await loadPortfolioSymbolEodBars(routeTicker, from, date);
+  const pick = bars.length ? bars[bars.length - 1]! : null;
   if (!pick || !Number.isFinite(pick.close) || pick.close <= 0) {
     return NextResponse.json({ price: null, barDate: null, source: null }, { status: 404 });
   }

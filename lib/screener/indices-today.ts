@@ -3,7 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT_FAST } from "@/lib/data/cache-policy";
-import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { MARKET_INDICES_TODAY, type MarketIndexConfig } from "@/lib/screener/indices-config";
 
 export type IndexCardData = {
@@ -52,8 +52,8 @@ async function buildIndexCardDailyOnly(config: MarketIndexConfig): Promise<Index
   let changePercent1D: number | null = null;
   let sparklineToday: number[] | null = null;
 
-  const daily = await fetchEodhdEodDaily(config.eodhdSymbol, fromDailyStr, todayStr);
-  const dailyBars = (daily ?? []).filter((b) => Number.isFinite(b.close));
+  const daily = await loadPortfolioSymbolEodBars(config.eodhdSymbol, fromDailyStr, todayStr);
+  const dailyBars = daily.filter((b) => Number.isFinite(b.close));
 
   if (dailyBars.length >= 1) {
     const lastDaily = dailyBars[dailyBars.length - 1]!;

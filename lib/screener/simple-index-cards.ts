@@ -15,7 +15,7 @@ import {
 import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
 import { readMarketSnapshot } from "@/lib/market/market-snapshot-store";
 import { rebuildMarketSnapshotBlobSingleFlight } from "@/lib/market/market-snapshot-rebuild";
-import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
 
 const INDEX_CARD_EODHD_SYMBOLS = ["GSPC.INDX", "NDX.INDX", "DJI.INDX", "IWM.US", "VIX.INDX"] as const;
@@ -63,8 +63,8 @@ async function loadDailySparklineFallback(symbol: string): Promise<number[] | nu
   const from = new Date(now);
   from.setUTCDate(from.getUTCDate() - 21);
   const fromStr = toUtcDateStr(from);
-  const daily = await fetchEodhdEodDaily(symbol, fromStr, toStr);
-  const closes = (daily ?? []).map((b) => b.close).filter((v) => Number.isFinite(v));
+  const daily = await loadPortfolioSymbolEodBars(symbol, fromStr, toStr);
+  const closes = daily.map((b) => b.close).filter((v) => Number.isFinite(v));
   if (closes.length < 2) return null;
   return sample(closes, 18);
 }

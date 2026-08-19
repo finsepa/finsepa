@@ -3,7 +3,8 @@ import "server-only";
 import { format, parse, subDays } from "date-fns";
 
 import type { ChartingSeriesPoint, FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
-import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
+import { type EodhdDailyBar } from "@/lib/market/eodhd-eod";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 
 /** UTC calendar YYYY-MM-DD from fiscal `periodEnd` (matches charting period keys). */
 export function chartingPeriodEndToUtcYmd(periodEnd: string): string | null {
@@ -239,8 +240,8 @@ export async function enrichChartingPointsWithPriceImpliedMarketCap(
   const prefetched =
     opts?.dailyBars?.length ? sliceSortedEodDailyBars(opts.dailyBars, win.from, win.to) : [];
   const bars =
-    prefetched.length > 0 ? prefetched : await fetchEodhdEodDaily(ticker.trim(), win.from, win.to);
-  if (!bars?.length) return;
+    prefetched.length > 0 ? prefetched : await loadPortfolioSymbolEodBars(ticker.trim(), win.from, win.to);
+  if (!bars.length) return;
 
   for (const p of points) {
     const ymd = chartingPeriodEndToUtcYmd(p.periodEnd);

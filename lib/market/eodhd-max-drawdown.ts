@@ -1,6 +1,7 @@
 import "server-only";
 
-import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
+import { type EodhdDailyBar } from "@/lib/market/eodhd-eod";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import type { DrawdownSeriesPoint } from "@/lib/market/drawdown-series-types";
 
 export type { DrawdownSeriesPoint } from "@/lib/market/drawdown-series-types";
@@ -54,8 +55,8 @@ export async function fetchFiveYearMaxDrawdownFraction(ticker: string): Promise<
   const now = new Date();
   const from = new Date(now);
   from.setUTCFullYear(from.getUTCFullYear() - 5);
-  const bars = await fetchEodhdEodDaily(ticker, ymdUtc(from), ymdUtc(now));
-  if (!bars?.length) return null;
+  const bars = await loadPortfolioSymbolEodBars(ticker, ymdUtc(from), ymdUtc(now));
+  if (!bars.length) return null;
   const closes = bars.map((b) => b.close);
   return computeMaxDrawdownFraction(closes);
 }
@@ -65,8 +66,8 @@ export async function fetchTwentyYearDrawdownSeries(ticker: string): Promise<Dra
   const now = new Date();
   const from = new Date(now);
   from.setUTCFullYear(from.getUTCFullYear() - 20);
-  const bars = await fetchEodhdEodDaily(ticker, ymdUtc(from), ymdUtc(now));
-  if (!bars?.length) return null;
+  const bars = await loadPortfolioSymbolEodBars(ticker, ymdUtc(from), ymdUtc(now));
+  if (!bars.length) return null;
   const series = computeDrawdownSeries(bars);
   return series.length ? series : null;
 }

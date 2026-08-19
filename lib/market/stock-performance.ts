@@ -4,7 +4,8 @@ import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 
-import { fetchEodhdEodDaily, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
+import { type EodhdDailyBar } from "@/lib/market/eodhd-eod";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { STOCK_CHART_ALL_LOOKBACK_YEARS } from "@/lib/market/stock-chart-types";
 import { computeAnnualReturnsFromSortedDailyBars } from "@/lib/market/stock-annual-returns";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
@@ -114,8 +115,8 @@ async function loadStockPerformanceUncached(ticker: string): Promise<StockPerfor
   fromDate.setUTCFullYear(fromDate.getUTCFullYear() - STOCK_CHART_ALL_LOOKBACK_YEARS);
   const from = ymdUtc(fromDate);
 
-  const bars = await fetchEodhdEodDaily(sym, from, to);
-  const sorted = bars?.length ? [...bars].sort((a, b) => a.date.localeCompare(b.date)) : [];
+  const bars = await loadPortfolioSymbolEodBars(sym, from, to);
+  const sorted = bars.length ? [...bars].sort((a, b) => a.date.localeCompare(b.date)) : [];
 
   return computeStockPerformanceFromSortedDailyBars(sorted, sym, now);
 }

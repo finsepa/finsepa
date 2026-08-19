@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Suspense, useRef, useState } from "react";
 
+import { CheckoutSuccessToast } from "@/components/account/checkout-success-toast";
 import { MainScrollToTop } from "@/components/layout/main-scroll-to-top";
 import { MarketsTabHostProvider } from "@/components/screener/markets-tab-host-context";
 import { StockDetailTabHostProvider } from "@/components/stock/stock-detail-tab-host-context";
@@ -85,6 +86,9 @@ function ProtectedAppChrome({
     >
       <Suspense fallback={null}>
         <NavigationTopLoader />
+      </Suspense>
+      <Suspense fallback={null}>
+        <CheckoutSuccessToast />
       </Suspense>
       <div
         suppressHydrationWarning

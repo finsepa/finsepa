@@ -2,11 +2,11 @@ import "server-only";
 
 import { format, parse, subDays } from "date-fns";
 
-import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
 import { readScreenerEodBarsSnapshot, upsertScreenerEodBarsSnapshot } from "@/lib/screener/screener-eod-bars-snapshot";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 export type EodhdDailyBar = {
@@ -237,35 +237,10 @@ export async function fetchEodhdEodDailyScreener(
   const snap = await readScreenerEodBarsSnapshot(sym);
   if (snap !== undefined) return snap;
 
-  const params = new URLSearchParams({
-    api_token: key,
-    fmt: "json",
-    period: "d",
-    order: "a",
-    from,
-    to,
-  });
-  const url = `https://eodhd.com/api/eod/${encodeURIComponent(sym)}?${params.toString()}`;
-
   try {
     if (!traceEodhdHttp("fetchEodhdEodDailyScreener", { symbol: sym })) return null;
-    const res = await fetchEodhd(url, { next: { revalidate: REVALIDATE_WARM } });
-    if (!res.ok) return null;
-    const data = (await res.json()) as unknown;
-    if (!Array.isArray(data)) return null;
-
-    const out: EodhdDailyBar[] = [];
-    for (const raw of data) {
-      if (!raw || typeof raw !== "object") continue;
-      const row = raw as Record<string, unknown>;
-      const date = row.date;
-      if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-      const close = barCloseAdjusted(row);
-      if (close == null) continue;
-      out.push({ date, close });
-    }
-    out.sort((a, b) => a.date.localeCompare(b.date));
-    const result = out.length ? out : null;
+    const bars = await loadPortfolioSymbolEodBars(symbolOrTicker, from, to);
+    const result = bars.length ? bars : null;
     void upsertScreenerEodBarsSnapshot(sym, result);
     return result;
   } catch {
