@@ -82,6 +82,12 @@ export const REVALIDATE_WARM = 300;
 export const REVALIDATE_SCREENER_MARKET = 300;
 
 /**
+ * ~5m — shared multi-symbol EODHD realtime quotes (portfolio ∩ watchlist ∩ screener).
+ * Same seconds as {@link REVALIDATE_SCREENER_MARKET} / portfolio live-quotes — does not tighten header 15s spot.
+ */
+export const REVALIDATE_BATCH_REALTIME_QUOTES = REVALIDATE_SCREENER_MARKET
+
+/**
  * ~15m — US equities screener quotes **during regular session only** (see `screener-us-market-cache.ts`).
  * Pre/post/closed use a frozen segment with `revalidate: false` until the next session.
  */

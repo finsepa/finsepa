@@ -126,6 +126,9 @@ export async function fetchEodhdRealtimeSymbolsRaw(symbols: string[]): Promise<M
 /**
  * Multiple US symbols in fewer HTTP round-trips (EODHD `s=` param).
  * @see https://eodhd.com/financial-apis/live-ohlcv-stocks-api (Multiple Tickers with One Request)
+ *
+ * List/portfolio callers should prefer {@link import("@/lib/market/eodhd-realtime-quotes").loadEodhdUsRealtimeQuotes}
+ * so overlapping universes share cache. This raw helper stays uncached for crypto live header.
  */
 export async function fetchEodhdUsRealtimeBatch(tickers: string[]): Promise<Map<string, EodhdRealtimePayload>> {
   const symbols = tickers.map((t) => toEodhdUsSymbol(t.trim().toUpperCase())).filter(Boolean);

@@ -4,7 +4,7 @@ import { withScreenerUsMarketCache } from "@/lib/screener/screener-us-market-cac
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { fetchEodhdEodDailyScreener, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
-import { fetchEodhdUsRealtimeBatch } from "@/lib/market/eodhd-realtime";
+import { loadEodhdUsRealtimeQuotes } from "@/lib/market/eodhd-realtime-quotes";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { deriveMetricsFromDailyBars, eodFetchWindowUtc } from "@/lib/screener/eod-derived-metrics";
 import {
@@ -66,7 +66,7 @@ async function loadSectorEtfProxyYtdUncached(): Promise<Record<ScreenerCanonical
   );
 
   const rtMap =
-    epoch.mode === "live" ? await fetchEodhdUsRealtimeBatch(SECTOR_ETF_TICKERS) : new Map<string, { close?: number }>();
+    epoch.mode === "live" ? await loadEodhdUsRealtimeQuotes(SECTOR_ETF_TICKERS) : new Map<string, { close?: number }>();
 
   const ytdByTicker = new Map<string, number | null>();
   SECTOR_ETF_TICKERS.forEach((ticker, i) => {

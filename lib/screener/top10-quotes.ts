@@ -4,7 +4,7 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
-import { fetchEodhdUsRealtimeBatch } from "@/lib/market/eodhd-realtime";
+import { loadEodhdUsRealtimeQuotes } from "@/lib/market/eodhd-realtime-quotes";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
 import { buildScreenerCompanyRowFromUniverse, resolveScreenerPeToMatchKeyStats } from "@/lib/screener/companies-rows";
@@ -39,7 +39,7 @@ function fallbackRow(ticker: Top10Ticker): ScreenerRowWithMarketCapSort {
 
 async function loadTop10RowsUncached(): Promise<ScreenerRowWithMarketCapSort[]> {
   const { universe } = await getScreenerCompaniesStaticLayer();
-  const realtimeMap = await fetchEodhdUsRealtimeBatch([...TOP10_TICKERS]);
+  const realtimeMap = await loadEodhdUsRealtimeQuotes([...TOP10_TICKERS]);
   const byTicker = new Map(universe.map((r) => [r.ticker.toUpperCase(), r] as const));
 
   const out: ScreenerRowWithMarketCapSort[] = [];

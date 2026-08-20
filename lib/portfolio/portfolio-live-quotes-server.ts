@@ -1,15 +1,12 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
-
 import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
 import { applyLivePricesToHoldings } from "@/lib/portfolio/apply-live-prices-to-holdings";
-import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { getCryptoLiveSpotPriceUsd } from "@/lib/market/crypto-live-price";
 import { toSupportedCryptoTicker } from "@/lib/market/crypto-meta";
-import { fetchEodhdRealtimeSymbolsRaw } from "@/lib/market/eodhd-realtime";
+import { loadEodhdRealtimeQuotes } from "@/lib/market/eodhd-realtime-quotes";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 
 function realtimeClose(payload: { close?: number } | undefined): number | null {
@@ -43,7 +40,7 @@ export async function fetchPortfolioLivePricesUsd(symbols: string[]): Promise<Re
   }
 
   if (stockEodhd.length) {
-    const map = await fetchEodhdRealtimeSymbolsRaw(stockEodhd);
+    const map = await loadEodhdRealtimeQuotes(stockEodhd);
     for (const sym of unique) {
       if (isPortfolioCryptoSymbol(sym)) continue;
       const eodhd = toEodhdUsSymbol(sym);
@@ -70,26 +67,11 @@ export async function fetchPortfolioLivePricesUsd(symbols: string[]): Promise<Re
   return out;
 }
 
-function normalizeSymbolsKey(symbols: string[]): string {
-  return [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].sort().join(",");
-}
-
-const getCachedPortfolioLivePricesUsd = unstable_cache(
-  async (symbolsKey: string) => {
-    const symbols = symbolsKey ? symbolsKey.split(",").filter(Boolean) : [];
-    return fetchPortfolioLivePricesUsd(symbols);
-  },
-  ["portfolio-live-quotes-v1"],
-  { revalidate: REVALIDATE_WARM },
-);
-
-/** Server-side TTL cache to dedupe refresh spam (esp. across hard reloads on deferred routes). */
+/** Per-symbol cache lives in {@link loadEodhdRealtimeQuotes} — no extra full-set key. */
 export async function fetchPortfolioLivePricesUsdCached(
   symbols: string[],
 ): Promise<Record<string, number | null>> {
-  const key = normalizeSymbolsKey(symbols);
-  if (!key) return {};
-  return getCachedPortfolioLivePricesUsd(key);
+  return fetchPortfolioLivePricesUsd(symbols);
 }
 
 export async function quoteHoldingsToMarketServer(

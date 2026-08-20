@@ -3,7 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_HOT, REVALIDATE_SCREENER_IDENTITY } from "@/lib/data/cache-policy";
-import { fetchEodhdUsRealtimeBatch } from "@/lib/market/eodhd-realtime";
+import { loadEodhdUsRealtimeQuotes } from "@/lib/market/eodhd-realtime-quotes";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import type { EodhdTopUniverseRow } from "@/lib/market/eodhd-screener";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
@@ -58,7 +58,7 @@ export const getScreenerCompaniesStaticLayer = unstable_cache(
 export const getScreenerCompaniesMarketSliceLayer = unstable_cache(
   async (tickers: string[]) => {
     if (!tickers.length) return new Map<string, EodhdRealtimePayload>();
-    return fetchEodhdUsRealtimeBatch(tickers);
+    return loadEodhdUsRealtimeQuotes(tickers);
   },
   ["screener-v2-companies-market-slice-layer-v1"],
   { revalidate: REVALIDATE_HOT },
@@ -72,7 +72,7 @@ async function buildScreenerMarketLayerUncached(): Promise<Map<string, EodhdReal
   const universe = await getTop500Universe();
   const tickers = universe.map((u) => u.ticker);
   if (!tickers.length) return new Map();
-  return fetchEodhdUsRealtimeBatch(tickers);
+  return loadEodhdUsRealtimeQuotes(tickers);
 }
 
 export const getScreenerCompaniesMarketLayer = unstable_cache(

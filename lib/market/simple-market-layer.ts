@@ -21,7 +21,8 @@ import {
   fetchEodhdCryptoDailyBarsForMeta,
   pickCryptoRealtimePayload,
 } from "@/lib/market/eodhd-crypto";
-import { fetchEodhdRealtimeSymbolsRaw, type EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
+import { loadEodhdRealtimeQuotes } from "@/lib/market/eodhd-realtime-quotes";
+import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { fetchEodhdEodDailyScreener, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { deriveMetricsFromDailyBars, eodFetchWindowUtc } from "@/lib/screener/eod-derived-metrics";
@@ -270,7 +271,7 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
       if (includeCrypto) {
         const cryptoMetas = cryptoMetasForBatch(cryptoBatch);
         const symbolList = cryptoRealtimeRequestSymbols(cryptoMetas);
-        const map = await fetchEodhdRealtimeSymbolsRaw(symbolList);
+        const map = await loadEodhdRealtimeQuotes(symbolList);
         for (const c of cryptoMetas) {
           crypto[c.symbol] = toDatum(pickCryptoRealtimePayload(map, c));
         }
@@ -307,7 +308,7 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
       symbolList.push(...SCREENER_INDEX_SYMBOLS);
     }
 
-    const map = await fetchEodhdRealtimeSymbolsRaw(symbolList);
+    const map = await loadEodhdRealtimeQuotes(symbolList);
 
     const stocks = {} as Record<Top10Ticker, SimpleMarketDatum>;
     for (const t of TOP10_TICKERS) {
