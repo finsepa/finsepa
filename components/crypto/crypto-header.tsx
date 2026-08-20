@@ -60,7 +60,7 @@ type Props = {
   headerLoading: boolean;
   /**
    * Stock-style header: change sits inline to the right of the price and the date/time timestamp
-   * shows below (matches the equity header). Used for the live 24H crypto view (BTC).
+   * shows below (matches the equity header). Used for the live 24H crypto view (BTC, ETH).
    */
   stockStyleLayout?: boolean;
 };
