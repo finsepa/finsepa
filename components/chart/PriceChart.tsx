@@ -182,9 +182,9 @@ type RangeChartPriceBadge = {
 /**
  * Tickers whose stale SSR 1D seed should be hidden behind a skeleton until the authoritative
  * no-store refetch resolves — avoids a ~1s flash of the smoothed prior-session chart on open.
- * Intentionally scoped to AAPL/NVDA only (not the full live-minute allowlist).
+ * Intentionally scoped to reference live tickers (not necessarily every allowlist member).
  */
-const SKELETON_ON_1D_REFRESH_TICKERS = new Set(["AAPL", "NVDA"]);
+const SKELETON_ON_1D_REFRESH_TICKERS = new Set(["AAPL", "NVDA", "GOOGL"]);
 
 function resolveInitialLiveSessionMinute(
   prop: boolean | undefined,

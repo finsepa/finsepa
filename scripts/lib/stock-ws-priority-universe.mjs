@@ -3,7 +3,7 @@
 export const PRIORITY_ETFS = ["SPY", "QQQ"];
 
 /** Default live 1m chart + WS tickers (mirrors stock-1d-live-minute-chart-tickers.ts). */
-export const DEFAULT_LIVE_MINUTE_CHART_TICKERS = ["NVDA", "AAPL", "QQQ", "SPY"];
+export const DEFAULT_LIVE_MINUTE_CHART_TICKERS = ["NVDA", "AAPL", "GOOGL", "QQQ", "SPY"];
 
 export function loadStock1DLiveMinuteChartTickers() {
   const raw = process.env.STOCK_1D_LIVE_MINUTE_CHART?.trim() ?? process.env.STOCK_WS_ALWAYS_ON?.trim();

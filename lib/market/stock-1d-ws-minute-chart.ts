@@ -19,7 +19,7 @@ import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session"
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 
 /** Allowlist tickers that emit the `[live-1d-ws]` audit log in development only. */
-const STOCK_1D_LIVE_DEBUG_TICKERS = new Set(["AAPL", "NVDA", "QQQ", "SPY"]);
+const STOCK_1D_LIVE_DEBUG_TICKERS = new Set(["AAPL", "NVDA", "GOOGL", "QQQ", "SPY"]);
 
 export type LiveWsMinuteBarCoverage = {
   firstBarTime: number | null;
@@ -79,7 +79,7 @@ export function computeLiveWsMinuteBarCoverage(
 }
 
 /**
- * Single server normalizer for live 1D charts (allowlist: NVDA, AAPL, QQQ, SPY).
+ * Single server normalizer for live 1D charts (allowlist: NVDA, AAPL, GOOGL, QQQ, SPY).
  * Input: raw WS minute rows from Supabase. Output: one forward-filled 1m series for today.
  */
 export function normalizeStock1DLiveWsMinuteChartPoints(
@@ -202,7 +202,7 @@ async function fetchStock1DRestBaseUncached(ticker: string, sessionYmd: string):
 }
 
 /**
- * Unconditional REST base for the live 1D chart (allowlist: AAPL, NVDA, QQQ, SPY) — mirrors the
+ * Unconditional REST base for the live 1D chart (allowlist: AAPL, NVDA, GOOGL, QQQ, SPY) — mirrors the
  * BTC pipeline. EODHD intraday lags for the forming session, so blend 5m (reach) + 1m (density,
  * wins on its buckets); fall back to 1h only when both are empty. Cached per (ticker, session) so
  * closed minutes are byte-stable across reloads while fresh WS bars (read uncached) supply the tail.
@@ -365,7 +365,7 @@ function seriesMaxFlatRun(points: readonly StockChartPoint[]): number {
 }
 
 /**
- * Live 1D during regular / post-market session (allowlist: AAPL, NVDA, QQQ, SPY).
+ * Live 1D during regular / post-market session (allowlist: AAPL, NVDA, GOOGL, QQQ, SPY).
  *
  * Mirrors the BTC pipeline for determinism: fetch a REST intraday base UNCONDITIONALLY every load
  * (cached per session), merge fresh WS minute bars on top (WS wins on overlapping buckets), then

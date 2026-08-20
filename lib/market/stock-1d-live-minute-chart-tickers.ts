@@ -7,11 +7,12 @@ import {
 export const STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS = [
   "NVDA",
   "AAPL",
+  "GOOGL",
   "QQQ",
   "SPY",
 ] as const;
 
-/** Alias — same four tickers for WS ingest + live 1D reference implementation. */
+/** Alias — same tickers for WS ingest + live 1D reference implementation. */
 export const STOCK_LIVE_1D_REFERENCE_TICKERS = STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS;
 
 function parseLiveMinuteChartTickersEnv(raw: string | undefined): string[] {
@@ -27,7 +28,7 @@ function parseLiveMinuteChartTickersEnv(raw: string | undefined): string[] {
   return out;
 }
 
-/** `STOCK_1D_LIVE_MINUTE_CHART=NVDA,AAPL,QQQ,SPY` — all others use last trading day @ 2m on 1D. */
+/** `STOCK_1D_LIVE_MINUTE_CHART=NVDA,AAPL,GOOGL,QQQ,SPY` — all others use last trading day @ 2m on 1D. */
 export function stock1DLiveMinuteChartTickers(): readonly string[] {
   if (process.env.STOCK_1D_LIVE_MINUTE_CHART === "") return [];
   const fromEnv = parseLiveMinuteChartTickersEnv(process.env.STOCK_1D_LIVE_MINUTE_CHART);

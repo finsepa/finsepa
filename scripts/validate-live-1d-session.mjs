@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /**
- * Live 1D session validation snapshot (reference tickers: AAPL, NVDA, SPY, QQQ).
+ * Live 1D session validation snapshot (reference tickers: AAPL, NVDA, GOOGL, SPY, QQQ).
  * Run every 15–30 min during regular hours; compare visually to Google Finance.
  *
  * Usage:
  *   npm run stock:validate-1d-session
- *   npm run stock:validate-1d-session -- --tickers=AAPL,NVDA,SPY,QQQ
+ *   npm run stock:validate-1d-session -- --tickers=AAPL,NVDA,GOOGL,SPY,QQQ
  */
 
 import { createClient } from "@supabase/supabase-js";
 
 const DISPLAY_TZ = "America/New_York";
-const LIVE_TICKERS = ["AAPL", "NVDA", "SPY", "QQQ"];
+const LIVE_TICKERS = ["AAPL", "NVDA", "GOOGL", "SPY", "QQQ"];
 
 const tickersArg = process.argv.find((a) => a.startsWith("--tickers="))?.slice("--tickers=".length);
 const tickers = (tickersArg ? tickersArg.split(",") : LIVE_TICKERS)

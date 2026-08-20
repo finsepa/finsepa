@@ -23,15 +23,15 @@ const REQUIRED = [
 
 const RECOMMENDED = {
   STOCK_WS_CURATED: "1",
-  /** Tick-perfect: only NVDA, AAPL, QQQ, SPY on WebSocket. Use 48 for full curated universe. */
+  /** Tick-perfect: only NVDA, AAPL, GOOGL, QQQ, SPY on WebSocket. Use 48 for full curated universe. */
   STOCK_WS_TOP_STOCKS: "0",
-  STOCK_WS_ALWAYS_ON: "NVDA,AAPL,QQQ,SPY",
-  STOCK_1D_LIVE_MINUTE_CHART: "NVDA,AAPL,QQQ,SPY",
+  STOCK_WS_ALWAYS_ON: "NVDA,AAPL,GOOGL,QQQ,SPY",
+  STOCK_1D_LIVE_MINUTE_CHART: "NVDA,AAPL,GOOGL,QQQ,SPY",
   STOCK_WS_WATCHLIST: "0",
   STOCK_WS_SCREENER: "0",
   /** Must be 0 — otherwise every stock page view adds WS slots (was causing subscribed: 8). */
   STOCK_WS_CHART_WATCH: "0",
-  STOCK_WS_MAX_SYMBOLS: "4",
+  STOCK_WS_MAX_SYMBOLS: "5",
   FINSEPA_STOCK_MINUTE_BAR_READ: "1",
   FINSEPA_STOCK_MINUTE_BAR_WRITE: "1",
   FINSEPA_STOCK_TICK_BACKFILL: "1",
