@@ -4,37 +4,20 @@ import { unstable_cache } from "next/cache";
 
 import { CACHE_CONTROL_PRIVATE_SCREENER_ROW } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { fetchKeyStatCellForTicker } from "@/lib/screener/fetch-screener-key-stat-cell";
-import { getScreenerKeyStatMetricById } from "@/lib/screener/screener-key-stats-metric-catalog";
-import { readScreenerKeyStatCellSnapshot, upsertScreenerKeyStatCellSnapshot } from "@/lib/screener/screener-key-stat-snapshot";
+import { fetchScreenerKeyStatCellsBatch } from "@/lib/screener/fetch-screener-key-stat-cells-batch";
+import { parseScreenerCompaniesKeyStatRequest } from "@/lib/screener/screener-companies-key-stat-request";
 
-const MAX_TICKERS = 20;
-const CHUNK_SIZE = 6;
-
-const getCachedKeyStatCells = unstable_cache(
-  async (metricId: string, tickersKey: string) => {
-    const metric = getScreenerKeyStatMetricById(metricId);
-    if (!metric) return { metric: null as typeof metric | null, values: {} as Record<string, string> };
+const getCachedKeyStatBatch = unstable_cache(
+  async (metricIdsKey: string, tickersKey: string) => {
+    const metricIds = metricIdsKey ? metricIdsKey.split(",").filter(Boolean) : [];
     const tickers = tickersKey ? tickersKey.split(",").filter(Boolean) : [];
-    const values: Record<string, string> = {};
-    for (let i = 0; i < tickers.length; i += CHUNK_SIZE) {
-      const chunk = tickers.slice(i, i + CHUNK_SIZE);
-      const chunkResults = await Promise.all(
-        chunk.map(async (ticker) => {
-          const snap = await readScreenerKeyStatCellSnapshot(metricId, ticker);
-          if (snap !== undefined) return { ticker, value: snap };
-          const value = await fetchKeyStatCellForTicker(ticker, metric.section, metric.label);
-          void upsertScreenerKeyStatCellSnapshot(metricId, ticker, value);
-          return { ticker, value };
-        }),
-      );
-      for (const { ticker, value } of chunkResults) {
-        values[ticker] = value;
-      }
+    const parsed = parseScreenerCompaniesKeyStatRequest({ tickers, metricIds });
+    if (!parsed.ok || parsed.parsed.mode !== "batch") {
+      return {} as Record<string, Record<string, string>>;
     }
-    return { metric, values };
+    return fetchScreenerKeyStatCellsBatch(parsed.parsed.tickers, parsed.parsed.metrics);
   },
-  ["screener-companies-key-stat-v2-supabase"],
+  ["screener-companies-key-stat-batch-v1"],
   // Key-stat cells are fundamentals-derived; cache long to prevent spikes.
   { revalidate: 12 * 60 * 60 },
 );
@@ -53,38 +36,41 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const tickersRaw = body && typeof body === "object" && "tickers" in body ? (body as { tickers?: unknown }).tickers : null;
-  const metricIdRaw =
-    body && typeof body === "object" && "metricId" in body ? (body as { metricId?: unknown }).metricId : null;
-
-  if (typeof metricIdRaw !== "string" || !metricIdRaw.trim()) {
-    return NextResponse.json({ error: "metricId required" }, { status: 400 });
+  const parsed = parseScreenerCompaniesKeyStatRequest(body);
+  if (!parsed.ok) {
+    return NextResponse.json({ error: parsed.error }, { status: parsed.status });
   }
 
-  const metric = getScreenerKeyStatMetricById(metricIdRaw.trim());
-  if (!metric) {
-    return NextResponse.json({ error: "Unknown metricId" }, { status: 400 });
+  const cacheHeaders = { "Cache-Control": CACHE_CONTROL_PRIVATE_SCREENER_ROW };
+
+  if (!parsed.parsed.tickers.length) {
+    if (parsed.parsed.mode === "batch") {
+      return NextResponse.json({ valuesByMetric: {}, metricIds: parsed.parsed.metricIds }, { headers: cacheHeaders });
+    }
+    return NextResponse.json({ values: {} satisfies Record<string, string> }, { headers: cacheHeaders });
   }
 
-  if (!Array.isArray(tickersRaw)) {
-    return NextResponse.json({ error: "tickers must be an array" }, { status: 400 });
+  if (parsed.parsed.mode === "legacy") {
+    const { metric, tickers } = parsed.parsed;
+    const tickersKey = [...tickers].sort().join(",");
+    const valuesByMetric = await getCachedKeyStatBatch(metric.id, tickersKey);
+    const values = valuesByMetric[metric.id] ?? {};
+    return NextResponse.json(
+      { values, metricId: metric.id, label: metric.label, section: metric.section },
+      { headers: cacheHeaders },
+    );
   }
 
-  const tickers = tickersRaw
-    .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
-    .map((t) => t.trim().toUpperCase())
-    .slice(0, MAX_TICKERS);
+  const { tickers, metricIds, metrics } = parsed.parsed;
+  const tickersKey = [...tickers].sort().join(",");
+  const metricIdsKey = metricIds.join(",");
+  const valuesByMetric = await getCachedKeyStatBatch(metricIdsKey, tickersKey);
 
-  if (!tickers.length) {
-    return NextResponse.json({ values: {} satisfies Record<string, string> }, { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_SCREENER_ROW } });
+  // Ensure every requested metric id is present in the payload.
+  const normalized: Record<string, Record<string, string>> = {};
+  for (const metric of metrics) {
+    normalized[metric.id] = valuesByMetric[metric.id] ?? {};
   }
 
-  const tickersKey = [...new Set(tickers)].sort().join(",");
-  const cached = await getCachedKeyStatCells(metric.id, tickersKey);
-  const values = cached.values;
-
-  return NextResponse.json(
-    { values, metricId: metric.id, label: metric.label, section: metric.section },
-    { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_SCREENER_ROW } },
-  );
+  return NextResponse.json({ valuesByMetric: normalized, metricIds }, { headers: cacheHeaders });
 }

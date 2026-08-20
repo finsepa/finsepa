@@ -986,26 +986,17 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
     let cancelled = false;
     setCompaniesKeyStatLoading(true);
-    Promise.all(
-      companiesKeyStatMetricIds.map(async (metricId) => {
-        const res = await fetch("/api/screener/companies-key-stat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tickers, metricId }),
-          credentials: "include",
-        });
+    fetch("/api/screener/companies-key-stat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tickers, metricIds: companiesKeyStatMetricIds }),
+      credentials: "include",
+    })
+      .then(async (res) => {
         if (!res.ok) throw new Error("Request failed");
-        const data = (await res.json()) as { values?: Record<string, string> };
-        return { metricId, values: data.values ?? {} };
-      }),
-    )
-      .then((results) => {
+        const data = (await res.json()) as { valuesByMetric?: Record<string, Record<string, string>> };
         if (cancelled) return;
-        const byMetric: Record<string, Record<string, string>> = {};
-        for (const { metricId, values } of results) {
-          byMetric[metricId] = values;
-        }
-        setCompaniesKeyStatValuesByMetric(byMetric);
+        setCompaniesKeyStatValuesByMetric(data.valuesByMetric ?? {});
       })
       .catch(() => {
         if (!cancelled) setCompaniesKeyStatValuesByMetric({});
