@@ -95,6 +95,7 @@ import type {
   PortfolioChartRange,
   PortfolioValueHistoryPoint,
 } from "@/lib/portfolio/portfolio-chart-types";
+import { fetchPortfolioValueHistoryCached } from "@/lib/portfolio/portfolio-value-history-client-cache";
 import { effectiveSamplingRange } from "@/lib/portfolio/portfolio-chart-sampling";
 
 const BENCHMARK_SPY_LINE = "#EA580C";
@@ -2107,25 +2108,9 @@ function PortfolioOverviewChartInner({
     setLoading(true);
     setError(null);
     const gen = ++loadGenRef.current;
-    const fetchPoints = async (): Promise<PortfolioValueHistoryPoint[]> => {
-      const res = await fetch("/api/portfolio/value-history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ range, transactions }),
-      });
-      if (!res.ok) {
-        throw new Error("Failed to load chart");
-      }
-      const json = (await res.json()) as { points?: PortfolioValueHistoryPoint[] };
-      return Array.isArray(json.points) ? json.points : [];
-    };
     try {
-      let next = await fetchPoints();
-      // One retry: empty history with an active ledger is usually a transient provider gap.
-      if (next.length === 0 && transactions.length > 0) {
-        next = await fetchPoints();
-      }
+      let next = await fetchPortfolioValueHistoryCached(range, transactions);
+      // One retry handled inside fetchPortfolioValueHistoryCached.
       if (gen !== loadGenRef.current) return;
       setPoints(next);
     } catch {

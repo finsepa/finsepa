@@ -26,6 +26,7 @@ import {
 import { totalCostBasisInvested } from "@/lib/portfolio/overview-metrics";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 import type { PortfolioChartRange, PortfolioValueHistoryPoint } from "@/lib/portfolio/portfolio-chart-types";
+import { fetchPortfolioValueHistoryCached } from "@/lib/portfolio/portfolio-value-history-client-cache";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { portfolioIsCombined } from "@/components/portfolio/portfolio-types";
 import { cn } from "@/lib/utils";
@@ -48,17 +49,7 @@ async function fetchValueHistory(
   transactions: readonly PortfolioTransaction[],
   signal?: AbortSignal,
 ): Promise<PortfolioValueHistoryPoint[]> {
-  if (transactions.length === 0) return [];
-  const res = await fetch("/api/portfolio/value-history", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    signal,
-    body: JSON.stringify({ range, transactions }),
-  });
-  if (!res.ok) throw new Error("Failed to load chart");
-  const json = (await res.json()) as { points?: PortfolioValueHistoryPoint[] };
-  return Array.isArray(json.points) ? json.points : [];
+  return fetchPortfolioValueHistoryCached(range, transactions, signal);
 }
 
 /** Clickable legend badge — same pattern as Dynamics of portfolio returns. */
