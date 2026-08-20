@@ -1,22 +1,15 @@
 import { NextResponse } from "next/server";
-import { unstable_cache } from "next/cache";
 
 import { CACHE_CONTROL_PRIVATE_HOT } from "@/lib/data/cache-policy";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { isSingleAssetMode, isSupportedAsset, SINGLE_ASSET_SYMBOL } from "@/lib/features/single-asset";
 import { getNvdaHeaderMeta, getNvdaKeyStatsBundle, getNvdaPerformance } from "@/lib/fixtures/nvda";
 import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
-import { buildStockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle";
+import { loadStockKeyStatsBundleForApi } from "@/lib/market/stock-key-stats-bundle-cache";
 import { getStockPerformance } from "@/lib/market/stock-performance";
 import { capComparisonTickers } from "@/lib/comparison/comparison-session";
 import { parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
 import type { ComparisonTickerSlice } from "@/lib/comparison/fetch-comparison-ticker-slice";
-
-const getCachedKeyStatsBundle = unstable_cache(
-  async (ticker: string) => buildStockKeyStatsBundle(ticker, { refreshFundamentals: false }),
-  ["stock-key-stats-bundle-v2-earnings-actuals-overlay"],
-  { revalidate: 12 * 60 * 60 },
-);
 
 async function loadSliceForTicker(ticker: string): Promise<ComparisonTickerSlice> {
   const sym = ticker.trim().toUpperCase();
@@ -40,7 +33,7 @@ async function loadSliceForTicker(ticker: string): Promise<ComparisonTickerSlice
   const [headerMeta, performance, keyStatsBundle] = await Promise.all([
     getStockDetailHeaderMetaForPage(sym),
     getStockPerformance(sym),
-    getCachedKeyStatsBundle(sym),
+    loadStockKeyStatsBundleForApi(sym),
   ]);
 
   return { headerMeta, performance, keyStatsBundle };

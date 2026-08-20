@@ -1,27 +1,8 @@
-import { NextResponse } from "next/server";
-
-import { fetchEodhdKeyStatsGrowth } from "@/lib/market/eodhd-key-stats-growth";
-import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
+import { respondKeyStatsSectionRoute } from "@/lib/market/stock-key-stats-section-route";
 
 type Ctx = { params: Promise<{ ticker: string }> };
 
-export async function GET(_request: Request, { params }: Ctx) {
-  const { ticker: raw } = await params;
-
-  let routeTicker: string;
-  try {
-    routeTicker = normalizeWatchlistTicker(decodeURIComponent(raw));
-  } catch (e) {
-    if (e instanceof WatchlistValidationError) {
-      return NextResponse.json({ error: e.message }, { status: 400 });
-    }
-    return NextResponse.json({ error: "Invalid ticker." }, { status: 400 });
-  }
-
-  const data = await fetchEodhdKeyStatsGrowth(routeTicker);
-  if (!data) {
-    return NextResponse.json({ ticker: routeTicker, rows: null }, { status: 200 });
-  }
-
-  return NextResponse.json({ ticker: routeTicker, rows: data.rows });
+/** @deprecated Use `GET /api/stocks/[ticker]/key-stats-bundle` instead. */
+export async function GET(request: Request, { params }: Ctx) {
+  return respondKeyStatsSectionRoute(request, params, "growth");
 }
