@@ -114,10 +114,7 @@ import {
 } from "@/lib/chart/fundamentals-rounded-bar-primitive";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
-import {
-  fetchChartingFundamentalsSeriesCached,
-  revalidateChartingFundamentalsSeriesCached,
-} from "@/lib/charting/charting-fundamentals-client-cache";
+import { fetchChartingFundamentalsSeriesCached } from "@/lib/charting/charting-fundamentals-client-cache";
 import {
   ChartingFundamentalsLineChart,
   chartingMetricsShareLineChartKind,
@@ -2039,25 +2036,26 @@ export function ChartingWorkspace({
       setPoints(seedPoints);
       setTtmPoint(seedTtmPoint);
       setLoading(false);
-    } else {
-      setLoading(true);
+      return () => {
+        cancelled = true;
+      };
     }
+
+    setLoading(true);
 
     async function load() {
       try {
-        const loaded = hasSeed
-          ? await revalidateChartingFundamentalsSeriesCached(ticker, period)
-          : await fetchChartingFundamentalsSeriesCached(ticker, period);
+        const loaded = await fetchChartingFundamentalsSeriesCached(ticker, period);
         if (cancelled) return;
         if (loaded?.points.length) {
           setPoints(loaded.points);
           setTtmPoint(period === "annual" ? loaded.ttmPoint : null);
-        } else if (!hasSeed) {
+        } else {
           setPoints(null);
           setTtmPoint(null);
         }
       } catch {
-        if (!cancelled && !hasSeed) {
+        if (!cancelled) {
           setPoints(null);
           setTtmPoint(null);
         }

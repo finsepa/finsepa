@@ -152,21 +152,6 @@ export function StockFinancialsTab({
       const seededTtm = parseChartingTtmPoint(initialTtmPoint);
       setTtmPoint(seededTtm);
       setLoading(false);
-      if (!seededTtm) {
-        void (async () => {
-          try {
-            const res = await fetch(
-              `/api/stocks/${encodeURIComponent(ticker)}/fundamentals-series?period=annual`,
-              { credentials: "include" },
-            );
-            if (!res.ok) return;
-            const json = (await res.json()) as { ttmPoint?: unknown };
-            setTtmPoint(parseChartingTtmPoint(json.ttmPoint));
-          } catch {
-            /* ignore */
-          }
-        })();
-      }
       return;
     }
     void load("annual");

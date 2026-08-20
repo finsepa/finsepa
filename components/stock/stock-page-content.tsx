@@ -65,6 +65,7 @@ import { usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } fro
 import {
   stockPageSsrHas1DChartSeed,
   stockPageSsrHasLiveSpotSeed,
+  stockPageSsrHasPerformanceSeed,
 } from "@/lib/market/stock-page-ssr-live-seed";
 import {
   formatAssetChartTimestamp,
@@ -697,7 +698,7 @@ export function StockPageContent({
 
   useEffect(() => {
     setPerformanceClient(null);
-    if (performanceFromServer?.price != null && Number.isFinite(performanceFromServer.price)) {
+    if (stockPageSsrHasPerformanceSeed(initialPageData, ticker)) {
       return;
     }
     let cancelled = false;
@@ -717,7 +718,7 @@ export function StockPageContent({
     return () => {
       cancelled = true;
     };
-  }, [ticker, performanceFromServer?.price]);
+  }, [ticker, initialPageData]);
 
   const performanceForHeaderFallback = performanceFromServer ?? performanceClient;
 

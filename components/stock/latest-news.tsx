@@ -274,6 +274,8 @@ function LatestNewsInner({
           setNextOffset(seed.length);
           setHasMore(seed.length > 0);
           setLoading(false);
+          // Overview: SSR already fetched EODHD news — skip duplicate mount fetch for OG images.
+          if (isOverview) return;
           const needsImages = seed.some((row) => !row.imageUrl);
           if (seed.length < PAGE_SIZE || needsImages) {
             void (async () => {
@@ -361,7 +363,7 @@ function LatestNewsInner({
     return () => {
       mounted = false;
     };
-  }, [sym, seed, isStock]);
+  }, [sym, seed, isStock, isOverview]);
 
   const loadMore = useCallback(async () => {
     if (!isStock || loadingMore || loading || !hasMore) return;
