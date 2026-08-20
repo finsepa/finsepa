@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Fix Welcome Trial Start Loops template button href.
+ * Fix Welcome to Finsepa Loops template button href.
  *
  * Published template had: href="{{data.platformLink}" (invalid — wrong syntax + missing `}}`).
  * Correct LMX transactional syntax (matches password-reset / confirm-email): href="{data.platformLink}"
@@ -162,14 +162,6 @@ function fixLmx(lmx) {
     const appOrigin =
       process.env.NEXT_PUBLIC_APP_ORIGIN?.trim().replace(/\/$/, "") ||
       "https://app.finsepa.com";
-    const trialEnds = new Date();
-    trialEnds.setUTCDate(trialEnds.getUTCDate() + 7);
-    const trialEndsAt = trialEnds.toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-      timeZone: "UTC",
-    });
     await loops("/transactional", {
       method: "POST",
       body: {
@@ -179,10 +171,6 @@ function fixLmx(lmx) {
           firstName: "Test",
           platformLink: `${appOrigin}/screener`,
           confirmationLink: `${appOrigin}/screener`,
-          trialDays: 7,
-          trialEndsAt,
-          proInfoLine:
-            "Your free trial includes full platform access for 7 days. Upgrade to Finsepa Pro anytime for ongoing research tools, portfolio tracking, and market data.",
         },
       },
     });

@@ -47,15 +47,6 @@ const firstName =
   (typeof meta.full_name === "string" && meta.full_name.trim().split(/\s+/)[0]) ||
   emailArg.split("@")[0];
 
-const trialEnds = new Date();
-trialEnds.setUTCDate(trialEnds.getUTCDate() + 7);
-const trialEndsAt = trialEnds.toLocaleDateString("en-US", {
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-  timeZone: "UTC",
-});
-
 const body = {
   transactionalId: txId,
   email: emailArg,
@@ -63,10 +54,6 @@ const body = {
     firstName,
     platformLink: `${appOrigin}/screener`,
     confirmationLink: `${appOrigin}/screener`,
-    trialDays: 7,
-    trialEndsAt,
-    proInfoLine:
-      "Your free trial includes full platform access for 7 days. Upgrade to Finsepa Pro anytime for ongoing research tools, portfolio tracking, and market data.",
   },
 };
 

@@ -19,8 +19,8 @@ export async function GET() {
 }
 
 /**
- * Sends the Welcome Trial Start Loops email once per user (Google sign-up or after email confirm).
- * Called from `/auth/callback`, onboarding bootstrap, and first protected page load.
+ * Sends the Loops signup welcome once per user (Google / Apple / email OTP after confirm).
+ * Called from `/auth/callback`, onboarding bootstrap, first protected page load, and iOS.
  */
 export async function POST(request: Request) {
   const sessionUser = await resolveAuthUserFromRequest(request);

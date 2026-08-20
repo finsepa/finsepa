@@ -436,8 +436,8 @@ export async function clearProWelcomeEmailClaim(userId: string): Promise<void> {
 }
 
 /**
- * Atomically claim the Welcome Trial Start email slot across concurrent triggers
- * (auth callback, onboarding bootstrap, protected shell).
+ * Atomically claim the signup welcome email slot across concurrent triggers
+ * (auth callback, onboarding bootstrap, protected shell, iOS).
  */
 export async function claimWelcomeTrialEmailSend(userId: string): Promise<boolean> {
   const admin = getSupabaseAdminClient();

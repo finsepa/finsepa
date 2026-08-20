@@ -15,16 +15,7 @@ import {
   shouldSendWelcomeTrialStartEmail,
   welcomeTrialStartAlreadySent,
 } from "@/lib/auth/welcome-trial-start-email";
-import {
-  effectivePlatformTrialEndsAtIso,
-  PLATFORM_TRIAL_DAYS,
-  platformTrialDaysRemaining,
-} from "@/lib/account/platform-trial";
 import { getLoopsApiKey } from "@/lib/env/loops";
-import {
-  formatTrialEndsAtForEmail,
-  LOOPS_TRIAL_PRO_INFO_LINE,
-} from "@/lib/loops/trial-email-variables";
 import { sendLoopsWelcomeTrialStartEmail } from "@/lib/loops/send-welcome-trial-start";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -62,7 +53,7 @@ export async function sendWelcomeTrialStartEmailIfNeeded(
     return { sent: false, reason: "admin_unavailable" };
   }
 
-  // Claim before send so callback + onboarding + protected shell cannot double-send.
+  // Claim before send so callback + onboarding + protected shell + iOS cannot double-send.
   if (!(await claimWelcomeTrialEmailSend(user.id))) {
     return { sent: false, reason: "already_sent" };
   }
@@ -70,36 +61,13 @@ export async function sendWelcomeTrialStartEmailIfNeeded(
   const email = user.email!.trim().toLowerCase();
   const origin = resolveAuthAppOriginForServer(requestOrigin) || requestOrigin.replace(/\/$/, "");
   const platformLink = `${origin}${PATH_APP_ENTRY}`;
-
-  let trialEndsIso: string | null = null;
-  const { data: billing } = await admin
-    .from("billing_subscriptions")
-    .select("platform_trial_ends_at, plan_code, status")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (billing) {
-    trialEndsIso = effectivePlatformTrialEndsAtIso(billing);
-  }
-  if (!trialEndsIso) {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() + PLATFORM_TRIAL_DAYS);
-    trialEndsIso = d.toISOString();
-  }
-
-  const daysLeft = platformTrialDaysRemaining(trialEndsIso) ?? PLATFORM_TRIAL_DAYS;
-  const trialEndsAt = formatTrialEndsAtForEmail(trialEndsIso);
   const firstName = displayFirstNameFromUser(user, email);
-  const proInfoLine = LOOPS_TRIAL_PRO_INFO_LINE;
 
   const sendResult = await sendLoopsWelcomeTrialStartEmail({
     apiKey: loopsKey,
     to: email,
     firstName,
     platformLink,
-    trialDays: daysLeft,
-    trialEndsAt,
-    proInfoLine,
   });
 
   if (!sendResult.ok) {

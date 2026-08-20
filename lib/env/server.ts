@@ -104,12 +104,12 @@ export function getLoopsTransactionalProRenewedId(): string {
   return v || LOOPS_TRANSACTIONAL_ID_PRO_RENEWED_DEFAULT;
 }
 
-/** Default “Welcome Trial Start” transactional in Loops. */
+/** Default “Welcome to Finsepa” signup transactional in Loops (legacy env name). */
 const LOOPS_TRANSACTIONAL_ID_WELCOME_TRIAL_START_DEFAULT = "cmpqlacpq1dux0j155z7t77cv";
 
 /**
- * Loops “Welcome Trial Start” (Google sign-up or after email confirm).
- * Template data variables: firstName, platformLink, trialDays, trialEndsAt, proInfoLine.
+ * Loops “Welcome to Finsepa” (Google / Apple sign-up or after email confirm).
+ * Template data variables: firstName, platformLink.
  * Button link in Loops editor: `{data.platformLink}` (same as `{data.confirmationLink}` on other templates).
  */
 export function getLoopsTransactionalWelcomeTrialStartId(): string {

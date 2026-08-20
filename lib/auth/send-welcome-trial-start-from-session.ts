@@ -2,7 +2,7 @@
 
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
-/** POST Welcome Trial Start using the fresh session token (cookies may not be set yet). */
+/** POST signup welcome using the fresh session token (cookies may not be set yet). */
 export async function postWelcomeTrialStartFromSession(): Promise<{
   ok: boolean;
   sent?: boolean;
