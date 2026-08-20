@@ -30,7 +30,7 @@ export async function GET(request: Request, { params }: Ctx) {
   const seriesParam = url.searchParams.get("series");
   const series: StockChartSeries = isStockChartSeries(seriesParam) ? seriesParam : "price";
 
-  // Live crypto 1D pipeline (BTC only): rolling last-24h WS minute bars, uncached + no-store,
+  // Live crypto 1D pipeline (BTC/ETH): rolling last-24h WS minute bars, uncached + no-store,
   // client polls ~60s. All other ranges/symbols keep the existing cached daily/intraday path.
   const liveCrypto1D = range === "1D" && isCryptoLive1DSymbol(routeSymbol);
 

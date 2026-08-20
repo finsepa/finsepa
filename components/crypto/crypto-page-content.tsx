@@ -152,7 +152,7 @@ export function CryptoPageContent({
     setComparePicks((cur) => cur.filter((p) => p.symbol.trim().toUpperCase() !== sym));
   }, []);
 
-  // BTC only: hidden 1D chart feeds the header. Other crypto uses performance + live-price poll
+  // Live crypto 1D: hidden 1D chart feeds the header. Other crypto uses performance + live-price poll
   // (avoids a second lightweight-charts instance + extra intraday fetch on SOL/ETH/…).
   const cryptoChartDrivesHeader = isLiveCrypto;
 

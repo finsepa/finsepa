@@ -160,7 +160,7 @@ function maxGapSeconds(points: readonly StockChartPoint[]): number {
 }
 
 /**
- * Rolling last-24h 1D series for a live crypto ticker (BTC only, for now).
+ * Rolling last-24h 1D series for a live crypto ticker (BTC / ETH allowlist).
  *
  * Base = EODHD REST intraday (5m + 1m blend, cached) so the series is continuous across worker
  * downtime; live WS minute bars from Supabase are merged on top and win on overlapping buckets.

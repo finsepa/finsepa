@@ -2710,7 +2710,7 @@ export function PriceChart({
     };
   }, [holdingsStyle, kind, range, series, symbol, screenshotPreviewMode, liveSessionMinute, initialChart]);
 
-  // Live crypto 1D (BTC only) — rolling last 24h, refresh ~60s. Separate from stock session logic:
+  // Live crypto 1D (BTC/ETH allowlist) — rolling last 24h, refresh ~60s. Separate from stock session logic:
   // crypto is 24/7, so no market-session gating. Full-replace the series each poll.
   useEffect(() => {
     if (holdingsStyle || kind !== "crypto" || range !== "1D" || screenshotPreviewMode) return;

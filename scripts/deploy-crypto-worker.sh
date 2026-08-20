@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Deploy ONLY the BTC crypto WS ingest worker to its dedicated Railway service.
+# Deploy the crypto WS ingest worker (BTC + ETH) to its dedicated Railway service.
 #
 # `--path-as-root` archives `workers/crypto-minute-ingest/` as the build root, so Railway reads
 # that directory's own railway.toml + Dockerfile. This guarantees the crypto service builds the
