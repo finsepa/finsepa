@@ -85,7 +85,7 @@ export function CryptoPageContent({
 
   const [loading, setLoading] = useState(!serverMatch);
   const [row, setRow] = useState<CryptoAssetRow | null>(serverMatch?.asset ?? null);
-  // BTC (live 24/7) defaults to the rolling 24H view; other crypto keeps the 1Y default.
+  // Live 24/7 allowlist (BTC, ETH): default to rolling 24H (`1D` under the hood). Others stay on 1Y.
   const [range, setRange] = useState<StockChartRange>(() =>
     isCryptoLive1DSymbol(routeSymbol.trim().toUpperCase()) ? "1D" : "1Y",
   );
@@ -97,10 +97,15 @@ export function CryptoPageContent({
   const symUpper = routeSymbol.trim().toUpperCase();
 
   /**
-   * Live 24/7 crypto (BTC): the header is always driven by the rolling last-24h (1D) feed, so it uses
-   * the stock-style layout (change inline + date/time below) and a `24H` range label — for any selected range.
+   * Live 24/7 crypto (BTC, ETH): header is driven by the rolling last-24h feed, stock-style layout
+   * (change inline + date/time below), and a `24H` range label instead of `1D`.
    */
   const isLiveCrypto = isCryptoLive1DSymbol(symUpper);
+
+  // Soft-nav between coins can reuse this client tree; keep the default range aligned with the allowlist.
+  useEffect(() => {
+    setRange(isCryptoLive1DSymbol(symUpper) ? "1D" : "1Y");
+  }, [symUpper]);
 
   /** URL tab from the client router — applied after mount so the first paint matches SSR (`initialActiveTab`). */
   const [searchSyncedTab, setSearchSyncedTab] = useState<CryptoDetailTabId | null>(null);
@@ -152,8 +157,8 @@ export function CryptoPageContent({
     setComparePicks((cur) => cur.filter((p) => p.symbol.trim().toUpperCase() !== sym));
   }, []);
 
-  // Live crypto 1D: hidden 1D chart feeds the header. Other crypto uses performance + live-price poll
-  // (avoids a second lightweight-charts instance + extra intraday fetch on SOL/ETH/…).
+  // Live crypto 24H: hidden 1D chart feeds the header. Other crypto uses performance + live-price poll
+  // (avoids a second lightweight-charts instance + extra intraday fetch on SOL/…).
   const cryptoChartDrivesHeader = isLiveCrypto;
 
   const performanceFromServer = useMemo(

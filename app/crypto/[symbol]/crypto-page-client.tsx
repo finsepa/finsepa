@@ -19,6 +19,7 @@ export function CryptoPageClient({
   return (
     <Suspense fallback={<StockPageSkeleton />}>
       <CryptoPageContent
+        key={routeSymbol}
         routeSymbol={routeSymbol}
         initialData={initialData}
         initialActiveTab={initialActiveTab}
