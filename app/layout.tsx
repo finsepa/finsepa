@@ -24,6 +24,11 @@ export const metadata: Metadata = {
     icon: [{ url: "/favicon.ico" }, { url: "/icon.png", type: "image/png" }],
     apple: "/apple-icon.png",
   },
+  /** Safari on iOS: native Smart App Banner → App Store / open Finsepa. */
+  other: {
+    "apple-itunes-app":
+      "app-id=6801018314, app-argument=https://apps.apple.com/app/finsepa/id6801018314",
+  },
 };
 
 export const viewport: Viewport = {
