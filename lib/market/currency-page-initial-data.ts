@@ -1,5 +1,8 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
+import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import {
   ASSET_REBUILD_LEASE_TTL_SEC,
   ASSET_REBUILD_WAITER_MAX_MS,
@@ -11,7 +14,6 @@ import {
   tryAcquireAssetRebuildLease,
 } from "@/lib/market/asset-rebuild-lease";
 import { runColdMissSingleFlight } from "@/lib/market/asset-rebuild-single-flight";
-import { stockChartPointsFromDailyBars } from "@/lib/market/crypto-chart-data";
 import {
   currencyDisplayCode,
   isCurrencyChartRange,
@@ -28,13 +30,10 @@ import {
   upsertRouteAssetPageSnapshot,
 } from "@/lib/market/route-asset-page-snapshot-store";
 import { emptyAnnualReturns } from "@/lib/market/stock-annual-returns";
+import { loadStockStyleChartPointsForProviderSymbol } from "@/lib/market/stock-chart-data";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
-import {
-  STOCK_CHART_ALL_LOOKBACK_YEARS,
-  type StockChartPoint,
-  type StockChartRange,
-} from "@/lib/market/stock-chart-types";
+import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
 
 export {
@@ -44,7 +43,8 @@ export {
   type CurrencyPageInitialData,
 } from "@/lib/market/currency-page-shared";
 
-const DEFAULT_RANGE: CurrencyChartRange = "1Y";
+/** Open on 1D like stocks — stock-style loaders, no live WS. */
+const DEFAULT_RANGE: CurrencyChartRange = "1D";
 
 function ymdUtc(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -79,28 +79,26 @@ function emptyPayload(routeSymbol: string): CurrencyPageInitialData {
   };
 }
 
+/**
+ * Currency charts → stock range strategies + HOT cache.
+ * No live 1D. `.FOREX` disables US RTH via loadStockStyleChartPointsForProviderSymbol.
+ */
+const getCurrencyChartPointsCached = unstable_cache(
+  async (providerSymbol: string, range: StockChartRange): Promise<StockChartPoint[]> => {
+    return loadStockStyleChartPointsForProviderSymbol(providerSymbol, range);
+  },
+  ["currency-stock-pipeline-v1"],
+  { revalidate: REVALIDATE_HOT },
+);
+
 export async function getCurrencyChartPoints(
   symbol: string,
   range: StockChartRange,
-  now: Date = new Date(),
+  _now: Date = new Date(),
 ): Promise<StockChartPoint[]> {
   const sym = symbol.trim().toUpperCase();
   if (!sym || !isCurrencyChartRange(range)) return [];
-
-  const to = ymdUtc(now);
-  const fromDate = new Date(now);
-  if (range === "ALL") {
-    fromDate.setUTCFullYear(fromDate.getUTCFullYear() - STOCK_CHART_ALL_LOOKBACK_YEARS);
-  } else if (range === "5Y") {
-    fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 6);
-  } else {
-    fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 2);
-  }
-  const from = ymdUtc(fromDate);
-  const bars = await loadPortfolioSymbolEodBars(sym, from, to);
-  if (!bars?.length) return [];
-  const sorted = [...bars].sort((a, b) => a.date.localeCompare(b.date));
-  return stockChartPointsFromDailyBars(sorted, range, now);
+  return getCurrencyChartPointsCached(sym, range);
 }
 
 export async function loadCurrencyPageInitialDataUncached(
@@ -116,10 +114,12 @@ export async function loadCurrencyPageInitialDataUncached(
   fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 6);
   const from = ymdUtc(fromDate);
 
-  const bars = await loadPortfolioSymbolEodBars(sym, from, to);
+  const [bars, chartPoints] = await Promise.all([
+    loadPortfolioSymbolEodBars(sym, from, to),
+    getCurrencyChartPoints(sym, DEFAULT_RANGE, now),
+  ]);
   const sorted = bars.length ? [...bars].sort((a, b) => a.date.localeCompare(b.date)) : [];
   const performance = computeStockPerformanceFromSortedDailyBars(sorted, sym, now);
-  const chartPoints = stockChartPointsFromDailyBars(sorted, DEFAULT_RANGE, now);
 
   return {
     routeSymbol: sym,
@@ -132,7 +132,7 @@ export async function loadCurrencyPageInitialDataUncached(
 
 /**
  * Durable `asset_currency_{SYM}` + single-flight cold miss.
- * `getCurrencyChartPoints` remains on-demand (out of this pass).
+ * Chart ranges use stock-style HOT cache via `getCurrencyChartPoints`.
  */
 export async function loadCurrencyPageInitialData(
   routeSymbol: string,

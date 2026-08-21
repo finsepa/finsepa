@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 import type { ChartDisplayState } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
@@ -43,9 +43,15 @@ function CurrencyPageContentInner({
   const serverMatch =
     initialData != null && initialData.routeSymbol.trim().toUpperCase() === symKey ? initialData : null;
 
-  const [range, setRange] = useState<CurrencyChartRange>(() => serverMatch?.chart.range ?? "1Y");
+  const [range, setRange] = useState<CurrencyChartRange>(() => "1D");
   const [chartSeries, setChartSeries] = useState<StockChartSeries>("price");
   const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(EMPTY_CHART_DISPLAY);
+
+  // Soft-nav between pairs can reuse this client tree — keep default 1D (no live).
+  useEffect(() => {
+    setRange("1D");
+    setSessionHeaderUi(EMPTY_CHART_DISPLAY);
+  }, [symKey]);
 
   const displayName = serverMatch?.displayName ?? symKey;
   const displayCode = serverMatch?.displayCode ?? symKey;
@@ -105,7 +111,14 @@ function CurrencyPageContentInner({
             symbol={symKey}
             range={range}
             series={chartSeries}
-            initialChart={range === (serverMatch?.chart.range ?? "1Y") ? initialChartMemo : null}
+            // Proven: never SSR-seed 1Y (slows interaction). Seed only matching non-1Y.
+            initialChart={
+              range === "1Y"
+                ? null
+                : initialChartMemo?.range === range
+                  ? initialChartMemo
+                  : null
+            }
             onDisplayChange={setSessionHeaderUi}
           />
         </ChartControls>

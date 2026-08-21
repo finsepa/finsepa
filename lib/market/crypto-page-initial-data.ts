@@ -16,6 +16,8 @@ import { buildCryptoAssetRowFromDailyBars } from "@/lib/market/crypto-asset";
 import { stockChartPointsFromDailyBars } from "@/lib/market/crypto-chart-data";
 import { loadCryptoLive1DMinuteChartPoints } from "@/lib/market/crypto-1d-live-minute-chart";
 import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
+import { usesCryptoStockPipelineExperiment } from "@/lib/market/crypto-stock-pipeline-experiment";
+import { getCryptoChartPointsViaStockPipeline } from "@/lib/market/crypto-stock-pipeline-experiment.server";
 import { getCryptoNewsForPage } from "@/lib/market/crypto-news";
 import {
   cryptoPageSnapshotKey,
@@ -172,12 +174,14 @@ export async function loadCryptoPageInitialDataUncached(routeSymbol: string): Pr
   const from = ymdUtc(fromDate);
   const live1d = isCryptoLive1DSymbol(raw);
 
-  const [dailyBars, sessionPoints, news] = await Promise.all([
+  const [dailyBars, sessionPoints, news, experimentChart] = await Promise.all([
     fetchEodhdCryptoDailyBarsForMeta(meta, from, to),
-    // BTC: preload minute/live 1D for the offscreen header chart.
-    // Others: skip uncached intraday here — header uses daily close + client `/live-price`.
+    // Live allowlist: preload minute/live 1D for the header chart path.
     live1d ? loadCryptoLive1DMinuteChartPoints(raw, now) : Promise.resolve([] as StockChartPoint[]),
     getCryptoNewsForPage(raw),
+    usesCryptoStockPipelineExperiment(raw)
+      ? getCryptoChartPointsViaStockPipeline(raw, DEFAULT_RANGE)
+      : Promise.resolve(null),
   ]);
 
   const sorted = dailyBars?.length ? [...dailyBars].sort((a, b) => a.date.localeCompare(b.date)) : [];
@@ -187,7 +191,8 @@ export async function loadCryptoPageInitialDataUncached(routeSymbol: string): Pr
     Promise.resolve(computeStockPerformanceFromSortedDailyBars(sorted, meta.symbol, now)),
   ]);
 
-  const chartPoints = stockChartPointsFromDailyBars(sorted, DEFAULT_RANGE, now);
+  const chartPoints =
+    experimentChart ?? stockChartPointsFromDailyBars(sorted, DEFAULT_RANGE, now);
   const closeSpot = lastPositiveCloseFromCryptoBars(sorted);
   const lastSession =
     sessionPoints.length > 0 ? sessionPoints[sessionPoints.length - 1]?.value : null;

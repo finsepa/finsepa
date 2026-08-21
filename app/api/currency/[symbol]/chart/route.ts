@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_CHART_STREAM } from "@/lib/data/cache-policy";
 import { getCurrencyChartPoints } from "@/lib/market/currency-page-initial-data";
 import { isCurrencyChartRange, isCurrencyPageSymbol } from "@/lib/market/currency-page-shared";
 import { pricePointsToReturnIndexPoints } from "@/lib/market/stock-chart-data";
@@ -8,15 +9,13 @@ import {
   type StockChartRange,
   type StockChartSeries,
 } from "@/lib/market/stock-chart-types";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 
 type Ctx = { params: Promise<{ symbol: string }> };
 
+/** Auth: Bearer or cookie via `resolveAuthUserFromRequest` (native iOS clients). */
 export async function GET(request: Request, { params }: Ctx) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await resolveAuthUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -29,7 +28,7 @@ export async function GET(request: Request, { params }: Ctx) {
 
   const url = new URL(request.url);
   const rangeParam = url.searchParams.get("range");
-  const range: StockChartRange = isCurrencyChartRange(rangeParam) ? rangeParam : "1Y";
+  const range: StockChartRange = isCurrencyChartRange(rangeParam) ? rangeParam : "1D";
   const seriesParam = url.searchParams.get("series");
   const series: StockChartSeries = isStockChartSeries(seriesParam) ? seriesParam : "price";
 
@@ -38,10 +37,14 @@ export async function GET(request: Request, { params }: Ctx) {
     points = pricePointsToReturnIndexPoints(points);
   }
 
-  return NextResponse.json({
-    symbol: routeSymbol,
-    range,
-    series,
-    points,
-  });
+  return NextResponse.json(
+    {
+      symbol: routeSymbol,
+      range,
+      series,
+      points,
+      pipeline: "currency-stock-v1",
+    },
+    { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_CHART_STREAM } },
+  );
 }

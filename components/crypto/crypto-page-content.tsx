@@ -27,6 +27,7 @@ import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 import type { CryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
 import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
+import { usesCryptoStockPipelineExperiment } from "@/lib/market/crypto-stock-pipeline-experiment";
 import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
 import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
 import type { StockChartPoint, StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
@@ -85,10 +86,12 @@ export function CryptoPageContent({
 
   const [loading, setLoading] = useState(!serverMatch);
   const [row, setRow] = useState<CryptoAssetRow | null>(serverMatch?.asset ?? null);
-  // Live 24/7 allowlist (BTC, ETH): default to rolling 24H (`1D` under the hood). Others stay on 1Y.
-  const [range, setRange] = useState<StockChartRange>(() =>
-    isCryptoLive1DSymbol(routeSymbol.trim().toUpperCase()) ? "1D" : "1Y",
-  );
+  // Live allowlist (BTC/ETH): 24H. Other crypto on stock-style pipeline: open on 1D (continuous 24h).
+  const [range, setRange] = useState<StockChartRange>(() => {
+    const sym = routeSymbol.trim().toUpperCase();
+    if (isCryptoLive1DSymbol(sym) || usesCryptoStockPipelineExperiment(sym)) return "1D";
+    return "1Y";
+  });
   const [comparePicks, setComparePicks] = useState<CompanyPick[]>([]);
   const [chartSeries, setChartSeries] = useState<StockChartSeries>("price");
   const [sessionHeaderUi, setSessionHeaderUi] = useState<ChartDisplayState>(() =>
@@ -99,14 +102,18 @@ export function CryptoPageContent({
   /**
    * Live 24/7 crypto (BTC, ETH): header is driven by the rolling last-24h feed, stock-style layout
    * (change inline + date/time below), and a `24H` range label instead of `1D`.
+   * Stock-style pipeline coins default to 1D but are not live-allowlisted unless in this set.
    */
   const isLiveCrypto = isCryptoLive1DSymbol(symUpper);
 
   // Soft-nav between coins can reuse this client tree; keep the default range aligned with the allowlist.
   useEffect(() => {
-    setRange(isCryptoLive1DSymbol(symUpper) ? "1D" : "1Y");
+    if (isCryptoLive1DSymbol(symUpper) || usesCryptoStockPipelineExperiment(symUpper)) {
+      setRange("1D");
+      return;
+    }
+    setRange("1Y");
   }, [symUpper]);
-
   /** URL tab from the client router — applied after mount so the first paint matches SSR (`initialActiveTab`). */
   const [searchSyncedTab, setSearchSyncedTab] = useState<CryptoDetailTabId | null>(null);
 
@@ -623,7 +630,18 @@ export function CryptoPageContent({
                     symbol={symUpper}
                     range={range}
                     series={chartSeries}
-                    initialChart={isLiveCrypto ? initialSessionChartMemo : initialChartMemo}
+                    initialChart={
+                      // Proven: SSR 1Y seed slows interaction — never seed 1Y on stock-style pipeline.
+                      usesCryptoStockPipelineExperiment(symUpper) && range === "1Y"
+                        ? null
+                        : isLiveCrypto
+                          ? range === "1D"
+                            ? initialSessionChartMemo
+                            : null
+                          : initialChartMemo?.range === range
+                            ? initialChartMemo
+                            : null
+                    }
                     onDisplayChange={
                       !isLiveCrypto ? undefined
                       : range === "1D" ? onSessionHeaderDisplay

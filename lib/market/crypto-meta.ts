@@ -214,7 +214,11 @@ export function toSupportedCryptoTicker(symbolOrTicker: string): SupportedCrypto
 
 export function toEodhdCryptoSymbol(symbolOrTicker: string): string | null {
   const s = toSupportedCryptoTicker(symbolOrTicker);
-  return s ? CRYPTO_BY_SYMBOL[s]!.eodhdSymbol : null;
+  if (s) return CRYPTO_BY_SYMBOL[s]!.eodhdSymbol;
+  // Already-formed EODHD crypto pairs (stock-style loaders pass `BTC-USD.CC` as the ticker).
+  const u = symbolOrTicker.trim().toUpperCase();
+  if (/^[A-Z0-9]{1,20}-(USD|USDT|EUR|GBP)\.CC$/.test(u)) return u;
+  return null;
 }
 
 /** Primary + alternate EODHD pair symbols (daily bars, realtime batch, fundamentals). */

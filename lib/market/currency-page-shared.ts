@@ -5,8 +5,11 @@ import {
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 
-/** EOD-only ranges — same as indices (no 1D/5D intraday). */
-export const CURRENCY_CHART_RANGES = ["1M", "6M", "YTD", "1Y", "5Y", "ALL"] as const;
+/**
+ * Stock-style ranges (same mid/long loaders as equities). No live WS/minute path —
+ * 1D/5D use prior-session / intraday stock strategies only. FX is not US RTH.
+ */
+export const CURRENCY_CHART_RANGES = ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"] as const;
 export type CurrencyChartRange = (typeof CURRENCY_CHART_RANGES)[number];
 
 export function isCurrencyChartRange(v: string | null | undefined): v is CurrencyChartRange {

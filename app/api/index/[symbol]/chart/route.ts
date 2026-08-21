@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { CACHE_CONTROL_PRIVATE_CHART_STREAM } from "@/lib/data/cache-policy";
 import { getIndexChartPoints } from "@/lib/market/index-page-initial-data";
 import { isIndexChartRange, isIndexPageSymbol } from "@/lib/market/index-page-shared";
 import { pricePointsToReturnIndexPoints } from "@/lib/market/stock-chart-data";
@@ -27,7 +28,7 @@ export async function GET(request: Request, { params }: Ctx) {
 
   const url = new URL(request.url);
   const rangeParam = url.searchParams.get("range");
-  const range: StockChartRange = isIndexChartRange(rangeParam) ? rangeParam : "1Y";
+  const range: StockChartRange = isIndexChartRange(rangeParam) ? rangeParam : "1D";
   const seriesParam = url.searchParams.get("series");
   const series: StockChartSeries = isStockChartSeries(seriesParam) ? seriesParam : "price";
 
@@ -36,10 +37,14 @@ export async function GET(request: Request, { params }: Ctx) {
     points = pricePointsToReturnIndexPoints(points);
   }
 
-  return NextResponse.json({
-    symbol: routeSymbol,
-    range,
-    series,
-    points,
-  });
+  return NextResponse.json(
+    {
+      symbol: routeSymbol,
+      range,
+      series,
+      points,
+      pipeline: "index-stock-v1",
+    },
+    { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_CHART_STREAM } },
+  );
 }

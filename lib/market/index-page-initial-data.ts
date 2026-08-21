@@ -1,5 +1,8 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+
+import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import {
   ASSET_REBUILD_LEASE_TTL_SEC,
   ASSET_REBUILD_WAITER_MAX_MS,
@@ -11,10 +14,10 @@ import {
   tryAcquireAssetRebuildLease,
 } from "@/lib/market/asset-rebuild-lease";
 import { runColdMissSingleFlight } from "@/lib/market/asset-rebuild-single-flight";
-import { stockChartPointsFromDailyBars } from "@/lib/market/crypto-chart-data";
 import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { loadIndexComponentsLimited } from "@/lib/market/index-page-meta";
 import {
+  indexDisablesUsSessionFilters,
   indexDisplayCode,
   indexSupportsComponents,
   isIndexChartRange,
@@ -32,11 +35,8 @@ import {
 } from "@/lib/market/route-asset-page-snapshot-store";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
-import {
-  STOCK_CHART_ALL_LOOKBACK_YEARS,
-  type StockChartPoint,
-  type StockChartRange,
-} from "@/lib/market/stock-chart-types";
+import { loadStockStyleChartPointsForProviderSymbol } from "@/lib/market/stock-chart-data";
+import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 import { emptyAnnualReturns } from "@/lib/market/stock-annual-returns";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
 
@@ -47,7 +47,8 @@ export {
   type IndexPageInitialData,
 } from "@/lib/market/index-page-shared";
 
-const DEFAULT_RANGE: IndexChartRange = "1Y";
+/** Open on 1D like stocks — stock-style loaders, no live WS. */
+const DEFAULT_RANGE: IndexChartRange = "1D";
 
 function ymdUtc(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -85,28 +86,29 @@ function emptyPayload(routeSymbol: string): IndexPageInitialData {
   };
 }
 
+/**
+ * Index charts → same stock range strategies + HOT cache as equities.
+ * No live 1D path. Non-US symbols skip US RTH filters.
+ */
+const getIndexChartPointsCached = unstable_cache(
+  async (providerSymbol: string, range: StockChartRange, noUsRth: "0" | "1"): Promise<StockChartPoint[]> => {
+    return loadStockStyleChartPointsForProviderSymbol(providerSymbol, range, {
+      disableUsSessionFilters: noUsRth === "1",
+    });
+  },
+  ["index-stock-pipeline-v1"],
+  { revalidate: REVALIDATE_HOT },
+);
+
 export async function getIndexChartPoints(
   symbol: string,
   range: StockChartRange,
-  now: Date = new Date(),
+  _now: Date = new Date(),
 ): Promise<StockChartPoint[]> {
   const sym = symbol.trim().toUpperCase();
   if (!sym || !isIndexChartRange(range)) return [];
-
-  const to = ymdUtc(now);
-  const fromDate = new Date(now);
-  if (range === "ALL") {
-    fromDate.setUTCFullYear(fromDate.getUTCFullYear() - STOCK_CHART_ALL_LOOKBACK_YEARS);
-  } else if (range === "5Y") {
-    fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 6);
-  } else {
-    fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 2);
-  }
-  const from = ymdUtc(fromDate);
-  const bars = await loadPortfolioSymbolEodBars(sym, from, to);
-  if (!bars?.length) return [];
-  const sorted = [...bars].sort((a, b) => a.date.localeCompare(b.date));
-  return stockChartPointsFromDailyBars(sorted, range, now);
+  const noUsRth = indexDisablesUsSessionFilters(sym) ? "1" : "0";
+  return getIndexChartPointsCached(sym, range, noUsRth);
 }
 
 export async function loadIndexPageInitialDataUncached(routeSymbol: string): Promise<IndexPageInitialData> {
@@ -122,14 +124,14 @@ export async function loadIndexPageInitialDataUncached(routeSymbol: string): Pro
 
   const showComponents = indexSupportsComponents(sym);
 
-  const [bars, components] = await Promise.all([
+  const [bars, components, chartPoints] = await Promise.all([
     loadPortfolioSymbolEodBars(sym, from, to),
     showComponents ? loadIndexComponentsLimited(sym, 50) : Promise.resolve([] as IndexComponentRow[]),
+    getIndexChartPoints(sym, DEFAULT_RANGE, now),
   ]);
 
   const sorted = bars.length ? [...bars].sort((a, b) => a.date.localeCompare(b.date)) : [];
   const performance = computeStockPerformanceFromSortedDailyBars(sorted, sym, now);
-  const chartPoints = stockChartPointsFromDailyBars(sorted, DEFAULT_RANGE, now);
 
   return {
     routeSymbol: sym,
@@ -145,7 +147,7 @@ export async function loadIndexPageInitialDataUncached(routeSymbol: string): Pro
 
 /**
  * Durable `asset_index_{SYM}` + single-flight cold miss. Warm hit unchanged (serve snapshot).
- * Chart range APIs (`getIndexChartPoints`) remain on-demand and are out of this pass.
+ * Chart range APIs use stock-style HOT cache via `getIndexChartPoints`.
  */
 export async function loadIndexPageInitialData(routeSymbol: string): Promise<IndexPageInitialData> {
   const sym = routeSymbol.trim().toUpperCase();

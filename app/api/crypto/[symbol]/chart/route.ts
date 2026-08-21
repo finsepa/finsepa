@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 
 import { cryptoMarketCapPointsFromPricePoints, getCryptoChartPoints } from "@/lib/market/crypto-chart-data";
 import { loadCryptoLive1DMinuteChartPoints } from "@/lib/market/crypto-1d-live-minute-chart";
+import { getCryptoChartPointsViaStockPipeline } from "@/lib/market/crypto-stock-pipeline-experiment.server";
+import { usesCryptoStockPipelineExperiment } from "@/lib/market/crypto-stock-pipeline-experiment";
 import { isCryptoLive1DSymbol, normalizeCryptoBaseSymbol } from "@/lib/market/crypto-live-1d-tickers";
 import { pricePointsToReturnIndexPoints } from "@/lib/market/stock-chart-data";
-import { CACHE_CONTROL_PRIVATE_NO_STORE } from "@/lib/data/cache-policy";
+import {
+  CACHE_CONTROL_PRIVATE_CHART_STREAM,
+  CACHE_CONTROL_PRIVATE_NO_STORE,
+} from "@/lib/data/cache-policy";
 import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { isStockChartSeries, STOCK_CHART_RANGES, type StockChartRange, type StockChartSeries } from "@/lib/market/stock-chart-types";
 
@@ -30,32 +35,43 @@ export async function GET(request: Request, { params }: Ctx) {
   const seriesParam = url.searchParams.get("series");
   const series: StockChartSeries = isStockChartSeries(seriesParam) ? seriesParam : "price";
 
-  // Live crypto 1D pipeline (BTC/ETH): rolling last-24h WS minute bars, uncached + no-store,
-  // client polls ~60s. All other ranges/symbols keep the existing cached daily/intraday path.
-  const liveCrypto1D = range === "1D" && isCryptoLive1DSymbol(routeSymbol);
+  const stockPipeline = usesCryptoStockPipelineExperiment(routeSymbol);
 
-  /** Windowing is already applied inside the loaders; avoid a second slice that can drop the whole series. */
-  let points = liveCrypto1D
-    ? await loadCryptoLive1DMinuteChartPoints(routeSymbol)
-    : await getCryptoChartPoints(routeSymbol, range);
+  // Live allowlist keeps rolling 24H for range=1D. All other ranges use stock-style `.CC` loaders
+  // (no US RTH filters). Legacy getCryptoChartPoints remains the fallback when pipeline is off.
+  const liveCrypto1D = range === "1D" && isCryptoLive1DSymbol(routeSymbol);
+  const useStockPipeline = stockPipeline && !liveCrypto1D;
+
+  let points =
+    (useStockPipeline ? await getCryptoChartPointsViaStockPipeline(routeSymbol, range) : null) ??
+    (liveCrypto1D
+      ? await loadCryptoLive1DMinuteChartPoints(routeSymbol)
+      : await getCryptoChartPoints(routeSymbol, range));
+
   if (series === "return") {
     points = pricePointsToReturnIndexPoints(points);
   } else if (series === "marketCap") {
     points = await cryptoMarketCapPointsFromPricePoints(routeSymbol, points);
   }
 
-  if (liveCrypto1D && process.env.NODE_ENV === "development") {
+  if ((liveCrypto1D || useStockPipeline) && process.env.NODE_ENV === "development") {
     const first = points[0];
     const last = points[points.length - 1];
     console.info("[crypto-chart-api]", normalizeCryptoBaseSymbol(routeSymbol), {
       range,
       series,
       pointCount: points.length,
+      stockPipeline: useStockPipeline,
       firstPointTime: first ? new Date(first.time * 1000).toISOString() : null,
       lastPointTime: last ? new Date(last.time * 1000).toISOString() : null,
-      cacheControl: "no-store",
     });
   }
+
+  const headers = liveCrypto1D
+    ? { "Cache-Control": CACHE_CONTROL_PRIVATE_NO_STORE }
+    : useStockPipeline
+      ? { "Cache-Control": CACHE_CONTROL_PRIVATE_CHART_STREAM }
+      : undefined;
 
   return NextResponse.json(
     {
@@ -63,7 +79,8 @@ export async function GET(request: Request, { params }: Ctx) {
       range,
       series,
       points,
+      ...(useStockPipeline ? { pipeline: "crypto-stock-v3" } : {}),
     },
-    liveCrypto1D ? { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_NO_STORE } } : undefined,
+    headers ? { headers } : undefined,
   );
 }

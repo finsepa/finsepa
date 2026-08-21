@@ -11,8 +11,11 @@ export type IndexComponentRow = {
   exchange: string | null;
 };
 
-/** EOD-only ranges — no 1D/5D intraday (unlike stock/crypto live allowlists). */
-export const INDEX_CHART_RANGES = ["1M", "6M", "YTD", "1Y", "5Y", "ALL"] as const;
+/**
+ * Stock-style ranges (same mid/long loaders as equities). No live WS/minute path —
+ * 1D/5D use prior-session / intraday stock strategies only.
+ */
+export const INDEX_CHART_RANGES = ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"] as const;
 export type IndexChartRange = (typeof INDEX_CHART_RANGES)[number];
 
 export function isIndexChartRange(v: string | null | undefined): v is IndexChartRange {
@@ -74,4 +77,20 @@ export function indexSupportsComponents(symbol: string): boolean {
   const s = symbol.trim().toUpperCase();
   if (s === "VIX.INDX") return false;
   return true;
+}
+
+/**
+ * Non-US index venues — do not apply US RTH / session clipping on stock-style loaders.
+ * US indices (GSPC/NDX/DJI/VIX/IWM) keep equity session filters.
+ */
+const NON_US_INDEX_SYMBOLS = new Set([
+  "BUK100P.INDX",
+  "GDAXI.INDX",
+  "N225.INDX",
+  "FCHI.INDX",
+  "HSI.INDX",
+]);
+
+export function indexDisablesUsSessionFilters(symbol: string): boolean {
+  return NON_US_INDEX_SYMBOLS.has(symbol.trim().toUpperCase());
 }
