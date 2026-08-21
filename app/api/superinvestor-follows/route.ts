@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { AuthRequiredError, requireAuthUser } from "@/lib/watchlist/api-auth";
+import { AuthRequiredError, requireAuthUserFromRequest } from "@/lib/watchlist/api-auth";
 import {
   addSuperinvestorFollow,
   listSuperinvestorFollowsForUser,
@@ -8,12 +8,13 @@ import {
   removeSuperinvestorFollow,
   SuperinvestorFollowValidationError,
 } from "@/lib/superinvestors/follow-operations";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
-export async function GET() {
+/** Auth: Bearer or cookie via `requireAuthUserFromRequest` (native iOS clients). */
+export async function GET(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
     try {
       const items = await listSuperinvestorFollowsForUser(supabase, user.id);
       return NextResponse.json({ items });
@@ -32,8 +33,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
 
     let body: unknown;
     try {
@@ -69,8 +70,8 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
 
     const profilePathParam = new URL(request.url).searchParams.get("profilePath");
     if (profilePathParam == null || profilePathParam === "") {
@@ -94,6 +95,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: e.message }, { status: 400 });
     }
     const message = e instanceof Error ? e.message : "Server error";
+    console.error("[superinvestor-follows DELETE] failed", message, e);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
