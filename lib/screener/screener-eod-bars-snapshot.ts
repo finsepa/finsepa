@@ -30,7 +30,20 @@ export async function readScreenerEodBarsSnapshot(symbolOrTicker: string): Promi
   return data.data as EodhdDailyBar[] | null;
 }
 
-export async function upsertScreenerEodBarsSnapshot(symbolOrTicker: string, bars: EodhdDailyBar[] | null): Promise<void> {
+/**
+ * Persist non-empty screener EOD bars. Skip null/undefined — `market_snapshot.data`
+ * is jsonb NOT NULL; writing SQL null raises Postgres 23502.
+ *
+ * Empty vs missing stays distinguishable for callers of {@link readScreenerEodBarsSnapshot}:
+ * - no row / segment miss → `undefined` (missing)
+ * - fetch with zero bars → caller returns `null` without writing (same as today; null upserts never succeeded)
+ */
+export async function upsertScreenerEodBarsSnapshot(
+  symbolOrTicker: string,
+  bars: EodhdDailyBar[] | null | undefined,
+): Promise<void> {
+  if (bars == null) return;
+
   const key = keyForSymbol(symbolOrTicker);
   if (!key) return;
   const admin = getSupabaseAdminClient();

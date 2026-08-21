@@ -157,9 +157,17 @@ export function CryptoPageContent({
     setComparePicks((cur) => cur.filter((p) => p.symbol.trim().toUpperCase() !== sym));
   }, []);
 
-  // Live crypto 24H: hidden 1D chart feeds the header. Other crypto uses performance + live-price poll
-  // (avoids a second lightweight-charts instance + extra intraday fetch on SOL/…).
+  // Live crypto 24H: a dedicated offscreen 1D chart feeds the header only when the visible overview
+  // price chart is not already mounted (holdings tab, compare mode, non-price series). While overview
+  // shows a price chart, that single instance drives the header — avoids a second PriceChart on BTC/ETH.
+  // Other crypto uses performance + live-price poll (never a second chart).
   const cryptoChartDrivesHeader = isLiveCrypto;
+  const overviewDrivesLiveHeader =
+    isLiveCrypto &&
+    activeTab === "overview" &&
+    chartSeries === "price" &&
+    comparePicks.length === 0;
+  const needsOffscreenHeaderChart = cryptoChartDrivesHeader && !overviewDrivesLiveHeader;
 
   const performanceFromServer = useMemo(
     (): StockPerformance | null =>
@@ -373,7 +381,7 @@ export function CryptoPageContent({
   const [mountHeaderChart, setMountHeaderChart] = useState(false);
 
   useEffect(() => {
-    if (!cryptoChartDrivesHeader) {
+    if (!needsOffscreenHeaderChart) {
       setMountHeaderChart(false);
       return;
     }
@@ -384,7 +392,7 @@ export function CryptoPageContent({
     }
     const t = window.setTimeout(enable, 400);
     return () => window.clearTimeout(t);
-  }, [symUpper, cryptoChartDrivesHeader]);
+  }, [symUpper, needsOffscreenHeaderChart]);
 
   const initialPerformance = useMemo((): StockPerformance | null | undefined => {
     if (!serverMatch?.performance) return undefined;
@@ -549,8 +557,8 @@ export function CryptoPageContent({
         <>
           <CryptoDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} />
 
-          {/* BTC header 1D chart lives outside tabs so Overview can unmount without freezing the header. */}
-          {cryptoChartDrivesHeader && mountHeaderChart ? (
+          {/* Offscreen 1D header chart only when overview is not already driving the header. */}
+          {needsOffscreenHeaderChart && mountHeaderChart ? (
             <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
               <PriceChart
                 key={`${symUpper}-header-1d`}
@@ -616,7 +624,11 @@ export function CryptoPageContent({
                     range={range}
                     series={chartSeries}
                     initialChart={isLiveCrypto ? initialSessionChartMemo : initialChartMemo}
-                    onDisplayChange={isLiveCrypto ? onRangeChartDisplay : undefined}
+                    onDisplayChange={
+                      !isLiveCrypto ? undefined
+                      : range === "1D" ? onSessionHeaderDisplay
+                      : onRangeChartDisplay
+                    }
                     liveSpotUsd={range === "1D" ? cryptoLiveWsTipSpot : null}
                     liveQuotedAtSec={range === "1D" ? cryptoLiveWsTipQuotedAtSec : null}
                   />

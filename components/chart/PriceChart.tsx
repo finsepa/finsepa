@@ -80,6 +80,16 @@ import { isStock1DLiveMinuteChartTicker, usesStock1DLiveWsMinutePipeline, usesSt
 import { isCryptoLive1DSymbol, usesCryptoLogPriceScale } from "@/lib/market/crypto-live-1d-tickers";
 import { pinCryptoLive1DChartTip } from "@/lib/chart/crypto-live-1d-chart-tip";
 import {
+  chartPipelineBeginRun,
+  chartPipelineComplete,
+  chartPipelineInstant,
+  chartPipelineMark,
+  chartPipelineTraceEnabled,
+  installChartPipelineGlobals,
+  installChartPipelineSpies,
+  installSeriesPipelineSpies,
+} from "@/lib/chart/chart-pipeline-trace";
+import {
   appendLiveSessionNowTail,
   applyStock1DLiveSessionTimeScale,
   fitOverviewChartTimeScale,
@@ -212,6 +222,8 @@ function applyStockChartApiPoints(
   if (!next.length) return [...prev];
   return [...next];
 }
+
+installChartPipelineGlobals();
 
 const RANGE_PRICE_BADGE_CLASS =
   "inline-block rounded-[6px] bg-stroke px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums text-fg";
@@ -1204,6 +1216,9 @@ export function PriceChart({
   const hoverPointRef = useRef<{ x: number; y: number } | null>(null);
   const hoverPointRafRef = useRef<number>(0);
   const [ready, setReady] = useState(false);
+  /** Mirrors `ready` for chart data effect — keep `ready` out of that effect's deps so flipping
+   * ready does not re-run series.setData / fitContent (was the crypto range-switch lag). */
+  const readyRef = useRef(false);
   const [containerWidth, setContainerWidth] = useState(0);
   const [rangeOpenBadge, setRangeOpenBadge] = useState<RangeChartPriceBadge | null>(null);
   const [rangeHighBadge, setRangeHighBadge] = useState<RangeChartPriceBadge | null>(null);
@@ -1345,6 +1360,8 @@ export function PriceChart({
   pinLiveSessionTimeScaleAndSyncAxisRef.current = pinLiveSessionTimeScaleAndSyncAxis;
 
   const fitChartTimeScale = useCallback((chart: IChartApi, containerWidthPx: number, pointCount: number) => {
+    const mark = chartPipelineMark("fitContent_or_autoscale_path", { pointCount });
+    try {
     if (stock1DLiveSessionRef.current) {
       const meta = liveSessionChartMetaRef.current;
       const ymd =
@@ -1376,6 +1393,9 @@ export function PriceChart({
         liveSessionMinute: liveSessionMinuteRef.current,
       },
     );
+    } finally {
+      mark.end();
+    }
   }, [pinLiveSessionTimeScaleAndSyncAxis]);
 
   useEffect(() => {
@@ -1389,6 +1409,10 @@ export function PriceChart({
   useEffect(() => {
     loadingRef.current = loading;
   }, [loading]);
+
+  useEffect(() => {
+    readyRef.current = ready;
+  }, [ready]);
 
   useEffect(() => {
     overviewBottomAxisModeRef.current = overviewBottomAxisMode;
@@ -1899,6 +1923,11 @@ export function PriceChart({
 
     chartRef.current = chart;
     seriesRef.current = series;
+    installChartPipelineSpies(chart);
+    installSeriesPipelineSpies(series as unknown as Record<string, unknown>);
+    if (holdingsFillUnderlayRef.current) {
+      installSeriesPipelineSpies(holdingsFillUnderlayRef.current as unknown as Record<string, unknown>);
+    }
 
     // Apply log/linear price axis immediately on (re)creation so a rebuilt chart keeps the
     // correct scale even when `logPriceScale` itself did not change (the dedicated effect below
@@ -2524,13 +2553,13 @@ export function PriceChart({
         if (deferSeedForSkeleton) {
           // Hold the skeleton (loading, not ready) — do not paint the stale SSR seed.
           setLoading(true);
-          setReady(false);
+          setReady(false); readyRef.current = false;
         } else {
           setLoading(true);
-          setReady(false);
+          setReady(false); readyRef.current = false;
           setPoints(initialChart.points);
           setLoading(false);
-          requestAnimationFrame(() => setReady(true));
+          setReady(true); readyRef.current = true;
         }
 
         if (shouldRefresh1DChart) {
@@ -2585,7 +2614,7 @@ export function PriceChart({
               // fall back to the SSR seed so we never leave an empty chart behind the skeleton.
               if (!gotFreshPoints) setPoints(initialChart.points);
               setLoading(false);
-              requestAnimationFrame(() => setReady(true));
+              setReady(true); readyRef.current = true;
             }
           }
         }
@@ -2596,7 +2625,7 @@ export function PriceChart({
       setPeriodAxisLabelsGuarded([]);
       setHoverPriceGuarded(null);
       setHoverTimeUnixGuarded(null);
-      setReady(false);
+      setReady(false); readyRef.current = false;
       const dailyCadence = chartDataCadence === "daily";
       const cacheKey =
         dailyCadence && kind === "stock"
@@ -2608,7 +2637,7 @@ export function PriceChart({
           if (!mounted) return;
           setPoints(cached);
           setLoading(false);
-          requestAnimationFrame(() => setReady(true));
+          setReady(true); readyRef.current = true;
           return;
         }
       }
@@ -2618,24 +2647,46 @@ export function PriceChart({
           ? `/api/stocks/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}${cadenceQ}`
           : `/api/crypto/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}`;
       try {
+        if (chartPipelineTraceEnabled()) {
+          chartPipelineBeginRun({
+            label: `${kind}:${symbol}:${range}`,
+            kind,
+            symbol,
+            range,
+          });
+          chartPipelineInstant("fetch_start", { path });
+        }
         const res = await fetch(path, { credentials: "include" });
+        chartPipelineInstant("fetch_complete", { ok: res.ok, status: res.status });
         if (!res.ok) {
           if (!mounted) return;
           setPoints([]);
           setLoading(false);
-          requestAnimationFrame(() => setReady(true));
+          setReady(true); readyRef.current = true;
+          chartPipelineComplete({ aborted: true, reason: "http_error" });
           return;
         }
-        const json = (await res.json()) as {
+        const bodyMark = chartPipelineMark("response_body_download");
+        const rawText = await res.text();
+        bodyMark.end();
+        const parseMark = chartPipelineMark("response_json_parse", { chars: rawText.length });
+        const json = JSON.parse(rawText) as {
           points?: StockChartPoint[];
           liveSessionMinute?: boolean;
         };
+        parseMark.end();
+        chartPipelineInstant("data_received", {
+          points: Array.isArray(json.points) ? json.points.length : 0,
+        });
         if (!mounted) return;
         const nextPoints = Array.isArray(json.points) ? json.points : [];
         if (typeof json.liveSessionMinute === "boolean") {
           setLiveSessionMinute(json.liveSessionMinute);
         }
         if (cacheKey && nextPoints.length) writeSuperinvestorHoldingChartCache(cacheKey, nextPoints);
+        const applyMark = chartPipelineMark("client_applyStockChartApiPoints", {
+          nextPoints: nextPoints.length,
+        });
         if (nextPoints.length) {
           setPoints((prev) =>
             applyStockChartApiPoints(
@@ -2647,13 +2698,17 @@ export function PriceChart({
         } else {
           setPoints((prev) => (prev.length ? prev : nextPoints));
         }
+        applyMark.end();
+        chartPipelineInstant("setPoints_called", { points: nextPoints.length });
         setLoading(false);
-        requestAnimationFrame(() => setReady(true));
+        setReady(true); readyRef.current = true;
+        chartPipelineInstant("setReady_scheduled");
       } catch {
         if (!mounted) return;
         setPoints([]);
         setLoading(false);
-        requestAnimationFrame(() => setReady(true));
+        setReady(true); readyRef.current = true;
+        chartPipelineComplete({ aborted: true, reason: "fetch_throw" });
       }
     }
     void load();
@@ -2847,6 +2902,16 @@ export function PriceChart({
           liveSessionMinute: liveSessionMinuteRef.current,
         })
       : null;
+    const transformMark = chartPipelineMark("crypto_or_stock_point_transform", {
+      chartPoints: chartPoints.length,
+      kind,
+      range,
+    });
+    chartPipelineInstant("PriceChart_state_effect_enter", {
+      chartPoints: chartPoints.length,
+      loading,
+      ready,
+    });
     const sessionChartPoints = chartPoints;
     const valued = sessionChartPoints.filter(
       (p) => isFiniteNumber(p.time) && isFiniteNumber(p.value),
@@ -2859,6 +2924,11 @@ export function PriceChart({
       useLiveSessionChart && liveSessionMinuteRef.current
         ? stock1DLiveSessionLineDataWithGapBreaks(valued)
         : valuedLineData;
+    transformMark.end();
+
+    // Ensure spies stay attached if series was replaced mid-lifecycle.
+    installSeriesPipelineSpies(seriesRef.current as unknown as Record<string, unknown>);
+    if (chartRef.current) installChartPipelineSpies(chartRef.current);
 
     const open =
       useLiveSessionChart && liveSessionYmd
@@ -2948,8 +3018,8 @@ export function PriceChart({
         holdingsDeferredMarkersRef.current = chartMarkers;
         const lineAnimKey = `${symbol}:${range}:${data.length}:${data[0]?.time ?? ""}:${data.at(-1)?.time ?? ""}`;
         const shouldAnimateHoldingsLine =
-          ready &&
-          !loading &&
+          readyRef.current &&
+          !loadingRef.current &&
           !screenshotPreviewMode &&
           data.length >= 2 &&
           !prefersReducedFundamentalsBarMotion();
@@ -3004,6 +3074,7 @@ export function PriceChart({
       open,
     );
     const single = ensureOverviewSingleSeries(open, relGrad);
+    installSeriesPipelineSpies(single as unknown as Record<string, unknown>);
     markers = markersRef.current;
     if (!markers) return;
 
@@ -3144,7 +3215,7 @@ export function PriceChart({
     if (!useLiveSessionChart) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (!holdingsStyle && !loading && chartRef.current && hoverTimeRef.current == null) {
+          if (!holdingsStyle && !loadingRef.current && chartRef.current && hoverTimeRef.current == null) {
             setPeriodAxisLabelsGuarded(
               syncOverviewPeriodAxisLabels(
                 chartRef.current,
@@ -3156,10 +3227,36 @@ export function PriceChart({
               ),
             );
           }
+          chartPipelineInstant("first_visible_paint_approx");
+          requestAnimationFrame(() => {
+            chartPipelineInstant("chart_interactive_approx");
+            chartPipelineComplete({
+              points: chartPoints.length,
+              kind,
+              range,
+              symbol,
+            });
+          });
+        });
+      });
+    } else {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          chartPipelineInstant("first_visible_paint_approx");
+          requestAnimationFrame(() => {
+            chartPipelineInstant("chart_interactive_approx");
+            chartPipelineComplete({
+              points: chartPoints.length,
+              kind,
+              range,
+              symbol,
+              liveSession: true,
+            });
+          });
         });
       });
     }
-  }, [chartPoints, liveSpotUsd, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, kind, series, loading, ready, periodAxisSyncOptions, range, fitChartTimeScale, stock1DLiveSession, liveSessionMinute, symbol, screenshotPreviewMode, chartThemePaintKey]);
+  }, [chartPoints, liveSpotUsd, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, kind, series, periodAxisSyncOptions, range, fitChartTimeScale, stock1DLiveSession, liveSessionMinute, symbol, screenshotPreviewMode, chartThemePaintKey]);
 
   useEffect(() => {
     if (!stock1DLiveSession || holdingsStyle) return;

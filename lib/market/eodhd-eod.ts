@@ -241,7 +241,8 @@ export async function fetchEodhdEodDailyScreener(
     if (!traceEodhdHttp("fetchEodhdEodDailyScreener", { symbol: sym })) return null;
     const bars = await loadPortfolioSymbolEodBars(symbolOrTicker, from, to);
     const result = bars.length ? bars : null;
-    void upsertScreenerEodBarsSnapshot(sym, result);
+    // Only persist non-empty bars — null would violate market_snapshot.data NOT NULL (23502).
+    if (result) void upsertScreenerEodBarsSnapshot(sym, result);
     return result;
   } catch {
     return null;
