@@ -598,14 +598,14 @@ function inferSec13fValueFieldUnit(rows: readonly { rawValue: number; shares: nu
     const dollarsPlausible = pxIfDollars >= 0.05 && pxIfDollars <= 800_000;
     const thousandsPlausible = pxIfThousands >= 0.05 && pxIfThousands <= 800_000;
     /**
-     * Prefer SEC-default thousands when both units look plausible.
-     * Do not treat `pxIfThousands ≈ 1000 × pxIfDollars` as evidence of dollars — that ratio
-     * is exactly what a correct thousands-denominated filing produces.
+     * When `<value>` is full USD, `pxIfThousands` is ~1000× the real price while `pxIfDollars`
+     * stays plausible (Fundsmith, Pershing). SEC-default thousands keeps both plausible but
+     * `pxIfDollars` tracks real $/sh (~0.05–800); use that to avoid defaulting to thousands.
      */
-    if (thousandsPlausible && !dollarsPlausible) {
-      thousandsVotes++;
-    } else if (dollarsPlausible && !thousandsPlausible) {
+    if (dollarsPlausible && pxIfThousands > pxIfDollars * 200) {
       dollarsVotes++;
+    } else if (thousandsPlausible && pxIfDollars < 0.5) {
+      thousandsVotes++;
     } else if (thousandsPlausible) {
       thousandsVotes++;
     } else if (dollarsPlausible) {

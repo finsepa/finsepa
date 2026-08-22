@@ -127,6 +127,7 @@ function inferUnit(rows) {
     const dollarsPlausible = pxD >= 0.05 && pxD <= 800_000;
     const thousandsPlausible = pxT >= 0.05 && pxT <= 800_000;
     if (dollarsPlausible && pxT > pxD * 200) dollarsVotes++;
+    else if (thousandsPlausible && pxD < 0.5) thousandsVotes++;
     else if (thousandsPlausible) thousandsVotes++;
     else if (dollarsPlausible) dollarsVotes++;
   }
