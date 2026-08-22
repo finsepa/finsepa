@@ -94,6 +94,8 @@ export type SuperinvestorsFundRowModel = {
   totalValueUsd: number;
   positionCount: number;
   filingDate: string | null;
+  /** Buy/sell count in the latest 13F filing quarter (Activity tab). */
+  activityCount?: number;
   /** Top five positions by value (same order as portfolio). */
   topHoldings: { issuer: string; ticker: string | null }[];
 };

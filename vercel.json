@@ -12,6 +12,30 @@
       "schedule": "0 14 * * *"
     },
     {
+      "path": "/api/cron/superinvestor-performance?shard=0&shards=6",
+      "schedule": "15 14 * * *"
+    },
+    {
+      "path": "/api/cron/superinvestor-performance?shard=1&shards=6",
+      "schedule": "15 14 * * *"
+    },
+    {
+      "path": "/api/cron/superinvestor-performance?shard=2&shards=6",
+      "schedule": "15 14 * * *"
+    },
+    {
+      "path": "/api/cron/superinvestor-performance?shard=3&shards=6",
+      "schedule": "15 14 * * *"
+    },
+    {
+      "path": "/api/cron/superinvestor-performance?shard=4&shards=6",
+      "schedule": "15 14 * * *"
+    },
+    {
+      "path": "/api/cron/superinvestor-performance?shard=5&shards=6",
+      "schedule": "15 14 * * *"
+    },
+    {
       "path": "/api/cron/earnings-notifications",
       "schedule": "7,22,37,52 * * * *"
     },

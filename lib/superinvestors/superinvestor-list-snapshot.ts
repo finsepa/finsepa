@@ -77,6 +77,7 @@ export function listRowFromProfilePage(
     totalValueUsd: comparison.totalValueUsd,
     positionCount: comparison.positionCount,
     filingDate: comparison.current.filingDate,
+    activityCount: page.transactions.quarters[0]?.transactions.length ?? 0,
     topHoldings: comparison.rows.slice(0, 5).map((h) => ({
       issuer: h.companyName,
       ticker: h.ticker,

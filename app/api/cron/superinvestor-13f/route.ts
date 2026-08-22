@@ -140,6 +140,7 @@ export async function GET(request: Request) {
 
     const { at, durationMs, averageProcessingTimeMs, okCount, listSnapshotOk, listRowCount, results } =
       await refreshAllSuperinvestor13fPortfolios();
+
     return NextResponse.json({
       at,
       durationMs,

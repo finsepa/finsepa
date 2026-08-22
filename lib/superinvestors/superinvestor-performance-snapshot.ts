@@ -4,9 +4,6 @@ import { marketSnapshotReadEnabled } from "@/lib/market/market-snapshot-store";
 import type { SuperinvestorPerformanceSeries } from "@/lib/superinvestors/superinvestor-performance-types";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
-/** Serve durable series for up to 24h even if segment day rolls. */
-const PERF_STALE_MS = 24 * 60 * 60 * 1000;
-
 /**
  * Durable `market_snapshot` key per manager.
  * Berkshire keeps the historical key so existing warm rows are not orphaned.
@@ -28,9 +25,25 @@ function isPerformanceSeries(v: unknown): v is SuperinvestorPerformanceSeries {
   );
 }
 
-export async function readSuperinvestorPerformanceSnapshot(
+export type SuperinvestorPerformanceSnapshotRow = {
+  series: SuperinvestorPerformanceSeries;
+  segment: string | null;
+  updatedAt: string | null;
+  /** True when upsert segment is not today's UTC date. */
+  stale: boolean;
+};
+
+function ymdDaysAgo(days: number, fromYmd: string): string {
+  const [y, m, d] = fromYmd.split("-").map((x) => Number(x));
+  const dt = new Date(Date.UTC(y!, m! - 1, d!));
+  dt.setUTCDate(dt.getUTCDate() - days);
+  return dt.toISOString().slice(0, 10);
+}
+
+/** Read durable row metadata (cron rebuild decisions). */
+export async function readSuperinvestorPerformanceSnapshotRow(
   slug: string,
-): Promise<SuperinvestorPerformanceSeries | null> {
+): Promise<SuperinvestorPerformanceSnapshotRow | null> {
   if (!slug.trim() || !marketSnapshotReadEnabled()) return null;
   const admin = getSupabaseAdminClient();
   if (!admin) return null;
@@ -45,13 +58,36 @@ export async function readSuperinvestorPerformanceSnapshot(
   if (!isPerformanceSeries(data.data)) return null;
 
   const today = new Date().toISOString().slice(0, 10);
-  if (data.segment === today) return data.data;
+  const segment = typeof data.segment === "string" ? data.segment : null;
+  return {
+    series: data.data,
+    segment,
+    updatedAt: data.updated_at != null ? String(data.updated_at) : null,
+    stale: segment !== today,
+  };
+}
 
-  const updated = Date.parse(String(data.updated_at ?? ""));
-  if (Number.isFinite(updated) && Date.now() - updated <= PERF_STALE_MS) {
-    return data.data;
-  }
-  return null;
+/**
+ * User/API read: serve the last good series (stale-while-revalidate).
+ * Returns null only when no valid snapshot exists.
+ */
+export async function readSuperinvestorPerformanceSnapshot(
+  slug: string,
+): Promise<SuperinvestorPerformanceSeries | null> {
+  const row = await readSuperinvestorPerformanceSnapshotRow(slug);
+  return row?.series ?? null;
+}
+
+/**
+ * Cron rebuild skip: avoid SEC + EOD when today's segment exists or series end is recent.
+ * Uses a 3-day calendar buffer so weekend/holiday gaps still refresh on the next cron.
+ */
+export function shouldSkipSuperinvestorPerformanceRebuild(
+  row: SuperinvestorPerformanceSnapshotRow,
+): boolean {
+  if (!row.stale) return true;
+  const today = new Date().toISOString().slice(0, 10);
+  return row.series.toYmd >= ymdDaysAgo(3, today);
 }
 
 export async function upsertSuperinvestorPerformanceSnapshot(

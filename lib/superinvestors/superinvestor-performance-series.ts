@@ -12,11 +12,15 @@ import {
 import { superinvestorDisplayNameForSlug } from "@/lib/superinvestors/superinvestor-display-names";
 import {
   readSuperinvestorPerformanceSnapshot,
+  readSuperinvestorPerformanceSnapshotRow,
+  shouldSkipSuperinvestorPerformanceRebuild,
   upsertSuperinvestorPerformanceSnapshot,
 } from "@/lib/superinvestors/superinvestor-performance-snapshot";
 import {
   SUPERINVESTOR_PERF_NOTIONAL_USD,
+  SUPERINVESTOR_PERFORMANCE_CRON_SLUGS,
   isSuperinvestorPerformanceEnabled,
+  superinvestorPerformanceSlugsForShard,
   type SuperinvestorPerformancePoint,
   type SuperinvestorPerformanceSeries,
 } from "@/lib/superinvestors/superinvestor-performance-types";
@@ -157,8 +161,10 @@ function selectEvalDays(sessionDays: string[], books: SuperinvestorPerformanceBo
 async function buildSuperinvestorPerformanceSeriesUncached(
   slug: string,
 ): Promise<SuperinvestorPerformanceSeries> {
-  const durable = await readSuperinvestorPerformanceSnapshot(slug);
-  if (durable) return durable;
+  const existing = await readSuperinvestorPerformanceSnapshotRow(slug);
+  if (existing && shouldSkipSuperinvestorPerformanceRebuild(existing)) {
+    return existing.series;
+  }
 
   const cik = SUPERINVESTOR_SLUG_CIK[slug];
   if (!cik) {
@@ -315,8 +321,54 @@ export async function rebuildSuperinvestorPerformanceSeries(
   } catch {
     try {
       return await buildSuperinvestorPerformanceSeriesUncached(slug);
-    } catch {
+    } catch (error) {
+      console.error(
+        "[superinvestor-performance] rebuild failed",
+        slug,
+        error instanceof Error ? error.message : error,
+      );
       return null;
     }
   }
+}
+
+export type SuperinvestorPerformanceRebuildResult = {
+  slug: string;
+  ok: boolean;
+  skipped?: boolean;
+};
+
+async function rebuildSuperinvestorPerformanceSlugs(
+  slugs: readonly string[],
+): Promise<SuperinvestorPerformanceRebuildResult[]> {
+  const results: SuperinvestorPerformanceRebuildResult[] = [];
+
+  for (const slug of slugs) {
+    const row = await readSuperinvestorPerformanceSnapshotRow(slug);
+    if (row && shouldSkipSuperinvestorPerformanceRebuild(row)) {
+      results.push({ slug, ok: true, skipped: true });
+      continue;
+    }
+
+    const series = await rebuildSuperinvestorPerformanceSeries(slug);
+    results.push({ slug, ok: Boolean(series) });
+  }
+
+  return results;
+}
+
+/** Warm performance for every cron slug (ops / manual). */
+export async function rebuildAllEnabledSuperinvestorPerformanceSeries(): Promise<
+  SuperinvestorPerformanceRebuildResult[]
+> {
+  return rebuildSuperinvestorPerformanceSlugs(SUPERINVESTOR_PERFORMANCE_CRON_SLUGS);
+}
+
+/** Sharded cron warm — ~5 managers per shard when shards=6. */
+export async function rebuildSuperinvestorPerformanceShard(args: {
+  shard: number;
+  shards: number;
+}): Promise<SuperinvestorPerformanceRebuildResult[]> {
+  const slugs = superinvestorPerformanceSlugsForShard(args.shard, args.shards);
+  return rebuildSuperinvestorPerformanceSlugs(slugs);
 }

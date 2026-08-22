@@ -49,6 +49,7 @@ export async function GET(request: Request) {
       totalValueUsd: row.totalValueUsd,
       positionCount: row.positionCount,
       filingDate: row.filingDate,
+      activityCount: row.activityCount ?? 0,
     }));
 
     return NextResponse.json(

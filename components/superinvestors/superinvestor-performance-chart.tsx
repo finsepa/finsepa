@@ -267,8 +267,8 @@ export function SuperinvestorPerformanceChart({ profileSlug }: { profileSlug: st
         credentials: "include",
         signal: ac.signal,
       });
-      if (res.status === 503 && attempt < 2) {
-        await new Promise((r) => setTimeout(r, 2500));
+      if (res.status === 503 && attempt < 5) {
+        await new Promise((r) => setTimeout(r, 3000));
         if (ac.signal.aborted) return;
         return load(attempt + 1);
       }
