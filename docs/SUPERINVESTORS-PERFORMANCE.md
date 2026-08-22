@@ -10,7 +10,7 @@ Engineering reference for the Buffett / Berkshire **Performance** tab: what it m
 
 | Item | Detail |
 |------|--------|
-| **Who** | Only `berkshire-hathaway` (Warren Buffett). Gated by `SUPERINVESTOR_PERFORMANCE_ENABLED_SLUGS`. |
+| **Who** | Top 10 managers (`SUPERINVESTOR_PERFORMANCE_TOP10_SLUGS`): Buffett, Ackman, Terry Smith, Burry, Cathie Wood, Li Lu, Dalio, Fisher, PRIMECAP, Ken Griffin. Gated by `isSuperinvestorPerformanceEnabled`. |
 | **Question** | Hypothetical cumulative return of the disclosed SEC 13F **long equity** book vs **SPY** (labeled S&P 500). |
 | **Notional** | `$10,000` starting capital (`SUPERINVESTOR_PERF_NOTIONAL_USD`) for both book and SPY $ P&L. |
 | **UI** | Profile tab **Performance** → chart ranges 7D / 1M / 6M / YTD / 1Y / 5Y; toggleable legend; portfolio-style headline %. |
@@ -30,7 +30,7 @@ flowchart LR
   end
 
   subgraph rebuild [Cron / ops rebuild]
-    Cron["cron/superinvestor-13f?slug=berkshire-hathaway"]
+    Cron["cron/superinvestor-performance (sharded)"]
     SEC[SEC 13F books ~5Y]
     EOD[EOD bars via loadPortfolioEodBars]
     Build[Chain returns · sparse eval days]
@@ -59,7 +59,7 @@ flowchart LR
 | API | `app/api/superinvestors/[slug]/performance/route.ts` (`maxDuration` 120) |
 | Chart UI | `components/superinvestors/superinvestor-performance-chart.tsx` |
 | Tab gate | `components/superinvestors/superinvestor-13f-profile-tabs.tsx` |
-| Cron hook | `app/api/cron/superinvestor-13f/route.ts` (single-slug Berkshire, non-`enrichOnly`) |
+| Cron hook | `app/api/cron/superinvestor-performance/route.ts` (6 shards daily); optional single-slug warm via `cron/superinvestor-13f?slug=` |
 
 ---
 
@@ -196,7 +196,7 @@ After profile refresh (non-`enrichOnly`), cron calls `rebuildSuperinvestorPerfor
 
 Checklist (not implemented):
 
-1. Add slug to `SUPERINVESTOR_PERFORMANCE_ENABLED_SLUGS`.
+1. Add slug to `SUPERINVESTOR_PERFORMANCE_TOP10_SLUGS` (or a future phase-2 list).
 2. Generalize `loadBerkshirePerformanceBooks` → per-CIK performance book loader (reuse institutional parse).
 3. New `market_snapshot` key per slug (or namespaced segment).
 4. Cron: rebuild when that slug refreshes.
