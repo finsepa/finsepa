@@ -3,13 +3,14 @@ import "server-only";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { marketSnapshotReadEnabled } from "@/lib/market/market-snapshot-store";
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
+import {
+  isUsableCryptoDerivedSnapshot,
+  type CryptoDerivedMetricsSnapshot,
+} from "@/lib/screener/eod-derived-metrics";
 
-export type CryptoDerivedSnapshot = {
-  changePercent7D: number | null;
-  changePercent1M: number | null;
-  changePercentYTD: number | null;
-  last5DailyCloses: number[];
-};
+export type CryptoDerivedSnapshot = CryptoDerivedMetricsSnapshot;
+
+export { isUsableCryptoDerivedSnapshot };
 
 const SEGMENT_PREFIX = "crypto_derived_v1";
 
@@ -33,7 +34,10 @@ export async function readCryptoDerivedSnapshot(symbol: string): Promise<CryptoD
   const { data, error } = await admin.from("market_snapshot").select("key, segment, data").eq("key", key).maybeSingle();
   if (error || !data) return undefined;
   if (data.segment !== segmentForNow()) return undefined;
-  return data.data as CryptoDerivedSnapshot | null;
+  const snap = data.data as CryptoDerivedSnapshot | null;
+  if (snap === null) return null;
+  if (!isUsableCryptoDerivedSnapshot(snap)) return undefined;
+  return snap;
 }
 
 export async function upsertCryptoDerivedSnapshot(symbol: string, snap: CryptoDerivedSnapshot | null): Promise<void> {

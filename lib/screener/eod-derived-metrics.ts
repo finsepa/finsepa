@@ -111,3 +111,21 @@ export function eodFetchWindowUtc(): { from: string; to: string } {
   const fromStr = from.toISOString().slice(0, 10);
   return { from: fromStr, to: toStr };
 }
+
+export type CryptoDerivedMetricsSnapshot = {
+  changePercent7D: number | null;
+  changePercent1M: number | null;
+  changePercentYTD: number | null;
+  last5DailyCloses: number[];
+};
+
+/** Empty rows were cached as valid hits and blocked EOD refetch for the session. */
+export function isUsableCryptoDerivedSnapshot(
+  snap: CryptoDerivedMetricsSnapshot | null | undefined,
+): snap is CryptoDerivedMetricsSnapshot {
+  if (!snap) return false;
+  if (snap.last5DailyCloses.length >= 2) return true;
+  if (snap.changePercent1M != null && Number.isFinite(snap.changePercent1M)) return true;
+  if (snap.changePercentYTD != null && Number.isFinite(snap.changePercentYTD)) return true;
+  return false;
+}

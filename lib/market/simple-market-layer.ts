@@ -41,7 +41,7 @@ import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit"
 import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
 import { readMarketSnapshot, readMarketSnapshotSlow } from "@/lib/market/market-snapshot-store";
 import { rebuildMarketSnapshotBlobSingleFlight } from "@/lib/market/market-snapshot-rebuild";
-import { readCryptoDerivedSnapshot, upsertCryptoDerivedSnapshot } from "@/lib/market/crypto-derived-snapshot";
+import { readCryptoDerivedSnapshot, upsertCryptoDerivedSnapshot, isUsableCryptoDerivedSnapshot } from "@/lib/market/crypto-derived-snapshot";
 import {
   mergeWatchlistStockMarketSlice,
   pickScreenerDerivedForTickers,
@@ -820,8 +820,7 @@ function barsToCryptoDerived(bars: EodhdDailyBar[]): CryptoDerivedSlice {
 
 async function cryptoDerivedForMeta(meta: CryptoMeta, from: string, to: string): Promise<CryptoDerivedSlice> {
   const cached = await readCryptoDerivedSnapshot(meta.symbol);
-  if (cached !== undefined && cached) return { ...cached, marketCapUsd: null };
-  if (cached !== undefined && cached === null) return emptyCryptoDerived();
+  if (cached) return { ...cached, marketCapUsd: null };
 
   const raw = await fetchEodhdCryptoDailyBarsForMeta(meta, from, to);
   const bars = Array.isArray(raw) ? raw : [];
@@ -832,7 +831,9 @@ async function cryptoDerivedForMeta(meta: CryptoMeta, from: string, to: string):
     changePercentYTD: derived.changePercentYTD,
     last5DailyCloses: derived.last5DailyCloses,
   };
-  void upsertCryptoDerivedSnapshot(meta.symbol, snap);
+  if (isUsableCryptoDerivedSnapshot(snap)) {
+    void upsertCryptoDerivedSnapshot(meta.symbol, snap);
+  }
   return derived;
 }
 
@@ -876,14 +877,28 @@ export async function getSimpleCryptoDerived(): Promise<SimpleCryptoDerived> {
 
 export async function getSimpleCryptoDerivedTop10(): Promise<SimpleCryptoDerived> {
   const snap = await readMarketSnapshotSlow<SimpleCryptoDerived>(MARKET_SNAPSHOT_KEY.cryptoDerived);
-  if (snap) {
-    const out: SimpleCryptoDerived = {};
-    for (const c of CRYPTO_TOP10) {
-      const row = snap[c.symbol];
+  const out: SimpleCryptoDerived = {};
+  const needsFetch: CryptoMeta[] = [];
+
+  for (const c of CRYPTO_TOP10) {
+    const row = snap?.[c.symbol];
+    if (row && isUsableCryptoDerivedSnapshot(row)) {
+      out[c.symbol] = row;
+    } else {
+      needsFetch.push(c);
+    }
+  }
+
+  if (needsFetch.length > 0) {
+    const filled = await getSimpleCryptoDerivedForMetas(needsFetch);
+    for (const c of needsFetch) {
+      const row = filled[c.symbol];
       if (row) out[c.symbol] = row;
     }
-    if (Object.keys(out).length) return out;
   }
+
+  if (Object.keys(out).length > 0) return out;
+
   const full = await rebuildMarketSnapshotBlobSingleFlight<SimpleCryptoDerived>({
     key: MARKET_SNAPSHOT_KEY.cryptoDerived,
     tier: "slow",
@@ -891,12 +906,12 @@ export async function getSimpleCryptoDerivedTop10(): Promise<SimpleCryptoDerived
     emptyFallback: () => ({}),
     isUsable: (d) => !!d && Object.keys(d).length > 0,
   });
-  const out: SimpleCryptoDerived = {};
+  const fallback: SimpleCryptoDerived = {};
   for (const c of CRYPTO_TOP10) {
     const row = full[c.symbol];
-    if (row) out[c.symbol] = row;
+    if (row && isUsableCryptoDerivedSnapshot(row)) fallback[c.symbol] = row;
   }
-  return out;
+  return Object.keys(fallback).length > 0 ? fallback : out;
 }
 
 /** Daily-bar metrics for an arbitrary crypto meta list (e.g. screener page 2). */
