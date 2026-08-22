@@ -5,8 +5,7 @@ import { loadSuperinvestorsListRows } from "@/lib/superinvestors/load-superinves
 
 export const runtime = "nodejs";
 
-const DEFAULT_LIMIT = 5;
-const MAX_LIMIT = 50;
+const MAX_LIMIT = 100;
 
 function appOrigin(): string {
   const raw =
@@ -27,18 +26,23 @@ function absoluteAvatarSrc(src: string | null | undefined, origin: string): stri
 
 /**
  * Superinvestors list for iOS / clients — snapshot-only (same rows as web table).
- * Query: `?limit=5` (default 5, max 50). Sorted by AUM desc in the snapshot.
+ * Optional `?limit=N` (max 100). Omit limit to return the full snapshot (web parity).
  */
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const rawLimit = Number(url.searchParams.get("limit") ?? DEFAULT_LIMIT);
-    const limit = Number.isFinite(rawLimit)
-      ? Math.min(MAX_LIMIT, Math.max(1, Math.floor(rawLimit)))
-      : DEFAULT_LIMIT;
+    const allRows = await loadSuperinvestorsListRows();
+    const limitParam = url.searchParams.get("limit");
+    let rows = allRows;
+    if (limitParam != null && limitParam !== "") {
+      const rawLimit = Number(limitParam);
+      if (Number.isFinite(rawLimit) && rawLimit > 0) {
+        rows = allRows.slice(0, Math.min(MAX_LIMIT, Math.floor(rawLimit)));
+      }
+    }
 
     const origin = appOrigin();
-    const rows = (await loadSuperinvestorsListRows()).slice(0, limit).map((row) => ({
+    const payload = rows.map((row) => ({
       href: row.href,
       displayName: row.displayName,
       avatarSrc: absoluteAvatarSrc(row.avatarSrc, origin),
@@ -48,7 +52,7 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json(
-      { rows },
+      { rows: payload },
       { headers: { "Cache-Control": CACHE_CONTROL_PUBLIC_WARM } },
     );
   } catch {
