@@ -43,6 +43,7 @@ export async function readCryptoDerivedSnapshot(symbol: string): Promise<CryptoD
 export async function upsertCryptoDerivedSnapshot(symbol: string, snap: CryptoDerivedSnapshot | null): Promise<void> {
   const key = keyFor(symbol);
   if (!key) return;
+  if (snap != null && !isUsableCryptoDerivedSnapshot(snap)) return;
   const admin = getSupabaseAdminClient();
   if (!admin) return;
 

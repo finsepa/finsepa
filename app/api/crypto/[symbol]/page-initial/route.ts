@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_MAX_0_MUST_REVALIDATE } from "@/lib/data/cache-policy";
 import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
+import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { loadCryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
 
 type Ctx = { params: Promise<{ symbol: string }> };
@@ -18,7 +19,7 @@ export async function GET(request: Request, { params }: Ctx) {
   }
 
   const { symbol: raw } = await params;
-  const routeSymbol = decodeURIComponent(raw).trim().toUpperCase();
+  const routeSymbol = cryptoRouteBase(decodeURIComponent(raw).trim()).toUpperCase();
   if (!routeSymbol) {
     return NextResponse.json({ error: "Invalid symbol" }, { status: 400 });
   }

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
+import { isUsableCryptoPageSnapshot } from "@/lib/market/crypto-page-snapshot-usability";
 import {
   ASSET_REBUILD_LEASE_TTL_SEC,
   ASSET_REBUILD_WAITER_MAX_MS,
@@ -97,6 +99,7 @@ function scheduleCryptoPageSnapshotWrite(
   data: CryptoPageInitialData,
 ) {
   const payload = stripCryptoPageSnapshotHotFields(data);
+  if (!isUsableCryptoPageSnapshot(payload)) return;
   void upsertCryptoPageSnapshot(symbol, segment, payload).then((res) => {
     if (!res.ok && process.env.NODE_ENV === "development") {
       console.warn("[crypto-page-snapshot] upsert failed", { symbol, reason: res.reason });
@@ -110,6 +113,9 @@ async function persistCryptoPageSnapshotAwaited(
   data: CryptoPageInitialData,
 ): Promise<{ ok: boolean; reason?: string }> {
   const payload = stripCryptoPageSnapshotHotFields(data);
+  if (!isUsableCryptoPageSnapshot(payload)) {
+    return { ok: false, reason: "unusable_snapshot" };
+  }
   const res = await upsertCryptoPageSnapshot(symbol, segment, payload);
   if (!res.ok && process.env.NODE_ENV === "development") {
     console.warn("[crypto-page-snapshot] awaited upsert failed", { symbol, reason: res.reason });
@@ -158,13 +164,15 @@ export async function loadCryptoPageInitialDataUncached(routeSymbol: string): Pr
   const raw = routeSymbol.trim();
   if (!raw) return emptyPayload("");
 
+  const sym = cryptoRouteBase(raw).toUpperCase();
+
   if (isSingleAssetMode()) {
-    return emptyPayload(raw);
+    return emptyPayload(sym);
   }
 
-  const meta = await resolveCryptoMetaForProvider(raw);
+  const meta = await resolveCryptoMetaForProvider(sym);
   if (!meta) {
-    return emptyPayload(raw);
+    return emptyPayload(sym);
   }
 
   const now = new Date();
@@ -172,15 +180,15 @@ export async function loadCryptoPageInitialDataUncached(routeSymbol: string): Pr
   const fromDate = new Date(now);
   fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 6);
   const from = ymdUtc(fromDate);
-  const live1d = isCryptoLive1DSymbol(raw);
+  const live1d = isCryptoLive1DSymbol(sym);
 
   const [dailyBars, sessionPoints, news, experimentChart] = await Promise.all([
     fetchEodhdCryptoDailyBarsForMeta(meta, from, to),
     // Live allowlist: preload minute/live 1D for the header chart path.
-    live1d ? loadCryptoLive1DMinuteChartPoints(raw, now) : Promise.resolve([] as StockChartPoint[]),
-    getCryptoNewsForPage(raw),
-    usesCryptoStockPipelineExperiment(raw)
-      ? getCryptoChartPointsViaStockPipeline(raw, DEFAULT_RANGE)
+    live1d ? loadCryptoLive1DMinuteChartPoints(sym, now) : Promise.resolve([] as StockChartPoint[]),
+    getCryptoNewsForPage(sym),
+    usesCryptoStockPipelineExperiment(sym)
+      ? getCryptoChartPointsViaStockPipeline(sym, DEFAULT_RANGE)
       : Promise.resolve(null),
   ]);
 
@@ -204,7 +212,7 @@ export async function loadCryptoPageInitialDataUncached(routeSymbol: string): Pr
         : null;
 
   return {
-    routeSymbol: raw,
+    routeSymbol: sym,
     asset,
     chart: { range: DEFAULT_RANGE, points: chartPoints },
     sessionChart: { range: SESSION_RANGE, points: sessionPoints },
@@ -223,15 +231,20 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
   const raw = routeSymbol.trim();
   if (!raw) return null;
 
+  const sym = cryptoRouteBase(raw).toUpperCase();
+
   if (isSingleAssetMode()) {
-    return emptyPayload(raw);
+    return emptyPayload(sym);
   }
 
-  const sym = raw.toUpperCase();
   const segment = getCryptoPageCacheSegment();
   const cachedHit = await readCryptoPageSnapshot(sym, segment, { allowStale: true });
 
-  if (cachedHit?.payload?.routeSymbol?.trim().toUpperCase() === sym) {
+  if (
+    cachedHit &&
+    isUsableCryptoPageSnapshot(cachedHit.payload) &&
+    cachedHit.payload.routeSymbol.trim().toUpperCase() === sym
+  ) {
     const base = cryptoPageSnapshotToPageData(cachedHit.payload);
     const closeFromPerf =
       typeof base.performance?.price === "number" &&
@@ -266,7 +279,7 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
   }
 
   const snapKey = cryptoPageSnapshotKey(sym);
-  if (!snapKey) return emptyPayload(raw);
+  if (!snapKey) return emptyPayload(sym);
 
   type CryptoHit = { payload: CryptoPageSnapshotPayload; exactSegment: boolean };
 
@@ -279,9 +292,11 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
     loadUncached: () => loadCryptoPageInitialDataUncached(sym),
     persistSnapshot: (page) => persistCryptoPageSnapshotAwaited(sym, segment, page),
     readSnapshot: () => readCryptoPageSnapshot(sym, segment, { allowStale: true }),
-    isUsableHit: (hit) => hit?.payload?.routeSymbol?.trim().toUpperCase() === sym,
+    isUsableHit: (hit) =>
+      isUsableCryptoPageSnapshot(hit?.payload) &&
+      hit?.payload?.routeSymbol?.trim().toUpperCase() === sym,
     pageFromSnapshot: async (hit) => cryptoPageSnapshotToPageData(hit.payload),
-    fallbackPage: () => emptyPayload(raw),
+    fallbackPage: () => emptyPayload(sym),
     sleep: sleepMs,
     now: () => Date.now(),
     waiterMaxMs: ASSET_REBUILD_WAITER_MAX_MS,

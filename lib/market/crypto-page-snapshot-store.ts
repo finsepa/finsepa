@@ -2,6 +2,7 @@ import "server-only";
 
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { CryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
+import { isUsableCryptoPageSnapshot } from "@/lib/market/crypto-page-snapshot-usability";
 import { marketSnapshotReadEnabled } from "@/lib/market/market-snapshot-store";
 
 /** How long a prior-segment crypto page snapshot stays usable (hot-refresh only). */
@@ -71,7 +72,8 @@ export async function readCryptoPageSnapshot(
   if (
     !payload ||
     typeof payload !== "object" ||
-    payload.routeSymbol?.trim().toUpperCase() !== sym
+    payload.routeSymbol?.trim().toUpperCase() !== sym ||
+    !isUsableCryptoPageSnapshot(payload)
   ) {
     return null;
   }
@@ -96,6 +98,9 @@ export async function upsertCryptoPageSnapshot(
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const key = cryptoPageSnapshotKey(symbol);
   if (!key) return { ok: false, reason: "invalid_symbol" };
+  if (!isUsableCryptoPageSnapshot(payload)) {
+    return { ok: false, reason: "unusable_snapshot" };
+  }
 
   const admin = getSupabaseAdminClient();
   if (!admin) return { ok: false, reason: "no_supabase_admin" };
