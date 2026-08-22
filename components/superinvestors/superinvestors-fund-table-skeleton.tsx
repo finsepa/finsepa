@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 const pulse = "animate-pulse rounded-md bg-skeleton";
 
 const colLayout =
-  "grid w-full min-w-0 grid-cols-[40px_48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-2";
+  "grid w-full min-w-0 grid-cols-[40px_48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-2";
 
 const mobileColLayout = "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(4.75rem,auto)] gap-x-2";
 
@@ -54,6 +54,7 @@ function SkeletonRow({ mobile }: { mobile?: boolean }) {
       <div className={`mx-auto h-10 w-10 rounded-full ${pulse}`} />
       <div className={`h-4 w-36 ${pulse}`} />
       <div className={cn(`ml-auto h-4 w-16 ${pulse}`, TABLE_END_ALIGNED_PAD_CLASS)} />
+      <div className={cn(`ml-auto h-4 w-14 ${pulse}`, TABLE_END_ALIGNED_PAD_CLASS)} />
       <div className={cn(`ml-auto h-4 w-14 ${pulse}`, TABLE_END_ALIGNED_PAD_CLASS)} />
       <div className={cn(`ml-auto h-4 w-20 ${pulse}`, TABLE_END_ALIGNED_PAD_CLASS)} />
       <div className={cn("flex justify-end gap-1", TABLE_END_ALIGNED_PAD_CLASS)}>
@@ -95,6 +96,7 @@ export function SuperinvestorsFundTableSkeleton({ rows = 12 }: { rows?: number }
             <div aria-hidden />
             <div className="col-span-2 col-start-2 pl-1">Fund</div>
             <div className={numericHeaderClass}>Size</div>
+            <div className={numericHeaderClass}>1Y perf</div>
             <div className={numericHeaderClass}>No. of stocks</div>
             <div className={numericHeaderClass}>Last updated</div>
             <div className={numericHeaderClass}>Top 5 holdings</div>

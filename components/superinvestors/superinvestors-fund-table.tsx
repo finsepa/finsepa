@@ -20,6 +20,7 @@ import {
 import { SuperinvestorFollowStarToggle } from "@/components/superinvestors/superinvestor-follow-star-toggle";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
+import { formatSuperinvestorPerformancePct } from "@/lib/superinvestors/superinvestor-performance-headline";
 import { cn } from "@/lib/utils";
 
 function avatarNeedsDarkTile(src: string): boolean {
@@ -63,13 +64,13 @@ function FundRowAvatar({ src, displayName }: { src: string | null | undefined; d
   );
 }
 
-/** Desktop: star + avatar + fund + size + count + last update + top 5 holdings. */
+/** Desktop: star + avatar + fund + size + performance + count + last update + top 5 holdings. */
 const colLayout =
-  "grid w-full min-w-0 grid-cols-[40px_48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-2";
+  "grid w-full min-w-0 grid-cols-[40px_48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-2";
 
 /** Columns inside row `Link` (after star). */
 const rowLinkGrid =
-  "grid w-full min-w-0 grid-cols-[48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-2";
+  "grid w-full min-w-0 grid-cols-[48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-2";
 
 /** Mobile: fund block (left) · last updated (right). */
 const mobileColLayout = "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(4.75rem,auto)] gap-x-2";
@@ -98,6 +99,8 @@ export type SuperinvestorsFundRowModel = {
   activityCount?: number;
   /** Top five positions by value (same order as portfolio). */
   topHoldings: { issuer: string; ticker: string | null }[];
+  /** 1Y rebased book return % from durable performance snapshot; null when not warmed. */
+  bookReturnPct1y?: number | null;
 };
 
 function formatFilingDate(ymd: string | null): string {
@@ -111,7 +114,7 @@ function stocksCountLabel(count: number) {
   return count.toLocaleString("en-US");
 }
 
-type SuperinvestorsSortKey = "size" | "updated";
+type SuperinvestorsSortKey = "size" | "performance" | "updated";
 
 function compareFundRows(
   a: SuperinvestorsFundRowModel,
@@ -121,6 +124,14 @@ function compareFundRows(
 ): number {
   const mul = dir === "asc" ? 1 : -1;
   if (key === "size") return (a.totalValueUsd - b.totalValueUsd) * mul;
+  if (key === "performance") {
+    const av = a.bookReturnPct1y;
+    const bv = b.bookReturnPct1y;
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return (av - bv) * mul;
+  }
 
   const ad = a.filingDate?.trim() ?? "";
   const bd = b.filingDate?.trim() ?? "";
@@ -128,6 +139,18 @@ function compareFundRows(
   if (!ad) return 1;
   if (!bd) return -1;
   return ad.localeCompare(bd) * mul;
+}
+
+function performanceCellLabel(pct: number | null | undefined): string {
+  if (pct == null || !Number.isFinite(pct)) return "—";
+  return formatSuperinvestorPerformancePct(pct);
+}
+
+function performanceCellClass(pct: number | null | undefined): string {
+  if (pct == null || !Number.isFinite(pct)) return numericCellClass;
+  if (pct > 0) return cn(numericCellClass, "text-up");
+  if (pct < 0) return cn(numericCellClass, "text-down");
+  return numericCellClass;
 }
 
 function FundSortHeader({
@@ -219,6 +242,13 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
               dir={sort.dir}
               onSort={onSort}
             />
+            <FundSortHeader
+              label="1Y perf"
+              sortKey="performance"
+              activeKey={sort.key}
+              dir={sort.dir}
+              onSort={onSort}
+            />
             <div className={numericHeaderClass}>No. of stocks</div>
             <FundSortHeader
               label="Last updated"
@@ -268,6 +298,19 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                       <span className="tabular-nums">{formatUsdCompact(r.totalValueUsd)}</span>
                       <span> · </span>
                       <span className="tabular-nums">{stocksCountLabel(r.positionCount)}</span>
+                      {r.bookReturnPct1y != null && Number.isFinite(r.bookReturnPct1y) ? (
+                        <>
+                          <span> · </span>
+                          <span
+                            className={cn(
+                              "tabular-nums",
+                              r.bookReturnPct1y > 0 ? "text-up" : r.bookReturnPct1y < 0 ? "text-down" : "",
+                            )}
+                          >
+                            {formatSuperinvestorPerformancePct(r.bookReturnPct1y)} 1Y
+                          </span>
+                        </>
+                      ) : null}
                     </div>
                   </div>
                 </Link>
@@ -308,6 +351,10 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                 </div>
 
                 <div className={numericCellClass}>{formatUsdCompact(r.totalValueUsd)}</div>
+
+                <div className={performanceCellClass(r.bookReturnPct1y)}>
+                  {performanceCellLabel(r.bookReturnPct1y)}
+                </div>
 
                 <div className={numericCellClass}>{stocksCountLabel(r.positionCount)}</div>
 

@@ -50,6 +50,7 @@ export async function GET(request: Request) {
       positionCount: row.positionCount,
       filingDate: row.filingDate,
       activityCount: row.activityCount ?? 0,
+      bookReturnPct1y: row.bookReturnPct1y ?? null,
     }));
 
     return NextResponse.json(
