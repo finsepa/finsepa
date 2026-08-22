@@ -4,8 +4,8 @@ import { SUPERINVESTOR_SLUG_CIK } from "@/lib/superinvestors/superinvestor-slug-
 export const SUPERINVESTOR_PERF_NOTIONAL_USD = 10_000;
 
 /**
- * Phase 1 performance rollout — first 10 managers in {@link SUPERINVESTOR_REGISTRY} order.
- * User/API reads durable snapshots only; EODHD runs on cron rebuild (not page load).
+ * Phase 1 rollout (historical) — first 10 managers in {@link SUPERINVESTOR_REGISTRY} order.
+ * @deprecated All tracked managers are now enabled via {@link SUPERINVESTOR_PERFORMANCE_CRON_SLUGS}.
  */
 export const SUPERINVESTOR_PERFORMANCE_TOP10_SLUGS = [
   "berkshire-hathaway",
@@ -20,14 +20,13 @@ export const SUPERINVESTOR_PERFORMANCE_TOP10_SLUGS = [
   "ken-griffin",
 ] as const satisfies readonly (keyof typeof SUPERINVESTOR_SLUG_CIK)[];
 
-/** Stable order for cron sharding — top-10 rollout only. */
-export const SUPERINVESTOR_PERFORMANCE_CRON_SLUGS = SUPERINVESTOR_PERFORMANCE_TOP10_SLUGS;
+/** Stable order for cron sharding — every superinvestor with a CIK mapping. */
+export const SUPERINVESTOR_PERFORMANCE_CRON_SLUGS = Object.keys(SUPERINVESTOR_SLUG_CIK).sort() as readonly string[];
 
 /** @deprecated Prefer {@link SUPERINVESTOR_PERFORMANCE_CRON_SLUGS}. */
 export const SUPERINVESTOR_PERFORMANCE_ENABLED_SLUGS = SUPERINVESTOR_PERFORMANCE_CRON_SLUGS;
 
-export type SuperinvestorPerformanceEnabledSlug =
-  (typeof SUPERINVESTOR_PERFORMANCE_TOP10_SLUGS)[number];
+export type SuperinvestorPerformanceEnabledSlug = keyof typeof SUPERINVESTOR_SLUG_CIK;
 
 export type SuperinvestorPerformancePoint = {
   /** yyyy-MM-dd */
@@ -55,10 +54,8 @@ export type SuperinvestorPerformanceSeries = {
   disclaimer: string;
 };
 
-const PERFORMANCE_ENABLED = new Set<string>(SUPERINVESTOR_PERFORMANCE_TOP10_SLUGS);
-
 export function isSuperinvestorPerformanceEnabled(slug: string): boolean {
-  return PERFORMANCE_ENABLED.has(slug);
+  return Object.prototype.hasOwnProperty.call(SUPERINVESTOR_SLUG_CIK, slug);
 }
 
 /** Slugs assigned to a cron shard (0-based). */

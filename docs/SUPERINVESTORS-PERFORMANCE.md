@@ -10,7 +10,7 @@ Engineering reference for the Buffett / Berkshire **Performance** tab: what it m
 
 | Item | Detail |
 |------|--------|
-| **Who** | Top 10 managers (`SUPERINVESTOR_PERFORMANCE_TOP10_SLUGS`): Buffett, Ackman, Terry Smith, Burry, Cathie Wood, Li Lu, Dalio, Fisher, PRIMECAP, Ken Griffin. Gated by `isSuperinvestorPerformanceEnabled`. |
+| **Who** | All 29 tracked managers (`SUPERINVESTOR_SLUG_CIK`). Gated by `isSuperinvestorPerformanceEnabled`. |
 | **Question** | Hypothetical cumulative return of the disclosed SEC 13F **long equity** book vs **SPY** (labeled S&P 500). |
 | **Notional** | `$10,000` starting capital (`SUPERINVESTOR_PERF_NOTIONAL_USD`) for both book and SPY $ P&L. |
 | **UI** | Profile tab **Performance** → chart ranges 7D / 1M / 6M / YTD / 1Y / 5Y; toggleable legend; portfolio-style headline %. |
@@ -196,7 +196,7 @@ After profile refresh (non-`enrichOnly`), cron calls `rebuildSuperinvestorPerfor
 
 Checklist (not implemented):
 
-1. Add slug to `SUPERINVESTOR_PERFORMANCE_TOP10_SLUGS` (or a future phase-2 list).
+1. Add slug to `SUPERINVESTOR_SLUG_CIK` and ensure cron warm includes it.
 2. Generalize `loadBerkshirePerformanceBooks` → per-CIK performance book loader (reuse institutional parse).
 3. New `market_snapshot` key per slug (or namespaced segment).
 4. Cron: rebuild when that slug refreshes.
