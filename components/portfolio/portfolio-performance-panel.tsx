@@ -102,7 +102,7 @@ function PerformanceChartSection({
   sourcePointsById,
 }: {
   title: string;
-  metric: "value" | "profit";
+  metric: "value" | "profit" | "return";
   range: PortfolioChartRange;
   onRangeChange: (r: PortfolioChartRange) => void;
   canLoad: boolean;
@@ -397,7 +397,7 @@ function PortfolioPerformancePanelInner({
 
       <PerformanceChartSection
         title="Portfolio return"
-        metric="profit"
+        metric="return"
         range={range}
         onRangeChange={setRange}
         canLoad={canLoad}
