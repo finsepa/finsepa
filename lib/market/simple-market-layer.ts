@@ -25,7 +25,11 @@ import { loadEodhdRealtimeQuotes } from "@/lib/market/eodhd-realtime-quotes";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { fetchEodhdEodDailyScreener, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
-import { deriveMetricsFromDailyBars, eodFetchWindowUtc } from "@/lib/screener/eod-derived-metrics";
+import {
+  deriveMetricsFromDailyBars,
+  eodFetchWindowUtc,
+  isUsableCryptoDerivedHub,
+} from "@/lib/screener/eod-derived-metrics";
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
 import { pickScreenerPage2Tickers } from "@/lib/screener/pick-screener-page2-tickers";
 import {
@@ -121,6 +125,23 @@ function emptyCryptoDerived(): CryptoDerivedSlice {
     last5DailyCloses: [],
     marketCapUsd: null,
   };
+}
+
+function hasPositiveCryptoPrice(d: SimpleMarketDatum | null | undefined): boolean {
+  return typeof d?.price === "number" && Number.isFinite(d.price) && d.price > 0;
+}
+
+/**
+ * Hub `crypto_tab` must have prices for a majority of TOP10 — partial null rows
+ * (ETH/XRP/BNB empty while BTC present) were treated as valid weekend cache hits.
+ */
+export function isUsableCryptoTabMarketData(data: SimpleMarketData | null | undefined): boolean {
+  if (!data?.crypto) return false;
+  let ok = 0;
+  for (const m of CRYPTO_TOP10) {
+    if (hasPositiveCryptoPrice(data.crypto[m.symbol] ?? data.crypto[m.symbol.toUpperCase()])) ok += 1;
+  }
+  return ok >= Math.ceil(CRYPTO_TOP10.length * 0.5);
 }
 
 function datumFromEodDailyBars(bars: EodhdDailyBar[]): SimpleMarketDatum {
@@ -554,20 +575,20 @@ export async function getSimpleMarketDataScreenerStocks(): Promise<SimpleMarketD
 async function getSimpleMarketDataCryptoTabCached(): Promise<SimpleMarketData> {
   return unstable_cache(
     loadSimpleMarketDataCryptoTabUncached,
-    ["simple-market-data-v16-crypto-tab-ttl"],
+    ["simple-market-data-v17-crypto-tab-usable-prices"],
     { revalidate: REVALIDATE_SCREENER_MARKET },
   )();
 }
 
 export async function getSimpleMarketDataCryptoTab(): Promise<SimpleMarketData> {
   const snap = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.cryptoTab);
-  if (snap) return snap;
+  if (snap && isUsableCryptoTabMarketData(snap)) return snap;
   return rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
     key: MARKET_SNAPSHOT_KEY.cryptoTab,
     tier: "hot",
     loadUncached: () => getSimpleMarketDataCryptoTabCached(),
     emptyFallback: () => buildEmptyMarketData(),
-    isUsable: (d) => !!d && Object.keys(d.crypto ?? {}).length > 0,
+    isUsable: (d) => isUsableCryptoTabMarketData(d),
   });
 }
 
@@ -858,20 +879,20 @@ async function loadSimpleCryptoDerivedUncached(): Promise<SimpleCryptoDerived> {
 }
 
 async function getSimpleCryptoDerivedCached(): Promise<SimpleCryptoDerived> {
-  return unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v9-ton-pol-eodhd"], {
+  return unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v10-reject-empty-hub"], {
     revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
   })();
 }
 
 export async function getSimpleCryptoDerived(): Promise<SimpleCryptoDerived> {
   const snap = await readMarketSnapshotSlow<SimpleCryptoDerived>(MARKET_SNAPSHOT_KEY.cryptoDerived);
-  if (snap) return snap;
+  if (snap && isUsableCryptoDerivedHub(snap, CRYPTO_TOP10.map((c) => c.symbol))) return snap;
   return rebuildMarketSnapshotBlobSingleFlight<SimpleCryptoDerived>({
     key: MARKET_SNAPSHOT_KEY.cryptoDerived,
     tier: "slow",
     loadUncached: () => getSimpleCryptoDerivedCached(),
     emptyFallback: () => ({}),
-    isUsable: (d) => !!d && Object.keys(d).length > 0,
+    isUsable: (d) => isUsableCryptoDerivedHub(d, CRYPTO_TOP10.map((c) => c.symbol)),
   });
 }
 
@@ -904,7 +925,7 @@ export async function getSimpleCryptoDerivedTop10(): Promise<SimpleCryptoDerived
     tier: "slow",
     loadUncached: () => getSimpleCryptoDerivedCached(),
     emptyFallback: () => ({}),
-    isUsable: (d) => !!d && Object.keys(d).length > 0,
+    isUsable: (d) => isUsableCryptoDerivedHub(d, CRYPTO_TOP10.map((c) => c.symbol)),
   });
   const fallback: SimpleCryptoDerived = {};
   for (const c of CRYPTO_TOP10) {
@@ -924,7 +945,7 @@ export async function getSimpleCryptoDerivedForMetas(metas: readonly CryptoMeta[
     .join(",");
 
   return withScreenerUsMarketCache(
-    "simple-crypto-derived-metas-v2-uni7083",
+    "simple-crypto-derived-metas-v3-reject-empty",
     async () => {
       const window = eodFetchWindowUtc();
       const list = [...metas];

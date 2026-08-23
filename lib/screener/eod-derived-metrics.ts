@@ -129,3 +129,24 @@ export function isUsableCryptoDerivedSnapshot(
   if (snap.changePercentYTD != null && Number.isFinite(snap.changePercentYTD)) return true;
   return false;
 }
+
+/**
+ * Hub blob `crypto_derived` is usable when a majority of listed symbols have real metrics.
+ * Partial empty hubs (e.g. only DOGE filled) were served all weekend under frozen segments.
+ */
+export function isUsableCryptoDerivedHub(
+  hub: Record<string, CryptoDerivedMetricsSnapshot | null | undefined> | null | undefined,
+  requiredSymbols?: readonly string[],
+): boolean {
+  if (!hub || typeof hub !== "object") return false;
+  const symbols =
+    requiredSymbols && requiredSymbols.length > 0
+      ? requiredSymbols.map((s) => s.trim().toUpperCase()).filter(Boolean)
+      : Object.keys(hub);
+  if (!symbols.length) return false;
+  let ok = 0;
+  for (const sym of symbols) {
+    if (isUsableCryptoDerivedSnapshot(hub[sym] ?? hub[sym.toUpperCase()])) ok += 1;
+  }
+  return ok >= Math.ceil(symbols.length * 0.5);
+}
