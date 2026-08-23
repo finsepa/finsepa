@@ -96,7 +96,7 @@ export function SuperinvestorsFundTableSkeleton({ rows = 12 }: { rows?: number }
             <div aria-hidden />
             <div className="col-span-2 col-start-2 pl-1">Fund</div>
             <div className={numericHeaderClass}>Size</div>
-            <div className={numericHeaderClass}>1Y perf</div>
+            <div className={numericHeaderClass}>1Y perf.</div>
             <div className={numericHeaderClass}>No. of stocks</div>
             <div className={numericHeaderClass}>Last updated</div>
             <div className={numericHeaderClass}>Top 5 holdings</div>

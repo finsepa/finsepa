@@ -10,9 +10,12 @@
  * Usage:
  *   node --env-file=.env.local scripts/send-test-push.mjs rakshamann@gmail.com
  *   node --env-file=.env.local scripts/send-test-push.mjs --email rakshamann@gmail.com --ticker AAPL
+ *   node --env-file=.env.local scripts/send-test-push.mjs --email rakshamann@gmail.com --kind superinvestor --slug berkshire-hathaway
+ *   node --env-file=.env.local scripts/send-test-push.mjs --email rakshamann@gmail.com --apns-key ~/Downloads/AuthKey_XXXX.p8
  */
 
 import crypto from "node:crypto";
+import fs from "node:fs";
 import http2 from "node:http2";
 
 import { createClient } from "@supabase/supabase-js";
@@ -24,16 +27,60 @@ const emailArg =
   process.argv.find((a, i) => process.argv[i - 1] === "--email")?.trim().toLowerCase() ||
   process.argv[2]?.trim().toLowerCase() ||
   null;
+const kindArg =
+  process.argv.find((a, i) => process.argv[i - 1] === "--kind")?.trim().toLowerCase() ||
+  "earnings";
 const tickerArg =
   process.argv.find((a, i) => process.argv[i - 1] === "--ticker")?.trim().toUpperCase() || "TEST";
+const slugArg =
+  process.argv.find((a, i) => process.argv[i - 1] === "--slug")?.trim().toLowerCase() ||
+  "berkshire-hathaway";
+const apnsKeyPath = process.argv.find((a, i) => process.argv[i - 1] === "--apns-key")?.trim();
+
+function formatSuperinvestorQuarterLabel(raw) {
+  const trimmed = (raw ?? "").trim();
+  if (!trimmed) return "";
+  const m = /^Q([1-4])(?:\s*[·.•⋯…]?\s*|\s+)(\d{4})$/i.exec(trimmed);
+  if (m) return `Q${m[1]} · ${m[2]}`;
+  return trimmed;
+}
+
+function formatSuperinvestorActivitySummary(activityCount) {
+  if (activityCount <= 0) return "Holdings updated";
+  if (activityCount === 1) return "New 1 activity";
+  return `New ${activityCount} activities`;
+}
+
+function formatSuperinvestorPushCopy({ managerName, quarterLabel, activityCount }) {
+  const quarter = formatSuperinvestorQuarterLabel(quarterLabel);
+  const summary = formatSuperinvestorActivitySummary(activityCount);
+  const body = quarter ? `${quarter}\n${summary}` : summary;
+  return {
+    title: (managerName ?? "").trim() || "Superinvestor",
+    body,
+  };
+}
 
 function loadApnsConfig() {
-  const keyId = process.env.APNS_KEY_ID?.trim();
-  const teamId = process.env.APNS_TEAM_ID?.trim();
   const bundleId = process.env.APNS_BUNDLE_ID?.trim() || "com.finsepa.app";
-  const privateKeyRaw =
+  let keyId = process.env.APNS_KEY_ID?.trim();
+  let teamId = process.env.APNS_TEAM_ID?.trim() || "985NB96SBH";
+  let privateKeyRaw =
     process.env.APNS_PRIVATE_KEY?.trim() || process.env.APNS_AUTH_KEY_P8?.trim();
-  if (!keyId || !teamId || !privateKeyRaw) return null;
+
+  if (apnsKeyPath) {
+    const expanded = apnsKeyPath.replace(/^~(?=\/)/, process.env.HOME ?? "");
+    const pem = fs.readFileSync(expanded, "utf8").trim();
+    if (!pem.includes("BEGIN PRIVATE KEY")) {
+      console.error(`Expected a .p8 PEM at ${apnsKeyPath}`);
+      process.exit(1);
+    }
+    privateKeyRaw = pem;
+    const fileKeyId = expanded.match(/AuthKey_([A-Z0-9]+)\.p8$/i)?.[1];
+    if (fileKeyId) keyId = keyId || fileKeyId;
+  }
+
+  if (!keyId || !privateKeyRaw) return null;
 
   let privateKeyPem = privateKeyRaw.includes("BEGIN PRIVATE KEY")
     ? privateKeyRaw
@@ -191,25 +238,56 @@ async function main() {
       process.exit(1);
     }
 
-    const title = `${tickerArg} — Finsepa test push`;
-    const body = "If you see this banner, APNs is working.";
-    const href = `/stock/${encodeURIComponent(tickerArg)}?tab=earnings`;
-    const dedupeKey = `TEST_PUSH:${Date.now()}`;
+    const isSuperinvestor = kindArg === "superinvestor" || kindArg === "superinvestor_activity";
+    const slug = slugArg;
+    const managerName = slug === "berkshire-hathaway" ? "Warren Buffett" : "Superinvestor test";
+    const quarterLabel = "Q2 · 2026";
+    const activityCount = 3;
+    const href = isSuperinvestor
+      ? `/superinvestors/${encodeURIComponent(slug)}?tab=activity`
+      : `/stock/${encodeURIComponent(tickerArg)}?tab=earnings`;
+    const dedupeKey = isSuperinvestor
+      ? `TEST_SUPERINVESTOR:${slug}:${Date.now()}`
+      : `TEST_PUSH:${Date.now()}`;
+
+    let title;
+    let body;
+    let kind;
+    let ticker;
+    let payload;
+
+    if (isSuperinvestor) {
+      ({ title, body } = formatSuperinvestorPushCopy({
+        managerName,
+        quarterLabel: "Q2 2026",
+        activityCount,
+      }));
+      kind = "superinvestor_activity";
+      ticker = slug;
+      payload = {
+        slug,
+        managerName,
+        quarterLabel,
+        activityCount,
+        accession: `TEST-${Date.now()}`,
+        filingDate: null,
+        href,
+        test: true,
+      };
+    } else {
+      title = `${tickerArg} — Finsepa test push`;
+      body = "If you see this banner, APNs is working.";
+      kind = "earnings_released";
+      ticker = tickerArg;
+      payload = { ticker: tickerArg, test: true, href };
+    }
 
     const ins = await client.query(
       `INSERT INTO public.user_notifications
         (user_id, kind, ticker, title, body, href, payload, dedupe_key)
-       VALUES ($1, 'earnings_released', $2, $3, $4, $5, $6::jsonb, $7)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
        RETURNING id`,
-      [
-        user.id,
-        tickerArg,
-        title,
-        body,
-        href,
-        JSON.stringify({ ticker: tickerArg, test: true, href }),
-        dedupeKey,
-      ],
+      [user.id, kind, ticker, title, body, href, JSON.stringify(payload), dedupeKey],
     );
     const notificationId = ins.rows[0]?.id;
     console.log(`In-app notification: ${notificationId}`);
@@ -221,8 +299,8 @@ async function main() {
       const result = await sendOneApns(apns, device, {
         title,
         body,
-        ticker: tickerArg,
-        kind: "earnings_released",
+        ticker,
+        kind,
         notificationId,
       });
       if (result.ok) {

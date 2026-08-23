@@ -38,6 +38,7 @@ yarn-error.log*
 .env.development
 .env.*.local
 .env.production.local
+.env.vercel.tmp
 .env.development.local
 .env.local.bak
 

@@ -243,7 +243,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
               onSort={onSort}
             />
             <FundSortHeader
-              label="1Y perf"
+              label="1Y perf."
               sortKey="performance"
               activeKey={sort.key}
               dir={sort.dir}
