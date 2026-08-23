@@ -4,7 +4,7 @@ import { UnderlineTabs } from "@/components/screener/market-tabs";
 import type { SecondaryTabItem } from "@/components/ui/secondary-tabs";
 import { cn } from "@/lib/utils";
 
-const tabs = ["Overview", "Performance", "Dividends", "Cash", "Transactions"] as const;
+const tabs = ["Overview", "Insights", "Dividends", "Cash", "Transactions"] as const;
 export type PortfolioViewTab = (typeof tabs)[number];
 
 export type OverviewHoldingsSubTab = "assets" | "allocation" | "slices" | "earnings";
@@ -19,7 +19,7 @@ export const PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS = [
 /** Community `/portfolios/[id]` read-only view — no Cash tab. */
 export const publicPortfolioViewTabs = [
   "Overview",
-  "Performance",
+  "Insights",
   "Dividends",
   "Transactions",
 ] as const satisfies readonly PortfolioViewTab[];
@@ -28,8 +28,9 @@ export const publicPortfolioViewTabs = [
 export function portfolioViewTabFromSearchParam(value: string | null): PortfolioViewTab {
   if (!value) return "Overview";
   switch (value.toLowerCase()) {
-    case "performance":
-      return "Performance";
+    case "insights":
+    case "performance": // legacy deep link
+      return "Insights";
     case "metrics":
       return "Overview";
     case "dividends":
@@ -69,8 +70,8 @@ export function searchParamFromOverviewHoldingsSubTab(view: OverviewHoldingsSubT
 
 export function searchParamFromPortfolioViewTab(tab: PortfolioViewTab): string {
   switch (tab) {
-    case "Performance":
-      return "performance";
+    case "Insights":
+      return "insights";
     case "Dividends":
       return "dividends";
     case "Cash":

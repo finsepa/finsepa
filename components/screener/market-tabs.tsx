@@ -23,7 +23,7 @@ function normalizeUnderlineTabs<T extends string>(
   return tabList.map((t) => (typeof t === "string" ? { value: t, label: t } : t));
 }
 
-/** Primary underline tabs — shared by Screener (Stocks/Crypto/Indices) and Portfolio (Overview/Performance/Cash/…). */
+/** Primary underline tabs — shared by Screener (Stocks/Crypto/Indices) and Portfolio (Overview/Insights/Cash/…). */
 export function UnderlineTabs<T extends string>({
   tabs: tabList,
   active,

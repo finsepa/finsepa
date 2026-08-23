@@ -125,7 +125,7 @@ const PortfolioDividendsPanel = dynamic(
 function initialTabsVisited(active: PortfolioViewTab): Record<PortfolioViewTab, boolean> {
   return {
     Overview: active === "Overview",
-    Performance: active === "Performance",
+    Insights: active === "Insights",
     Dividends: active === "Dividends",
     Cash: active === "Cash",
     Transactions: active === "Transactions",

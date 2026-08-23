@@ -65,7 +65,7 @@ function PortfolioOverviewCardsSkeleton() {
 function PortfolioPageTabsSkeleton({ publicView = false }: { publicView?: boolean }) {
   const tabs = publicView
     ? [...publicPortfolioViewTabs]
-    : (["Overview", "Performance", "Dividends", "Cash", "Transactions"] as const);
+    : (["Overview", "Insights", "Dividends", "Cash", "Transactions"] as const);
 
   return (
     <nav
