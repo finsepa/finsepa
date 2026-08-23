@@ -5,8 +5,23 @@ import {
   getScreenerUsMarketCacheEpoch,
   type ScreenerUsMarketCacheEpoch,
 } from "@/lib/screener/screener-us-market-cache";
+import { isUsableCryptoDerivedHub } from "@/lib/screener/eod-derived-metrics";
+import { CRYPTO_TOP10 } from "@/lib/market/crypto-meta";
 
 import { MARKET_SNAPSHOT_KEY, type MarketSnapshotKey } from "@/lib/market/market-snapshot-keys";
+
+function isUsableCryptoTabPayload(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  const crypto = (payload as { crypto?: Record<string, { price?: number | null }> }).crypto;
+  if (!crypto || typeof crypto !== "object") return false;
+  let ok = 0;
+  for (const m of CRYPTO_TOP10) {
+    const row = crypto[m.symbol] ?? crypto[m.symbol.toUpperCase()];
+    const p = row?.price;
+    if (typeof p === "number" && Number.isFinite(p) && p > 0) ok += 1;
+  }
+  return ok >= Math.ceil(CRYPTO_TOP10.length * 0.5);
+}
 
 export type MarketSnapshotRow = {
   key: string;
@@ -139,6 +154,23 @@ export async function upsertMarketSnapshot(
   // `data` is jsonb NOT NULL — bare null/undefined becomes a Postgres 23502.
   if (payload === null || payload === undefined) {
     return { ok: false, reason: "empty_payload" };
+  }
+
+  // Never let cron overwrite a healthy weekend hub with a sparse EODHD batch.
+  if (key === MARKET_SNAPSHOT_KEY.cryptoTab) {
+    if (!isUsableCryptoTabPayload(payload)) {
+      return { ok: false, reason: "unusable_crypto_tab" };
+    }
+  }
+  if (key === MARKET_SNAPSHOT_KEY.cryptoDerived) {
+    if (
+      !isUsableCryptoDerivedHub(
+        payload as Record<string, { changePercent1M?: number | null; changePercentYTD?: number | null; last5DailyCloses?: number[] }>,
+        CRYPTO_TOP10.map((c) => c.symbol),
+      )
+    ) {
+      return { ok: false, reason: "unusable_crypto_derived" };
+    }
   }
 
   const admin = getSupabaseAdminClient();

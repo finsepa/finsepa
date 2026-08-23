@@ -8,6 +8,7 @@ import {
 import { SCREENER_MARKET_TABS_LRU_MAX } from "@/lib/cache/screener-client-cache-limits";
 import {
   marketCacheSegmentFromPayload,
+  isUsableScreenerMarketTabPayload,
   type ScreenerPagePayload,
 } from "@/lib/screener/screener-page-payload-types";
 import type { ScreenerMarketTabParam } from "@/lib/screener/screener-market-url";
@@ -15,7 +16,8 @@ import { buildScreenerCompaniesListKey } from "@/lib/screener/screener-companies
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import type { ScreenerIndustryDrill } from "@/lib/screener/screener-industry-url";
 
-const STORAGE_KEY = "finsepa:screener:market-tabs:v2-lru";
+/** v3: drop weekend-frozen sparse crypto payloads stuck under v2 + same segment. */
+const STORAGE_KEY = "finsepa:screener:market-tabs:v3-lru";
 
 const inflight = new Map<string, Promise<ScreenerPagePayload>>();
 
@@ -68,7 +70,7 @@ export async function fetchScreenerMarketTabPayload(
   const inflightKey = `${segmentKey}|${cacheKey}`;
 
   const cached = marketSegment ? readScreenerMarketTabCache(marketSegment, cacheKey) : null;
-  if (cached) return cached;
+  if (cached && isUsableScreenerMarketTabPayload(cached)) return cached;
 
   const existing = inflight.get(inflightKey);
   if (existing) return existing;
@@ -86,7 +88,7 @@ export async function fetchScreenerMarketTabPayload(
       typeof json.marketCacheSegment === "string" && json.marketCacheSegment
         ? json.marketCacheSegment
         : marketCacheSegmentFromPayload(payload);
-    if (segment) {
+    if (segment && isUsableScreenerMarketTabPayload(payload)) {
       writeScreenerMarketTabCache(segment, cacheKey, payload);
     }
     return payload;

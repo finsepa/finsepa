@@ -87,7 +87,9 @@ export function isEmptyScreenerMarketTabPayload(payload: ScreenerPagePayload): b
     case "stocks":
       return payload.stockRows.length === 0 && payload.indexCards.length === 0;
     case "crypto":
-      return payload.cryptoRows.length === 0;
+      // Sparse rows (symbols present, prices/returns null) must not count as filled —
+      // weekend client LRU otherwise sticks on poisoned hubs forever under frozen segments.
+      return payload.cryptoRows.length === 0 || !isUsableCryptoScreenerRows(payload.cryptoRows);
     case "indices":
       return payload.indicesRows.length === 0;
     case "etfs":
@@ -97,4 +99,24 @@ export function isEmptyScreenerMarketTabPayload(payload: ScreenerPagePayload): b
     default:
       return true;
   }
+}
+
+/**
+ * Client-safe: crypto tab is usable when a majority of rows have a real price.
+ * Matches server `isUsableCryptoTabMarketData` intent for TOP10-sized page-1 payloads.
+ */
+export function isUsableCryptoScreenerRows(rows: readonly CryptoTop10Row[] | null | undefined): boolean {
+  if (!rows?.length) return false;
+  let ok = 0;
+  for (const r of rows) {
+    if (typeof r.price === "number" && Number.isFinite(r.price) && r.price > 0) ok += 1;
+  }
+  return ok >= Math.ceil(rows.length * 0.5);
+}
+
+/** Reject client-cached crypto payloads that would paint Price/1D/1M/YTD as dashes. */
+export function isUsableScreenerMarketTabPayload(payload: ScreenerPagePayload | null | undefined): boolean {
+  if (!payload) return false;
+  if (payload.market === "crypto") return isUsableCryptoScreenerRows(payload.cryptoRows);
+  return !isEmptyScreenerMarketTabPayload(payload);
 }
