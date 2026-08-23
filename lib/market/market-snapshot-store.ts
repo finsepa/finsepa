@@ -5,7 +5,7 @@ import {
   getScreenerUsMarketCacheEpoch,
   type ScreenerUsMarketCacheEpoch,
 } from "@/lib/screener/screener-us-market-cache";
-import { isUsableCryptoDerivedHub } from "@/lib/screener/eod-derived-metrics";
+import { isUsableCryptoDerivedHub, type CryptoDerivedMetricsSnapshot } from "@/lib/screener/eod-derived-metrics";
 import { CRYPTO_TOP10 } from "@/lib/market/crypto-meta";
 
 import { MARKET_SNAPSHOT_KEY, type MarketSnapshotKey } from "@/lib/market/market-snapshot-keys";
@@ -165,7 +165,7 @@ export async function upsertMarketSnapshot(
   if (key === MARKET_SNAPSHOT_KEY.cryptoDerived) {
     if (
       !isUsableCryptoDerivedHub(
-        payload as Record<string, { changePercent1M?: number | null; changePercentYTD?: number | null; last5DailyCloses?: number[] }>,
+        payload as Record<string, CryptoDerivedMetricsSnapshot | null | undefined>,
         CRYPTO_TOP10.map((c) => c.symbol),
       )
     ) {
