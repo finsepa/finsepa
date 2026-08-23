@@ -518,12 +518,12 @@ export function PortfolioPageView({
                 </div>
               ) : null}
 
-              {tabsVisited.Performance ? (
+              {tabsVisited.Insights ? (
                 <div
-                  className={panelClass("Performance")}
+                  className={panelClass("Insights")}
                   role="tabpanel"
-                  id="portfolio-tab-performance"
-                  aria-hidden={viewTab !== "Performance"}
+                  id="portfolio-tab-insights"
+                  aria-hidden={viewTab !== "Insights"}
                 >
                   <PortfolioPerformancePanel holdings={holdings} transactions={transactions} />
                 </div>
