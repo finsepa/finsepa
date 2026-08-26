@@ -15,6 +15,10 @@ import {
   serverHasSectionsLayout,
   type WatchlistSection,
 } from "@/lib/watchlist/sections";
+import {
+  buildDefaultWatchlistSectionLayout,
+  defaultWatchlistSeedTickers,
+} from "@/lib/watchlist/default-watchlist-seed";
 
 export type { WatchlistSection };
 
@@ -133,14 +137,21 @@ function migrateLegacyCollections(userId: string | null): WatchlistCollectionsSn
   };
 }
 
-/** Stable SSR/hydration default — never reads localStorage. */
+/** Stable SSR/hydration default — never reads localStorage. Seeded so new users aren't empty. */
 export function createDefaultWatchlistCollectionsSnapshot(): WatchlistCollectionsSnapshot {
   const id = "pending";
+  const layout = buildDefaultWatchlistSectionLayout();
   return {
     v: 2,
     activeId: id,
     lists: [
-      withSectionLayout({ id, name: DEFAULT_WATCHLIST_DISPLAY_NAME, tickers: [] }),
+      withSectionLayout({
+        id,
+        name: DEFAULT_WATCHLIST_DISPLAY_NAME,
+        tickers: defaultWatchlistSeedTickers(),
+        sections: layout.sections,
+        tickerSections: layout.tickerSections,
+      }),
     ],
     pendingRemoval: [],
   };
@@ -736,7 +747,16 @@ export function deleteActiveWatchlistCollection(
   let lists = snapshot.lists.filter((list) => list.id !== active.id);
   if (!lists.length) {
     const id = newWatchlistCollectionId();
-    lists = [withSectionLayout({ id, name: DEFAULT_WATCHLIST_DISPLAY_NAME, tickers: [] })];
+    const layout = buildDefaultWatchlistSectionLayout();
+    lists = [
+      withSectionLayout({
+        id,
+        name: DEFAULT_WATCHLIST_DISPLAY_NAME,
+        tickers: defaultWatchlistSeedTickers(),
+        sections: layout.sections,
+        tickerSections: layout.tickerSections,
+      }),
+    ];
     snapshot = { v: 2, activeId: id, lists, pendingRemoval: [] };
   } else {
     snapshot = {

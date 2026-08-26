@@ -194,8 +194,12 @@ export function FreePlanLimitsIntroModal() {
           </p>
           <ul className="list-disc space-y-2 pl-5 text-[14px] leading-5 text-fg-muted">
             <li>
-              <span className="text-fg">1 manual portfolio</span> and{" "}
-              <span className="text-fg">1 watchlist</span> stay active
+              <span className="text-fg">Demo + 1 manual portfolio (up to 15 holdings)</span> and{" "}
+              <span className="text-fg">1 watchlist (up to 15 assets)</span> stay active
+            </li>
+            <li>
+              If you already have more than 15 assets, you can keep them — adding new ones
+              requires Pro
             </li>
             <li>If you made more than the Free limits, pick which ones to keep below</li>
             <li>Brokerage portfolios stay saved but freeze (no sync) on Free</li>

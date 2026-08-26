@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 /** White-on-dark logos need a dark tile or they disappear on the default gray circle. */
 function avatarNeedsDarkTile(src: string): boolean {
-  return src.includes("blackrock");
+  return src.includes("blackrock") || src.includes("baillie-gifford");
 }
 
 /**

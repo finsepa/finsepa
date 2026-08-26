@@ -31,6 +31,12 @@ import { readSupabaseSession } from "@/lib/supabase/safe-auth";
 import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
 import {
+  FREE_WATCHLIST_ASSET_LIMIT_CODE,
+  freeWatchlistAssetLimitMessage,
+  wouldExceedFreeWatchlistAssetCap,
+} from "@/lib/account/free-plan-asset-limits";
+import { FREE_MAX_WATCHLIST_ASSETS } from "@/lib/account/plan-entitlements";
+import {
   addTickerToSnapshot,
   clearDuplicateWatchlistTickerCopies,
   cloneWatchlistCollectionsSnapshot,
@@ -691,6 +697,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         if (options.mergeGuest) {
           const guestMergeGeneration = nextMutationGeneration();
           const guestTickers = unionWatchlistTickers(working);
+          let skippedForCap = 0;
           for (const storageKey of guestTickers) {
             const ticker = normalizeTicker(storageKey);
             if (serverSnapshotContainsTicker(serverSnapshot, ticker)) continue;
@@ -703,11 +710,25 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
             if (!serverCollectionId) continue;
             logWatchlistSync("mutation_start", "guest_merge_add");
             const posted = await postWatchlistTicker(ticker, serverCollectionId);
-            if (posted) {
+            if (posted.ok) {
               logWatchlistSync("mutation_success", "guest_merge_add");
+            } else if (posted.code === FREE_WATCHLIST_ASSET_LIMIT_CODE) {
+              skippedForCap += 1;
+              logWatchlistSync("mutation_failure", "guest_merge_add");
             } else {
               logWatchlistSync("mutation_failure", "guest_merge_add");
             }
+          }
+          if (skippedForCap > 0) {
+            toastProUpgrade({
+              title: "Free plan limit",
+              description: freeWatchlistAssetLimitMessage(),
+              onUpgrade: () => {
+                if (typeof window !== "undefined") {
+                  window.location.assign(PATH_ACCOUNT_PLANS);
+                }
+              },
+            });
           }
           await applyFreshServerState(guestMergeGeneration);
         }
@@ -798,6 +819,26 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         current.lists.find((list) => list.id === resolvedId) ??
         getActiveWatchlistCollection(current);
 
+      const maxAssets =
+        plan?.isFree === true ? (plan.maxWatchlistAssets ?? FREE_MAX_WATCHLIST_ASSETS) : null;
+      // Guest (no plan provider) still gets Free-shaped local cap before sign-in merge.
+      const effectiveMax = maxAssets ?? (userIdRef.current ? null : FREE_MAX_WATCHLIST_ASSETS);
+      if (
+        effectiveMax != null &&
+        wouldExceedFreeWatchlistAssetCap({
+          currentTickerCount: targetList.tickers.length,
+          tickerAlreadyPresent: targetList.tickers.some((t) => normalizeTicker(t) === ticker),
+          maxAssets: effectiveMax,
+        })
+      ) {
+        toastProUpgrade({
+          title: "Free plan limit",
+          description: freeWatchlistAssetLimitMessage(effectiveMax),
+          onUpgrade: openUpgradePlans,
+        });
+        return;
+      }
+
       const snapshot = addTickerToSnapshot(current, resolvedId, storageKey);
       if (!snapshot) {
         toastWatchlistAddFailed();
@@ -832,7 +873,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
         if (serverCollectionId) {
           const posted = await postWatchlistTicker(ticker, serverCollectionId);
-          if (posted) {
+          if (posted.ok) {
             markWatchlistMutationHttpConfirmed(timing);
             if (withActiveTarget.activeId === resolvedId) {
               void setActiveWatchlistOnServer(serverCollectionId);
@@ -853,6 +894,18 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
             markWatchlistMutationQueueReleased(timing);
             return true;
           }
+          if (posted.code === FREE_WATCHLIST_ASSET_LIMIT_CODE) {
+            logWatchlistSync("mutation_failure", "add");
+            applyCollectionsIfCurrent(generation, previous);
+            toastProUpgrade({
+              title: "Free plan limit",
+              description: posted.error ?? freeWatchlistAssetLimitMessage(),
+              onUpgrade: openUpgradePlans,
+            });
+            dispatchWatchlistMutated(ticker);
+            markWatchlistMutationQueueReleased(timing);
+            return false;
+          }
         }
 
         logWatchlistSync("mutation_failure", "add");
@@ -869,6 +922,8 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       applyCollectionsIfCurrent,
       enqueueWatchlistMutation,
       nextMutationGeneration,
+      openUpgradePlans,
+      plan,
       resolveServerCollectionIdForList,
       scheduleMembershipReconcile,
     ],

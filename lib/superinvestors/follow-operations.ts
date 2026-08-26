@@ -1,9 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { defaultSuperinvestorFollowPaths } from "@/lib/superinvestors/default-superinvestor-follows";
 import { normalizeSuperinvestorFollowHref } from "@/lib/superinvestors/superinvestor-follow-storage";
 import type { SuperinvestorFollowRow } from "@/lib/superinvestors/follow-types";
 
 const TABLE = "superinvestor_follows";
+
+/** Same window as watchlist new-account reset — only auto-seed brand-new accounts. */
+export const NEW_ACCOUNT_SUPERINVESTOR_FOLLOW_SEED_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export class SuperinvestorFollowValidationError extends Error {
   constructor(message: string) {
@@ -27,6 +31,13 @@ export function normalizeSuperinvestorFollowPath(raw: string): string {
   return path;
 }
 
+export function isWithinNewAccountFollowSeedWindow(createdAtIso: string | null | undefined): boolean {
+  if (!createdAtIso) return false;
+  const createdAt = new Date(createdAtIso).getTime();
+  if (Number.isNaN(createdAt)) return false;
+  return Date.now() - createdAt <= NEW_ACCOUNT_SUPERINVESTOR_FOLLOW_SEED_WINDOW_MS;
+}
+
 export async function listSuperinvestorFollowsForUser(
   supabase: SupabaseClient,
   userId: string,
@@ -41,6 +52,30 @@ export async function listSuperinvestorFollowsForUser(
     throw new Error(error.message);
   }
   return (data ?? []) as SuperinvestorFollowRow[];
+}
+
+/**
+ * For brand-new accounts with an empty Following list, seed Buffett + Terry Smith.
+ * Does not re-seed older accounts that cleared their follows.
+ */
+export async function ensureDefaultSuperinvestorFollows(
+  supabase: SupabaseClient,
+  userId: string,
+  userCreatedAt: string | null | undefined,
+): Promise<SuperinvestorFollowRow[]> {
+  const existing = await listSuperinvestorFollowsForUser(supabase, userId);
+  if (existing.length > 0) return existing;
+  if (!isWithinNewAccountFollowSeedWindow(userCreatedAt)) return existing;
+
+  const paths = defaultSuperinvestorFollowPaths();
+  const rows = paths.map((profile_path) => ({ user_id: userId, profile_path }));
+  const { error } = await supabase.from(TABLE).upsert(rows, {
+    onConflict: "user_id,profile_path",
+    ignoreDuplicates: true,
+  });
+  if (error) throw new Error(error.message);
+
+  return listSuperinvestorFollowsForUser(supabase, userId);
 }
 
 export async function addSuperinvestorFollow(

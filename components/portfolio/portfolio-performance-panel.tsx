@@ -11,6 +11,7 @@ import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system
 import { SegmentedControl } from "@/components/design-system/segmented-control";
 import {
   earliestBenchmarkCoverYmd,
+  fetchNasdaqBenchmarkChartPoints,
   fetchSpyBenchmarkChartPoints,
   PORTFOLIO_CHART_RANGE_LABELS,
   PortfolioValueHistoryChartPane,
@@ -33,6 +34,8 @@ import { cn } from "@/lib/utils";
 
 const SPY_SWATCH = "#EA580C";
 const SPY_LABEL = "S&P 500";
+const NASDAQ_SWATCH = "#9333EA";
+const NASDAQ_LABEL = "Nasdaq";
 
 /** Distinct line colors for combined source portfolios (not accent / SPY orange). */
 const COMBINED_SOURCE_SWATCHES = [
@@ -97,12 +100,13 @@ function PerformanceChartSection({
   points,
   transactions,
   spyPricePoints,
+  nasdaqPricePoints,
   benchmarkInvestedUsd,
   combinedSources,
   sourcePointsById,
 }: {
   title: string;
-  metric: "value" | "profit" | "return";
+  metric: "value" | "profit" | "return" | "drawdown";
   range: PortfolioChartRange;
   onRangeChange: (r: PortfolioChartRange) => void;
   canLoad: boolean;
@@ -111,6 +115,7 @@ function PerformanceChartSection({
   points: PortfolioValueHistoryPoint[];
   transactions: PortfolioTransaction[];
   spyPricePoints: StockChartPoint[] | null;
+  nasdaqPricePoints: StockChartPoint[] | null;
   benchmarkInvestedUsd: number | null;
   /** Empty when not a combined portfolio. */
   combinedSources: readonly CombinedSourceDef[];
@@ -119,9 +124,12 @@ function PerformanceChartSection({
   const isCombined = combinedSources.length > 0;
   const portfolioLabel = isCombined ? "Combined" : "Portfolio";
   const portfolioSwatch = resolveFsColor("--fs-accent");
+  /** Benchmark overlays apply on value / return / profit — not drawdown. */
+  const showBenchmarkBadges = metric === "value" || metric === "return" || metric === "profit";
 
   const [showPortfolio, setShowPortfolio] = useState(true);
   const [compareSpy, setCompareSpy] = useState(false);
+  const [compareNasdaq, setCompareNasdaq] = useState(false);
   const [sourceVisible, setSourceVisible] = useState<Record<string, boolean>>({});
 
   const sourceIdsKey = combinedSources.map((s) => s.id).join("|");
@@ -130,24 +138,33 @@ function PerformanceChartSection({
   useEffect(() => {
     setShowPortfolio(true);
     setCompareSpy(false);
+    setCompareNasdaq(false);
     setSourceVisible({});
   }, [sourceIdsKey]);
 
   const anySourceOn = combinedSources.some((s) => sourceVisible[s.id]);
+  const anyBenchmarkOn = showBenchmarkBadges && (compareSpy || compareNasdaq);
 
   const togglePortfolio = useCallback(() => {
     setShowPortfolio((cur) => {
-      if (cur && !compareSpy && !anySourceOn) return cur;
+      if (cur && !anyBenchmarkOn && !anySourceOn) return cur;
       return !cur;
     });
-  }, [compareSpy, anySourceOn]);
+  }, [anyBenchmarkOn, anySourceOn]);
 
   const toggleSpy = useCallback(() => {
     setCompareSpy((cur) => {
-      if (cur && !showPortfolio && !anySourceOn) return cur;
+      if (cur && !showPortfolio && !compareNasdaq && !anySourceOn) return cur;
       return !cur;
     });
-  }, [showPortfolio, anySourceOn]);
+  }, [showPortfolio, compareNasdaq, anySourceOn]);
+
+  const toggleNasdaq = useCallback(() => {
+    setCompareNasdaq((cur) => {
+      if (cur && !showPortfolio && !compareSpy && !anySourceOn) return cur;
+      return !cur;
+    });
+  }, [showPortfolio, compareSpy, anySourceOn]);
 
   const toggleSource = useCallback(
     (id: string) => {
@@ -155,12 +172,12 @@ function PerformanceChartSection({
         const nextOn = !prev[id];
         if (!nextOn) {
           const othersOn = combinedSources.some((s) => s.id !== id && prev[s.id]);
-          if (!othersOn && !showPortfolio && !compareSpy) return prev;
+          if (!othersOn && !showPortfolio && !anyBenchmarkOn) return prev;
         }
         return { ...prev, [id]: nextOn };
       });
     },
-    [combinedSources, showPortfolio, compareSpy],
+    [combinedSources, showPortfolio, anyBenchmarkOn],
   );
 
   const overlaySeries = useMemo(
@@ -213,12 +230,22 @@ function PerformanceChartSection({
           onToggle={() => toggleSource(s.id)}
         />
       ))}
-      <PerformanceLegendBadge
-        label={SPY_LABEL}
-        swatch={SPY_SWATCH}
-        pressed={compareSpy}
-        onToggle={toggleSpy}
-      />
+      {showBenchmarkBadges ? (
+        <>
+          <PerformanceLegendBadge
+            label={SPY_LABEL}
+            swatch={SPY_SWATCH}
+            pressed={compareSpy}
+            onToggle={toggleSpy}
+          />
+          <PerformanceLegendBadge
+            label={NASDAQ_LABEL}
+            swatch={NASDAQ_SWATCH}
+            pressed={compareNasdaq}
+            onToggle={toggleNasdaq}
+          />
+        </>
+      ) : null}
     </div>
   ) : null;
 
@@ -267,8 +294,10 @@ function PerformanceChartSection({
             points={points}
             transactions={transactions}
             showPortfolio={showPortfolio}
-            compareSpy={compareSpy}
+            compareSpy={showBenchmarkBadges && compareSpy}
+            compareNasdaq={showBenchmarkBadges && compareNasdaq}
             spyPricePoints={spyPricePoints}
+            nasdaqPricePoints={nasdaqPricePoints}
             benchmarkInvestedUsd={benchmarkInvestedUsd}
             overlaySeries={overlaySeries}
           />
@@ -298,6 +327,7 @@ function PortfolioPerformancePanelInner({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [spyPoints, setSpyPoints] = useState<StockChartPoint[] | null>(null);
+  const [nasdaqPoints, setNasdaqPoints] = useState<StockChartPoint[] | null>(null);
 
   const selected = useMemo(
     () => portfolios.find((p) => p.id === selectedPortfolioId) ?? null,
@@ -365,6 +395,7 @@ function PortfolioPerformancePanelInner({
   useEffect(() => {
     if (!canLoad) {
       setSpyPoints(null);
+      setNasdaqPoints(null);
       return;
     }
     const ac = new AbortController();
@@ -373,6 +404,11 @@ function PortfolioPerformancePanelInner({
       .then(setSpyPoints)
       .catch(() => {
         if (!ac.signal.aborted) setSpyPoints(null);
+      });
+    void fetchNasdaqBenchmarkChartPoints(range, ac.signal, coverFromYmd)
+      .then(setNasdaqPoints)
+      .catch(() => {
+        if (!ac.signal.aborted) setNasdaqPoints(null);
       });
     return () => ac.abort();
   }, [canLoad, range, transactions]);
@@ -390,6 +426,7 @@ function PortfolioPerformancePanelInner({
         points={points}
         transactions={transactions}
         spyPricePoints={spyPoints}
+        nasdaqPricePoints={nasdaqPoints}
         benchmarkInvestedUsd={benchmarkInvestedUsd}
         combinedSources={combinedSources}
         sourcePointsById={sourcePointsById}
@@ -406,6 +443,24 @@ function PortfolioPerformancePanelInner({
         points={points}
         transactions={transactions}
         spyPricePoints={spyPoints}
+        nasdaqPricePoints={nasdaqPoints}
+        benchmarkInvestedUsd={benchmarkInvestedUsd}
+        combinedSources={combinedSources}
+        sourcePointsById={sourcePointsById}
+      />
+
+      <PerformanceChartSection
+        title="Drawdowns"
+        metric="drawdown"
+        range={range}
+        onRangeChange={setRange}
+        canLoad={canLoad}
+        loading={loading}
+        error={error}
+        points={points}
+        transactions={transactions}
+        spyPricePoints={spyPoints}
+        nasdaqPricePoints={nasdaqPoints}
         benchmarkInvestedUsd={benchmarkInvestedUsd}
         combinedSources={combinedSources}
         sourcePointsById={sourcePointsById}

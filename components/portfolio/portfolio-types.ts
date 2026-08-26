@@ -64,10 +64,15 @@ export function portfolioIsDemo(p: PortfolioEntry | null | undefined): boolean {
   return p?.isDemo === true || p?.kind === "demo";
 }
 
-/** Default display name for Free demo sample portfolios (picker label stays "Demo"). */
-export const DEFAULT_DEMO_PORTFOLIO_NAME = "Finsepa Portfolio";
+/** Default display name for Free demo sample portfolios. */
+export const DEFAULT_DEMO_PORTFOLIO_NAME = "Finsepa Demo";
 /** Prior seed titles — rewritten on normalize so existing demos rename once. */
-const LEGACY_DEMO_PORTFOLIO_NAMES = new Set(["Demo portfolio", "Demo Portfolio"]);
+const LEGACY_DEMO_PORTFOLIO_NAMES = new Set([
+  "Demo portfolio",
+  "Demo Portfolio",
+  "Finsepa Portfolio",
+  "Finsepa Demo Portfolio",
+]);
 
 /** True when this portfolio originated from brokerage (live or offline freeze). */
 export function portfolioIsBrokerageOrigin(p: PortfolioEntry | null | undefined): boolean {

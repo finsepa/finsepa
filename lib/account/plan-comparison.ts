@@ -5,8 +5,9 @@
  */
 
 export const FREE_PLAN_CARD_FEATURES = [
-  "1 manual portfolio",
+  "Demo + 1 manual portfolio",
   "1 watchlist",
+  "Up to 15 holdings",
   "30+ years of financial data",
   "Stocks, crypto, ETF, indices, currencies",
   "Earnings calendar",
@@ -21,6 +22,7 @@ export const PRO_PLAN_CARD_FEATURES = [
   "All Free features +",
   "Unlimited portfolios",
   "Unlimited watchlists",
+  "Unlimited holdings",
   "Brokerage connection",
   "Combined portfolios",
   "AI Agent",

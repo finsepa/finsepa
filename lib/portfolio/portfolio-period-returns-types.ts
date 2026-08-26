@@ -10,6 +10,8 @@ export type PortfolioPeriodReturnBar = {
   periodEnd: string;
   /** Total return % for the portfolio over the period (approx.; ignores intra-period timing of flows). */
   portfolioPct: number | null;
-  /** Contribution-model Modified Dietz % for the benchmark (same window / flows as portfolio). */
+  /** Contribution-model Modified Dietz % for S&P 500 (SPY) — same window / flows as portfolio. */
   benchmarkPct: number | null;
+  /** Contribution-model Modified Dietz % for Nasdaq (QQQ) — same window / flows as portfolio. */
+  nasdaqPct: number | null;
 };

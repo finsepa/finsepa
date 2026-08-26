@@ -11,6 +11,10 @@ import {
   parseSectionsLayout,
   serializeSectionsLayout,
 } from "@/lib/watchlist/sections";
+import {
+  buildDefaultWatchlistSectionLayout,
+  defaultWatchlistSeedTickers,
+} from "@/lib/watchlist/default-watchlist-seed";
 import type {
   WatchlistCollectionRow,
   WatchlistRow,
@@ -40,6 +44,15 @@ export class WatchlistValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "WatchlistValidationError";
+  }
+}
+
+/** Free plan: collection already at max assets and ticker is new. */
+export class WatchlistPlanLimitError extends Error {
+  readonly code = "FREE_WATCHLIST_ASSET_LIMIT";
+  constructor(message: string) {
+    super(message);
+    this.name = "WatchlistPlanLimitError";
   }
 }
 
@@ -235,13 +248,14 @@ export async function ensureDefaultWatchlistCollection(
   const existing = await listCollectionsForUser(supabase, userId);
   if (existing.length > 0) return existing[0]!;
 
+  const seedLayout = buildDefaultWatchlistSectionLayout();
   const { data, error } = await supabase
     .from(COLLECTIONS_TABLE)
     .insert({
       user_id: userId,
       name: DEFAULT_WATCHLIST_DISPLAY_NAME,
       sort_order: 0,
-      sections_layout: serializeSectionsLayout(emptyWatchlistSectionLayout()),
+      sections_layout: serializeSectionsLayout(seedLayout),
     })
     .select("id,user_id,name,sort_order,created_at,sections_layout")
     .maybeSingle();
@@ -250,8 +264,28 @@ export async function ensureDefaultWatchlistCollection(
   if (!data) throw new Error("Failed to create default watchlist collection.");
 
   const row = data as WatchlistCollectionRow;
+  await seedDefaultWatchlistItems(supabase, userId, row.id);
   await setActiveCollectionId(supabase, userId, row.id);
   return row;
+}
+
+async function seedDefaultWatchlistItems(
+  supabase: SupabaseClient,
+  userId: string,
+  collectionId: string,
+): Promise<void> {
+  const tickers = defaultWatchlistSeedTickers();
+  if (tickers.length === 0) return;
+  const rows = tickers.map((ticker, sortOrder) => ({
+    user_id: userId,
+    collection_id: collectionId,
+    ticker,
+    sort_order: sortOrder,
+  }));
+  const { error } = await supabase.from(ITEMS_TABLE).upsert(rows, {
+    onConflict: "collection_id,ticker",
+  });
+  if (error) throw new Error(error.message);
 }
 
 export async function getWatchlistSnapshot(
@@ -298,15 +332,18 @@ export async function resetWatchlistForNewAccount(
   }
 
   const defaultCollection = await ensureDefaultWatchlistCollection(supabase, userId);
+  const seedLayout = buildDefaultWatchlistSectionLayout();
   const { error: layoutError } = await supabase
     .from(COLLECTIONS_TABLE)
     .update({
       name: DEFAULT_WATCHLIST_DISPLAY_NAME,
-      sections_layout: serializeSectionsLayout(emptyWatchlistSectionLayout()),
+      sections_layout: serializeSectionsLayout(seedLayout),
     })
     .eq("id", defaultCollection.id)
     .eq("user_id", userId);
   if (layoutError) throw new Error(layoutError.message);
+
+  await seedDefaultWatchlistItems(supabase, userId, defaultCollection.id);
 
   await setActiveCollectionId(supabase, userId, defaultCollection.id);
   return getWatchlistSnapshot(supabase, userId);
@@ -533,11 +570,33 @@ export async function addWatchlistTicker(
   userId: string,
   collectionId: string,
   ticker: string,
-  options?: { sortOrder?: number },
+  options?: { sortOrder?: number; maxAssets?: number | null },
 ): Promise<{ row: WatchlistRow; created: boolean }> {
   const collections = await listCollectionsForUser(supabase, userId);
   if (!collections.some((c) => c.id === collectionId)) {
     throw new WatchlistValidationError("Watchlist not found.");
+  }
+
+  const { data: existingBefore, error: existingError } = await supabase
+    .from(ITEMS_TABLE)
+    .select("id")
+    .eq("collection_id", collectionId)
+    .eq("ticker", ticker)
+    .maybeSingle();
+  if (existingError) throw new Error(existingError.message);
+
+  const maxAssets = options?.maxAssets;
+  if (maxAssets != null && !existingBefore) {
+    const { count, error: countError } = await supabase
+      .from(ITEMS_TABLE)
+      .select("id", { count: "exact", head: true })
+      .eq("collection_id", collectionId);
+    if (countError) throw new Error(countError.message);
+    if ((count ?? 0) >= maxAssets) {
+      throw new WatchlistPlanLimitError(
+        `Free includes up to ${maxAssets} assets per watchlist. Upgrade to Pro for unlimited assets.`,
+      );
+    }
   }
 
   let sortOrder = options?.sortOrder;
@@ -552,14 +611,6 @@ export async function addWatchlistTicker(
     if (lastError) throw new Error(lastError.message);
     sortOrder = (lastRow?.sort_order ?? -1) + 1;
   }
-
-  const { data: existingBefore, error: existingError } = await supabase
-    .from(ITEMS_TABLE)
-    .select("id")
-    .eq("collection_id", collectionId)
-    .eq("ticker", ticker)
-    .maybeSingle();
-  if (existingError) throw new Error(existingError.message);
 
   const { data, error } = await supabase
     .from(ITEMS_TABLE)
@@ -627,6 +678,7 @@ export async function syncWatchlistFromClient(
   userId: string,
   collections: WatchlistSyncCollectionInput[],
   activeName?: string,
+  options?: { maxAssetsPerCollection?: number | null },
 ): Promise<WatchlistServerSnapshot> {
   // Replacement semantics: deletes any server ticker omitted from `collections` payload.
   // Not for login/bootstrap — explicit POST/DELETE/collection endpoints only in normal flows.
@@ -637,6 +689,34 @@ export async function syncWatchlistFromClient(
   const existing = await listCollectionsForUser(supabase, userId);
   const existingItems = await listItemsForUser(supabase, userId);
   const incomingTickerCount = countIncomingTickers(collections);
+  const maxAssets = options?.maxAssetsPerCollection ?? null;
+
+  if (maxAssets != null) {
+    for (const input of collections) {
+      const desired = [
+        ...new Set(
+          input.tickers
+            .map((t) => {
+              try {
+                return normalizeWatchlistTicker(t);
+              } catch {
+                return "";
+              }
+            })
+            .filter(Boolean),
+        ),
+      ];
+      const matched = existing.find((c) => collectionNamesMatch(input.name, c.name));
+      const prevCount = matched
+        ? existingItems.filter((item) => item.collection_id === matched.id).length
+        : 0;
+      if (desired.length > maxAssets && desired.length > prevCount) {
+        throw new WatchlistPlanLimitError(
+          `Free includes up to ${maxAssets} assets per watchlist. Upgrade to Pro for unlimited assets.`,
+        );
+      }
+    }
+  }
 
   if (existingItems.length > 0 && incomingTickerCount === 0) {
     throw new WatchlistDestructiveSyncError(
@@ -729,6 +809,7 @@ export async function syncWatchlistFromClient(
 
     for (let index = 0; index < desiredOrder.length; index++) {
       const ticker = desiredOrder[index]!;
+      // Cap already enforced above; do not re-check per upsert (grandfather over-cap lists).
       await addWatchlistTicker(supabase, userId, collection.id, ticker, { sortOrder: index });
     }
 

@@ -1,6 +1,8 @@
 "use client";
 
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { WatchlistOptionsMenu } from "@/components/watchlist/watchlist-options-menu";
+import { FREE_MAX_WATCHLIST_ASSETS } from "@/lib/account/plan-entitlements";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 
 export function isWatchlistRoute(pathname: string): boolean {
@@ -13,6 +15,7 @@ export function MobileWatchlistTopbarChrome() {
     activeWatchlistName,
     watchlists,
     activeWatchlistId,
+    watchedTickers,
     createWatchlist,
     createActiveSection,
     renameActiveWatchlist,
@@ -20,15 +23,27 @@ export function MobileWatchlistTopbarChrome() {
     switchWatchlist,
     storageHydrated,
   } = useWatchlist();
+  const plan = usePlanAccessOptional();
+  const countBadge =
+    plan?.isFree === true
+      ? `${watchedTickers.length}/${plan.maxWatchlistAssets ?? FREE_MAX_WATCHLIST_ASSETS}`
+      : null;
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
       <h1
         suppressHydrationWarning
-        className="min-w-0 truncate text-[22px] font-semibold leading-7 tracking-[-0.02em] text-fg"
+        className="inline-flex min-w-0 items-center gap-1.5 truncate text-[22px] font-semibold leading-7 tracking-[-0.02em] text-fg"
       >
         {storageHydrated ? (
-          activeWatchlistName
+          <>
+            <span className="truncate">{activeWatchlistName}</span>
+            {countBadge ? (
+              <span className="inline-flex h-[18px] shrink-0 items-center justify-center rounded-full bg-stroke px-[6px] text-[11px] font-medium tabular-nums leading-none text-fg">
+                {countBadge}
+              </span>
+            ) : null}
+          </>
         ) : (
           <span className="inline-block h-7 w-[min(100%,10rem)] max-w-full animate-pulse rounded-md bg-stroke" />
         )}

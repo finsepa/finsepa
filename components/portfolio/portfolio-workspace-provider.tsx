@@ -19,10 +19,14 @@ import { toast } from "sonner";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import { FreePortfolioPickModal } from "@/components/account/free-plan-modals";
-import { countBrokeragePortfolios, countManualPortfoliosForFreeQuota } from "@/lib/account/free-plan-quota";
+import { countBrokeragePortfolios, countManualPortfoliosForFreeQuota, isManualPortfolioForFreeQuota } from "@/lib/account/free-plan-quota";
+import {
+  FREE_HOLDINGS_LIMIT_CODE,
+  freeHoldingsLimitMessage,
+} from "@/lib/account/free-plan-asset-limits";
 import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
-import { buildDemoPortfolioSeed, ensureDemoDividendTransactions } from "@/lib/portfolio/demo-portfolio-seed";
+import { buildDemoPortfolioSeed, demoLedgerNeedsReseed, ensureDemoDividendTransactions } from "@/lib/portfolio/demo-portfolio-seed";
 import { SegmentedControl } from "@/components/design-system/segmented-control";
 import { AddCashModal } from "@/components/layout/add-cash-modal";
 import { DeletePortfolioConfirmModal } from "@/components/portfolio/delete-portfolio-confirm-modal";
@@ -440,6 +444,8 @@ export function PortfolioWorkspaceProvider({
   }, [router]);
   const [freePortfolioPickOpen, setFreePortfolioPickOpen] = useState(false);
   const demoSeededRef = useRef(false);
+  /** Portfolio ids whose demo ledger was replaced for {@link DEMO_LEDGER_REVISION}. */
+  const demoReseedDoneRef = useRef(new Set<string>());
 
   /** Must match server vs client first paint — never use {@link newPortfolioId} in initial seed (random UUID). */
   const portfolioSeedId = useId().replace(/:/g, "");
@@ -1002,6 +1008,21 @@ export function PortfolioWorkspaceProvider({
           });
           return;
         }
+        if (res.status === 403) {
+          const body = (await res.json().catch(() => null)) as {
+            code?: string;
+            message?: string;
+            max?: number;
+          } | null;
+          if (body?.code === FREE_HOLDINGS_LIMIT_CODE) {
+            toastProUpgrade({
+              title: "Free plan limit",
+              description: body.message ?? freeHoldingsLimitMessage(body.max),
+              onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
+            });
+            return;
+          }
+        }
         const body = (await res.json().catch(() => null)) as {
           ok?: boolean;
           warning?: string;
@@ -1021,6 +1042,7 @@ export function PortfolioWorkspaceProvider({
     selectedPortfolioId,
     holdingsByPortfolioId,
     transactionsByPortfolioId,
+    router,
   ]);
 
   const prevPublishedPortfolioIdsRef = useRef<Set<string>>(new Set());
@@ -1243,7 +1265,7 @@ export function PortfolioWorkspaceProvider({
       const txs = txsOverride ?? transactionsByPortfolioId[portfolioId] ?? [];
       if (!txs.some((t) => t.kind === "trade")) return;
 
-      const fp = `continuous-v2|${ledgerTxFingerprint(txs)}`;
+      const fp = `continuous-v3|${ledgerTxFingerprint(txs)}`;
       if (stockSplitsFpRef.current.get(portfolioId) === fp) return;
 
       stockSplitsInFlightRef.current.add(portfolioId);
@@ -1280,7 +1302,7 @@ export function PortfolioWorkspaceProvider({
         // Bypass strict mutation validation (orphan sells etc. already in display ledger).
         const tagged = tagLegacyAnomalySells(nextRaw, portfolioId);
         const { transactions: migrated } = migratePortfolioTransactionSequences(tagged.transactions);
-        stockSplitsFpRef.current.set(portfolioId, `continuous-v2|${ledgerTxFingerprint(migrated)}`);
+        stockSplitsFpRef.current.set(portfolioId, `continuous-v3|${ledgerTxFingerprint(migrated)}`);
         setTransactionsByPortfolioId((prev) => ({ ...prev, [portfolioId]: migrated }));
         const rebuilt = replayTradeTransactionsToHoldings(migrated);
         const quoted = await refreshHoldingMarketPrices(rebuilt);
@@ -1294,10 +1316,49 @@ export function PortfolioWorkspaceProvider({
     [portfolios, transactionsByPortfolioId, ledgerTxFingerprint, setPortfolioHoldings],
   );
 
+  /**
+   * Replace outdated demo ledgers (e.g. NFLX as-traded seed prices / partial adj-heal)
+   * with the current continuous-scale seed, keeping the same portfolio id.
+   */
+  const reseedDemoLedgerIfNeeded = useCallback(
+    (portfolioId: string): boolean => {
+      const port = portfolios.find((x) => x.id === portfolioId);
+      if (!port || !portfolioIsDemo(port)) return false;
+      if (demoReseedDoneRef.current.has(portfolioId)) return false;
+
+      const txs = transactionsByPortfolioId[portfolioId] ?? [];
+      if (txs.length === 0) return false;
+      if (!demoLedgerNeedsReseed(txs)) {
+        demoReseedDoneRef.current.add(portfolioId);
+        return false;
+      }
+
+      demoReseedDoneRef.current.add(portfolioId);
+      const seed = buildDemoPortfolioSeed(portfolioId);
+      setPortfolioHoldings(portfolioId, seed.holdings);
+      setPortfolioTransactions(portfolioId, seed.transactions);
+      demoDividendsAppliedRef.current.add(portfolioId);
+      // Clear split-sync fingerprint so continuous repair runs on the new ledger.
+      stockSplitsFpRef.current.delete(portfolioId);
+      runHoldingsQuoteRefresh({ [portfolioId]: seed.holdings });
+      void syncStockSplitsForPortfolio(portfolioId, seed.transactions);
+      return true;
+    },
+    [
+      portfolios,
+      transactionsByPortfolioId,
+      setPortfolioHoldings,
+      setPortfolioTransactions,
+      runHoldingsQuoteRefresh,
+      syncStockSplitsForPortfolio,
+    ],
+  );
+
   useEffect(() => {
     if (!workspaceHydrated && !portfolioBootstrapFromLocal) return;
     for (const p of portfolios) {
       if (portfolioIsDemo(p)) {
+        if (reseedDemoLedgerIfNeeded(p.id)) continue;
         void ensureDemoDividendsForPortfolio(p.id);
       }
       if (portfolioIsCombined(p) || p.snaptrade) continue;
@@ -1310,6 +1371,7 @@ export function PortfolioWorkspaceProvider({
     transactionsByPortfolioId,
     syncStockSplitsForPortfolio,
     ensureDemoDividendsForPortfolio,
+    reseedDemoLedgerIfNeeded,
   ]);
 
   const openTryDemoPortfolio = useCallback(() => {
@@ -1317,14 +1379,16 @@ export function PortfolioWorkspaceProvider({
       const existing = portfolios.find((p) => portfolioIsDemo(p));
       if (existing) {
         setSelectedPortfolioId(existing.id);
-        // Seed marks are historic fill prices — always re-mark to market when focusing demo.
-        runHoldingsQuoteRefresh({
-          [existing.id]: holdingsByPortfolioId[existing.id] ?? [],
-        });
-        void ensureDemoDividendsForPortfolio(existing.id);
-        void syncStockSplitsForPortfolio(existing.id);
+        if (!reseedDemoLedgerIfNeeded(existing.id)) {
+          // Seed marks are historic fill prices — always re-mark to market when focusing demo.
+          runHoldingsQuoteRefresh({
+            [existing.id]: holdingsByPortfolioId[existing.id] ?? [],
+          });
+          void ensureDemoDividendsForPortfolio(existing.id);
+          void syncStockSplitsForPortfolio(existing.id);
+        }
       }
-      toast.message("Finsepa Portfolio is already in your list.");
+      toast.message("Finsepa Demo is already in your list.");
       return;
     }
     if (demoSeededRef.current) return;
@@ -1338,7 +1402,7 @@ export function PortfolioWorkspaceProvider({
     // Holdings are provisionally last-fill (early 2023) until live quotes / split sync land.
     runHoldingsQuoteRefresh({ [seed.portfolio.id]: seed.holdings });
     void syncStockSplitsForPortfolio(seed.portfolio.id, seed.transactions);
-    toast.success("Finsepa Portfolio added — explore sample holdings anytime.");
+    toast.success("Finsepa Demo added — explore sample holdings anytime.");
   }, [
     portfolios,
     holdingsByPortfolioId,
@@ -1348,6 +1412,79 @@ export function PortfolioWorkspaceProvider({
     runHoldingsQuoteRefresh,
     syncStockSplitsForPortfolio,
     ensureDemoDividendsForPortfolio,
+    reseedDemoLedgerIfNeeded,
+  ]);
+
+  /**
+   * Free: always keep a Demo sample book (does not count toward the 1 manual slot).
+   * New signups land on Demo; empty "My Portfolio" placeholders are removed so Free starts as Demo-only.
+   */
+  useEffect(() => {
+    if (!workspaceHydrated) return;
+    if (plan?.isFree !== true) return;
+    if (!plan.selectionReady) return;
+
+    const existingDemo = portfolios.find((p) => portfolioIsDemo(p));
+    if (existingDemo) {
+      reseedDemoLedgerIfNeeded(existingDemo.id);
+      const hasManual = portfolios.some((p) => isManualPortfolioForFreeQuota(p));
+      const selected = portfolios.find((p) => p.id === selectedPortfolioId);
+      // Free with Demo only — keep Demo selected (don't force off a real manual book).
+      if (!hasManual && (!selected || !portfolioIsDemo(selected))) {
+        if (selectedPortfolioId !== existingDemo.id) {
+          setSelectedPortfolioId(existingDemo.id);
+        }
+      }
+      return;
+    }
+
+    if (demoSeededRef.current) return;
+    demoSeededRef.current = true;
+
+    const seed = buildDemoPortfolioSeed();
+    const emptyPlaceholderIds = new Set(
+      portfolios
+        .filter((p) => {
+          if (!isManualPortfolioForFreeQuota(p)) return false;
+          const txs = transactionsByPortfolioId[p.id] ?? [];
+          const holds = holdingsByPortfolioId[p.id] ?? [];
+          return txs.length === 0 && holds.length === 0;
+        })
+        .map((p) => p.id),
+    );
+
+    setPortfolios((prev) => [
+      ...prev.filter((p) => !emptyPlaceholderIds.has(p.id)),
+      seed.portfolio,
+    ]);
+    setHoldingsByPortfolioId((prev) => {
+      const next = { ...prev };
+      for (const id of emptyPlaceholderIds) delete next[id];
+      next[seed.portfolio.id] = seed.holdings;
+      return next;
+    });
+    setTransactionsByPortfolioId((prev) => {
+      const next = { ...prev };
+      for (const id of emptyPlaceholderIds) delete next[id];
+      next[seed.portfolio.id] = seed.transactions;
+      return next;
+    });
+    demoDividendsAppliedRef.current.add(seed.portfolio.id);
+    setSelectedPortfolioId(seed.portfolio.id);
+    runHoldingsQuoteRefresh({ [seed.portfolio.id]: seed.holdings });
+    void syncStockSplitsForPortfolio(seed.portfolio.id, seed.transactions);
+  }, [
+    workspaceHydrated,
+    plan?.isFree,
+    plan?.selectionReady,
+    portfolios,
+    selectedPortfolioId,
+    holdingsByPortfolioId,
+    transactionsByPortfolioId,
+    setSelectedPortfolioId,
+    runHoldingsQuoteRefresh,
+    syncStockSplitsForPortfolio,
+    reseedDemoLedgerIfNeeded,
   ]);
 
   const openEditTransaction = useCallback(
@@ -1468,7 +1605,7 @@ export function PortfolioWorkspaceProvider({
     if (plan?.isFree && !plan.canCreatePortfolio) {
       toastProUpgrade({
         title: "Free plan limit",
-        description: "Free includes 1 manual portfolio. Upgrade to Pro to add more.",
+        description: "Free includes Demo + 1 manual portfolio. Upgrade to Pro to add more.",
         onUpgrade: openUpgradePlans,
       });
       return;

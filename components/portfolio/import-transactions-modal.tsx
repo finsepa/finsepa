@@ -12,6 +12,15 @@ import {
 } from "@/components/portfolio/portfolio-types";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
+import {
+  countUniqueOpenHoldingSymbols,
+  freeHoldingsLimitMessage,
+} from "@/lib/account/free-plan-asset-limits";
+import { FREE_MAX_HOLDINGS_PER_PORTFOLIO } from "@/lib/account/plan-entitlements";
+import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
+import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
+import { useRouter } from "next/navigation";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import {
   buildImportedDrafts,
@@ -92,6 +101,8 @@ type Props = {
 export function ImportTransactionsModal({ open, onClose }: Props) {
   const titleId = useId();
   const addingStatusId = useId();
+  const router = useRouter();
+  const plan = usePlanAccessOptional();
   const {
     selectedPortfolioId,
     portfolios,
@@ -407,8 +418,25 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
       const imported = await buildTransactions(pid);
       /** Stable by date so same-calendar-day rows keep file order (Snowball / broker CSVs). */
       const merged = [...existing, ...imported].sort((a, b) => a.date.localeCompare(b.date));
-      setPortfolioTransactions(pid, merged);
       const rebuilt = replayTradeTransactionsToHoldings(merged);
+      const maxHoldings =
+        plan?.isFree === true
+          ? (plan.maxHoldingsPerPortfolio ?? FREE_MAX_HOLDINGS_PER_PORTFOLIO)
+          : null;
+      if (maxHoldings != null && countUniqueOpenHoldingSymbols(rebuilt) > maxHoldings) {
+        const prevCount = countUniqueOpenHoldingSymbols(
+          replayTradeTransactionsToHoldings(existing),
+        );
+        if (countUniqueOpenHoldingSymbols(rebuilt) > prevCount) {
+          toastProUpgrade({
+            title: "Free plan limit",
+            description: freeHoldingsLimitMessage(maxHoldings),
+            onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
+          });
+          return;
+        }
+      }
+      setPortfolioTransactions(pid, merged);
       const quoted = await refreshHoldingMarketPrices(rebuilt);
       setPortfolioHoldings(pid, quoted);
       setImportedCount(imported.length);
@@ -422,6 +450,8 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
     canImport,
     buildTransactions,
     hasPortfolio,
+    plan,
+    router,
     selectedPortfolioId,
     setPortfolioHoldings,
     setPortfolioTransactions,

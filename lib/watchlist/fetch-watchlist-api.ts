@@ -107,13 +107,26 @@ export async function syncWatchlistCollectionsToServer(
   return syncWatchlistSnapshotToServer(localSnapshotToSyncInputWithServer(local, knownServer));
 }
 
-export async function postWatchlistTicker(ticker: string, collectionId: string): Promise<boolean> {
+export async function postWatchlistTicker(
+  ticker: string,
+  collectionId: string,
+): Promise<{ ok: boolean; code?: string; error?: string }> {
   const res = await watchlistApiFetch("/api/watchlist", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ticker, collectionId }),
   });
-  return res.ok;
+  if (res.ok) return { ok: true };
+  let code: string | undefined;
+  let error: string | undefined;
+  try {
+    const body = (await res.json()) as { code?: string; error?: string };
+    code = typeof body.code === "string" ? body.code : undefined;
+    error = typeof body.error === "string" ? body.error : undefined;
+  } catch {
+    /* ignore */
+  }
+  return { ok: false, code, error };
 }
 
 export async function deleteWatchlistTicker(

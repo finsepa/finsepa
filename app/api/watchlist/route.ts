@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
+import { FREE_WATCHLIST_ASSET_LIMIT_CODE } from "@/lib/account/free-plan-asset-limits";
 import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   addWatchlistTicker,
   getWatchlistSnapshot,
   normalizeWatchlistTicker,
   removeWatchlistTicker,
+  WatchlistPlanLimitError,
   WatchlistValidationError,
 } from "@/lib/watchlist/operations";
 import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
@@ -59,11 +62,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "collectionId is required." }, { status: 400 });
     }
 
-    const { row, created } = await addWatchlistTicker(supabase, user.id, collectionId, ticker);
+    const gate = await getSubscriptionGateContext(supabase, user.id);
+    const { row, created } = await addWatchlistTicker(supabase, user.id, collectionId, ticker, {
+      maxAssets: gate.isFree ? gate.maxWatchlistAssets : null,
+    });
     return NextResponse.json({ entry: row, created }, { status: 200 });
   } catch (e) {
     if (e instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (e instanceof WatchlistPlanLimitError) {
+      return NextResponse.json(
+        { error: e.message, code: FREE_WATCHLIST_ASSET_LIMIT_CODE },
+        { status: 403 },
+      );
     }
     if (e instanceof WatchlistValidationError) {
       return NextResponse.json({ error: e.message }, { status: 400 });

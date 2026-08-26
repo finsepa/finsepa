@@ -205,7 +205,7 @@ export const SUPERINVESTOR_REGISTRY: SuperinvestorRegistryItem[] = [
     slug: "baillie-gifford",
     managerName: "Baillie Gifford",
     fundNameOverride: "Baillie Gifford & Co Holdings",
-    avatarSrc: null,
+    avatarSrc: "/superinvestors/baillie-gifford.png",
     loadProfilePage: getBaillieGiffordProfilePage,
     load: getBaillieGiffordHoldingsComparison,
     loadTransactions: getBaillieGiffordQuarterlyTransactions,

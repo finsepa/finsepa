@@ -189,7 +189,12 @@ function PortfolioPnlBreakdownTooltip({
             {formatSignedUsd(unrealizedUsd)}
           </div>
           <div className="text-fg-muted">Realized</div>
-          <div className={cn("text-right tabular-nums", realizedUsd >= 0 ? "text-up" : "text-down")}>
+          <div
+            className={cn(
+              "text-right tabular-nums",
+              Math.abs(realizedUsd) < 0.005 ? "text-fg-muted" : realizedUsd > 0 ? "text-up" : "text-down",
+            )}
+          >
             {formatSignedUsd(realizedUsd)}
           </div>
           <div className="text-fg-muted">Total</div>

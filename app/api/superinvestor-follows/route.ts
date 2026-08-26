@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { AuthRequiredError, requireAuthUserFromRequest } from "@/lib/watchlist/api-auth";
 import {
   addSuperinvestorFollow,
-  listSuperinvestorFollowsForUser,
+  ensureDefaultSuperinvestorFollows,
   normalizeSuperinvestorFollowPath,
   removeSuperinvestorFollow,
   SuperinvestorFollowValidationError,
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     const user = await requireAuthUserFromRequest(request);
     const supabase = await getSupabaseClientForRequest(request);
     try {
-      const items = await listSuperinvestorFollowsForUser(supabase, user.id);
+      const items = await ensureDefaultSuperinvestorFollows(supabase, user.id, user.created_at);
       return NextResponse.json({ items });
     } catch (dbErr) {
       console.error("[superinvestor-follows GET] list failed", dbErr);

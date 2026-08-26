@@ -451,6 +451,7 @@ export function WatchlistTable() {
           name={activeWatchlistName}
           watchlists={watchlists}
           activeWatchlistId={activeWatchlistId}
+          assetCount={watchedTickers.length}
           onCreate={createWatchlist}
           onCreateSection={createActiveSection}
           onRename={renameActiveWatchlist}

@@ -3,13 +3,17 @@
  * Pro = unlimited product surface; Free = hard product caps.
  * `trial` is unused (legacy API); new users start on Free.
  *
- * Free portfolio surface: 1 **manual** portfolio, no brokerage connect/sync.
- * Brokerage is Pro only (connection + resync).
+ * Free portfolio surface: **Demo + 1 manual** portfolio, no brokerage connect/sync.
+ * Brokerage is Pro only (connection + resync). Demo does not count toward the manual slot.
  */
 export type PlanTier = "pro" | "trial" | "free";
 
 export const FREE_MAX_REAL_PORTFOLIOS = 1;
 export const FREE_MAX_WATCHLISTS = 1;
+/** Free: max unique open holdings (shares &gt; 0) per manual portfolio. */
+export const FREE_MAX_HOLDINGS_PER_PORTFOLIO = 15;
+/** Free: max tickers per watchlist collection. */
+export const FREE_MAX_WATCHLIST_ASSETS = 15;
 
 export type PlanEntitlements = {
   tier: PlanTier;
@@ -28,6 +32,16 @@ export type PlanEntitlements = {
    */
   maxRealPortfolios: number | null;
   maxWatchlists: number | null;
+  /**
+   * Free: max unique open holdings per manual portfolio.
+   * `null` = unlimited (Pro). Over-cap books from Pro→Free stay readable; growth is blocked.
+   */
+  maxHoldingsPerPortfolio: number | null;
+  /**
+   * Free: max tickers per watchlist.
+   * `null` = unlimited (Pro). Over-cap lists stay; growth is blocked.
+   */
+  maxWatchlistAssets: number | null;
   canUseAgent: boolean;
   canPublishPublicPortfolio: boolean;
   canCreateCombinedPortfolio: boolean;
@@ -58,6 +72,8 @@ export function entitlementsForTier(
     topbarTrialDaysLeft: null,
     maxRealPortfolios: unlimited ? null : FREE_MAX_REAL_PORTFOLIOS,
     maxWatchlists: unlimited ? null : FREE_MAX_WATCHLISTS,
+    maxHoldingsPerPortfolio: unlimited ? null : FREE_MAX_HOLDINGS_PER_PORTFOLIO,
+    maxWatchlistAssets: unlimited ? null : FREE_MAX_WATCHLIST_ASSETS,
     canUseAgent: unlimited,
     canPublishPublicPortfolio: unlimited,
     canCreateCombinedPortfolio: unlimited,

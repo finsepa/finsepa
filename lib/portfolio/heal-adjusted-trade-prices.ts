@@ -2,23 +2,15 @@ import "server-only";
 
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { fetchEodhdEodDailyBothCloses } from "@/lib/market/eodhd-eod";
-import { isLikelyAsTradedCloseAfterSplit } from "@/lib/portfolio/is-likely-split-adjusted-close-price";
 import {
   equityCoverageFromTransactions,
   isEquitySymbolForStockSplit,
   corporateActionSplitExternalId,
 } from "@/lib/portfolio/merge-stock-splits";
+import { restoreTradeToAdjustedCloseScale } from "@/lib/portfolio/restore-trade-adjusted-scale";
 
 function normSym(symbol: string): string {
   return symbol.trim().toUpperCase().replace(/\.US$/i, "");
-}
-
-function recomputeTradeSum(t: PortfolioTransaction, price: number): number {
-  const notional = t.shares * price;
-  const fee = Number.isFinite(t.fee) && t.fee > 0 ? t.fee : 0;
-  const op = t.operation.trim().toLowerCase();
-  if (op === "sell") return notional - fee;
-  return -(notional + fee);
 }
 
 function barOnOrBefore(
@@ -60,8 +52,9 @@ export function stripAutoCorporateActionSplits(
 }
 
 /**
- * Restore continuous/chart-scale prices when trades were rewritten to as-traded unadjusted
- * close after stock splits (inflates cash outflows and share re-base doubles costs).
+ * Restore continuous/chart-scale prices when fills match as-traded unadjusted closes
+ * after later stock splits. Scales shares with the price so cost basis is preserved
+ * (avoids 4 @ $330 → 4 @ $33 destroying 10× of cost).
  */
 export async function restoreAdjustedCloseTradePrices(
   transactions: readonly PortfolioTransaction[],
@@ -92,15 +85,10 @@ export async function restoreAdjustedCloseTradePrices(
     if (!bars?.length) return t;
     const bar = barOnOrBefore(bars, t.date);
     if (!bar) return t;
-    if (!isLikelyAsTradedCloseAfterSplit(t.price, bar.adjustedClose, bar.close)) return t;
-
+    const restored = restoreTradeToAdjustedCloseScale(t, bar);
+    if (!restored) return t;
     changed += 1;
-    const price = bar.adjustedClose;
-    return {
-      ...t,
-      price,
-      sum: recomputeTradeSum(t, price),
-    };
+    return restored;
   });
 
   return { transactions: next, changed };

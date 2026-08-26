@@ -42,7 +42,9 @@ export function SearchResultLogo({ item }: { item: SearchAssetItem }) {
         className={cn(
           "h-8 w-8 shrink-0 border border-stroke-muted bg-surface object-contain",
           item.type === "superinvestor" ? "rounded-full object-cover" : "rounded-lg",
-          item.type === "superinvestor" && src.includes("blackrock") && "bg-fg p-1",
+          item.type === "superinvestor" &&
+            (src.includes("blackrock") || src.includes("baillie-gifford")) &&
+            "bg-fg p-1",
         )}
         onError={() => {
           setFailedSrc(src);

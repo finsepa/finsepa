@@ -1,5 +1,7 @@
 /** Client-only followed superinvestor profile paths (e.g. `/superinvestors/berkshire-hathaway`). */
 
+import { defaultSuperinvestorFollowPaths } from "@/lib/superinvestors/default-superinvestor-follows";
+
 const STORAGE_KEY = "finsepa.superinvestor-follow.v1";
 
 export type SuperinvestorFollowSnapshot = {
@@ -32,14 +34,21 @@ function readRaw(raw: string): string[] {
   }
 }
 
+/**
+ * Guest with no storage key yet → Buffett + Terry Smith.
+ * Explicit empty `hrefs: []` is respected (user cleared Following).
+ */
 export function readSuperinvestorFollowLocal(userId: string | null = null): string[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(storageKeyForUser(userId));
-    if (!raw) return [];
+    if (!raw) {
+      if (!userId) return defaultSuperinvestorFollowPaths();
+      return [];
+    }
     return readRaw(raw);
   } catch {
-    return [];
+    return !userId ? defaultSuperinvestorFollowPaths() : [];
   }
 }
 

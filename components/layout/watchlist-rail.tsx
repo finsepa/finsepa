@@ -19,6 +19,8 @@ import {
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { shellChromeToggleButtonClass } from "@/components/layout/shell-chrome-toggle-button";
 import { SHELL_DESKTOP_PANEL_BG_CLASS } from "@/components/design-system/card-surface-styles";
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
+import { FREE_MAX_WATCHLIST_ASSETS } from "@/lib/account/plan-entitlements";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import { normalizeWatchlistStorageKey } from "@/lib/watchlist/normalize-storage-key";
@@ -438,6 +440,7 @@ export function WatchlistRail() {
   useEffect(() => setMounted(true), []);
   const { collapsed, toggleCollapsed, outerWidthPx } = useWatchlistRailLayout();
   const expanded = !collapsed;
+  const plan = usePlanAccessOptional();
   const { items, empty, error, pricesLoading, loading } = useWatchlistEnrichedItems({
     enabled: expanded,
   });
@@ -460,6 +463,11 @@ export function WatchlistRail() {
     removeFromActiveWatchlist,
     storageHydrated,
   } = useWatchlist();
+
+  const freeWatchlistCountBadge =
+    plan?.isFree === true
+      ? `${watchedTickers.length}/${plan.maxWatchlistAssets ?? FREE_MAX_WATCHLIST_ASSETS}`
+      : null;
 
   const railGroups = partitionEnrichedItemsBySections(
     items,
@@ -511,6 +519,7 @@ export function WatchlistRail() {
                   variant="rail-title"
                   className="min-w-0 flex-1"
                   ready={storageHydrated}
+                  countBadge={freeWatchlistCountBadge}
                 />
               ) : (
                 <WatchlistRailTitleSkeleton />

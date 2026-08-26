@@ -76,8 +76,8 @@ export function PortfolioEmptySetupTiles({ className }: { className?: string }) 
     },
     {
       id: "demo",
-      title: "Try a demo portfolio",
-      description: "Explore with sample holdings before adding your own.",
+      title: "Open demo portfolio",
+      description: "Explore sample holdings (always available on Free).",
       icon: <Layers2 className="size-5" strokeWidth={1.75} aria-hidden />,
       onClick: () => openTryDemoPortfolio(),
     },

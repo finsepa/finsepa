@@ -19,7 +19,6 @@ import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surf
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import {
-  equityMarketValue,
   lifetimeEquityProfitPct,
   netCashUsd,
   normalizeUsdForDisplay,
@@ -27,6 +26,7 @@ import {
   totalNetWorth,
   unrealizedProfitUsd,
 } from "@/lib/portfolio/overview-metrics";
+import { portfolioDividendIncome } from "@/lib/portfolio/portfolio-dividend-income";
 import {
   cumulativeRealizedGainUsd,
   lifetimeEquityProfitUsd,
@@ -212,7 +212,6 @@ function PortfolioOverviewCardsInner({
   );
   const unrealizedLifetimeUsd = useMemo(() => unrealizedProfitUsd(holdings), [holdings]);
 
-  const equity = useMemo(() => equityMarketValue(holdings), [holdings]);
   const hasTradeHistory = useMemo(
     () => tradeSymbolsFromHistory(transactions).length > 0,
     [transactions],
@@ -482,34 +481,10 @@ function PortfolioOverviewCardsInner({
     return dietzPeriod?.pct ?? null;
   }, [period, profitAllPct, dietzPeriod]);
 
-  const dividendWeightedYield = useMemo(() => {
-    if (equity <= 0) return null;
-    let num = 0;
-    let denom = 0;
-    for (const h of holdings) {
-      const sym = h.symbol.toUpperCase();
-      const y = yieldBySymbol[sym];
-      if (y == null || !Number.isFinite(y)) continue;
-      num += h.currentValue * y;
-      denom += h.currentValue;
-    }
-    if (denom <= 0) return null;
-    return num / denom;
-  }, [holdings, yieldBySymbol, equity]);
-
-  const dividendAnnualUsd = useMemo(() => {
-    if (equity <= 0) return null;
-    let sum = 0;
-    let any = false;
-    for (const h of holdings) {
-      const sym = h.symbol.toUpperCase();
-      const y = yieldBySymbol[sym];
-      if (y == null || !Number.isFinite(y)) continue;
-      any = true;
-      sum += h.currentValue * (y / 100);
-    }
-    return any ? sum : null;
-  }, [holdings, yieldBySymbol, equity]);
+  const { annualUsd: dividendAnnualUsd, yieldPct: dividendWeightedYield } = useMemo(
+    () => portfolioDividendIncome(holdings, yieldBySymbol),
+    [holdings, yieldBySymbol],
+  );
 
   const isEmptyOverview = holdings.length === 0;
   const showEmptyPortfolioMetrics = isEmptyOverview && !hasTradeHistory;

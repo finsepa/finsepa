@@ -40,7 +40,8 @@ import type {
 } from "@/lib/portfolio/portfolio-period-returns-types";
 import { cn } from "@/lib/utils";
 
-const BENCHMARK_BAR = "#EA580C";
+const BENCHMARK_SPY_BAR = "#EA580C";
+const BENCHMARK_NASDAQ_BAR = "#9333EA";
 /** Light: soft rose wash. Dark: `--fs-down-soft` (#49080e). */
 const NEGATIVE_ZONE_CLASS = "bg-[rgba(254,242,242,0.92)] dark:bg-down-soft";
 const NEGATIVE_ZONE_FILL_CLASS = "fill-[rgba(254,242,242,0.92)] dark:fill-down-soft";
@@ -61,7 +62,7 @@ const GRANULARITY_OPTIONS: TabSwitcherOption<PeriodReturnGranularity>[] = [
 ];
 
 const BENCHMARK_SPY_LABEL = "S&P 500";
-const BENCHMARK_TICKER = "SPY";
+const BENCHMARK_NASDAQ_LABEL = "Nasdaq";
 
 function formatPctAxis(n: number): string {
   const rounded =
@@ -287,17 +288,19 @@ function ReturnsDynamicsChartSkeleton() {
 function DynamicsSvg({
   bars,
   showPortfolio,
-  showBenchmark,
-  benchmarkLabel,
+  showSpy,
+  showNasdaq,
   onTogglePortfolio,
-  onToggleBenchmark,
+  onToggleSpy,
+  onToggleNasdaq,
 }: {
   bars: PortfolioPeriodReturnBar[];
   showPortfolio: boolean;
-  showBenchmark: boolean;
-  benchmarkLabel: string;
+  showSpy: boolean;
+  showNasdaq: boolean;
   onTogglePortfolio: () => void;
-  onToggleBenchmark: () => void;
+  onToggleSpy: () => void;
+  onToggleNasdaq: () => void;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const plotRef = useRef<HTMLDivElement>(null);
@@ -331,12 +334,15 @@ function DynamicsSvg({
       if (showPortfolio && b.portfolioPct != null && Number.isFinite(b.portfolioPct)) {
         v.push(b.portfolioPct);
       }
-      if (showBenchmark && b.benchmarkPct != null && Number.isFinite(b.benchmarkPct)) {
+      if (showSpy && b.benchmarkPct != null && Number.isFinite(b.benchmarkPct)) {
         v.push(b.benchmarkPct);
+      }
+      if (showNasdaq && b.nasdaqPct != null && Number.isFinite(b.nasdaqPct)) {
+        v.push(b.nasdaqPct);
       }
     }
     return v;
-  }, [bars, showPortfolio, showBenchmark]);
+  }, [bars, showPortfolio, showSpy, showNasdaq]);
 
   const { yMin, yMax, ticks } = niceYRange(values);
 
@@ -348,41 +354,58 @@ function DynamicsSvg({
   const y0 = yFor(0);
   const n = Math.max(1, bars.length);
   const groupW = innerW / n;
-  const bothSeries = showPortfolio && showBenchmark;
-  const barW = bothSeries ? Math.min(28, groupW * 0.32) : Math.min(40, groupW * 0.55);
-  const gap = bothSeries ? groupW * 0.08 : groupW * 0.2;
+  const seriesCount =
+    (showPortfolio ? 1 : 0) + (showSpy ? 1 : 0) + (showNasdaq ? 1 : 0);
+  const multi = seriesCount >= 2;
+  const barW =
+    seriesCount >= 3 ? Math.min(22, groupW * 0.22)
+    : multi ? Math.min(28, groupW * 0.32)
+    : Math.min(40, groupW * 0.55);
+  const gap = seriesCount >= 3 ? groupW * 0.05 : multi ? groupW * 0.08 : groupW * 0.2;
+
+  const groupLayout = useCallback(
+    (b: PortfolioPeriodReturnBar, i: number) => {
+      const gx = padL + i * groupW + groupW / 2;
+      const hasP = showPortfolio && b.portfolioPct != null && Number.isFinite(b.portfolioPct);
+      const hasS = showSpy && b.benchmarkPct != null && Number.isFinite(b.benchmarkPct);
+      const hasN = showNasdaq && b.nasdaqPct != null && Number.isFinite(b.nasdaqPct);
+      const count = (hasP ? 1 : 0) + (hasS ? 1 : 0) + (hasN ? 1 : 0);
+      const pairW = count > 1 ? barW * count + gap * (count - 1) : barW;
+      const startX = gx - pairW / 2;
+      let x = startX;
+      const slots: { key: string; x: number; value: number; color: string }[] = [];
+      if (hasP) {
+        slots.push({ key: "p", x, value: b.portfolioPct!, color: resolveFsColor("--fs-accent") });
+        x += barW + gap;
+      }
+      if (hasS) {
+        slots.push({ key: "s", x, value: b.benchmarkPct!, color: BENCHMARK_SPY_BAR });
+        x += barW + gap;
+      }
+      if (hasN) {
+        slots.push({ key: "n", x, value: b.nasdaqPct!, color: BENCHMARK_NASDAQ_BAR });
+      }
+      return slots;
+    },
+    [padL, groupW, showPortfolio, showSpy, showNasdaq, barW, gap],
+  );
 
   const barValueLabels = useMemo(() => {
     const labels: { key: string; leftPx: number; topPx: number; text: string }[] = [];
     for (let i = 0; i < bars.length; i++) {
-      const b = bars[i]!;
-      const gx = padL + i * groupW + groupW / 2;
-      const p = b.portfolioPct;
-      const bench = b.benchmarkPct;
-      const hasP = showPortfolio && p != null && Number.isFinite(p);
-      const hasB = showBenchmark && bench != null && Number.isFinite(bench);
-      const pairW = hasP && hasB ? barW * 2 + gap : barW;
-      const startX = gx - pairW / 2;
-
-      if (hasP && p! >= 0) {
+      const slots = groupLayout(bars[i]!, i);
+      for (const s of slots) {
+        if (s.value < 0) continue;
         labels.push({
-          key: `p-${i}`,
-          leftPx: startX + barW / 2,
-          topPx: yFor(p!) - 4,
-          text: formatPctAxis(p!),
-        });
-      }
-      if (hasB && bench! >= 0) {
-        labels.push({
-          key: `b-${i}`,
-          leftPx: (hasP ? startX + barW + gap : startX) + barW / 2,
-          topPx: yFor(bench!) - 4,
-          text: formatPctAxis(bench!),
+          key: `${s.key}-${i}`,
+          leftPx: s.x + barW / 2,
+          topPx: yFor(s.value) - 4,
+          text: formatPctAxis(s.value),
         });
       }
     }
     return labels;
-  }, [bars, showPortfolio, showBenchmark, padL, groupW, barW, gap, yFor]);
+  }, [bars, groupLayout, barW, yFor]);
 
   const updateHoverFromEvent = useCallback((i: number, clientX: number, clientY: number) => {
     const el = wrapRef.current;
@@ -392,6 +415,29 @@ function DynamicsSvg({
   }, []);
 
   const hoveredBar = hover != null ? bars[hover.i] : null;
+
+  const legend = (
+    <>
+      <ReturnsLegendBadge
+        label="Portfolio"
+        swatch={resolveFsColor("--fs-accent")}
+        pressed={showPortfolio}
+        onToggle={onTogglePortfolio}
+      />
+      <ReturnsLegendBadge
+        label={BENCHMARK_SPY_LABEL}
+        swatch={BENCHMARK_SPY_BAR}
+        pressed={showSpy}
+        onToggle={onToggleSpy}
+      />
+      <ReturnsLegendBadge
+        label={BENCHMARK_NASDAQ_LABEL}
+        swatch={BENCHMARK_NASDAQ_BAR}
+        pressed={showNasdaq}
+        onToggle={onToggleNasdaq}
+      />
+    </>
+  );
 
   return (
     <div ref={wrapRef} className="relative w-full" onPointerLeave={() => setHover(null)}>
@@ -446,55 +492,26 @@ function DynamicsSvg({
               ) : null}
 
               {bars.map((b, i) => {
-                const gx = padL + i * groupW + groupW / 2;
-                const p = b.portfolioPct;
-                const bench = b.benchmarkPct;
-                const hasP = showPortfolio && p != null && Number.isFinite(p);
-                const hasB = showBenchmark && bench != null && Number.isFinite(bench);
-                const pairW = hasP && hasB ? barW * 2 + gap : barW;
-                const startX = gx - pairW / 2;
-
-                const els: ReactNode[] = [];
-                if (hasP) {
-                  const y1 = yFor(p!);
+                const slots = groupLayout(b, i);
+                const els: ReactNode[] = slots.map((s) => {
+                  const y1 = yFor(s.value);
                   const up = y1 < y0;
                   const hPix = Math.max(1, Math.abs(y0 - y1));
                   const yTop = up ? y1 : y0;
-                  els.push(
+                  return (
                     <rect
-                      key="p"
-                      x={startX}
+                      key={s.key}
+                      x={s.x}
                       y={yTop}
                       width={barW}
                       height={hPix}
                       rx={2}
                       ry={2}
-                      fill={resolveFsColor("--fs-accent")}
-                    />,
+                      fill={s.color}
+                    />
                   );
-                }
-                if (hasB) {
-                  const y1b = yFor(bench!);
-                  const upB = y1b < y0;
-                  const hPixB = Math.max(1, Math.abs(y0 - y1b));
-                  const yTopB = upB ? y1b : y0;
-                  els.push(
-                    <rect
-                      key="b"
-                      x={hasP ? startX + barW + gap : startX}
-                      y={yTopB}
-                      width={barW}
-                      height={hPixB}
-                      rx={2}
-                      ry={2}
-                      fill={BENCHMARK_BAR}
-                    />,
-                  );
-                }
-
-                return (
-                  <g key={`${b.periodStart}-${b.periodEnd}`}>{els}</g>
-                );
+                });
+                return <g key={`${b.periodStart}-${b.periodEnd}`}>{els}</g>;
               })}
 
               {bars.map((b, i) => {
@@ -553,14 +570,30 @@ function DynamicsSvg({
                     </span>
                   </p>
                 ) : null}
-                {showBenchmark ? (
+                {showSpy ? (
                   <p className={cn("text-[12px] leading-4 text-fg-muted", showPortfolio ? "mt-0.5" : "mt-1.5")}>
-                    <span className="font-semibold" style={{ color: BENCHMARK_BAR }}>
-                      {benchmarkLabel}
+                    <span className="font-semibold" style={{ color: BENCHMARK_SPY_BAR }}>
+                      {BENCHMARK_SPY_LABEL}
                     </span>
                     <span className="tabular-nums text-fg">
                       {" "}
                       {formatTooltipPct(hoveredBar.benchmarkPct)}
+                    </span>
+                  </p>
+                ) : null}
+                {showNasdaq ? (
+                  <p
+                    className={cn(
+                      "text-[12px] leading-4 text-fg-muted",
+                      showPortfolio || showSpy ? "mt-0.5" : "mt-1.5",
+                    )}
+                  >
+                    <span className="font-semibold" style={{ color: BENCHMARK_NASDAQ_BAR }}>
+                      {BENCHMARK_NASDAQ_LABEL}
+                    </span>
+                    <span className="tabular-nums text-fg">
+                      {" "}
+                      {formatTooltipPct(hoveredBar.nasdaqPct)}
                     </span>
                   </p>
                 ) : null}
@@ -628,20 +661,7 @@ function DynamicsSvg({
         </div>
       </div>
 
-      <div className="mt-3 hidden flex-wrap items-center justify-center gap-2 sm:flex">
-        <ReturnsLegendBadge
-          label="Portfolio"
-          swatch={resolveFsColor("--fs-accent")}
-          pressed={showPortfolio}
-          onToggle={onTogglePortfolio}
-        />
-        <ReturnsLegendBadge
-          label={benchmarkLabel}
-          swatch={BENCHMARK_BAR}
-          pressed={showBenchmark}
-          onToggle={onToggleBenchmark}
-        />
-      </div>
+      <div className="mt-3 hidden flex-wrap items-center justify-center gap-2 sm:flex">{legend}</div>
     </div>
   );
 }
@@ -656,6 +676,7 @@ function PortfolioReturnsDynamicsChartInner({
   const [granularity, setGranularity] = useState<PeriodReturnGranularity>("annually");
   const [showPortfolio, setShowPortfolio] = useState(true);
   const [compareSpy, setCompareSpy] = useState(true);
+  const [compareNasdaq, setCompareNasdaq] = useState(false);
   const [bars, setBars] = useState<PortfolioPeriodReturnBar[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -663,17 +684,24 @@ function PortfolioReturnsDynamicsChartInner({
   // At least one series stays visible (same guard as the Fear & Greed legend badges).
   const togglePortfolio = useCallback(() => {
     setShowPortfolio((cur) => {
-      if (cur && !compareSpy) return cur;
+      if (cur && !compareSpy && !compareNasdaq) return cur;
       return !cur;
     });
-  }, [compareSpy]);
+  }, [compareSpy, compareNasdaq]);
 
   const toggleSpy = useCallback(() => {
     setCompareSpy((cur) => {
-      if (cur && !showPortfolio) return cur;
+      if (cur && !showPortfolio && !compareNasdaq) return cur;
       return !cur;
     });
-  }, [showPortfolio]);
+  }, [showPortfolio, compareNasdaq]);
+
+  const toggleNasdaq = useCallback(() => {
+    setCompareNasdaq((cur) => {
+      if (cur && !showPortfolio && !compareSpy) return cur;
+      return !cur;
+    });
+  }, [showPortfolio, compareSpy]);
 
   const load = useCallback(async () => {
     if (!canLoad) {
@@ -690,7 +718,7 @@ function PortfolioReturnsDynamicsChartInner({
         body: JSON.stringify({
           transactions,
           granularity,
-          benchmark: BENCHMARK_TICKER,
+          benchmark: "SPY",
         }),
       });
       if (!res.ok) throw new Error("Failed to load");
@@ -711,7 +739,8 @@ function PortfolioReturnsDynamicsChartInner({
   const hasRenderable = bars.some(
     (b) =>
       (b.portfolioPct != null && Number.isFinite(b.portfolioPct)) ||
-      (b.benchmarkPct != null && Number.isFinite(b.benchmarkPct)),
+      (b.benchmarkPct != null && Number.isFinite(b.benchmarkPct)) ||
+      (b.nasdaqPct != null && Number.isFinite(b.nasdaqPct)),
   );
 
   return (
@@ -773,10 +802,11 @@ function PortfolioReturnsDynamicsChartInner({
           <DynamicsSvg
             bars={bars}
             showPortfolio={showPortfolio}
-            showBenchmark={compareSpy}
-            benchmarkLabel={BENCHMARK_SPY_LABEL}
+            showSpy={compareSpy}
+            showNasdaq={compareNasdaq}
             onTogglePortfolio={togglePortfolio}
-            onToggleBenchmark={toggleSpy}
+            onToggleSpy={toggleSpy}
+            onToggleNasdaq={toggleNasdaq}
           />
         )}
       </div>
@@ -804,9 +834,15 @@ function PortfolioReturnsDynamicsChartInner({
           />
           <ReturnsLegendBadge
             label={BENCHMARK_SPY_LABEL}
-            swatch={BENCHMARK_BAR}
+            swatch={BENCHMARK_SPY_BAR}
             pressed={compareSpy}
             onToggle={toggleSpy}
+          />
+          <ReturnsLegendBadge
+            label={BENCHMARK_NASDAQ_LABEL}
+            swatch={BENCHMARK_NASDAQ_BAR}
+            pressed={compareNasdaq}
+            onToggle={toggleNasdaq}
           />
         </div>
       ) : null}

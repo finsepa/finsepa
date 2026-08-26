@@ -36,12 +36,19 @@ import { PortfolioHoldingsSubTabMobileCard } from "@/components/portfolio/portfo
 import { useAllocationCenterAvatar } from "@/components/portfolio/use-allocation-center-avatar";
 import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
 import { PortfolioBrokerageOfflineBanner } from "@/components/portfolio/portfolio-brokerage-offline-banner";
+import { PortfolioDemoBanner } from "@/components/portfolio/portfolio-demo-banner";
 import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-status-icon";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadcrumbs";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import {
+  portfolioIsDemo,
+  type PortfolioHolding,
+  type PortfolioTransaction,
+} from "@/components/portfolio/portfolio-types";
+import { countUniqueOpenHoldingSymbols } from "@/lib/account/free-plan-asset-limits";
+import { FREE_MAX_HOLDINGS_PER_PORTFOLIO } from "@/lib/account/plan-entitlements";
 import { totalCostBasisInvested } from "@/lib/portfolio/overview-metrics";
 import {
   ALLOCATION_RETURN_PERIOD_DEFAULT,
@@ -176,6 +183,7 @@ export function PortfolioPageView({
     portfolios,
     selectedPortfolioId,
     openEditPortfolio,
+    openCreatePortfolio,
     portfolioDisplayReady,
     selectedPortfolioReadOnly,
     openReconnectBrokerage,
@@ -199,6 +207,8 @@ export function PortfolioPageView({
     selectedPortfolio != null &&
     (selectedPortfolio.snaptrade?.offline === true ||
       (selectedPortfolioReadOnly && selectedPortfolio.snaptrade != null));
+  const showDemoBanner =
+    !isPublicView && selectedPortfolio != null && portfolioIsDemo(selectedPortfolio);
 
   useEffect(() => {
     setViewTab(tabFromUrl(searchParams.get("tab")));
@@ -268,13 +278,17 @@ export function PortfolioPageView({
     [holdings, transactions],
   );
 
-  const assetCount = holdings.length;
+  const assetCount = countUniqueOpenHoldingSymbols(holdings);
+  const assetsTabBadge =
+    plan?.isFree === true
+      ? `${assetCount}/${plan.maxHoldingsPerPortfolio ?? FREE_MAX_HOLDINGS_PER_PORTFOLIO}`
+      : assetCount;
   const holdingsSubTabItems = useMemo(
     () =>
       PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS.map((item) =>
-        item.id === "assets" ? { ...item, badge: assetCount } : item,
+        item.id === "assets" ? { ...item, badge: assetsTabBadge } : item,
       ),
-    [assetCount],
+    [assetsTabBadge],
   );
   const { imageSrc: allocationAvatarImageSrc, initials: allocationAvatarInitials } =
     useAllocationCenterAvatar();
@@ -427,6 +441,10 @@ export function PortfolioPageView({
             : undefined
           }
         />
+      ) : null}
+
+      {showDemoBanner ? (
+        <PortfolioDemoBanner onCreateOwn={() => openCreatePortfolio({ mode: "manual" })} />
       ) : null}
 
       <PortfolioOverviewAthProvider>

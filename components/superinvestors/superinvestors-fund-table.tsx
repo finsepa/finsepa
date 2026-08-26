@@ -24,7 +24,7 @@ import { formatSuperinvestorPerformancePct } from "@/lib/superinvestors/superinv
 import { cn } from "@/lib/utils";
 
 function avatarNeedsDarkTile(src: string): boolean {
-  return src.includes("blackrock");
+  return src.includes("blackrock") || src.includes("baillie-gifford");
 }
 
 /** Local `/public` fund avatars — native `img` + onError; see `SuperinvestorProfileAvatar`. */

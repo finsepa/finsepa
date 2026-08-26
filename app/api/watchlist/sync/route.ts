@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { FREE_WATCHLIST_ASSET_LIMIT_CODE } from "@/lib/account/free-plan-asset-limits";
+import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
 import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   syncWatchlistFromClient,
   WatchlistDestructiveSyncError,
+  WatchlistPlanLimitError,
   WatchlistValidationError,
 } from "@/lib/watchlist/operations";
 import {
@@ -73,11 +76,20 @@ export async function POST(request: Request) {
     const bodyRecord = body as { collections: unknown; activeName?: unknown };
     const activeName = typeof bodyRecord.activeName === "string" ? bodyRecord.activeName : undefined;
 
-    const snapshot = await syncWatchlistFromClient(supabase, user.id, collections, activeName);
+    const gate = await getSubscriptionGateContext(supabase, user.id);
+    const snapshot = await syncWatchlistFromClient(supabase, user.id, collections, activeName, {
+      maxAssetsPerCollection: gate.isFree ? gate.maxWatchlistAssets : null,
+    });
     return NextResponse.json(snapshot, { status: 200 });
   } catch (e) {
     if (e instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (e instanceof WatchlistPlanLimitError) {
+      return NextResponse.json(
+        { error: e.message, code: FREE_WATCHLIST_ASSET_LIMIT_CODE },
+        { status: 403 },
+      );
     }
     if (e instanceof WatchlistValidationError) {
       return NextResponse.json({ error: e.message }, { status: 400 });

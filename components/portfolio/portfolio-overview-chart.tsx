@@ -10,6 +10,7 @@ import {
   type MutableRefObject,
   type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 import { format, parseISO, subDays } from "date-fns";
 import {
   AreaSeries,
@@ -69,8 +70,6 @@ import {
   extractAllExternalCashFlows,
 } from "@/lib/portfolio/benchmark/benchmark-engine";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
-import { FormListboxSelect } from "@/components/ui/form-listbox-select";
-import type { ListboxOption } from "@/components/ui/form-listbox-select";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 import {
   Empty,
@@ -83,13 +82,13 @@ import { netCashUsdUpTo, normalizeUsdForDisplay } from "@/lib/portfolio/overview
 import {
   topbarSquircleActiveClass,
   topbarSquircleIconClass,
-  topbarSquircleTextButtonClass,
 } from "@/components/design-system/topbar-control-classes";
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import {
   SegmentedControl,
   type SegmentedControlOption,
 } from "@/components/design-system/segmented-control";
+import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
 import type {
   PortfolioChartRange,
@@ -221,6 +220,15 @@ export async function fetchSpyBenchmarkChartPoints(
   coverFromYmd?: string | null,
 ): Promise<StockChartPoint[] | null> {
   return fetchBenchmarkChartPoints("SPY", range, signal, coverFromYmd);
+}
+
+/** Fetch Nasdaq-100 proxy (QQQ) price history for portfolio compare overlays. */
+export async function fetchNasdaqBenchmarkChartPoints(
+  range: PortfolioChartRange,
+  signal: AbortSignal,
+  coverFromYmd?: string | null,
+): Promise<StockChartPoint[] | null> {
+  return fetchBenchmarkChartPoints("QQQ", range, signal, coverFromYmd);
 }
 
 function portfolioSamplingRange(
@@ -601,7 +609,7 @@ function PortfolioChartSettingsButton({
   onCompareNasdaqChange: (next: boolean) => void;
   /** S&P compare — Value ($ contribution) or Return (%). */
   benchmarkCompareDisabled: boolean;
-  /** Nasdaq compare — Value only. */
+  /** Nasdaq compare — Value / Return / Profit (same as S&P). */
   nasdaqCompareDisabled: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -672,7 +680,7 @@ function PortfolioChartSettingsButton({
               const hint =
                 key === "compareSpy" && benchmarkCompareDisabled ? BENCHMARK_COMPARE_DISABLED_HINT
                 : key === "compareNasdaq" && nasdaqCompareDisabled ?
-                  "Switch to Value to compare portfolio net worth with Nasdaq."
+                  BENCHMARK_COMPARE_DISABLED_HINT
                 : undefined;
               return (
                 <div key={key} role="menuitem" className={dropdownMenuPlainItemRowClassName()}>
@@ -697,13 +705,6 @@ function PortfolioChartSettingsButton({
 export type PortfolioChartMetricMode = "value" | "profit" | "return" | "drawdown";
 
 type MetricMode = PortfolioChartMetricMode;
-
-const PORTFOLIO_CHART_METRIC_OPTIONS: readonly ListboxOption<PortfolioChartMetricMode>[] = [
-  { value: "value", label: "Value" },
-  { value: "profit", label: "Total profit" },
-  { value: "return", label: "Return" },
-  { value: "drawdown", label: "Drawdowns" },
-];
 
 /** Metrics plotted in % (Return, Drawdowns) share the percent axis/tooltip format. */
 function isPercentMetric(m: MetricMode): boolean {
@@ -738,15 +739,6 @@ export const PORTFOLIO_CHART_RANGE_LABELS: readonly SegmentedControlOption<Portf
 /** Mobile range row omits YTD — same as asset `ChartControls`. */
 const PORTFOLIO_CHART_MOBILE_RANGE_LABELS = PORTFOLIO_CHART_RANGE_LABELS.filter(
   (option) => option.value !== "ytd",
-);
-
-const PORTFOLIO_CHART_METRIC_SEGMENTS: readonly SegmentedControlOption<PortfolioChartMetricMode>[] =
-  PORTFOLIO_CHART_METRIC_OPTIONS;
-
-/** Match asset chart metric listbox trigger (`ChartControls`). */
-const PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS = cn(
-  topbarSquircleTextButtonClass,
-  "w-auto bg-surface font-semibold hover:bg-surface-muted",
 );
 
 /** One-decimal truncation (e.g. 7616 → 7.6) so axis + last-price badge stay distinct. */
@@ -1035,6 +1027,30 @@ type TradeDotHoverApi = {
   onLeave: () => void;
 };
 
+const TRADE_TOOLTIP_MAX_W_PX = 280;
+const TRADE_TOOLTIP_MAX_H_PX = 280;
+const TRADE_TOOLTIP_LEAVE_MS = 160;
+
+function tradeTooltipNearPointer(
+  clientX: number,
+  clientY: number,
+  lineCount: number,
+): { left: number; top: number } {
+  const pad = 8;
+  const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const estH = Math.min(TRADE_TOOLTIP_MAX_H_PX, 56 + lineCount * 18);
+  let left = clientX + pad;
+  let top = clientY - estH - pad;
+  if (left + TRADE_TOOLTIP_MAX_W_PX > vw - pad) {
+    left = clientX - TRADE_TOOLTIP_MAX_W_PX - pad;
+  }
+  if (top < pad) top = clientY + pad;
+  left = Math.max(pad, Math.min(left, vw - pad - TRADE_TOOLTIP_MAX_W_PX));
+  top = Math.max(pad, Math.min(top, vh - pad - Math.min(estH, TRADE_TOOLTIP_MAX_H_PX)));
+  return { left, top };
+}
+
 function portfolioCrosshairBottomLabel(
   hoverTime: Time,
   range: PortfolioChartRange,
@@ -1211,7 +1227,7 @@ export function PortfolioValueHistoryChartPane({
   showPortfolio?: boolean;
   /** When true with {@link spyPricePoints}, draws S&P 500 comparison (value or profit). */
   compareSpy?: boolean;
-  /** When true with {@link nasdaqPricePoints}, draws Nasdaq comparison for the Value metric (same $ scale). */
+  /** When true with {@link nasdaqPricePoints}, draws Nasdaq comparison (value or return). */
   compareNasdaq?: boolean;
   spyPricePoints?: readonly StockChartPoint[] | null;
   nasdaqPricePoints?: readonly StockChartPoint[] | null;
@@ -1280,52 +1296,63 @@ export function PortfolioValueHistoryChartPane({
     setPeriodAxisLabels(next);
   }, []);
   const [tradeTooltip, setTradeTooltip] = useState<{
-    x: number;
-    y: number;
+    left: number;
+    top: number;
     dateLabel: string;
     lines: string[];
   } | null>(null);
+  const [tradeTooltipMounted, setTradeTooltipMounted] = useState(false);
+  const tradeTooltipLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setTradeTooltipMounted(true);
+    return () => {
+      if (tradeTooltipLeaveTimerRef.current) clearTimeout(tradeTooltipLeaveTimerRef.current);
+    };
+  }, []);
+
+  const cancelTradeTooltipLeave = useCallback(() => {
+    if (tradeTooltipLeaveTimerRef.current) {
+      clearTimeout(tradeTooltipLeaveTimerRef.current);
+      tradeTooltipLeaveTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleTradeTooltipLeave = useCallback(() => {
+    cancelTradeTooltipLeave();
+    tradeTooltipLeaveTimerRef.current = setTimeout(() => {
+      tradeTooltipLeaveTimerRef.current = null;
+      setTradeTooltip(null);
+    }, TRADE_TOOLTIP_LEAVE_MS);
+  }, [cancelTradeTooltipLeave]);
 
   tradeDotHoverApiRef.current = {
     onEnter({ clientX, clientY, bucket, chartYmd }) {
+      cancelTradeTooltipLeave();
       hoverTimeRef.current = null;
       setHoverAxisLabel(null);
       setTooltip(null);
-      const box = containerRef.current;
-      if (!box) return;
-      const r = box.getBoundingClientRect();
-      const px = clientX - r.left;
-      const py = clientY - r.top;
-      const tw = 260;
       const { dateLabel, lines } = buildTradeDotTooltip(bucket, chartYmd, transactions);
-      const th = Math.min(280, 56 + lines.length * 18);
-      const pad = 8;
-      let x = px + pad;
-      let y = py - th - pad;
-      if (x + tw > box.clientWidth - pad) x = Math.max(pad, box.clientWidth - tw - pad);
-      if (x < pad) x = pad;
-      if (y < pad) y = pad;
-      if (y + th > chartLayoutRef.current.plotHeightPx - pad) {
-        y = Math.min(chartLayoutRef.current.plotHeightPx - th - pad, py + pad);
-      }
+      const pos = tradeTooltipNearPointer(clientX, clientY, lines.length);
       setTradeTooltip({
-        x,
-        y,
+        left: pos.left,
+        top: pos.top,
         dateLabel,
         lines,
       });
     },
     onLeave() {
-      setTradeTooltip(null);
+      scheduleTradeTooltipLeave();
     },
   };
 
   const drawCompareSpy =
     compareSpy && (metric === "value" || metric === "return" || metric === "profit");
-  const drawCompareNasdaq = compareNasdaq && metric === "value";
+  const drawCompareNasdaq =
+    compareNasdaq && (metric === "value" || metric === "return" || metric === "profit");
   /** Create compare series with the chart so toggling S&P does not remount the portfolio series. */
   const mountSpySeries = metric === "value" || metric === "return" || metric === "profit";
-  const mountNasdaqSeries = metric === "value";
+  const mountNasdaqSeries = metric === "value" || metric === "return" || metric === "profit";
 
   chartRangeRef.current = range;
 
@@ -1906,7 +1933,7 @@ export function PortfolioValueHistoryChartPane({
   ]);
 
   const metricTitle =
-    metric === "value" ? "Value"
+    metric === "value" ? "Total value"
     : metric === "profit" ? "Total profit"
     : metric === "drawdown" ? "Drawdown"
     : "Return";
@@ -1919,7 +1946,8 @@ export function PortfolioValueHistoryChartPane({
       onMouseLeave={() => {
         hoverTimeRef.current = null;
         setTooltip(null);
-        setTradeTooltip(null);
+        // Trade tooltip is portaled to body — leave delay / tooltip hover handles close.
+        scheduleTradeTooltipLeave();
         setHoverAxisLabel(null);
         const c = chartRef.current;
         const s = seriesRef.current;
@@ -1991,40 +2019,44 @@ export function PortfolioValueHistoryChartPane({
             </p>
           </div>
         ) : null}
-        {tradeTooltip ? (
-          <div
-            className={cn(
-              "pointer-events-none absolute z-[15] max-w-[min(calc(100vw-2rem),260px)] px-3 py-2",
-              tooltipSurfaceClassName,
-            )}
-            style={{ left: tradeTooltip.x, top: tradeTooltip.y }}
-            role="tooltip"
-          >
-            <p className="text-[11px] leading-4 text-fg-muted">{tradeTooltip.dateLabel}</p>
-            <div className="mt-1.5 space-y-0.5 text-xs leading-snug text-fg">
-              {tradeTooltip.lines.map((line, i) => {
-                const isTxDate =
-                  /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}$/.test(line) &&
-                  i > 0;
-                return (
-                  <p
-                    key={i}
-                    className={cn(
-                      "tabular-nums",
-                      line.startsWith("Cash before:") || line.startsWith("Total cash:") ?
-                        "font-semibold text-fg"
-                      : isTxDate ?
-                        "pt-1.5 text-[11px] font-medium text-fg-muted"
-                      : "font-medium",
-                    )}
-                  >
-                    {line}
-                  </p>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
+        {tradeTooltipMounted && tradeTooltip
+          ? createPortal(
+              <div
+                className={cn(
+                  "pointer-events-auto fixed z-[200] max-h-[min(280px,50vh)] w-[min(calc(100vw-2rem),280px)] overflow-y-auto overscroll-contain px-3 py-2",
+                  tooltipSurfaceClassName,
+                )}
+                style={{ left: tradeTooltip.left, top: tradeTooltip.top }}
+                role="tooltip"
+                onMouseEnter={cancelTradeTooltipLeave}
+                onMouseLeave={scheduleTradeTooltipLeave}
+              >
+                <p className="text-[11px] leading-4 text-fg-muted">{tradeTooltip.dateLabel}</p>                <div className="mt-1.5 space-y-0.5 text-xs leading-snug text-fg">
+                  {tradeTooltip.lines.map((line, i) => {
+                    const isTxDate =
+                      /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}$/.test(line) &&
+                      i > 0;
+                    return (
+                      <p
+                        key={i}
+                        className={cn(
+                          "tabular-nums",
+                          line.startsWith("Cash before:") || line.startsWith("Total cash:") ?
+                            "font-semibold text-fg"
+                          : isTxDate ?
+                            "pt-1.5 text-[11px] font-medium text-fg-muted"
+                          : "font-medium",
+                        )}
+                      >
+                        {line}
+                      </p>
+                    );
+                  })}
+                </div>
+              </div>,
+              document.body,
+            )
+          : null}
       </div>
       <div
         className="relative w-full shrink-0 overflow-visible"
@@ -2074,7 +2106,7 @@ function PortfolioOverviewChartInner({
   /** Current open equity cost basis; aligns benchmark $ line with “invested” under Total value. */
   benchmarkInvestedUsd?: number | null;
 }) {
-  const [metric, setMetric] = useState<PortfolioChartMetricMode>("value");
+  const metric: PortfolioChartMetricMode = "value";
   const [range, setRange] = useState<PortfolioChartRange>("ytd");
   const [points, setPoints] = useState<PortfolioValueHistoryPoint[]>([]);
   const [loading, setLoading] = useState(false);
@@ -2087,8 +2119,6 @@ function PortfolioOverviewChartInner({
   const [nasdaqPoints, setNasdaqPoints] = useState<StockChartPoint[] | null>(null);
 
   const canLoad = transactions.length > 0;
-  const benchmarkCompareDisabled = metric !== "value" && metric !== "return";
-  const nasdaqCompareDisabled = metric !== "value";
   const chartSettingsProps = {
     showTrades,
     onShowTradesChange: setShowTrades,
@@ -2096,8 +2126,8 @@ function PortfolioOverviewChartInner({
     onCompareSpyChange: setCompareSpy,
     compareNasdaq,
     onCompareNasdaqChange: setCompareNasdaq,
-    benchmarkCompareDisabled,
-    nasdaqCompareDisabled,
+    benchmarkCompareDisabled: false,
+    nasdaqCompareDisabled: false,
   } as const;
 
   const load = useCallback(async () => {
@@ -2139,8 +2169,8 @@ function PortfolioOverviewChartInner({
     return () => mq.removeEventListener("change", syncMobileRange);
   }, [range]);
 
-  const fetchSpy = compareSpy && (metric === "value" || metric === "return") && canLoad;
-  const fetchNasdaq = compareNasdaq && metric === "value" && canLoad;
+  const fetchSpy = compareSpy && canLoad;
+  const fetchNasdaq = compareNasdaq && canLoad;
   const coverFromYmd = earliestBenchmarkCoverYmd(transactions);
 
   useEffect(() => {
@@ -2173,38 +2203,18 @@ function PortfolioOverviewChartInner({
 
   return (
     <section className="relative z-10 mb-6 w-full min-w-0 max-md:mb-4">
-      {/* Mobile: metric + settings above chart (asset ChartControls layout). */}
+      {/* Mobile: title + settings above chart. */}
       <div className="mb-2 flex w-full min-w-0 items-center justify-between gap-2 sm:hidden">
-        <FormListboxSelect
-          compact
-          fitTrigger
-          truncateLabel={false}
-          className="w-auto shrink-0"
-          listboxClassName="w-auto"
-          aria-label="Chart metric"
-          triggerClassName={PORTFOLIO_CHART_MOBILE_METRIC_TRIGGER_CLASS}
-          options={PORTFOLIO_CHART_METRIC_OPTIONS}
-          value={metric}
-          onChange={(v) => setMetric(v as PortfolioChartMetricMode)}
-        />
+        <h2 className={cn("min-w-0 shrink", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Total value</h2>
         <div className="shrink-0">
           <PortfolioChartSettingsButton {...chartSettingsProps} />
         </div>
       </div>
 
-      {/* Desktop controls — same structure/spacing as asset ChartControls. */}
+      {/* Desktop: title + settings + range. */}
       <div className="mb-0 hidden sm:mb-4 sm:block">
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-          <div className="min-w-0 shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
-            <SegmentedControl
-              options={PORTFOLIO_CHART_METRIC_SEGMENTS}
-              value={metric}
-              onChange={setMetric}
-              size="sm"
-              aria-label="Chart metric"
-              className="min-w-min flex-nowrap"
-            />
-          </div>
+          <h2 className={cn("min-w-0 shrink-0", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Total value</h2>
 
           <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-2">
             <div className="hidden shrink-0 sm:block">

@@ -147,7 +147,7 @@ function sliceRecent<T>(arr: T[], max: number): T[] {
 export async function computePortfolioPeriodReturns(
   transactions: PortfolioTransaction[],
   granularity: PeriodReturnGranularity,
-  benchmarkTicker: string,
+  _benchmarkTicker: string,
 ): Promise<PortfolioPeriodReturnBar[]> {
   if (transactions.length === 0) return [];
 
@@ -179,16 +179,19 @@ export async function computePortfolioPeriodReturns(
   const fromYmd = ymd(subDays(earliestPreDt, 14));
 
   const symbols = tradeSymbols(transactions);
-  const benchSym = benchmarkTicker.trim().toUpperCase() || "SPY";
 
-  const [barsBySymbol, benchBars] = await Promise.all([
+  const [barsBySymbol, spyBars, nasdaqBars] = await Promise.all([
     loadPortfolioEodBars(symbols, fromYmd, toYmd),
-    loadPortfolioBenchmarkEodBars(benchSym, fromYmd, toYmd),
+    loadPortfolioBenchmarkEodBars("SPY", fromYmd, toYmd),
+    loadPortfolioBenchmarkEodBars("QQQ", fromYmd, toYmd),
   ]);
-  if (benchBars.length === 0) return [];
+  if (spyBars.length === 0 && nasdaqBars.length === 0) return [];
 
-  const benchSorted = [...benchBars].sort((a, b) => a.date.localeCompare(b.date));
-  const priceOnOrBefore = makePriceOnOrBefore(benchSorted);
+  const spySorted = [...spyBars].sort((a, b) => a.date.localeCompare(b.date));
+  const nasdaqSorted = [...nasdaqBars].sort((a, b) => a.date.localeCompare(b.date));
+  const sessionSorted = spySorted.length > 0 ? spySorted : nasdaqSorted;
+  const spyPriceOnOrBefore = spySorted.length > 0 ? makePriceOnOrBefore(spySorted) : null;
+  const nasdaqPriceOnOrBefore = nasdaqSorted.length > 0 ? makePriceOnOrBefore(nasdaqSorted) : null;
 
   const out: PortfolioPeriodReturnBar[] = [];
 
@@ -198,10 +201,10 @@ export async function computePortfolioPeriodReturns(
       periodEnd: b.periodEnd,
       asOfYmd: toYmd,
       firstTxYmd: firstYmd,
-      benchSorted,
+      benchSorted: sessionSorted,
     });
     if (!marks) {
-      out.push({ ...b, portfolioPct: null, benchmarkPct: null });
+      out.push({ ...b, portfolioPct: null, benchmarkPct: null, nasdaqPct: null });
       continue;
     }
     const { d0, d1 } = marks;
@@ -209,21 +212,37 @@ export async function computePortfolioPeriodReturns(
     const portfolioVStart =
       d0 < firstYmd ? 0 : portfolioNetWorthOnDate(transactions, barsBySymbol, d0);
     const portfolioVEnd = portfolioNetWorthOnDate(transactions, barsBySymbol, d1);
-    const compare = comparePortfolioToBenchmark({
-      transactions,
-      portfolioVStart,
-      portfolioVEnd,
-      startYmd: d0,
-      endYmd: d1,
-      priceOnOrBefore,
-    });
+
+    const spyCompare =
+      spyPriceOnOrBefore == null ?
+        null
+      : comparePortfolioToBenchmark({
+          transactions,
+          portfolioVStart,
+          portfolioVEnd,
+          startYmd: d0,
+          endYmd: d1,
+          priceOnOrBefore: spyPriceOnOrBefore,
+        });
+    const nasdaqCompare =
+      nasdaqPriceOnOrBefore == null ?
+        null
+      : comparePortfolioToBenchmark({
+          transactions,
+          portfolioVStart,
+          portfolioVEnd,
+          startYmd: d0,
+          endYmd: d1,
+          priceOnOrBefore: nasdaqPriceOnOrBefore,
+        });
 
     out.push({
       label: b.label,
       periodStart: b.periodStart,
       periodEnd: b.periodEnd,
-      portfolioPct: compare.portfolioPct,
-      benchmarkPct: compare.benchmarkPct,
+      portfolioPct: spyCompare?.portfolioPct ?? nasdaqCompare?.portfolioPct ?? null,
+      benchmarkPct: spyCompare?.benchmarkPct ?? null,
+      nasdaqPct: nasdaqCompare?.benchmarkPct ?? null,
     });
   }
 

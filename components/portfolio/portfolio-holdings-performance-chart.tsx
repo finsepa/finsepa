@@ -10,7 +10,6 @@ import { SegmentedControl } from "@/components/design-system/segmented-control";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
-  FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
 } from "@/lib/chart/fundamentals-chart-surface";
 import {
@@ -208,7 +207,11 @@ function HoldingsPerformanceBarChart({
             <div
               className={cn(
                 "text-right tabular-nums",
-                hovered.realizedUsd >= 0 ? "text-up" : "text-down",
+                Math.abs(hovered.realizedUsd) < 0.005
+                  ? "text-fg-muted"
+                  : hovered.realizedUsd > 0
+                    ? "text-up"
+                    : "text-down",
               )}
             >
               {formatSignedUsd(hovered.realizedUsd)}
@@ -239,17 +242,28 @@ function HoldingsPerformanceBarChart({
         >
           <div className="flex min-h-0 w-full min-w-0" style={{ height: plotHeightPx }}>
             <div className="relative shrink-0" style={{ width: Y_LABEL_W_PX }} aria-hidden={rows.length === 0}>
-              {rows.map((row, i) => (
-                <div
-                  key={row.h.id}
-                  className="flex items-center justify-end pr-2 text-[13px] font-medium leading-5 text-fg"
-                  style={{ height: ROW_HEIGHT_PX }}
-                  onPointerEnter={(e) => updateHover(i, e.clientX, e.clientY)}
-                  onPointerMove={(e) => updateHover(i, e.clientX, e.clientY)}
-                >
-                  <span className="truncate tabular-nums">{row.symbol}</span>
-                </div>
-              ))}
+              {rows.map((row, i) => {
+                const value = rowValue(row, metric);
+                const hasValue = value != null && Number.isFinite(value);
+                const isPositive = hasValue && value >= 0;
+                const isHovered = hover?.i === i;
+                const hoverBandClass = isPositive ? "bg-up-soft" : "bg-down-soft";
+
+                return (
+                  <div
+                    key={row.h.id}
+                    className={cn(
+                      "relative flex items-center justify-end pr-2 text-[13px] font-medium leading-5 text-fg",
+                      isHovered && hoverBandClass,
+                    )}
+                    style={{ height: ROW_HEIGHT_PX }}
+                    onPointerEnter={(e) => updateHover(i, e.clientX, e.clientY)}
+                    onPointerMove={(e) => updateHover(i, e.clientX, e.clientY)}
+                  >
+                    <span className="relative z-[1] truncate tabular-nums">{row.symbol}</span>
+                  </div>
+                );
+              })}
             </div>
 
             <div className="relative min-w-0 flex-1 overflow-hidden">
@@ -277,6 +291,7 @@ function HoldingsPerformanceBarChart({
                 const isPositive = hasValue && value >= 0;
                 const barColor = isPositive ? PROFIT_BAR : LOSS_BAR;
                 const isHovered = hover?.i === i;
+                const hoverBandClass = isPositive ? "bg-up-soft" : "bg-down-soft";
 
                 return (
                   <div
@@ -307,8 +322,10 @@ function HoldingsPerformanceBarChart({
                   >
                     {isHovered ? (
                       <div
-                        className="pointer-events-none absolute inset-y-0 -left-1 right-0 z-0"
-                        style={{ background: FUNDAMENTALS_CHART_HOVER_BAND_BG }}
+                        className={cn(
+                          "pointer-events-none absolute inset-y-0 -left-1 right-0 z-0",
+                          hoverBandClass,
+                        )}
                         aria-hidden
                       />
                     ) : null}
@@ -334,6 +351,8 @@ function HoldingsPerformanceBarChart({
                 const value = rowValue(row, metric);
                 const hasValue = value != null && Number.isFinite(value);
                 const isPositive = hasValue && value >= 0;
+                const isHovered = hover?.i === i;
+                const hoverBandClass = isPositive ? "bg-up-soft" : "bg-down-soft";
                 const textColor = isPositive ? resolveFsColor("--fs-up") : resolveFsColor("--fs-down");
                 const label =
                   hasValue ?
@@ -345,12 +364,15 @@ function HoldingsPerformanceBarChart({
                 return (
                   <div
                     key={row.h.id}
-                    className="flex items-center justify-end truncate pl-1 text-[12px] font-semibold tabular-nums leading-4"
+                    className={cn(
+                      "relative flex items-center justify-end truncate pl-1 text-[12px] font-semibold tabular-nums leading-4",
+                      isHovered && hoverBandClass,
+                    )}
                     style={{ height: ROW_HEIGHT_PX, color: hasValue ? textColor : "#A1A1AA" }}
                     onPointerEnter={(e) => updateHover(i, e.clientX, e.clientY)}
                     onPointerMove={(e) => updateHover(i, e.clientX, e.clientY)}
                   >
-                    {label}
+                    <span className="relative z-[1]">{label}</span>
                   </div>
                 );
               })}
@@ -395,7 +417,7 @@ function PortfolioHoldingsPerformanceChartInner({
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
 }) {
-  const [metric, setMetric] = useState<MetricMode>("usd");
+  const [metric, setMetric] = useState<MetricMode>("pct");
   const [sortDesc, setSortDesc] = useState(true);
   const resolvedCompanyNames = usePortfolioHoldingDisplayNames(holdings);
 
@@ -470,8 +492,8 @@ function PortfolioHoldingsPerformanceChartInner({
         <SegmentedControl
           aria-label="Holdings performance metric"
           options={[
-            { value: "usd", label: "Profit $" },
             { value: "pct", label: "Return %" },
+            { value: "usd", label: "Profit $" },
           ]}
           value={metric}
           onChange={setMetric}

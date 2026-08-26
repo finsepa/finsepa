@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 
+import {
+  FREE_HOLDINGS_LIMIT_CODE,
+  findFreeHoldingsPersistViolation,
+  freeHoldingsLimitMessage,
+} from "@/lib/account/free-plan-asset-limits";
+import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
 import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   type PersistedPortfolioState,
@@ -112,6 +118,39 @@ export async function PUT(request: Request) {
         warnings: validation.warnings.slice(0, 20),
         migrateReport,
       });
+    }
+
+    const gate = await getSubscriptionGateContext(supabase, user.id);
+    if (gate.isFree && gate.maxHoldingsPerPortfolio != null) {
+      const { data: existingRow } = await supabase
+        .from("portfolio_workspace")
+        .select("state")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const previous = existingRow?.state
+        ? parsePersistedPortfolioUnknown(existingRow.state)
+        : null;
+      const violation = findFreeHoldingsPersistViolation({
+        portfolios: state.portfolios,
+        nextHoldingsByPortfolioId: state.holdingsByPortfolioId,
+        previousHoldingsByPortfolioId: previous?.holdingsByPortfolioId ?? null,
+        maxHoldings: gate.maxHoldingsPerPortfolio,
+      });
+      if (violation) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: FREE_HOLDINGS_LIMIT_CODE,
+            code: FREE_HOLDINGS_LIMIT_CODE,
+            message: freeHoldingsLimitMessage(violation.max),
+            portfolioId: violation.portfolioId,
+            nextCount: violation.nextCount,
+            prevCount: violation.prevCount,
+            max: violation.max,
+          },
+          { status: 403 },
+        );
+      }
     }
 
     const now = new Date().toISOString();

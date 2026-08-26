@@ -57,6 +57,8 @@ export type WatchlistOptionsMenuProps = {
   className?: string;
   /** When false, menu toggle is ignored (avoids SSR/localStorage races without `disabled` on the button). */
   ready?: boolean;
+  /** Free plan: e.g. `1/15` shown next to the rail title. */
+  countBadge?: string | null;
 };
 
 export function WatchlistOptionsMenu({
@@ -71,6 +73,7 @@ export function WatchlistOptionsMenu({
   variant,
   className,
   ready = true,
+  countBadge = null,
 }: WatchlistOptionsMenuProps) {
   const plan = usePlanAccessOptional();
   const router = useRouter();
@@ -233,6 +236,14 @@ export function WatchlistOptionsMenu({
             <span className="truncate" suppressHydrationWarning>
               {name}
             </span>
+            {countBadge ? (
+              <span
+                suppressHydrationWarning
+                className="inline-flex h-[18px] shrink-0 items-center justify-center rounded-full bg-stroke px-[6px] text-[11px] font-medium tabular-nums leading-none text-fg"
+              >
+                {countBadge}
+              </span>
+            ) : null}
             <ChevronDown
               className={cn(
                 "h-4 w-4 shrink-0 transition-transform duration-150",

@@ -34,6 +34,8 @@ export async function GET(request: Request) {
     entitlements: {
       maxRealPortfolios: gate.maxRealPortfolios,
       maxWatchlists: gate.maxWatchlists,
+      maxHoldingsPerPortfolio: gate.maxHoldingsPerPortfolio,
+      maxWatchlistAssets: gate.maxWatchlistAssets,
       canUseAgent: gate.canUseAgent,
       canPublishPublicPortfolio: gate.canPublishPublicPortfolio,
       canCreateCombinedPortfolio: gate.canCreateCombinedPortfolio,

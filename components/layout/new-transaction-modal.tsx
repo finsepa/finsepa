@@ -34,6 +34,15 @@ import { TransactionPortfolioField } from "@/components/portfolio/transaction-po
 import { newHoldingId, newTransactionRowId, type PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { SegmentedControl } from "@/components/design-system";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
+import {
+  freeHoldingsLimitMessage,
+  wouldExceedFreeHoldingsCap,
+} from "@/lib/account/free-plan-asset-limits";
+import { FREE_MAX_HOLDINGS_PER_PORTFOLIO } from "@/lib/account/plan-entitlements";
+import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
+import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
+import { useRouter } from "next/navigation";
 import { customPortfolioSymbolFromName } from "@/lib/portfolio/custom-asset-symbol";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { fetchLiveMarketPriceClient, fetchPriceOnDateClient } from "@/lib/portfolio/client-symbol-quotes";
@@ -107,6 +116,8 @@ type Props = {
  */
 export function NewTransactionModal({ open, presetCompany = null, onClose }: Props) {
   const titleId = useId();
+  const router = useRouter();
+  const plan = usePlanAccessOptional();
   const {
     portfolios,
     selectedPortfolioId,
@@ -547,6 +558,25 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
         holdingsByPortfolioId[selectedPortfolioId]?.find(
           (h) => h.symbol.toUpperCase() === symUpper,
         ) ?? null;
+
+      if (
+        operation === "Buy" &&
+        plan?.isFree === true &&
+        wouldExceedFreeHoldingsCap({
+          holdings: holdingsByPortfolioId[selectedPortfolioId],
+          symbol: symUpper,
+          maxHoldings: plan.maxHoldingsPerPortfolio ?? FREE_MAX_HOLDINGS_PER_PORTFOLIO,
+        })
+      ) {
+        toastProUpgrade({
+          title: "Free plan limit",
+          description: freeHoldingsLimitMessage(
+            plan.maxHoldingsPerPortfolio ?? FREE_MAX_HOLDINGS_PER_PORTFOLIO,
+          ),
+          onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
+        });
+        return;
+      }
       const positionId = existing?.id ?? newHoldingId();
 
       let holdingIdForTx = positionId;
@@ -636,7 +666,9 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
     holdingsByPortfolioId,
     onClose,
     operation,
+    plan,
     price,
+    router,
     selectedCompany,
     selectedPortfolioId,
     setPortfolioHoldings,

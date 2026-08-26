@@ -16,7 +16,10 @@ import {
   replayTradeTransactionsToHoldingsUpTo,
 } from "@/lib/portfolio/rebuild-holdings-from-trades";
 
-/** Static illustrative prices (USD) near early-2023 for seeded demo buys. */
+/** Static illustrative prices (USD) near early-2023 for seeded demo buys.
+ * Equity prices are on the **continuous / split-adjusted** scale (same as charts),
+ * so later corporate actions (e.g. NFLX 10:1 on 2025-11-17) do not desync P&L.
+ */
 const DEMO_ASSETS: {
   symbol: string;
   name: string;
@@ -30,7 +33,8 @@ const DEMO_ASSETS: {
   { symbol: "QQQ", name: "Invesco QQQ Trust", weight: 0.2, prices: [280, 295, 310, 320] },
   { symbol: "TSLA", name: "Tesla", weight: 0.05, prices: [120, 190, 195, 165] },
   { symbol: "AAPL", name: "Apple", weight: 0.05, prices: [130, 150, 160, 165] },
-  { symbol: "NFLX", name: "Netflix", weight: 0.05, prices: [320, 340, 330, 330] },
+  // NFLX: continuous scale after Nov 2025 10:1 (as-traded ~320 → ~32)
+  { symbol: "NFLX", name: "Netflix", weight: 0.05, prices: [32, 34, 33, 33.3] },
   { symbol: "KO", name: "Coca-Cola", weight: 0.05, prices: [60, 59, 61, 64] },
   { symbol: "META", name: "Meta Platforms", weight: 0.05, prices: [130, 170, 200, 210] },
   { symbol: "COST", name: "Costco", weight: 0.05, prices: [480, 500, 490, 500] },
@@ -67,12 +71,24 @@ const TOTAL_USD = 100_000;
 const PER_MONTH_USD = TOTAL_USD / BUY_DATES.length;
 
 const DEMO_DIV_EXTERNAL_PREFIX = "finsepa:demo:div:";
+/** Bump when demo buy prices/share math change (e.g. post-split continuous scale). */
+export const DEMO_LEDGER_REVISION = 3;
+export const DEMO_SEED_EXTERNAL_ID = `finsepa:demo:seed:v${DEMO_LEDGER_REVISION}`;
 
 export type DemoPortfolioSeed = {
   portfolio: PortfolioEntry;
   holdings: PortfolioHolding[];
   transactions: PortfolioTransaction[];
 };
+
+/** True when this demo ledger predates {@link DEMO_LEDGER_REVISION} (or has no seed marker). */
+export function demoLedgerNeedsReseed(
+  transactions: readonly PortfolioTransaction[],
+): boolean {
+  return !transactions.some(
+    (t) => typeof t.externalId === "string" && t.externalId === DEMO_SEED_EXTERNAL_ID,
+  );
+}
 
 function ymdUtc(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -220,8 +236,8 @@ export function ensureDemoDividendTransactions(
  * Seeds a Free-plan demo portfolio: ~$100k diversified across crypto + mega-caps,
  * with proportional monthly buys over 4 months starting Jan 2023, plus sample cash dividends.
  */
-export function buildDemoPortfolioSeed(): DemoPortfolioSeed {
-  const portfolioId = newPortfolioId();
+export function buildDemoPortfolioSeed(existingPortfolioId?: string): DemoPortfolioSeed {
+  const portfolioId = existingPortfolioId?.trim() || newPortfolioId();
   const portfolio: PortfolioEntry = {
     id: portfolioId,
     name: DEFAULT_DEMO_PORTFOLIO_NAME,
@@ -276,6 +292,7 @@ export function buildDemoPortfolioSeed(): DemoPortfolioSeed {
     sum: TOTAL_USD,
     profitPct: null,
     profitUsd: null,
+    externalId: DEMO_SEED_EXTERNAL_ID,
   });
 
   transactions.sort((a, b) => {
