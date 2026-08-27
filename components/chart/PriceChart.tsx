@@ -138,6 +138,7 @@ import {
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import { cn } from "@/lib/utils";
 import { formatSignedPercent2dp } from "@/lib/market/key-stats-basic-format";
+import { formatCryptoUsd, formatCryptoUsdAxis } from "@/lib/market/format-crypto-usd";
 import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
 function formatStockPriceAxis(p: number): string {
@@ -169,6 +170,7 @@ function formatOverviewChartAxisValue(
 ): string {
   if (kind === "stock" && chartSeries === "marketCap") return formatMarketCapAxis(value);
   if (kind === "stock" && chartSeries === "return") return formatReturnAxis(value);
+  if (kind === "crypto" && chartSeries === "price") return formatCryptoUsd(value);
   return `$${formatStockPriceAxis(value)}`;
 }
 
@@ -1956,7 +1958,9 @@ export function PriceChart({
         ? formatMarketCapAxis(price)
         : kindRef.current === "stock" && chartMetricSeriesRef.current === "return"
           ? formatReturnAxis(price)
-          : `$${formatStockPriceAxis(price)}`;
+          : kindRef.current === "crypto"
+            ? formatCryptoUsd(price)
+            : `$${formatStockPriceAxis(price)}`;
 
     const applyHoldingsHoverDom = () => {
       const draft = holdingsHoverDraftRef.current;
@@ -2468,7 +2472,9 @@ export function PriceChart({
         ? formatMarketCapAxis
         : kind === "stock" && series === "return"
           ? formatReturnAxis
-          : formatStockPriceAxis;
+          : kind === "crypto"
+            ? formatCryptoUsdAxis
+            : formatStockPriceAxis;
     chart.applyOptions({
       localization: {
         priceFormatter: fmt,
@@ -3201,7 +3207,9 @@ export function PriceChart({
         ? formatMarketCapAxis(hoverPrice)
         : kind === "stock" && series === "return"
           ? formatReturnAxis(hoverPrice)
-          : `$${formatStockPriceAxis(hoverPrice)}`;
+          : kind === "crypto"
+            ? formatCryptoUsd(hoverPrice)
+            : `$${formatStockPriceAxis(hoverPrice)}`;
 
     if (series === "return") {
       return { valueLabel, changeLabel: null as string | null, changePct: null as number | null };

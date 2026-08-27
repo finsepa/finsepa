@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import NumberFlow, { type Format } from "@number-flow/react";
 
+import { cryptoUsdFractionDigits } from "@/lib/market/format-crypto-usd";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +33,7 @@ function resolveFlowConfig(
   chartMetric: StockChartSeries,
 ): FlowConfig {
   if (variant === "crypto") {
-    const maxFractionDigits = value < 1 ? 6 : value < 100 ? 4 : 2;
+    const maxFractionDigits = cryptoUsdFractionDigits(value);
     return { value, prefix: "$", format: { minimumFractionDigits: 2, maximumFractionDigits: maxFractionDigits } };
   }
   if (chartMetric === "marketCap") {

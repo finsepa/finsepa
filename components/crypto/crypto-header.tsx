@@ -11,19 +11,8 @@ import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { withLogoDevTheme } from "@/lib/screener/company-logo-url";
 import { useClientMounted, useLogoDevTheme } from "@/lib/theme/use-logo-dev-theme";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
+import { formatCryptoUsd, formatCryptoUsdChangeAbs } from "@/lib/market/format-crypto-usd";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
-
-function formatCryptoUsd(value: number | null) {
-  if (value == null || !Number.isFinite(value)) return "—";
-  const max = value < 1 ? 6 : value < 100 ? 4 : 2;
-  return `$${value.toLocaleString("en-US", { maximumFractionDigits: max, minimumFractionDigits: 2 })}`;
-}
-
-function formatCryptoChangeAbs(value: number | null, refPrice: number | null) {
-  if (value == null || !Number.isFinite(value)) return "—";
-  const max = refPrice != null && refPrice < 1 ? 6 : refPrice != null && refPrice < 100 ? 4 : 2;
-  return value.toLocaleString("en-US", { maximumFractionDigits: max, minimumFractionDigits: 2 });
-}
 
 /** Per-symbol zoom inside the fixed 48×48 header frame (crypto marks carry baked-in padding). */
 const CRYPTO_HEADER_LOGO_SCALE: Partial<Record<string, number>> = {
@@ -171,7 +160,7 @@ export function CryptoHeader({
           >
             {chartLoading || !hasChange || anim.abs == null || anim.pct == null
               ? "—"
-              : `${isPositive ? "+" : ""}${formatCryptoChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
+              : `${isPositive ? "+" : ""}${formatCryptoUsdChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
           </span>
           {chartRangeLabel ? <span className={periodLabelClass}>{chartRangeLabel}</span> : null}
           <span className={periodLabelClass} aria-hidden>
@@ -183,7 +172,7 @@ export function CryptoHeader({
               isSelPositive ? "text-up" : "text-down"
             }`}
           >
-            {`${isSelPositive ? "+" : ""}${formatCryptoChangeAbs(selectionChangeAbs!, anim.price)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`}
+            {`${isSelPositive ? "+" : ""}${formatCryptoUsdChangeAbs(selectionChangeAbs!, anim.price)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`}
           </span>
           <span className={periodLabelClass}>Selected range</span>
         </>
@@ -197,7 +186,7 @@ export function CryptoHeader({
           >
             {chartLoading || !hasChange || anim.abs == null || anim.pct == null
               ? "—"
-              : `${isPositive ? "+" : ""}${formatCryptoChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
+              : `${isPositive ? "+" : ""}${formatCryptoUsdChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
           </span>
           <span className={periodLabelClass}>{periodText}</span>
         </>
@@ -212,7 +201,7 @@ export function CryptoHeader({
   const stockStyleChangeText =
     chartLoading || !hasChange || anim.abs == null || anim.pct == null
       ? "—"
-      : `${isPositive ? "+" : ""}${formatCryptoChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`;
+      : `${isPositive ? "+" : ""}${formatCryptoUsdChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`;
 
   const stockStyleChangeClass = `text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
     hasChange ? (isPositive ? "text-up" : "text-down") : "text-fg-muted"
@@ -239,7 +228,7 @@ export function CryptoHeader({
           isSelPositive ? "text-up" : "text-down"
         }`}
       >
-        {`${isSelPositive ? "+" : ""}${formatCryptoChangeAbs(selectionChangeAbs!, anim.price)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`}
+        {`${isSelPositive ? "+" : ""}${formatCryptoUsdChangeAbs(selectionChangeAbs!, anim.price)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`}
       </span>
       <span className={periodLabelClass}>Selected range</span>
     </div>
