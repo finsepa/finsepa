@@ -2,7 +2,7 @@
  * Web crypto chart loading: stock-style range strategies + HOT cache lifecycle on `.CC` pairs,
  * with US equity RTH / session filters disabled (24/7 UTC semantics).
  *
- * Live 1D allowlist (BTC/ETH) still uses the crypto live-24H path for range=1D only.
+ * Live 1D allowlist (BTC/ETH/XRP/BNB/SOL) still uses the crypto live-24H path for range=1D only.
  *
  * Kill switch: `NEXT_PUBLIC_CRYPTO_STOCK_PIPELINE_EXPERIMENT=0`
  * (default: on for the full crypto web universe)
