@@ -68,6 +68,10 @@ import {
   normalizeTransactionsProvenance,
 } from "@/lib/snaptrade/snaptrade-provenance";
 import { defaultSnaptradeUpdateFromYmd } from "@/lib/snaptrade/sync-update-from";
+import {
+  findOrphanSnaptradeConnection,
+  linkedSnaptradeAuthorizationIds,
+} from "@/lib/snaptrade/orphan-connection";
 import { PortfolioPrivacySelect, PortfolioPrivacyFieldLabel } from "@/components/portfolio/portfolio-privacy-select";
 import { PortfolioSnaptradeConnectionInfo } from "@/components/portfolio/portfolio-snaptrade-connection-info";
 import type { CompanyPick } from "@/components/charting/company-picker";
@@ -1781,8 +1785,8 @@ export function PortfolioWorkspaceProvider({
             description:
               warningLine ?
                 warningLine
-              : isRealTime ? "Holdings and cash updated from SnapTrade."
-              : "Used SnapTrade daily cache (no extra refresh charge). Data may be up to 24h old.",
+              : isRealTime ? "Holdings and cash updated."
+              : "Used daily brokerage cache (no extra refresh charge). Data may be up to 24h old.",
           });
         }
 
@@ -2055,8 +2059,36 @@ export function PortfolioWorkspaceProvider({
     [openUpgradePlans, plan, portfolios, startReconnectPortal],
   );
 
+  const syncOrphanedBrokerageToPortfolio = useCallback(
+    async (portfolioId: string, authorizationId: string) => {
+      const p = portfolios.find((x) => x.id === portfolioId);
+      if (!p) return;
+      await finalizeConnectBrokerage({
+        name: p.name,
+        privacy: p.privacy,
+        authorizationId,
+        reconnectPortfolioId: portfolioId,
+      });
+    },
+    [finalizeConnectBrokerage, portfolios],
+  );
+
+  const fetchOrphanSnaptradeAuthorizationId = useCallback(async (): Promise<string | null> => {
+    try {
+      const res = await fetch("/api/snaptrade/connections", { cache: "no-store" });
+      const data = (await res.json()) as {
+        connections?: Array<{ id: string; createdDate?: string | null }>;
+      };
+      const rows = Array.isArray(data.connections) ? data.connections : [];
+      const orphan = findOrphanSnaptradeConnection(rows, linkedSnaptradeAuthorizationIds(portfolios));
+      return orphan?.id?.trim() || null;
+    } catch {
+      return null;
+    }
+  }, [portfolios]);
+
   /** Empty setup: SnapTrade picker for the selected portfolio (skip name/privacy). */
-  const openConnectBrokerageToSelected = useCallback(() => {
+  const openConnectBrokerageToSelected = useCallback(async () => {
     if (plan && !plan.canConnectBrokerage) {
       toastProUpgrade({
         title: "Pro feature",
@@ -2081,6 +2113,13 @@ export function PortfolioWorkspaceProvider({
     setCreatePortfolioOpen(false);
     setCreateCombinedOpen(false);
     setConnectBrokerageOpen(false);
+    if (!p.snaptrade) {
+      const orphanAuthId = await fetchOrphanSnaptradeAuthorizationId();
+      if (orphanAuthId) {
+        await syncOrphanedBrokerageToPortfolio(p.id, orphanAuthId);
+        return;
+      }
+    }
     void startReconnectPortal({
       name: p.name,
       privacy: p.privacy,
@@ -2094,6 +2133,8 @@ export function PortfolioWorkspaceProvider({
     selectedPortfolioId,
     selectedPortfolioReadOnly,
     startReconnectPortal,
+    fetchOrphanSnaptradeAuthorizationId,
+    syncOrphanedBrokerageToPortfolio,
   ]);
 
   const openNewTransaction = useCallback(() => {
@@ -2440,6 +2481,7 @@ export function PortfolioWorkspaceProvider({
       openConnectBrokerage,
       openConnectBrokerageToSelected,
       openReconnectBrokerage,
+      syncOrphanedBrokerageToPortfolio,
       openTryDemoPortfolio,
       openSnaptradeSyncModal,
       resyncLinkedPortfolio,
@@ -2482,6 +2524,7 @@ export function PortfolioWorkspaceProvider({
       openConnectBrokerage,
       openConnectBrokerageToSelected,
       openReconnectBrokerage,
+      syncOrphanedBrokerageToPortfolio,
       openTryDemoPortfolio,
       openSnaptradeSyncModal,
       resyncLinkedPortfolio,

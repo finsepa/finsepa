@@ -43,6 +43,8 @@ export type BillingPlansViewState = {
   billedByApple?: boolean;
   /** Pro is billed via Stripe on the web — manage/cancel in Billing, not App Store. */
   billedByWeb?: boolean;
+  /** Actual recurring charge when on Pro (falls back to list price in UI). */
+  recurringAmountUsd?: number | null;
 };
 
 const breadcrumbLinkClass =
@@ -155,29 +157,40 @@ export function BillingPlansPageClient({ plan }: { plan: BillingPlansViewState }
     if (plan.activeCycle) setCycle(plan.activeCycle);
   }, [plan.activeCycle]);
 
+  const showWebBilledProManage = plan.isPro && plan.billedByWeb;
+
   const priceText = useMemo(() => {
-    return `$${proPriceForCycle(cycle).toFixed(2)}`;
-  }, [cycle]);
+    const listed = proPriceForCycle(cycle);
+    const onActiveCycle = !plan.activeCycle || plan.activeCycle === cycle;
+    const amount =
+      showWebBilledProManage &&
+      onActiveCycle &&
+      typeof plan.recurringAmountUsd === "number" &&
+      plan.recurringAmountUsd > 0
+        ? plan.recurringAmountUsd
+        : listed;
+    return `$${amount.toFixed(2)}`;
+  }, [cycle, plan.activeCycle, plan.recurringAmountUsd, showWebBilledProManage]);
   const suffixText = proPriceSuffix(cycle);
   const billedYearly = cycle === "annually";
 
   const proPrimaryAction: ProPrimaryAction = useMemo(() => {
     if (!plan.isPro) return "checkout";
-    if (plan.billedByApple || plan.billedByWeb) return "current";
+    if (plan.billedByApple) return "current";
     const active = plan.activeCycle;
     if (!active || active === cycle) return "current";
     if (active === "monthly" && cycle === "annually") return "upgrade-cycle";
     if (active === "annually" && cycle === "monthly") return "downgrade-cycle";
     return "current";
-  }, [plan.isPro, plan.billedByApple, plan.billedByWeb, plan.activeCycle, cycle]);
-
-  const showWebBilledProManage = plan.isPro && plan.billedByWeb;
+  }, [plan.isPro, plan.billedByApple, plan.activeCycle, cycle]);
 
   const proPrimaryLabel =
     proPrimaryAction === "upgrade-cycle"
-      ? "Upgrade to Pro"
+      ? plan.isPro
+        ? "Switch to yearly"
+        : "Upgrade to Pro"
       : proPrimaryAction === "downgrade-cycle"
-        ? "Downgrade"
+        ? "Switch to monthly"
         : proPrimaryAction === "current"
           ? "Current plan"
           : "Upgrade to Pro";
@@ -316,36 +329,24 @@ export function BillingPlansPageClient({ plan }: { plan: BillingPlansViewState }
               ) : null}
             </div>
             <div className="mt-3 flex items-baseline gap-1.5">
-              {showWebBilledProManage ? (
-                <p className="text-[14px] leading-6 text-fg-muted">
-                  Billed on the web. Cancel there to return to Free.
-                </p>
-              ) : (
-                <>
-                  <span className="text-[28px] font-bold leading-none tracking-tight text-fg sm:text-[32px]">
-                    {priceText}
-                  </span>
-                  <span className="text-[14px] text-fg-muted">{suffixText}</span>
-                </>
-              )}
+              <span className="text-[28px] font-bold leading-none tracking-tight text-fg sm:text-[32px]">
+                {priceText}
+              </span>
+              <span className="text-[14px] text-fg-muted">{suffixText}</span>
             </div>
 
-            {!showWebBilledProManage ? (
-              <div className="mt-5 border-t border-stroke pt-4">
-                <BilledYearlyToggle
-                  checked={billedYearly}
-                  onCheckedChange={(yearly) => setCycle(yearly ? "annually" : "monthly")}
-                />
-              </div>
-            ) : (
-              <div className="mt-5 border-t border-stroke pt-4" />
-            )}
+            <div className="mt-5 border-t border-stroke pt-4">
+              <BilledYearlyToggle
+                checked={billedYearly}
+                onCheckedChange={(yearly) => setCycle(yearly ? "annually" : "monthly")}
+              />
+            </div>
 
             <FeatureList features={PRO_PLAN_CARD_FEATURES} />
 
             <div className="mt-auto flex flex-col gap-2 pt-8">
               {plan.isPro ? (
-                showWebBilledProManage ? (
+                showWebBilledProManage && proPrimaryAction === "current" ? (
                   <Link
                     href={PATH_ACCOUNT_BILLING}
                     className={cn(accentFillButtonClassName, "flex w-full items-center justify-center")}

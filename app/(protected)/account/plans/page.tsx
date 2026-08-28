@@ -41,6 +41,7 @@ export default async function AccountPlansPage() {
         activeCycle,
         billedByApple: summary.billingProvider === "apple",
         billedByWeb: summary.billedOnWeb === true,
+        recurringAmountUsd: summary.recurringAmountUsd,
       }}
     />
   );

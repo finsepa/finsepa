@@ -53,7 +53,9 @@ export function PortfolioSyncStatusIcon({
   }, [snaptrade?.authorizationId, snaptrade?.isRealTimeConnection]);
 
   const tooltipLabel = useMemo(() => {
-    if (!snaptrade?.syncedAt) return "";
+    if (!snaptrade?.syncedAt) {
+      return "Brokerage connected — tap to import holdings and transactions.";
+    }
     return formatPortfolioSyncTooltipLines({
       syncedAt: snaptrade.syncedAt,
       brokerageName: snaptrade.brokerageName,
@@ -61,7 +63,7 @@ export function PortfolioSyncStatusIcon({
     });
   }, [snaptrade?.syncedAt, snaptrade?.brokerageName, isRealTimeConnection]);
 
-  if (!snaptrade?.syncedAt) return null;
+  if (!snaptrade?.authorizationId || snaptrade.authorizationId === "offline") return null;
 
   return (
     <TopbarDelayedTooltip

@@ -51,7 +51,7 @@ export function PortfolioSnaptradeConnectionInfo({
       offline
         ? [
             "This is a frozen offline copy — positions are not live.",
-            "SnapTrade was disconnected to stop ongoing connection charges on Free.",
+            "Live connection was paused on Free to stop ongoing connection charges.",
             "Upgrade to Pro to reconnect and sync again.",
           ]
         : brokerageSyncExplanationBullets(isRealTimeConnection),
@@ -75,7 +75,7 @@ export function PortfolioSnaptradeConnectionInfo({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-fg">{brokerageName}</p>
             <p className="mt-0.5 text-xs text-fg-muted">
-              SnapTrade · {accountLine}
+              Finsepa · {accountLine}
             </p>
             <p className="mt-1 text-xs text-fg-muted">{formatPortfolioLastSyncLine(snaptrade.syncedAt)}</p>
           </div>

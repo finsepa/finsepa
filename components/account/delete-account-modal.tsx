@@ -129,7 +129,7 @@ export function DeleteAccountModal({ open, onClose, onDeleted }: Props) {
             <li>All portfolios, holdings, and transactions</li>
             <li>Watchlists, notifications, and agent chats</li>
             <li>Profile details and saved preferences</li>
-            <li>Connected brokerages (SnapTrade)</li>
+            <li>Connected brokerages</li>
             <li>Stripe subscription and billing customer</li>
           </ul>
           <p className="text-sm leading-5 text-fg-muted">

@@ -6,16 +6,16 @@ export function formatPortfolioLastSyncLine(syncedAt: string): string {
   return `Last synced at ${format(parsed, "MMM d, yyyy 'at' h:mm a")}`;
 }
 
-/** SnapTrade holdings refresh cadence for the connected brokerage. */
+/** Holdings refresh cadence for the connected brokerage. */
 export function snapTradeHoldingsCadenceLine(isRealTimeConnection: boolean): string {
   return isRealTimeConnection ?
-      "Holdings refresh on each sync (SnapTrade real-time)"
-    : "Holdings refresh about once per day via SnapTrade";
+      "Holdings refresh on each sync."
+    : "Holdings refresh about once per day.";
 }
 
-/** SnapTrade transaction cache policy (same for real-time and daily plans). */
+/** Broker transaction cache policy (same for real-time and daily plans). */
 export const SNAPTRADE_TRANSACTIONS_CADENCE_LINE =
-  "Transactions update once per day (T+1) via SnapTrade";
+  "Transactions update once per day (T+1).";
 
 export const FINSEPA_MANUAL_SYNC_LINE = "Click the sync icon next to the portfolio name to refresh anytime.";
 

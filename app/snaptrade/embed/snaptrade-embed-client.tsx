@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
 import { useWindowMessage } from "snaptrade-react";
 
 import { Spinner } from "@/components/ui/spinner";
@@ -35,6 +34,10 @@ function SnapTradeEmbedInner() {
   const searchParams = useSearchParams();
   const loginLink = searchParams.get("link")?.trim() ?? "";
   const darkMode = searchParams.get("darkMode") === "true";
+  const portalOutcomeRef = useRef<{ succeeded: boolean; authorizationId: string }>({
+    succeeded: false,
+    authorizationId: "",
+  });
 
   const portalSrc = useMemo(
     () => (loginLink ? withSnapTradePortalParams(loginLink, darkMode) : ""),
@@ -43,23 +46,39 @@ function SnapTradeEmbedInner() {
 
   useWindowMessage({
     handleSuccess: (authorizationId) => {
-      forwardToNative({ status: "SUCCESS", authorizationId });
+      const authId = String(authorizationId ?? "").trim();
+      portalOutcomeRef.current = { succeeded: true, authorizationId: authId };
+      forwardToNative({ status: "SUCCESS", authorizationId: authId || undefined });
     },
     handleError: (data) => {
+      portalOutcomeRef.current = { succeeded: false, authorizationId: "" };
       forwardToNative({ status: "ERROR", ...data });
     },
     handleExit: () => {
-      forwardToNative("ABANDONED");
+      if (portalOutcomeRef.current.succeeded) return;
+      forwardToNative({ status: "ABANDONED" });
     },
     close: () => {
-      forwardToNative("CLOSE_MODAL");
+      if (portalOutcomeRef.current.succeeded) {
+        forwardToNative({
+          status: "SUCCESS",
+          authorizationId: portalOutcomeRef.current.authorizationId || undefined,
+          close: true,
+        });
+        return;
+      }
+      forwardToNative({ status: "CLOSE_MODAL" });
     },
   });
+
+  useEffect(() => {
+    portalOutcomeRef.current = { succeeded: false, authorizationId: "" };
+  }, [portalSrc]);
 
   if (!portalSrc) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-fg">Missing SnapTrade portal link.</p>
+        <p className="text-sm text-fg">Missing brokerage connection link.</p>
       </div>
     );
   }
@@ -68,7 +87,7 @@ function SnapTradeEmbedInner() {
     <div className="relative flex min-h-[60vh] flex-1 flex-col overflow-hidden bg-surface">
       <iframe
         id="snaptrade-react-connection-portal"
-        title="Connect brokerage via SnapTrade"
+        title="Connect brokerage"
         src={portalSrc}
         className={cn("block min-h-[60vh] w-full flex-1 border-0 bg-surface")}
         allow="clipboard-read; clipboard-write"
@@ -84,7 +103,7 @@ export function SnapTradeEmbedClient() {
       fallback={
         <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
           <Spinner className="size-6 text-fg-muted" />
-          <p className="text-sm text-fg-muted">Loading SnapTrade…</p>
+          <p className="text-sm text-fg-muted">Loading…</p>
         </div>
       }
     >

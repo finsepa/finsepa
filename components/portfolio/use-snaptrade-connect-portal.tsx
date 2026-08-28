@@ -31,24 +31,23 @@ function SnapTradePortalModal({
   loginLink,
   darkMode,
   open,
-  onClose,
+  onDismiss,
   onSuccess,
   onError,
-  onExit,
 }: {
   loginLink: string;
   darkMode: boolean;
   open: boolean;
-  onClose: () => void;
+  onDismiss: () => void;
   onSuccess: (authorizationId: string) => void;
   onError: (error: { errorCode?: string; detail?: string; statusCode?: string }) => void;
-  onExit: () => void;
 }) {
   const titleId = useId();
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeTimedOut, setIframeTimedOut] = useState(false);
   const loadedRef = useRef(false);
   const closedByHostRef = useRef(false);
+  const portalOutcomeRef = useRef<"open" | "success">("open");
 
   const portalSrc = useMemo(
     () => withSnapTradePortalParams(loginLink, darkMode),
@@ -57,17 +56,24 @@ function SnapTradePortalModal({
 
   useWindowMessage({
     handleSuccess: (authorizationId) => {
+      portalOutcomeRef.current = "success";
       onSuccess(authorizationId);
     },
     handleError: (data) => {
       onError(data);
     },
     handleExit: () => {
-      if (!closedByHostRef.current) onExit();
+      if (portalOutcomeRef.current === "success") return;
+      if (!closedByHostRef.current) onDismiss();
     },
     close: () => {
+      if (portalOutcomeRef.current === "success") {
+        closedByHostRef.current = true;
+        onDismiss();
+        return;
+      }
       closedByHostRef.current = true;
-      onClose();
+      onDismiss();
     },
   });
 
@@ -77,6 +83,7 @@ function SnapTradePortalModal({
     setIframeLoaded(false);
     setIframeTimedOut(false);
     closedByHostRef.current = false;
+    portalOutcomeRef.current = "open";
     const timer = window.setTimeout(() => {
       if (!loadedRef.current) setIframeTimedOut(true);
     }, 12_000);
@@ -86,11 +93,11 @@ function SnapTradePortalModal({
   if (!open) return null;
 
   return (
-    <AppModalOverlay open onClose={onClose} zIndex={200} closeOnBackdropClick={false}>
+    <AppModalOverlay open onClose={onDismiss} zIndex={200} closeOnBackdropClick={false}>
       <AppModalShell
         titleId={titleId}
         title="Connect brokerage"
-        onClose={onClose}
+        onClose={onDismiss}
         maxWidthClass="w-full max-w-[min(450px,calc(100vw-2rem))]"
         maxHeightClass="h-[min(640px,92dvh)] max-h-[min(640px,92dvh)]"
         dialogClassName="min-h-0 flex-1"
@@ -102,14 +109,14 @@ function SnapTradePortalModal({
           {!iframeLoaded && !iframeTimedOut ? (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-surface">
               <Spinner className="size-6 text-fg-muted" />
-              <p className="text-sm text-fg-muted">Loading SnapTrade…</p>
+              <p className="text-sm text-fg-muted">Loading…</p>
             </div>
           ) : null}
           {iframeTimedOut && !iframeLoaded ? (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-surface px-6 text-center">
-              <p className="text-sm text-fg">SnapTrade portal didn&apos;t load.</p>
+              <p className="text-sm text-fg">Broker connection didn&apos;t load.</p>
               <p className="text-xs text-fg-muted">
-                Check your connection, then close and try again — or open the portal in a new tab.
+                Check your connection, then close and try again — or open it in a new tab.
               </p>
               <a
                 href={portalSrc}
@@ -117,13 +124,13 @@ function SnapTradePortalModal({
                 rel="noopener noreferrer"
                 className="text-sm font-medium text-accent underline-offset-2 hover:underline"
               >
-                Open SnapTrade in a new tab
+                Open in a new tab
               </a>
             </div>
           ) : null}
           <iframe
             id="snaptrade-react-connection-portal"
-            title="Connect brokerage via SnapTrade"
+            title="Connect brokerage"
             src={portalSrc}
             className={cn(
               "block min-h-0 w-full flex-1 rounded-xl border-0 bg-surface",
@@ -160,6 +167,8 @@ export function useSnapTradeConnectPortal({
     reconnectAuthorizationId?: string;
     reconnectPortfolioId?: string;
   } | null>(null);
+  /** SnapTrade sends CLOSE_MODAL right after SUCCESS — don't treat that as cancel. */
+  const portalOutcomeRef = useRef<"open" | "success" | "closed">("open");
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
 
@@ -169,6 +178,7 @@ export function useSnapTradeConnectPortal({
     setPortalDarkMode(false);
     setPortalLoading(false);
     pendingRef.current = null;
+    portalOutcomeRef.current = "open";
   }, []);
 
   const closeAll = useCallback(() => {
@@ -199,13 +209,13 @@ export function useSnapTradeConnectPortal({
         });
         const data = (await res.json()) as { redirectUri?: string; error?: string };
         if (!res.ok || !data.redirectUri) {
-          throw new Error(data.error ?? "Could not open SnapTrade connection portal.");
+          throw new Error(data.error ?? "Could not open brokerage connection.");
         }
         setPortalDarkMode(darkMode);
         setPortalLink(data.redirectUri);
         setPortalOpen(true);
       } catch (e) {
-        const message = e instanceof Error ? e.message : "Could not open SnapTrade connection portal.";
+        const message = e instanceof Error ? e.message : "Could not open brokerage connection.";
         toast.error(message);
         closeAll();
       } finally {
@@ -245,6 +255,7 @@ export function useSnapTradeConnectPortal({
       }
 
       setPortalOpen(false);
+      portalOutcomeRef.current = "success";
       try {
         await onCompleteRef.current({
           name: pending.name,
@@ -266,12 +277,17 @@ export function useSnapTradeConnectPortal({
 
   const onPortalSuccess = useCallback(
     (authorizationId: string) => {
+      portalOutcomeRef.current = "success";
       void finishWithAuthorization(authorizationId);
     },
     [finishWithAuthorization],
   );
 
-  const onPortalExit = useCallback(() => {
+  const onPortalDismiss = useCallback(() => {
+    if (portalOutcomeRef.current === "success") {
+      setPortalOpen(false);
+      return;
+    }
     closeAll();
   }, [closeAll]);
 
@@ -293,10 +309,10 @@ export function useSnapTradeConnectPortal({
         loginLink={portalLink}
         darkMode={portalDarkMode}
         open={portalOpen}
-        onClose={onPortalExit}
+        onClose={onPortalDismiss}
         onSuccess={onPortalSuccess}
         onError={onPortalError}
-        onExit={onPortalExit}
+        onExit={onPortalDismiss}
       />
     ) : null;
 

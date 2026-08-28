@@ -38,6 +38,7 @@ import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-lo
 import { PortfolioBrokerageOfflineBanner } from "@/components/portfolio/portfolio-brokerage-offline-banner";
 import { PortfolioDemoBanner } from "@/components/portfolio/portfolio-demo-banner";
 import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-status-icon";
+import { PortfolioPendingBrokerageSyncButton } from "@/components/portfolio/portfolio-pending-brokerage-sync-button";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadcrumbs";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
@@ -187,6 +188,7 @@ export function PortfolioPageView({
     portfolioDisplayReady,
     selectedPortfolioReadOnly,
     openReconnectBrokerage,
+    syncOrphanedBrokerageToPortfolio,
   } = usePortfolioWorkspace();
 
   const plan = usePlanAccessOptional();
@@ -368,6 +370,12 @@ export function PortfolioPageView({
             portfolioId={selectedPortfolioId}
             snaptrade={selectedPortfolio.snaptrade}
             variant="toolbar"
+          />
+        ) : selectedPortfolioId != null && !ledgerActionsLocked && plan?.canConnectBrokerage ? (
+          <PortfolioPendingBrokerageSyncButton
+            portfolioId={selectedPortfolioId}
+            portfolios={portfolios}
+            onSync={syncOrphanedBrokerageToPortfolio}
           />
         ) : null}
         <button

@@ -13,7 +13,10 @@ import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 export async function POST(request: Request) {
   try {
     if (!isSnapTradeConfigured()) {
-      return NextResponse.json({ error: "SnapTrade is not configured." }, { status: 503 });
+      return NextResponse.json(
+        { error: "Brokerage connection is temporarily unavailable." },
+        { status: 503 },
+      );
     }
 
     const user = await requireAuthUserFromRequest(request);
@@ -49,12 +52,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     if (e instanceof SnapTradeNotConfiguredError) {
-      return NextResponse.json({ error: e.message }, { status: 503 });
+      return NextResponse.json(
+        { error: "Brokerage connection is temporarily unavailable." },
+        { status: 503 },
+      );
     }
     if (e instanceof SnapTradeUserStoreError) {
-      return NextResponse.json({ error: e.message }, { status: 503 });
+      return NextResponse.json(
+        { error: "Could not start brokerage connection. Try again." },
+        { status: 503 },
+      );
     }
-    const message = e instanceof Error ? e.message : "Failed to open SnapTrade portal.";
+    const message = e instanceof Error ? e.message : "Failed to open brokerage connection.";
     console.error("[snaptrade/portal POST]", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }

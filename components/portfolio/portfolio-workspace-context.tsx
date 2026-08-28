@@ -35,6 +35,11 @@ export type PortfolioWorkspaceContextValue = {
    * Free: sends the user to Plans.
    */
   openReconnectBrokerage: (portfolioId: string) => void;
+  /** Attach a server-side SnapTrade connection that never finished portfolio sync (e.g. iOS Done). */
+  syncOrphanedBrokerageToPortfolio: (
+    portfolioId: string,
+    authorizationId: string,
+  ) => Promise<void>;
   /** Seed (or convert the empty selected portfolio into) the Free demo sample — keeps the portfolio name when converting. */
   openTryDemoPortfolio: () => void;
   /** Re-pull holdings and cash from SnapTrade for a linked portfolio (no paid refresh endpoint). */
