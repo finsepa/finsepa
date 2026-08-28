@@ -50,6 +50,7 @@ export function PublicPortfolioViewProvider({
       openConnectBrokerage: noop,
       openConnectBrokerageToSelected: noop,
       openReconnectBrokerage: noop,
+      syncOrphanedBrokerageToPortfolio: noopAsync,
       openTryDemoPortfolio: noop,
       openSnaptradeSyncModal: noop,
       resyncLinkedPortfolio: async () => {},
