@@ -309,10 +309,9 @@ export function useSnapTradeConnectPortal({
         loginLink={portalLink}
         darkMode={portalDarkMode}
         open={portalOpen}
-        onClose={onPortalDismiss}
+        onDismiss={onPortalDismiss}
         onSuccess={onPortalSuccess}
         onError={onPortalError}
-        onExit={onPortalDismiss}
       />
     ) : null;
 
