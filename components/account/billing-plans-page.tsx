@@ -23,7 +23,6 @@ import {
 } from "@/lib/account/plan-comparison";
 import {
   type BillingCycle,
-  appleProPriceForCycle,
   proPriceForCycle,
   proPriceSuffix,
 } from "@/lib/account/plan-pricing";
@@ -42,6 +41,8 @@ export type BillingPlansViewState = {
   activeCycle: BillingCycle | null;
   /** Pro is billed via App Store — manage/cancel on iOS, not Stripe. */
   billedByApple?: boolean;
+  /** Pro is billed via Stripe on the web — manage/cancel in Billing, not App Store. */
+  billedByWeb?: boolean;
 };
 
 const breadcrumbLinkClass =
@@ -155,21 +156,22 @@ export function BillingPlansPageClient({ plan }: { plan: BillingPlansViewState }
   }, [plan.activeCycle]);
 
   const priceText = useMemo(() => {
-    const amount = plan.billedByApple ? appleProPriceForCycle(cycle) : proPriceForCycle(cycle);
-    return `$${amount.toFixed(2)}`;
-  }, [cycle, plan.billedByApple]);
+    return `$${proPriceForCycle(cycle).toFixed(2)}`;
+  }, [cycle]);
   const suffixText = proPriceSuffix(cycle);
   const billedYearly = cycle === "annually";
 
   const proPrimaryAction: ProPrimaryAction = useMemo(() => {
     if (!plan.isPro) return "checkout";
-    if (plan.billedByApple) return "current";
+    if (plan.billedByApple || plan.billedByWeb) return "current";
     const active = plan.activeCycle;
     if (!active || active === cycle) return "current";
     if (active === "monthly" && cycle === "annually") return "upgrade-cycle";
     if (active === "annually" && cycle === "monthly") return "downgrade-cycle";
     return "current";
-  }, [plan.isPro, plan.billedByApple, plan.activeCycle, cycle]);
+  }, [plan.isPro, plan.billedByApple, plan.billedByWeb, plan.activeCycle, cycle]);
+
+  const showWebBilledProManage = plan.isPro && plan.billedByWeb;
 
   const proPrimaryLabel =
     proPrimaryAction === "upgrade-cycle"
@@ -314,24 +316,43 @@ export function BillingPlansPageClient({ plan }: { plan: BillingPlansViewState }
               ) : null}
             </div>
             <div className="mt-3 flex items-baseline gap-1.5">
-              <span className="text-[28px] font-bold leading-none tracking-tight text-fg sm:text-[32px]">
-                {priceText}
-              </span>
-              <span className="text-[14px] text-fg-muted">{suffixText}</span>
+              {showWebBilledProManage ? (
+                <p className="text-[14px] leading-6 text-fg-muted">
+                  Billed on the web. Cancel there to return to Free.
+                </p>
+              ) : (
+                <>
+                  <span className="text-[28px] font-bold leading-none tracking-tight text-fg sm:text-[32px]">
+                    {priceText}
+                  </span>
+                  <span className="text-[14px] text-fg-muted">{suffixText}</span>
+                </>
+              )}
             </div>
 
-            <div className="mt-5 border-t border-stroke pt-4">
-              <BilledYearlyToggle
-                checked={billedYearly}
-                onCheckedChange={(yearly) => setCycle(yearly ? "annually" : "monthly")}
-              />
-            </div>
+            {!showWebBilledProManage ? (
+              <div className="mt-5 border-t border-stroke pt-4">
+                <BilledYearlyToggle
+                  checked={billedYearly}
+                  onCheckedChange={(yearly) => setCycle(yearly ? "annually" : "monthly")}
+                />
+              </div>
+            ) : (
+              <div className="mt-5 border-t border-stroke pt-4" />
+            )}
 
             <FeatureList features={PRO_PLAN_CARD_FEATURES} />
 
             <div className="mt-auto flex flex-col gap-2 pt-8">
               {plan.isPro ? (
-                proPrimaryAction === "current" ? (
+                showWebBilledProManage ? (
+                  <Link
+                    href={PATH_ACCOUNT_BILLING}
+                    className={cn(accentFillButtonClassName, "flex w-full items-center justify-center")}
+                  >
+                    Manage
+                  </Link>
+                ) : proPrimaryAction === "current" ? (
                   <button
                     type="button"
                     disabled

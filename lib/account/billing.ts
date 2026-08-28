@@ -1,3 +1,6 @@
+import { getAuthAppOriginFromEnv } from "@/lib/auth/app-origin";
+import { PATH_ACCOUNT_BILLING } from "@/lib/auth/routes";
+
 export type BillingPlan = "trial" | "free" | "pro";
 
 export type BillingAccessState =
@@ -38,6 +41,10 @@ export type BillingSummary = {
   billingProvider?: "apple" | "stripe" | null;
   /** Paid Pro cadence. Null when not on Pro. */
   billingCycle?: "monthly" | "annually" | null;
+  /** True when Pro is billed via Stripe (web), not App Store. */
+  billedOnWeb?: boolean;
+  /** Absolute URL for web Billing tab — iOS opens this when Pro is Stripe-billed. */
+  manageBillingUrl?: string | null;
 };
 
 export const EMPTY_BILLING_SUMMARY: BillingSummary = {
@@ -54,7 +61,28 @@ export const EMPTY_BILLING_SUMMARY: BillingSummary = {
   platformTrialDaysRemaining: null,
   billingProvider: null,
   billingCycle: null,
+  billedOnWeb: false,
+  manageBillingUrl: null,
 };
+
+/** In-app Billing tab path (same account works on web + iOS). */
+export function webBillingManagePath(): string {
+  return PATH_ACCOUNT_BILLING;
+}
+
+/** Absolute Billing URL for native clients (Safari / in-app web). */
+export function webBillingManageUrl(origin?: string | null): string {
+  const base =
+    origin?.trim().replace(/\/$/, "") || getAuthAppOriginFromEnv() || "https://app.finsepa.com";
+  return `${base}${PATH_ACCOUNT_BILLING}`;
+}
+
+export function billedOnWebFromSummary(summary: {
+  plan?: BillingPlan;
+  billingProvider?: "apple" | "stripe" | null;
+}): boolean {
+  return summary.plan === "pro" && summary.billingProvider === "stripe";
+}
 
 /** e.g. "Trial ends on Jun 30, 2026" — null when the end date is unknown. */
 export function platformTrialEndsMetaLabel(platformTrialEndsAt: string | null | undefined): string | null {

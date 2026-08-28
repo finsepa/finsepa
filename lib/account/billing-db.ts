@@ -1,7 +1,7 @@
 import "server-only";
 
 import type Stripe from "stripe";
-import { EMPTY_BILLING_SUMMARY, type BillingSummary } from "@/lib/account/billing";
+import { EMPTY_BILLING_SUMMARY, type BillingSummary, webBillingManageUrl } from "@/lib/account/billing";
 import {
   appleProPriceForCycle,
   billingCycleFromPlanCode,
@@ -113,6 +113,14 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
     accessState = "free";
   }
 
+  const billingProvider: BillingSummary["billingProvider"] =
+    subscription.billing_provider === "apple" || subscription.billing_provider === "stripe"
+      ? subscription.billing_provider
+      : isPro
+        ? "stripe"
+        : null;
+  const billedOnWeb = isPro && billingProvider === "stripe";
+
   return {
     plan: isPro ? "pro" : "free",
     accessState,
@@ -127,13 +135,10 @@ export async function getBillingSummaryForUser(userId: string): Promise<BillingS
     recurringDueDate: subscription.current_period_end,
     platformTrialEndsAt: isPro ? null : platformTrialEndsAtIso,
     platformTrialDaysRemaining: null,
-    billingProvider:
-      subscription.billing_provider === "apple" || subscription.billing_provider === "stripe"
-        ? subscription.billing_provider
-        : isPro
-          ? "stripe"
-          : null,
+    billingProvider,
     billingCycle: isPro ? billingCycleFromPlanCode(subscription.plan_code) : null,
+    billedOnWeb,
+    manageBillingUrl: billedOnWeb ? webBillingManageUrl() : null,
     paymentHistory: (invoices ?? []).map(mapInvoiceHistoryRow),
   };
 }

@@ -7,6 +7,7 @@ import {
   freeActiveManualPortfolioExists,
 } from "@/lib/account/free-plan-selection";
 import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
+import { getBillingSummaryForUser } from "@/lib/account/billing-db";
 import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
@@ -20,9 +21,10 @@ export async function GET(request: Request) {
   }
   const supabase = await getSupabaseClientForRequest(request);
 
-  const [gate, selection] = await Promise.all([
+  const [gate, selection, billing] = await Promise.all([
     getSubscriptionGateContext(supabase, user.id),
     loadFreePlanSelection(supabase, user.id),
+    getBillingSummaryForUser(user.id),
   ]);
 
   return NextResponse.json({
@@ -31,6 +33,9 @@ export async function GET(request: Request) {
     isTrial: gate.isTrial,
     isFree: gate.isFree,
     topbarTrialDaysLeft: gate.topbarTrialDaysLeft,
+    billingProvider: billing.billingProvider ?? null,
+    billedOnWeb: billing.billedOnWeb === true,
+    manageBillingUrl: billing.manageBillingUrl ?? null,
     entitlements: {
       maxRealPortfolios: gate.maxRealPortfolios,
       maxWatchlists: gate.maxWatchlists,

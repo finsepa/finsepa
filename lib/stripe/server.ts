@@ -78,9 +78,9 @@ function getDefaultStripeAccount(): StripeAccountConfig | null {
     // Payment Links: env overrides preferred; hardcoded URLs keep Upgrade working when env is unset
     // (historical prod path — same buy.stripe.com links the app shipped with).
     monthlyPaymentLink:
-      pickProcessEnv("STRIPE_PAYMENT_LINK_MONTHLY") ?? "https://buy.stripe.com/eVqaEX3nf0kQ7iyduP5AQ0i",
+      pickProcessEnv("STRIPE_PAYMENT_LINK_MONTHLY") ?? "https://buy.stripe.com/9B628rf5XffKdGWduP5AQ0k",
     annualPaymentLink:
-      pickProcessEnv("STRIPE_PAYMENT_LINK_ANNUAL") ?? "https://buy.stripe.com/fZu6oH9LDaZubyO4Yj5AQ0j",
+      pickProcessEnv("STRIPE_PAYMENT_LINK_ANNUAL") ?? "https://buy.stripe.com/eVq8wP9LDd7CbyO0I35AQ0l",
     monthlyPriceId: pickProcessEnv("STRIPE_PRICE_ID_MONTHLY")?.trim(),
     annualPriceId: pickProcessEnv("STRIPE_PRICE_ID_ANNUAL")?.trim(),
     portalReturnUrl: getDefaultPortalReturnUrl(),

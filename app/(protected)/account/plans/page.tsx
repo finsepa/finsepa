@@ -40,6 +40,7 @@ export default async function AccountPlansPage() {
         planLabel: isPro ? "Pro" : "Free",
         activeCycle,
         billedByApple: summary.billingProvider === "apple",
+        billedByWeb: summary.billedOnWeb === true,
       }}
     />
   );

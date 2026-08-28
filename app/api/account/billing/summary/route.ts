@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { webBillingManageUrl } from "@/lib/account/billing";
 import { createClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
@@ -388,6 +389,8 @@ export async function GET(request: Request) {
           ? "stripe"
           : null;
 
+    const billedOnWeb = plan === "pro" && billingProvider === "stripe";
+
     return NextResponse.json({
       plan,
       accessState,
@@ -402,6 +405,8 @@ export async function GET(request: Request) {
       platformTrialDaysRemaining,
       billingProvider,
       billingCycle: isPro ? billingCycleFromPlanCode(subscription?.plan_code) : null,
+      billedOnWeb,
+      manageBillingUrl: billedOnWeb ? webBillingManageUrl() : null,
       paymentHistory: (invoices ?? []).map((row) => ({
         id: row.id,
         date: row.paid_at,

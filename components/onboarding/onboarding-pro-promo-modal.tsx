@@ -13,16 +13,16 @@ import {
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
 import { SpinnerLabel } from "@/components/ui/spinner";
+import {
+  type BillingCycle,
+  proPriceForCycle,
+  proPriceSuffix,
+} from "@/lib/account/plan-pricing";
 import { PRO_PLAN_FEATURES } from "@/lib/account/pro-plan-features";
 import { markOnboardingCompleteForUser } from "@/lib/auth/onboarding";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 import { useClientMounted } from "./use-client-mounted";
-
-type BillingCycle = "monthly" | "annually";
-
-const MONTHLY_PRICE = 15;
-const ANNUAL_PRICE = 150;
 
 /** Post-onboarding Pro upsell (Figma node 8884:393726). */
 export function OnboardingProPromoModal({
@@ -36,12 +36,8 @@ export function OnboardingProPromoModal({
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [startingCheckout, setStartingCheckout] = useState(false);
 
-  const priceText = useMemo(() => {
-    if (cycle === "monthly") return `$${MONTHLY_PRICE.toFixed(2)}`;
-    return `$${ANNUAL_PRICE.toFixed(2)}`;
-  }, [cycle]);
-
-  const suffixText = cycle === "monthly" ? "/ month" : "/ year";
+  const priceText = useMemo(() => `$${proPriceForCycle(cycle).toFixed(2)}`, [cycle]);
+  const suffixText = proPriceSuffix(cycle);
 
   if (!mounted || !open) return null;
 

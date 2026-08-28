@@ -25,7 +25,7 @@ export function appleAmountUsdForProductId(productId: string): number {
   return appleCycleForProductId(productId) === "annually" ? APPLE_PRO_ANNUAL_USD : APPLE_PRO_MONTHLY_USD;
 }
 
-/** Apple `price` is milliunits (17990 → 17.99). Falls back to App Store list price. */
+/** Apple `price` is milliunits (12990 → 12.99). Falls back to App Store list price. */
 export function appleAmountUsdFromTransaction(args: {
   productId: string;
   priceMilliunits?: number | null;

@@ -137,13 +137,10 @@ export async function createSnapTradePortalLink(
   options?: {
     reconnectAuthorizationId?: string | null;
     darkMode?: boolean;
-    /** Native iOS opens portal in SFSafariViewController (not iframe). */
-    client?: "ios";
   },
 ): Promise<string> {
   const credentials = await ensureSnapTradeUser(userId);
   const snaptrade = getSnaptradeSdk();
-  const isIosStandalone = options?.client === "ios";
 
   const loginResponse = await snaptrade.authentication.loginSnapTradeUser({
     userId: credentials.snaptradeUserId,
@@ -152,8 +149,8 @@ export async function createSnapTradePortalLink(
     connectionPortalVersion: "v4",
     darkMode: options?.darkMode === true,
     reconnect: options?.reconnectAuthorizationId ?? undefined,
-    // Web iframe: Finsepa modal provides close. iOS Safari VC: portal needs its own close control.
-    showCloseButton: isIosStandalone,
+    // Finsepa modal/sheet provides close — hide duplicate X inside SnapTrade (web + iOS).
+    showCloseButton: false,
   });
 
   return extractRedirectUri(loginResponse.data);
