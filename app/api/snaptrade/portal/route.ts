@@ -26,15 +26,20 @@ export async function POST(request: Request) {
 
     let reconnectAuthorizationId: string | null = null;
     let darkMode = false;
+    let client: "ios" | undefined;
     try {
       const body = (await request.json()) as {
         reconnectAuthorizationId?: unknown;
         darkMode?: unknown;
+        client?: unknown;
       };
       if (typeof body.reconnectAuthorizationId === "string" && body.reconnectAuthorizationId.trim()) {
         reconnectAuthorizationId = body.reconnectAuthorizationId.trim();
       }
       darkMode = body.darkMode === true;
+      if (body.client === "ios") {
+        client = "ios";
+      }
     } catch {
       // Empty body is fine for a fresh connection.
     }
@@ -42,6 +47,7 @@ export async function POST(request: Request) {
     const redirectUri = await createSnapTradePortalLink(user.id, {
       reconnectAuthorizationId,
       darkMode,
+      client,
     });
     return NextResponse.json({ redirectUri });
   } catch (e) {
