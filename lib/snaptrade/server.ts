@@ -131,9 +131,15 @@ function extractRedirectUri(data: unknown): string {
   return redirectUri.trim();
 }
 
+
 export async function createSnapTradePortalLink(
   userId: string,
-  options?: { reconnectAuthorizationId?: string | null; darkMode?: boolean },
+  options?: {
+    reconnectAuthorizationId?: string | null;
+    darkMode?: boolean;
+    customRedirect?: string;
+    immediateRedirect?: boolean;
+  },
 ): Promise<string> {
   const credentials = await ensureSnapTradeUser(userId);
   const snaptrade = getSnaptradeSdk();
@@ -146,6 +152,8 @@ export async function createSnapTradePortalLink(
     // Match Finsepa appearance (class-based dark on `html`); default light for host apps.
     darkMode: options?.darkMode === true,
     reconnect: options?.reconnectAuthorizationId ?? undefined,
+    customRedirect: options?.customRedirect,
+    immediateRedirect: options?.immediateRedirect === true ? true : undefined,
     // Finsepa modal already provides close — avoid duplicate X inside the iframe.
     showCloseButton: false,
   });
