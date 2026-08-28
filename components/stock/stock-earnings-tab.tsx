@@ -37,7 +37,6 @@ import {
   ScreenerTableScroll,
   TABLE_END_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
-import { STOCK_TABLE_LABEL_COL_WIDTH } from "@/components/stock/stock-income-statement-table";
 import { parseEarningsReportYmd } from "@/lib/market/earnings-countdown";
 import { cn } from "@/lib/utils";
 import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
@@ -245,9 +244,11 @@ function nearestVerticalScrollParent(start: HTMLElement | null): HTMLElement | n
 }
 
 /** Reports table chrome — same inset stroke / hover pad as Stocks companies + Financials. */
-const REPORTS_GRID_CLASS = "grid min-w-[760px] items-center gap-x-2";
+const REPORTS_GRID_CLASS = "grid w-full min-w-0 items-center gap-x-1.5 sm:gap-x-2";
+/** Icon-only Slides/Filings — last track fits two `size-8` buttons + end pad. */
 const REPORTS_GRID_STYLE = {
-  gridTemplateColumns: `${STOCK_TABLE_LABEL_COL_WIDTH} minmax(7rem, 1.1fr) minmax(6.5rem, 0.9fr) minmax(7rem, 1.1fr) minmax(6.5rem, 0.9fr) 224px`,
+  gridTemplateColumns:
+    "minmax(9rem, 1.15fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) 5.25rem",
 } as const;
 
 const reportsHeaderLabelClass = cn(
@@ -514,7 +515,7 @@ function EstimatesChartSkeleton() {
 
 function TableSkeleton() {
   return (
-    <ScreenerTableScroll mobileScroll minWidthClassName="min-w-[760px]">
+    <ScreenerTableScroll mobileScroll>
       <div className="bg-surface">
         <ReportsHeaderRow />
         {Array.from({ length: 4 }).map((_, r) => (
@@ -540,9 +541,9 @@ function TableSkeleton() {
                   </div>
                 ))}
                 <div className={reportsActionsCellClass}>
-                  <div className="inline-flex w-max max-w-full shrink-0 flex-nowrap justify-end gap-2">
-                    <SkeletonBox className="h-9 w-[5.5rem] shrink-0 rounded-[10px]" />
-                    <SkeletonBox className="h-9 w-[5.5rem] shrink-0 rounded-[10px]" />
+                  <div className="inline-flex shrink-0 flex-nowrap items-center justify-end gap-2">
+                    <SkeletonBox className="size-8 shrink-0 rounded-[10px]" />
+                    <SkeletonBox className="size-8 shrink-0 rounded-[10px]" />
                   </div>
                 </div>
               </div>
@@ -835,7 +836,7 @@ export function StockEarningsTabContent({
       {!loading && data && historyRows.length > 0 ? (
         <div className="min-w-0 space-y-5">
           <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Earnings history</h2>
-          <ScreenerTableScroll mobileScroll minWidthClassName="min-w-[760px]">
+          <ScreenerTableScroll mobileScroll>
             <div className="bg-surface">
               <ReportsHeaderRow />
               {earningsHistoryRendered.map((entry, idx) => {
@@ -893,9 +894,7 @@ export function StockEarningsTabContent({
                           actualRaw={entry.row.revenueActualUsd}
                         />
                         <div className={reportsActionsCellClass}>
-                          <div className="inline-flex w-max max-w-full justify-end">
-                            <EarningsReportRowActions listingTicker={sym} row={entry.row} />
-                          </div>
+                          <EarningsReportRowActions listingTicker={sym} row={entry.row} />
                         </div>
                       </div>
                     </div>

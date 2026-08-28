@@ -14,9 +14,9 @@ import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types"
 import { secondaryOutlineButtonClassName } from "@/components/design-system";
 import { cn } from "@/lib/utils";
 
-const outlineButtonClass = cn(
+const iconButtonClass = cn(
   secondaryOutlineButtonClassName,
-  "min-w-[76px] gap-1.5 overflow-hidden whitespace-nowrap px-3 font-['Inter'] text-[14px] font-normal leading-5 active:bg-surface focus-visible:ring-neutral-900/10",
+  "size-8 min-w-0 gap-0 p-0 active:bg-surface focus-visible:ring-neutral-900/10",
 );
 
 function firstPartyEarningsDocumentUrls(
@@ -50,7 +50,7 @@ function ActionButton({
   children: React.ReactNode;
 }) {
   return (
-    <button type="button" onClick={onClick} className={outlineButtonClass} aria-label={label} title={label}>
+    <button type="button" onClick={onClick} className={iconButtonClass} aria-label={label} title={label}>
       {children}
     </button>
   );
@@ -59,7 +59,7 @@ function ActionButton({
 function ActionDisabled({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <span
-      className={cn(outlineButtonClass, "pointer-events-none cursor-not-allowed opacity-45")}
+      className={cn(iconButtonClass, "pointer-events-none cursor-not-allowed opacity-45")}
       aria-label={label}
       title={label}
     >
@@ -99,33 +99,29 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
         sourceUrl={preview?.url ?? null}
         onClose={() => setPreview(null)}
       />
-      <div className="flex w-max max-w-full shrink-0 flex-nowrap items-center justify-end gap-2">
+      <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2">
         {released && canPreview(slidesUrl) ? (
           <ActionButton
-            label="Open earnings presentation preview"
+            label="Slides"
             onClick={() => setPreview({ url: slidesUrl!, title: "Earnings presentation" })}
           >
             <Presentation className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
-            <span className="shrink-0">Slides</span>
           </ActionButton>
         ) : (
           <ActionDisabled label={slidesDisabledLabel}>
             <Presentation className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="shrink-0">Slides</span>
           </ActionDisabled>
         )}
         {released && canPreview(filingsUrl) ? (
           <ActionButton
-            label="Open quarterly report preview"
+            label="Filings"
             onClick={() => setPreview({ url: filingsUrl!, title: "Quarterly report" })}
           >
             <FileSearch className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
-            <span className="shrink-0">Filings</span>
           </ActionButton>
         ) : (
           <ActionDisabled label={filingsDisabledLabel}>
             <FileSearch className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="shrink-0">Filings</span>
           </ActionDisabled>
         )}
       </div>

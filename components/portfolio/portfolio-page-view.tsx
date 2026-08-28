@@ -371,7 +371,10 @@ export function PortfolioPageView({
             snaptrade={selectedPortfolio.snaptrade}
             variant="toolbar"
           />
-        ) : selectedPortfolioId != null && !ledgerActionsLocked && plan?.canConnectBrokerage ? (
+        ) : selectedPortfolioId != null &&
+          !ledgerActionsLocked &&
+          showEmptySetupTiles &&
+          plan?.canConnectBrokerage ? (
           <PortfolioPendingBrokerageSyncButton
             portfolioId={selectedPortfolioId}
             portfolios={portfolios}

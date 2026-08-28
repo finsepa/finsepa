@@ -102,14 +102,14 @@ const earningsListRowPadClass = DEFAULT_TABLE_ROW_HOVER_PAD_CLASS;
 
 const earningsListTimeHeaderClass = "min-w-0 w-full text-right";
 
-const earningsListTimeCellClass = "flex min-w-0 w-full items-center justify-end";
+const earningsListTimeCellClass = "flex min-w-0 w-full flex-col items-end justify-center gap-0.5";
 
 const earningsListRevenueCellClass =
-  "min-w-0 w-full text-center font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg";
+  "flex min-w-0 w-full items-center justify-end font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg";
 
 /** 12px end pad on last column. */
 const earningsListEpsCellClass = cn(
-  "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
+  "flex min-w-0 w-full items-center justify-end font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
   TABLE_END_ALIGNED_PAD_CLASS,
 );
 
@@ -172,6 +172,12 @@ function earningsListTimingDisplayLabel(timing: EarningsReportTiming): string {
   if (timing === "bmo") return "Before market";
   if (timing === "amc") return "After market";
   return "TBD";
+}
+
+function earningsListTimingTimeDisplay(timing: EarningsReportTiming): string {
+  if (timing === "bmo") return "9:30 AM ET";
+  if (timing === "amc") return "4:00 PM ET";
+  return "—";
 }
 
 function EarningsListTimingBadge({ timing }: { timing: EarningsReportTiming }) {
@@ -238,7 +244,7 @@ function EarningsListRow({
         <div
           className={cn(
             earningsListColLayout,
-            "group min-h-[60px] text-[14px] leading-5 text-fg",
+            "group min-h-[60px] items-center text-[14px] leading-5 text-fg",
             SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
           )}
         >
@@ -257,6 +263,9 @@ function EarningsListRow({
           </div>
           <div className={earningsListTimeCellClass}>
             <EarningsListTimingBadge timing={item.timing} />
+            <span className="text-[12px] font-normal leading-4 text-fg-muted tabular-nums">
+              {earningsListTimingTimeDisplay(item.timing)}
+            </span>
           </div>
           <div className={earningsListRevenueCellClass}>{formatEarningsListMetric(estRevenueDisplay)}</div>
           <div className={earningsListEpsCellClass}>{formatEarningsListMetric(estEpsDisplay)}</div>

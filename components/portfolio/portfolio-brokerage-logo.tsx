@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Briefcase, GitMerge } from "@/lib/icons";
+import { GitMerge, Layers2 } from "@/lib/icons";
 
+import { FinsepaLogo } from "@/components/brand/finsepa-logo";
 import {
   portfolioIsCombined,
+  portfolioIsDemo,
   type PortfolioEntry,
   type PortfolioSnaptradeLink,
 } from "@/components/portfolio/portfolio-types";
@@ -15,7 +17,7 @@ function BrokerageInitials({ name, className }: { name: string; className?: stri
   return (
     <div
       className={cn(
-        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-stroke bg-surface-muted text-[11px] font-semibold text-fg-muted",
+        "flex shrink-0 items-center justify-center rounded-[10px] border border-stroke bg-surface text-[11px] font-semibold text-fg-muted shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]",
         className,
       )}
       aria-hidden
@@ -25,16 +27,25 @@ function BrokerageInitials({ name, className }: { name: string; className?: stri
   );
 }
 
+const portfolioListLogoSizeClass = {
+  list: "h-9 w-9",
+  topbar: "h-9 w-9",
+} as const;
+
 const portfolioListLogoShellClass =
-  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-stroke bg-surface-muted";
+  "flex shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-stroke bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]";
 
 /** Top bar squircle — matches `topbarSquircleIconClass` (36×36). */
 export const portfolioTopbarLogoClass =
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-stroke bg-surface-muted shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]";
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-stroke bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]";
 
 type PortfolioLogoSize = "list" | "topbar";
 
-/** Logo in portfolio picker rows — brokerage image, or icon tile for manual / combined. */
+function portfolioLogoShellClass(size: PortfolioLogoSize, className?: string) {
+  return cn(portfolioListLogoShellClass, portfolioListLogoSizeClass[size], className);
+}
+
+/** Logo in portfolio picker rows — brokerage image, Finsepa tile for manual, icon for combined/demo. */
 export function PortfolioListLogo({
   portfolio,
   className,
@@ -44,11 +55,9 @@ export function PortfolioListLogo({
   className?: string;
   size?: PortfolioLogoSize;
 }) {
-  const shellClass = cn(
-    size === "topbar" ? portfolioTopbarLogoClass : portfolioListLogoShellClass,
-    className,
-  );
-  const iconClass = size === "topbar" ? "h-5 w-5" : "h-4 w-4";
+  const shellClass = portfolioLogoShellClass(size, className);
+  const iconClass = size === "topbar" ? "h-[18px] w-[18px]" : "h-4 w-4";
+  const brandMarkSize = size === "topbar" ? 20 : 18;
 
   if (portfolioIsCombined(portfolio)) {
     return (
@@ -62,9 +71,17 @@ export function PortfolioListLogo({
     return <PortfolioBrokerageLogo snaptrade={portfolio.snaptrade} size={size} className={className} />;
   }
 
+  if (portfolioIsDemo(portfolio)) {
+    return (
+      <div className={shellClass} aria-hidden>
+        <Layers2 className={cn(iconClass, "text-fg-muted")} strokeWidth={2} />
+      </div>
+    );
+  }
+
   return (
     <div className={shellClass} aria-hidden>
-      <Briefcase className={cn(iconClass, "text-fg-muted")} strokeWidth={2} />
+      <FinsepaLogo size={brandMarkSize} className="text-fg" title="" />
     </div>
   );
 }
@@ -113,25 +130,19 @@ export function PortfolioBrokerageLogo({
     return (
       <BrokerageInitials
         name={name}
-        className={cn(
-          size === "topbar" ? portfolioTopbarLogoClass : undefined,
-          className,
-        )}
+        className={cn(portfolioListLogoSizeClass[size], className)}
       />
     );
   }
 
   return (
-    <img
-      src={logoUrl}
-      alt=""
-      className={cn(
-        size === "topbar" ?
-          cn(portfolioTopbarLogoClass, "bg-surface object-contain p-0.5")
-        : "h-8 w-8 shrink-0 rounded-lg border border-stroke bg-surface object-contain p-0.5",
-        className,
-      )}
-      onError={() => setFailed(true)}
-    />
+    <div className={cn(portfolioLogoShellClass(size, className), "p-1")} aria-hidden>
+      <img
+        src={logoUrl}
+        alt=""
+        className="h-full w-full object-contain"
+        onError={() => setFailed(true)}
+      />
+    </div>
   );
 }

@@ -2,36 +2,53 @@ import { format, parseISO } from "date-fns";
 
 export function formatPortfolioLastSyncLine(syncedAt: string): string {
   const parsed = parseISO(syncedAt);
-  if (!Number.isFinite(parsed.getTime())) return "Last synced recently";
-  return `Last synced at ${format(parsed, "MMM d, yyyy 'at' h:mm a")}`;
+  if (!Number.isFinite(parsed.getTime())) return "Synced recently";
+  return `Synced ${format(parsed, "MMM d 'at' h:mm a")}`;
 }
 
 /** Holdings refresh cadence for the connected brokerage. */
 export function snapTradeHoldingsCadenceLine(isRealTimeConnection: boolean): string {
   return isRealTimeConnection ?
-      "Holdings refresh on each sync."
-    : "Holdings refresh about once per day.";
+      "Holdings update when you sync."
+    : "Holdings update about once a day.";
 }
 
 /** Broker transaction cache policy (same for real-time and daily plans). */
-export const SNAPTRADE_TRANSACTIONS_CADENCE_LINE =
-  "Transactions update once per day (T+1).";
+export const SNAPTRADE_TRANSACTIONS_CADENCE_LINE = "New trades can take about a day to show up.";
 
-export const FINSEPA_MANUAL_SYNC_LINE = "Click the sync icon next to the portfolio name to refresh anytime.";
+export const FINSEPA_MANUAL_SYNC_LINE = "Tap Sync anytime to refresh.";
+
+/** Sync modal — incremental update from a chosen date. */
+export const SNAPTRADE_SYNC_WITH_DATE_LABEL = "With date";
+export const SNAPTRADE_SYNC_WITH_DATE_DESCRIPTION =
+  "Updates holdings, cash, and new trades from this date.";
+
+/** Sync modal — full history reload (date cleared / “first transaction”). */
+export const SNAPTRADE_SYNC_FIRST_TRANSACTION_LABEL = "First transaction";
+export const SNAPTRADE_SYNC_FIRST_TRANSACTION_DESCRIPTION =
+  "Pulls your full broker history again. Manual entries stay.";
+
+export const SNAPTRADE_SYNC_NOT_SYNCED_TOOLTIP = "Connected — tap to sync.";
+
+function formatPortfolioSyncTooltipHint(isRealTimeConnection?: boolean | null): string {
+  if (isRealTimeConnection === false) {
+    return "Tap to refresh. Data may be up to a day old.";
+  }
+  return "Tap to refresh. New trades can take about a day.";
+}
 
 /** Short bullets for Edit portfolio → brokerage connection. */
 export function brokerageSyncExplanationBullets(isRealTimeConnection?: boolean | null): string[] {
   const holdingsLine =
     typeof isRealTimeConnection === "boolean" ?
       snapTradeHoldingsCadenceLine(isRealTimeConnection)
-    : "Holdings and cash refresh when you sync or once per day automatically.";
+    : "Holdings and cash update when you sync, or about once a day automatically.";
 
   return [
-    "Finsepa syncs linked portfolios automatically about once a day while you use the app.",
+    "We auto-sync about once a day while you use the app.",
     holdingsLine,
     SNAPTRADE_TRANSACTIONS_CADENCE_LINE,
-    "Manual sync imports transactions from your chosen start date and always refreshes current holdings and cash.",
-    "If broker balances differ from imported history, Finsepa adds small adjustments so positions stay correct.",
+    "Manual sync lets you pick how far back to import trades.",
     FINSEPA_MANUAL_SYNC_LINE,
   ];
 }
@@ -45,13 +62,8 @@ export function formatPortfolioSyncTooltipLines({
   brokerageName?: string | null;
   isRealTimeConnection?: boolean | null;
 }): string {
-  const lines = [formatPortfolioLastSyncLine(syncedAt)];
+  let firstLine = formatPortfolioLastSyncLine(syncedAt);
   const brokerage = brokerageName?.trim();
-  if (brokerage) lines.push(brokerage);
-  if (typeof isRealTimeConnection === "boolean") {
-    lines.push(snapTradeHoldingsCadenceLine(isRealTimeConnection));
-  }
-  lines.push(SNAPTRADE_TRANSACTIONS_CADENCE_LINE);
-  lines.push(FINSEPA_MANUAL_SYNC_LINE);
-  return lines.join("\n");
+  if (brokerage) firstLine = `${firstLine} · ${brokerage}`;
+  return `${firstLine}\n${formatPortfolioSyncTooltipHint(isRealTimeConnection)}`;
 }

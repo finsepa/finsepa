@@ -6,7 +6,7 @@ import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip
 import { topbarSquircleTextButtonClass } from "@/components/design-system/topbar-control-classes";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import type { PortfolioSnaptradeLink } from "@/components/portfolio/portfolio-types";
-import { formatPortfolioSyncTooltipLines } from "@/lib/snaptrade/sync-copy";
+import { formatPortfolioSyncTooltipLines, SNAPTRADE_SYNC_NOT_SYNCED_TOOLTIP } from "@/lib/snaptrade/sync-copy";
 import { RefreshCw } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
@@ -54,7 +54,7 @@ export function PortfolioSyncStatusIcon({
 
   const tooltipLabel = useMemo(() => {
     if (!snaptrade?.syncedAt) {
-      return "Brokerage connected — tap to import holdings and transactions.";
+      return SNAPTRADE_SYNC_NOT_SYNCED_TOOLTIP;
     }
     return formatPortfolioSyncTooltipLines({
       syncedAt: snaptrade.syncedAt,

@@ -888,7 +888,7 @@ const getEarningsWeekDataPackageCached = unstable_cache(
     const monday = Number.isFinite(t) ? mondayOfWeekUtc(new Date(t)) : mondayOfWeekUtc(new Date());
     return buildEarningsWeekDataPackageUncached(monday, mode === "fund");
   },
-  ["earnings-week-v34-precomputed-estimates"],
+  ["earnings-week-v35-combined-estimate"],
   { revalidate: REVALIDATE_EARNINGS_CALENDAR },
 );
 

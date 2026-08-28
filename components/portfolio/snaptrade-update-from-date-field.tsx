@@ -47,24 +47,17 @@ function YearFirstCaptionDropdownNav({
   );
 }
 
-/** Nullable date field — `null` shows “first transaction” (sync full history). */
+/** Date field for incremental SnapTrade sync (always a concrete yyyy-MM-dd). */
 export function SnaptradeUpdateFromDateField({
   valueYmd,
   onChangeYmd,
 }: {
-  valueYmd: string | null;
-  onChangeYmd: (next: string | null) => void;
+  valueYmd: string;
+  onChangeYmd: (next: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  // Stabilize Date identity — a fresh Date each render + useEffect([selectedDate])
-  // causes an infinite setMonth loop when the popover opens.
-  const selectedDate = useMemo(
-    () => (valueYmd ? ymdToLocalDate(valueYmd) : null),
-    [valueYmd],
-  );
-  const [month, setMonth] = useState(() =>
-    startOfCalendarMonth(selectedDate ?? new Date()),
-  );
+  const selectedDate = useMemo(() => ymdToLocalDate(valueYmd), [valueYmd]);
+  const [month, setMonth] = useState(() => startOfCalendarMonth(selectedDate));
 
   const { startMonth, endMonth } = useMemo(() => {
     const y = new Date().getFullYear();
@@ -76,7 +69,7 @@ export function SnaptradeUpdateFromDateField({
 
   useEffect(() => {
     if (!open) return;
-    const next = startOfCalendarMonth(selectedDate ?? new Date());
+    const next = startOfCalendarMonth(selectedDate);
     setMonth((prev) => (sameCalendarMonth(prev, next) ? prev : next));
   }, [open, valueYmd, selectedDate]);
 
@@ -87,8 +80,8 @@ export function SnaptradeUpdateFromDateField({
           type="button"
           className="flex h-9 w-full items-center justify-between gap-2 rounded-[10px] border border-stroke bg-surface px-3 text-left text-sm font-normal transition-colors hover:bg-canvas"
         >
-          <span className={cn("min-w-0 truncate", valueYmd ? "text-fg" : "text-fg-muted")}>
-            {valueYmd ? format(ymdToLocalDate(valueYmd), "MM/dd/yyyy") : "first transaction"}
+          <span className="min-w-0 truncate text-fg">
+            {format(ymdToLocalDate(valueYmd), "MM/dd/yyyy")}
           </span>
           <CalendarIcon className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden />
         </button>
@@ -98,54 +91,40 @@ export function SnaptradeUpdateFromDateField({
         align="start"
         sideOffset={8}
       >
-        <div className="flex flex-col gap-2 p-1">
-          {valueYmd ?
-            <button
-              type="button"
-              className="rounded-md px-2 py-1.5 text-left text-xs font-medium text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
-              onClick={() => {
-                onChangeYmd(null);
-                setOpen(false);
-              }}
-            >
-              Sync from first transaction
-            </button>
-          : null}
-          <Calendar
-            mode="single"
-            captionLayout="dropdown"
-            hideNavigation
-            captionDropdownStretch
-            showOutsideDays
-            startMonth={startMonth}
-            endMonth={endMonth}
-            className="w-full min-w-0 rounded-lg border-0 bg-transparent p-3"
-            classNames={{
-              root: "!w-full !min-w-0 !max-w-none",
-              months: "!w-full min-w-0",
-              month: "!w-full min-w-0",
-              month_caption: "!flex !w-full !min-w-0 items-stretch !px-0 !gap-2",
-              dropdowns:
-                "!relative !z-[2] grid w-full min-w-0 grid-cols-2 gap-2 !items-stretch !justify-normal",
-              dropdown_root: "!relative flex w-full min-w-0 max-w-none shrink",
-              weekday: "text-[0.8rem] font-normal text-fg-muted",
-              outside: "text-fg-subtle",
-            }}
-            components={{ DropdownNav: YearFirstCaptionDropdownNav }}
-            month={month}
-            onMonthChange={(m) => {
-              const next = startOfCalendarMonth(m);
-              setMonth((prev) => (sameCalendarMonth(prev, next) ? prev : next));
-            }}
-            selected={selectedDate ?? undefined}
-            onSelect={(d) => {
-              if (d) {
-                onChangeYmd(format(d, "yyyy-MM-dd"));
-                setOpen(false);
-              }
-            }}
-          />
-        </div>
+        <Calendar
+          mode="single"
+          captionLayout="dropdown"
+          hideNavigation
+          captionDropdownStretch
+          showOutsideDays
+          startMonth={startMonth}
+          endMonth={endMonth}
+          className="w-full min-w-0 rounded-lg border-0 bg-transparent p-3"
+          classNames={{
+            root: "!w-full !min-w-0 !max-w-none",
+            months: "!w-full min-w-0",
+            month: "!w-full min-w-0",
+            month_caption: "!flex !w-full !min-w-0 items-stretch !px-0 !gap-2",
+            dropdowns:
+              "!relative !z-[2] grid w-full min-w-0 grid-cols-2 gap-2 !items-stretch !justify-normal",
+            dropdown_root: "!relative flex w-full min-w-0 max-w-none shrink",
+            weekday: "text-[0.8rem] font-normal text-fg-muted",
+            outside: "text-fg-subtle",
+          }}
+          components={{ DropdownNav: YearFirstCaptionDropdownNav }}
+          month={month}
+          onMonthChange={(m) => {
+            const next = startOfCalendarMonth(m);
+            setMonth((prev) => (sameCalendarMonth(prev, next) ? prev : next));
+          }}
+          selected={selectedDate}
+          onSelect={(d) => {
+            if (d) {
+              onChangeYmd(format(d, "yyyy-MM-dd"));
+              setOpen(false);
+            }
+          }}
+        />
       </PopoverContent>
     </Popover>
   );
