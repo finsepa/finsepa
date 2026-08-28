@@ -146,6 +146,8 @@ export async function createSnapTradePortalLink(
     // Match Finsepa appearance (class-based dark on `html`); default light for host apps.
     darkMode: options?.darkMode === true,
     reconnect: options?.reconnectAuthorizationId ?? undefined,
+    // Finsepa modal already provides close — avoid duplicate X inside the iframe.
+    showCloseButton: false,
   });
 
   return extractRedirectUri(loginResponse.data);

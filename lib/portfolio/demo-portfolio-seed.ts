@@ -236,11 +236,15 @@ export function ensureDemoDividendTransactions(
  * Seeds a Free-plan demo portfolio: ~$100k diversified across crypto + mega-caps,
  * with proportional monthly buys over 4 months starting Jan 2023, plus sample cash dividends.
  */
-export function buildDemoPortfolioSeed(existingPortfolioId?: string): DemoPortfolioSeed {
+export function buildDemoPortfolioSeed(
+  existingPortfolioId?: string,
+  options?: { name?: string },
+): DemoPortfolioSeed {
   const portfolioId = existingPortfolioId?.trim() || newPortfolioId();
+  const name = options?.name?.trim() || DEFAULT_DEMO_PORTFOLIO_NAME;
   const portfolio: PortfolioEntry = {
     id: portfolioId,
-    name: DEFAULT_DEMO_PORTFOLIO_NAME,
+    name,
     privacy: "private",
     kind: "demo",
     isDemo: true,

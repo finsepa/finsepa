@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { brokerageProRequiredError } from "@/lib/account/brokerage-plan-gate";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   isSnapTradeConfigured,
   SnapTradeNotConfiguredError,
@@ -13,7 +13,7 @@ import {
 } from "@/lib/snaptrade/sync-brokerage";
 import { normalizePortfolioSnaptradeSyncSettings } from "@/lib/snaptrade/sync-settings";
 import { normalizeSnaptradeUpdateFromYmd } from "@/lib/snaptrade/sync-update-from";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
 export async function POST(request: Request) {
   try {
@@ -21,8 +21,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "SnapTrade is not configured." }, { status: 503 });
     }
 
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
 
     const blocked = await brokerageProRequiredError(supabase, user.id);
     if (blocked) {

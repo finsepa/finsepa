@@ -22,15 +22,20 @@ export type PortfolioWorkspaceContextValue = {
   transactionsByPortfolioId: Record<string, PortfolioTransaction[]>;
   addTransaction: (portfolioId: string, transaction: PortfolioTransaction) => void;
   openEditPortfolio: (id: string) => void;
-  openCreatePortfolio: (options?: { mode?: "manual" | "brokerage" }) => void;
+  openCreatePortfolio: () => void;
   openCreateCombinedPortfolio: () => void;
   openConnectBrokerage: () => void;
+  /**
+   * Empty-portfolio setup: open SnapTrade institution picker for the selected portfolio
+   * (uses its existing name/privacy; does not ask again). Pro only.
+   */
+  openConnectBrokerageToSelected: () => void;
   /**
    * Pro: open SnapTrade portal and re-link into an existing offline (or linked) brokerage portfolio.
    * Free: sends the user to Plans.
    */
   openReconnectBrokerage: (portfolioId: string) => void;
-  /** Seed (or focus) the Free demo portfolio — does not count toward Free portfolio quota. */
+  /** Seed (or convert the empty selected portfolio into) the Free demo sample — keeps the portfolio name when converting. */
   openTryDemoPortfolio: () => void;
   /** Re-pull holdings and cash from SnapTrade for a linked portfolio (no paid refresh endpoint). */
   resyncLinkedPortfolio: (
@@ -42,8 +47,8 @@ export type PortfolioWorkspaceContextValue = {
   /** Updates visibility for a portfolio and syncs the public listing (same behavior as Edit → Save). */
   updatePortfolioPrivacy: (portfolioId: string, nextPrivacy: PortfolioPrivacy) => void;
   /**
-   * True when the selected portfolio is a read-only combined view, or a Free offline/brokerage freeze
-   * (no trades / imports / sync).
+   * True when the selected portfolio is read-only for ledger edits: combined aggregate, demo sample,
+   * or a Free offline/brokerage freeze (no trades / imports / sync). Rename/delete in Edit still allowed.
    */
   selectedPortfolioReadOnly: boolean;
   newTransactionOpen: boolean;

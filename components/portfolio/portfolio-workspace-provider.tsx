@@ -13,11 +13,9 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
-import { SpinnerLabel } from "@/components/ui/spinner";
 import { toast } from "sonner";
 
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
-import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import { FreePortfolioPickModal } from "@/components/account/free-plan-modals";
 import { countBrokeragePortfolios, countManualPortfoliosForFreeQuota, isManualPortfolioForFreeQuota } from "@/lib/account/free-plan-quota";
 import {
@@ -27,7 +25,6 @@ import {
 import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
 import { buildDemoPortfolioSeed, demoLedgerNeedsReseed, ensureDemoDividendTransactions } from "@/lib/portfolio/demo-portfolio-seed";
-import { SegmentedControl } from "@/components/design-system/segmented-control";
 import { AddCashModal } from "@/components/layout/add-cash-modal";
 import { DeletePortfolioConfirmModal } from "@/components/portfolio/delete-portfolio-confirm-modal";
 import { ClearableInput } from "@/components/layout/clearable-input";
@@ -275,47 +272,22 @@ function EditPortfolioModal({
   );
 }
 
-type CreatePortfolioMode = "manual" | "brokerage";
-
 function CreatePortfolioModal({
   onClose,
   onAdd,
-  onConnectBrokerageComplete,
-  initialMode = "manual",
 }: {
   onClose: () => void;
-  onAdd: (name: string, privacy: PortfolioPrivacy) => void;
-  onConnectBrokerageComplete: (payload: ConnectBrokerageCompletePayload) => void | Promise<void>;
-  initialMode?: CreatePortfolioMode;
+  onAdd: (name: string) => void;
 }) {
   const titleId = useId();
-  const plan = usePlanAccessOptional();
-  const [mode, setMode] = useState<CreatePortfolioMode>(initialMode);
   const [name, setName] = useState("");
-  const [privacy, setPrivacy] = useState<PortfolioPrivacy>("private");
-
-  const { portalLoading, portalActive, portalNode, reset, startPortal } = useSnapTradeConnectPortal({
-    onComplete: onConnectBrokerageComplete,
-    onClose,
-  });
 
   const closeAll = useCallback(() => {
-    reset();
-    setMode(initialMode);
     setName("");
-    setPrivacy("private");
     onClose();
-  }, [initialMode, onClose, reset]);
+  }, [onClose]);
 
-  const canSubmit = name.trim().length > 0 && !portalLoading;
-  const canConnectBrokerage = plan?.canConnectBrokerage !== false;
-  const isBrokerage = mode === "brokerage" && canConnectBrokerage;
-
-  useEffect(() => {
-    if (!canConnectBrokerage && mode === "brokerage") setMode("manual");
-  }, [canConnectBrokerage, mode]);
-
-  if (portalActive) return portalNode;
+  const canSubmit = name.trim().length > 0;
 
   return (
     <AppModalOverlay open onClose={closeAll} zIndex={110}>
@@ -329,66 +301,17 @@ function CreatePortfolioModal({
             <button type="button" onClick={closeAll} className={appModalCancelButtonClass}>
               Cancel
             </button>
-            {isBrokerage ? (
-              <button
-                type="button"
-                disabled={!canSubmit}
-                onClick={() => {
-                  const t = name.trim();
-                  if (!t) return;
-                  void startPortal({ name: t, privacy });
-                }}
-                className={appModalPrimaryButtonClass(canSubmit)}
-              >
-                {portalLoading ? <SpinnerLabel>Opening…</SpinnerLabel> : "Continue"}
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={!canSubmit}
-                onClick={() => onAdd(name, privacy)}
-                className={appModalPrimaryButtonClass(canSubmit)}
-              >
-                Add
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={!canSubmit}
+              onClick={() => onAdd(name)}
+              className={appModalPrimaryButtonClass(canSubmit)}
+            >
+              Add
+            </button>
           </AppModalFooter>
         }
       >
-        <SegmentedControl
-          fullWidth
-          aria-label="Portfolio type"
-          value={canConnectBrokerage ? mode : "manual"}
-          onChange={(next) => {
-            if (next === "brokerage" && !canConnectBrokerage) return;
-            setMode(next);
-          }}
-          options={[
-            { value: "manual", label: "Manual Portfolio" },
-            {
-              value: "brokerage",
-              label:
-                canConnectBrokerage ? (
-                  "Connect brokerage"
-                ) : (
-                  <span className="inline-flex items-center justify-center gap-1.5">
-                    <span>Connect brokerage</span>
-                    <ProFeatureBadge
-                      label="Brokerage connection is available on Pro only"
-                      zIndex={350}
-                    />
-                  </span>
-                ),
-              "aria-label": "Connect brokerage",
-              disabled: !canConnectBrokerage,
-            },
-          ]}
-        />
-        {!canConnectBrokerage ? (
-          <p className="text-[13px] leading-5 text-fg-muted">
-            Brokerage connection is on Pro. Free includes one manual portfolio.
-          </p>
-        ) : null}
         <ModalField label="Name">
           <ClearableInput
             type="text"
@@ -396,15 +319,6 @@ function CreatePortfolioModal({
             onChange={setName}
             placeholder="Enter name"
             clearLabel="Clear name"
-          />
-        </ModalField>
-        <ModalField label={<PortfolioPrivacyFieldLabel />}>
-          <PortfolioPrivacySelect
-            value={privacy}
-            onChange={setPrivacy}
-            disabledValues={
-              plan && !plan.canPublishPublicPortfolio ? (["public"] as const) : undefined
-            }
           />
         </ModalField>
       </AppModalShell>
@@ -524,7 +438,6 @@ export function PortfolioWorkspaceProvider({
   const [editPortfolioId, setEditPortfolioId] = useState<string | null>(null);
   const [deletePortfolioConfirmId, setDeletePortfolioConfirmId] = useState<string | null>(null);
   const [createPortfolioOpen, setCreatePortfolioOpen] = useState(false);
-  const [createPortfolioMode, setCreatePortfolioMode] = useState<CreatePortfolioMode>("manual");
   const [createCombinedOpen, setCreateCombinedOpen] = useState(false);
   const [connectBrokerageOpen, setConnectBrokerageOpen] = useState(false);
   const [snaptradeSyncPortfolioId, setSnaptradeSyncPortfolioId] = useState<string | null>(null);
@@ -592,6 +505,7 @@ export function PortfolioWorkspaceProvider({
     const p = portfolios.find((x) => x.id === selectedPortfolioId);
     if (!p) return false;
     if (portfolioIsCombined(p)) return true;
+    if (portfolioIsDemo(p)) return true;
     // Offline freezes always read-only until Pro reconnect clears offline.
     if (portfolioIsOfflineBrokerage(p)) return true;
     // Free: any brokerage book is view-only while demoting or offline.
@@ -1375,6 +1289,51 @@ export function PortfolioWorkspaceProvider({
   ]);
 
   const openTryDemoPortfolio = useCallback(() => {
+    const selected = portfolios.find((p) => p.id === selectedPortfolioId);
+    const selectedTxs = selected ? (transactionsByPortfolioId[selected.id] ?? []) : [];
+    const canConvertSelected =
+      selected &&
+      !portfolioIsDemo(selected) &&
+      !portfolioIsCombined(selected) &&
+      !selected.snaptrade &&
+      selectedTxs.length === 0;
+
+    // Empty setup: turn this portfolio into the demo book, keep its name.
+    if (canConvertSelected) {
+      const otherDemoIds = portfolios
+        .filter((p) => portfolioIsDemo(p) && p.id !== selected.id)
+        .map((p) => p.id);
+      const seed = buildDemoPortfolioSeed(selected.id, { name: selected.name });
+      demoSeededRef.current = true;
+      setPortfolios((prev) =>
+        prev
+          .filter((p) => !otherDemoIds.includes(p.id))
+          .map((p) => (p.id === selected.id ? seed.portfolio : p)),
+      );
+
+      setHoldingsByPortfolioId((prev) => {
+        const next = { ...prev };
+        for (const id of otherDemoIds) delete next[id];
+        next[seed.portfolio.id] = seed.holdings;
+        return next;
+      });
+      setTransactionsByPortfolioId((prev) => {
+        const next = { ...prev };
+        for (const id of otherDemoIds) delete next[id];
+        next[seed.portfolio.id] = seed.transactions;
+        return next;
+      });
+      demoDividendsAppliedRef.current.add(seed.portfolio.id);
+      stockSplitsFpRef.current.delete(seed.portfolio.id);
+      setSelectedPortfolioId(seed.portfolio.id);
+      runHoldingsQuoteRefresh({ [seed.portfolio.id]: seed.holdings });
+      void syncStockSplitsForPortfolio(seed.portfolio.id, seed.transactions);
+      toast.success(`“${selected.name}” is now a demo portfolio.`, {
+        description: "Sample holdings loaded — edit anytime or clear and start over.",
+      });
+      return;
+    }
+
     if (portfolios.some((p) => portfolioIsDemo(p))) {
       const existing = portfolios.find((p) => portfolioIsDemo(p));
       if (existing) {
@@ -1388,7 +1347,7 @@ export function PortfolioWorkspaceProvider({
           void syncStockSplitsForPortfolio(existing.id);
         }
       }
-      toast.message("Finsepa Demo is already in your list.");
+      toast.message("Demo portfolio is already in your list.");
       return;
     }
     if (demoSeededRef.current) return;
@@ -1405,6 +1364,8 @@ export function PortfolioWorkspaceProvider({
     toast.success("Finsepa Demo added — explore sample holdings anytime.");
   }, [
     portfolios,
+    selectedPortfolioId,
+    transactionsByPortfolioId,
     holdingsByPortfolioId,
     setSelectedPortfolioId,
     setPortfolioHoldings,
@@ -1593,15 +1554,7 @@ export function PortfolioWorkspaceProvider({
     [plan, isFreePortfolioAccessible, portfolios, openUpgradePlans],
   );
 
-  const openCreatePortfolio = useCallback((options?: { mode?: CreatePortfolioMode }) => {
-    if (options?.mode === "brokerage" && plan && !plan.canConnectBrokerage) {
-      toastProUpgrade({
-        title: "Pro feature",
-        description: "Brokerage connection is available on Pro only.",
-        onUpgrade: openUpgradePlans,
-      });
-      return;
-    }
+  const openCreatePortfolio = useCallback(() => {
     if (plan?.isFree && !plan.canCreatePortfolio) {
       toastProUpgrade({
         title: "Free plan limit",
@@ -1613,7 +1566,6 @@ export function PortfolioWorkspaceProvider({
     setEditPortfolioOpen(false);
     setEditPortfolioId(null);
     setCreateCombinedOpen(false);
-    setCreatePortfolioMode(options?.mode === "brokerage" ? "brokerage" : "manual");
     setCreatePortfolioOpen(true);
   }, [plan, openUpgradePlans]);
 
@@ -1954,11 +1906,11 @@ export function PortfolioWorkspaceProvider({
       const t = name.trim();
       if (!t) return;
 
-      // ── Reconnect path (incl. offline Free freeze re-linked on Pro): sync into the same portfolio. ──
+      // ── Reconnect / first-link into an existing portfolio (keeps id, name, privacy). ──
       const reconnectTarget = reconnectPortfolioId
         ? portfolios.find((p) => p.id === reconnectPortfolioId)
         : undefined;
-      if (reconnectTarget) {
+      if (reconnectTarget?.snaptrade) {
         await resyncLinkedPortfolio(reconnectTarget.id, {
           updateFromYmd: null,
           authorizationIdOverride: authorizationId,
@@ -1981,39 +1933,64 @@ export function PortfolioWorkspaceProvider({
           throw new Error(data.error ?? "Failed to sync brokerage.");
         }
 
-        const portfolioId = newPortfolioId();
+        const attachExisting = reconnectTarget && !reconnectTarget.snaptrade;
+        const portfolioId = attachExisting ? reconnectTarget.id : newPortfolioId();
+        const displayName = attachExisting ? reconnectTarget.name : t;
+        const displayPrivacy = attachExisting ? reconnectTarget.privacy : privacy;
 
-        setPortfolios((prev) => [
-          ...prev,
-          {
-            id: portfolioId,
-            name: t,
-            privacy,
-            snaptrade: {
-              authorizationId: data.authorizationId ?? authorizationId,
-              accountIds: Array.isArray(data.accountIds) ? data.accountIds : [],
-              brokerageName: data.brokerageName ?? null,
-              brokerageSlug: data.brokerageSlug ?? null,
-              brokerageLogoUrl: data.brokerageLogoUrl ?? null,
-              isRealTimeConnection: data.isRealTimeConnection === true,
-              syncedAt: new Date().toISOString(),
-              syncSettings: { ...DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS },
+        if (attachExisting) {
+          setPortfolios((prev) =>
+            prev.map((p) =>
+              p.id !== portfolioId
+                ? p
+                : {
+                    ...p,
+                    snaptrade: {
+                      authorizationId: data.authorizationId ?? authorizationId,
+                      accountIds: Array.isArray(data.accountIds) ? data.accountIds : [],
+                      brokerageName: data.brokerageName ?? null,
+                      brokerageSlug: data.brokerageSlug ?? null,
+                      brokerageLogoUrl: data.brokerageLogoUrl ?? null,
+                      isRealTimeConnection: data.isRealTimeConnection === true,
+                      syncedAt: new Date().toISOString(),
+                      syncSettings: { ...DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS },
+                    },
+                  },
+            ),
+          );
+        } else {
+          setPortfolios((prev) => [
+            ...prev,
+            {
+              id: portfolioId,
+              name: displayName,
+              privacy: displayPrivacy,
+              snaptrade: {
+                authorizationId: data.authorizationId ?? authorizationId,
+                accountIds: Array.isArray(data.accountIds) ? data.accountIds : [],
+                brokerageName: data.brokerageName ?? null,
+                brokerageSlug: data.brokerageSlug ?? null,
+                brokerageLogoUrl: data.brokerageLogoUrl ?? null,
+                isRealTimeConnection: data.isRealTimeConnection === true,
+                syncedAt: new Date().toISOString(),
+                syncSettings: { ...DEFAULT_PORTFOLIO_SNAPTRADE_SYNC_SETTINGS },
+              },
             },
-          },
-        ]);
+          ]);
+        }
 
         const { quoted, transactions } = await applySnapTradeSyncToPortfolio(
           portfolioId,
           authorizationId,
           data,
         );
-        setSelectedPortfolioId(portfolioId);
+        if (!attachExisting) setSelectedPortfolioId(portfolioId);
 
         toast.success(
           <span>
             Portfolio{" "}
             <a href="/portfolio" className="font-semibold underline underline-offset-2">
-              &ldquo;{t}&rdquo;
+              &ldquo;{displayName}&rdquo;
             </a>{" "}
             connected
             {data.brokerageName ? ` to ${data.brokerageName}` : ""}.
@@ -2021,11 +1998,11 @@ export function PortfolioWorkspaceProvider({
           { id: toastId },
         );
 
-        if (privacy === "public") {
+        if (displayPrivacy === "public") {
           void putPublicPortfolioListingRequest({
             portfolioId,
             publish: true,
-            displayName: t,
+            displayName,
             metrics: metricsForPublicListing(quoted, transactions),
           }).then((r) => {
             if (r.ok) dispatchPublicListingsChanged();
@@ -2077,6 +2054,47 @@ export function PortfolioWorkspaceProvider({
     },
     [openUpgradePlans, plan, portfolios, startReconnectPortal],
   );
+
+  /** Empty setup: SnapTrade picker for the selected portfolio (skip name/privacy). */
+  const openConnectBrokerageToSelected = useCallback(() => {
+    if (plan && !plan.canConnectBrokerage) {
+      toastProUpgrade({
+        title: "Pro feature",
+        description: "Brokerage connection is available on Pro only.",
+        onUpgrade: openUpgradePlans,
+      });
+      return;
+    }
+    const p = portfolios.find((x) => x.id === selectedPortfolioId);
+    if (!p || portfolioIsCombined(p) || portfolioIsDemo(p)) {
+      openConnectBrokerage();
+      return;
+    }
+    if (selectedPortfolioReadOnly && !p.snaptrade?.offline) {
+      toast.error("This portfolio is read-only.", {
+        description: "Create a new portfolio or unlock editing before connecting a brokerage.",
+      });
+      return;
+    }
+    setEditPortfolioOpen(false);
+    setEditPortfolioId(null);
+    setCreatePortfolioOpen(false);
+    setCreateCombinedOpen(false);
+    setConnectBrokerageOpen(false);
+    void startReconnectPortal({
+      name: p.name,
+      privacy: p.privacy,
+      reconnectPortfolioId: p.id,
+    });
+  }, [
+    openConnectBrokerage,
+    openUpgradePlans,
+    plan,
+    portfolios,
+    selectedPortfolioId,
+    selectedPortfolioReadOnly,
+    startReconnectPortal,
+  ]);
 
   const openNewTransaction = useCallback(() => {
     const p = portfolios.find((x) => x.id === selectedPortfolioId);
@@ -2420,6 +2438,7 @@ export function PortfolioWorkspaceProvider({
       openCreatePortfolio,
       openCreateCombinedPortfolio,
       openConnectBrokerage,
+      openConnectBrokerageToSelected,
       openReconnectBrokerage,
       openTryDemoPortfolio,
       openSnaptradeSyncModal,
@@ -2461,6 +2480,7 @@ export function PortfolioWorkspaceProvider({
       openCreatePortfolio,
       openCreateCombinedPortfolio,
       openConnectBrokerage,
+      openConnectBrokerageToSelected,
       openReconnectBrokerage,
       openTryDemoPortfolio,
       openSnaptradeSyncModal,
@@ -2710,14 +2730,8 @@ export function PortfolioWorkspaceProvider({
       />
       {createPortfolioOpen ? (
         <CreatePortfolioModal
-          key={createPortfolioMode}
-          initialMode={createPortfolioMode}
           onClose={() => setCreatePortfolioOpen(false)}
-          onConnectBrokerageComplete={async (payload) => {
-            await finalizeConnectBrokerage(payload);
-            setCreatePortfolioOpen(false);
-          }}
-          onAdd={(name, nextPrivacy) => {
+          onAdd={(name) => {
             const t = name.trim();
             if (t.length === 0) return;
             const id = newPortfolioId();
@@ -2732,7 +2746,7 @@ export function PortfolioWorkspaceProvider({
                     !portfolioIsCombined(p) &&
                     !p.snaptrade,
                 ));
-            setPortfolios((prev) => [...prev, { id, name: t, privacy: nextPrivacy }]);
+            setPortfolios((prev) => [...prev, { id, name: t, privacy: "private" }]);
             // Bypass Free lock gate — this book becomes the Free active slot when needed.
             setSelectedPortfolioState(id);
             saveLastSelectedPortfolioId(userId, id);
@@ -2754,16 +2768,6 @@ export function PortfolioWorkspaceProvider({
                 if (!ok) {
                   toast.error("Could not activate this portfolio on Free. Try again.");
                 }
-              });
-            }
-            if (nextPrivacy === "public") {
-              void putPublicPortfolioListingRequest({
-                portfolioId: id,
-                publish: true,
-                displayName: t,
-                metrics: metricsForPublicListing([], []),
-              }).then((r) => {
-                if (r.ok) dispatchPublicListingsChanged();
               });
             }
           }}

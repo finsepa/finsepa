@@ -720,7 +720,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
       >
           <div className="flex flex-col gap-5">
             <Field label="Portfolio">
-              <TransactionPortfolioField />
+              <TransactionPortfolioField excludeDemoPortfolios />
             </Field>
 
             <TransactionTypeTabs active={transactionTab} onChange={setTransactionTab} />

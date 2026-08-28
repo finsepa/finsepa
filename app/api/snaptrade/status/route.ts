@@ -1,22 +1,20 @@
 import { NextResponse } from "next/server";
 
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   isSnapTradeConfigured,
   listSnapTradeConnections,
   SnapTradeUserStoreError,
 } from "@/lib/snaptrade/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const configured = isSnapTradeConfigured();
     if (!configured) {
       return NextResponse.json({ configured: false, connected: false, connectionCount: 0 });
     }
 
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
 
     const connections = await listSnapTradeConnections(user.id);
     return NextResponse.json({

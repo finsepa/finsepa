@@ -25,7 +25,7 @@ export function PortfolioDemoBanner({
         <div className="min-w-0 space-y-0.5">
           <p className="text-[14px] font-semibold leading-5 text-fg">This is a demo portfolio.</p>
           <p className="text-[13px] leading-5 text-fg-muted">
-            When you&apos;re ready, create your own portfolio in seconds.
+            When you&apos;re ready, create your own portfolio.
           </p>
         </div>
       </div>

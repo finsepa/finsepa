@@ -96,17 +96,17 @@ function SnapTradePortalModal({
         dialogClassName="min-h-0 flex-1"
         cardClassName="min-h-0 flex-1"
         bodyScroll={false}
-        bodyClassName="!flex min-h-0 flex-1 flex-col !overflow-hidden !p-0"
+        bodyClassName="!flex min-h-0 flex-1 flex-col !overflow-hidden !p-5"
       >
-        <div className="relative flex min-h-0 flex-1 flex-col bg-surface">
+        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-surface">
           {!iframeLoaded && !iframeTimedOut ? (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-surface">
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-surface">
               <Spinner className="size-6 text-fg-muted" />
               <p className="text-sm text-fg-muted">Loading SnapTrade…</p>
             </div>
           ) : null}
           {iframeTimedOut && !iframeLoaded ? (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-surface px-6 text-center">
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-surface px-6 text-center">
               <p className="text-sm text-fg">SnapTrade portal didn&apos;t load.</p>
               <p className="text-xs text-fg-muted">
                 Check your connection, then close and try again — or open the portal in a new tab.
@@ -126,7 +126,7 @@ function SnapTradePortalModal({
             title="Connect brokerage via SnapTrade"
             src={portalSrc}
             className={cn(
-              "block min-h-0 w-full flex-1 border-0 bg-surface",
+              "block min-h-0 w-full flex-1 rounded-xl border-0 bg-surface",
               !iframeLoaded && "opacity-0",
             )}
             allow="clipboard-write"

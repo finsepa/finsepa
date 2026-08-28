@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
 
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   deleteSnapTradeConnection,
   isSnapTradeConfigured,
   SnapTradeNotConfiguredError,
   SnapTradeUserStoreError,
 } from "@/lib/snaptrade/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type RouteContext = { params: Promise<{ authorizationId: string }> };
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   try {
     if (!isSnapTradeConfigured()) {
       return NextResponse.json({ error: "SnapTrade is not configured." }, { status: 503 });
@@ -23,8 +22,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Missing connection id." }, { status: 400 });
     }
 
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
 
     await deleteSnapTradeConnection(user.id, id);
     return NextResponse.json({ ok: true });

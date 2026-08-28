@@ -12,7 +12,7 @@ import {
 } from "@/components/layout/cash-direction-select";
 import { UsdMoneyClearableInput } from "@/components/layout/usd-money-clearable-input";
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
-import { newTransactionRowId, portfolioIsCombined } from "@/components/portfolio/portfolio-types";
+import { newTransactionRowId, portfolioIsCombined, portfolioIsDemo } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import {
@@ -49,7 +49,7 @@ export function AddCashModal({ open, onClose }: Props) {
   const [cashPortfolioId, setCashPortfolioId] = useState("");
 
   const standardPortfolios = useMemo(
-    () => portfolios.filter((p) => !portfolioIsCombined(p)),
+    () => portfolios.filter((p) => !portfolioIsCombined(p) && !portfolioIsDemo(p)),
     [portfolios],
   );
 

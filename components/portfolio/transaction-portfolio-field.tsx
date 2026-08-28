@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Globe, Lock, Pencil } from "@/lib/icons";
 
 import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
@@ -21,7 +21,7 @@ import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import { portfolioKindSubtext, type PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
+import { portfolioIsDemo, portfolioKindSubtext, type PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
 import {
   createCombinedPortfolioMenuIconAnimation,
   createPortfolioMenuIconAnimation,
@@ -61,21 +61,30 @@ export function TransactionPortfolioField({
   compactMenuAlign = "leading",
   /** Import modal: list portfolios only — no create/connect actions or row edit/sync controls. */
   portfoliosOnly = false,
+  /** Add Cash / New Transaction: demo books are view-only — omit from picker. */
+  excludeDemoPortfolios = false,
 }: {
   variant?: Variant;
   compactMenuAlign?: CompactMenuAlign;
   portfoliosOnly?: boolean;
+  excludeDemoPortfolios?: boolean;
 }) {
   const {
     portfolios,
     selectedPortfolioId,
     setSelectedPortfolioId,
     isFreePortfolioAccessible,
+    transactionsByPortfolioId,
     openEditPortfolio,
     openCreatePortfolio,
     openCreateCombinedPortfolio,
   } = usePortfolioWorkspace();
   const plan = usePlanAccessOptional();
+
+  const pickerPortfolios = useMemo(
+    () => (excludeDemoPortfolios ? portfolios.filter((p) => !portfolioIsDemo(p)) : portfolios),
+    [portfolios, excludeDemoPortfolios],
+  );
 
   const [open, setOpen] = useState(false);
   const [createPortfolioIconPlaying, setCreatePortfolioIconPlaying] = useState(false);
@@ -84,7 +93,7 @@ export function TransactionPortfolioField({
   const menuPortalRef = useRef<HTMLDivElement>(null);
   const chevronsRef = useRef<ChevronsUpDownIconHandle>(null);
   const selected =
-    portfolios.find((p) => p.id === selectedPortfolioId) ?? portfolios[0] ?? null;
+    pickerPortfolios.find((p) => p.id === selectedPortfolioId) ?? pickerPortfolios[0] ?? null;
   const hasPortfolio = selected != null;
   const hasEnoughSourcesForCombined =
     portfolios.filter((p) => p.kind !== "combined").length >= 2;
@@ -92,6 +101,22 @@ export function TransactionPortfolioField({
   const canCreateCombinedPortfolio = hasEnoughSourcesForCombined && !combinedLockedOnFree;
   const freePortfolioQuotaMax =
     plan?.isFree === true ? (plan.maxRealPortfolios ?? FREE_MAX_REAL_PORTFOLIOS) : null;
+
+  useEffect(() => {
+    if (!excludeDemoPortfolios) return;
+    const current = portfolios.find((p) => p.id === selectedPortfolioId);
+    if (current && !portfolioIsDemo(current)) return;
+    const fallback = pickerPortfolios[0];
+    if (fallback && fallback.id !== selectedPortfolioId) {
+      setSelectedPortfolioId(fallback.id);
+    }
+  }, [
+    excludeDemoPortfolios,
+    pickerPortfolios,
+    portfolios,
+    selectedPortfolioId,
+    setSelectedPortfolioId,
+  ]);
 
   useEffect(() => {
     if (!open) {
@@ -128,10 +153,10 @@ export function TransactionPortfolioField({
 
   const menuPanel = (
     <>
-      {portfolios.length > 0 ? (
+      {pickerPortfolios.length > 0 ? (
         <div className="px-3 py-1.5 text-xs font-medium leading-4 text-fg-muted">My portfolios</div>
       ) : null}
-      {portfolios.map((p) => {
+      {pickerPortfolios.map((p) => {
         const isSelected = p.id === selectedPortfolioId;
         const isLockedOnFree = !isFreePortfolioAccessible(p.id);
         const showFreeQuotaBadge =
@@ -178,7 +203,11 @@ export function TransactionPortfolioField({
               <PortfolioListLogo portfolio={p} />
               <span className="flex min-w-0 flex-1 flex-col items-start gap-0">
                 <span className="w-full truncate text-sm font-medium leading-5 text-fg">{p.name}</span>
-                <span className="text-xs leading-4 text-fg-muted">{portfolioKindSubtext(p)}</span>
+                <span className="text-xs leading-4 text-fg-muted">
+                  {portfolioKindSubtext(p, {
+                    emptyLedger: (transactionsByPortfolioId[p.id] ?? []).length === 0,
+                  })}
+                </span>
               </span>
             </button>
             {portfoliosOnly ? (

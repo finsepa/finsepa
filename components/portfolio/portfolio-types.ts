@@ -5,8 +5,9 @@ export type ConnectBrokerageCompletePayload = {
   privacy: PortfolioPrivacy;
   authorizationId: string;
   /**
-   * When set, this is a RECONNECT of an already-linked portfolio: update that portfolio in
-   * place (safe-merge new broker rows) instead of creating a new one.
+   * When set, sync into this portfolio instead of creating a new one:
+   * - already linked / offline → reconnect + resync
+   * - empty manual → first SnapTrade link (keeps name & privacy)
    */
   reconnectPortfolioId?: string;
 };
@@ -91,8 +92,19 @@ export function portfolioIsOfflineBrokerage(p: PortfolioEntry | null | undefined
   return p?.snaptrade?.offline === true;
 }
 
-/** Subtitle for portfolio picker rows (combined / SnapTrade / manual). */
-export function portfolioKindSubtext(p: PortfolioEntry): string {
+/** Subtitle for portfolio picker rows (combined / SnapTrade / manual / empty). */
+export function portfolioKindSubtext(
+  p: PortfolioEntry,
+  opts?: { emptyLedger?: boolean },
+): string {
+  if (
+    opts?.emptyLedger &&
+    !portfolioIsDemo(p) &&
+    !portfolioIsCombined(p) &&
+    !portfolioIsBrokerageOrigin(p)
+  ) {
+    return "Not configured";
+  }
   if (portfolioIsDemo(p)) return "Demo";
   if (portfolioIsCombined(p)) return "Combined portfolio";
   if (portfolioIsOfflineBrokerage(p)) return "Brokerage · offline";

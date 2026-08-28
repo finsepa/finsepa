@@ -31,6 +31,15 @@ export function cumulativeRealizedGainUsdForAsset(
   routeKey: string,
   assetKind: "stock" | "crypto",
 ): number {
+  return cumulativeRealizedStatsForAsset(transactions, routeKey, assetKind).realizedGainUsd;
+}
+
+/** Realized $ and sold cost basis for one asset (for closed-position return %). */
+export function cumulativeRealizedStatsForAsset(
+  transactions: PortfolioTransaction[],
+  routeKey: string,
+  assetKind: "stock" | "crypto",
+): { realizedGainUsd: number; realizedCostBasisUsd: number } {
   const key = routeKey.trim().toUpperCase();
   const filtered = transactions.filter(
     (t) =>
@@ -38,7 +47,11 @@ export function cumulativeRealizedGainUsdForAsset(
       portfolioSymbolMatchesAssetRoute({ holdingSymbol: t.symbol, routeKey: key, kind: assetKind }),
   );
   const { transactions: migrated } = migratePortfolioTransactionSequences(filtered);
-  return replayPortfolioLedger(migrated, { mode: "display" }).realizedGainUsd;
+  const r = replayPortfolioLedger(migrated, { mode: "display" });
+  return {
+    realizedGainUsd: r.realizedGainUsd,
+    realizedCostBasisUsd: r.realizedCostBasisUsd,
+  };
 }
 
 /** Sum of trade row fees (buys, sells, splits) for one asset. */

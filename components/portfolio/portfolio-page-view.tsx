@@ -385,7 +385,7 @@ export function PortfolioPageView({
         >
           <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
         </button>
-        {!ledgerActionsLocked && !showEmptySetupTiles ? (
+        {!ledgerActionsLocked && !showEmptySetupTiles && !showDemoBanner ? (
           <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
         ) : null}
       </>
@@ -444,7 +444,7 @@ export function PortfolioPageView({
       ) : null}
 
       {showDemoBanner ? (
-        <PortfolioDemoBanner onCreateOwn={() => openCreatePortfolio({ mode: "manual" })} />
+        <PortfolioDemoBanner onCreateOwn={() => openCreatePortfolio()} />
       ) : null}
 
       <PortfolioOverviewAthProvider>

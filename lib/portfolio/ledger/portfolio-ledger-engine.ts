@@ -18,6 +18,8 @@ export type LedgerReplayResult = {
   holdings: PortfolioHolding[];
   cashUsd: number;
   realizedGainUsd: number;
+  /** Average-cost basis of shares sold (denominator for realized return %). */
+  realizedCostBasisUsd: number;
   openCostBasisUsd: number;
   ordered: PortfolioTransaction[];
   issues: PortfolioLedgerIssue[];
@@ -82,6 +84,7 @@ export function replayPortfolioLedger(
   const bySymbol = new Map<string, PortfolioHolding>();
   const issues: PortfolioLedgerIssue[] = [];
   let realizedGainUsd = 0;
+  let realizedCostBasisUsd = 0;
   let cashUsd = 0;
   let blocking = false;
 
@@ -251,6 +254,7 @@ export function replayPortfolioLedger(
         const proceedsUsed =
           Number.isFinite(t.sum) && t.shares > 0 ? (t.sum * sold) / t.shares : t.sum;
         realizedGainUsd += (Number.isFinite(proceedsUsed) ? proceedsUsed : 0) - costRemoved;
+        realizedCostBasisUsd += costRemoved;
         if (next) bySymbol.set(sym, next);
         else bySymbol.delete(sym);
         continue;
@@ -258,6 +262,7 @@ export function replayPortfolioLedger(
 
       const { next, costRemoved } = applySellExact(existing, t.shares);
       realizedGainUsd += t.sum - costRemoved;
+      realizedCostBasisUsd += costRemoved;
       if (next) bySymbol.set(sym, next);
       else bySymbol.delete(sym);
       continue;
@@ -271,6 +276,7 @@ export function replayPortfolioLedger(
     holdings,
     cashUsd,
     realizedGainUsd,
+    realizedCostBasisUsd,
     openCostBasisUsd,
     ordered,
     issues,

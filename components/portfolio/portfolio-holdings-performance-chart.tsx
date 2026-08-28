@@ -22,7 +22,9 @@ import {
 import { portfolioHoldingAssetHref } from "@/lib/crypto/crypto-picker-universe";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
-import { cumulativeRealizedGainUsdForAsset } from "@/lib/portfolio/realized-pnl-from-trades";
+import { cumulativeRealizedStatsForAsset } from "@/lib/portfolio/realized-pnl-from-trades";
+import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
+import { portfolioSymbolMatchesAssetRoute } from "@/lib/portfolio/portfolio-asset-route-match";
 import {
   portfolioHoldingDisplayName,
   usePortfolioHoldingDisplayNames,
@@ -46,6 +48,7 @@ type MetricMode = "usd" | "pct";
 
 type PerfRow = {
   h: PortfolioHolding;
+  closed: boolean;
   unrealizedUsd: number;
   realizedUsd: number;
   totalProfitUsd: number;
@@ -189,7 +192,12 @@ function HoldingsPerformanceBarChart({
           className={cn(FUNDAMENTALS_CHART_TOOLTIP_CLASS, "!fixed z-[200] w-[240px]")}
           style={{ left: tooltipPos.left, top: tooltipPos.top }}
         >
-          <div className="text-[12px] font-semibold leading-4 text-fg">{hovered.companyName}</div>
+          <div className="text-[12px] font-semibold leading-4 text-fg">
+            {hovered.companyName}
+            {hovered.closed ? (
+              <span className="ml-1.5 font-normal text-fg-muted">· Closed</span>
+            ) : null}
+          </div>
           <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[12px] leading-4">
             <div className="text-fg-muted">Unrealized</div>
             <div
@@ -199,7 +207,7 @@ function HoldingsPerformanceBarChart({
               )}
             >
               {formatSignedUsd(hovered.unrealizedUsd)}
-              {hovered.totalProfitPct != null ? (
+              {!hovered.closed && hovered.totalProfitPct != null ? (
                 <span className="font-normal text-fg-muted"> · {formatSignedPct(hovered.totalProfitPct)}</span>
               ) : null}
             </div>
@@ -215,6 +223,9 @@ function HoldingsPerformanceBarChart({
               )}
             >
               {formatSignedUsd(hovered.realizedUsd)}
+              {hovered.closed && hovered.totalProfitPct != null ? (
+                <span className="font-normal text-fg-muted"> · {formatSignedPct(hovered.totalProfitPct)}</span>
+              ) : null}
             </div>
             <div className="text-fg-muted">Total</div>
             <div
@@ -260,7 +271,14 @@ function HoldingsPerformanceBarChart({
                     onPointerEnter={(e) => updateHover(i, e.clientX, e.clientY)}
                     onPointerMove={(e) => updateHover(i, e.clientX, e.clientY)}
                   >
-                    <span className="relative z-[1] truncate tabular-nums">{row.symbol}</span>
+                    <span
+                      className={cn(
+                        "relative z-[1] truncate tabular-nums",
+                        row.closed && "text-fg-muted",
+                      )}
+                    >
+                      {row.symbol}
+                    </span>
                   </div>
                 );
               })}
@@ -419,19 +437,67 @@ function PortfolioHoldingsPerformanceChartInner({
 }) {
   const [metric, setMetric] = useState<MetricMode>("pct");
   const [sortDesc, setSortDesc] = useState(true);
-  const resolvedCompanyNames = usePortfolioHoldingDisplayNames(holdings);
+
+  const closedStubHoldings = useMemo((): PortfolioHolding[] => {
+    const stubs: PortfolioHolding[] = [];
+    const seenRoute = new Set<string>();
+
+    for (const t of transactions) {
+      if (t.kind !== "trade") continue;
+      const raw = t.symbol.trim();
+      if (!raw) continue;
+      const routeKey = cryptoRouteBase(raw) || raw.toUpperCase();
+      const key = routeKey.toUpperCase();
+      if (seenRoute.has(key)) continue;
+      seenRoute.add(key);
+
+      const assetKind: "stock" | "crypto" = isSupportedCryptoAssetSymbol(key) ? "crypto" : "stock";
+      const stillOpen = holdings.some((h) =>
+        portfolioSymbolMatchesAssetRoute({
+          holdingSymbol: h.symbol,
+          routeKey: key,
+          kind: assetKind,
+        }),
+      );
+      if (stillOpen) continue;
+
+      stubs.push({
+        id: `closed:${key}`,
+        symbol: raw.toUpperCase(),
+        name: t.name?.trim() || raw.toUpperCase(),
+        logoUrl: displayLogoUrlForPortfolioSymbol(raw) || null,
+        shares: 0,
+        avgPrice: 0,
+        costBasis: 0,
+        marketPrice: 0,
+        currentValue: 0,
+      });
+    }
+    return stubs;
+  }, [holdings, transactions]);
+
+  const nameSourceHoldings = useMemo(
+    () => [...holdings, ...closedStubHoldings],
+    [holdings, closedStubHoldings],
+  );
+  const resolvedCompanyNames = usePortfolioHoldingDisplayNames(nameSourceHoldings);
 
   const sortedRows = useMemo(() => {
     const rows: PerfRow[] = holdings.map((h) => {
       const unrealizedUsd = h.currentValue - h.costBasis;
       const routeKey = cryptoRouteBase(h.symbol);
       const assetKind: "stock" | "crypto" = isSupportedCryptoAssetSymbol(routeKey) ? "crypto" : "stock";
-      const realizedUsd = cumulativeRealizedGainUsdForAsset(transactions, routeKey, assetKind);
+      const { realizedGainUsd: realizedUsd } = cumulativeRealizedStatsForAsset(
+        transactions,
+        routeKey,
+        assetKind,
+      );
       const totalProfitUsd = unrealizedUsd + realizedUsd;
       // % is open-position only — don't divide lifetime (incl. realized) by remaining cost basis.
       const totalProfitPct = h.costBasis > 0 ? (unrealizedUsd / h.costBasis) * 100 : null;
       return {
         h,
+        closed: false,
         unrealizedUsd,
         realizedUsd,
         totalProfitUsd,
@@ -442,6 +508,31 @@ function PortfolioHoldingsPerformanceChartInner({
       };
     });
 
+    for (const stub of closedStubHoldings) {
+      const routeKey = cryptoRouteBase(stub.symbol);
+      const assetKind: "stock" | "crypto" = isSupportedCryptoAssetSymbol(routeKey) ? "crypto" : "stock";
+      const { realizedGainUsd: realizedUsd, realizedCostBasisUsd } = cumulativeRealizedStatsForAsset(
+        transactions,
+        routeKey,
+        assetKind,
+      );
+      // Skip empty closed stubs (e.g. trade noise with no sell cost / P&L).
+      if (Math.abs(realizedUsd) < 0.005 && realizedCostBasisUsd < 0.005) continue;
+      const totalProfitPct =
+        realizedCostBasisUsd > 0 ? (realizedUsd / realizedCostBasisUsd) * 100 : null;
+      rows.push({
+        h: stub,
+        closed: true,
+        unrealizedUsd: 0,
+        realizedUsd,
+        totalProfitUsd: realizedUsd,
+        totalProfitPct,
+        symbol: stub.symbol.trim().toUpperCase() || stub.name.trim(),
+        companyName: portfolioHoldingDisplayName(stub, resolvedCompanyNames),
+        assetHref: portfolioHoldingAssetHref(stub.symbol, { tab: "holdings" }),
+      });
+    }
+
     rows.sort((a, b) => {
       const av = rowValue(a, metric) ?? -Infinity;
       const bv = rowValue(b, metric) ?? -Infinity;
@@ -451,9 +542,16 @@ function PortfolioHoldingsPerformanceChartInner({
       return a.symbol.localeCompare(b.symbol);
     });
     return rows;
-  }, [holdings, transactions, resolvedCompanyNames, metric, sortDesc]);
+  }, [
+    holdings,
+    closedStubHoldings,
+    transactions,
+    resolvedCompanyNames,
+    metric,
+    sortDesc,
+  ]);
 
-  if (holdings.length === 0) {
+  if (sortedRows.length === 0) {
     return (
       <Empty variant="card" className="min-h-[min(40vh,360px)]">
         <EmptyHeader>

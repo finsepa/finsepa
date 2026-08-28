@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import {
   getSnapTradeBrokerageBrandForAuthorization,
   isSnapTradeConfigured,
   SnapTradeNotConfiguredError,
   SnapTradeUserStoreError,
 } from "@/lib/snaptrade/server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   try {
@@ -20,8 +19,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "authorizationId is required." }, { status: 400 });
     }
 
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
 
     const brand = await getSnapTradeBrokerageBrandForAuthorization(user.id, authorizationId);
     if (!brand) {

@@ -528,7 +528,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
             <>
               <div className="mb-4 flex flex-col gap-2">
                 <span className="text-sm font-medium leading-5 text-fg">Portfolio</span>
-                <TransactionPortfolioField portfoliosOnly />
+                <TransactionPortfolioField portfoliosOnly excludeDemoPortfolios />
               </div>
 
               {rows.length === 0 ? (

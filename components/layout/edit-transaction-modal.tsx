@@ -283,7 +283,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
           ) : isCash ? (
             <div className="flex flex-col gap-5">
               <Field label="Portfolio">
-                <TransactionPortfolioField />
+                <TransactionPortfolioField excludeDemoPortfolios />
               </Field>
               <Field label="Direction">
                 <CashDirectionSelect
@@ -307,7 +307,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
           ) : (
             <div className="flex flex-col gap-5">
               <Field label="Portfolio">
-                <TransactionPortfolioField />
+                <TransactionPortfolioField excludeDemoPortfolios />
               </Field>
               <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
               <div className="grid grid-cols-2 gap-4">

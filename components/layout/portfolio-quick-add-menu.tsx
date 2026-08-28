@@ -67,6 +67,8 @@ export function PortfolioQuickAddMenu({
   const menuPortalRef = useRef<HTMLDivElement>(null);
 
   const canCreateCombinedPortfolio = portfolios.filter((p) => p.kind !== "combined").length >= 2;
+  const selectedPortfolioName =
+    portfolios.find((p) => p.id === selectedPortfolioId)?.name.trim() || null;
 
   const activityItems: Array<{
     id: QuickAddItemId;
@@ -270,6 +272,11 @@ export function PortfolioQuickAddMenu({
             "origin-top-right [animation:quick-add-dropdown-in_220ms_ease-out_both] motion-reduce:[animation:none]",
           )}
         >
+          {selectedPortfolioName ? (
+            <div className="px-3 py-1.5 text-xs font-medium leading-4 text-fg-muted">
+              {selectedPortfolioName}
+            </div>
+          ) : null}
           {activityItems.map(renderItem)}
           <div
             role="separator"

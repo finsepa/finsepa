@@ -48,6 +48,7 @@ export function PublicPortfolioViewProvider({
       openCreatePortfolio: noop,
       openCreateCombinedPortfolio: noop,
       openConnectBrokerage: noop,
+      openConnectBrokerageToSelected: noop,
       openReconnectBrokerage: noop,
       openTryDemoPortfolio: noop,
       openSnaptradeSyncModal: noop,
