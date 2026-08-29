@@ -124,6 +124,7 @@ const PortfolioDividendsPanel = dynamic(
     import("@/components/portfolio/portfolio-dividends-panel").then((m) => ({
       default: m.PortfolioDividendsPanel as ComponentType<{
         holdings: PortfolioHolding[];
+        transactions?: PortfolioTransaction[];
         publicListingId?: string;
       }>,
     })),
@@ -565,7 +566,11 @@ export function PortfolioPageView({
                   id="portfolio-tab-dividends"
                   aria-hidden={viewTab !== "Dividends"}
                 >
-                  <PortfolioDividendsPanel holdings={holdings} publicListingId={publicListingId} />
+                  <PortfolioDividendsPanel
+                    holdings={holdings}
+                    transactions={transactions}
+                    publicListingId={publicListingId}
+                  />
                 </div>
               ) : null}
 

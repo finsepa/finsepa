@@ -32,6 +32,7 @@ import type {
   PortfolioDividendScheduleMonth,
   PortfolioDividendScheduleRow,
   PortfolioDividendsSchedulePayload,
+  PortfolioDividendsYearBounds,
 } from "@/lib/portfolio/portfolio-dividends-schedule-types";
 
 export type {
@@ -39,6 +40,7 @@ export type {
   PortfolioDividendScheduleMonth,
   PortfolioDividendScheduleRow,
   PortfolioDividendsSchedulePayload,
+  PortfolioDividendsYearBounds,
 } from "@/lib/portfolio/portfolio-dividends-schedule-types";
 
 type HoldingInput = { symbol: string; shares: number };
@@ -48,6 +50,7 @@ type ScheduleWindow = {
   paymentToYmd: string;
   calendarToYmd: string;
   historyFromYmd: string;
+  yearBounds: PortfolioDividendsYearBounds;
 };
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
@@ -137,12 +140,26 @@ function projectExDatesFromHistory(history: EodhdDividendRow[], fromYmd: string,
   return out;
 }
 
-function scheduleWindowForToday(today = new Date()): ScheduleWindow {
-  const fromYmd = format(today, "yyyy-MM-dd");
-  const paymentToYmd = format(addMonths(today, 12), "yyyy-MM-dd");
-  const calendarToYmd = format(addDays(addMonths(today, 12), 45), "yyyy-MM-dd");
+/**
+ * Shared calendar window for all portfolios: prior year → next year.
+ * Stable year keys keep ticker snapshots reusable across users (no per-visitor EODHD fan-out).
+ * Client clamps navigation further with portfolio inception year.
+ */
+function scheduleWindowForCalendarYears(today = new Date()): ScheduleWindow {
+  const currentYear = today.getFullYear();
+  const minYear = currentYear - 1;
+  const maxYear = currentYear + 1;
+  const fromYmd = `${minYear}-01-01`;
+  const paymentToYmd = `${maxYear}-12-31`;
+  const calendarToYmd = format(addDays(parseISO(paymentToYmd), 45), "yyyy-MM-dd");
   const historyFromYmd = format(addMonths(parseISO(fromYmd), -24), "yyyy-MM-dd");
-  return { fromYmd, paymentToYmd, calendarToYmd, historyFromYmd };
+  return {
+    fromYmd,
+    paymentToYmd,
+    calendarToYmd,
+    historyFromYmd,
+    yearBounds: { minYear, maxYear, currentYear },
+  };
 }
 
 function yieldPctFromRatio(ratio: number | null): number | null {
@@ -268,7 +285,7 @@ async function buildPortfolioDividendsScheduleUncached(
   windowKey: string,
 ): Promise<PortfolioDividendsSchedulePayload> {
   void windowKey;
-  const window = scheduleWindowForToday();
+  const window = scheduleWindowForCalendarYears();
   const eligible = normalizeHoldings(holdings);
 
   const inputsBySymbol = new Map<
@@ -307,13 +324,13 @@ async function buildPortfolioDividendsScheduleUncached(
       const labelDate = parseISO(`${monthKey}-01`);
       return {
         monthKey,
-        label: format(labelDate, "MMMM yy"),
+        label: format(labelDate, "MMMM yyyy"),
         totalUsd,
         rows: sortedRows,
       };
     });
 
-  return { months };
+  return { months, yearBounds: window.yearBounds };
 }
 
 const getCachedPortfolioDividendsSchedule = unstable_cache(
@@ -321,15 +338,16 @@ const getCachedPortfolioDividendsSchedule = unstable_cache(
     const holdings = JSON.parse(holdingsJson) as HoldingInput[];
     return buildPortfolioDividendsScheduleUncached(holdings, windowKey);
   },
-  ["portfolio-dividends-schedule-v1"],
+  ["portfolio-dividends-schedule-v2-calendar-years"],
   { revalidate: REVALIDATE_HOT },
 );
 
 export async function buildPortfolioDividendsSchedule(
   holdings: HoldingInput[],
 ): Promise<PortfolioDividendsSchedulePayload> {
-  const window = scheduleWindowForToday();
-  const windowKey = `${window.fromYmd}|${window.paymentToYmd}|${window.calendarToYmd}`;
+  const window = scheduleWindowForCalendarYears();
+  // Year-stable key → one shared cache entry per holdings set for the calendar year span.
+  const windowKey = `${window.yearBounds.minYear}|${window.yearBounds.maxYear}`;
   const normalized = normalizeHoldings(holdings);
   const holdingsJson = JSON.stringify(
     normalized.map((h) => ({ symbol: h.symbol, shares: h.shares })),

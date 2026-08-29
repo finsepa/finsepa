@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { CalendarDays, Clock } from "@/lib/icons";
+import { CalendarDays } from "@/lib/icons";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
@@ -27,7 +27,9 @@ import type {
   PortfolioDividendScheduleMonth,
   PortfolioDividendScheduleRow,
   PortfolioDividendsSchedulePayload,
+  PortfolioDividendsYearBounds,
 } from "@/lib/portfolio/portfolio-dividends-schedule-types";
+import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import {
   Empty,
   EmptyDescription,
@@ -35,9 +37,9 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { SecondaryTabs, type SecondaryTabItem } from "@/components/ui/secondary-tabs";
 import { cn } from "@/lib/utils";
 import { PortfolioDividendsChart } from "@/components/portfolio/portfolio-dividends-chart";
-import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
 
 const usd0 = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -58,11 +60,10 @@ const HOLDING_COMPANY_NAME_CLASS =
 /** Matches overview-market client session dedupe (`portfolio-overview-cards.tsx`). */
 const DIVIDENDS_SESSION_TTL_MS = 5 * 60_000;
 
-/** Desktop dividends columns — company + payment/amount/frequency/yield/ex-date (fluid; no forced min-width that clips card insets). */
+/** Desktop: company + dividend date + amount + frequency + yield. */
 const DIVIDENDS_GRID =
-  "grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.75fr)_minmax(0,1fr)] items-center gap-x-2";
+  "grid w-full min-w-0 grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.85fr)] items-center gap-x-2";
 
-/** Right-aligned metrics — 12px end inset ({@link TABLE_END_ALIGNED_PAD_CLASS}). */
 const DIVIDENDS_NUMERIC_CELL = cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS);
 
 function formatSignedUsd(n: number): string {
@@ -86,22 +87,21 @@ function formatShortDate(ymd: string): string {
   }
 }
 
-function StatusBadge({ status }: { status: PortfolioDividendScheduleRow["status"] }) {
-  const declared = status === "declared";
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 text-[12px] font-normal leading-4",
-        declared ? "text-accent" : "text-fg-muted",
-      )}
-    >
-      <span
-        className={cn("h-1.5 w-1.5 shrink-0 rounded-full", declared ? "bg-accent" : "bg-fg-subtle")}
-        aria-hidden
-      />
-      {declared ? "Declared" : "Estimated"}
-    </span>
-  );
+function portfolioStartYear(transactions: readonly PortfolioTransaction[]): number | null {
+  let min: number | null = null;
+  for (const tx of transactions) {
+    const d = typeof tx.date === "string" ? tx.date.trim() : "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+    const y = Number(d.slice(0, 4));
+    if (!Number.isFinite(y)) continue;
+    min = min == null ? y : Math.min(min, y);
+  }
+  return min;
+}
+
+function defaultYearBounds(): PortfolioDividendsYearBounds {
+  const currentYear = new Date().getFullYear();
+  return { minYear: currentYear - 1, maxYear: currentYear + 1, currentYear };
 }
 
 function DividendRowMobile({
@@ -180,13 +180,7 @@ function DividendDesktopRow({
             </div>
           </div>
           <div className={DIVIDENDS_NUMERIC_CELL}>
-            <div className="inline-flex w-full items-center justify-end gap-1 font-['Inter'] tabular-nums text-fg">
-              {formatShortDate(row.paymentDate)}
-              <Clock className="h-3.5 w-3.5 shrink-0 text-fg-subtle" strokeWidth={1.75} aria-hidden />
-            </div>
-            <div className="mt-0.5 flex justify-end">
-              <StatusBadge status={row.status} />
-            </div>
+            <div className="font-['Inter'] tabular-nums text-fg">{formatShortDate(row.paymentDate)}</div>
           </div>
           <div className={DIVIDENDS_NUMERIC_CELL}>
             <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
@@ -198,30 +192,11 @@ function DividendDesktopRow({
             <div className="font-['Inter'] text-[14px] font-medium leading-5 text-fg">
               {row.frequencyLabel ?? "—"}
             </div>
-            {row.growthPct != null && Number.isFinite(row.growthPct) ? (
-              <div
-                className={cn(
-                  "text-[12px] font-medium leading-4 tabular-nums",
-                  row.growthPct >= 0 ? "text-up" : "text-down",
-                )}
-              >
-                {row.growthPct >= 0 ? "▲" : "▼"} {pctFmt.format(Math.abs(row.growthPct))}%
-              </div>
-            ) : (
-              <div className="text-[12px] font-normal leading-4 text-fg-muted">—</div>
-            )}
           </div>
           <div className={DIVIDENDS_NUMERIC_CELL}>
             <div className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-fg">
               {row.yieldPct != null ? `${pctFmt.format(row.yieldPct)}%` : "—"}
             </div>
-            <div className="text-[12px] font-normal leading-4 text-fg-muted">yield</div>
-          </div>
-          <div className={DIVIDENDS_NUMERIC_CELL}>
-            <div className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-fg">
-              {row.exDividendDate ? formatShortDate(row.exDividendDate) : "—"}
-            </div>
-            <div className="text-[12px] font-normal leading-4 text-fg-muted">Ex-dividend date</div>
           </div>
         </div>
       </div>
@@ -250,12 +225,11 @@ function DividendsScheduleTables({
                 </span>
               ) : null}
             </div>
-            {/* Same card chrome + 16px row inset as holdings / screener tables. */}
             <ScreenerTableScroll minWidthClassName="min-w-0">
               <div className="bg-surface">
                 {month.rows.map((row, i) => (
                   <DividendRowMobile
-                    key={`${row.symbol}-${row.paymentDate}-${row.exDividendDate ?? ""}`}
+                    key={`${row.symbol}-${row.paymentDate}`}
                     row={row}
                     companyName={nameBySymbol.get(row.symbol) ?? row.symbol}
                     showDivider={i < month.rows.length - 1}
@@ -296,18 +270,17 @@ function DividendsScheduleTables({
                       )}
                     >
                       <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Company</div>
-                      <div className={DIVIDENDS_NUMERIC_CELL}>Payment</div>
+                      <div className={DIVIDENDS_NUMERIC_CELL}>Date</div>
                       <div className={DIVIDENDS_NUMERIC_CELL}>Amount</div>
                       <div className={DIVIDENDS_NUMERIC_CELL}>Frequency</div>
                       <div className={DIVIDENDS_NUMERIC_CELL}>Yield</div>
-                      <div className={DIVIDENDS_NUMERIC_CELL}>Ex-dividend</div>
                     </div>
                   </div>
                   <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
                 </div>
                 {month.rows.map((row, i) => (
                   <DividendDesktopRow
-                    key={`${row.symbol}-${row.paymentDate}-${row.exDividendDate ?? ""}`}
+                    key={`${row.symbol}-${row.paymentDate}`}
                     row={row}
                     companyName={nameBySymbol.get(row.symbol) ?? row.symbol}
                     showDivider={i < month.rows.length - 1}
@@ -322,17 +295,53 @@ function DividendsScheduleTables({
   );
 }
 
+function DividendsYearTabs({
+  year,
+  minYear,
+  maxYear,
+  onYearChange,
+}: {
+  year: number;
+  minYear: number;
+  maxYear: number;
+  onYearChange: (year: number) => void;
+}) {
+  /** Newest → oldest (future left, older right) — same pill tabs as Overview Assets / Earnings. */
+  const items = useMemo((): SecondaryTabItem<string>[] => {
+    const out: SecondaryTabItem<string>[] = [];
+    for (let y = maxYear; y >= minYear; y--) {
+      out.push({ id: String(y), label: String(y) });
+    }
+    return out;
+  }, [minYear, maxYear]);
+
+  if (items.length === 0) return null;
+
+  return (
+    <SecondaryTabs
+      className="mb-5"
+      aria-label="Dividend year"
+      items={items}
+      value={String(year)}
+      onValueChange={(id) => onYearChange(Number(id))}
+    />
+  );
+}
+
 function PortfolioDividendsPanelInner({
   holdings,
+  transactions = [],
   publicListingId,
 }: {
   holdings: PortfolioHolding[];
+  transactions?: PortfolioTransaction[];
   publicListingId?: string;
 }) {
   const resolvedNames = usePortfolioHoldingDisplayNames(holdings);
   const [payload, setPayload] = useState<PortfolioDividendsSchedulePayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const lastLoadKeyRef = useRef("");
   const lastLoadStateRef = useRef<"idle" | "inflight" | "done" | "error">("idle");
   const loadGenRef = useRef(0);
@@ -347,7 +356,6 @@ function PortfolioDividendsPanelInner({
     return m;
   }, [holdings, resolvedNames]);
 
-  /** Stable string key — never spread holdings into `useEffect` deps (length must stay constant). */
   const holdingsKey = useMemo(
     () =>
       holdings
@@ -357,9 +365,19 @@ function PortfolioDividendsPanelInner({
     [holdings],
   );
 
+  const inceptionYear = useMemo(() => portfolioStartYear(transactions), [transactions]);
+
+  const yearBounds = payload?.yearBounds ?? defaultYearBounds();
+  const navMinYear = Math.max(yearBounds.minYear, inceptionYear ?? yearBounds.minYear);
+  const navMaxYear = yearBounds.maxYear;
+
+  useEffect(() => {
+    setSelectedYear((y) => Math.min(navMaxYear, Math.max(navMinYear, y)));
+  }, [navMinYear, navMaxYear]);
+
   useEffect(() => {
     if (holdings.length === 0) {
-      setPayload({ months: [] });
+      setPayload({ months: [], yearBounds: defaultYearBounds() });
       setError(null);
       lastLoadKeyRef.current = "";
       lastLoadStateRef.current = "idle";
@@ -373,12 +391,17 @@ function PortfolioDividendsPanelInner({
     }
     lastLoadKeyRef.current = loadKey;
 
-    const sessionKey = `finsepa.portfolio.dividendsSchedule.v1.${loadKey}`;
+    const sessionKey = `finsepa.portfolio.dividendsSchedule.v3.${loadKey}`;
     try {
       const raw = sessionStorage.getItem(sessionKey);
       if (raw) {
         const parsed = JSON.parse(raw) as { at: number; data: PortfolioDividendsSchedulePayload };
-        if (parsed && typeof parsed.at === "number" && Date.now() - parsed.at < DIVIDENDS_SESSION_TTL_MS) {
+        if (
+          parsed &&
+          typeof parsed.at === "number" &&
+          Date.now() - parsed.at < DIVIDENDS_SESSION_TTL_MS &&
+          parsed.data?.yearBounds
+        ) {
           setPayload(parsed.data);
           setError(null);
           lastLoadStateRef.current = "done";
@@ -419,11 +442,15 @@ function PortfolioDividendsPanelInner({
         const json = (await res.json()) as PortfolioDividendsSchedulePayload;
         if (cancelled) return;
 
-        setPayload(json);
+        const normalized: PortfolioDividendsSchedulePayload = {
+          months: Array.isArray(json.months) ? json.months : [],
+          yearBounds: json.yearBounds ?? defaultYearBounds(),
+        };
+        setPayload(normalized);
         setError(null);
         lastLoadStateRef.current = "done";
         try {
-          sessionStorage.setItem(sessionKey, JSON.stringify({ at: Date.now(), data: json }));
+          sessionStorage.setItem(sessionKey, JSON.stringify({ at: Date.now(), data: normalized }));
         } catch {
           // ignore
         }
@@ -431,7 +458,7 @@ function PortfolioDividendsPanelInner({
         if (cancelled || gen !== loadGenRef.current) return;
         setError("Could not load dividend schedule");
         lastLoadStateRef.current = "error";
-        setPayload((prev) => prev ?? { months: [] });
+        setPayload((prev) => prev ?? { months: [], yearBounds: defaultYearBounds() });
       } finally {
         if (gen === loadGenRef.current) setLoading(false);
       }
@@ -445,6 +472,13 @@ function PortfolioDividendsPanelInner({
     };
   }, [holdingsKey, publicListingId]);
 
+  const yearMonths = useMemo(() => {
+    const prefix = `${selectedYear}-`;
+    return (payload?.months ?? []).filter((m) => m.monthKey.startsWith(prefix));
+  }, [payload?.months, selectedYear]);
+
+  const yearHasRows = yearMonths.some((m) => m.rows.length > 0);
+
   if (holdings.length === 0) {
     return (
       <Empty variant="card" className="min-h-[min(40vh,360px)]">
@@ -454,7 +488,7 @@ function PortfolioDividendsPanelInner({
           </EmptyMedia>
           <EmptyTitle>No holdings yet</EmptyTitle>
           <EmptyDescription>
-            Add dividend-paying stocks to see projected payouts by month for the next year.
+            Add dividend-paying stocks to see payouts by month for each year.
           </EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -484,27 +518,32 @@ function PortfolioDividendsPanelInner({
     );
   }
 
-  const months = payload?.months ?? [];
-  if (months.length === 0) {
-    return (
-      <Empty variant="card" className="min-h-[min(40vh,360px)]">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <CalendarDays className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-          </EmptyMedia>
-          <EmptyTitle>No upcoming dividends</EmptyTitle>
-          <EmptyDescription>
-            None of your holdings have scheduled or projected dividend payments in the next 12 months.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-    );
-  }
-
   return (
     <div className="w-full min-w-0 pb-8">
-      <PortfolioDividendsChart months={months} />
-      <DividendsScheduleTables months={months} nameBySymbol={nameBySymbol} />
+      <DividendsYearTabs
+        year={selectedYear}
+        minYear={navMinYear}
+        maxYear={navMaxYear}
+        onYearChange={setSelectedYear}
+      />
+      <PortfolioDividendsChart months={yearMonths} year={selectedYear} />
+      {yearHasRows ? (
+        <DividendsScheduleTables months={yearMonths} nameBySymbol={nameBySymbol} />
+      ) : (
+        <Empty variant="card" className="min-h-[min(28vh,240px)]">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <CalendarDays className="h-6 w-6" strokeWidth={1.75} aria-hidden />
+            </EmptyMedia>
+            <EmptyTitle>No dividends in {selectedYear}</EmptyTitle>
+            <EmptyDescription>
+              {selectedYear > yearBounds.currentYear
+                ? "No projected payouts for next year based on your current holdings."
+                : "None of your holdings have dividend payments in this year."}
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      )}
     </div>
   );
 }
