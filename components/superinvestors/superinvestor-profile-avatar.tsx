@@ -5,7 +5,7 @@ import { UserRound } from "@/lib/icons";
 
 import { cn } from "@/lib/utils";
 
-/** White-on-dark logos need a dark tile or they disappear on the default gray circle. */
+/** White-on-dark logos need a fixed dark tile — never `bg-fg` (flips to white in dark mode). */
 function avatarNeedsDarkTile(src: string): boolean {
   return src.includes("blackrock") || src.includes("baillie-gifford");
 }
@@ -52,7 +52,7 @@ export function SuperinvestorProfileAvatar({
 
   return (
     <span
-      className={cn(shell, darkTile ? "bg-fg" : "bg-surface-muted")}
+      className={cn(shell, darkTile ? "bg-[#141414]" : "bg-surface-muted")}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars */}
       <img

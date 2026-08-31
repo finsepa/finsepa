@@ -19,8 +19,8 @@ import type { PortfolioDividendScheduleMonth } from "@/lib/portfolio/portfolio-d
 import { cn } from "@/lib/utils";
 
 const BAR_COLOR = fundamentalsBarSolidAtIndex(0);
-/** Current calendar month — same red as axis label (`text-down`). */
-const CURRENT_BAR_COLOR = "var(--fs-down)";
+/** Current calendar month — brand orange (`--fs-orange` / `text-orange`). */
+const CURRENT_BAR_COLOR = "var(--fs-orange)";
 /** Future months — muted grey (theme token). */
 const FUTURE_BAR_COLOR = "var(--fs-fg-subtle)";
 
@@ -321,7 +321,7 @@ function PortfolioDividendsChartInner({
                 <span
                   className={cn(
                     "inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none sm:text-[12px]",
-                    p.isCurrent ? "font-semibold text-down" : "text-fg-muted",
+                    p.isCurrent ? "font-semibold text-orange" : "text-fg-muted",
                   )}
                 >
                   {p.axisLabel}

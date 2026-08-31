@@ -44,7 +44,7 @@ export function SearchResultLogo({ item }: { item: SearchAssetItem }) {
           item.type === "superinvestor" ? "rounded-full object-cover" : "rounded-lg",
           item.type === "superinvestor" &&
             (src.includes("blackrock") || src.includes("baillie-gifford")) &&
-            "bg-fg p-1",
+            "bg-[#141414] p-1",
         )}
         onError={() => {
           setFailedSrc(src);

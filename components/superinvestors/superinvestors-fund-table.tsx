@@ -48,7 +48,8 @@ function FundRowAvatar({ src, displayName }: { src: string | null | undefined; d
     <span
       className={cn(
         "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-stroke-muted",
-        darkTile ? "bg-fg" : "bg-surface-muted",
+        // Fixed dark tile — `bg-fg` flips to white in dark mode and frames these logos.
+        darkTile ? "bg-[#141414]" : "bg-surface-muted",
       )}
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars */}
