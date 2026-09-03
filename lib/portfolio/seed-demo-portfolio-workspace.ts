@@ -5,8 +5,8 @@ import {
   portfolioIsCombined,
   portfolioIsDemo,
   type PortfolioEntry,
-  type PortfolioGoal,
 } from "@/components/portfolio/portfolio-types";
+import { defaultDemoPortfolioGoal } from "@/lib/portfolio/demo-portfolio-goal";
 import { buildDemoPortfolioSeed } from "@/lib/portfolio/demo-portfolio-seed";
 import type { PersistedPortfolioState } from "@/lib/portfolio/portfolio-storage";
 
@@ -32,20 +32,6 @@ function emptyWorkspaceState(): PersistedPortfolioState {
     selectedPortfolioId: null,
     holdingsByPortfolioId: {},
     transactionsByPortfolioId: {},
-  };
-}
-
-function defaultDemoPortfolioGoal(now = new Date()): PortfolioGoal {
-  const year = now.getFullYear();
-  return {
-    kind: "value",
-    targetUsd: 1_000_000,
-    // Matches the UX “5 Years” at 2026 -> 2031; remains 5 years from now.
-    achieveByYear: year + 5,
-    monthlyContributionUsd: 2_000,
-    reinvestDividends: true,
-    // Keep demo UX stable without running an annual-return provider path at sign-up.
-    portfolioAnnualReturnPct: 28.52,
   };
 }
 

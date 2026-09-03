@@ -141,9 +141,7 @@ export function PortfolioGoalPanel({
   const dividendIncome = usePortfolioDividendAnnualUsd(holdings);
   const currentAnnualPassiveIncomeUsd = dividendIncome.annualUsd;
   const currentDividendYieldPct = dividendIncome.yieldPct;
-  const shouldComputePortfolioReturn =
-    goal == null || (goal.kind === "value" && goal.portfolioAnnualReturnPct == null);
-  const portfolioAverageAnnualReturnPct = usePortfolioAverageAnnualReturnPct(transactions, shouldComputePortfolioReturn);
+  const portfolioAverageAnnualReturnPct = usePortfolioAverageAnnualReturnPct(transactions);
 
   const holdingsEquityUsd = useMemo(
     () => holdings.reduce((sum, h) => sum + (Number.isFinite(h.currentValue) ? h.currentValue : 0), 0),

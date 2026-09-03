@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { parsePersistedPortfolioUnknown, mergePersistedPortfolioGoals } from "@/lib/portfolio/portfolio-storage";
+import { parsePersistedPortfolioUnknown, mergePersistedPortfolioGoals, persistedGoalsNeedCloudSync } from "@/lib/portfolio/portfolio-storage";
 
 describe("portfolio-storage goals", () => {
   it("round-trips goalByPortfolioId in workspace JSON", () => {
@@ -98,5 +98,36 @@ describe("portfolio-storage goals", () => {
     assert.ok(local && remote);
     const merged = mergePersistedPortfolioGoals(local, remote);
     assert.deepEqual(merged.goalByPortfolioId?.p1, local.goalByPortfolioId?.p1);
+  });
+
+  it("persistedGoalsNeedCloudSync is true when merged adds goals missing on remote", () => {
+    const remote = parsePersistedPortfolioUnknown({
+      v: 1,
+      savedAt: 1_800_000_000_000,
+      portfolios: [{ id: "p1", name: "Main", privacy: "private" }],
+      selectedPortfolioId: "p1",
+      holdingsByPortfolioId: { p1: [] },
+      transactionsByPortfolioId: { p1: [] },
+    });
+    const local = parsePersistedPortfolioUnknown({
+      v: 1,
+      savedAt: 1_700_000_000_000,
+      portfolios: [{ id: "p1", name: "Main", privacy: "private" }],
+      selectedPortfolioId: "p1",
+      holdingsByPortfolioId: { p1: [] },
+      transactionsByPortfolioId: { p1: [] },
+      goalByPortfolioId: {
+        p1: {
+          kind: "value",
+          targetUsd: 500_000,
+          achieveByYear: 2030,
+          monthlyContributionUsd: 1_000,
+          reinvestDividends: true,
+        },
+      },
+    });
+    assert.ok(remote && local);
+    const merged = mergePersistedPortfolioGoals(local, remote);
+    assert.equal(persistedGoalsNeedCloudSync(remote, merged), true);
   });
 });

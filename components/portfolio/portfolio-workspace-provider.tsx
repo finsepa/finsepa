@@ -25,6 +25,7 @@ import {
 import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
 import { buildDemoPortfolioSeed, demoLedgerNeedsReseed, ensureDemoDividendTransactions } from "@/lib/portfolio/demo-portfolio-seed";
+import { defaultDemoPortfolioGoal } from "@/lib/portfolio/demo-portfolio-goal";
 import { AddCashModal } from "@/components/layout/add-cash-modal";
 import { DeletePortfolioConfirmModal } from "@/components/portfolio/delete-portfolio-confirm-modal";
 import { ClearableInput } from "@/components/layout/clearable-input";
@@ -100,6 +101,7 @@ import {
   loadPersistedPortfolioStateForUser,
   mergePersistedPortfolioGoals,
   parsePersistedPortfolioUnknown,
+  persistedGoalsNeedCloudSync,
   portfolioStateHasLedgerData,
   saveLastSelectedPortfolioId,
   savePersistedPortfolioStateForUser,
@@ -119,8 +121,23 @@ import {
   replayTradeTransactionsToHoldings,
 } from "@/lib/portfolio/rebuild-holdings-from-trades";
 
-/** Always keep at least one portfolio; created when the user deletes the last one. */
+/** Default portfolio; created when the user deletes the last one. */
 const DEFAULT_PORTFOLIO_NAME = "My Portfolio";
+
+async function persistWorkspaceStateToCloud(state: PersistedPortfolioState): Promise<boolean> {
+  const { state: prepared } = prepareWorkspaceLedgerForPersist(state);
+  const putRes = await fetch("/api/portfolio/workspace", {
+    method: "PUT",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ state: prepared }),
+  });
+  const putBody = (await putRes.json().catch(() => null)) as {
+    ok?: boolean;
+    warning?: string;
+  } | null;
+  return putRes.ok && putBody?.ok !== false && putBody?.warning !== "db_unavailable";
+}
 
 function ensureAtLeastOnePortfolio(portfolios: PortfolioEntry[]): PortfolioEntry[] {
   if (portfolios.length > 0) return portfolios;
@@ -807,6 +824,14 @@ export function PortfolioWorkspaceProvider({
                   ...merged,
                   savedAt: remoteTime > 0 ? remoteTime : Date.now(),
                 });
+                if (persistedGoalsNeedCloudSync(remote, merged)) {
+                  const synced = await persistWorkspaceStateToCloud(merged);
+                  if (!synced) {
+                    toast.error("Portfolio not synced", {
+                      description: "Saved on this device — we could not update your account yet.",
+                    });
+                  }
+                }
             } else if (localIsNewer) {
                 applyWorkspaceState(local);
                 savePersistedPortfolioStateForUser(userId, local);
@@ -832,6 +857,14 @@ export function PortfolioWorkspaceProvider({
                   ...merged,
                   savedAt: remoteTime > 0 ? remoteTime : Date.now(),
                 });
+                if (persistedGoalsNeedCloudSync(remote, merged)) {
+                  const synced = await persistWorkspaceStateToCloud(merged);
+                  if (!synced) {
+                    toast.error("Portfolio not synced", {
+                      description: "Saved on this device — we could not update your account yet.",
+                    });
+                  }
+                }
               }
             } else if (local && local.portfolios.length > 0) {
               // Always promote local workspace when cloud has none — including empty
@@ -873,6 +906,13 @@ export function PortfolioWorkspaceProvider({
 
   const setPortfolioGoal = useCallback((portfolioId: string, goal: PortfolioGoal | null) => {
     setGoalByPortfolioIdState((prev) => ({ ...prev, [portfolioId]: goal }));
+  }, []);
+
+  const ensureDemoPortfolioGoal = useCallback((portfolioId: string) => {
+    setGoalByPortfolioIdState((prev) => {
+      if (portfolioId in prev) return prev;
+      return { ...prev, [portfolioId]: defaultDemoPortfolioGoal() };
+    });
   }, []);
 
   /** Immediate localStorage write so data survives fast sign-out / navigation (debounce cancel). */
@@ -1341,6 +1381,7 @@ export function PortfolioWorkspaceProvider({
         next[seed.portfolio.id] = seed.transactions;
         return next;
       });
+      ensureDemoPortfolioGoal(seed.portfolio.id);
       demoDividendsAppliedRef.current.add(seed.portfolio.id);
       stockSplitsFpRef.current.delete(seed.portfolio.id);
       setSelectedPortfolioId(seed.portfolio.id);
@@ -1356,6 +1397,7 @@ export function PortfolioWorkspaceProvider({
       const existing = portfolios.find((p) => portfolioIsDemo(p));
       if (existing) {
         setSelectedPortfolioId(existing.id);
+        ensureDemoPortfolioGoal(existing.id);
         if (!reseedDemoLedgerIfNeeded(existing.id)) {
           // Seed marks are historic fill prices — always re-mark to market when focusing demo.
           runHoldingsQuoteRefresh({
@@ -1374,6 +1416,7 @@ export function PortfolioWorkspaceProvider({
     setPortfolios((prev) => [...prev, seed.portfolio]);
     setPortfolioHoldings(seed.portfolio.id, seed.holdings);
     setPortfolioTransactions(seed.portfolio.id, seed.transactions);
+    ensureDemoPortfolioGoal(seed.portfolio.id);
     setSelectedPortfolioId(seed.portfolio.id);
     demoDividendsAppliedRef.current.add(seed.portfolio.id);
     // Holdings are provisionally last-fill (early 2023) until live quotes / split sync land.
@@ -1392,6 +1435,7 @@ export function PortfolioWorkspaceProvider({
     syncStockSplitsForPortfolio,
     ensureDemoDividendsForPortfolio,
     reseedDemoLedgerIfNeeded,
+    ensureDemoPortfolioGoal,
   ]);
 
   /**
@@ -1406,6 +1450,7 @@ export function PortfolioWorkspaceProvider({
     const existingDemo = portfolios.find((p) => portfolioIsDemo(p));
     if (existingDemo) {
       reseedDemoLedgerIfNeeded(existingDemo.id);
+      ensureDemoPortfolioGoal(existingDemo.id);
       const hasManual = portfolios.some((p) => isManualPortfolioForFreeQuota(p));
       const selected = portfolios.find((p) => p.id === selectedPortfolioId);
       // Free with Demo only — keep Demo selected (don't force off a real manual book).
@@ -1448,6 +1493,7 @@ export function PortfolioWorkspaceProvider({
       next[seed.portfolio.id] = seed.transactions;
       return next;
     });
+    ensureDemoPortfolioGoal(seed.portfolio.id);
     demoDividendsAppliedRef.current.add(seed.portfolio.id);
     setSelectedPortfolioId(seed.portfolio.id);
     runHoldingsQuoteRefresh({ [seed.portfolio.id]: seed.holdings });
@@ -1464,6 +1510,7 @@ export function PortfolioWorkspaceProvider({
     runHoldingsQuoteRefresh,
     syncStockSplitsForPortfolio,
     reseedDemoLedgerIfNeeded,
+    ensureDemoPortfolioGoal,
   ]);
 
   const openEditTransaction = useCallback(

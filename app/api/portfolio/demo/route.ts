@@ -51,6 +51,28 @@ export async function POST(request: Request) {
     const seeded = seedDemoPortfolioInWorkspace(previous, { convertPortfolioId });
 
     if ("alreadyExists" in seeded && seeded.alreadyExists) {
+      const previousGoals = previous?.goalByPortfolioId?.[seeded.portfolioId];
+      const nextGoals = seeded.state.goalByPortfolioId?.[seeded.portfolioId];
+      if (nextGoals != null && previousGoals == null) {
+        const { state: prepared, report: migrateReport } = prepareWorkspaceLedgerForPersist(seeded.state);
+        const now = new Date().toISOString();
+        const { error: writeError } = await supabase.from("portfolio_workspace").upsert(
+          {
+            user_id: user.id,
+            state: prepared satisfies PersistedPortfolioState,
+            updated_at: now,
+          },
+          { onConflict: "user_id" },
+        );
+        if (writeError) {
+          console.error("[portfolio/demo POST] goal backfill", writeError.message);
+        } else if (migrateReport.changed) {
+          console.info("[portfolio/demo POST] demo goal backfill persisted", {
+            userId: user.id,
+            portfolioId: seeded.portfolioId,
+          });
+        }
+      }
       return NextResponse.json({
         ok: true,
         portfolioId: seeded.portfolioId,

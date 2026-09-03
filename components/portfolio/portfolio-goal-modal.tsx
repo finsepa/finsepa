@@ -263,6 +263,7 @@ export function PortfolioGoalModal({
   const [yieldInput, setYieldInput] = useState(initialForm.yieldInput);
   const [growthInput, setGrowthInput] = useState(initialForm.growthInput);
   const yieldTouchedRef = useRef(false);
+  const returnTouchedRef = useRef(false);
 
   const wasOpenRef = useRef(open);
   useEffect(() => {
@@ -270,6 +271,7 @@ export function PortfolioGoalModal({
     wasOpenRef.current = open;
     if (!justOpened) return;
     yieldTouchedRef.current = false;
+    returnTouchedRef.current = false;
     const next = goalFormStateFromProps(
       initialGoal,
       portfolioAverageAnnualReturnPct,
@@ -292,6 +294,14 @@ export function PortfolioGoalModal({
     if (currentDividendYieldPct == null || !Number.isFinite(currentDividendYieldPct)) return;
     setYieldInput(formatPercentInput(currentDividendYieldPct));
   }, [open, kind, yieldInput, currentDividendYieldPct]);
+
+  useEffect(() => {
+    if (!open || kind !== "value") return;
+    if (returnTouchedRef.current) return;
+    if (initialGoal?.portfolioAnnualReturnPct != null) return;
+    if (portfolioAverageAnnualReturnPct == null || !Number.isFinite(portfolioAverageAnnualReturnPct)) return;
+    setReturnInput(formatPercentInput(portfolioAverageAnnualReturnPct));
+  }, [open, kind, initialGoal?.portfolioAnnualReturnPct, portfolioAverageAnnualReturnPct]);
 
   const defaultReturnPct =
     portfolioAverageAnnualReturnPct != null && Number.isFinite(portfolioAverageAnnualReturnPct)
@@ -530,7 +540,10 @@ export function PortfolioGoalModal({
                   type="text"
                   inputMode="decimal"
                   value={returnInput}
-                  onChange={(v) => setReturnInput(sanitizePercentInput(v))}
+                  onChange={(v) => {
+                    returnTouchedRef.current = true;
+                    setReturnInput(sanitizePercentInput(v));
+                  }}
                   placeholder={formatPercentInput(defaultReturnPct)}
                   clearLabel="Clear return"
                   aria-label="Annual portfolio return (percent)"

@@ -194,6 +194,25 @@ function normalizeState(state: RawPersistedState): PersistedPortfolioState {
   };
 }
 
+/** True when merged goals differ from what is already stored remotely. */
+export function persistedGoalsNeedCloudSync(
+  remote: PersistedPortfolioState,
+  merged: PersistedPortfolioState,
+): boolean {
+  const remoteGoals = remote.goalByPortfolioId ?? {};
+  const mergedGoals = merged.goalByPortfolioId ?? {};
+  const mergedKeys = Object.keys(mergedGoals);
+  if (mergedKeys.length === 0) return false;
+
+  for (const id of mergedKeys) {
+    const next = mergedGoals[id];
+    const prev = remoteGoals[id];
+    if (next == null && prev == null) continue;
+    if (JSON.stringify(next) !== JSON.stringify(prev)) return true;
+  }
+  return false;
+}
+
 /** Keep local goals when a cloud snapshot predates goal persistence. */
 export function mergePersistedPortfolioGoals(
   local: PersistedPortfolioState | null | undefined,
