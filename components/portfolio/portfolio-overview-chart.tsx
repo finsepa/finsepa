@@ -823,7 +823,7 @@ function computeGoalAchievementDots(
     if (!show || series == null) continue;
     const placement = goalAchievementPlacement(series, lineData, year, targetUsd);
     if (!placement) continue;
-    const x = chart.timeScale().logicalToCoordinate(placement.logical);
+    const x = chart.timeScale().logicalToCoordinate(placement.logical as unknown as import("lightweight-charts").Logical);
     const y = series.priceToCoordinate(placement.value);
     if (x == null || y == null || !Number.isFinite(x) || !Number.isFinite(y)) continue;
     if (x < -8 || x > plotW + 8 || y < -8 || y > plotH + 8) continue;
@@ -913,7 +913,7 @@ function resolveGoalLineEndXPx(
   if (plotW < 12) return fallback;
   const lastIdx = series.data().length - 1;
   if (lastIdx < 0) return fallback;
-  const logicalX = chart.timeScale().logicalToCoordinate(lastIdx);
+  const logicalX = chart.timeScale().logicalToCoordinate(lastIdx as unknown as import("lightweight-charts").Logical);
   if (logicalX == null || !Number.isFinite(logicalX) || logicalX < plotW * 0.45) {
     return fallback;
   }
