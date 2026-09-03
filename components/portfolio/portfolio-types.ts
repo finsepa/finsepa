@@ -282,6 +282,12 @@ export function newTransactionRowId(): string {
 
 export type PortfolioGoalKind = "value" | "passive_income";
 
+/** Marks a user-cleared goal so sync can keep the empty state instead of restoring an older cloud goal. */
+export type ClearedPortfolioGoal = {
+  cleared: true;
+  updatedAt: number;
+};
+
 /** Per-portfolio savings / growth target (Goal tab). */
 export type PortfolioGoal = {
   kind: PortfolioGoalKind;
@@ -299,10 +305,43 @@ export type PortfolioGoal = {
   dividendYieldPct?: number;
   /** Passive-income goals: assumed annual dividend growth (%). Defaults to 5. */
   dividendGrowthPct?: number;
+  /** Client clock (ms) when this goal was last saved — used for cross-device merge. */
+  updatedAt?: number;
 };
+
+export type PersistedPortfolioGoalEntry = PortfolioGoal | ClearedPortfolioGoal | null;
+
+export function isClearedPortfolioGoal(x: unknown): x is ClearedPortfolioGoal {
+  if (x === null || typeof x !== "object") return false;
+  const g = x as ClearedPortfolioGoal;
+  return g.cleared === true && typeof g.updatedAt === "number" && Number.isFinite(g.updatedAt);
+}
+
+export function activePortfolioGoal(
+  entry: PersistedPortfolioGoalEntry | undefined,
+): PortfolioGoal | null {
+  if (entry == null || isClearedPortfolioGoal(entry)) return null;
+  return entry;
+}
+
+export function stampPortfolioGoal(goal: PortfolioGoal, at = Date.now()): PortfolioGoal {
+  return { ...goal, updatedAt: at };
+}
+
+export function clearedPortfolioGoal(at = Date.now()): ClearedPortfolioGoal {
+  return { cleared: true, updatedAt: at };
+}
+
+export function persistedGoalUpdatedAt(entry: PersistedPortfolioGoalEntry | undefined): number {
+  if (entry == null) return 0;
+  if (isClearedPortfolioGoal(entry)) return entry.updatedAt;
+  if (typeof entry.updatedAt === "number" && Number.isFinite(entry.updatedAt)) return entry.updatedAt;
+  return 0;
+}
 
 export function isPortfolioGoal(x: unknown): x is PortfolioGoal {
   if (x === null || typeof x !== "object") return false;
+  if (isClearedPortfolioGoal(x)) return false;
   const g = x as PortfolioGoal;
   return (
     (g.kind === "value" || g.kind === "passive_income") &&
@@ -323,6 +362,7 @@ export function isPortfolioGoal(x: unknown): x is PortfolioGoal {
     (g.dividendYieldPct === undefined ||
       (typeof g.dividendYieldPct === "number" && Number.isFinite(g.dividendYieldPct))) &&
     (g.dividendGrowthPct === undefined ||
-      (typeof g.dividendGrowthPct === "number" && Number.isFinite(g.dividendGrowthPct)))
+      (typeof g.dividendGrowthPct === "number" && Number.isFinite(g.dividendGrowthPct))) &&
+    (g.updatedAt === undefined || (typeof g.updatedAt === "number" && Number.isFinite(g.updatedAt)))
   );
 }

@@ -10,5 +10,6 @@ export function defaultDemoPortfolioGoal(now = new Date()): PortfolioGoal {
     monthlyContributionUsd: 2_000,
     reinvestDividends: true,
     portfolioAnnualReturnPct: 28.52,
+    updatedAt: now.getTime(),
   };
 }

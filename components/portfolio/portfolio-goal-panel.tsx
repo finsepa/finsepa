@@ -1,10 +1,11 @@
 "use client";
 
-import { Flag01, Pencil } from "@/lib/icons";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { Flag01, Pencil, RefreshCw } from "@/lib/icons";
+import { useCallback, useId, useMemo, useState, type ReactNode } from "react";
 
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { secondaryFillButtonClassName, secondaryOutlineButtonClassName } from "@/components/design-system/secondary-button-styles";
+import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { PortfolioGoalModal } from "@/components/portfolio/portfolio-goal-modal";
 import { PortfolioGoalProgressBar } from "@/components/portfolio/portfolio-goal-progress-bar";
 import {
@@ -14,7 +15,19 @@ import {
 import { PortfolioGoalResultsTable } from "@/components/portfolio/portfolio-goal-results-table";
 import { PortfolioHoldingsSubTabMobileCard } from "@/components/portfolio/portfolio-holdings-sub-tab-mobile-card";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import type { PortfolioGoal, PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import {
+  activePortfolioGoal,
+  type PortfolioGoal,
+  type PortfolioHolding,
+  type PortfolioTransaction,
+} from "@/components/portfolio/portfolio-types";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import {
+  AppModalFooter,
+  AppModalShell,
+  appModalCancelButtonClass,
+  appModalDangerButtonClass,
+} from "@/components/ui/app-modal-shell";
 import {
   Empty,
   EmptyDescription,
@@ -76,6 +89,45 @@ function GoalSettingBadge({ children }: { children: ReactNode }) {
   );
 }
 
+function GoalResetConfirmModal({
+  open,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const titleId = useId();
+  if (!open) return null;
+
+  return (
+    <AppModalOverlay open={open} onClose={onClose} zIndex={300}>
+      <AppModalShell
+        titleId={titleId}
+        title="Reset goal"
+        onClose={onClose}
+        bodyClassName="px-5 pb-2 pt-5"
+        footer={
+          <AppModalFooter>
+            <button type="button" onClick={onClose} className={appModalCancelButtonClass}>
+              Cancel
+            </button>
+            <button type="button" onClick={onConfirm} className={appModalDangerButtonClass()}>
+              Reset goal
+            </button>
+          </AppModalFooter>
+        }
+      >
+        <p className="text-sm leading-5 text-fg">Are you sure you want to reset your goal?</p>
+        <p className="mt-3 text-sm leading-5 text-fg-muted">
+          My Goal will return to an empty state. You can set a new goal anytime.
+        </p>
+      </AppModalShell>
+    </AppModalOverlay>
+  );
+}
+
 function GoalProjectionConfigBadges({
   goal,
   currentYieldPct,
@@ -130,8 +182,9 @@ export function PortfolioGoalPanel({
     setPortfolioGoal,
   } = usePortfolioWorkspace();
 
-  const goal = selectedPortfolioId != null ? goalByPortfolioId[selectedPortfolioId] : null;
+  const goal = selectedPortfolioId != null ? activePortfolioGoal(goalByPortfolioId[selectedPortfolioId]) : null;
   const [modalOpen, setModalOpen] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   const currentValue = useMemo(() => {
     const cash = netCashUsd(transactions);
@@ -239,6 +292,13 @@ export function PortfolioGoalPanel({
     [selectedPortfolioId, setPortfolioGoal],
   );
 
+  const handleResetGoal = useCallback(() => {
+    if (selectedPortfolioId == null) return;
+    setPortfolioGoal(selectedPortfolioId, null);
+    setResetConfirmOpen(false);
+    setModalOpen(false);
+  }, [selectedPortfolioId, setPortfolioGoal]);
+
   if (goal == null) {
     return (
       <>
@@ -329,10 +389,21 @@ export function PortfolioGoalPanel({
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <GoalProjectionConfigBadges goal={goal} currentYieldPct={currentDividendYieldPct} />
           </div>
-          <button type="button" onClick={openEdit} className={cn(secondaryOutlineButtonClassName, "shrink-0")}>
-            <Pencil className="size-4 shrink-0" strokeWidth={2} aria-hidden />
-            Edit
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setResetConfirmOpen(true)}
+              className={topbarSquircleIconClass}
+              aria-label="Reset goal"
+              title="Reset goal"
+            >
+              <RefreshCw className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+            </button>
+            <button type="button" onClick={openEdit} className={cn(secondaryOutlineButtonClassName, "shrink-0")}>
+              <Pencil className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+              Edit
+            </button>
+          </div>
         </div>
         <PortfolioGoalProjectionChart series={chartSeries} targetUsd={goal.targetUsd} />
         {goal.kind === "passive_income" ? null : (
@@ -381,6 +452,11 @@ export function PortfolioGoalPanel({
         portfolioAverageAnnualReturnPct={portfolioAverageAnnualReturnPct}
         onClose={() => setModalOpen(false)}
         onSave={handleSave}
+      />
+      <GoalResetConfirmModal
+        open={resetConfirmOpen}
+        onClose={() => setResetConfirmOpen(false)}
+        onConfirm={handleResetGoal}
       />
     </div>
   );

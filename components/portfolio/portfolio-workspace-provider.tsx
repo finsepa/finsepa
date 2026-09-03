@@ -79,7 +79,10 @@ import {
   portfolioIsDemo,
   portfolioIsLiveBrokerage,
   portfolioIsOfflineBrokerage,
+  clearedPortfolioGoal,
+  stampPortfolioGoal,
   type ConnectBrokerageCompletePayload,
+  type PersistedPortfolioGoalEntry,
   type PortfolioEntry,
   type PortfolioGoal,
   type PortfolioHolding,
@@ -99,6 +102,7 @@ import {
   coalesceSelectedPortfolioId,
   loadLastSelectedPortfolioId,
   loadPersistedPortfolioStateForUser,
+  mergeGoalMaps,
   mergePersistedPortfolioGoals,
   parsePersistedPortfolioUnknown,
   persistedGoalsNeedCloudSync,
@@ -472,7 +476,7 @@ export function PortfolioWorkspaceProvider({
   const [transactionsByPortfolioId, setTransactionsByPortfolioId] = useState<
     Record<string, PortfolioTransaction[]>
   >({});
-  const [goalByPortfolioId, setGoalByPortfolioIdState] = useState<Record<string, PortfolioGoal | null>>({});
+  const [goalByPortfolioId, setGoalByPortfolioIdState] = useState<Record<string, PersistedPortfolioGoalEntry>>({});
   /** False until local + server merge has finished (avoids overwriting cloud with the default seed). */
   const [workspaceHydrated, setWorkspaceHydrated] = useState(false);
   /** True after we synchronously applied a local snapshot (fast path for repeat visits / post-login). */
@@ -651,9 +655,10 @@ export function PortfolioWorkspaceProvider({
       const ledgerFingerprint = portfolioLedgerFingerprint(saved);
       const rebuilt = rebuildHoldingsFromSaved(saved);
 
-      // Goals are independent of ledger txs — merge so older cloud rows cannot wipe them.
+      // Goals are independent of ledger txs — merge by updatedAt so a stale cloud
+      // snapshot cannot wipe a goal just saved on this device.
       if (saved.goalByPortfolioId !== undefined) {
-        setGoalByPortfolioIdState((prev) => ({ ...prev, ...saved.goalByPortfolioId }));
+        setGoalByPortfolioIdState((prev) => mergeGoalMaps(prev, saved.goalByPortfolioId) ?? {});
       }
 
       if (appliedLedgerFingerprintRef.current !== ledgerFingerprint) {
@@ -905,7 +910,10 @@ export function PortfolioWorkspaceProvider({
   }, [userId, applyWorkspaceState]);
 
   const setPortfolioGoal = useCallback((portfolioId: string, goal: PortfolioGoal | null) => {
-    setGoalByPortfolioIdState((prev) => ({ ...prev, [portfolioId]: goal }));
+    setGoalByPortfolioIdState((prev) => ({
+      ...prev,
+      [portfolioId]: goal == null ? clearedPortfolioGoal() : stampPortfolioGoal(goal),
+    }));
   }, []);
 
   const ensureDemoPortfolioGoal = useCallback((portfolioId: string) => {

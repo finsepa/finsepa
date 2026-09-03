@@ -130,4 +130,48 @@ describe("portfolio-storage goals", () => {
     const merged = mergePersistedPortfolioGoals(local, remote);
     assert.equal(persistedGoalsNeedCloudSync(remote, merged), true);
   });
+
+  it("keeps a stamped local goal over a later unstamped cloud snapshot", () => {
+    const local = parsePersistedPortfolioUnknown({
+      v: 1,
+      savedAt: 1_700_000_000_000,
+      portfolios: [{ id: "p1", name: "Main", privacy: "private" }],
+      selectedPortfolioId: "p1",
+      holdingsByPortfolioId: { p1: [] },
+      transactionsByPortfolioId: { p1: [] },
+      goalByPortfolioId: {
+        p1: {
+          kind: "value",
+          targetUsd: 999_000,
+          achieveByYear: 2031,
+          monthlyContributionUsd: 500,
+          reinvestDividends: true,
+          updatedAt: 2_000_000_000_000,
+        },
+      },
+    });
+    const remote = parsePersistedPortfolioUnknown({
+      v: 1,
+      savedAt: 2_100_000_000_000,
+      portfolios: [{ id: "p1", name: "Main", privacy: "private" }],
+      selectedPortfolioId: "p1",
+      holdingsByPortfolioId: { p1: [] },
+      transactionsByPortfolioId: { p1: [] },
+      goalByPortfolioId: {
+        p1: {
+          kind: "value",
+          targetUsd: 1_000_000,
+          achieveByYear: 2031,
+          monthlyContributionUsd: 2_000,
+          reinvestDividends: true,
+        },
+      },
+    });
+    assert.ok(local && remote);
+    const merged = mergePersistedPortfolioGoals(local, remote);
+    assert.equal(merged.goalByPortfolioId?.p1 && "targetUsd" in merged.goalByPortfolioId.p1
+      ? merged.goalByPortfolioId.p1.targetUsd
+      : null, 999_000);
+    assert.equal(persistedGoalsNeedCloudSync(remote, merged), true);
+  });
 });

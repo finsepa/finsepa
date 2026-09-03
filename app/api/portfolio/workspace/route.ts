@@ -10,6 +10,7 @@ import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/a
 import {
   type PersistedPortfolioState,
   parsePersistedPortfolioUnknown,
+  withMergedPortfolioGoals,
 } from "@/lib/portfolio/portfolio-storage";
 import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 import { isPortfolioLedgerStrictPersistEnabled } from "@/lib/features/portfolio-correctness";
@@ -88,7 +89,18 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Invalid portfolio state payload." }, { status: 400 });
     }
 
-    const { state, report: migrateReport } = prepareWorkspaceLedgerForPersist(parsed);
+    const { data: existingRow } = await supabase
+      .from("portfolio_workspace")
+      .select("state")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const previous = existingRow?.state
+      ? parsePersistedPortfolioUnknown(existingRow.state)
+      : null;
+
+    const { state, report: migrateReport } = prepareWorkspaceLedgerForPersist(
+      withMergedPortfolioGoals(parsed, previous),
+    );
     const strict = isPortfolioLedgerStrictPersistEnabled();
     const validation = validateWorkspaceState(state, {
       allowLegacyAnomalies: true,
@@ -122,14 +134,6 @@ export async function PUT(request: Request) {
 
     const gate = await getSubscriptionGateContext(supabase, user.id);
     if (gate.isFree && gate.maxHoldingsPerPortfolio != null) {
-      const { data: existingRow } = await supabase
-        .from("portfolio_workspace")
-        .select("state")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      const previous = existingRow?.state
-        ? parsePersistedPortfolioUnknown(existingRow.state)
-        : null;
       const violation = findFreeHoldingsPersistViolation({
         portfolios: state.portfolios,
         nextHoldingsByPortfolioId: state.holdingsByPortfolioId,

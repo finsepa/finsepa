@@ -1,10 +1,15 @@
 import type {
   PortfolioEntry,
-  PortfolioGoal,
+  PersistedPortfolioGoalEntry,
   PortfolioHolding,
   PortfolioTransaction,
 } from "@/components/portfolio/portfolio-types";
-import { isPortfolioGoal, normalizePortfolioEntry } from "@/components/portfolio/portfolio-types";
+import {
+  isClearedPortfolioGoal,
+  isPortfolioGoal,
+  persistedGoalUpdatedAt,
+  normalizePortfolioEntry,
+} from "@/components/portfolio/portfolio-types";
 
 /** Legacy key (pre–per-user storage). Migrated once into {@link portfolioStorageKeyForUser}. */
 export const PORTFOLIO_STORAGE_KEY = "finsepa.portfolio.v1" as const;
@@ -65,7 +70,7 @@ export type PersistedPortfolioState = {
   selectedPortfolioId: string | null;
   holdingsByPortfolioId: Record<string, PortfolioHolding[]>;
   transactionsByPortfolioId: Record<string, PortfolioTransaction[]>;
-  goalByPortfolioId?: Record<string, PortfolioGoal | null>;
+  goalByPortfolioId?: Record<string, PersistedPortfolioGoalEntry>;
 };
 
 function isRecord(x: unknown): x is Record<string, unknown> {
@@ -170,13 +175,13 @@ function normalizeState(state: RawPersistedState): PersistedPortfolioState {
     }
   }
 
-  const goals: Record<string, PortfolioGoal | null> = {};
+  const goals: Record<string, PersistedPortfolioGoalEntry> = {};
   const hasGoalField = isRecord(state.goalByPortfolioId);
   if (hasGoalField) {
     for (const id of ids) {
       const raw = state.goalByPortfolioId![id];
-      if (raw === null) {
-        goals[id] = null;
+      if (raw === null || isClearedPortfolioGoal(raw)) {
+        goals[id] = raw === null ? null : raw;
       } else if (isPortfolioGoal(raw)) {
         goals[id] = raw;
       }
@@ -194,6 +199,36 @@ function normalizeState(state: RawPersistedState): PersistedPortfolioState {
   };
 }
 
+export function mergeGoalMaps(
+  localGoals: Record<string, PersistedPortfolioGoalEntry> | undefined,
+  remoteGoals: Record<string, PersistedPortfolioGoalEntry> | undefined,
+): Record<string, PersistedPortfolioGoalEntry> | undefined {
+  if (localGoals == null && remoteGoals == null) return undefined;
+  if (localGoals == null) return { ...remoteGoals };
+  if (remoteGoals == null) return { ...localGoals };
+
+  const out: Record<string, PersistedPortfolioGoalEntry> = { ...remoteGoals };
+  const ids = new Set([...Object.keys(localGoals), ...Object.keys(remoteGoals)]);
+  for (const id of ids) {
+    const localHas = Object.prototype.hasOwnProperty.call(localGoals, id);
+    const remoteHas = Object.prototype.hasOwnProperty.call(remoteGoals, id);
+    if (!localHas) {
+      if (remoteHas) out[id] = remoteGoals[id]!;
+      continue;
+    }
+    if (!remoteHas) {
+      out[id] = localGoals[id]!;
+      continue;
+    }
+    const localEntry = localGoals[id]!;
+    const remoteEntry = remoteGoals[id]!;
+    const localAt = persistedGoalUpdatedAt(localEntry);
+    const remoteAt = persistedGoalUpdatedAt(remoteEntry);
+    out[id] = localAt >= remoteAt ? localEntry : remoteEntry;
+  }
+  return out;
+}
+
 /** True when merged goals differ from what is already stored remotely. */
 export function persistedGoalsNeedCloudSync(
   remote: PersistedPortfolioState,
@@ -201,34 +236,45 @@ export function persistedGoalsNeedCloudSync(
 ): boolean {
   const remoteGoals = remote.goalByPortfolioId ?? {};
   const mergedGoals = merged.goalByPortfolioId ?? {};
-  const mergedKeys = Object.keys(mergedGoals);
-  if (mergedKeys.length === 0) return false;
+  const keys = new Set([...Object.keys(mergedGoals), ...Object.keys(remoteGoals)]);
+  if (keys.size === 0) return false;
 
-  for (const id of mergedKeys) {
+  for (const id of keys) {
     const next = mergedGoals[id];
     const prev = remoteGoals[id];
-    if (next == null && prev == null) continue;
+    if (next == null && prev == null && !(id in mergedGoals) && !(id in remoteGoals)) continue;
     if (JSON.stringify(next) !== JSON.stringify(prev)) return true;
   }
   return false;
 }
 
-/** Keep local goals when a cloud snapshot predates goal persistence. */
+/**
+ * Merge per-portfolio goals by {@link PortfolioGoal.updatedAt}.
+ * Unstamped (legacy) entries lose to stamped ones so a later production PUT cannot
+ * clobber a goal that was just saved on another device.
+ * Hydrate: pass local first, remote second, then spread remote ledger in the result.
+ */
 export function mergePersistedPortfolioGoals(
   local: PersistedPortfolioState | null | undefined,
   remote: PersistedPortfolioState,
 ): PersistedPortfolioState {
-  const localGoals = local?.goalByPortfolioId;
-  const remoteGoals = remote.goalByPortfolioId;
-  if (localGoals == null || remoteGoals == null) {
-    return {
-      ...remote,
-      ...(localGoals != null && remoteGoals == null ? { goalByPortfolioId: localGoals } : {}),
-    };
-  }
+  const goalByPortfolioId = mergeGoalMaps(local?.goalByPortfolioId, remote.goalByPortfolioId);
   return {
     ...remote,
-    goalByPortfolioId: { ...localGoals, ...remoteGoals },
+    ...(goalByPortfolioId != null ? { goalByPortfolioId } : {}),
+  };
+}
+
+/** Keep incoming ledger, merge goals against the row already in the cloud. */
+export function withMergedPortfolioGoals(
+  incoming: PersistedPortfolioState,
+  existing: PersistedPortfolioState | null | undefined,
+): PersistedPortfolioState {
+  if (existing == null) return incoming;
+  const goalByPortfolioId = mergeGoalMaps(incoming.goalByPortfolioId, existing.goalByPortfolioId);
+  return {
+    ...incoming,
+    ...(goalByPortfolioId != null ? { goalByPortfolioId } : {}),
   };
 }
 
