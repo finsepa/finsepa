@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { startTransition, useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
+import { useSearchParams } from "next/navigation";
 import { Download, Pencil } from "@/lib/icons";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 
@@ -28,9 +28,9 @@ import {
   type OverviewHoldingsSubTab,
   type PortfolioViewTab,
   overviewHoldingsSubTabFromSearchParam,
+  portfolioPageSearchHref,
   portfolioViewTabFromSearchParam,
-  searchParamFromOverviewHoldingsSubTab,
-  searchParamFromPortfolioViewTab,
+  replacePortfolioPageUrl,
 } from "@/components/portfolio/portfolio-page-tabs";
 import { PortfolioHoldingsSubTabMobileCard } from "@/components/portfolio/portfolio-holdings-sub-tab-mobile-card";
 import { useAllocationCenterAvatar } from "@/components/portfolio/use-allocation-center-avatar";
@@ -119,6 +119,21 @@ const PortfolioPerformancePanel = dynamic(
   },
 );
 
+const PortfolioGoalPanel = dynamic(
+  () =>
+    import("@/components/portfolio/portfolio-goal-panel").then((m) => ({
+      default: m.PortfolioGoalPanel,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="mb-10 w-full">
+        <AssetChartSkeleton />
+      </div>
+    ),
+  },
+);
+
 const PortfolioDividendsPanel = dynamic(
   () =>
     import("@/components/portfolio/portfolio-dividends-panel").then((m) => ({
@@ -135,6 +150,7 @@ function initialTabsVisited(active: PortfolioViewTab): Record<PortfolioViewTab, 
   return {
     Overview: active === "Overview",
     Insights: active === "Insights",
+    Goal: active === "Goal",
     Dividends: active === "Dividends",
     Cash: active === "Cash",
     Transactions: active === "Transactions",
@@ -163,12 +179,12 @@ export function PortfolioPageView({
   /** Community listing id — dividend schedule uses listing API. */
   publicListingId?: string;
 }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const tabFromUrl = useCallback(
     (param: string | null) => {
       const tab = portfolioViewTabFromSearchParam(param);
-      return readOnly && tab === "Cash" ? "Overview" : tab;
+      if (readOnly && (tab === "Cash" || tab === "Goal")) return "Overview";
+      return tab;
     },
     [readOnly],
   );
@@ -214,56 +230,65 @@ export function PortfolioPageView({
     !isPublicView && selectedPortfolio != null && portfolioIsDemo(selectedPortfolio);
 
   useEffect(() => {
-    setViewTab(tabFromUrl(searchParams.get("tab")));
-    if (tabFromUrl(searchParams.get("tab")) === "Overview") {
+    const rawTab = searchParams.get("tab");
+    const fromUrl = tabFromUrl(rawTab);
+    const autoDemoGoal =
+      rawTab == null &&
+      !readOnly &&
+      selectedPortfolio != null &&
+      portfolioIsDemo(selectedPortfolio) &&
+      fromUrl === "Overview";
+    const nextTab: PortfolioViewTab = autoDemoGoal ? "Goal" : fromUrl;
+    setViewTab(nextTab);
+
+    if (autoDemoGoal) {
+      setTabsVisited(initialTabsVisited("Goal"));
+    }
+
+    if (nextTab === "Overview") {
       setOverviewHoldingsSubTab(
         overviewHoldingsSubTabFromSearchParam(searchParams.get("tab"), searchParams.get("view")),
       );
     }
-  }, [searchParams, tabFromUrl]);
+  }, [searchParams, tabFromUrl, readOnly, selectedPortfolio]);
 
   useEffect(() => {
     if (searchParams.get("tab")?.toLowerCase() !== "slices") return;
-    router.replace(`${tabBasePath}?tab=overview&view=slices`, { scroll: false });
-  }, [searchParams, router, tabBasePath]);
+    replacePortfolioPageUrl(`${tabBasePath}?tab=overview&view=slices`);
+  }, [searchParams, tabBasePath]);
 
   useEffect(() => {
     if (searchParams.get("tab")?.toLowerCase() !== "metrics") return;
-    router.replace(`${tabBasePath}?tab=overview`, { scroll: false });
-  }, [searchParams, router, tabBasePath]);
+    replacePortfolioPageUrl(`${tabBasePath}?tab=overview`);
+  }, [searchParams, tabBasePath]);
 
   useEffect(() => {
     setTabsVisited((v) => ({ ...v, [viewTab]: true }));
   }, [viewTab]);
 
+  useEffect(() => {
+    if (viewTab === "Insights") return;
+    const t = window.setTimeout(() => {
+      void import("@/components/portfolio/portfolio-performance-panel");
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [viewTab]);
+
   const onTabChange = useCallback(
     (tab: PortfolioViewTab) => {
-      if (readOnly && tab === "Cash") return;
-      startTransition(() => {
-        setViewTab(tab);
-        const q = searchParamFromPortfolioViewTab(tab);
-        if (tab === "Overview") {
-          router.replace(
-            `${tabBasePath}?tab=${q}&view=${searchParamFromOverviewHoldingsSubTab(overviewHoldingsSubTab)}`,
-            { scroll: false },
-          );
-        } else {
-          router.replace(`${tabBasePath}?tab=${q}`, { scroll: false });
-        }
-      });
+      if (readOnly && (tab === "Cash" || tab === "Goal")) return;
+      setViewTab(tab);
+      replacePortfolioPageUrl(portfolioPageSearchHref(tabBasePath, tab, overviewHoldingsSubTab));
     },
-    [readOnly, router, tabBasePath, overviewHoldingsSubTab],
+    [readOnly, tabBasePath, overviewHoldingsSubTab],
   );
 
   const onOverviewHoldingsSubTabChange = useCallback(
     (subTab: OverviewHoldingsSubTab) => {
       setOverviewHoldingsSubTab(subTab);
-      router.replace(
-        `${tabBasePath}?tab=overview&view=${searchParamFromOverviewHoldingsSubTab(subTab)}`,
-        { scroll: false },
-      );
+      replacePortfolioPageUrl(portfolioPageSearchHref(tabBasePath, "Overview", subTab));
     },
-    [router, tabBasePath],
+    [tabBasePath],
   );
 
   const hasPortfolioLedger =
@@ -425,7 +450,7 @@ export function PortfolioPageView({
                 {portfolioName}
               </h1>
             ) : (
-              <div className="flex min-w-0 max-w-full items-center gap-2">
+              <div className="flex min-w-0 max-w-full items-center gap-2.5">
                 {selectedPortfolio ? <PortfolioListLogo portfolio={selectedPortfolio} /> : null}
                 <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-fg">
                   {portfolioName}
@@ -556,6 +581,17 @@ export function PortfolioPageView({
                   aria-hidden={viewTab !== "Insights"}
                 >
                   <PortfolioPerformancePanel holdings={holdings} transactions={transactions} />
+                </div>
+              ) : null}
+
+              {!readOnly && tabsVisited.Goal ? (
+                <div
+                  className={panelClass("Goal")}
+                  role="tabpanel"
+                  id="portfolio-tab-goal"
+                  aria-hidden={viewTab !== "Goal"}
+                >
+                  <PortfolioGoalPanel holdings={holdings} transactions={transactions} />
                 </div>
               ) : null}
 

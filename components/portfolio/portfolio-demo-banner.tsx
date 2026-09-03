@@ -20,16 +20,15 @@ export function PortfolioDemoBanner({
       )}
       role="status"
     >
-      <div className="flex min-w-0 items-start gap-2.5">
-        <Info className="mt-0.5 size-4 shrink-0 text-info-fg" strokeWidth={2} aria-hidden />
-        <div className="min-w-0 space-y-0.5">
-          <p className="text-[14px] font-semibold leading-5 text-fg">This is a demo portfolio.</p>
-          <p className="text-[13px] leading-5 text-fg-muted">
-            When you&apos;re ready, create your own portfolio.
-          </p>
-        </div>
+      <div className="flex min-w-0 items-center gap-2.5">
+        <Info className="size-4 shrink-0 text-info-fg" strokeWidth={2} aria-hidden />
+        <p className="min-w-0 text-[14px] font-semibold leading-5 text-fg">This is a demo portfolio</p>
       </div>
-      <button type="button" onClick={onCreateOwn} className={cn(accentFillButtonClassName, "w-full shrink-0 sm:w-auto")}>
+      <button
+        type="button"
+        onClick={onCreateOwn}
+        className={cn(accentFillButtonClassName, "h-7 w-auto rounded-[8px] px-2.5 text-[12px]")}
+      >
         Create Portfolio
       </button>
     </div>

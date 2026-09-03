@@ -5,7 +5,7 @@ import type { PortfolioChartRange } from "@/lib/portfolio/portfolio-chart-types"
 /** Longer horizon → higher rank. Used to pick the denser of requested vs actual span. */
 const RANGE_RANK: Record<PortfolioChartRange, number> = {
   "1d": 0,
-  "7d": 1,
+  "5d": 1,
   "1m": 2,
   "6m": 3,
   ytd: 4,
@@ -20,7 +20,7 @@ const RANGE_RANK: Record<PortfolioChartRange, number> = {
  */
 function samplingRangeForSpanDays(days: number): PortfolioChartRange {
   if (days <= 2) return "1d";
-  if (days <= 10) return "7d";
+  if (days <= 10) return "5d";
   if (days <= 45) return "1m";
   if (days <= 200) return "6m";
   if (days <= 400) return "1y";
@@ -31,7 +31,7 @@ function samplingRangeForSpanDays(days: number): PortfolioChartRange {
 /**
  * Dietz / overlays keep the user-selected `requested` range.
  * Point sampling follows how long the clamped window actually is so a young
- * ALL/5Y book gets 1D/7D/1Y cadence instead of sparse weekly marks.
+ * ALL/5Y book gets 1D/5D/1Y cadence instead of sparse weekly marks.
  */
 export function effectiveSamplingRange(
   requested: PortfolioChartRange,

@@ -1,7 +1,8 @@
 "use client";
 
+import { PortfolioUpDownLegendSwatch } from "@/components/chart/portfolio-up-down-legend-swatch";
 import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LineChart } from "@/lib/icons";
 
 import { PortfolioHoldingsPerformanceChart } from "@/components/portfolio/portfolio-holdings-performance-chart";
@@ -16,7 +17,6 @@ import {
   PORTFOLIO_CHART_RANGE_LABELS,
   PortfolioValueHistoryChartPane,
 } from "@/components/portfolio/portfolio-overview-chart";
-import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import {
   Empty,
   EmptyDescription,
@@ -27,7 +27,10 @@ import {
 import { totalCostBasisInvested } from "@/lib/portfolio/overview-metrics";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 import type { PortfolioChartRange, PortfolioValueHistoryPoint } from "@/lib/portfolio/portfolio-chart-types";
-import { fetchPortfolioValueHistoryCached } from "@/lib/portfolio/portfolio-value-history-client-cache";
+import {
+  fetchPortfolioValueHistoryCached,
+  peekPortfolioValueHistoryCached,
+} from "@/lib/portfolio/portfolio-value-history-client-cache";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { portfolioIsCombined } from "@/components/portfolio/portfolio-types";
 import { cn } from "@/lib/utils";
@@ -50,20 +53,21 @@ const COMBINED_SOURCE_SWATCHES = [
 async function fetchValueHistory(
   range: PortfolioChartRange,
   transactions: readonly PortfolioTransaction[],
-  signal?: AbortSignal,
 ): Promise<PortfolioValueHistoryPoint[]> {
-  return fetchPortfolioValueHistoryCached(range, transactions, signal);
+  return fetchPortfolioValueHistoryCached(range, transactions);
 }
 
 /** Clickable legend badge — same pattern as Dynamics of portfolio returns. */
 function PerformanceLegendBadge({
   label,
   swatch,
+  swatchVariant = "solid",
   pressed,
   onToggle,
 }: {
   label: string;
-  swatch: string;
+  swatch?: string;
+  swatchVariant?: "solid" | "upDown";
   pressed: boolean;
   onToggle: () => void;
 }) {
@@ -77,7 +81,11 @@ function PerformanceLegendBadge({
         !pressed && "opacity-40",
       )}
     >
-      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: swatch }} aria-hidden />
+      {swatchVariant === "upDown" ? (
+        <PortfolioUpDownLegendSwatch />
+      ) : (
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: swatch }} aria-hidden />
+      )}
       <span className="min-w-0 truncate">{label}</span>
     </button>
   );
@@ -99,8 +107,6 @@ function PerformanceChartSection({
   error,
   points,
   transactions,
-  spyPricePoints,
-  nasdaqPricePoints,
   benchmarkInvestedUsd,
   combinedSources,
   sourcePointsById,
@@ -114,8 +120,6 @@ function PerformanceChartSection({
   error: string | null;
   points: PortfolioValueHistoryPoint[];
   transactions: PortfolioTransaction[];
-  spyPricePoints: StockChartPoint[] | null;
-  nasdaqPricePoints: StockChartPoint[] | null;
   benchmarkInvestedUsd: number | null;
   /** Empty when not a combined portfolio. */
   combinedSources: readonly CombinedSourceDef[];
@@ -124,15 +128,20 @@ function PerformanceChartSection({
   const isCombined = combinedSources.length > 0;
   const portfolioLabel = isCombined ? "Combined" : "Portfolio";
   const portfolioSwatch = resolveFsColor("--fs-accent");
-  /** Benchmark overlays apply on value / return / profit — not drawdown. */
-  const showBenchmarkBadges = metric === "value" || metric === "return" || metric === "profit";
+  const portfolioSwatchVariant = metric === "value" ? "solid" : "upDown";
+  /** Benchmark overlays apply on value / return / profit / drawdown. */
+  const showBenchmarkBadges =
+    metric === "value" || metric === "return" || metric === "profit" || metric === "drawdown";
 
   const [showPortfolio, setShowPortfolio] = useState(true);
   const [compareSpy, setCompareSpy] = useState(false);
   const [compareNasdaq, setCompareNasdaq] = useState(false);
   const [sourceVisible, setSourceVisible] = useState<Record<string, boolean>>({});
+  const [spyPricePoints, setSpyPricePoints] = useState<StockChartPoint[] | null>(null);
+  const [nasdaqPricePoints, setNasdaqPricePoints] = useState<StockChartPoint[] | null>(null);
 
   const sourceIdsKey = combinedSources.map((s) => s.id).join("|");
+  const coverFromYmd = earliestBenchmarkCoverYmd(transactions);
 
   // Reset source toggles when combined composition changes; Combined stays on.
   useEffect(() => {
@@ -141,6 +150,41 @@ function PerformanceChartSection({
     setCompareNasdaq(false);
     setSourceVisible({});
   }, [sourceIdsKey]);
+
+  const fetchSpy = canLoad && showBenchmarkBadges && compareSpy;
+  const fetchNasdaq = canLoad && showBenchmarkBadges && compareNasdaq;
+
+  useEffect(() => {
+    if (!fetchSpy) {
+      setSpyPricePoints(null);
+      return;
+    }
+    const ac = new AbortController();
+    void fetchSpyBenchmarkChartPoints(range, ac.signal, coverFromYmd)
+      .then((pts) => {
+        if (!ac.signal.aborted) setSpyPricePoints(pts);
+      })
+      .catch(() => {
+        if (!ac.signal.aborted) setSpyPricePoints(null);
+      });
+    return () => ac.abort();
+  }, [fetchSpy, range, coverFromYmd]);
+
+  useEffect(() => {
+    if (!fetchNasdaq) {
+      setNasdaqPricePoints(null);
+      return;
+    }
+    const ac = new AbortController();
+    void fetchNasdaqBenchmarkChartPoints(range, ac.signal, coverFromYmd)
+      .then((pts) => {
+        if (!ac.signal.aborted) setNasdaqPricePoints(pts);
+      })
+      .catch(() => {
+        if (!ac.signal.aborted) setNasdaqPricePoints(null);
+      });
+    return () => ac.abort();
+  }, [fetchNasdaq, range, coverFromYmd]);
 
   const anySourceOn = combinedSources.some((s) => sourceVisible[s.id]);
   const anyBenchmarkOn = showBenchmarkBadges && (compareSpy || compareNasdaq);
@@ -187,6 +231,7 @@ function PerformanceChartSection({
         color: s.color,
         visible: Boolean(sourceVisible[s.id]),
         points: sourcePointsById.get(s.id) ?? [],
+        label: s.name,
       })),
     [combinedSources, sourceVisible, sourcePointsById],
   );
@@ -218,6 +263,7 @@ function PerformanceChartSection({
       <PerformanceLegendBadge
         label={portfolioLabel}
         swatch={portfolioSwatch}
+        swatchVariant={portfolioSwatchVariant}
         pressed={showPortfolio}
         onToggle={togglePortfolio}
       />
@@ -269,13 +315,27 @@ function PerformanceChartSection({
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
-        ) : loading ? (
-          <AssetChartSkeleton />
+        ) : loading || points.length > 0 ? (
+          <PortfolioValueHistoryChartPane
+            metric={metric}
+            range={range}
+            points={points}
+            loading={loading}
+            transactions={transactions}
+            showPortfolio={showPortfolio}
+            compareSpy={showBenchmarkBadges && compareSpy}
+            compareNasdaq={showBenchmarkBadges && compareNasdaq}
+            spyPricePoints={spyPricePoints}
+            nasdaqPricePoints={nasdaqPricePoints}
+            benchmarkInvestedUsd={benchmarkInvestedUsd}
+            overlaySeries={overlaySeries}
+            mainSeriesTooltipLabel={portfolioLabel}
+          />
         ) : error ? (
           <div className="flex h-[320px] flex-col items-center justify-center px-6">
             <p className="text-sm text-fg-muted">{error}</p>
           </div>
-        ) : points.length === 0 ? (
+        ) : (
           <Empty variant="plain" className="h-[320px] justify-center py-0">
             <EmptyHeader>
               <EmptyMedia variant="icon">
@@ -287,20 +347,6 @@ function PerformanceChartSection({
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
-        ) : (
-          <PortfolioValueHistoryChartPane
-            metric={metric}
-            range={range}
-            points={points}
-            transactions={transactions}
-            showPortfolio={showPortfolio}
-            compareSpy={showBenchmarkBadges && compareSpy}
-            compareNasdaq={showBenchmarkBadges && compareNasdaq}
-            spyPricePoints={spyPricePoints}
-            nasdaqPricePoints={nasdaqPricePoints}
-            benchmarkInvestedUsd={benchmarkInvestedUsd}
-            overlaySeries={overlaySeries}
-          />
         )}
       </div>
 
@@ -319,15 +365,15 @@ function PortfolioPerformancePanelInner({
   transactions: PortfolioTransaction[];
 }) {
   const { portfolios, selectedPortfolioId, transactionsByPortfolioId } = usePortfolioWorkspace();
-  const [range, setRange] = useState<PortfolioChartRange>("ytd");
+  const [range, setRange] = useState<PortfolioChartRange>("1y");
   const [points, setPoints] = useState<PortfolioValueHistoryPoint[]>([]);
   const [sourcePointsById, setSourcePointsById] = useState<
     Map<string, PortfolioValueHistoryPoint[]>
   >(() => new Map());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => transactions.length > 0);
   const [error, setError] = useState<string | null>(null);
-  const [spyPoints, setSpyPoints] = useState<StockChartPoint[] | null>(null);
-  const [nasdaqPoints, setNasdaqPoints] = useState<StockChartPoint[] | null>(null);
+  const loadGenRef = useRef(0);
+  const paintedPointsRef = useRef(0);
 
   const selected = useMemo(
     () => portfolios.find((p) => p.id === selectedPortfolioId) ?? null,
@@ -350,17 +396,57 @@ function PortfolioPerformancePanelInner({
   const canLoad = transactions.length > 0;
   const benchmarkInvestedUsd = useMemo(() => totalCostBasisInvested(holdings), [holdings]);
 
+  const applyRange = useCallback(
+    (next: PortfolioChartRange) => {
+      setRange(next);
+      if (!transactions.length) {
+        paintedPointsRef.current = 0;
+        setPoints([]);
+        setSourcePointsById(new Map());
+        setLoading(false);
+        return;
+      }
+      const cached = peekPortfolioValueHistoryCached(next, transactions);
+      if (cached) {
+        paintedPointsRef.current = cached.length;
+        setPoints(cached);
+        setLoading(false);
+      } else {
+        paintedPointsRef.current = 0;
+        setPoints([]);
+        setSourcePointsById(new Map());
+        setLoading(true);
+      }
+      setError(null);
+    },
+    [transactions],
+  );
+
   const load = useCallback(async () => {
     if (!canLoad) {
+      paintedPointsRef.current = 0;
       setPoints([]);
       setSourcePointsById(new Map());
+      setLoading(false);
       return;
     }
-    setLoading(true);
+    const gen = ++loadGenRef.current;
+    const cached = peekPortfolioValueHistoryCached(range, transactions);
+    if (cached) {
+      paintedPointsRef.current = cached.length;
+      setPoints(cached);
+      setLoading(false);
+    } else {
+      paintedPointsRef.current = 0;
+      setPoints([]);
+      setSourcePointsById(new Map());
+      setLoading(true);
+    }
     setError(null);
-    const ac = new AbortController();
     try {
-      const combinedPts = await fetchValueHistory(range, transactions, ac.signal);
+      const combinedPts = await fetchValueHistory(range, transactions);
+      if (gen !== loadGenRef.current) return;
+      paintedPointsRef.current = combinedPts.length;
       setPoints(combinedPts);
 
       if (combinedSources.length > 0) {
@@ -369,22 +455,22 @@ function PortfolioPerformancePanelInner({
           combinedSources.map(async (s) => {
             const txs = transactionsByPortfolioId[s.id] ?? [];
             try {
-              next.set(s.id, await fetchValueHistory(range, txs, ac.signal));
+              next.set(s.id, await fetchValueHistory(range, txs));
             } catch {
               next.set(s.id, []);
             }
           }),
         );
+        if (gen !== loadGenRef.current) return;
         setSourcePointsById(next);
       } else {
         setSourcePointsById(new Map());
       }
     } catch {
+      if (gen !== loadGenRef.current) return;
       setError("Could not load history");
-      setPoints([]);
-      setSourcePointsById(new Map());
     } finally {
-      setLoading(false);
+      if (gen === loadGenRef.current) setLoading(false);
     }
   }, [canLoad, range, transactions, combinedSources, transactionsByPortfolioId]);
 
@@ -392,26 +478,18 @@ function PortfolioPerformancePanelInner({
     void load();
   }, [load]);
 
+  /** Mobile range row omits YTD — match Overview / asset `ChartControls`. */
   useEffect(() => {
-    if (!canLoad) {
-      setSpyPoints(null);
-      setNasdaqPoints(null);
-      return;
-    }
-    const ac = new AbortController();
-    const coverFromYmd = earliestBenchmarkCoverYmd(transactions);
-    void fetchSpyBenchmarkChartPoints(range, ac.signal, coverFromYmd)
-      .then(setSpyPoints)
-      .catch(() => {
-        if (!ac.signal.aborted) setSpyPoints(null);
-      });
-    void fetchNasdaqBenchmarkChartPoints(range, ac.signal, coverFromYmd)
-      .then(setNasdaqPoints)
-      .catch(() => {
-        if (!ac.signal.aborted) setNasdaqPoints(null);
-      });
-    return () => ac.abort();
-  }, [canLoad, range, transactions]);
+    const mq = window.matchMedia("(max-width: 639px)");
+    const syncMobileRange = () => {
+      if (mq.matches && range === "ytd") {
+        applyRange("6m");
+      }
+    };
+    syncMobileRange();
+    mq.addEventListener("change", syncMobileRange);
+    return () => mq.removeEventListener("change", syncMobileRange);
+  }, [range, applyRange]);
 
   return (
     <>
@@ -419,14 +497,12 @@ function PortfolioPerformancePanelInner({
         title="Portfolio value"
         metric="value"
         range={range}
-        onRangeChange={setRange}
+        onRangeChange={applyRange}
         canLoad={canLoad}
         loading={loading}
         error={error}
         points={points}
         transactions={transactions}
-        spyPricePoints={spyPoints}
-        nasdaqPricePoints={nasdaqPoints}
         benchmarkInvestedUsd={benchmarkInvestedUsd}
         combinedSources={combinedSources}
         sourcePointsById={sourcePointsById}
@@ -436,14 +512,12 @@ function PortfolioPerformancePanelInner({
         title="Portfolio return"
         metric="return"
         range={range}
-        onRangeChange={setRange}
+        onRangeChange={applyRange}
         canLoad={canLoad}
         loading={loading}
         error={error}
         points={points}
         transactions={transactions}
-        spyPricePoints={spyPoints}
-        nasdaqPricePoints={nasdaqPoints}
         benchmarkInvestedUsd={benchmarkInvestedUsd}
         combinedSources={combinedSources}
         sourcePointsById={sourcePointsById}
@@ -453,14 +527,12 @@ function PortfolioPerformancePanelInner({
         title="Drawdowns"
         metric="drawdown"
         range={range}
-        onRangeChange={setRange}
+        onRangeChange={applyRange}
         canLoad={canLoad}
         loading={loading}
         error={error}
         points={points}
         transactions={transactions}
-        spyPricePoints={spyPoints}
-        nasdaqPricePoints={nasdaqPoints}
         benchmarkInvestedUsd={benchmarkInvestedUsd}
         combinedSources={combinedSources}
         sourcePointsById={sourcePointsById}

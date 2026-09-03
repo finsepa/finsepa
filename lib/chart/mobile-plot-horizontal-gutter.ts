@@ -103,7 +103,7 @@ export function applyMobilePlotHorizontalGutter(
 export function fitSeriesLogicalRangeToPlotWidth(
   chart: IChartApi,
   logicalPointCount: number,
-  options?: { fixEdges?: boolean },
+  options?: { fixEdges?: boolean; plotWidthPx?: number },
 ): void {
   if (logicalPointCount < 1) return;
 
@@ -111,40 +111,42 @@ export function fitSeriesLogicalRangeToPlotWidth(
   const lastIdx = logicalPointCount - 1;
   const fixEdges = options?.fixEdges ?? true;
 
-  const layout = (attempt = 0) => {
-    requestAnimationFrame(() => {
-      const plotW = ts.width();
-      if (plotW < 12 && attempt < 12) {
-        layout(attempt + 1);
-        return;
-      }
-      if (plotW < 12) {
-        ts.fitContent();
-        return;
-      }
+  const apply = (): boolean => {
+    const plotW = Math.max(ts.width(), options?.plotWidthPx ?? 0);
+    if (plotW < 12) return false;
 
-      // Visible range is logical indices 0…lastIdx (n−1 bars apart). Spacing must be
-      // plotW / lastIdx, not plotW / n, or the last point stops one bar short of the edge.
-      const spacing = lastIdx > 0 ? plotW / lastIdx : plotW;
-      // Allow sub-0.5px spacing for dense ranges (e.g. ALL) so every bar fits instead of
-      // scrolling the earliest history off-screen; a 0.02px floor keeps huge ranges sane.
-      const barSpacing = Math.max(0.02, spacing);
-      ts.applyOptions({
-        ...(fixEdges ?
-          { fixLeftEdge: true, fixRightEdge: true, rightOffset: 0 }
-        : {}),
-        barSpacing,
-        minBarSpacing: Math.min(0.5, barSpacing),
-      });
-      ts.setVisibleLogicalRange({ from: 0, to: lastIdx });
-
-      if (attempt === 0) {
-        layout(1);
-      }
+    // Visible range is logical indices 0…lastIdx (n−1 bars apart). Spacing must be
+    // plotW / lastIdx, not plotW / n, or the last point stops one bar short of the edge.
+    const spacing = lastIdx > 0 ? plotW / lastIdx : plotW;
+    // Allow sub-0.5px spacing for dense ranges (e.g. ALL) so every bar fits instead of
+    // scrolling the earliest history off-screen; a 0.02px floor keeps huge ranges sane.
+    const barSpacing = Math.max(0.02, spacing);
+    ts.applyOptions({
+      ...(fixEdges ?
+        { fixLeftEdge: true, fixRightEdge: true, rightOffset: 0 }
+      : {}),
+      barSpacing,
+      minBarSpacing: Math.min(0.5, barSpacing),
     });
+    ts.setVisibleLogicalRange({ from: 0, to: lastIdx });
+    return true;
   };
 
-  layout();
+  // Apply in this turn when the pane width is already known so range toggles do not
+  // paint the previous bar-spacing (stretched/compressed) and then snap on the next frame.
+  if (apply()) return;
+
+  const retry = (attempt: number) => {
+    requestAnimationFrame(() => {
+      if (apply()) return;
+      if (attempt < 12) {
+        retry(attempt + 1);
+        return;
+      }
+      ts.fitContent();
+    });
+  };
+  retry(0);
 }
 
 /** Fit series to plot width on mobile — snap logical range 0…n−1 with no trailing whitespace. */
@@ -160,5 +162,8 @@ export function fitContentWithMobilePlotGutter(
   }
 
   ts.applyOptions(mobileTimeScaleOptions(containerWidthPx));
-  fitSeriesLogicalRangeToPlotWidth(chart, logicalPointCount, { fixEdges: true });
+  fitSeriesLogicalRangeToPlotWidth(chart, logicalPointCount, {
+    fixEdges: true,
+    plotWidthPx: containerWidthPx,
+  });
 }

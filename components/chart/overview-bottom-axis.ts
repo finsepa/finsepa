@@ -202,7 +202,7 @@ function overviewAxisShows5DWeekdayLabel(
 
 const MOBILE_5D_WEEKDAY_LABEL_MAX = 5;
 
-/** Mobile 5D / portfolio 7D: weekday names in range order (e.g. Fri Mon Tue Wed Thu). */
+/** Mobile 5D: weekday names in range order (e.g. Fri Mon Tue Wed Thu). */
 function collectMobileWeekdayLabels(
   data: readonly StockChartPoint[],
   timeZone: string,
@@ -228,7 +228,7 @@ function collectMobile5DWeekdayLabels(data: readonly StockChartPoint[], timeZone
   return collectMobileWeekdayLabels(data, timeZone, MOBILE_5D_WEEKDAY_LABEL_MAX);
 }
 
-/** Mobile 5D / portfolio 7D: spread weekday labels evenly across the plot (same as mobile 1D hour row). */
+/** Mobile 5D: spread weekday labels evenly across the plot (same as mobile 1D hour row). */
 function buildMobileWeekdayAxisLabels(
   chart: IChartApi,
   data: readonly StockChartPoint[],
@@ -761,10 +761,15 @@ const CRYPTO_1D_AXIS_STEPS_HOURS = [1, 2, 3, 4, 6, 12] as const;
 /** Min gap between adjacent compact hour ticks (e.g. `12AM`) so they never overlap. */
 const CRYPTO_1D_AXIS_MIN_LABEL_PX = 88;
 
-function cryptoLive1DAxisHourStep(plotWidthPx: number, spanHours: number): number {
+function cryptoLive1DAxisHourStep(
+  plotWidthPx: number,
+  spanHours: number,
+  minHourStep = 1,
+): number {
   const plotW = plotWidthPx > 0 ? plotWidthPx : 800;
   const maxComfortable = Math.max(2, Math.floor(plotW / CRYPTO_1D_AXIS_MIN_LABEL_PX));
   for (const step of CRYPTO_1D_AXIS_STEPS_HOURS) {
+    if (step < minHourStep) continue;
     if (Math.ceil(spanHours / step) <= maxComfortable) return step;
   }
   return 12;
@@ -775,13 +780,14 @@ export function buildCryptoLive1DAxisLabels(
   data: readonly StockChartPoint[],
   timeZone: string,
   plotWidthPx = 0,
+  minHourStep = 1,
 ): OverviewAxisLabel[] {
   const pts = data.filter((p) => isFiniteNumber(p.time)).sort((a, b) => a.time - b.time);
   const n = pts.length;
   if (!n) return [];
   const spanHours = Math.max(1, (pts[n - 1]!.time - pts[0]!.time) / 3600);
   const plotW = plotWidthPx > 0 ? plotWidthPx : chart.paneSize(0).width;
-  const step = cryptoLive1DAxisHourStep(plotW, spanHours);
+  const step = cryptoLive1DAxisHourStep(plotW, spanHours, minHourStep);
 
   const out: OverviewAxisLabel[] = [];
   let lastHourKey: string | null = null;
@@ -956,7 +962,9 @@ export type OverviewPeriodAxisSyncOptions = {
   liveSessionMinute?: boolean;
   /** Live 24/7 crypto 1D (BTC): rolling-24h nice-interval hour axis (Google-Finance style). */
   cryptoLive1D?: boolean;
-  /** Portfolio 7D / extended weekday rows — default 5 for stock 5D. */
+  /** Floor for {@link cryptoLive1D} step (portfolio 1D uses 3 so ticks stay `3AM 6AM 9AM`). */
+  cryptoLive1DMinHourStep?: number;
+  /** Weekday rows for 5D (stock / crypto / portfolio). Default 5. */
   weekdayLabelMax?: number;
 };
 
@@ -972,7 +980,13 @@ export function syncOverviewPeriodAxisLabels(
   const n = data.length;
   if (!n) return [];
   if (options?.cryptoLive1D) {
-    return buildCryptoLive1DAxisLabels(chart, data, timeZone, plotWidthPx);
+    return buildCryptoLive1DAxisLabels(
+      chart,
+      data,
+      timeZone,
+      plotWidthPx,
+      options.cryptoLive1DMinHourStep ?? 1,
+    );
   }
   if (options?.stock1DLiveSessionExtended) {
     const sessionYmd =

@@ -80,6 +80,10 @@ import { isStock1DLiveMinuteChartTicker, usesStock1DLiveWsMinutePipeline, usesSt
 import { isCryptoLive1DSymbol, usesCryptoLogPriceScale } from "@/lib/market/crypto-live-1d-tickers";
 import { pinCryptoLive1DChartTip } from "@/lib/chart/crypto-live-1d-chart-tip";
 import {
+  hollowInBarCircleMarkers,
+  scheduleScaledInBarMarkers,
+} from "@/lib/chart/hollow-in-bar-circle-markers";
+import {
   appendLiveSessionNowTail,
   applyStock1DLiveSessionTimeScale,
   fitOverviewChartTimeScale,
@@ -607,25 +611,7 @@ function syncYAxisTickLabels(
 
 /**
  * In-bar series markers scale with `barSpacing` (LWCharts uses clamp(barSpacing, 12, 30) for shape height).
- * Sparse ranges (e.g. 1M) get oversized dots vs dense ranges (6M). Damp toward ~16px equivalent without exceeding default.
  */
-function inBarMarkerSizeMultiplier(barSpacing: number): number {
-  const clamped = Math.min(Math.max(barSpacing, 12), 30);
-  return Math.min(1, 16 / clamped);
-}
-
-function scheduleScaledInBarMarkers(
-  chart: IChartApi,
-  markers: ISeriesMarkersPluginApi<UTCTimestamp>,
-  templates: SeriesMarker<UTCTimestamp>[],
-) {
-  const apply = () => {
-    const bs = chart.timeScale().options().barSpacing;
-    const sm = inBarMarkerSizeMultiplier(bs);
-    markers.setMarkers(templates.map((m) => ({ ...m, size: (m.size ?? 1) * sm })));
-  };
-  requestAnimationFrame(() => requestAnimationFrame(apply));
-}
 
 function isTouchLikeChartDevice(): boolean {
   if (typeof window === "undefined") return false;
@@ -719,33 +705,6 @@ function tradeMarkersForChart(
     out.push(...hollowInBarCircleMarkers(time, stroke, 2));
   }
   return out;
-}
-
-/**
- * LW series markers are fill-only — paint a stroke ring then a smaller panel-filled disc on top.
- * Disc fill must match main panel (black on dark), never light-theme white.
- */
-function hollowInBarCircleMarkers(
-  time: UTCTimestamp,
-  strokeColor: string,
-  size = 1,
-): SeriesMarker<UTCTimestamp>[] {
-  return [
-    {
-      time,
-      position: "inBar",
-      shape: "circle",
-      color: strokeColor,
-      size,
-    },
-    {
-      time,
-      position: "inBar",
-      shape: "circle",
-      color: chartMarkerDiscFillColor(),
-      size: Math.max(0.35, size * 0.5),
-    },
-  ];
 }
 
 function costBasisPriceLineTitle(price: number): string {
@@ -1513,7 +1472,7 @@ export function PriceChart({
         minimumHeight: useCustomBottomAxis ? 0 : undefined,
       },
       crosshair: {
-        mode: holdingsStyle ? CrosshairMode.Normal : hide ? CrosshairMode.Normal : CrosshairMode.Magnet,
+        mode: hide && !holdingsStyle ? CrosshairMode.Normal : CrosshairMode.Magnet,
       },
     });
     const wrapEl = wrapRef.current;
@@ -1835,9 +1794,8 @@ export function PriceChart({
         minimumHeight: useCustomBottomAxis ? 0 : undefined,
       },
       crosshair: {
-        mode: holdingsStyleRef.current
-          ? CrosshairMode.Normal
-          : screenshotPreviewMode || hideMobileYAxisLabelsRef.current
+        mode:
+          screenshotPreviewMode || (hideMobileYAxisLabelsRef.current && !holdingsStyleRef.current)
             ? CrosshairMode.Normal
             : CrosshairMode.Magnet,
         vertLine: {
@@ -2099,13 +2057,32 @@ export function PriceChart({
     const onCrosshairMove = (param: MouseEventParams) => {
       const s = seriesRef.current;
       if (!s) return;
-      if (param.point === undefined || param.point.x < 0 || param.point.y < 0 || param.time === undefined) {
+      // Magnet can snap Y slightly above the pane at range highs. Holdings still
+      // has a valid X to resolve the nearest bar; don't treat that as a mouse-leave.
+      if (
+        param.point === undefined ||
+        param.point.x < 0 ||
+        (param.point.y < 0 && !holdingsStyleRef.current)
+      ) {
         const wasHovered = crosshairHoveredRef.current;
         crosshairHoveredRef.current = false;
         hoverTimeRef.current = null;
         if (holdingsStyleRef.current) {
           clearHoldingsHoverDom();
         } else if (hideMobileYAxisLabelsRef.current) {
+          clearMobileOverviewCrosshairDom();
+        } else {
+          clearOverviewHover();
+        }
+        return;
+      }
+      // Long holdings ranges leave gaps between weekly/monthly bars. Magnet + nearest-x
+      // lookup still produce a tooltip when `param.time` is missing between points.
+      if (param.time === undefined && !holdingsStyleRef.current) {
+        const wasHovered = crosshairHoveredRef.current;
+        crosshairHoveredRef.current = false;
+        hoverTimeRef.current = null;
+        if (hideMobileYAxisLabelsRef.current) {
           clearMobileOverviewCrosshairDom();
         } else {
           clearOverviewHover();
@@ -2155,11 +2132,13 @@ export function PriceChart({
         return;
       }
 
-      const nextPt = { x: param.point.x, y: param.point.y };
+      const nextPt = { x: param.point.x, y: Math.max(0, param.point.y) };
       let hoverValue: number | null = null;
       let tunix: number | null = null;
       let nearBar: StockChartPoint | null = null;
-      const data = param.seriesData.get(s);
+      // Between sparse 5Y/ALL bars `param.time` is missing; seriesData can still hold the
+      // last snapped row, which would pin the tooltip to one date across the whole plot.
+      const data = param.time !== undefined ? param.seriesData.get(s) : undefined;
       if (data && typeof data === "object" && "value" in data && isFiniteNumber((data as { value: number }).value)) {
         hoverValue = (data as { value: number }).value;
         const row = data as { value: number; time?: UTCTimestamp };
@@ -2168,9 +2147,13 @@ export function PriceChart({
         if (typeof row.time === "number" && Number.isFinite(row.time)) {
           nearBar = { time: row.time, value: hoverValue };
         }
-      } else {
-        const sec = horzTimeToUnixSeconds(param.time as Time);
+      }
+      if (hoverValue == null || tunix == null) {
+        const sec = param.time !== undefined ? horzTimeToUnixSeconds(param.time as Time) : null;
         nearBar = sec != null ? nearestPointByTime(pointsRef.current, sec) : null;
+        if (!nearBar) {
+          nearBar = pointAtChartX(chart, pointsRef.current, nextPt.x);
+        }
         if (nearBar && isFiniteNumber(nearBar.time) && isFiniteNumber(nearBar.value)) {
           hoverValue = nearBar.value;
           tunix = chartPointDisplayUnix(nearBar, overviewBottomAxisModeRef.current);
@@ -3144,6 +3127,7 @@ export function PriceChart({
         lastValued.time,
         lastPointStroke,
         1,
+        lastPointStroke,
       );
       overviewInBarMarkersRef.current = lastTemplates;
       scheduleScaledInBarMarkers(chart, markers, lastTemplates);

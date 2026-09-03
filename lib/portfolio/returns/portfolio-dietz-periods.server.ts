@@ -24,6 +24,7 @@ const MAX_TX = 4000;
 
 export type DietzPeriodKey =
   | "d1"
+  | "d5"
   | "d7"
   | "m1"
   | "m3"
@@ -118,6 +119,8 @@ function calendarPeriodStart(key: Exclude<DietzPeriodKey, "all">, now: Date): st
   switch (key) {
     case "d1":
       return ymd(subDays(now, 1));
+    case "d5":
+      return ymd(subDays(now, 5));
     case "d7":
       return ymd(subDays(now, 7));
     case "m1":
@@ -139,7 +142,7 @@ function calendarPeriodStart(key: Exclude<DietzPeriodKey, "all">, now: Date): st
 
 export async function computePortfolioDietzPeriods(
   transactions: PortfolioTransaction[],
-  keys: DietzPeriodKey[] = ["d1", "d7", "m1", "m3", "m6", "ytd", "y1", "y3", "y5", "all"],
+  keys: DietzPeriodKey[] = ["d1", "d5", "d7", "m1", "m3", "m6", "ytd", "y1", "y3", "y5", "all"],
 ): Promise<Partial<Record<DietzPeriodKey, DietzPeriodPayload>>> {
   if (transactions.length === 0) return {};
 
@@ -246,6 +249,7 @@ export function parseDietzReturnsBody(body: unknown): {
 
   const allowed: DietzPeriodKey[] = [
     "d1",
+    "d5",
     "d7",
     "m1",
     "m3",

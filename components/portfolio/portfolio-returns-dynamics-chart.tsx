@@ -14,6 +14,8 @@ import { LineChart } from "@/lib/icons";
 
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import { SecondaryTabs, type SecondaryTabItem } from "@/components/ui/secondary-tabs";
+import { PortfolioUpDownLegendSwatch } from "@/components/chart/portfolio-up-down-legend-swatch";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
@@ -38,6 +40,11 @@ import type {
   PeriodReturnGranularity,
   PortfolioPeriodReturnBar,
 } from "@/lib/portfolio/portfolio-period-returns-types";
+import {
+  latestPeriodReturnYear,
+  periodReturnBarLabelForYear,
+  portfolioPeriodReturnYears,
+} from "@/lib/portfolio/portfolio-period-returns-years";
 import { cn } from "@/lib/utils";
 
 const BENCHMARK_SPY_BAR = "#EA580C";
@@ -55,7 +62,6 @@ const Y_AXIS_TICK_COUNT = 6;
 const Y_AXIS_STEP_COUNT = Y_AXIS_TICK_COUNT - 1;
 
 const GRANULARITY_OPTIONS: TabSwitcherOption<PeriodReturnGranularity>[] = [
-  { value: "weekly", label: "Weekly" },
   { value: "monthly", label: "Monthly" },
   { value: "quarterly", label: "Quarterly" },
   { value: "annually", label: "Annually" },
@@ -63,6 +69,10 @@ const GRANULARITY_OPTIONS: TabSwitcherOption<PeriodReturnGranularity>[] = [
 
 const BENCHMARK_SPY_LABEL = "S&P 500";
 const BENCHMARK_NASDAQ_LABEL = "Nasdaq";
+
+function portfolioReturnBarColor(pct: number): string {
+  return pct >= 0 ? resolveFsColor("--fs-up") : resolveFsColor("--fs-down");
+}
 
 function formatPctAxis(n: number): string {
   const rounded =
@@ -177,11 +187,13 @@ function niceYRange(
 function ReturnsLegendBadge({
   label,
   swatch,
+  swatchVariant = "solid",
   pressed,
   onToggle,
 }: {
   label: string;
-  swatch: string;
+  swatch?: string;
+  swatchVariant?: "solid" | "upDown";
   pressed: boolean;
   onToggle: () => void;
 }) {
@@ -195,7 +207,11 @@ function ReturnsLegendBadge({
         !pressed && "opacity-40",
       )}
     >
-      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: swatch }} aria-hidden />
+      {swatchVariant === "upDown" ? (
+        <PortfolioUpDownLegendSwatch />
+      ) : (
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: swatch }} aria-hidden />
+      )}
       <span className="min-w-0 truncate">{label}</span>
     </button>
   );
@@ -375,7 +391,12 @@ function DynamicsSvg({
       let x = startX;
       const slots: { key: string; x: number; value: number; color: string }[] = [];
       if (hasP) {
-        slots.push({ key: "p", x, value: b.portfolioPct!, color: resolveFsColor("--fs-accent") });
+        slots.push({
+          key: "p",
+          x,
+          value: b.portfolioPct!,
+          color: portfolioReturnBarColor(b.portfolioPct!),
+        });
         x += barW + gap;
       }
       if (hasS) {
@@ -391,21 +412,29 @@ function DynamicsSvg({
   );
 
   const barValueLabels = useMemo(() => {
-    const labels: { key: string; leftPx: number; topPx: number; text: string }[] = [];
+    const labels: { key: string; leftPx: number; topPx: number; text: string; below: boolean }[] = [];
+    const gapPx = 4;
+    const linePx = 12;
     for (let i = 0; i < bars.length; i++) {
       const slots = groupLayout(bars[i]!, i);
       for (const s of slots) {
-        if (s.value < 0) continue;
+        const below = s.value < 0;
+        const atBar = yFor(s.value);
+        let topPx = below ? atBar + gapPx : atBar - gapPx;
+        if (below && topPx + linePx > plotH) {
+          topPx = Math.max(atBar + 2, plotH - linePx);
+        }
         labels.push({
           key: `${s.key}-${i}`,
           leftPx: s.x + barW / 2,
-          topPx: yFor(s.value) - 4,
+          topPx,
           text: formatPctAxis(s.value),
+          below,
         });
       }
     }
     return labels;
-  }, [bars, groupLayout, barW, yFor]);
+  }, [bars, groupLayout, barW, yFor, plotH]);
 
   const updateHoverFromEvent = useCallback((i: number, clientX: number, clientY: number) => {
     const el = wrapRef.current;
@@ -420,7 +449,7 @@ function DynamicsSvg({
     <>
       <ReturnsLegendBadge
         label="Portfolio"
-        swatch={resolveFsColor("--fs-accent")}
+        swatchVariant="upDown"
         pressed={showPortfolio}
         onToggle={onTogglePortfolio}
       />
@@ -539,7 +568,7 @@ function DynamicsSvg({
                 style={{
                   left: b.leftPx,
                   top: b.topPx,
-                  transform: "translate(-50%, -100%)",
+                  transform: b.below ? "translate(-50%, 0)" : "translate(-50%, -100%)",
                   textShadow: "var(--fs-chart-value-label-shadow)",
                 }}
                 title={b.text}
@@ -561,7 +590,12 @@ function DynamicsSvg({
                 <p className="text-[12px] font-semibold leading-4 text-fg">{hoveredBar.label}</p>
                 {showPortfolio ? (
                   <p className="mt-1.5 text-[12px] leading-4 text-fg-muted">
-                    <span className="font-semibold" style={{ color: resolveFsColor("--fs-accent") }}>
+                    <span
+                      className="font-semibold"
+                      style={{
+                        color: portfolioReturnBarColor(hoveredBar.portfolioPct ?? 0),
+                      }}
+                    >
                       Portfolio
                     </span>
                     <span className="tabular-nums text-fg">
@@ -674,12 +708,44 @@ function PortfolioReturnsDynamicsChartInner({
   canLoad: boolean;
 }) {
   const [granularity, setGranularity] = useState<PeriodReturnGranularity>("annually");
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [showPortfolio, setShowPortfolio] = useState(true);
   const [compareSpy, setCompareSpy] = useState(true);
   const [compareNasdaq, setCompareNasdaq] = useState(false);
   const [bars, setBars] = useState<PortfolioPeriodReturnBar[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const loadGenRef = useRef(0);
+
+  const availableYears = useMemo(
+    () => portfolioPeriodReturnYears(transactions),
+    [transactions],
+  );
+  const yearTabItems = useMemo(
+    (): SecondaryTabItem<string>[] =>
+      availableYears.map((y) => ({ id: String(y), label: String(y) })),
+    [availableYears],
+  );
+  const showYearTabs = canLoad && granularity !== "annually" && yearTabItems.length > 0;
+
+  useEffect(() => {
+    if (availableYears.length === 0) return;
+    if (!availableYears.includes(selectedYear)) {
+      const last = latestPeriodReturnYear(availableYears);
+      if (last != null) setSelectedYear(last);
+    }
+  }, [availableYears, selectedYear]);
+
+  const applyGranularity = useCallback(
+    (next: PeriodReturnGranularity) => {
+      if (granularity === "annually" && next !== "annually") {
+        const last = latestPeriodReturnYear(availableYears);
+        if (last != null) setSelectedYear(last);
+      }
+      setGranularity(next);
+    },
+    [availableYears, granularity],
+  );
 
   // At least one series stays visible (same guard as the Fear & Greed legend badges).
   const togglePortfolio = useCallback(() => {
@@ -708,6 +774,7 @@ function PortfolioReturnsDynamicsChartInner({
       setBars([]);
       return;
     }
+    const gen = ++loadGenRef.current;
     setLoading(true);
     setError(null);
     try {
@@ -719,18 +786,21 @@ function PortfolioReturnsDynamicsChartInner({
           transactions,
           granularity,
           benchmark: "SPY",
+          ...(granularity === "annually" ? {} : { year: selectedYear }),
         }),
       });
       if (!res.ok) throw new Error("Failed to load");
       const json = (await res.json()) as { bars?: PortfolioPeriodReturnBar[] };
+      if (gen !== loadGenRef.current) return;
       setBars(Array.isArray(json.bars) ? json.bars : []);
     } catch {
+      if (gen !== loadGenRef.current) return;
       setError("Could not load period returns");
       setBars([]);
     } finally {
-      setLoading(false);
+      if (gen === loadGenRef.current) setLoading(false);
     }
-  }, [canLoad, transactions, granularity]);
+  }, [canLoad, transactions, granularity, selectedYear]);
 
   useEffect(() => {
     void load();
@@ -743,28 +813,47 @@ function PortfolioReturnsDynamicsChartInner({
       (b.nasdaqPct != null && Number.isFinite(b.nasdaqPct)),
   );
 
+  const chartBars = useMemo(() => {
+    if (granularity === "annually") return bars;
+    return bars.map((b) => ({
+      ...b,
+      label: periodReturnBarLabelForYear(b.periodStart, granularity),
+    }));
+  }, [bars, granularity]);
+
   return (
     <section className="mb-10 w-full min-w-0">
-      <div className="mb-4 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div className="flex min-w-0 items-start justify-between gap-3">
-          <h2 className={cn("min-w-0 shrink", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
-            Dynamics of portfolio returns
-          </h2>
-        </div>
+      <div className="mb-4 flex flex-col gap-3">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="flex min-w-0 items-start justify-between gap-3">
+            <h2 className={cn("min-w-0 shrink", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
+              Returns
+            </h2>
+          </div>
 
-        <div className="flex min-w-0 flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-          <div className="hidden min-w-0 items-center gap-3 sm:flex">
-            <div className="max-w-full min-w-0 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <TabSwitcher
-                aria-label="Return period"
-                className="w-max min-w-0 justify-end"
-                options={GRANULARITY_OPTIONS}
-                value={granularity}
-                onChange={setGranularity}
-              />
+          <div className="flex min-w-0 flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <div className="hidden min-w-0 items-center gap-3 sm:flex">
+              <div className="max-w-full min-w-0 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <TabSwitcher
+                  aria-label="Return period"
+                  className="w-max min-w-0 justify-end"
+                  options={GRANULARITY_OPTIONS}
+                  value={granularity}
+                  onChange={applyGranularity}
+                />
+              </div>
             </div>
           </div>
         </div>
+
+        {showYearTabs ? (
+          <SecondaryTabs
+            aria-label="Return year"
+            items={yearTabItems}
+            value={String(selectedYear)}
+            onValueChange={(id) => setSelectedYear(Number(id))}
+          />
+        ) : null}
       </div>
 
       <div className="w-full min-w-0">
@@ -800,7 +889,7 @@ function PortfolioReturnsDynamicsChartInner({
           </Empty>
         ) : (
           <DynamicsSvg
-            bars={bars}
+            bars={chartBars}
             showPortfolio={showPortfolio}
             showSpy={compareSpy}
             showNasdaq={compareNasdaq}
@@ -819,7 +908,7 @@ function PortfolioReturnsDynamicsChartInner({
           className="w-full min-w-0"
           options={GRANULARITY_OPTIONS}
           value={granularity}
-          onChange={setGranularity}
+          onChange={applyGranularity}
         />
       </div>
 
@@ -828,7 +917,7 @@ function PortfolioReturnsDynamicsChartInner({
         <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:hidden">
           <ReturnsLegendBadge
             label="Portfolio"
-            swatch={resolveFsColor("--fs-accent")}
+            swatchVariant="upDown"
             pressed={showPortfolio}
             onToggle={togglePortfolio}
           />

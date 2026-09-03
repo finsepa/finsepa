@@ -5,6 +5,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type MutableRefObject,
@@ -22,14 +23,19 @@ import {
   LineStyle,
   LineType,
   createChart,
+  createSeriesMarkers,
   type IChartApi,
   type ISeriesApi,
+  type ISeriesMarkersPluginApi,
   type MouseEventParams,
   type Time,
+  type UTCTimestamp,
 } from "lightweight-charts";
 import { LineChart, Settings } from "@/lib/icons";
 
+import { applyLastPointCircleMarkers } from "@/lib/chart/hollow-in-bar-circle-markers";
 import { accentAreaGradientColors, baselineUpDownFillColors } from "@/lib/chart/accent-area-fill";
+import { PortfolioUpDownLegendSwatch } from "@/components/chart/portfolio-up-down-legend-swatch";
 import { useChartThemePaintKey } from "@/lib/theme/use-logo-dev-theme";
 import { baselineRelativeGradientEnabled } from "@/lib/chart/baseline-relative-gradient";
 import {
@@ -37,15 +43,17 @@ import {
   prefersReducedFundamentalsBarMotion,
   runFundamentalsBarEnterAnimation,
 } from "@/lib/chart/fundamentals-bar-enter-animation";
-import { fitSeriesLogicalRangeToPlotWidth } from "@/lib/chart/mobile-plot-horizontal-gutter";
+import { fitSeriesLogicalRangeToPlotWidth, shouldHideMobileYAxisLabels } from "@/lib/chart/mobile-plot-horizontal-gutter";
 import {
   CHART_PLOT_BACKGROUND_CLASS,
   CHART_PLOT_BACKGROUND_LABEL_CLASS,
+  FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
+  computeFundamentalsChartTooltipPlacement,
 } from "@/lib/chart/fundamentals-chart-surface";
 
-import { horzTimeToUnixSeconds } from "@/components/chart/chart-selection-utils";
+import { horzTimeToUnixSeconds, nearestPointByTime } from "@/components/chart/chart-selection-utils";
 import {
   CHART_PLOT_DOTS_PATTERN_CLASS,
   formatOverviewCrosshairBottomDate,
@@ -66,10 +74,15 @@ import {
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import {
-  buildContributionBenchmarkSeries,
   extractAllExternalCashFlows,
+  replayBenchmarkSharesAsOf,
 } from "@/lib/portfolio/benchmark/benchmark-engine";
-import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
+import {
+  lastBenchmarkValueOnOrBeforeTime,
+  mergeEodWithIntradayBenchmarkPoints,
+  sortBenchmarkChartPoints,
+} from "@/lib/portfolio/benchmark/benchmark-chart-points";
+import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 import {
   Empty,
@@ -94,7 +107,10 @@ import type {
   PortfolioChartRange,
   PortfolioValueHistoryPoint,
 } from "@/lib/portfolio/portfolio-chart-types";
-import { fetchPortfolioValueHistoryCached } from "@/lib/portfolio/portfolio-value-history-client-cache";
+import {
+  fetchPortfolioValueHistoryCached,
+  peekPortfolioValueHistoryCached,
+} from "@/lib/portfolio/portfolio-value-history-client-cache";
 import { effectiveSamplingRange } from "@/lib/portfolio/portfolio-chart-sampling";
 
 const BENCHMARK_SPY_LINE = "#EA580C";
@@ -110,6 +126,7 @@ function applyOverviewLineRevealClip(el: HTMLElement | null, progress: number): 
   if (!el) return;
   if (progress >= 1) {
     el.style.clipPath = "";
+    el.style.opacity = "";
     return;
   }
   const rightInset = (1 - progress) * 100;
@@ -119,17 +136,89 @@ function applyOverviewLineRevealClip(el: HTMLElement | null, progress: number): 
 function cancelOverviewLineEnter(args: {
   cancelRef: { current: (() => void) | null };
   doneRef: { current: boolean };
-  wrap: HTMLElement | null;
+  clearClip: () => void;
 }): void {
   args.cancelRef.current?.();
   args.cancelRef.current = null;
   args.doneRef.current = true;
-  applyOverviewLineRevealClip(args.wrap, 1);
+  args.clearClip();
+}
+
+/**
+ * Production overview enter: wait until LW has a real pane width (and has painted),
+ * then clip left-to-right. Clipping at 0 before the first paint leaves axes-only blank
+ * space — the canvas never composites, so the reveal has nothing to show and the line pops in.
+ */
+function runOverviewLineEnterReveal(args: {
+  chart: IChartApi;
+  wrap: HTMLElement | null;
+  applyClip: (progress: number) => void;
+  onRevealStart?: () => void;
+  onComplete: () => void;
+}): () => void {
+  let cancelled = false;
+  let animCancel: (() => void) | null = null;
+  let raf = 0;
+  const wrap = args.wrap;
+
+  const restoreWrap = () => {
+    if (wrap) wrap.style.opacity = "";
+  };
+
+  if (wrap) wrap.style.opacity = "0";
+  args.applyClip(1);
+
+  const start = (frame: number) => {
+    if (cancelled) return;
+    const plotW = args.chart.timeScale().width();
+    if ((plotW < 12 || frame < 2) && frame < 24) {
+      raf = requestAnimationFrame(() => start(frame + 1));
+      return;
+    }
+    restoreWrap();
+    args.applyClip(0);
+    args.onRevealStart?.();
+    animCancel = runFundamentalsBarEnterAnimation({
+      periodCount: 1,
+      onFrame: (elapsedMs) => {
+        args.applyClip(fundamentalsBarEnterProgress(0, 1, elapsedMs));
+      },
+      onComplete: () => {
+        if (cancelled) return;
+        args.applyClip(1);
+        args.onComplete();
+      },
+    });
+  };
+
+  raf = requestAnimationFrame(() => start(0));
+
+  return () => {
+    cancelled = true;
+    cancelAnimationFrame(raf);
+    animCancel?.();
+    restoreWrap();
+  };
 }
 
 /** Matches `rightPriceScale.scaleMargins` on the overview LW chart. */
 const OVERVIEW_SCALE_MARGIN_TOP = 0.12;
 const OVERVIEW_SCALE_MARGIN_BOTTOM = 0.08;
+
+const COMPARE_OVERLAY_PRICE_SCALE_ID = "finsepa-compare-overlay";
+
+/**
+ * Return / profit / drawdown always share the portfolio axis (same units).
+ * Value shares on 6M / YTD / 1Y / 1M / 5Y / ALL. 1D / 5D value keep an overlay
+ * scale so lifetime S&P $ does not flatten the Overview window.
+ */
+function compareSharesPortfolioPriceScale(
+  range: PortfolioChartRange,
+  metric: MetricMode,
+): boolean {
+  if (metric !== "value") return true;
+  return range !== "1d" && range !== "5d";
+}
 
 type OverviewYAxisLabel = { key: string; label: string; topPct: number };
 
@@ -138,7 +227,49 @@ const EMPTY_OVERLAY_SERIES: readonly {
   points: readonly PortfolioValueHistoryPoint[];
   color: string;
   visible: boolean;
+  label?: string;
 }[] = [];
+
+function overviewMetricTitle(metric: MetricMode): string {
+  return metric === "value" ? "Total value"
+    : metric === "profit" ? "Total profit"
+    : metric === "drawdown" ? "Drawdown"
+    : "Return";
+}
+
+function overviewTooltipValue(
+  metric: MetricMode,
+  raw: number,
+): { valueLabel: string; valueTone: "pos" | "neg" | "neutral" } {
+  const valueLabel =
+    isPercentMetric(metric) ? formatReturnPctAxis(raw)
+    : metric === "profit" ? `${raw >= 0 ? "+" : "−"}${TOOLTIP_USD.format(Math.abs(raw))}`
+    : TOOLTIP_USD.format(raw);
+  const valueTone =
+    isPercentMetric(metric) || metric === "profit" ?
+      raw > 0 ? "pos"
+      : raw < 0 ? "neg"
+      : "neutral"
+    : "neutral";
+  return { valueLabel, valueTone };
+}
+
+function overlayLineCrosshairOptions(color: string, visible: boolean) {
+  return {
+    crosshairMarkerVisible: visible,
+    crosshairMarkerRadius: 5,
+    crosshairMarkerBorderColor: color,
+    crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
+    crosshairMarkerBorderWidth: 2,
+  } as const;
+}
+
+function overviewLastPointStroke(metric: MetricMode, data: readonly { value: number }[]): string {
+  if (metric === "value") return resolveFsColor("--fs-accent");
+  if (metric === "drawdown") return resolveFsColor("--fs-down");
+  const last = data[data.length - 1]?.value;
+  return typeof last === "number" && last < 0 ? resolveFsColor("--fs-down") : resolveFsColor("--fs-up");
+}
 
 function overviewYAxisLabelsEqual(a: OverviewYAxisLabel[], b: OverviewYAxisLabel[]): boolean {
   if (a === b) return true;
@@ -156,6 +287,20 @@ type OverviewMainSeries = ISeriesApi<"Area"> | ISeriesApi<"Baseline">;
 const BENCHMARK_COMPARE_DISABLED_HINT =
   "Switch to Value or Return to compare with an index.";
 
+async function fetchStockPriceChartPoints(
+  ticker: string,
+  stockRange: StockChartRange,
+  signal: AbortSignal,
+): Promise<StockChartPoint[]> {
+  const res = await fetch(
+    `/api/stocks/${encodeURIComponent(ticker)}/chart?range=${encodeURIComponent(stockRange)}&series=price`,
+    { credentials: "include", signal, cache: "no-store" },
+  );
+  if (!res.ok) return [];
+  const json = (await res.json()) as { points?: StockChartPoint[] };
+  return Array.isArray(json.points) ? json.points : [];
+}
+
 async function fetchBenchmarkChartPoints(
   ticker: string,
   range: PortfolioChartRange,
@@ -163,25 +308,39 @@ async function fetchBenchmarkChartPoints(
   coverFromYmd?: string | null,
 ): Promise<StockChartPoint[] | null> {
   const toYmd = format(new Date(), "yyyy-MM-dd");
-  // Daily EOD via Portfolio loader — same session cadence as value-history (not weekly/monthly stock charts).
+  const windowFrom = chartWindowStartYmd(range);
+  // Contribution replay needs SPY/QQQ at historical deposit dates (same as 6M / YTD / 1Y).
   let fromYmd = coverFromYmd && /^\d{4}-\d{2}-\d{2}$/.test(coverFromYmd) ? coverFromYmd : toYmd;
-  // Pad so the first chart sample can resolve a prior session mark.
   try {
     fromYmd = format(subDays(parseISO(fromYmd), 14), "yyyy-MM-dd");
   } catch {
     /* keep fromYmd */
   }
-  // Also cover the visible chart window start when it is earlier than coverFrom.
-  const windowFrom = chartWindowStartYmd(range);
   if (windowFrom != null && windowFrom < fromYmd) fromYmd = windowFrom;
 
+  const hourlyQs = range === "1m" ? "&intraday=1h" : "";
   const res = await fetch(
-    `/api/portfolio/benchmark-history?ticker=${encodeURIComponent(ticker)}&from=${encodeURIComponent(fromYmd)}&to=${encodeURIComponent(toYmd)}`,
+    `/api/portfolio/benchmark-history?ticker=${encodeURIComponent(ticker)}&from=${encodeURIComponent(fromYmd)}&to=${encodeURIComponent(toYmd)}${hourlyQs}`,
     { credentials: "include", signal, cache: "no-store" },
   );
   if (!res.ok) return null;
   const json = (await res.json()) as { points?: StockChartPoint[] };
-  return Array.isArray(json.points) ? json.points : null;
+  const eod = Array.isArray(json.points) ? json.points : [];
+
+  // 1D / 5D overlays need asset-style 5m. 1M uses 1h on this endpoint (not stock 1M / 1m lookback).
+  if (range === "1d" || range === "5d") {
+    const intra = await fetchStockPriceChartPoints(ticker, portfolioRangeToStockRange(range), signal);
+    // Portfolio 1D is rolling 24h; stock 1D is only today's RTH. 5D fills yesterday's session
+    // so the overlay is not a previous-close plateau with one open step.
+    const priorSession = range === "1d" ? await fetchStockPriceChartPoints(ticker, "5D", signal) : [];
+    const windowBars =
+      range === "1d" && priorSession.length > 0
+        ? mergeEodWithIntradayBenchmarkPoints(priorSession, intra)
+        : intra;
+    if (windowBars.length > 0) return mergeEodWithIntradayBenchmarkPoints(eod, windowBars);
+  }
+
+  return eod.length > 0 ? eod : null;
 }
 
 /** First calendar day of the selected portfolio chart range (approx). */
@@ -191,8 +350,8 @@ function chartWindowStartYmd(range: PortfolioChartRange): string | null {
     switch (range) {
       case "1d":
         return format(subDays(now, 1), "yyyy-MM-dd");
-      case "7d":
-        return format(subDays(now, 7), "yyyy-MM-dd");
+      case "5d":
+        return format(subDays(now, 5), "yyyy-MM-dd");
       case "1m":
         return format(subDays(now, 31), "yyyy-MM-dd");
       case "6m":
@@ -245,7 +404,7 @@ function portfolioRangeToStockRange(r: PortfolioChartRange): StockChartRange {
   switch (r) {
     case "1d":
       return "1D";
-    case "7d":
+    case "5d":
       return "5D";
     case "1m":
       return "1M";
@@ -292,9 +451,19 @@ function barYmdFromStockPoint(p: StockChartPoint): string | null {
 }
 
 function spySortedByTime(raw: readonly StockChartPoint[]): StockChartPoint[] {
-  return [...raw]
-    .filter((p) => Number.isFinite(p.time) && Number.isFinite(p.value))
-    .sort((a, b) => a.time - b.time);
+  return sortBenchmarkChartPoints(raw);
+}
+
+function spyValueAtPortfolioPoint(
+  sorted: readonly StockChartPoint[],
+  p: PortfolioValueHistoryPoint,
+): number | null {
+  const ts = p.time != null && Number.isFinite(p.time) ? p.time : null;
+  if (ts != null) {
+    const px = lastBenchmarkValueOnOrBeforeTime(sorted, ts);
+    if (px != null) return px;
+  }
+  return spyPriceForFlow(sorted, p.t);
 }
 
 /** Last SPY/EOD close on or before calendar `ymd` (UTC yyyy-MM-dd). */
@@ -336,11 +505,14 @@ function spyPriceForFlow(sorted: readonly StockChartPoint[], ymd: string): numbe
 }
 
 function portfolioPointTime(p: PortfolioValueHistoryPoint): Time {
-  return p.time != null && Number.isFinite(p.time) ? (p.time as Time) : (p.t as Time);
+  if (p.time != null && Number.isFinite(p.time)) return p.time as Time;
+  const ms = Date.parse(`${p.t}T12:00:00.000Z`);
+  return (Number.isFinite(ms) ? Math.floor(ms / 1000) : 0) as Time;
 }
 
 /**
  * Dollar path if external cash flows had tracked the benchmark (contribution model).
+ * Same overlay math on every range — 6M / YTD / 1Y are the visual reference.
  * Falls back to single-notional SPY scale when the ledger has no Cash In/Out rows.
  */
 function buildBenchmarkCompareLineData(
@@ -352,51 +524,46 @@ function buildBenchmarkCompareLineData(
 ): { time: Time; value: number }[] {
   if (!rawSpy?.length || filtered.length === 0) return [];
   const spy = spySortedByTime(rawSpy);
-  const priceOnOrBefore = (ymd: string) => spyPriceForFlow(spy, ymd);
+  const priceOnOrBeforeYmd = (ymd: string) => spyPriceForFlow(spy, ymd);
 
   if (transactions && transactions.length > 0) {
     const flows = extractAllExternalCashFlows(transactions);
     if (flows.length > 0) {
-      const series = buildContributionBenchmarkSeries({
-        sampleYmds: filtered.map((p) => p.t),
-        flows,
-        priceOnOrBefore,
-        mode,
-      });
-      const byT = new Map(series.map((r) => [r.t, r.value]));
       const out: { time: Time; value: number }[] = [];
       for (const p of filtered) {
-        const v = byT.get(p.t);
-        if (v == null || !Number.isFinite(v)) continue;
-        out.push({ time: portfolioPointTime(p), value: v });
+        const px = spyValueAtPortfolioPoint(spy, p);
+        if (px == null || !Number.isFinite(px) || px <= 0) continue;
+        const shares = replayBenchmarkSharesAsOf(flows, p.t, priceOnOrBeforeYmd);
+        const nav = shares * px;
+        if (!Number.isFinite(nav)) continue;
+        const netDeposits =
+          mode === "profit" ?
+            flows.filter((f) => f.date <= p.t).reduce((s, f) => s + f.amount, 0)
+          : 0;
+        out.push({
+          time: portfolioPointTime(p),
+          value: mode === "profit" ? nav - netDeposits : nav,
+        });
       }
       return out;
     }
   }
 
   // Legacy fallback: scale a single notional by SPY price ratio (no cash-flow ledger).
-  const rows: { t: string; spy: number; v: number }[] = [];
-  for (const p of filtered) {
-    const s = priceOnOrBefore(p.t);
-    if (s == null || !Number.isFinite(s) || s <= 0) continue;
-    if (!Number.isFinite(p.value)) continue;
-    rows.push({ t: p.t, spy: s, v: p.value });
-  }
-  if (rows.length === 0) return [];
-  const first = rows[0]!;
-  const spy0 = first.spy;
+  const firstPx = spyValueAtPortfolioPoint(spy, filtered[0]!);
+  if (firstPx == null || firstPx <= 0) return [];
   const investedOk =
     equityCostBasisInvestedUsd != null &&
     Number.isFinite(equityCostBasisInvestedUsd) &&
     equityCostBasisInvestedUsd > 1e-9;
-  const anchor = rows.find((r) => r.v > 1e-9) ?? first;
-  const notional0 = investedOk ? equityCostBasisInvestedUsd! : anchor.v;
-  if (spy0 <= 0 || notional0 <= 0) return [];
+  const anchor = filtered.find((p) => Number.isFinite(p.value) && p.value > 1e-9) ?? filtered[0]!;
+  const notional0 = investedOk ? equityCostBasisInvestedUsd! : anchor.value;
+  if (!(notional0 > 0)) return [];
   const out: { time: Time; value: number }[] = [];
   for (const p of filtered) {
-    const s = priceOnOrBefore(p.t);
+    const s = spyValueAtPortfolioPoint(spy, p);
     if (s == null || !Number.isFinite(s) || s <= 0) continue;
-    const scaled = s * (notional0 / spy0);
+    const scaled = s * (notional0 / firstPx);
     out.push({
       time: portfolioPointTime(p),
       value: mode === "profit" ? scaled - notional0 : scaled,
@@ -415,11 +582,11 @@ function buildBenchmarkReturnLineData(
 ): { time: Time; value: number }[] {
   if (!rawSpy?.length || filtered.length === 0) return [];
   const spy = spySortedByTime(rawSpy);
-  const firstPx = spyPriceForFlow(spy, filtered[0]!.t);
+  const firstPx = spyValueAtPortfolioPoint(spy, filtered[0]!);
   if (firstPx == null || firstPx <= 0) return [];
   const out: { time: Time; value: number }[] = [];
   for (const p of filtered) {
-    const px = spyPriceForFlow(spy, p.t);
+    const px = spyValueAtPortfolioPoint(spy, p);
     if (px == null || px <= 0) continue;
     out.push({
       time: portfolioPointTime(p),
@@ -427,6 +594,25 @@ function buildBenchmarkReturnLineData(
     });
   }
   return out;
+}
+
+/**
+ * Index drawdown % from the running peak of the benchmark price (same timestamps
+ * as the portfolio line). Price-based, like Return — not contribution-replayed NAV.
+ */
+function buildBenchmarkDrawdownLineData(
+  filtered: readonly PortfolioValueHistoryPoint[],
+  rawSpy: readonly StockChartPoint[] | null | undefined,
+): { time: Time; value: number }[] {
+  if (!rawSpy?.length || filtered.length === 0) return [];
+  const spy = spySortedByTime(rawSpy);
+  const line: { time: Time; value: number }[] = [];
+  for (const p of filtered) {
+    const px = spyValueAtPortfolioPoint(spy, p);
+    if (px == null || !Number.isFinite(px) || px <= 0) continue;
+    line.push({ time: portfolioPointTime(p), value: px });
+  }
+  return buildDrawdownFromValueLine(line);
 }
 
 function chartYmdForTrade(tradeYmd: string, sortedChartYmd: readonly string[]): string | null {
@@ -540,6 +726,252 @@ function syncPortfolioTradeDotsOverlay(
 
     overlay.appendChild(hit);
   }
+}
+
+/** Accent dot + dashed vertical line at the portfolio goal achievement year. */
+function goalYearChartTime(year: number): UTCTimestamp {
+  return Math.floor(Date.parse(`${year}-12-31T12:00:00.000Z`) / 1000) as UTCTimestamp;
+}
+
+function utcYearFromChartTime(time: Time): number | null {
+  if (typeof time === "number" && Number.isFinite(time)) {
+    return new Date(time * 1000).getUTCFullYear();
+  }
+  if (time && typeof time === "object" && "year" in time && typeof time.year === "number") {
+    return time.year;
+  }
+  return null;
+}
+
+function pointForGoalYear(
+  lineData: readonly { time: Time; value: number }[],
+  year: number,
+): { time: Time; value: number } | undefined {
+  const exact = goalYearChartTime(year);
+  const exactHit = lineData.find((d) => d.time === exact);
+  if (exactHit) return exactHit;
+  return lineData.find((d) => utcYearFromChartTime(d.time) === year);
+}
+
+/** First year-end sample where the line is at or above the goal (matches the results table). */
+function firstGoalLinePointAtOrAboveTarget(
+  data: readonly { time: Time; value: number }[],
+  targetUsd: number,
+): { logical: number; value: number } | null {
+  if (!(targetUsd > 0) || data.length === 0) return null;
+  for (let i = 0; i < data.length; i++) {
+    const pt = data[i]!;
+    if (!Number.isFinite(pt.value) || pt.value < targetUsd) continue;
+    // Current-year start is already at/above target — nothing to highlight ahead.
+    if (i === 0) return null;
+    return { logical: i, value: pt.value };
+  }
+  return null;
+}
+
+function goalAchievementPlacement(
+  series: ISeriesApi<"Area"> | ISeriesApi<"Baseline"> | ISeriesApi<"Line"> | null,
+  lineData: readonly { time: Time; value: number }[],
+  year: number | null,
+  targetUsd: number | null,
+): { logical: number; value: number } | null {
+  const seriesData = series ? (series.data() as { time: Time; value: number }[]) : [];
+  const data = seriesData.length > 0 ? seriesData : lineData;
+  if (data.length === 0) return null;
+  if (targetUsd != null && targetUsd > 0) {
+    const hit = firstGoalLinePointAtOrAboveTarget(data, targetUsd);
+    if (hit) return hit;
+  }
+  if (year == null) return null;
+  const idx = data.findIndex((d) => utcYearFromChartTime(d.time) === year);
+  if (idx < 0) {
+    const pt = pointForGoalYear(data, year);
+    if (!pt) return null;
+    const fallbackIdx = data.findIndex((d) => d.time === pt.time);
+    return { logical: Math.max(0, fallbackIdx), value: pt.value };
+  }
+  return { logical: idx, value: data[idx]!.value };
+}
+
+type GoalAchievementMarkerSpec = {
+  key: string;
+  year: number | null;
+  show: boolean;
+  lineData: readonly { time: Time; value: number }[];
+  strokeColor: string;
+  series: ISeriesApi<"Area"> | ISeriesApi<"Baseline"> | ISeriesApi<"Line"> | null;
+};
+
+type GoalAchievementDot = {
+  key: string;
+  color: string;
+  xPx: number;
+  yPx: number;
+};
+
+function computeGoalAchievementDots(
+  chart: IChartApi,
+  plotW: number,
+  plotH: number,
+  markers: readonly GoalAchievementMarkerSpec[],
+  targetUsd: number | null,
+): GoalAchievementDot[] {
+  if (plotW < 12 || plotH < 12) return [];
+  const out: GoalAchievementDot[] = [];
+  for (const marker of markers) {
+    const { year, show, lineData, strokeColor, series, key } = marker;
+    if (!show || series == null) continue;
+    const placement = goalAchievementPlacement(series, lineData, year, targetUsd);
+    if (!placement) continue;
+    const x = chart.timeScale().logicalToCoordinate(placement.logical);
+    const y = series.priceToCoordinate(placement.value);
+    if (x == null || y == null || !Number.isFinite(x) || !Number.isFinite(y)) continue;
+    if (x < -8 || x > plotW + 8 || y < -8 || y > plotH + 8) continue;
+    out.push({
+      key,
+      color: strokeColor,
+      xPx: Math.round(Math.min(Math.max(x, 0), plotW) * 10) / 10,
+      yPx: Math.round(Math.min(Math.max(y, 0), plotH) * 10) / 10,
+    });
+  }
+  return out;
+}
+
+function goalAchievementDotsEqual(a: GoalAchievementDot[], b: GoalAchievementDot[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i]!;
+    const y = b[i]!;
+    if (x.key !== y.key || x.color !== y.color || x.xPx !== y.xPx || x.yPx !== y.yPx) return false;
+  }
+  return true;
+}
+
+const GOAL_LINE_END_DOT_PX = 8;
+const GOAL_LINE_END_DOT_HALF = GOAL_LINE_END_DOT_PX / 2;
+/** Hover-style ring on the year the line first reaches the goal (LW radius 5 + 2px stroke). */
+const GOAL_ACHIEVEMENT_DOT_PX = 12;
+const GOAL_ACHIEVEMENT_DOT_HALF = GOAL_ACHIEVEMENT_DOT_PX / 2;
+/** Last-point disc at the left of the native price scale (Insights last-value gutter). */
+const GOAL_LINE_END_GUTTER_PX = 0;
+
+type GoalLineEndBadgeSpec = {
+  key: string;
+  show: boolean;
+  lineData: readonly { time: Time; value: number }[];
+  color: string;
+};
+
+type GoalYAxisEndBadge = {
+  key: string;
+  label: string;
+  color: string;
+  endXPx: number | null;
+  endYPx: number | null;
+};
+
+function goalYAxisEndBadgesEqual(a: GoalYAxisEndBadge[], b: GoalYAxisEndBadge[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i]!;
+    const y = b[i]!;
+    if (
+      x.key !== y.key ||
+      x.label !== y.label ||
+      x.color !== y.color ||
+      x.endXPx !== y.endXPx ||
+      x.endYPx !== y.endYPx
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+type GoalLineEndSeries = ISeriesApi<"Area"> | ISeriesApi<"Baseline"> | ISeriesApi<"Line">;
+
+function lastGoalLinePoint(
+  series: GoalLineEndSeries | null,
+  lineData: readonly { time: Time; value: number }[],
+): { time: Time; value: number } | null {
+  const seriesData = series ? (series.data() as { time: Time; value: number }[]) : [];
+  const data = seriesData.length > 0 ? seriesData : lineData;
+  const last = data.at(-1);
+  if (!last || !Number.isFinite(last.value)) return null;
+  return last;
+}
+
+/** Last sparkline point is on the right; never clamp a bogus 0-coord onto 2026. */
+function resolveGoalLineEndXPx(
+  chart: IChartApi,
+  series: GoalLineEndSeries,
+  plotW: number,
+): number {
+  const fallback = Math.max(GOAL_LINE_END_DOT_HALF, plotW - GOAL_LINE_END_GUTTER_PX);
+  if (plotW < 12) return fallback;
+  const lastIdx = series.data().length - 1;
+  if (lastIdx < 0) return fallback;
+  const logicalX = chart.timeScale().logicalToCoordinate(lastIdx);
+  if (logicalX == null || !Number.isFinite(logicalX) || logicalX < plotW * 0.45) {
+    return fallback;
+  }
+  return Math.min(logicalX, plotW - GOAL_LINE_END_DOT_HALF);
+}
+
+function attachGoalEndPointCoordinates(
+  chart: IChartApi,
+  badges: readonly GoalYAxisEndBadge[],
+  specs: readonly GoalLineEndBadgeSpec[],
+  seriesForKey: (key: string) => GoalLineEndSeries | null,
+  plotWidthPx: number,
+): GoalYAxisEndBadge[] {
+  const tsW = chart.timeScale().width();
+  const plotW = tsW > 12 ? tsW : plotWidthPx;
+  return badges.map((badge) => {
+    const spec = specs.find((s) => s.key === badge.key);
+    if (!spec) return { ...badge, endXPx: null, endYPx: null };
+    const series = seriesForKey(badge.key);
+    const last = lastGoalLinePoint(series, spec.lineData);
+    if (!last || series == null) return { ...badge, endXPx: null, endYPx: null };
+    const y = series.priceToCoordinate(last.value);
+    if (y == null || !Number.isFinite(y)) {
+      return { ...badge, endXPx: null, endYPx: null };
+    }
+    return {
+      ...badge,
+      endXPx: Math.round(resolveGoalLineEndXPx(chart, series, plotW) * 10) / 10,
+      endYPx: Math.round(y * 10) / 10,
+    };
+  });
+}
+
+/** Goal end values sit on the sparkline (Overview last-price marker + last-value badge). */
+function computeGoalYAxisEndBadges(badges: readonly GoalLineEndBadgeSpec[]): GoalYAxisEndBadge[] {
+  const raw: GoalYAxisEndBadge[] = [];
+  for (const badge of badges) {
+    if (!badge.show || badge.lineData.length === 0) continue;
+    const value = badge.lineData[badge.lineData.length - 1]!.value;
+    if (!Number.isFinite(value)) continue;
+    raw.push({
+      key: badge.key,
+      label: formatAxisUsd(value),
+      color: badge.color,
+      endXPx: null,
+      endYPx: null,
+    });
+  }
+  return raw;
+}
+
+function resolveGoalPaneEndBadges(
+  plotLayout: "default" | "goal",
+  goalExtents: { min: number; max: number } | null,
+  badgeSpecs: readonly GoalLineEndBadgeSpec[],
+): GoalYAxisEndBadge[] {
+  if (plotLayout !== "goal" || !goalExtents) return [];
+  return computeGoalYAxisEndBadges(badgeSpecs);
 }
 
 function PillSwitch({
@@ -711,6 +1143,13 @@ function isPercentMetric(m: MetricMode): boolean {
   return m === "return" || m === "drawdown";
 }
 
+/** Insights Value / Return / Profit / Drawdowns can overlay S&P 500 and Nasdaq. */
+function metricSupportsBenchmarkCompare(metric: MetricMode): boolean {
+  return (
+    metric === "value" || metric === "return" || metric === "profit" || metric === "drawdown"
+  );
+}
+
 /** Crosshair disc border — match baseline sparkline (green ≥ 0 / red < 0); Value stays accent. */
 function overviewCrosshairMarkerBorderColor(metric: MetricMode, value: number): string {
   if (metric === "value") return resolveFsColor("--fs-accent");
@@ -727,7 +1166,7 @@ function formatReturnPctAxis(n: number): string {
 
 export const PORTFOLIO_CHART_RANGE_LABELS: readonly SegmentedControlOption<PortfolioChartRange>[] = [
   { value: "1d", label: "1D" },
-  { value: "7d", label: "7D" },
+  { value: "5d", label: "5D" },
   { value: "1m", label: "1M" },
   { value: "6m", label: "6M" },
   { value: "ytd", label: "YTD" },
@@ -778,28 +1217,40 @@ function overviewYAxisPriceRange(min: number, max: number): { bottom: number; to
   };
 }
 
+/** Goal projections are always ≥ $0 — never show negative axis padding. */
+function goalValueYAxisPriceRange(min: number, max: number): { bottom: number; top: number } {
+  const clampedMin = Math.max(0, min);
+  const { bottom, top } = overviewYAxisPriceRange(clampedMin, max);
+  return { bottom: Math.max(0, bottom), top };
+}
+
 function overviewYAxisTopPercent(price: number, bottom: number, top: number): number {
   const span = top - bottom;
   if (span <= 0) return 50;
   return ((top - price) / span) * 100;
 }
 
-/** HTML right-axis labels — avoids LW price-line axis labels stacking at $0. */
-function computeOverviewYAxisLabels(
-  series: OverviewMainSeries,
+function computeOverviewYAxisLabelsFromExtents(
+  min: number,
+  max: number,
   metric: MetricMode,
   tickCount: number,
 ): OverviewYAxisLabel[] {
-  const extents = overviewSeriesValueExtents(series);
-  if (!extents) return [];
-
-  let { min, max } = extents;
   if (metric !== "value") {
     min = Math.min(min, 0);
     max = Math.max(max, 0);
   }
 
   const { bottom, top } = overviewYAxisPriceRange(min, max);
+  return computeOverviewYAxisLabelsFromPriceRange(bottom, top, metric, tickCount);
+}
+
+function computeOverviewYAxisLabelsFromPriceRange(
+  bottom: number,
+  top: number,
+  metric: MetricMode,
+  tickCount: number,
+): OverviewYAxisLabel[] {
   const span = top - bottom;
   if (span <= 0 || tickCount < 2) return [];
 
@@ -813,6 +1264,128 @@ function computeOverviewYAxisLabels(
     });
   }
   return labels;
+}
+
+function metricHistoryPointValue(p: PortfolioValueHistoryPoint, metric: MetricMode): number | null {
+  if (metric === "value") return Number.isFinite(p.value) ? p.value : null;
+  if (metric === "profit") return Number.isFinite(p.profit) ? p.profit : null;
+  if (metric === "return") {
+    return typeof p.returnPct === "number" && Number.isFinite(p.returnPct) ? p.returnPct : null;
+  }
+  return Number.isFinite(p.value) ? p.value : null;
+}
+
+function goalProjectionValueExtents(
+  portfolioLineData: readonly { value: number }[],
+  overlaySeries: readonly {
+    visible: boolean;
+    points: readonly PortfolioValueHistoryPoint[];
+  }[],
+  metric: MetricMode,
+): { min: number; max: number } | null {
+  let min = Infinity;
+  let max = -Infinity;
+  const consider = (value: number | null) => {
+    if (value == null || !Number.isFinite(value)) return;
+    if (value < min) min = value;
+    if (value > max) max = value;
+  };
+
+  for (const pt of portfolioLineData) consider(pt.value);
+  for (const overlay of overlaySeries) {
+    if (!overlay.visible) continue;
+    for (const p of overlay.points) consider(metricHistoryPointValue(p, metric));
+  }
+
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+  return { min, max };
+}
+
+function goalSharedAutoscaleOptions(min: number, max: number) {
+  const { bottom, top } = goalValueYAxisPriceRange(min, max);
+  return {
+    autoscaleInfoProvider: () => ({
+      priceRange: { minValue: bottom, maxValue: top },
+    }),
+  } as const;
+}
+
+function applyGoalSharedAutoscale(
+  mainSeries: OverviewMainSeries,
+  overlaySeriesById: ReadonlyMap<string, ISeriesApi<"Line">>,
+  overlaySeries: readonly {
+    id: string;
+    visible: boolean;
+    points: readonly PortfolioValueHistoryPoint[];
+  }[],
+  portfolioLineData: readonly { value: number }[],
+  metric: MetricMode,
+): { min: number; max: number } | null {
+  const extents = goalProjectionValueExtents(portfolioLineData, overlaySeries, metric);
+  if (!extents) return null;
+  const scaleOpts = goalSharedAutoscaleOptions(extents.min, extents.max);
+  mainSeries.applyOptions(scaleOpts);
+  for (const overlay of overlaySeries) {
+    if (!overlay.visible) continue;
+    overlaySeriesById.get(overlay.id)?.applyOptions(scaleOpts);
+  }
+  return extents;
+}
+
+function unionSeriesValueExtents(
+  parts: readonly ({ min: number; max: number } | null | undefined)[],
+): { min: number; max: number } | null {
+  let min = Infinity;
+  let max = -Infinity;
+  for (const p of parts) {
+    if (!p) continue;
+    if (p.min < min) min = p.min;
+    if (p.max > max) max = p.max;
+  }
+  if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+  return { min, max };
+}
+
+function applyCompareSharedAutoscale(
+  mainSeries: OverviewMainSeries,
+  compareSeries: readonly (ISeriesApi<"Line"> | null)[],
+  extents: { min: number; max: number },
+  metric: MetricMode,
+): void {
+  let min = extents.min;
+  let max = extents.max;
+  if (metric !== "value") {
+    min = Math.min(min, 0);
+    max = Math.max(max, 0);
+  }
+  const { bottom, top } = overviewYAxisPriceRange(min, max);
+  const scaleOpts = {
+    autoscaleInfoProvider: () => ({
+      priceRange: { minValue: bottom, maxValue: top },
+    }),
+  } as const;
+  mainSeries.applyOptions(scaleOpts);
+  for (const s of compareSeries) s?.applyOptions(scaleOpts);
+}
+
+/** LW `merge` skips `undefined`, so `autoscaleInfoProvider: undefined` never clears a prior override. */
+function restoreSeriesDefaultAutoscale(
+  series: OverviewMainSeries | ISeriesApi<"Line"> | null,
+): void {
+  series?.applyOptions({
+    autoscaleInfoProvider: (original) => original(),
+  });
+}
+
+/** HTML right-axis labels — avoids LW price-line axis labels stacking at $0. */
+function computeOverviewYAxisLabels(
+  series: OverviewMainSeries,
+  metric: MetricMode,
+  tickCount: number,
+): OverviewYAxisLabel[] {
+  const extents = overviewSeriesValueExtents(series);
+  if (!extents) return [];
+  return computeOverviewYAxisLabelsFromExtents(extents.min, extents.max, metric, tickCount);
 }
 
 /** Hide axis ticks that would sit under the LW last-value badge on the right edge. */
@@ -917,6 +1490,38 @@ function syncOverviewYAxisLabels(
     badgeContext.lastTopPct,
     badgeContext.bottom,
     badgeContext.top,
+    metric,
+  );
+}
+
+function syncOverviewYAxisLabelsFromMinMax(
+  series: OverviewMainSeries,
+  min: number,
+  max: number,
+  metric: MetricMode,
+  tickCount: number,
+): OverviewYAxisLabel[] {
+  const labels = computeOverviewYAxisLabelsFromExtents(min, max, metric, tickCount);
+  const data = series.data();
+  if (data.length === 0) return labels;
+  const lastValue = (data[data.length - 1] as { value?: number }).value;
+  if (typeof lastValue !== "number" || !Number.isFinite(lastValue)) return labels;
+
+  let lo = min;
+  let hi = max;
+  if (metric !== "value") {
+    lo = Math.min(lo, 0);
+    hi = Math.max(hi, 0);
+  }
+  const { bottom, top } = overviewYAxisPriceRange(lo, hi);
+  const lastTopPct = overviewYAxisTopPercent(lastValue, bottom, top);
+  const filtered = filterYAxisLabelsForLastValueBadge(labels, lastTopPct);
+  return supplementOverviewYAxisLabelForBadgeGap(
+    filtered,
+    labels.length - filtered.length,
+    lastTopPct,
+    bottom,
+    top,
     metric,
   );
 }
@@ -1066,26 +1671,186 @@ function portfolioCrosshairBottomLabel(
   );
 }
 
+/** Charting-style hover header for annual projection points (year only). */
+function formatChartHoverPeriodYear(hoverTime: Time): string {
+  const sec = horzTimeToUnixSeconds(hoverTime);
+  if (sec == null) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(new Date(sec * 1000));
+}
+
+type PortfolioChartInteractionStyle = "overview" | "fundamentals";
+
+/** Goal projection chart: plot column + Y-axis column (no native LW price-scale gutter). */
+type PortfolioChartPlotLayout = "default" | "goal";
+
+function resolveGoalChartYAxisWidthPx(containerWidthPx: number): number {
+  if (shouldHideMobileYAxisLabels(containerWidthPx)) return 0;
+  return FUNDAMENTALS_CHART_Y_AXIS_W_PX;
+}
+
+function collectGoalEndBadgeSpecs(badgeCfg: {
+  showPortfolio: boolean;
+  portfolioLineData: readonly { time: Time; value: number }[];
+  safeVisible: boolean;
+  safeLineData: readonly { time: Time; value: number }[];
+  safeStrokeColor: string;
+  aggressiveVisible: boolean;
+  aggressiveLineData: readonly { time: Time; value: number }[];
+  aggressiveStrokeColor: string;
+}): GoalLineEndBadgeSpec[] {
+  return [
+    {
+      key: "portfolio",
+      show: badgeCfg.showPortfolio,
+      lineData: badgeCfg.portfolioLineData,
+      color: resolveFsColor("--fs-accent"),
+    },
+    {
+      key: "safe",
+      show: badgeCfg.safeVisible,
+      lineData: badgeCfg.safeLineData,
+      color: badgeCfg.safeStrokeColor,
+    },
+    {
+      key: "aggressive",
+      show: badgeCfg.aggressiveVisible,
+      lineData: badgeCfg.aggressiveLineData,
+      color: badgeCfg.aggressiveStrokeColor,
+    },
+  ];
+}
+
+/** Remove default time-scale padding so the first/last points sit on the pane edges. */
+function snapOverviewTimeScale(
+  chart: IChartApi,
+  series: ISeriesApi<"Area"> | ISeriesApi<"Baseline"> | ISeriesApi<"Line">,
+  plotWidthPx?: number,
+) {
+  fitSeriesLogicalRangeToPlotWidth(chart, series.data().length, { plotWidthPx });
+}
+
+function snapChartTimeScaleForLayout(
+  chart: IChartApi,
+  series: ISeriesApi<"Area"> | ISeriesApi<"Baseline"> | ISeriesApi<"Line">,
+  plotWidthPx?: number,
+): void {
+  snapOverviewTimeScale(chart, series, plotWidthPx);
+}
+
+function syncPaneYAxisLabelsForLayout(
+  series: OverviewMainSeries,
+  metric: MetricMode,
+  tickCount: number,
+  plotLayout: PortfolioChartPlotLayout,
+  goalExtents: { min: number; max: number } | null,
+  compareExtents: { min: number; max: number } | null = null,
+): OverviewYAxisLabel[] {
+  if (plotLayout === "goal" && goalExtents) {
+    const { bottom, top } = goalValueYAxisPriceRange(goalExtents.min, goalExtents.max);
+    return computeOverviewYAxisLabelsFromPriceRange(bottom, top, metric, tickCount);
+  }
+  if (compareExtents) {
+    return syncOverviewYAxisLabelsFromMinMax(
+      series,
+      compareExtents.min,
+      compareExtents.max,
+      metric,
+      tickCount,
+    );
+  }
+  return syncOverviewYAxisLabels(series, metric, tickCount);
+}
+
+type PortfolioChartTooltipState =
+  | {
+      variant: "overview";
+      x: number;
+      y: number;
+      lines: readonly {
+        label: string;
+        valueLabel: string;
+        valueTone: "pos" | "neg" | "neutral";
+        swatchColor?: string;
+        swatchVariant?: "solid" | "upDown";
+      }[];
+    }
+  | {
+      variant: "fundamentals";
+      anchorX: number;
+      y: number;
+      side: "left" | "right";
+      /** Center on the cursor, or sit fully above it when the plot bottom would clip. */
+      vAlign: "center" | "above";
+      periodLabel: string;
+      rows: readonly {
+        key: string;
+        label: string;
+        value: string;
+        color: string;
+        swatchVariant?: "solid" | "upDown";
+      }[];
+    };
+
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === "number" && Number.isFinite(v);
+}
+
+function lineDataToStockChartPoints(
+  data: readonly { time: Time; value: number }[],
+): StockChartPoint[] {
+  return data.map((pt) => ({
+    time:
+      typeof pt.time === "number" ? pt.time
+      : horzTimeToUnixSeconds(pt.time) ?? 0,
+    value: pt.value,
+  }));
+}
+
+/** Prefer LW seriesData; fall back to nearest bar when magnet/compare leaves the map empty. */
+function resolveOverviewSeriesValueAtCrosshair(
+  series: ISeriesApi<"Area"> | ISeriesApi<"Baseline"> | ISeriesApi<"Line"> | null,
+  param: MouseEventParams,
+  fallbackPoints: readonly StockChartPoint[],
+): number | null {
+  if (!series) return null;
+  const mapped = param.seriesData.get(series);
+  if (
+    mapped &&
+    typeof mapped === "object" &&
+    "value" in mapped &&
+    isFiniteNumber((mapped as { value: number }).value)
+  ) {
+    return (mapped as { value: number }).value;
+  }
+  if (param.time === undefined) return null;
+  const sec = horzTimeToUnixSeconds(param.time);
+  if (sec == null || fallbackPoints.length === 0) return null;
+  const near = nearestPointByTime([...fallbackPoints], sec);
+  return near && isFiniteNumber(near.value) ? near.value : null;
 }
 
 const PORTFOLIO_CHART_HEIGHT_DESKTOP_PX = 320;
 const PORTFOLIO_CHART_HEIGHT_MOBILE_PX = 240;
 
 type PortfolioOverviewChartLayout = {
+  containerWidthPx: number;
   chartHeightPx: number;
   axisRowPx: number;
   plotHeightPx: number;
   yAxisLabelCount: number;
 };
 
-function resolvePortfolioOverviewChartLayout(viewportWidthPx: number): PortfolioOverviewChartLayout {
-  const compact = viewportWidthPx < 640;
+function resolvePortfolioOverviewChartLayout(containerWidthPx: number): PortfolioOverviewChartLayout {
+  const widthPx = containerWidthPx > 0 ? containerWidthPx : 1024;
+  const compact = widthPx < 640;
   const chartHeightPx = compact ? PORTFOLIO_CHART_HEIGHT_MOBILE_PX : PORTFOLIO_CHART_HEIGHT_DESKTOP_PX;
   /** Same axis-row heights as asset `PriceChart` (`overviewChartAxisRowPx`). */
-  const axisRowPx = overviewChartAxisRowPx(viewportWidthPx);
+  const axisRowPx = overviewChartAxisRowPx(widthPx);
   return {
+    containerWidthPx: widthPx,
     chartHeightPx,
     axisRowPx,
     plotHeightPx: chartHeightPx - axisRowPx,
@@ -1093,19 +1858,46 @@ function resolvePortfolioOverviewChartLayout(viewportWidthPx: number): Portfolio
   };
 }
 
-function usePortfolioOverviewChartLayout(): PortfolioOverviewChartLayout {
+function overviewChartLayoutsEqual(
+  a: PortfolioOverviewChartLayout,
+  b: PortfolioOverviewChartLayout,
+): boolean {
+  return (
+    a.containerWidthPx === b.containerWidthPx &&
+    a.chartHeightPx === b.chartHeightPx &&
+    a.axisRowPx === b.axisRowPx &&
+    a.plotHeightPx === b.plotHeightPx &&
+    a.yAxisLabelCount === b.yAxisLabelCount
+  );
+}
+
+function usePortfolioOverviewChartLayout(
+  containerRef: RefObject<HTMLElement | null>,
+): PortfolioOverviewChartLayout {
   const [layout, setLayout] = useState<PortfolioOverviewChartLayout>(() =>
-    typeof window !== "undefined"
-      ? resolvePortfolioOverviewChartLayout(window.innerWidth)
-      : resolvePortfolioOverviewChartLayout(1024),
+    resolvePortfolioOverviewChartLayout(1024),
   );
 
   useEffect(() => {
-    const update = () => setLayout(resolvePortfolioOverviewChartLayout(window.innerWidth));
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
+    const measure = () => {
+      const widthPx =
+        containerRef.current?.clientWidth ?? (typeof window !== "undefined" ? window.innerWidth : 1024);
+      // Inactive tab panels use `hidden` (display:none, width 0). Ignore that so we
+      // don't flip layout to the 1024 fallback and remount charts on tab switch.
+      if (widthPx < 12) return;
+      const next = resolvePortfolioOverviewChartLayout(widthPx);
+      setLayout((prev) => (overviewChartLayoutsEqual(prev, next) ? prev : next));
+    };
+    measure();
+    const el = containerRef.current;
+    if (!el) {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [containerRef]);
 
   return layout;
 }
@@ -1130,15 +1922,26 @@ function portfolioHistoryToStockChartPoints(
  * Drawdown % from the running peak within the selected period.
  * 0% at every new high; ≤ 0 elsewhere, so the line hangs from the top of the pane.
  */
+function buildDrawdownFromValueLine(
+  line: readonly { time: Time; value: number }[],
+): { time: Time; value: number }[] {
+  let peak = -Infinity;
+  return line.map((pt) => {
+    if (Number.isFinite(pt.value) && pt.value > peak) peak = pt.value;
+    const dd = peak > 1e-9 ? (pt.value / peak - 1) * 100 : 0;
+    return { time: pt.time, value: Math.min(0, dd) };
+  });
+}
+
 function buildDrawdownData(
   filtered: readonly PortfolioValueHistoryPoint[],
 ): { time: Time; value: number }[] {
-  let peak = -Infinity;
-  return filtered.map((p) => {
-    if (Number.isFinite(p.value) && p.value > peak) peak = p.value;
-    const dd = peak > 1e-9 ? (p.value / peak - 1) * 100 : 0;
-    return { time: portfolioChartTime(p) as Time, value: Math.min(0, dd) };
-  });
+  return buildDrawdownFromValueLine(
+    filtered.map((p) => ({
+      time: portfolioChartTime(p) as Time,
+      value: p.value,
+    })),
+  );
 }
 
 /** Bottom axis — same rules as stock overview / asset portfolio (`overview-bottom-axis`). */
@@ -1147,6 +1950,7 @@ function syncPortfolioPeriodAxisLabels(
   chartPoints: readonly StockChartPoint[],
   range: PortfolioChartRange,
   plotWidthPx: number,
+  minLabelGapPx = 24,
 ): OverviewAxisLabel[] {
   if (!chartPoints.length) return [];
   // Before the pane has a real width, coordinates are unreliable — skip rather than
@@ -1160,9 +1964,19 @@ function syncPortfolioPeriodAxisLabels(
     PORTFOLIO_CHART_TIME_ZONE,
     axisMode,
     plotWidthPx,
-    range === "7d" ? { weekdayLabelMax: 7 } : undefined,
+    range === "5d"
+      ? { weekdayLabelMax: 5 }
+      : range === "1d"
+        ? { cryptoLive1D: true, cryptoLive1DMinHourStep: 3 }
+        : undefined,
   );
-  return thinOverlappingPeriodAxisLabels(raw, plotWidthPx);
+  return thinOverlappingPeriodAxisLabels(raw, plotWidthPx, minLabelGapPx);
+}
+
+function resolveGoalPeriodAxisMinLabelGapPx(plotWidthPx: number): number {
+  if (plotWidthPx < 400) return 52;
+  if (plotWidthPx < 640) return 40;
+  return 32;
 }
 
 /**
@@ -1172,6 +1986,7 @@ function syncPortfolioPeriodAxisLabels(
 function thinOverlappingPeriodAxisLabels(
   labels: readonly OverviewAxisLabel[],
   plotWidthPx: number,
+  minGapPx = 24,
 ): OverviewAxisLabel[] {
   if (labels.length === 0) return [];
   if (!(plotWidthPx > 0)) return [...labels];
@@ -1181,11 +1996,65 @@ function thinOverlappingPeriodAxisLabels(
   let last = -Infinity;
   for (const lab of labels) {
     const left = clampLeft(lab.leftPx);
-    if (left - last < 24) continue;
+    if (left - last < minGapPx) continue;
     out.push({ ...lab, leftPx: left });
     last = left;
   }
   return out;
+}
+
+const PERIOD_AXIS_LABEL_SYNC_MAX_ATTEMPTS = 16;
+
+/** Retry until the time scale has real coordinates (first paint / range toggle). */
+function schedulePortfolioPeriodAxisLabelsWhenReady(args: {
+  chart: IChartApi;
+  chartPoints: readonly StockChartPoint[];
+  range: PortfolioChartRange;
+  getPlotWidthPx: () => number;
+  apply: (labels: OverviewAxisLabel[], plotWidthPx: number) => void;
+  minLabelGapPx?: number;
+  attempt?: number;
+  cancelled?: () => boolean;
+}): void {
+  const attempt = args.attempt ?? 0;
+  if (args.cancelled?.()) return;
+
+  const plotWidthPx = Math.max(0, args.getPlotWidthPx());
+  if (plotWidthPx <= 0) {
+    if (attempt < PERIOD_AXIS_LABEL_SYNC_MAX_ATTEMPTS) {
+      requestAnimationFrame(() =>
+        schedulePortfolioPeriodAxisLabelsWhenReady({ ...args, attempt: attempt + 1 }),
+      );
+    }
+    return;
+  }
+
+  const labels = syncPortfolioPeriodAxisLabels(
+    args.chart,
+    args.chartPoints,
+    args.range,
+    plotWidthPx,
+    args.minLabelGapPx,
+  );
+
+  const spanPx =
+    labels.length >= 2 ?
+      Math.max(...labels.map((l) => l.leftPx)) - Math.min(...labels.map((l) => l.leftPx))
+    : 0;
+  const minSpanPx = Math.min(Math.max(48, plotWidthPx * 0.12), plotWidthPx * 0.45);
+  const needsRetry =
+    attempt < PERIOD_AXIS_LABEL_SYNC_MAX_ATTEMPTS &&
+    args.chartPoints.length >= 8 &&
+    (labels.length <= 1 || spanPx < minSpanPx);
+
+  if (needsRetry) {
+    requestAnimationFrame(() =>
+      schedulePortfolioPeriodAxisLabelsWhenReady({ ...args, attempt: attempt + 1 }),
+    );
+    return;
+  }
+
+  args.apply(labels, plotWidthPx);
 }
 
 /** Figma: 10×10, white fill, 2px inside stroke (buy green / sell red). */
@@ -1194,14 +2063,6 @@ const TRADE_DOT_HALF = TRADE_DOT_PX / 2;
 /** Larger invisible target so tooltips are easy to trigger on the 10px dot. */
 const TRADE_HIT_PX = 24;
 const TRADE_HIT_HALF = TRADE_HIT_PX / 2;
-
-/** Remove default time-scale padding so the first/last points sit on the pane edges. */
-function snapOverviewTimeScale(
-  chart: IChartApi,
-  series: ISeriesApi<"Area"> | ISeriesApi<"Baseline">,
-) {
-  fitSeriesLogicalRangeToPlotWidth(chart, series.data().length);
-}
 
 /** Shared chart body for portfolio value history (Overview + Performance). */
 export function PortfolioValueHistoryChartPane({
@@ -1217,6 +2078,14 @@ export function PortfolioValueHistoryChartPane({
   nasdaqPricePoints = null,
   benchmarkInvestedUsd = null,
   overlaySeries = EMPTY_OVERLAY_SERIES,
+  portfolioMilestoneYear = null,
+  safeMilestoneYear = null,
+  aggressiveMilestoneYear = null,
+  goalTargetUsd = null,
+  mainSeriesTooltipLabel,
+  chartInteractionStyle = "overview",
+  plotLayout = "default",
+  loading = false,
 }: {
   metric: MetricMode;
   range: PortfolioChartRange;
@@ -1225,9 +2094,9 @@ export function PortfolioValueHistoryChartPane({
   showTrades?: boolean;
   /** When false, hides the main portfolio series (legend badge off). */
   showPortfolio?: boolean;
-  /** When true with {@link spyPricePoints}, draws S&P 500 comparison (value or profit). */
+  /** When true with {@link spyPricePoints}, draws S&P 500 comparison. */
   compareSpy?: boolean;
-  /** When true with {@link nasdaqPricePoints}, draws Nasdaq comparison (value or return). */
+  /** When true with {@link nasdaqPricePoints}, draws Nasdaq comparison. */
   compareNasdaq?: boolean;
   spyPricePoints?: readonly StockChartPoint[] | null;
   nasdaqPricePoints?: readonly StockChartPoint[] | null;
@@ -1242,16 +2111,39 @@ export function PortfolioValueHistoryChartPane({
     points: readonly PortfolioValueHistoryPoint[];
     color: string;
     visible: boolean;
+    /** Tooltip / legend label for this overlay line. */
+    label?: string;
   }[];
+  /** Year the portfolio projection line reaches the goal (accent marker). */
+  portfolioMilestoneYear?: number | null;
+  /** Year the safe line reaches the goal (purple marker). */
+  safeMilestoneYear?: number | null;
+  /** Year the aggressive line reaches the goal (orange marker). */
+  aggressiveMilestoneYear?: number | null;
+  /** Target $ used to place achievable dots where each sparkline crosses the goal. */
+  goalTargetUsd?: number | null;
+  /** Main series tooltip label (defaults to metric title, e.g. “Portfolio” on goal chart). */
+  mainSeriesTooltipLabel?: string;
+  /** Fundamentals / Charting hover: ISO period label in tooltip, no datetime under axis. */
+  chartInteractionStyle?: PortfolioChartInteractionStyle;
+  /** Goal projection: flex plot + custom Y-axis (no native LW price-scale gutter). */
+  plotLayout?: PortfolioChartPlotLayout;
+  /** BTC PriceChart-style overlay skeleton (shimmer area, no line-enter). */
+  loading?: boolean;
 }) {
-  const chartLayout = usePortfolioOverviewChartLayout();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const chartLayout = usePortfolioOverviewChartLayout(containerRef);
   const chartLayoutRef = useRef(chartLayout);
   chartLayoutRef.current = chartLayout;
+  const isGoalPlotLayout = plotLayout === "goal";
+  const goalYAxisWidthPx =
+    isGoalPlotLayout ? resolveGoalChartYAxisWidthPx(chartLayout.containerWidthPx) : FUNDAMENTALS_CHART_Y_AXIS_W_PX;
+  const showGoalYAxisColumn = isGoalPlotLayout && goalYAxisWidthPx > 0;
   const chartThemePaintKey = useChartThemePaintKey();
 
-  const containerRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const tradeOverlayRef = useRef<HTMLDivElement | null>(null);
+  const [chartReadyTick, setChartReadyTick] = useState(0);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Area"> | ISeriesApi<"Baseline"> | null>(null);
   const compareSeriesRefs = useRef<{
@@ -1259,7 +2151,17 @@ export function PortfolioValueHistoryChartPane({
     nasdaq: ISeriesApi<"Line"> | null;
   }>({ spy: null, nasdaq: null });
   const overlaySeriesRefs = useRef(new Map<string, ISeriesApi<"Line">>());
+  const lastPointMarkersRef = useRef<{
+    main: ISeriesMarkersPluginApi<UTCTimestamp> | null;
+    spy: ISeriesMarkersPluginApi<UTCTimestamp> | null;
+    nasdaq: ISeriesMarkersPluginApi<UTCTimestamp> | null;
+    overlays: Map<string, ISeriesMarkersPluginApi<UTCTimestamp>>;
+  }>({ main: null, spy: null, nasdaq: null, overlays: new Map() });
+  const syncLastPointMarkersRef = useRef<(() => void) | null>(null);
   const [yAxisLabels, setYAxisLabels] = useState<OverviewYAxisLabel[]>([]);
+  const [goalEndBadges, setGoalEndBadges] = useState<GoalYAxisEndBadge[]>([]);
+  const [goalAchievementDots, setGoalAchievementDots] = useState<GoalAchievementDot[]>([]);
+  const goalYAxisBadgesRef = useRef<HTMLDivElement | null>(null);
   const chartRangeRef = useRef<PortfolioChartRange>(range);
   const chartPointsRef = useRef<StockChartPoint[]>([]);
   const sessionYmdsRef = useRef<string[]>([]);
@@ -1269,18 +2171,71 @@ export function PortfolioValueHistoryChartPane({
     lineData: readonly { time: Time; value: number }[];
     sessionYmds: readonly string[];
   }>({ show: false, txs: [], lineData: [], sessionYmds: [] });
+  const goalAchievementConfigRef = useRef<{
+    portfolioMilestoneYear: number | null;
+    safeMilestoneYear: number | null;
+    aggressiveMilestoneYear: number | null;
+    goalTargetUsd: number | null;
+    showPortfolio: boolean;
+    portfolioLineData: readonly { time: Time; value: number }[];
+    safeOverlayId: string | null;
+    safeLineData: readonly { time: Time; value: number }[];
+    safeVisible: boolean;
+    safeStrokeColor: string;
+    aggressiveOverlayId: string | null;
+    aggressiveLineData: readonly { time: Time; value: number }[];
+    aggressiveVisible: boolean;
+    aggressiveStrokeColor: string;
+  }>({
+    portfolioMilestoneYear: null,
+    safeMilestoneYear: null,
+    aggressiveMilestoneYear: null,
+    goalTargetUsd: null,
+    showPortfolio: false,
+    portfolioLineData: [],
+    safeOverlayId: null,
+    safeLineData: [],
+    safeVisible: false,
+    safeStrokeColor: "",
+    aggressiveOverlayId: null,
+    aggressiveLineData: [],
+    aggressiveVisible: false,
+    aggressiveStrokeColor: "",
+  });
+  const goalEndBadgeConfigRef = useRef<{
+    showPortfolio: boolean;
+    portfolioLineData: readonly { time: Time; value: number }[];
+    safeOverlayId: string | null;
+    safeLineData: readonly { time: Time; value: number }[];
+    safeVisible: boolean;
+    safeStrokeColor: string;
+    aggressiveOverlayId: string | null;
+    aggressiveLineData: readonly { time: Time; value: number }[];
+    aggressiveVisible: boolean;
+    aggressiveStrokeColor: string;
+  }>({
+    showPortfolio: false,
+    portfolioLineData: [],
+    safeOverlayId: null,
+    safeLineData: [],
+    safeVisible: false,
+    safeStrokeColor: "",
+    aggressiveOverlayId: null,
+    aggressiveLineData: [],
+    aggressiveVisible: false,
+    aggressiveStrokeColor: "",
+  });
+  const goalYAxisExtentsRef = useRef<{ min: number; max: number } | null>(null);
+  const compareYAxisExtentsRef = useRef<{ min: number; max: number } | null>(null);
+  const goalAutoscaleActiveRef = useRef(false);
+  const compareAutoscaleActiveRef = useRef(false);
   const scheduleTradeDotsSyncRef = useRef<(() => void) | null>(null);
   const tradeDotHoverApiRef = useRef<TradeDotHoverApi | null>(null);
   const lineEnterCancelRef = useRef<(() => void) | null>(null);
   const lineAnimKeyRef = useRef<string>("");
   const lineEnterDoneRef = useRef(true);
-  const [tooltip, setTooltip] = useState<{
-    x: number;
-    y: number;
-    valueLabel: string;
-    /** Color the metric value green/red when signed (Return, Profit, Drawdowns). */
-    valueTone: "pos" | "neg" | "neutral";
-  } | null>(null);
+  const lineEnterRevealStartedRef = useRef(false);
+  const [tooltip, setTooltip] = useState<PortfolioChartTooltipState | null>(null);
   const [periodAxisLabels, setPeriodAxisLabels] = useState<OverviewAxisLabel[]>([]);
   const periodAxisLabelsRef = useRef<OverviewAxisLabel[]>([]);
   const [axisPlotWidthPx, setAxisPlotWidthPx] = useState(0);
@@ -1288,6 +2243,18 @@ export function PortfolioValueHistoryChartPane({
     null,
   );
   const hoverTimeRef = useRef<Time | null>(null);
+  const showPortfolioRef = useRef(showPortfolio);
+  showPortfolioRef.current = showPortfolio;
+  const overlaySeriesRef = useRef(overlaySeries);
+  overlaySeriesRef.current = overlaySeries;
+  const mainSeriesTooltipLabelRef = useRef(mainSeriesTooltipLabel);
+  mainSeriesTooltipLabelRef.current = mainSeriesTooltipLabel;
+  const chartInteractionStyleRef = useRef(chartInteractionStyle);
+  chartInteractionStyleRef.current = chartInteractionStyle;
+  const plotLayoutRef = useRef(plotLayout);
+  plotLayoutRef.current = plotLayout;
+  const metricRef = useRef(metric);
+  metricRef.current = metric;
 
   const setPeriodAxisLabelsGuarded = useCallback((next: OverviewAxisLabel[], plotWidthPx: number) => {
     setAxisPlotWidthPx(plotWidthPx);
@@ -1295,6 +2262,34 @@ export function PortfolioValueHistoryChartPane({
     periodAxisLabelsRef.current = next;
     setPeriodAxisLabels(next);
   }, []);
+  const periodAxisSyncGenRef = useRef(0);
+  const schedulePeriodAxisLabelsRef = useRef<(range: PortfolioChartRange) => void>(() => {});
+  const schedulePeriodAxisLabels = useCallback(
+    (rangeForSync: PortfolioChartRange) => {
+      if (hoverTimeRef.current != null) return;
+      const c = chartRef.current;
+      if (!c || chartPointsRef.current.length === 0) return;
+      const gen = ++periodAxisSyncGenRef.current;
+      schedulePortfolioPeriodAxisLabelsWhenReady({
+        chart: c,
+        chartPoints: chartPointsRef.current,
+        range: rangeForSync,
+        getPlotWidthPx: () => {
+          const tsW = c.timeScale().width();
+          if (tsW > 12) return tsW;
+          return Math.max(0, wrapRef.current?.clientWidth ?? 0);
+        },
+        minLabelGapPx:
+          plotLayoutRef.current === "goal"
+            ? resolveGoalPeriodAxisMinLabelGapPx(wrapRef.current?.clientWidth ?? chartLayoutRef.current.containerWidthPx)
+            : undefined,
+        apply: (labels, plotWidthPx) => setPeriodAxisLabelsGuarded(labels, plotWidthPx),
+        cancelled: () => gen !== periodAxisSyncGenRef.current,
+      });
+    },
+    [setPeriodAxisLabelsGuarded],
+  );
+  schedulePeriodAxisLabelsRef.current = schedulePeriodAxisLabels;
   const [tradeTooltip, setTradeTooltip] = useState<{
     left: number;
     top: number;
@@ -1303,6 +2298,96 @@ export function PortfolioValueHistoryChartPane({
   } | null>(null);
   const [tradeTooltipMounted, setTradeTooltipMounted] = useState(false);
   const tradeTooltipLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const applyPlotRevealClip = useCallback((progress: number) => {
+    applyOverviewLineRevealClip(wrapRef.current, progress);
+    if (plotLayoutRef.current === "goal") {
+      applyOverviewLineRevealClip(goalYAxisBadgesRef.current, progress);
+    }
+  }, []);
+
+  const syncPaneYAxisChrome = useCallback(() => {
+    const s = seriesRef.current;
+    if (!s || s.data().length === 0) return;
+    const goalBadgeSpecs =
+      plotLayoutRef.current === "goal"
+        ? collectGoalEndBadgeSpecs(goalEndBadgeConfigRef.current)
+        : [];
+    const nextY = syncPaneYAxisLabelsForLayout(
+      s,
+      metricRef.current,
+      chartLayoutRef.current.yAxisLabelCount,
+      plotLayoutRef.current,
+      goalYAxisExtentsRef.current,
+      plotLayoutRef.current === "goal" ? null : compareYAxisExtentsRef.current,
+    );
+    setYAxisLabels((prev) => (overviewYAxisLabelsEqual(prev, nextY) ? prev : nextY));
+    const chart = chartRef.current;
+    const nextGoalBadges =
+      chart ?
+        attachGoalEndPointCoordinates(
+          chart,
+          resolveGoalPaneEndBadges(
+            plotLayoutRef.current,
+            goalYAxisExtentsRef.current,
+            goalBadgeSpecs,
+          ),
+          goalBadgeSpecs,
+          (key) => {
+            if (key === "portfolio") return seriesRef.current;
+            const cfg = goalEndBadgeConfigRef.current;
+            const overlayId = key === "safe" ? cfg.safeOverlayId : cfg.aggressiveOverlayId;
+            return overlayId ? overlaySeriesRefs.current.get(overlayId) ?? null : null;
+          },
+          wrapRef.current?.clientWidth ?? chartLayoutRef.current.containerWidthPx,
+        )
+      : [];
+    setGoalEndBadges((prev) => (goalYAxisEndBadgesEqual(prev, nextGoalBadges) ? prev : nextGoalBadges));
+    if (plotLayoutRef.current !== "goal" || !chart || !lineEnterDoneRef.current) {
+      setGoalAchievementDots((prev) => (prev.length === 0 ? prev : []));
+    } else {
+      const goalCfg = goalAchievementConfigRef.current;
+      const nextAchievement = computeGoalAchievementDots(
+        chart,
+        Math.max(chart.timeScale().width(), wrapRef.current?.clientWidth ?? 0),
+        Math.max(wrapRef.current?.clientHeight ?? 0, chart.paneSize(0).height),
+        [
+          {
+            key: "portfolio",
+            year: goalCfg.portfolioMilestoneYear,
+            show: goalCfg.showPortfolio,
+            lineData: goalCfg.portfolioLineData,
+            strokeColor: resolveFsColor("--fs-accent"),
+            series: s,
+          },
+          {
+            key: "safe",
+            year: goalCfg.safeMilestoneYear,
+            show: goalCfg.safeVisible,
+            lineData: goalCfg.safeLineData,
+            strokeColor: goalCfg.safeStrokeColor,
+            series:
+              goalCfg.safeOverlayId != null ?
+                overlaySeriesRefs.current.get(goalCfg.safeOverlayId) ?? null
+              : null,
+          },
+          {
+            key: "aggressive",
+            year: goalCfg.aggressiveMilestoneYear,
+            show: goalCfg.aggressiveVisible,
+            lineData: goalCfg.aggressiveLineData,
+            strokeColor: goalCfg.aggressiveStrokeColor,
+            series:
+              goalCfg.aggressiveOverlayId != null ?
+                overlaySeriesRefs.current.get(goalCfg.aggressiveOverlayId) ?? null
+              : null,
+          },
+        ],
+        goalCfg.goalTargetUsd,
+      );
+      setGoalAchievementDots((prev) => (goalAchievementDotsEqual(prev, nextAchievement) ? prev : nextAchievement));
+    }
+  }, []);
 
   useEffect(() => {
     setTradeTooltipMounted(true);
@@ -1346,13 +2431,11 @@ export function PortfolioValueHistoryChartPane({
     },
   };
 
-  const drawCompareSpy =
-    compareSpy && (metric === "value" || metric === "return" || metric === "profit");
-  const drawCompareNasdaq =
-    compareNasdaq && (metric === "value" || metric === "return" || metric === "profit");
+  const drawCompareSpy = compareSpy && metricSupportsBenchmarkCompare(metric);
+  const drawCompareNasdaq = compareNasdaq && metricSupportsBenchmarkCompare(metric);
   /** Create compare series with the chart so toggling S&P does not remount the portfolio series. */
-  const mountSpySeries = metric === "value" || metric === "return" || metric === "profit";
-  const mountNasdaqSeries = metric === "value" || metric === "return" || metric === "profit";
+  const mountSpySeries = metricSupportsBenchmarkCompare(metric);
+  const mountNasdaqSeries = metricSupportsBenchmarkCompare(metric);
 
   chartRangeRef.current = range;
 
@@ -1361,10 +2444,11 @@ export function PortfolioValueHistoryChartPane({
     if (!el) return;
 
     const shouldForceEnglish = typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches;
+    const showNativeLastValueBadges = true;
 
     const chart = createChart(el, {
       width: Math.max(2, el.clientWidth),
-      height: chartLayout.plotHeightPx,
+      height: chartLayoutRef.current.plotHeightPx,
       autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
@@ -1377,9 +2461,15 @@ export function PortfolioValueHistoryChartPane({
         vertLines: { visible: false },
         horzLines: { visible: false },
       },
+      overlayPriceScales: {
+        borderVisible: false,
+        ticksVisible: false,
+        entireTextOnly: true,
+        scaleMargins: { top: OVERVIEW_SCALE_MARGIN_TOP, bottom: OVERVIEW_SCALE_MARGIN_BOTTOM },
+      },
       rightPriceScale: {
         borderVisible: false,
-        scaleMargins: { top: 0.12, bottom: 0.08 },
+        scaleMargins: { top: OVERVIEW_SCALE_MARGIN_TOP, bottom: OVERVIEW_SCALE_MARGIN_BOTTOM },
       },
       leftPriceScale: { visible: false },
       timeScale: {
@@ -1428,13 +2518,15 @@ export function PortfolioValueHistoryChartPane({
       seriesRef.current?.applyOptions({ crosshairMarkerBorderColor: borderColor });
     };
 
+    const lastPriceAnimation = LastPriceAnimationMode.Disabled;
+
     const baselineOpts = {
       relativeGradient: false,
       ...baselineUpDownFillColors("bright"),
       lineWidth: 2,
       lineType: LineType.Curved,
       priceLineVisible: false,
-      lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
+      lastPriceAnimation,
       crosshairMarkerVisible: true,
       crosshairMarkerRadius: 5,
       crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
@@ -1453,7 +2545,8 @@ export function PortfolioValueHistoryChartPane({
           lineWidth: 2,
           lineType: LineType.Curved,
           priceLineVisible: false,
-          lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
+          lastPriceAnimation,
+          lastValueVisible: showNativeLastValueBadges,
           crosshairMarkerVisible: true,
           crosshairMarkerRadius: 5,
           crosshairMarkerBorderColor: resolveFsColor("--fs-accent"),
@@ -1463,6 +2556,7 @@ export function PortfolioValueHistoryChartPane({
         })()
       : chart.addSeries(BaselineSeries, {
           ...baselineOpts,
+          lastValueVisible: showNativeLastValueBadges,
           // Drawdowns are always ≤ 0: force red even for the flat 0% stretches at peaks.
           ...(metric === "drawdown" ?
             {
@@ -1478,10 +2572,10 @@ export function PortfolioValueHistoryChartPane({
       lineWidth: 2,
       lineType: LineType.Curved,
       priceLineVisible: false,
-      lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
+      lastPriceAnimation,
       crosshairMarkerVisible: false,
-      priceScaleId: "right",
-      lastValueVisible: true,
+      priceScaleId: COMPARE_OVERLAY_PRICE_SCALE_ID,
+      lastValueVisible: showNativeLastValueBadges,
     } as const;
 
     if (mountSpySeries) {
@@ -1504,26 +2598,65 @@ export function PortfolioValueHistoryChartPane({
       compareSeriesRefs.current.nasdaq = null;
     }
 
+    if (mountSpySeries || mountNasdaqSeries) {
+      try {
+        chart.priceScale(COMPARE_OVERLAY_PRICE_SCALE_ID).applyOptions({
+          visible: true,
+          ticksVisible: false,
+          borderVisible: false,
+          entireTextOnly: true,
+          scaleMargins: {
+            top: OVERVIEW_SCALE_MARGIN_TOP,
+            bottom: OVERVIEW_SCALE_MARGIN_BOTTOM,
+          },
+        });
+      } catch {
+        /* overlay scale is created with the compare series */
+      }
+    }
+
     chartRef.current = chart;
     seriesRef.current = series;
+    setChartReadyTick((n) => n + 1);
+    lastPointMarkersRef.current = {
+      main: createSeriesMarkers(series, [], { autoScale: true }) as ISeriesMarkersPluginApi<UTCTimestamp>,
+      spy: mountSpySeries && compareSeriesRefs.current.spy
+        ? createSeriesMarkers(compareSeriesRefs.current.spy, [], { autoScale: true }) as ISeriesMarkersPluginApi<UTCTimestamp>
+        : null,
+      nasdaq: mountNasdaqSeries && compareSeriesRefs.current.nasdaq
+        ? createSeriesMarkers(compareSeriesRefs.current.nasdaq, [], { autoScale: true }) as ISeriesMarkersPluginApi<UTCTimestamp>
+        : null,
+      overlays: new Map(),
+    };
 
     scheduleTradeDotsSyncRef.current = () => {
       const c = chartRef.current;
       const s = seriesRef.current;
-      const overlay = tradeOverlayRef.current;
-      if (!c || !s || !overlay) return;
+      if (!c || !s) return;
+      const tradeOverlay = tradeOverlayRef.current;
       const cfg = tradeDotsConfigRef.current;
-      syncPortfolioTradeDotsOverlay(
-        c,
-        s,
-        overlay,
-        cfg.show,
-        cfg.txs,
-        cfg.lineData,
-        cfg.sessionYmds,
-        tradeDotHoverApiRef,
-      );
+      if (tradeOverlay) {
+        syncPortfolioTradeDotsOverlay(
+          c,
+          s,
+          tradeOverlay,
+          cfg.show,
+          cfg.txs,
+          cfg.lineData,
+          cfg.sessionYmds,
+          tradeDotHoverApiRef,
+        );
+      }
     };
+
+    const onGoalVisibleRangeChange = () => {
+      if (plotLayoutRef.current !== "goal") return;
+      scheduleTradeDotsSyncRef.current?.();
+      if (lineEnterDoneRef.current || lineEnterRevealStartedRef.current) {
+        syncPaneYAxisChrome();
+      }
+    };
+    chart.timeScale().subscribeVisibleLogicalRangeChange(onGoalVisibleRangeChange);
 
     const onCrosshairMove = (param: MouseEventParams) => {
       const s = seriesRef.current;
@@ -1539,50 +2672,134 @@ export function PortfolioValueHistoryChartPane({
         hoverTimeRef.current = null;
         setHoverAxisLabel((prev) => (prev == null ? prev : null));
         setTooltip((prev) => (prev == null ? prev : null));
+        schedulePeriodAxisLabelsRef.current(chartRangeRef.current);
         return;
       }
 
       const data = param.seriesData.get(s);
-      if (
-        !data ||
-        typeof data !== "object" ||
-        !("value" in data) ||
-        !isFiniteNumber((data as { value: number }).value)
-      ) {
+      const tooltipLines: {
+        label: string;
+        valueLabel: string;
+        valueTone: "pos" | "neg" | "neutral";
+        swatchColor?: string;
+        swatchVariant?: "solid" | "upDown";
+      }[] = [];
+
+      const currentMetric = metricRef.current;
+      const hasVisibleOverlays = overlaySeriesRef.current.some((o) => o.visible);
+      const showTooltipSwatches =
+        chartInteractionStyleRef.current === "fundamentals" || hasVisibleOverlays;
+
+      if (showPortfolioRef.current) {
+        const raw = resolveOverviewSeriesValueAtCrosshair(s, param, chartPointsRef.current);
+        if (raw != null) {
+          applyCrosshairMarkerBorder(overviewCrosshairMarkerBorderColor(currentMetric, raw));
+          const formatted = overviewTooltipValue(currentMetric, raw);
+          tooltipLines.push({
+            label: mainSeriesTooltipLabelRef.current ?? overviewMetricTitle(currentMetric),
+            swatchColor:
+              showTooltipSwatches && !isPercentMetric(currentMetric) ?
+                overviewCrosshairMarkerBorderColor(currentMetric, raw)
+              : undefined,
+            swatchVariant:
+              showTooltipSwatches && isPercentMetric(currentMetric) ? "upDown" : undefined,
+            ...formatted,
+          });
+        }
+      }
+
+      for (const o of overlaySeriesRef.current) {
+        if (!o.visible) continue;
+        const overlaySeriesApi = overlaySeriesRefs.current.get(o.id);
+        if (!overlaySeriesApi) continue;
+        const raw = resolveOverviewSeriesValueAtCrosshair(
+          overlaySeriesApi,
+          param,
+          lineDataToStockChartPoints(overlaySeriesApi.data() as { time: Time; value: number }[]),
+        );
+        if (raw == null) continue;
+        tooltipLines.push({
+          label: o.label?.trim() || o.id,
+          swatchColor: o.color,
+          ...overviewTooltipValue(currentMetric, raw),
+        });
+      }
+
+      if (tooltipLines.length === 0) {
         hoverTimeRef.current = null;
         setHoverAxisLabel((prev) => (prev == null ? prev : null));
         setTooltip((prev) => (prev == null ? prev : null));
+        schedulePeriodAxisLabelsRef.current(chartRangeRef.current);
         return;
+      }
+
+      if (!showPortfolioRef.current || data == null || typeof data !== "object" || !("value" in data)) {
+        applyCrosshairMarkerBorder(resolveFsColor("--fs-accent"));
       }
 
       setTradeTooltip((prev) => (prev == null ? prev : null));
 
       const hoverTime = param.time as Time;
       hoverTimeRef.current = hoverTime;
+      const plotWidthPx = Math.max(0, wrapRef.current?.clientWidth ?? 0);
+
+      if (chartInteractionStyleRef.current === "fundamentals") {
+        setHoverAxisLabel(null);
+        const rows: {
+          key: string;
+          label: string;
+          value: string;
+          color: string;
+          swatchVariant?: "solid" | "upDown";
+        }[] = [];
+        for (const line of tooltipLines) {
+          if (line.swatchVariant === "upDown") {
+            rows.push({
+              key: line.label,
+              label: line.label,
+              value: line.valueLabel,
+              color: "",
+              swatchVariant: "upDown",
+            });
+            continue;
+          }
+          if (!line.swatchColor) continue;
+          rows.push({
+            key: line.label,
+            label: line.label,
+            value: line.valueLabel,
+            color: line.swatchColor,
+          });
+        }
+        if (rows.length === 0) {
+          setTooltip(null);
+          return;
+        }
+        const { side } = computeFundamentalsChartTooltipPlacement(param.point.x, plotWidthPx);
+        const plotH = chartLayoutRef.current.plotHeightPx;
+        const estH = 44 + rows.length * 20;
+        const vAlign: "center" | "above" =
+          param.point.y + estH / 2 > plotH - 8 ? "above" : "center";
+        setTooltip({
+          variant: "fundamentals",
+          anchorX: param.point.x,
+          y: param.point.y,
+          side,
+          vAlign,
+          periodLabel: formatChartHoverPeriodYear(hoverTime),
+          rows,
+        });
+        return;
+      }
+
       setHoverAxisLabel({
         leftPx: param.point.x,
         label: portfolioCrosshairBottomLabel(hoverTime, chartRangeRef.current, chartPointsRef.current),
       });
 
-      const raw = (data as { value: number }).value;
-      applyCrosshairMarkerBorder(overviewCrosshairMarkerBorderColor(metric, raw));
-      const valueLabel =
-        isPercentMetric(metric) ?
-          formatReturnPctAxis(raw)
-        : metric === "profit" ?
-          `${raw >= 0 ? "+" : "−"}${TOOLTIP_USD.format(Math.abs(raw))}`
-        : TOOLTIP_USD.format(raw);
-      const valueTone =
-        isPercentMetric(metric) || metric === "profit" ?
-          raw > 0 ?
-            "pos"
-          : raw < 0 ?
-            "neg"
-          : "neutral"
-        : "neutral";
-
       const tw = 168;
-      const th = 40;
+      const lineH = 18;
+      const th = 16 + tooltipLines.length * lineH;
       const pad = 8;
       let x = param.point.x + pad;
       let y = param.point.y - th - pad;
@@ -1594,10 +2811,10 @@ export function PortfolioValueHistoryChartPane({
       }
 
       setTooltip({
+        variant: "overview",
         x,
         y,
-        valueLabel,
-        valueTone,
+        lines: tooltipLines,
       });
     };
 
@@ -1606,29 +2823,36 @@ export function PortfolioValueHistoryChartPane({
     const lastChartWidthRef = { current: 0 };
     const ro = new ResizeObserver(() => {
       if (!wrapRef.current || !chartRef.current) return;
-      const width = Math.max(2, wrapRef.current.clientWidth);
+      const width = wrapRef.current.clientWidth;
+      // Hidden tab panels collapse to width 0. Applying Math.max(2, 0) shrinks the
+      // time scale so last-value badges flash on the left when switching back.
+      if (width < 12) return;
       if (width !== lastChartWidthRef.current) {
         lastChartWidthRef.current = width;
         chartRef.current.applyOptions({ width });
       }
-      // Unhiding a tab (display:none → visible) or interrupting enter anim can leave the
-      // plot clipped; clear once we have a real width.
-      if (width > 2) {
-        applyOverviewLineRevealClip(wrapRef.current, 1);
-        lineEnterDoneRef.current = true;
+      syncLastPointMarkersRef.current?.();
+      // Tab unhide can leave a leftover clip. Never cancel a live enter (including the
+      // pre-paint wait) — aborting it either snaps the line in or leaves the plot blank.
+      if (lineEnterDoneRef.current) {
+        applyPlotRevealClip(1);
       }
       const s = seriesRef.current;
       if (s && s.data().length > 0) {
-        snapOverviewTimeScale(chartRef.current, s);
-        const nextY = syncOverviewYAxisLabels(s, metric, chartLayoutRef.current.yAxisLabelCount);
-        setYAxisLabels((prev) => (overviewYAxisLabelsEqual(prev, nextY) ? prev : nextY));
+        snapChartTimeScaleForLayout(
+          chartRef.current,
+          s,
+          wrapRef.current?.clientWidth ?? chartRef.current.timeScale().width(),
+        );
+        if (lineEnterDoneRef.current || lineEnterRevealStartedRef.current) {
+          syncPaneYAxisChrome();
+        }
       }
       requestAnimationFrame(() => {
         scheduleTradeDotsSyncRef.current?.();
         const c = chartRef.current;
         const s = seriesRef.current;
         if (!c || !s || s.data().length === 0) return;
-        const plotWidthPx = Math.max(0, wrapRef.current?.clientWidth ?? 0);
         const hoverTime = hoverTimeRef.current;
         if (hoverTime != null) {
           const x = c.timeScale().timeToCoordinate(hoverTime);
@@ -1638,16 +2862,8 @@ export function PortfolioValueHistoryChartPane({
               label: portfolioCrosshairBottomLabel(hoverTime, chartRangeRef.current, chartPointsRef.current),
             });
           }
-        } else {
-          setPeriodAxisLabelsGuarded(
-            syncPortfolioPeriodAxisLabels(
-              c,
-              chartPointsRef.current,
-              chartRangeRef.current,
-              plotWidthPx,
-            ),
-            plotWidthPx,
-          );
+        } else if (lineEnterDoneRef.current || lineEnterRevealStartedRef.current) {
+          schedulePeriodAxisLabelsRef.current(chartRangeRef.current);
         }
       });
     });
@@ -1658,21 +2874,27 @@ export function PortfolioValueHistoryChartPane({
     });
 
     return () => {
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(onGoalVisibleRangeChange);
       chart.unsubscribeCrosshairMove(onCrosshairMove);
       ro.disconnect();
       cancelOverviewLineEnter({
         cancelRef: lineEnterCancelRef,
         doneRef: lineEnterDoneRef,
-        wrap: wrapRef.current,
+        clearClip: () => applyPlotRevealClip(1),
       });
       lineAnimKeyRef.current = "";
       setYAxisLabels([]);
+      setGoalEndBadges([]);
+      setGoalAchievementDots([]);
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
       compareSeriesRefs.current = { spy: null, nasdaq: null };
       overlaySeriesRefs.current.clear();
+      lastPointMarkersRef.current = { main: null, spy: null, nasdaq: null, overlays: new Map() };
+      syncLastPointMarkersRef.current = null;
       scheduleTradeDotsSyncRef.current = null;
+      periodAxisSyncGenRef.current += 1;
       tradeOverlayRef.current?.replaceChildren();
       hoverTimeRef.current = null;
       setTooltip(null);
@@ -1682,10 +2904,20 @@ export function PortfolioValueHistoryChartPane({
       setPeriodAxisLabels([]);
       setAxisPlotWidthPx(0);
       setYAxisLabels([]);
+      setGoalEndBadges([]);
+      setGoalAchievementDots([]);
+      goalAutoscaleActiveRef.current = false;
+      goalYAxisExtentsRef.current = null;
+      compareAutoscaleActiveRef.current = false;
+      compareYAxisExtentsRef.current = null;
     };
-  }, [metric, chartLayout.plotHeightPx, setPeriodAxisLabelsGuarded, chartThemePaintKey]);
+  }, [metric, setPeriodAxisLabelsGuarded, chartThemePaintKey, applyPlotRevealClip, syncPaneYAxisChrome]);
 
   useEffect(() => {
+    chartRef.current?.applyOptions({ height: chartLayout.plotHeightPx });
+  }, [chartLayout.plotHeightPx]);
+
+  useLayoutEffect(() => {
     const chart = chartRef.current;
     const series = seriesRef.current;
     if (!chart || !series) return;
@@ -1713,11 +2945,16 @@ export function PortfolioValueHistoryChartPane({
           return { time: portfolioChartTime(p) as Time, value: y };
         });
 
+    const lineAnimKey =
+      data.length >= 2 ?
+        `${metric}:${data.length}:${String(data[0]?.time ?? "")}:${String(data.at(-1)?.time ?? "")}`
+      : "";
+
     if (data.length === 0) {
       cancelOverviewLineEnter({
         cancelRef: lineEnterCancelRef,
         doneRef: lineEnterDoneRef,
-        wrap: wrapRef.current,
+        clearClip: () => applyPlotRevealClip(1),
       });
       lineAnimKeyRef.current = "";
       series.setData([]);
@@ -1728,7 +2965,42 @@ export function PortfolioValueHistoryChartPane({
       compareSeriesRefs.current.spy?.setData([]);
       compareSeriesRefs.current.nasdaq?.setData([]);
       for (const s of overlaySeriesRefs.current.values()) s.setData([]);
+      lastPointMarkersRef.current.main?.setMarkers([]);
+      lastPointMarkersRef.current.spy?.setMarkers([]);
+      lastPointMarkersRef.current.nasdaq?.setMarkers([]);
+      for (const m of lastPointMarkersRef.current.overlays.values()) m.setMarkers([]);
+      goalAchievementConfigRef.current = {
+        portfolioMilestoneYear: null,
+        safeMilestoneYear: null,
+        aggressiveMilestoneYear: null,
+        goalTargetUsd: null,
+        showPortfolio: false,
+        portfolioLineData: [],
+        safeOverlayId: null,
+        safeLineData: [],
+        safeVisible: false,
+        safeStrokeColor: "",
+        aggressiveOverlayId: null,
+        aggressiveLineData: [],
+        aggressiveVisible: false,
+        aggressiveStrokeColor: "",
+      };
+      goalEndBadgeConfigRef.current = {
+        showPortfolio: false,
+        portfolioLineData: [],
+        safeOverlayId: null,
+        safeLineData: [],
+        safeVisible: false,
+        safeStrokeColor: "",
+        aggressiveOverlayId: null,
+        aggressiveLineData: [],
+        aggressiveVisible: false,
+        aggressiveStrokeColor: "",
+      };
+      goalYAxisExtentsRef.current = null;
       setYAxisLabels([]);
+      setGoalEndBadges([]);
+      setGoalAchievementDots([]);
       periodAxisLabelsRef.current = [];
       setPeriodAxisLabels([]);
       setAxisPlotWidthPx(0);
@@ -1741,7 +3013,53 @@ export function PortfolioValueHistoryChartPane({
       });
     }
 
-    series.setData(data);
+    const safeOverlay = overlaySeries.find((o) => o.id === "safe");
+    const aggressiveOverlay = overlaySeries.find((o) => o.id === "aggressive");
+    let safeLineData: { time: Time; value: number }[] = [];
+    if (safeOverlay?.visible) {
+      const filteredSafe = safeOverlay.points.filter((p) => Number.isFinite(p.value));
+      safeLineData = filteredSafe.map((p) => ({
+        time: portfolioChartTime(p) as Time,
+        value: p.value,
+      }));
+    }
+    let aggressiveLineData: { time: Time; value: number }[] = [];
+    if (aggressiveOverlay?.visible) {
+      const filteredAggressive = aggressiveOverlay.points.filter((p) => Number.isFinite(p.value));
+      aggressiveLineData = filteredAggressive.map((p) => ({
+        time: portfolioChartTime(p) as Time,
+        value: p.value,
+      }));
+    }
+
+    goalAchievementConfigRef.current = {
+      portfolioMilestoneYear,
+      safeMilestoneYear,
+      aggressiveMilestoneYear,
+      goalTargetUsd,
+      showPortfolio,
+      portfolioLineData: data,
+      safeOverlayId: safeOverlay ? "safe" : null,
+      safeLineData,
+      safeVisible: safeOverlay?.visible === true,
+      safeStrokeColor: safeOverlay?.color ?? "",
+      aggressiveOverlayId: aggressiveOverlay ? "aggressive" : null,
+      aggressiveLineData,
+      aggressiveVisible: aggressiveOverlay?.visible === true,
+      aggressiveStrokeColor: aggressiveOverlay?.color ?? "",
+    };
+    goalEndBadgeConfigRef.current = {
+      showPortfolio,
+      portfolioLineData: data,
+      safeOverlayId: safeOverlay ? "safe" : null,
+      safeLineData,
+      safeVisible: safeOverlay?.visible === true,
+      safeStrokeColor: safeOverlay?.color ?? "",
+      aggressiveOverlayId: aggressiveOverlay ? "aggressive" : null,
+      aggressiveLineData,
+      aggressiveVisible: aggressiveOverlay?.visible === true,
+      aggressiveStrokeColor: aggressiveOverlay?.color ?? "",
+    };
 
     const lastY = data[data.length - 1]?.value;
     if (typeof lastY === "number" && Number.isFinite(lastY)) {
@@ -1753,14 +3071,17 @@ export function PortfolioValueHistoryChartPane({
     tradeDotsConfigRef.current = { show: showTrades, txs: transactions, lineData: data, sessionYmds };
 
     const applyBenchmarkSeries = (
-      series: ISeriesApi<"Line"> | null,
+      benchSeries: ISeriesApi<"Line"> | null,
       enabled: boolean,
       rawPoints: readonly StockChartPoint[] | null | undefined,
     ) => {
-      if (series && enabled) {
-        const data =
+      if (!benchSeries) return;
+      if (enabled) {
+        const benchData =
           metric === "return" ?
             buildBenchmarkReturnLineData(filtered, rawPoints ?? undefined)
+          : metric === "drawdown" ?
+            buildBenchmarkDrawdownLineData(filtered, rawPoints ?? undefined)
           : buildBenchmarkCompareLineData(
               filtered,
               rawPoints ?? undefined,
@@ -1768,18 +3089,35 @@ export function PortfolioValueHistoryChartPane({
               metric === "profit" ? "profit" : "value",
               transactions,
             );
-        series.setData(data);
-      } else if (series) {
-        series.setData([]);
+        benchSeries.setData(benchData);
+      } else {
+        benchSeries.setData([]);
       }
     };
 
+    const samePortfolioLine =
+      lineAnimKey.length > 0 && lineAnimKey === lineAnimKeyRef.current;
+    if (!samePortfolioLine) {
+      series.setData(data);
+    }
+    series.applyOptions({
+      visible: showPortfolio,
+      ...(metric === "value" ?
+        { lastValueVisible: showPortfolio }
+      : {}),
+    });
+
     applyBenchmarkSeries(compareSeriesRefs.current.spy, drawCompareSpy, spyPricePoints);
     applyBenchmarkSeries(compareSeriesRefs.current.nasdaq, drawCompareNasdaq, nasdaqPricePoints);
-
-    series.applyOptions({ visible: showPortfolio });
-    compareSeriesRefs.current.spy?.applyOptions({ visible: drawCompareSpy });
-    compareSeriesRefs.current.nasdaq?.applyOptions({ visible: drawCompareNasdaq });
+    const showNativeCompareBadges = plotLayoutRef.current !== "goal";
+    compareSeriesRefs.current.spy?.applyOptions({
+      visible: drawCompareSpy,
+      lastValueVisible: drawCompareSpy && showNativeCompareBadges,
+    });
+    compareSeriesRefs.current.nasdaq?.applyOptions({
+      visible: drawCompareNasdaq,
+      lastValueVisible: drawCompareNasdaq && showNativeCompareBadges,
+    });
 
     // Combined-source overlays (line series managed alongside compare series).
     {
@@ -1792,6 +3130,7 @@ export function PortfolioValueHistoryChartPane({
             /* chart remounting */
           }
           overlaySeriesRefs.current.delete(id);
+          lastPointMarkersRef.current.overlays.delete(id);
         }
       }
       for (const o of overlaySeries) {
@@ -1799,18 +3138,28 @@ export function PortfolioValueHistoryChartPane({
         if (!s) {
           s = chart.addSeries(LineSeries, {
             lineWidth: 2,
-            lineType: LineType.Curved,
+            lineType: plotLayoutRef.current === "goal" ? LineType.Simple : LineType.Curved,
             priceLineVisible: false,
-            lastPriceAnimation: LastPriceAnimationMode.OnDataUpdate,
-            crosshairMarkerVisible: false,
+            lastPriceAnimation: LastPriceAnimationMode.Disabled,
             priceScaleId: "right",
-            lastValueVisible: true,
+            lastValueVisible: o.visible,
             color: o.color,
             visible: o.visible,
+            ...overlayLineCrosshairOptions(o.color, o.visible),
           });
           overlaySeriesRefs.current.set(o.id, s);
+          lastPointMarkersRef.current.overlays.set(
+            o.id,
+            createSeriesMarkers(s, [], { autoScale: true }) as ISeriesMarkersPluginApi<UTCTimestamp>,
+          );
         } else {
-          s.applyOptions({ color: o.color, visible: o.visible });
+          s.applyOptions({
+            color: o.color,
+            visible: o.visible,
+            lastValueVisible: o.visible,
+            lastPriceAnimation: LastPriceAnimationMode.Disabled,
+            ...overlayLineCrosshairOptions(o.color, o.visible),
+          });
         }
         if (!o.visible) {
           s.setData([]);
@@ -1837,84 +3186,206 @@ export function PortfolioValueHistoryChartPane({
       }
     }
 
-    snapOverviewTimeScale(chart, series);
+    if (plotLayoutRef.current === "goal") {
+      compareYAxisExtentsRef.current = null;
+      compareAutoscaleActiveRef.current = false;
+      goalYAxisExtentsRef.current = applyGoalSharedAutoscale(
+        series,
+        overlaySeriesRefs.current,
+        overlaySeries,
+        showPortfolio ? data : [],
+        metric,
+      );
+      goalAutoscaleActiveRef.current = true;
+    } else {
+      goalYAxisExtentsRef.current = null;
+      if (goalAutoscaleActiveRef.current) {
+        restoreSeriesDefaultAutoscale(series);
+        for (const s of overlaySeriesRefs.current.values()) {
+          restoreSeriesDefaultAutoscale(s);
+        }
+        goalAutoscaleActiveRef.current = false;
+      }
 
-    const lineAnimKey = `${metric}:${range}:${data.length}:${String(data[0]?.time ?? "")}:${String(data.at(-1)?.time ?? "")}`;
+      const spyApi = compareSeriesRefs.current.spy;
+      const nasdaqApi = compareSeriesRefs.current.nasdaq;
+      const sharePriceScale = compareSharesPortfolioPriceScale(range, metric);
+      const comparePriceScaleId = sharePriceScale ? "right" : COMPARE_OVERLAY_PRICE_SCALE_ID;
+      spyApi?.applyOptions({ priceScaleId: comparePriceScaleId });
+      nasdaqApi?.applyOptions({ priceScaleId: comparePriceScaleId });
+      if (!sharePriceScale && (drawCompareSpy || drawCompareNasdaq)) {
+        try {
+          chart.priceScale(COMPARE_OVERLAY_PRICE_SCALE_ID).applyOptions({
+            visible: true,
+            ticksVisible: false,
+            borderVisible: false,
+            entireTextOnly: true,
+            scaleMargins: {
+              top: OVERVIEW_SCALE_MARGIN_TOP,
+              bottom: OVERVIEW_SCALE_MARGIN_BOTTOM,
+            },
+          });
+        } catch {
+          /* overlay scale is created with the compare series */
+        }
+      }
+      const compareExtents = unionSeriesValueExtents([
+        showPortfolio ? overviewSeriesValueExtents(series) : null,
+        drawCompareSpy && spyApi ? overviewSeriesValueExtents(spyApi as OverviewMainSeries) : null,
+        drawCompareNasdaq && nasdaqApi ? overviewSeriesValueExtents(nasdaqApi as OverviewMainSeries) : null,
+      ]);
+      if (sharePriceScale && compareExtents && (drawCompareSpy || drawCompareNasdaq)) {
+        applyCompareSharedAutoscale(series, [spyApi, nasdaqApi], compareExtents, metric);
+        compareYAxisExtentsRef.current = compareExtents;
+        compareAutoscaleActiveRef.current = true;
+      } else {
+        compareYAxisExtentsRef.current = null;
+        restoreSeriesDefaultAutoscale(series);
+        restoreSeriesDefaultAutoscale(spyApi);
+        restoreSeriesDefaultAutoscale(nasdaqApi);
+        compareAutoscaleActiveRef.current = false;
+      }
+    }
+
+    snapChartTimeScaleForLayout(
+      chart,
+      series,
+      wrapRef.current?.clientWidth ?? chart.timeScale().width(),
+    );
+
+    const syncLastPointMarkers = () => {
+      const c = chartRef.current;
+      if (!c) return;
+      const plugins = lastPointMarkersRef.current;
+      applyLastPointCircleMarkers(
+        c,
+        plugins.main,
+        data,
+        overviewLastPointStroke(metric, data),
+        showPortfolio,
+      );
+      const spySeries = compareSeriesRefs.current.spy;
+      applyLastPointCircleMarkers(
+        c,
+        plugins.spy,
+        spySeries ? (spySeries.data() as { time: Time; value: number }[]) : [],
+        BENCHMARK_SPY_LINE,
+        drawCompareSpy,
+      );
+      const nasdaqSeries = compareSeriesRefs.current.nasdaq;
+      applyLastPointCircleMarkers(
+        c,
+        plugins.nasdaq,
+        nasdaqSeries ? (nasdaqSeries.data() as { time: Time; value: number }[]) : [],
+        BENCHMARK_NASDAQ_LINE,
+        drawCompareNasdaq,
+      );
+      for (const o of overlaySeries) {
+        const overlayApi = overlaySeriesRefs.current.get(o.id);
+        applyLastPointCircleMarkers(
+          c,
+          plugins.overlays.get(o.id),
+          overlayApi ? (overlayApi.data() as { time: Time; value: number }[]) : [],
+          o.color,
+          o.visible,
+        );
+      }
+    };
+    syncLastPointMarkersRef.current = syncLastPointMarkers;
+    syncLastPointMarkers();
+
     const shouldAnimateLine =
-      data.length >= 2 && !prefersReducedFundamentalsBarMotion();
+      isGoalPlotLayout &&
+      data.length >= 2 &&
+      !prefersReducedFundamentalsBarMotion();
 
     let deferTradeDots = false;
-    if (shouldAnimateLine && lineAnimKey !== lineAnimKeyRef.current) {
+    const isFirstLineReveal = lineAnimKeyRef.current === "";
+    if (shouldAnimateLine && isFirstLineReveal) {
       lineAnimKeyRef.current = lineAnimKey;
       lineEnterCancelRef.current?.();
       lineEnterCancelRef.current = null;
       lineEnterDoneRef.current = false;
+      lineEnterRevealStartedRef.current = false;
+      setYAxisLabels([]);
+      setGoalEndBadges([]);
+      setGoalAchievementDots([]);
       deferTradeDots = true;
       tradeOverlayRef.current?.replaceChildren();
-      applyOverviewLineRevealClip(wrapRef.current, 0);
-      lineEnterCancelRef.current = runFundamentalsBarEnterAnimation({
-        periodCount: 1,
-        onFrame: (elapsedMs) => {
-          applyOverviewLineRevealClip(
-            wrapRef.current,
-            fundamentalsBarEnterProgress(0, 1, elapsedMs),
-          );
+      lineEnterCancelRef.current = runOverviewLineEnterReveal({
+        chart,
+        wrap: wrapRef.current,
+        applyClip: applyPlotRevealClip,
+        onRevealStart: () => {
+          lineEnterRevealStartedRef.current = true;
+          syncPaneYAxisChrome();
+          schedulePeriodAxisLabelsRef.current(chartRangeRef.current);
+          if (plotLayoutRef.current === "goal") scheduleTradeDotsSyncRef.current?.();
         },
         onComplete: () => {
           lineEnterDoneRef.current = true;
-          applyOverviewLineRevealClip(wrapRef.current, 1);
+          lineEnterRevealStartedRef.current = true;
           lineEnterCancelRef.current = null;
           scheduleTradeDotsSyncRef.current?.();
+          schedulePeriodAxisLabelsRef.current(chartRangeRef.current);
+          syncPaneYAxisChrome();
         },
       });
     } else if (shouldAnimateLine && !lineEnterDoneRef.current && lineEnterCancelRef.current) {
-      // Enter animation still running from this effect’s prior frame.
+      // First-paint enter still running — keep it. Range / legend toggles must not restart
+      // the clip (that was the double blink: old series clipped, then new series clipped).
+      lineAnimKeyRef.current = lineAnimKey;
       deferTradeDots = true;
     } else {
-      // No live enter animation (or it was aborted) — never leave the plot clipped.
+      // Already on screen (or reduced motion): swap data in place, never clip from zero.
+      lineAnimKeyRef.current = lineAnimKey;
       cancelOverviewLineEnter({
         cancelRef: lineEnterCancelRef,
         doneRef: lineEnterDoneRef,
-        wrap: wrapRef.current,
+        clearClip: () => applyPlotRevealClip(1),
       });
+      lineEnterRevealStartedRef.current = true;
+      if (wrapRef.current) wrapRef.current.style.opacity = "";
     }
 
     let axisSyncCancelled = false;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        if (axisSyncCancelled) return;
-        const c = chartRef.current;
-        const s = seriesRef.current;
-        if (!c || !s || c !== chart || s !== series || s.data().length === 0) return;
-        const nextY = syncOverviewYAxisLabels(s, metric, chartLayoutRef.current.yAxisLabelCount);
-        setYAxisLabels((prev) => (overviewYAxisLabelsEqual(prev, nextY) ? prev : nextY));
-        if (!deferTradeDots) scheduleTradeDotsSyncRef.current?.();
-        const plotWidthPx = Math.max(0, wrapRef.current?.clientWidth ?? 0);
-        const hoverTime = hoverTimeRef.current;
-        if (hoverTime != null) {
-          const x = c.timeScale().timeToCoordinate(hoverTime);
-          if (x != null && Number.isFinite(x)) {
-            setHoverAxisLabel({
-              leftPx: x,
-              label: portfolioCrosshairBottomLabel(hoverTime, range, chartPointsRef.current),
-            });
-          }
-        } else {
-          setPeriodAxisLabelsGuarded(
-            syncPortfolioPeriodAxisLabels(c, chartPointsRef.current, range, plotWidthPx),
-            plotWidthPx,
-          );
+    const syncChromeNow = () => {
+      if (axisSyncCancelled) return;
+      const c = chartRef.current;
+      const s = seriesRef.current;
+      if (!c || !s || c !== chart || s !== series || s.data().length === 0) return;
+      if (lineEnterDoneRef.current || lineEnterRevealStartedRef.current) {
+        syncPaneYAxisChrome();
+      }
+      if (!deferTradeDots) scheduleTradeDotsSyncRef.current?.();
+      const hoverTime = hoverTimeRef.current;
+      if (hoverTime != null) {
+        const x = c.timeScale().timeToCoordinate(hoverTime);
+        if (x != null && Number.isFinite(x)) {
+          setHoverAxisLabel({
+            leftPx: x,
+            label: portfolioCrosshairBottomLabel(hoverTime, range, chartPointsRef.current),
+          });
         }
-      });
-    });
+      } else if (lineEnterDoneRef.current || lineEnterRevealStartedRef.current) {
+        schedulePeriodAxisLabels(range);
+      }
+    };
+    // Same turn as setData + time-scale snap so labels land with the line, not a frame later.
+    syncChromeNow();
     return () => {
       axisSyncCancelled = true;
-      cancelOverviewLineEnter({
-        cancelRef: lineEnterCancelRef,
-        doneRef: lineEnterDoneRef,
-        wrap: wrapRef.current,
-      });
-      lineAnimKeyRef.current = "";
+      periodAxisSyncGenRef.current += 1;
+      // Overlay / range fetches re-run this effect. Do not clear the anim key or abort a
+      // live first-paint enter — that restarted the clip (chart blinks twice on toggles).
+      if (!lineAnimKey) {
+        cancelOverviewLineEnter({
+          cancelRef: lineEnterCancelRef,
+          doneRef: lineEnterDoneRef,
+          clearClip: () => applyPlotRevealClip(1),
+        });
+        lineAnimKeyRef.current = "";
+      }
     };
   }, [
     points,
@@ -1929,14 +3400,257 @@ export function PortfolioValueHistoryChartPane({
     benchmarkInvestedUsd,
     showPortfolio,
     overlaySeries,
-    setPeriodAxisLabelsGuarded,
+    portfolioMilestoneYear,
+    safeMilestoneYear,
+    aggressiveMilestoneYear,
+    goalTargetUsd,
+    schedulePeriodAxisLabels,
+    applyPlotRevealClip,
+    syncPaneYAxisChrome,
+    chartReadyTick,
   ]);
 
-  const metricTitle =
-    metric === "value" ? "Total value"
-    : metric === "profit" ? "Total profit"
-    : metric === "drawdown" ? "Drawdown"
-    : "Return";
+  const plotSurface = (
+    <>
+      <div className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)} aria-hidden>
+            <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+          </div>
+          <div
+            ref={wrapRef}
+            className={cn(
+              "absolute inset-0 z-10 min-w-0",
+              loading
+                ? "pointer-events-none opacity-0"
+                : "opacity-100 transition-opacity duration-300 ease-out",
+            )}
+          />
+          {loading && !isGoalPlotLayout ? (
+            <div className="absolute inset-0 z-20 flex flex-col px-1 py-1">
+              <ChartSkeleton fill variant="minimal" />
+            </div>
+          ) : null}
+          {isGoalPlotLayout ?
+            <div className="pointer-events-none absolute inset-0 z-[21] overflow-visible">
+              <div ref={goalYAxisBadgesRef} className="pointer-events-none absolute inset-0">
+                {goalAchievementDots.map((dot) => (
+                  <span
+                    key={`${dot.key}-vline`}
+                    aria-hidden
+                    className="absolute top-0 bottom-0 w-0 border-l border-dashed border-black/25"
+                    style={{ left: dot.xPx }}
+                  />
+                ))}
+                {goalAchievementDots.map((dot) => (
+                  <span
+                    key={dot.key}
+                    aria-hidden
+                    className="absolute box-border rounded-full"
+                    style={{
+                      width: GOAL_ACHIEVEMENT_DOT_PX,
+                      height: GOAL_ACHIEVEMENT_DOT_PX,
+                      left: dot.xPx - GOAL_ACHIEVEMENT_DOT_HALF,
+                      top: dot.yPx - GOAL_ACHIEVEMENT_DOT_HALF,
+                      backgroundColor: chartMarkerDiscFillColor(),
+                      border: `2px solid ${dot.color}`,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          : null}
+          <div
+            ref={tradeOverlayRef}
+            className={cn(
+              "pointer-events-none absolute inset-0 z-[15]",
+              loading && "invisible",
+            )}
+          />
+          {tradeTooltipMounted && tradeTooltip
+            ? createPortal(
+                <div
+                  className={cn(
+                    "pointer-events-auto fixed z-[200] max-h-[min(280px,50vh)] w-[min(calc(100vw-2rem),280px)] overflow-y-auto overscroll-contain px-3 py-2",
+                    tooltipSurfaceClassName,
+                  )}
+                  style={{ left: tradeTooltip.left, top: tradeTooltip.top }}
+                  role="tooltip"
+                  onMouseEnter={cancelTradeTooltipLeave}
+                  onMouseLeave={scheduleTradeTooltipLeave}
+                >
+                  <p className="text-[11px] leading-4 text-fg-muted">{tradeTooltip.dateLabel}</p>                <div className="mt-1.5 space-y-0.5 text-xs leading-snug text-fg">
+                    {tradeTooltip.lines.map((line, i) => {
+                      const isTxDate =
+                        /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}$/.test(line) &&
+                        i > 0;
+                      return (
+                        <p
+                          key={i}
+                          className={cn(
+                            "tabular-nums",
+                            line.startsWith("Cash before:") || line.startsWith("Total cash:") ?
+                              "font-semibold text-fg"
+                            : isTxDate ?
+                              "pt-1.5 text-[11px] font-medium text-fg-muted"
+                            : "font-medium",
+                          )}
+                        >
+                          {line}
+                        </p>
+                      );
+                    })}
+                  </div>
+                </div>,
+                document.body,
+              )
+            : null}
+    </>
+  );
+
+  const chartHoverTooltip = tooltip ? (
+    tooltip.variant === "fundamentals" ? (
+      <div
+        className={FUNDAMENTALS_CHART_TOOLTIP_CLASS}
+        style={{
+          left: `clamp(8px, ${tooltip.anchorX}px, calc(100% - 8px))`,
+          top: tooltip.y,
+          transform:
+            tooltip.side === "left"
+              ? tooltip.vAlign === "above"
+                ? "translate(calc(-100% - 10px), calc(-100% - 8px))"
+                : "translate(calc(-100% - 10px), -50%)"
+              : tooltip.vAlign === "above"
+                ? "translate(10px, calc(-100% - 8px))"
+                : "translate(10px, -50%)",
+        }}
+        role="tooltip"
+      >
+        <p className="text-[12px] font-semibold leading-4 text-fg">{tooltip.periodLabel}</p>
+        <div className="mt-1.5 space-y-1">
+          {tooltip.rows.map((row) => (
+            <div key={row.key} className="flex items-baseline justify-between gap-3">
+              <span className="flex min-w-0 items-baseline gap-2">
+                {row.swatchVariant === "upDown" ? (
+                  <PortfolioUpDownLegendSwatch />
+                ) : (
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                    style={{ backgroundColor: row.color }}
+                    aria-hidden
+                  />
+                )}
+                <span className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                  {row.label}
+                </span>
+              </span>
+              <span className="shrink-0 text-[12px] font-semibold leading-4 tabular-nums text-fg">
+                {row.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    ) : (
+      <div
+        className={cn(
+          "pointer-events-none absolute z-10 min-w-[148px] px-3 py-2",
+          tooltipSurfaceClassName,
+        )}
+        style={{ left: tooltip.x, top: tooltip.y }}
+        role="status"
+      >
+        <div className="space-y-1">
+          {tooltip.lines.map((line) => (
+            <p key={line.label} className="flex items-center gap-2 text-xs font-semibold tabular-nums text-fg">
+              {line.swatchVariant === "upDown" ? (
+                <PortfolioUpDownLegendSwatch />
+              ) : line.swatchColor ? (
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: line.swatchColor }}
+                  aria-hidden
+                />
+              ) : null}
+              <span className="min-w-0">
+                {line.label}:{" "}
+                <span
+                  className={
+                    line.valueTone === "pos" ?
+                      "text-up"
+                    : line.valueTone === "neg" ?
+                      "text-down"
+                    : "text-fg"
+                  }
+                >
+                  {line.valueLabel}
+                </span>
+              </span>
+            </p>
+          ))}
+        </div>
+      </div>
+    )
+  ) : null;
+
+  const yAxisColumn =
+    isGoalPlotLayout && !showGoalYAxisColumn
+      ? null
+      : (
+    <div
+      className={cn(
+        "pointer-events-none absolute inset-y-0 right-0 z-[9] text-right font-['Inter'] text-[11px] tabular-nums leading-none text-fg-muted sm:text-[12px]",
+        FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
+      )}
+      style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
+      aria-hidden
+    >
+      <div className={cn("pointer-events-none absolute inset-x-0", OVERVIEW_CHART_PLOT_BACKDROP_INSET_CLASS)}>
+        {yAxisLabels.map((lab) => (
+          <span
+            key={lab.key}
+            className={cn(
+              "absolute right-0 block -translate-y-1/2 whitespace-nowrap rounded-sm px-0.5 py-px",
+              CHART_PLOT_BACKGROUND_LABEL_CLASS,
+            )}
+            style={{ top: `${lab.topPct}%` }}
+          >
+            {lab.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+
+  const periodAxisLabelNodes =
+    hoverAxisLabel ?
+      (
+        <span
+          className={cn(
+            "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-fg sm:text-[12px]",
+            periodAxisLabelMaxWidthClass("center"),
+            periodAxisLabelTransformClass("center"),
+          )}
+          style={periodAxisLabelLayoutStyle(hoverAxisLabel.leftPx, "center", axisPlotWidthPx)}
+        >
+          {hoverAxisLabel.label}
+        </span>
+      )
+    : periodAxisLabels.map((lab, i) => {
+        const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
+        return (
+          <span
+            key={lab.key}
+            className={cn(
+              "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] text-[11px] tabular-nums leading-none text-fg-muted sm:text-[12px]",
+              isGoalPlotLayout ? "font-medium" : "font-normal",
+              periodAxisLabelMaxWidthClass(anchor),
+              periodAxisLabelTransformClass(anchor),
+            )}
+            style={periodAxisLabelLayoutStyle(lab.leftPx, anchor, axisPlotWidthPx)}
+          >
+            {lab.label}
+          </span>
+        );
+      });
 
   return (
     <div
@@ -1952,147 +3666,21 @@ export function PortfolioValueHistoryChartPane({
         const c = chartRef.current;
         const s = seriesRef.current;
         if (c && s && s.data().length > 0) {
-          const plotWidthPx = Math.max(0, wrapRef.current?.clientWidth ?? 0);
-          setPeriodAxisLabelsGuarded(
-            syncPortfolioPeriodAxisLabels(
-              c,
-              chartPointsRef.current,
-              chartRangeRef.current,
-              plotWidthPx,
-            ),
-            plotWidthPx,
-          );
+          schedulePeriodAxisLabels(chartRangeRef.current);
         }
       }}
     >
       <div className="relative min-h-0 min-w-0 flex-1">
-        <div className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)} aria-hidden>
-          <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
-        </div>
-        <div ref={wrapRef} className="relative z-10 h-full w-full min-w-0" />
-        <div
-          className={cn(
-            "pointer-events-none absolute inset-y-0 right-0 z-[9] text-right font-['Inter'] text-[11px] tabular-nums leading-none text-fg-muted sm:text-[12px]",
-            FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
-          )}
-          style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
-          aria-hidden
-        >
-          <div className={cn("pointer-events-none absolute inset-x-0", OVERVIEW_CHART_PLOT_BACKDROP_INSET_CLASS)}>
-            {yAxisLabels.map((lab) => (
-              <span
-                key={lab.key}
-                className={cn(
-                  "absolute right-0 block -translate-y-1/2 rounded-sm px-0.5 py-px",
-                  CHART_PLOT_BACKGROUND_LABEL_CLASS,
-                )}
-                style={{ top: `${lab.topPct}%` }}
-              >
-                {lab.label}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div ref={tradeOverlayRef} className="pointer-events-none absolute inset-0 z-[15]" />
-        {tooltip ? (
-          <div
-            className={cn(
-              "pointer-events-none absolute z-10 min-w-[148px] px-3 py-2",
-              tooltipSurfaceClassName,
-            )}
-            style={{ left: tooltip.x, top: tooltip.y }}
-            role="status"
-          >
-            <p className="text-xs font-semibold tabular-nums text-fg">
-              {metricTitle}:{" "}
-              <span
-                className={
-                  tooltip.valueTone === "pos" ?
-                    "text-up"
-                  : tooltip.valueTone === "neg" ?
-                    "text-down"
-                  : "text-fg"
-                }
-              >
-                {tooltip.valueLabel}
-              </span>
-            </p>
-          </div>
-        ) : null}
-        {tradeTooltipMounted && tradeTooltip
-          ? createPortal(
-              <div
-                className={cn(
-                  "pointer-events-auto fixed z-[200] max-h-[min(280px,50vh)] w-[min(calc(100vw-2rem),280px)] overflow-y-auto overscroll-contain px-3 py-2",
-                  tooltipSurfaceClassName,
-                )}
-                style={{ left: tradeTooltip.left, top: tradeTooltip.top }}
-                role="tooltip"
-                onMouseEnter={cancelTradeTooltipLeave}
-                onMouseLeave={scheduleTradeTooltipLeave}
-              >
-                <p className="text-[11px] leading-4 text-fg-muted">{tradeTooltip.dateLabel}</p>                <div className="mt-1.5 space-y-0.5 text-xs leading-snug text-fg">
-                  {tradeTooltip.lines.map((line, i) => {
-                    const isTxDate =
-                      /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}$/.test(line) &&
-                      i > 0;
-                    return (
-                      <p
-                        key={i}
-                        className={cn(
-                          "tabular-nums",
-                          line.startsWith("Cash before:") || line.startsWith("Total cash:") ?
-                            "font-semibold text-fg"
-                          : isTxDate ?
-                            "pt-1.5 text-[11px] font-medium text-fg-muted"
-                          : "font-medium",
-                        )}
-                      >
-                        {line}
-                      </p>
-                    );
-                  })}
-                </div>
-              </div>,
-              document.body,
-            )
-          : null}
+        {plotSurface}
+        {loading ? null : chartHoverTooltip}
+        {loading ? null : yAxisColumn}
       </div>
       <div
         className="relative w-full shrink-0 overflow-visible"
         style={{ height: chartLayout.axisRowPx }}
-        aria-hidden={periodAxisLabels.length === 0 && !hoverAxisLabel}
+        aria-hidden={loading || (periodAxisLabels.length === 0 && !hoverAxisLabel)}
       >
-        {hoverAxisLabel ?
-          (
-          <span
-            className={cn(
-              "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-fg sm:text-[12px]",
-              periodAxisLabelMaxWidthClass("center"),
-              periodAxisLabelTransformClass("center"),
-            )}
-            style={periodAxisLabelLayoutStyle(hoverAxisLabel.leftPx, "center", axisPlotWidthPx)}
-          >
-            {hoverAxisLabel.label}
-          </span>
-          )
-        : periodAxisLabels.map((lab, i) => {
-            const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
-            return (
-            <span
-              key={lab.key}
-              className={cn(
-                "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
-                periodAxisLabelMaxWidthClass(anchor),
-                periodAxisLabelTransformClass(anchor),
-              )}
-              style={periodAxisLabelLayoutStyle(lab.leftPx, anchor, axisPlotWidthPx)}
-            >
-              {lab.label}
-            </span>
-            );
-          })
-        }
+        {loading ? null : periodAxisLabelNodes}
       </div>
     </div>
   );
@@ -2107,11 +3695,12 @@ function PortfolioOverviewChartInner({
   benchmarkInvestedUsd?: number | null;
 }) {
   const metric: PortfolioChartMetricMode = "value";
-  const [range, setRange] = useState<PortfolioChartRange>("ytd");
+  const [range, setRange] = useState<PortfolioChartRange>("1y");
   const [points, setPoints] = useState<PortfolioValueHistoryPoint[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => transactions.length > 0);
   const [error, setError] = useState<string | null>(null);
   const loadGenRef = useRef(0);
+  const paintedPointsRef = useRef(0);
   const [showTrades, setShowTrades] = useState(false);
   const [compareSpy, setCompareSpy] = useState(false);
   const [compareNasdaq, setCompareNasdaq] = useState(false);
@@ -2130,23 +3719,61 @@ function PortfolioOverviewChartInner({
     nasdaqCompareDisabled: false,
   } as const;
 
+  const applyRange = useCallback(
+    (next: PortfolioChartRange) => {
+      setRange(next);
+      if (!transactions.length) {
+        paintedPointsRef.current = 0;
+        setPoints([]);
+        setLoading(false);
+        return;
+      }
+      const cached = peekPortfolioValueHistoryCached(next, transactions);
+      if (cached) {
+        paintedPointsRef.current = cached.length;
+        setPoints(cached);
+        setLoading(false);
+      } else {
+        paintedPointsRef.current = 0;
+        setPoints([]);
+        setSpyPoints(null);
+        setNasdaqPoints(null);
+        setLoading(true);
+      }
+      setError(null);
+    },
+    [transactions],
+  );
+
   const load = useCallback(async () => {
     if (!canLoad) {
+      paintedPointsRef.current = 0;
       setPoints([]);
+      setLoading(false);
       return;
     }
-    setLoading(true);
-    setError(null);
     const gen = ++loadGenRef.current;
+    const cached = peekPortfolioValueHistoryCached(range, transactions);
+    if (cached) {
+      paintedPointsRef.current = cached.length;
+      setPoints(cached);
+      setLoading(false);
+    } else {
+      paintedPointsRef.current = 0;
+      setPoints([]);
+      setSpyPoints(null);
+      setNasdaqPoints(null);
+      setLoading(true);
+    }
+    setError(null);
     try {
-      let next = await fetchPortfolioValueHistoryCached(range, transactions);
-      // One retry handled inside fetchPortfolioValueHistoryCached.
+      const next = await fetchPortfolioValueHistoryCached(range, transactions);
       if (gen !== loadGenRef.current) return;
+      paintedPointsRef.current = next.length;
       setPoints(next);
     } catch {
       if (gen !== loadGenRef.current) return;
       setError("Could not load history");
-      // Keep prior points on failure — avoid wiping a good chart on transient errors.
     } finally {
       if (gen === loadGenRef.current) setLoading(false);
     }
@@ -2161,13 +3788,13 @@ function PortfolioOverviewChartInner({
     const mq = window.matchMedia("(max-width: 639px)");
     const syncMobileRange = () => {
       if (mq.matches && range === "ytd") {
-        setRange("6m");
+        applyRange("6m");
       }
     };
     syncMobileRange();
     mq.addEventListener("change", syncMobileRange);
     return () => mq.removeEventListener("change", syncMobileRange);
-  }, [range]);
+  }, [range, applyRange]);
 
   const fetchSpy = compareSpy && canLoad;
   const fetchNasdaq = compareNasdaq && canLoad;
@@ -2224,7 +3851,7 @@ function PortfolioOverviewChartInner({
               <SegmentedControl
                 options={PORTFOLIO_CHART_RANGE_LABELS}
                 value={range}
-                onChange={setRange}
+                onChange={applyRange}
                 size="sm"
                 aria-label="Chart time range"
                 className="min-w-min flex-nowrap"
@@ -2247,15 +3874,25 @@ function PortfolioOverviewChartInner({
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
-        ) : loading ? (
-          <div className="relative h-[240px] sm:h-[320px]">
-            <AssetChartSkeleton fill />
-          </div>
+        ) : loading || points.length > 0 ? (
+          <PortfolioValueHistoryChartPane
+            metric={metric}
+            range={range}
+            points={points}
+            loading={loading}
+            transactions={transactions}
+            showTrades={showTrades}
+            compareSpy={compareSpy}
+            compareNasdaq={compareNasdaq}
+            spyPricePoints={spyPoints}
+            nasdaqPricePoints={nasdaqPoints}
+            benchmarkInvestedUsd={benchmarkInvestedUsd}
+          />
         ) : error ? (
           <div className="flex h-[240px] flex-col items-center justify-center px-6 sm:h-[320px]">
             <p className="text-sm text-fg-muted">{error}</p>
           </div>
-        ) : points.length === 0 ? (
+        ) : (
           <Empty variant="plain" className="h-[240px] justify-center py-0 sm:h-[320px]">
             <EmptyHeader>
               <EmptyMedia variant="icon">
@@ -2267,19 +3904,6 @@ function PortfolioOverviewChartInner({
               </EmptyDescription>
             </EmptyHeader>
           </Empty>
-        ) : (
-          <PortfolioValueHistoryChartPane
-            metric={metric}
-            range={range}
-            points={points}
-            transactions={transactions}
-            showTrades={showTrades}
-            compareSpy={compareSpy}
-            compareNasdaq={compareNasdaq}
-            spyPricePoints={spyPoints}
-            nasdaqPricePoints={nasdaqPoints}
-            benchmarkInvestedUsd={benchmarkInvestedUsd}
-          />
         )}
       </div>
 
@@ -2288,7 +3912,7 @@ function PortfolioOverviewChartInner({
         <SegmentedControl
           options={PORTFOLIO_CHART_MOBILE_RANGE_LABELS}
           value={range === "ytd" ? "6m" : range}
-          onChange={setRange}
+          onChange={applyRange}
           size="sm"
           fullWidth
           aria-label="Chart time range"

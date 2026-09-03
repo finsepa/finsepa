@@ -1,4 +1,4 @@
-export const PERIOD_RETURN_GRANULARITIES = ["weekly", "monthly", "quarterly", "annually"] as const;
+export const PERIOD_RETURN_GRANULARITIES = ["monthly", "quarterly", "annually"] as const;
 export type PeriodReturnGranularity = (typeof PERIOD_RETURN_GRANULARITIES)[number];
 
 export type PortfolioPeriodReturnBar = {

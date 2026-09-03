@@ -10,7 +10,6 @@ import type { ChartDisplayState, HoldingsTradeTooltipItem } from "@/components/c
 import { PriceChart } from "@/components/chart/PriceChart";
 import { ChartControls } from "@/components/stock/chart-controls";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
-import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
 import {
   DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_DATA_ROW_CLASS,
@@ -406,24 +405,7 @@ export function AssetPortfolioHoldingsTab({
       </section>
 
       <div>
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-[18px] font-semibold leading-7 tracking-tight text-fg">Transactions</h2>
-          <button
-            type="button"
-            aria-label={`Add transaction for ${holding.name}`}
-            disabled={selectedPortfolioReadOnly}
-            onClick={() => openNewTransactionWithPreset({ symbol: route, name: holding.name })}
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-[10px] text-fg",
-              whiteSurfaceButtonChromeClass,
-              "transition-all duration-100 hover:bg-surface-muted",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
-              "disabled:pointer-events-none disabled:opacity-40",
-            )}
-          >
-            <Plus className="h-5 w-5" strokeWidth={2} aria-hidden />
-          </button>
-        </div>
+        <h2 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-fg">Transactions</h2>
         {tradeRows.length === 0 ? (
           <p className="text-[14px] leading-6 text-fg-muted">No trades recorded for this symbol in this portfolio.</p>
         ) : (

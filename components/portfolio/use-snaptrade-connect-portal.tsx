@@ -99,7 +99,7 @@ function SnapTradePortalModal({
         title="Connect brokerage"
         onClose={onDismiss}
         maxWidthClass="w-full max-w-[min(450px,calc(100vw-2rem))]"
-        maxHeightClass="h-[min(640px,92dvh)] max-h-[min(640px,92dvh)]"
+        maxHeightClass="h-[min(920px,92dvh)] max-h-[min(920px,92dvh)]"
         dialogClassName="min-h-0 flex-1"
         cardClassName="min-h-0 flex-1"
         bodyScroll={false}

@@ -80,11 +80,11 @@ const TOOLTIP_W = 200;
 const TOOLTIP_H = 56;
 const CHART_TZ = "America/New_York";
 
-/** User asked for 7M — treat as 7D to match portfolio range control. */
-type PerfChartRange = "7d" | "1m" | "6m" | "ytd" | "1y" | "5y";
+/** User asked for 7M — treat as 5D to match portfolio / asset range control. */
+type PerfChartRange = "5d" | "1m" | "6m" | "ytd" | "1y" | "5y";
 
 const RANGE_OPTIONS: readonly SegmentedControlOption<PerfChartRange>[] = [
-  { value: "7d", label: "7D" },
+  { value: "5d", label: "5D" },
   { value: "1m", label: "1M" },
   { value: "6m", label: "6M" },
   { value: "ytd", label: "YTD" },
@@ -93,7 +93,7 @@ const RANGE_OPTIONS: readonly SegmentedControlOption<PerfChartRange>[] = [
 ];
 
 const RANGE_LABEL: Record<PerfChartRange, string> = {
-  "7d": "7D",
+  "5d": "5D",
   "1m": "1M",
   "6m": "6M",
   ytd: "YTD",
@@ -103,7 +103,7 @@ const RANGE_LABEL: Record<PerfChartRange, string> = {
 
 function rangeToStockRange(range: PerfChartRange): StockChartRange {
   switch (range) {
-    case "7d":
+    case "5d":
       return "5D";
     case "1m":
       return "1M";
@@ -122,8 +122,8 @@ function rangeStartYmd(range: PerfChartRange, toYmd: string): string {
   const [y, m, d] = toYmd.split("-").map(Number);
   const end = new Date(Date.UTC(y!, m! - 1, d!));
   switch (range) {
-    case "7d":
-      end.setUTCDate(end.getUTCDate() - 7);
+    case "5d":
+      end.setUTCDate(end.getUTCDate() - 5);
       break;
     case "1m":
       end.setUTCDate(end.getUTCDate() - 31);

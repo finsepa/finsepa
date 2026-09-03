@@ -1,9 +1,10 @@
 import type {
   PortfolioEntry,
+  PortfolioGoal,
   PortfolioHolding,
   PortfolioTransaction,
 } from "@/components/portfolio/portfolio-types";
-import { normalizePortfolioEntry } from "@/components/portfolio/portfolio-types";
+import { isPortfolioGoal, normalizePortfolioEntry } from "@/components/portfolio/portfolio-types";
 
 /** Legacy key (pre–per-user storage). Migrated once into {@link portfolioStorageKeyForUser}. */
 export const PORTFOLIO_STORAGE_KEY = "finsepa.portfolio.v1" as const;
@@ -64,6 +65,7 @@ export type PersistedPortfolioState = {
   selectedPortfolioId: string | null;
   holdingsByPortfolioId: Record<string, PortfolioHolding[]>;
   transactionsByPortfolioId: Record<string, PortfolioTransaction[]>;
+  goalByPortfolioId?: Record<string, PortfolioGoal | null>;
 };
 
 function isRecord(x: unknown): x is Record<string, unknown> {
@@ -134,6 +136,7 @@ function isPortfolioTransaction(x: unknown): x is PortfolioTransaction {
 
 type RawPersistedState = Omit<PersistedPortfolioState, "portfolios"> & {
   portfolios: Array<{ id: string; name: string; privacy?: unknown }>;
+  goalByPortfolioId?: Record<string, unknown>;
 };
 
 function normalizeState(state: RawPersistedState): PersistedPortfolioState {
@@ -167,6 +170,19 @@ function normalizeState(state: RawPersistedState): PersistedPortfolioState {
     }
   }
 
+  const goals: Record<string, PortfolioGoal | null> = {};
+  const hasGoalField = isRecord(state.goalByPortfolioId);
+  if (hasGoalField) {
+    for (const id of ids) {
+      const raw = state.goalByPortfolioId![id];
+      if (raw === null) {
+        goals[id] = null;
+      } else if (isPortfolioGoal(raw)) {
+        goals[id] = raw;
+      }
+    }
+  }
+
   return {
     v: CURRENT_VERSION,
     savedAt: typeof state.savedAt === "number" && Number.isFinite(state.savedAt) ? state.savedAt : undefined,
@@ -174,6 +190,26 @@ function normalizeState(state: RawPersistedState): PersistedPortfolioState {
     selectedPortfolioId: selected,
     holdingsByPortfolioId: holdings,
     transactionsByPortfolioId: transactions,
+    ...(hasGoalField ? { goalByPortfolioId: goals } : {}),
+  };
+}
+
+/** Keep local goals when a cloud snapshot predates goal persistence. */
+export function mergePersistedPortfolioGoals(
+  local: PersistedPortfolioState | null | undefined,
+  remote: PersistedPortfolioState,
+): PersistedPortfolioState {
+  const localGoals = local?.goalByPortfolioId;
+  const remoteGoals = remote.goalByPortfolioId;
+  if (localGoals == null || remoteGoals == null) {
+    return {
+      ...remote,
+      ...(localGoals != null && remoteGoals == null ? { goalByPortfolioId: localGoals } : {}),
+    };
+  }
+  return {
+    ...remote,
+    goalByPortfolioId: { ...localGoals, ...remoteGoals },
   };
 }
 
@@ -216,6 +252,7 @@ function parsePersistedPortfolioRaw(raw: string): PersistedPortfolioState | null
       selectedPortfolioId: parsed.selectedPortfolioId,
       holdingsByPortfolioId,
       transactionsByPortfolioId,
+      goalByPortfolioId: isRecord(parsed.goalByPortfolioId) ? parsed.goalByPortfolioId : undefined,
     });
   } catch {
     return null;

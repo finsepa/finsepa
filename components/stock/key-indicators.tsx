@@ -9,6 +9,7 @@ import {
 import { KeyIndicatorsSkeleton } from "@/components/stock/key-indicators-skeleton";
 import { stockKeyIndicatorsClientEnabled } from "@/lib/features/key-indicators";
 import { ArrowCircleBrokenDownRight, ArrowCircleBrokenUpRight, CalendarDays } from "@/lib/icons";
+import { STOCK_DISPLAY_TZ } from "@/lib/market/chart-timestamp-format";
 import type {
   StockKeyIndicator,
   StockKeyIndicatorsResponse,
@@ -21,12 +22,23 @@ function formatAnalyzedAt(iso: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return null;
-  return new Intl.DateTimeFormat("en-US", {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: STOCK_DISPLAY_TZ,
     hour: "numeric",
     minute: "2-digit",
     month: "short",
     day: "numeric",
-  }).format(d);
+    hour12: true,
+  }).formatToParts(d);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  const month = get("month");
+  const day = get("day");
+  const hour = get("hour");
+  const minute = get("minute");
+  const dayPeriod = get("dayPeriod");
+  if (!month || !day || !hour || !minute || !dayPeriod) return null;
+  return `${month} ${day}, ${hour}:${minute} ${dayPeriod}`;
 }
 
 function isProIndicator(indicator: StockKeyIndicator): boolean {

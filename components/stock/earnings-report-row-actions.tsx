@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FileSearch, Presentation } from "@/lib/icons";
 
 import { EarningsPdfPreviewModal } from "@/components/stock/earnings-pdf-preview-modal";
+import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { getCuratedIrEarningsRowUrls } from "@/lib/market/earnings-ir-curated-lookup";
 import {
   earningsDocumentPreviewKind,
@@ -50,21 +51,25 @@ function ActionButton({
   children: React.ReactNode;
 }) {
   return (
-    <button type="button" onClick={onClick} className={iconButtonClass} aria-label={label} title={label}>
-      {children}
-    </button>
+    <TopbarDelayedTooltip label={label} className="shrink-0">
+      <button type="button" onClick={onClick} className={iconButtonClass} aria-label={label}>
+        {children}
+      </button>
+    </TopbarDelayedTooltip>
   );
 }
 
 function ActionDisabled({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <span
-      className={cn(iconButtonClass, "pointer-events-none cursor-not-allowed opacity-45")}
-      aria-label={label}
-      title={label}
-    >
-      {children}
-    </span>
+    <TopbarDelayedTooltip label={label} multiline className="shrink-0">
+      <span
+        className={cn(iconButtonClass, "cursor-not-allowed opacity-45")}
+        aria-label={label}
+        aria-disabled
+      >
+        {children}
+      </span>
+    </TopbarDelayedTooltip>
   );
 }
 

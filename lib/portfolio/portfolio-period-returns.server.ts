@@ -3,11 +3,9 @@ import "server-only";
 import {
   eachMonthOfInterval,
   eachQuarterOfInterval,
-  eachWeekOfInterval,
   eachYearOfInterval,
   endOfMonth,
   endOfQuarter,
-  endOfWeek,
   endOfYear,
   format,
   max as maxDate,
@@ -15,7 +13,6 @@ import {
   parseISO,
   startOfMonth,
   startOfQuarter,
-  startOfWeek,
   startOfYear,
   subDays,
   subYears,
@@ -26,6 +23,7 @@ import type {
   PeriodReturnGranularity,
   PortfolioPeriodReturnBar,
 } from "@/lib/portfolio/portfolio-period-returns-types";
+import { PERIOD_RETURN_HISTORY_YEARS } from "@/lib/portfolio/portfolio-period-returns-years";
 import { parseBodyTransactions } from "@/lib/portfolio/portfolio-value-history.server";
 import {
   comparePortfolioToBenchmark,
@@ -41,7 +39,6 @@ import { portfolioNetWorthOnDate } from "@/lib/portfolio/returns/portfolio-nav.s
 const MAX_TX = 4000;
 
 const MAX_BARS: Record<PeriodReturnGranularity, number> = {
-  weekly: 52,
   monthly: 24,
   quarterly: 16,
   annually: 12,
@@ -120,23 +117,9 @@ function buildBuckets(granularity: PeriodReturnGranularity, firstTx: Date, now: 
         periodEnd: ymd(endOfMonth(d)),
       }));
     }
-    case "weekly": {
-      const from = startOfWeek(startCap, { weekStartsOn: 1 });
-      const to = endOfWeek(endCap, { weekStartsOn: 1 });
-      const ws = eachWeekOfInterval({ start: from, end: to }, { weekStartsOn: 1 });
-      return ws.map((d) => {
-        const wkStart = startOfWeek(d, { weekStartsOn: 1 });
-        const wkEnd = endOfWeek(d, { weekStartsOn: 1 });
-        return {
-          label: `${format(wkStart, "MMM d")} – ${format(wkEnd, "MMM d, yyyy")}`,
-          periodStart: ymd(wkStart),
-          periodEnd: ymd(wkEnd),
-        };
-      });
-    }
     default:
       return [];
-  }
+    }
 }
 
 function sliceRecent<T>(arr: T[], max: number): T[] {
@@ -148,6 +131,7 @@ export async function computePortfolioPeriodReturns(
   transactions: PortfolioTransaction[],
   granularity: PeriodReturnGranularity,
   _benchmarkTicker: string,
+  calendarYear?: number | null,
 ): Promise<PortfolioPeriodReturnBar[]> {
   if (transactions.length === 0) return [];
 
@@ -158,12 +142,24 @@ export async function computePortfolioPeriodReturns(
   if (!firstDt) return [];
 
   const now = new Date();
-  const capFrom = subYears(now, 12);
+  const capFrom = subYears(now, PERIOD_RETURN_HISTORY_YEARS);
   const rangeStart = maxDate([firstDt, capFrom]);
   const toYmd = ymd(now);
 
-  let rawBuckets = buildBuckets(granularity, rangeStart, now);
-  rawBuckets = sliceRecent(rawBuckets, MAX_BARS[granularity]);
+  let rawBuckets: RawBucket[];
+  if (calendarYear != null && granularity !== "annually") {
+    const yearStart = startOfYear(new Date(calendarYear, 0, 1));
+    const yearEnd = minDate([endOfYear(new Date(calendarYear, 11, 31)), now]);
+    const from = maxDate([rangeStart, yearStart]);
+    if (from > yearEnd) return [];
+    const yearPrefix = `${calendarYear}-`;
+    rawBuckets = buildBuckets(granularity, from, yearEnd).filter((b) =>
+      b.periodStart.startsWith(yearPrefix),
+    );
+  } else {
+    rawBuckets = sliceRecent(buildBuckets(granularity, rangeStart, now), MAX_BARS[granularity]);
+  }
+  if (rawBuckets.length === 0) return [];
 
   /**
    * Annual/quarter/… buckets use d0 = last session on/before day-before periodStart
@@ -249,16 +245,24 @@ export async function computePortfolioPeriodReturns(
   return out;
 }
 
+function parseOptionalCalendarYear(raw: unknown): number | null {
+  if (raw == null || raw === "") return null;
+  const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+  if (!Number.isInteger(n) || n < 1990 || n > 2100) return null;
+  return n;
+}
+
 export function parsePortfolioPeriodReturnsBody(body: unknown): {
   transactions: PortfolioTransaction[];
   granularity: PeriodReturnGranularity;
   benchmark: string;
+  year: number | null;
 } | null {
   if (!body || typeof body !== "object") return null;
   const o = body as Record<string, unknown>;
   const g = o.granularity;
   const granularity =
-    g === "weekly" || g === "monthly" || g === "quarterly" || g === "annually" ? g : null;
+    g === "monthly" || g === "quarterly" || g === "annually" ? g : null;
   if (!granularity) return null;
 
   const rawTx = o.transactions;
@@ -268,6 +272,7 @@ export function parsePortfolioPeriodReturnsBody(body: unknown): {
 
   const b = o.benchmark;
   const benchmark = typeof b === "string" && b.trim() ? b.trim().toUpperCase() : "SPY";
+  const year = parseOptionalCalendarYear(o.year);
 
-  return { transactions, granularity, benchmark };
+  return { transactions, granularity, benchmark, year };
 }

@@ -11,10 +11,10 @@ import {
 /** Chart range id → Dietz period key used by `/api/portfolio/dietz-returns`. */
 const DIETZ_KEY_BY_RANGE: Record<
   PortfolioChartRange,
-  "d1" | "d7" | "m1" | "m6" | "ytd" | "y1" | "y5" | "all"
+  "d1" | "d5" | "d7" | "m1" | "m6" | "ytd" | "y1" | "y5" | "all"
 > = {
   "1d": "d1",
-  "7d": "d7",
+  "5d": "d5",
   "1m": "m1",
   "6m": "m6",
   ytd: "ytd",
@@ -25,7 +25,7 @@ const DIETZ_KEY_BY_RANGE: Record<
 
 const LABEL_BY_RANGE: Record<PortfolioChartRange, string> = {
   "1d": "1D",
-  "7d": "7D",
+  "5d": "5D",
   "1m": "1M",
   "6m": "6M",
   ytd: "YTD",
@@ -51,7 +51,7 @@ export function allocationReturnPeriodLabel(id: AllocationReturnPeriodId): strin
 
 export function allocationReturnDietzKey(
   id: AllocationReturnPeriodId,
-): "d1" | "d7" | "m1" | "m6" | "ytd" | "y1" | "y5" | "all" {
+): "d1" | "d5" | "d7" | "m1" | "m6" | "ytd" | "y1" | "y5" | "all" {
   return DIETZ_KEY_BY_RANGE[id] ?? "ytd";
 }
 
@@ -60,6 +60,7 @@ export function normalizeAllocationReturnPeriod(
   id: string | null | undefined,
 ): AllocationReturnPeriodId {
   if (id === "today") return "1d";
+  if (id === "7d") return "5d";
   if (id && (PORTFOLIO_CHART_RANGES as readonly string[]).includes(id)) {
     return id as AllocationReturnPeriodId;
   }

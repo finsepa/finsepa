@@ -5,10 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown } from "@/lib/icons";
 
 import {
+  dropdownMenuFloatingScrollbarClassName,
   dropdownMenuMobileSheetBodyClassName,
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
 import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
 import { dropdownTriggerFieldClassName } from "@/components/design-system/text-input-styles";
@@ -38,6 +40,10 @@ export function FormListboxSelect<V extends string>({
   /** Shrink-wrap trigger: label left, chevron inline with `gap-2` (8px), no absolute chevron reserve. */
   fitTrigger = false,
   menuAlign = "leading",
+  /** Portal menu to `document.body` (avoids clipping inside modals / overflow shells). */
+  portaled = false,
+  /** Trigger-only option (e.g. “Select year”) — excluded from the open menu list. */
+  placeholderOption,
 }: {
   id?: string;
   value: V;
@@ -63,16 +69,29 @@ export function FormListboxSelect<V extends string>({
   fitTrigger?: boolean;
   /** `trailing` anchors the menu to the trigger’s right edge (opens toward the left). */
   menuAlign?: "leading" | "trailing";
+  portaled?: boolean;
+  placeholderOption?: ListboxOption<V>;
 }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuPortalRef = useRef<HTMLDivElement>(null);
   const isMobileSheet = useMobileSheet();
-  const active = options.find((o) => o.value === value) ?? options[0];
+  const active =
+    options.find((o) => o.value === value) ??
+    (placeholderOption != null && value === placeholderOption.value ? placeholderOption : undefined) ??
+    options[0];
+
+  const menuOptions =
+    placeholderOption != null
+      ? options.filter((o) => o.value !== placeholderOption.value)
+      : options;
 
   useEffect(() => {
     if (!open || isMobileSheet) return;
     function onDocMouseDown(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (containerRef.current?.contains(t) || menuPortalRef.current?.contains(t)) return;
+      setOpen(false);
     }
     document.addEventListener("mousedown", onDocMouseDown);
     return () => document.removeEventListener("mousedown", onDocMouseDown);
@@ -89,7 +108,7 @@ export function FormListboxSelect<V extends string>({
 
   const optionList = (
     <>
-      {options.map((opt) => {
+      {menuOptions.map((opt) => {
         const selected = value === opt.value;
         return (
           <button
@@ -124,6 +143,27 @@ export function FormListboxSelect<V extends string>({
   );
 
   if (!active) return null;
+
+  const menuPanel = (
+    <div
+      className={cn(
+        dropdownMenuPanelClassName(),
+        "max-h-[min(400px,calc(100vh-12rem))] overflow-y-auto",
+        dropdownMenuFloatingScrollbarClassName,
+        !portaled &&
+          cn(
+            "absolute top-[calc(100%+4px)] z-[120] min-w-full w-max max-w-[min(24rem,calc(100vw-2rem))]",
+            menuAlign === "trailing" ? "right-0" : "left-0",
+          ),
+        portaled && "w-full min-w-0",
+        menuClassName,
+      )}
+      role="listbox"
+      aria-label={ariaLabel}
+    >
+      {optionList}
+    </div>
+  );
 
   const triggerBaseClass = cn(
     "relative flex cursor-pointer items-center rounded-[10px] text-left text-sm font-normal text-fg transition-colors focus-visible:ring-2 focus-visible:ring-fg/10",
@@ -207,10 +247,14 @@ export function FormListboxSelect<V extends string>({
           aria-hidden
         />
       ) : null}
-      {open && isMobileSheet ? (
+      {open && isMobileSheet && !portaled ? (
         <MobileBottomSheet open={open} onClose={() => setOpen(false)}>
           <div
-            className={dropdownMenuMobileSheetBodyClassName}
+            className={cn(
+              dropdownMenuMobileSheetBodyClassName,
+              "max-h-[min(400px,calc(100vh-12rem))] overflow-y-auto",
+              dropdownMenuFloatingScrollbarClassName,
+            )}
             role="listbox"
             aria-label={ariaLabel}
           >
@@ -218,20 +262,20 @@ export function FormListboxSelect<V extends string>({
           </div>
         </MobileBottomSheet>
       ) : null}
-      {open && !isMobileSheet ? (
-        <div
-          className={cn(
-            dropdownMenuPanelClassName(),
-            /** At least trigger width; grow with option labels (narrow triggers used to clip flags + text). */
-            "absolute top-[calc(100%+4px)] z-[120] min-w-full w-max max-w-[min(24rem,calc(100vw-2rem))]",
-            menuAlign === "trailing" ? "right-0" : "left-0",
-            menuClassName,
-          )}
-          role="listbox"
-          aria-label={ariaLabel}
+      {open && !isMobileSheet && !portaled ? menuPanel : null}
+      {open && portaled ? (
+        <TopbarDropdownPortal
+          open={open}
+          anchorRef={containerRef}
+          ref={menuPortalRef}
+          align={menuAlign}
+          matchAnchorWidth
+          placement="auto"
+          sheetTitle={ariaLabel}
+          onRequestClose={() => setOpen(false)}
         >
-          {optionList}
-        </div>
+          {menuPanel}
+        </TopbarDropdownPortal>
       ) : null}
     </div>
   );

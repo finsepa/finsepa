@@ -279,3 +279,50 @@ export type PortfolioTransaction = {
 export function newTransactionRowId(): string {
   return newPortfolioId();
 }
+
+export type PortfolioGoalKind = "value" | "passive_income";
+
+/** Per-portfolio savings / growth target (Goal tab). */
+export type PortfolioGoal = {
+  kind: PortfolioGoalKind;
+  targetUsd: number;
+  achieveByYear: number;
+  monthlyContributionUsd: number;
+  currency?: "USD";
+  /** When true, {@link portfolioAnnualReturnPct} overrides the default 20% portfolio return. */
+  adjustReturns?: boolean;
+  /** Custom annual return (%), e.g. 20 for 20%. Used when {@link adjustReturns} is true. */
+  portfolioAnnualReturnPct?: number;
+  /** When true, reinvest estimated dividend income into the portfolio projection. */
+  reinvestDividends?: boolean;
+  /** Passive-income goals: portfolio dividend yield (%). Defaults to current holdings yield. */
+  dividendYieldPct?: number;
+  /** Passive-income goals: assumed annual dividend growth (%). Defaults to 5. */
+  dividendGrowthPct?: number;
+};
+
+export function isPortfolioGoal(x: unknown): x is PortfolioGoal {
+  if (x === null || typeof x !== "object") return false;
+  const g = x as PortfolioGoal;
+  return (
+    (g.kind === "value" || g.kind === "passive_income") &&
+    typeof g.targetUsd === "number" &&
+    Number.isFinite(g.targetUsd) &&
+    g.targetUsd > 0 &&
+    typeof g.achieveByYear === "number" &&
+    Number.isFinite(g.achieveByYear) &&
+    typeof g.monthlyContributionUsd === "number" &&
+    Number.isFinite(g.monthlyContributionUsd) &&
+    g.monthlyContributionUsd >= 0 &&
+    (g.currency === undefined || g.currency === "USD") &&
+    (g.adjustReturns === undefined || typeof g.adjustReturns === "boolean") &&
+    (g.reinvestDividends === undefined || typeof g.reinvestDividends === "boolean") &&
+    (g.portfolioAnnualReturnPct === undefined ||
+      (typeof g.portfolioAnnualReturnPct === "number" &&
+        Number.isFinite(g.portfolioAnnualReturnPct))) &&
+    (g.dividendYieldPct === undefined ||
+      (typeof g.dividendYieldPct === "number" && Number.isFinite(g.dividendYieldPct))) &&
+    (g.dividendGrowthPct === undefined ||
+      (typeof g.dividendGrowthPct === "number" && Number.isFinite(g.dividendGrowthPct)))
+  );
+}

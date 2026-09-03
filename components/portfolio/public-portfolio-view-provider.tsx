@@ -43,6 +43,8 @@ export function PublicPortfolioViewProvider({
       holdingsByPortfolioId: { [pid]: holdings },
       addHolding: noop,
       transactionsByPortfolioId: { [pid]: normalizedTx },
+      goalByPortfolioId: {},
+      setPortfolioGoal: noop,
       addTransaction: noop,
       openEditPortfolio: noop,
       openCreatePortfolio: noop,

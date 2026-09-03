@@ -14,28 +14,31 @@ export type EodhdDailyBar = {
   close: number;
 };
 
+function positiveClose(v: unknown): number | null {
+  if (typeof v === "number" && Number.isFinite(v) && v > 0) return v;
+  if (typeof v === "string" && v.trim()) {
+    const n = Number(v.replace(/,/g, ""));
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return null;
+}
+
 /** Prefer adjusted close (continuous series for charts / performance). */
 function barCloseAdjusted(row: Record<string, unknown>): number | null {
-  const adj = row.adjusted_close;
-  const cl = row.close;
-  if (typeof adj === "number" && Number.isFinite(adj) && adj > 0) return adj;
-  if (typeof cl === "number" && Number.isFinite(cl) && cl > 0) return cl;
-  return null;
+  return (
+    positiveClose(row.adjusted_close) ??
+    positiveClose(row.adj_close) ??
+    positiveClose(row.close)
+  );
 }
 
 /** Raw session close (as-traded) — for portfolio trade fills across stock splits. */
 function barCloseUnadjusted(row: Record<string, unknown>): number | null {
-  const cl = row.close;
-  if (typeof cl === "number" && Number.isFinite(cl) && cl > 0) return cl;
-  const adj = row.adjusted_close;
-  if (typeof adj === "number" && Number.isFinite(adj) && adj > 0) return adj;
-  return null;
+  return positiveClose(row.close) ?? positiveClose(row.adjusted_close) ?? positiveClose(row.adj_close);
 }
 
 function barOpen(row: Record<string, unknown>): number | null {
-  const o = row.open;
-  if (typeof o === "number" && Number.isFinite(o) && o > 0) return o;
-  return null;
+  return positiveClose(row.open);
 }
 
 export type EodhdEodCloseMode = "adjusted" | "unadjusted";

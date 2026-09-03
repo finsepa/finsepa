@@ -6,6 +6,7 @@ import type { Dispatch, SetStateAction } from "react";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import type {
   PortfolioEntry,
+  PortfolioGoal,
   PortfolioHolding,
   PortfolioPrivacy,
   PortfolioTransaction,
@@ -20,6 +21,8 @@ export type PortfolioWorkspaceContextValue = {
   holdingsByPortfolioId: Record<string, PortfolioHolding[]>;
   addHolding: (portfolioId: string, holding: PortfolioHolding) => void;
   transactionsByPortfolioId: Record<string, PortfolioTransaction[]>;
+  goalByPortfolioId: Record<string, PortfolioGoal | null>;
+  setPortfolioGoal: (portfolioId: string, goal: PortfolioGoal | null) => void;
   addTransaction: (portfolioId: string, transaction: PortfolioTransaction) => void;
   openEditPortfolio: (id: string) => void;
   openCreatePortfolio: () => void;

@@ -27,6 +27,7 @@ export async function POST(request: Request) {
       parsed.transactions,
       parsed.granularity,
       parsed.benchmark,
+      parsed.year,
     );
 
     return NextResponse.json(

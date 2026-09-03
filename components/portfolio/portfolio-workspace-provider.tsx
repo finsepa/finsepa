@@ -68,10 +68,6 @@ import {
   normalizeTransactionsProvenance,
 } from "@/lib/snaptrade/snaptrade-provenance";
 import { defaultSnaptradeUpdateFromYmd } from "@/lib/snaptrade/sync-update-from";
-import {
-  findOrphanSnaptradeConnection,
-  linkedSnaptradeAuthorizationIds,
-} from "@/lib/snaptrade/orphan-connection";
 import { PortfolioPrivacySelect, PortfolioPrivacyFieldLabel } from "@/components/portfolio/portfolio-privacy-select";
 import { PortfolioSnaptradeConnectionInfo } from "@/components/portfolio/portfolio-snaptrade-connection-info";
 import type { CompanyPick } from "@/components/charting/company-picker";
@@ -84,6 +80,7 @@ import {
   portfolioIsOfflineBrokerage,
   type ConnectBrokerageCompletePayload,
   type PortfolioEntry,
+  type PortfolioGoal,
   type PortfolioHolding,
   type PortfolioPrivacy,
   type PortfolioSnaptradeLink,
@@ -101,6 +98,7 @@ import {
   coalesceSelectedPortfolioId,
   loadLastSelectedPortfolioId,
   loadPersistedPortfolioStateForUser,
+  mergePersistedPortfolioGoals,
   parsePersistedPortfolioUnknown,
   portfolioStateHasLedgerData,
   saveLastSelectedPortfolioId,
@@ -457,6 +455,7 @@ export function PortfolioWorkspaceProvider({
   const [transactionsByPortfolioId, setTransactionsByPortfolioId] = useState<
     Record<string, PortfolioTransaction[]>
   >({});
+  const [goalByPortfolioId, setGoalByPortfolioIdState] = useState<Record<string, PortfolioGoal | null>>({});
   /** False until local + server merge has finished (avoids overwriting cloud with the default seed). */
   const [workspaceHydrated, setWorkspaceHydrated] = useState(false);
   /** True after we synchronously applied a local snapshot (fast path for repeat visits / post-login). */
@@ -635,6 +634,11 @@ export function PortfolioWorkspaceProvider({
       const ledgerFingerprint = portfolioLedgerFingerprint(saved);
       const rebuilt = rebuildHoldingsFromSaved(saved);
 
+      // Goals are independent of ledger txs — merge so older cloud rows cannot wipe them.
+      if (saved.goalByPortfolioId !== undefined) {
+        setGoalByPortfolioIdState((prev) => ({ ...prev, ...saved.goalByPortfolioId }));
+      }
+
       if (appliedLedgerFingerprintRef.current !== ledgerFingerprint) {
         appliedLedgerFingerprintRef.current = ledgerFingerprint;
 
@@ -797,9 +801,10 @@ export function PortfolioWorkspaceProvider({
               const localHasLedger = local ? portfolioStateHasLedgerData(local) : false;
 
               if (localIsNewer && remoteHasLedger && !localHasLedger) {
-                applyWorkspaceState(remote);
+                const merged = mergePersistedPortfolioGoals(local, remote);
+                applyWorkspaceState(merged);
                 savePersistedPortfolioStateForUser(userId, {
-                  ...remote,
+                  ...merged,
                   savedAt: remoteTime > 0 ? remoteTime : Date.now(),
                 });
             } else if (localIsNewer) {
@@ -821,9 +826,10 @@ export function PortfolioWorkspaceProvider({
                   });
                 }
               } else {
-                applyWorkspaceState(remote);
+                const merged = mergePersistedPortfolioGoals(local, remote);
+                applyWorkspaceState(merged);
                 savePersistedPortfolioStateForUser(userId, {
-                  ...remote,
+                  ...merged,
                   savedAt: remoteTime > 0 ? remoteTime : Date.now(),
                 });
               }
@@ -865,6 +871,10 @@ export function PortfolioWorkspaceProvider({
     };
   }, [userId, applyWorkspaceState]);
 
+  const setPortfolioGoal = useCallback((portfolioId: string, goal: PortfolioGoal | null) => {
+    setGoalByPortfolioIdState((prev) => ({ ...prev, [portfolioId]: goal }));
+  }, []);
+
   /** Immediate localStorage write so data survives fast sign-out / navigation (debounce cancel). */
   useEffect(() => {
     if (!workspaceHydrated) return;
@@ -875,6 +885,7 @@ export function PortfolioWorkspaceProvider({
       selectedPortfolioId,
       holdingsByPortfolioId,
       transactionsByPortfolioId,
+      goalByPortfolioId,
     };
     // First session (no remote/local hydrate) never called applyWorkspaceState, so the
     // fingerprint stayed null and saves were skipped — portfolios vanished on refresh.
@@ -889,6 +900,7 @@ export function PortfolioWorkspaceProvider({
     selectedPortfolioId,
     holdingsByPortfolioId,
     transactionsByPortfolioId,
+    goalByPortfolioId,
   ]);
 
   /** Debounced cloud sync (local is already up to date via effect above). */
@@ -902,6 +914,7 @@ export function PortfolioWorkspaceProvider({
         selectedPortfolioId,
         holdingsByPortfolioId,
         transactionsByPortfolioId,
+        goalByPortfolioId,
       };
       if (appliedLedgerFingerprintRef.current === null) {
         appliedLedgerFingerprintRef.current = portfolioLedgerFingerprint(snapshot);
@@ -960,6 +973,7 @@ export function PortfolioWorkspaceProvider({
     selectedPortfolioId,
     holdingsByPortfolioId,
     transactionsByPortfolioId,
+    goalByPortfolioId,
     router,
   ]);
 
@@ -2073,20 +2087,6 @@ export function PortfolioWorkspaceProvider({
     [finalizeConnectBrokerage, portfolios],
   );
 
-  const fetchOrphanSnaptradeAuthorizationId = useCallback(async (): Promise<string | null> => {
-    try {
-      const res = await fetch("/api/snaptrade/connections", { cache: "no-store" });
-      const data = (await res.json()) as {
-        connections?: Array<{ id: string; createdDate?: string | null }>;
-      };
-      const rows = Array.isArray(data.connections) ? data.connections : [];
-      const orphan = findOrphanSnaptradeConnection(rows, linkedSnaptradeAuthorizationIds(portfolios));
-      return orphan?.id?.trim() || null;
-    } catch {
-      return null;
-    }
-  }, [portfolios]);
-
   /** Empty setup: SnapTrade picker for the selected portfolio (skip name/privacy). */
   const openConnectBrokerageToSelected = useCallback(async () => {
     if (plan && !plan.canConnectBrokerage) {
@@ -2113,13 +2113,6 @@ export function PortfolioWorkspaceProvider({
     setCreatePortfolioOpen(false);
     setCreateCombinedOpen(false);
     setConnectBrokerageOpen(false);
-    if (!p.snaptrade) {
-      const orphanAuthId = await fetchOrphanSnaptradeAuthorizationId();
-      if (orphanAuthId) {
-        await syncOrphanedBrokerageToPortfolio(p.id, orphanAuthId);
-        return;
-      }
-    }
     void startReconnectPortal({
       name: p.name,
       privacy: p.privacy,
@@ -2133,8 +2126,6 @@ export function PortfolioWorkspaceProvider({
     selectedPortfolioId,
     selectedPortfolioReadOnly,
     startReconnectPortal,
-    fetchOrphanSnaptradeAuthorizationId,
-    syncOrphanedBrokerageToPortfolio,
   ]);
 
   const openNewTransaction = useCallback(() => {
@@ -2474,6 +2465,8 @@ export function PortfolioWorkspaceProvider({
       holdingsByPortfolioId: displayHoldingsByPortfolioId,
       addHolding,
       transactionsByPortfolioId: displayTransactionsByPortfolioId,
+      goalByPortfolioId,
+      setPortfolioGoal,
       addTransaction,
       openEditPortfolio,
       openCreatePortfolio,
@@ -2512,6 +2505,8 @@ export function PortfolioWorkspaceProvider({
       displayHoldingsByPortfolioId,
       addHolding,
       displayTransactionsByPortfolioId,
+      goalByPortfolioId,
+      setPortfolioGoal,
       addTransaction,
       setPortfolioTransactions,
       setPortfolioHoldings,

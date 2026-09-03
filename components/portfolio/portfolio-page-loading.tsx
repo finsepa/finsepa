@@ -1,11 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   SCREENER_TABLE_MOBILE_SURFACE_CLASS,
   SCREENER_TABLE_OUTER_BORDER_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
-import { publicPortfolioViewTabs } from "@/components/portfolio/portfolio-page-tabs";
+import { portfolioViewTabs, publicPortfolioViewTabs } from "@/components/portfolio/portfolio-page-tabs";
 import { cn } from "@/lib/utils";
 
 const METRIC_CARD_CLASS =
@@ -63,24 +64,29 @@ function PortfolioOverviewCardsSkeleton() {
 }
 
 function PortfolioPageTabsSkeleton({ publicView = false }: { publicView?: boolean }) {
-  const tabs = publicView
-    ? [...publicPortfolioViewTabs]
-    : (["Overview", "Insights", "Dividends", "Cash", "Transactions"] as const);
+  // Decorative widths/colors differ post-mount — keep SSR + first client paint identical.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+
+  const tabs = publicView ? publicPortfolioViewTabs : portfolioViewTabs;
 
   return (
     <nav
       className="-mx-1 mb-6 flex gap-4 overflow-x-auto overflow-y-hidden border-b border-stroke pb-px [-webkit-overflow-scrolling:touch] sm:mx-0 sm:gap-6 sm:overflow-visible"
       aria-hidden
     >
-      {tabs.map((label) => (
-        <div key={label} className="mb-[-1px] shrink-0 pb-2">
-          <Pulse
-            className={cn(
-              "h-4 rounded-sm",
-              label === "Overview" ? "w-16" : label === "Transactions" ? "w-24" : "w-20",
-              // Active tab stand-in — theme tokens (never light-only `neutral-300`).
-              label === "Overview" ? "bg-surface-muted" : "bg-skeleton",
-            )}
+      {tabs.map((tab, index) => (
+        <div key={tab} className="mb-[-1px] shrink-0 pb-2">
+          <div
+            aria-hidden
+            className={
+              ready ?
+                cn(
+                  "h-4 w-20 animate-pulse rounded-sm",
+                  index === 0 ? "bg-surface-muted" : "bg-skeleton",
+                )
+              : "h-4 w-20 rounded-sm bg-skeleton"
+            }
           />
         </div>
       ))}
@@ -185,7 +191,7 @@ function PortfolioPageHeaderSkeleton({
         {showPortfoliosBreadcrumb ? (
           <Pulse className="h-8 w-[min(100%,12rem)] max-w-full rounded-lg" />
         ) : (
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2.5">
             <Pulse className="h-8 w-8 shrink-0 rounded-lg bg-skeleton" />
             <Pulse className="h-8 w-[min(100%,12rem)] max-w-full rounded-lg" />
             <Pulse className="h-9 w-9 shrink-0 rounded-[10px] bg-skeleton" />

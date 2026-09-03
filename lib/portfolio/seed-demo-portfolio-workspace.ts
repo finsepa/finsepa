@@ -5,6 +5,7 @@ import {
   portfolioIsCombined,
   portfolioIsDemo,
   type PortfolioEntry,
+  type PortfolioGoal,
 } from "@/components/portfolio/portfolio-types";
 import { buildDemoPortfolioSeed } from "@/lib/portfolio/demo-portfolio-seed";
 import type { PersistedPortfolioState } from "@/lib/portfolio/portfolio-storage";
@@ -34,6 +35,20 @@ function emptyWorkspaceState(): PersistedPortfolioState {
   };
 }
 
+function defaultDemoPortfolioGoal(now = new Date()): PortfolioGoal {
+  const year = now.getFullYear();
+  return {
+    kind: "value",
+    targetUsd: 1_000_000,
+    // Matches the UX “5 Years” at 2026 -> 2031; remains 5 years from now.
+    achieveByYear: year + 5,
+    monthlyContributionUsd: 2_000,
+    reinvestDividends: true,
+    // Keep demo UX stable without running an annual-return provider path at sign-up.
+    portfolioAnnualReturnPct: 28.52,
+  };
+}
+
 function canConvertPortfolioToDemo(
   portfolio: PortfolioEntry,
   transactions: readonly unknown[],
@@ -56,15 +71,20 @@ export function seedDemoPortfolioInWorkspace(
   const state = rawState ?? emptyWorkspaceState();
   const holdingsByPortfolioId = { ...state.holdingsByPortfolioId };
   const transactionsByPortfolioId = { ...state.transactionsByPortfolioId };
+  const goalByPortfolioId = { ...(state.goalByPortfolioId ?? {}) };
 
   const existingDemo = state.portfolios.find((p) => portfolioIsDemo(p));
   if (existingDemo) {
+    if (!(existingDemo.id in goalByPortfolioId)) {
+      goalByPortfolioId[existingDemo.id] = defaultDemoPortfolioGoal();
+    }
     return {
       ok: true,
       alreadyExists: true,
       state: {
         ...state,
         selectedPortfolioId: existingDemo.id,
+        goalByPortfolioId,
         savedAt: Date.now(),
       },
       portfolioId: existingDemo.id,
@@ -82,6 +102,7 @@ export function seedDemoPortfolioInWorkspace(
     for (const id of otherDemoIds) {
       delete holdingsByPortfolioId[id];
       delete transactionsByPortfolioId[id];
+      delete goalByPortfolioId[id];
     }
 
     const portfolios = state.portfolios
@@ -90,6 +111,9 @@ export function seedDemoPortfolioInWorkspace(
 
     holdingsByPortfolioId[seed.portfolio.id] = seed.holdings;
     transactionsByPortfolioId[seed.portfolio.id] = seed.transactions;
+    if (goalByPortfolioId[seed.portfolio.id] == null) {
+      goalByPortfolioId[seed.portfolio.id] = defaultDemoPortfolioGoal();
+    }
 
     return {
       ok: true,
@@ -99,6 +123,7 @@ export function seedDemoPortfolioInWorkspace(
         selectedPortfolioId: seed.portfolio.id,
         holdingsByPortfolioId,
         transactionsByPortfolioId,
+        goalByPortfolioId,
         savedAt: Date.now(),
       },
       portfolioId: seed.portfolio.id,
@@ -112,11 +137,15 @@ export function seedDemoPortfolioInWorkspace(
   for (const id of otherDemoIds) {
     delete holdingsByPortfolioId[id];
     delete transactionsByPortfolioId[id];
+    delete goalByPortfolioId[id];
   }
 
   const portfolios = [...state.portfolios.filter((p) => !otherDemoIds.includes(p.id)), seed.portfolio];
   holdingsByPortfolioId[seed.portfolio.id] = seed.holdings;
   transactionsByPortfolioId[seed.portfolio.id] = seed.transactions;
+  if (goalByPortfolioId[seed.portfolio.id] == null) {
+    goalByPortfolioId[seed.portfolio.id] = defaultDemoPortfolioGoal();
+  }
 
   return {
     ok: true,
@@ -126,6 +155,7 @@ export function seedDemoPortfolioInWorkspace(
       selectedPortfolioId: seed.portfolio.id,
       holdingsByPortfolioId,
       transactionsByPortfolioId,
+      goalByPortfolioId,
       savedAt: Date.now(),
     },
     portfolioId: seed.portfolio.id,

@@ -1,7 +1,7 @@
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import type { PortfolioChartRange, PortfolioValueHistoryPoint } from "@/lib/portfolio/portfolio-chart-types";
 
-const INTRADAY_RANGES = new Set<PortfolioChartRange>(["1d", "7d", "1m"]);
+const INTRADAY_RANGES = new Set<PortfolioChartRange>(["1d", "5d", "1m"]);
 
 type CacheEntry = {
   at: number;
@@ -61,16 +61,34 @@ export function invalidatePortfolioValueHistoryCache(): void {
   inflight.clear();
 }
 
+/** Sync cache read — `null` means this range is not loaded yet. */
+export function peekPortfolioValueHistoryCached(
+  range: PortfolioChartRange,
+  transactions: readonly PortfolioTransaction[],
+): PortfolioValueHistoryPoint[] | null {
+  if (!transactions.length) return [];
+  const key = portfolioValueHistoryCacheKey(range, transactions);
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < cacheTtlMs(range)) return hit.points;
+  return null;
+}
+
 /**
  * Dedupes portfolio value-history POSTs across Overview + Performance for the same
  * `(range, ledger)` within a short TTL — avoids repeat intraday EODHD work.
  */
+function throwIfAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) return;
+  throw new DOMException("The operation was aborted.", "AbortError");
+}
+
 export async function fetchPortfolioValueHistoryCached(
   range: PortfolioChartRange,
   transactions: readonly PortfolioTransaction[],
   signal?: AbortSignal,
 ): Promise<PortfolioValueHistoryPoint[]> {
   if (!transactions.length) return [];
+  throwIfAborted(signal);
 
   const key = portfolioValueHistoryCacheKey(range, transactions);
   const hit = cache.get(key);
@@ -79,21 +97,28 @@ export async function fetchPortfolioValueHistoryCached(
   }
 
   const pending = inflight.get(key);
-  if (pending) return pending;
+  if (pending) {
+    const points = await pending;
+    throwIfAborted(signal);
+    return points;
+  }
 
   const p = (async () => {
-    let points = await fetchPortfolioValueHistoryPayload(range, transactions, signal);
+    // Shared in-flight must not bind to one caller's AbortSignal — Overview and
+    // Insights join the same promise; aborting one must not fail the other.
+    let points = await fetchPortfolioValueHistoryPayload(range, transactions);
     // One retry: empty history with an active ledger is usually a transient provider gap.
     if (points.length === 0 && transactions.length > 0) {
-      points = await fetchPortfolioValueHistoryPayload(range, transactions, signal);
+      points = await fetchPortfolioValueHistoryPayload(range, transactions);
     }
     cache.set(key, { at: Date.now(), points });
     return points;
-  })()
-    .finally(() => {
-      inflight.delete(key);
-    });
+  })().finally(() => {
+    inflight.delete(key);
+  });
 
   inflight.set(key, p);
-  return p;
+  const points = await p;
+  throwIfAborted(signal);
+  return points;
 }

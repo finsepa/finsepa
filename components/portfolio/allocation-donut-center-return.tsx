@@ -123,7 +123,7 @@ function PeriodTrigger({
 }
 
 /**
- * Donut hole content: period return % + period dropdown (1D / 7D / … / ALL — same as chart).
+ * Donut hole content: period return % + period dropdown (1D / 5D / … / ALL — same as chart).
  */
 export function AllocationDonutCenterReturn({
   returnPct,

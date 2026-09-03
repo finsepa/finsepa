@@ -1,4 +1,4 @@
-export const PORTFOLIO_CHART_RANGES = ["1d", "7d", "1m", "6m", "ytd", "1y", "5y", "all"] as const;
+export const PORTFOLIO_CHART_RANGES = ["1d", "5d", "1m", "6m", "ytd", "1y", "5y", "all"] as const;
 export type PortfolioChartRange = (typeof PORTFOLIO_CHART_RANGES)[number];
 
 export type PortfolioValueHistoryPoint = {

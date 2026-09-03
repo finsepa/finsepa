@@ -36,7 +36,8 @@ const PROFIT_BAR = "#22C55E";
 const LOSS_BAR = "#EF4444";
 
 const Y_LABEL_W_PX = 76;
-const VALUE_LABEL_W_PX = 52;
+/** Right column — wide enough for "+999.99%" / "+$999K" without clipping. */
+const VALUE_LABEL_W_PX = 84;
 const ROW_HEIGHT_PX = 36;
 const BAR_HEIGHT_PX = 22;
 const X_AXIS_TICK_COUNT = 6;
@@ -364,7 +365,7 @@ function HoldingsPerformanceBarChart({
               })}
             </div>
 
-            <div className="relative shrink-0" style={{ width: VALUE_LABEL_W_PX }}>
+            <div className="relative shrink-0 overflow-visible" style={{ width: VALUE_LABEL_W_PX }}>
               {rows.map((row, i) => {
                 const value = rowValue(row, metric);
                 const hasValue = value != null && Number.isFinite(value);
@@ -383,7 +384,7 @@ function HoldingsPerformanceBarChart({
                   <div
                     key={row.h.id}
                     className={cn(
-                      "relative flex items-center justify-end truncate pl-1 text-[12px] font-semibold tabular-nums leading-4",
+                      "relative flex items-center justify-end whitespace-nowrap pl-1.5 text-[12px] font-semibold tabular-nums leading-4",
                       isHovered && hoverBandClass,
                     )}
                     style={{ height: ROW_HEIGHT_PX, color: hasValue ? textColor : "#A1A1AA" }}

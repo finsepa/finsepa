@@ -4,8 +4,20 @@ import { UnderlineTabs } from "@/components/screener/market-tabs";
 import type { SecondaryTabItem } from "@/components/ui/secondary-tabs";
 import { cn } from "@/lib/utils";
 
-const tabs = ["Overview", "Insights", "Dividends", "Cash", "Transactions"] as const;
-export type PortfolioViewTab = (typeof tabs)[number];
+export const portfolioViewTabs = [
+  "Overview",
+  "Insights",
+  "Goal",
+  "Dividends",
+  "Cash",
+  "Transactions",
+] as const;
+export type PortfolioViewTab = (typeof portfolioViewTabs)[number];
+
+/** Visible tab label (internal tab id stays `Goal` for routing/state). */
+export function portfolioViewTabLabel(tab: PortfolioViewTab): string {
+  return tab === "Goal" ? "My Goal" : tab;
+}
 
 export type OverviewHoldingsSubTab = "assets" | "allocation" | "slices" | "earnings";
 
@@ -31,6 +43,10 @@ export function portfolioViewTabFromSearchParam(value: string | null): Portfolio
     case "insights":
     case "performance": // legacy deep link
       return "Insights";
+    case "my-goal":
+    case "mygoal":
+    case "goal":
+      return "Goal";
     case "metrics":
       return "Overview";
     case "dividends":
@@ -72,6 +88,8 @@ export function searchParamFromPortfolioViewTab(tab: PortfolioViewTab): string {
   switch (tab) {
     case "Insights":
       return "insights";
+    case "Goal":
+      return "goal";
     case "Dividends":
       return "dividends";
     case "Cash":
@@ -82,6 +100,27 @@ export function searchParamFromPortfolioViewTab(tab: PortfolioViewTab): string {
     default:
       return "overview";
   }
+}
+
+export function portfolioPageSearchHref(
+  tabBasePath: string,
+  tab: PortfolioViewTab,
+  holdingsSubTab: OverviewHoldingsSubTab = "assets",
+): string {
+  const q = searchParamFromPortfolioViewTab(tab);
+  if (tab === "Overview") {
+    return `${tabBasePath}?tab=${q}&view=${searchParamFromOverviewHoldingsSubTab(holdingsSubTab)}`;
+  }
+  return `${tabBasePath}?tab=${q}`;
+}
+
+/** Update `?tab=` / `?view=` without a Next.js navigation (avoids a Suspense skeleton flash). */
+export function replacePortfolioPageUrl(href: string): void {
+  if (typeof window === "undefined") return;
+  const url = new URL(href, window.location.href);
+  const next = `${url.pathname}${url.search}`;
+  if (`${window.location.pathname}${window.location.search}` === next) return;
+  window.history.replaceState(window.history.state, "", next);
 }
 
 /** Uses the same `UnderlineTabs` component as Screener primary market tabs. */
@@ -95,10 +134,10 @@ export function PortfolioPageTabs({
   /** Hides Cash (and related deep links) on `/portfolios/[id]`. */
   publicView?: boolean;
 }) {
-  const tabList = publicView ? publicPortfolioViewTabs : tabs;
+  const tabList = publicView ? publicPortfolioViewTabs : portfolioViewTabs;
   return (
     <UnderlineTabs
-      tabs={tabList}
+      tabs={tabList.map((t) => ({ value: t, label: portfolioViewTabLabel(t) }))}
       active={active}
       onChange={onChange}
       ariaLabel="Portfolio"

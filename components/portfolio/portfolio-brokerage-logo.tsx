@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GitMerge, Layers2 } from "@/lib/icons";
+import { GitMerge } from "@/lib/icons";
 
 import { FinsepaLogo } from "@/components/brand/finsepa-logo";
 import {
   portfolioIsCombined,
-  portfolioIsDemo,
   type PortfolioEntry,
   type PortfolioSnaptradeLink,
 } from "@/components/portfolio/portfolio-types";
@@ -45,7 +44,7 @@ function portfolioLogoShellClass(size: PortfolioLogoSize, className?: string) {
   return cn(portfolioListLogoShellClass, portfolioListLogoSizeClass[size], className);
 }
 
-/** Logo in portfolio picker rows — brokerage image, Finsepa tile for manual, icon for combined/demo. */
+/** Logo in portfolio picker rows — brokerage image, Finsepa tile for manual/demo, icon for combined. */
 export function PortfolioListLogo({
   portfolio,
   className,
@@ -69,14 +68,6 @@ export function PortfolioListLogo({
 
   if (portfolio.snaptrade) {
     return <PortfolioBrokerageLogo snaptrade={portfolio.snaptrade} size={size} className={className} />;
-  }
-
-  if (portfolioIsDemo(portfolio)) {
-    return (
-      <div className={shellClass} aria-hidden>
-        <Layers2 className={cn(iconClass, "text-fg-muted")} strokeWidth={2} />
-      </div>
-    );
   }
 
   return (
