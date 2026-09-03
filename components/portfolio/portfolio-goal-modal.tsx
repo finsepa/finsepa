@@ -36,7 +36,7 @@ function ModalField({
 
 function parseUsdInput(raw: string): number | null {
   const cleaned = raw.replace(/[^0-9.]/g, "");
-  if (!cleaned) return null;
+  if (!cleaned || cleaned === ".") return null;
   const n = Number(cleaned);
   return Number.isFinite(n) ? n : null;
 }
@@ -44,6 +44,35 @@ function parseUsdInput(raw: string): number | null {
 function formatUsdInput(n: number): string {
   if (!Number.isFinite(n)) return "";
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
+}
+
+function sanitizeUsdInput(raw: string): string {
+  let out = "";
+  let hasDot = false;
+  let fraction = "";
+
+  for (const ch of raw) {
+    if (ch >= "0" && ch <= "9") {
+      if (hasDot) {
+        if (fraction.length < 2) fraction += ch;
+      } else {
+        out += ch;
+      }
+    } else if (ch === "." && !hasDot) {
+      hasDot = true;
+    }
+  }
+
+  const normalizedInt = out.replace(/^0+(?=\d)/, "");
+  const formattedInt =
+    normalizedInt.length > 0 ?
+      new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Number(normalizedInt))
+    : "";
+
+  if (hasDot) {
+    return `${formattedInt || "0"}.${fraction}`;
+  }
+  return formattedInt;
 }
 
 function parsePercentInput(raw: string): number | null {
@@ -406,9 +435,10 @@ export function PortfolioGoalModal({
             type="text"
             inputMode="decimal"
             value={targetInput}
-            onChange={setTargetInput}
+            onChange={(v) => setTargetInput(sanitizeUsdInput(v))}
             placeholder={kind === "passive_income" ? "5,000" : "10,000,000"}
             clearLabel="Clear target"
+            leadingAdornment="$"
             aria-label={
               kind === "passive_income" ? "Target annual passive income (USD)" : "Target amount (USD)"
             }
@@ -439,9 +469,10 @@ export function PortfolioGoalModal({
             type="text"
             inputMode="decimal"
             value={contributionInput}
-            onChange={setContributionInput}
+            onChange={(v) => setContributionInput(sanitizeUsdInput(v))}
             placeholder="0"
             clearLabel="Clear contribution"
+            leadingAdornment="$"
             aria-label="Monthly contribution (optional)"
           />
         </ModalField>

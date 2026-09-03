@@ -134,7 +134,7 @@ function isPortfolioTransaction(x: unknown): x is PortfolioTransaction {
   );
 }
 
-type RawPersistedState = Omit<PersistedPortfolioState, "portfolios"> & {
+type RawPersistedState = Omit<PersistedPortfolioState, "portfolios" | "goalByPortfolioId"> & {
   portfolios: Array<{ id: string; name: string; privacy?: unknown }>;
   goalByPortfolioId?: Record<string, unknown>;
 };
