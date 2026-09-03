@@ -1373,7 +1373,7 @@ function restoreSeriesDefaultAutoscale(
   series: OverviewMainSeries | ISeriesApi<"Line"> | null,
 ): void {
   series?.applyOptions({
-    autoscaleInfoProvider: (original) => original(),
+    autoscaleInfoProvider: (original: () => unknown) => original(),
   });
 }
 
@@ -3231,8 +3231,8 @@ export function PortfolioValueHistoryChartPane({
       }
       const compareExtents = unionSeriesValueExtents([
         showPortfolio ? overviewSeriesValueExtents(series) : null,
-        drawCompareSpy && spyApi ? overviewSeriesValueExtents(spyApi as OverviewMainSeries) : null,
-        drawCompareNasdaq && nasdaqApi ? overviewSeriesValueExtents(nasdaqApi as OverviewMainSeries) : null,
+        drawCompareSpy && spyApi ? overviewSeriesValueExtents(spyApi as unknown as OverviewMainSeries) : null,
+        drawCompareNasdaq && nasdaqApi ? overviewSeriesValueExtents(nasdaqApi as unknown as OverviewMainSeries) : null,
       ]);
       if (sharePriceScale && compareExtents && (drawCompareSpy || drawCompareNasdaq)) {
         applyCompareSharedAutoscale(series, [spyApi, nasdaqApi], compareExtents, metric);
