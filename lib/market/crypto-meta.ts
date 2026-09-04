@@ -27,52 +27,71 @@ function synthAltSymbols(meta: CryptoMeta): string[] {
   return existing.has(usdt) ? [] : [usdt];
 }
 
-/** Screener / featured table — keep a tight set for the markets grid. */
+/**
+ * Hot quote / hub-usability seed for `crypto_tab` cron (not display rank).
+ * Screener **order** is always live market-cap sort over {@link CRYPTO_SCREENER_ALL}.
+ * Keep ~20 liquid names so page-1 (20 rows) usually has realtime marks.
+ * Includes major stables (USDT/USDC) so ranks track CMC-style lists.
+ */
 export const CRYPTO_TOP10: CryptoMeta[] = [
   { symbol: "BTC", name: "Bitcoin", eodhdSymbol: "BTC-USD.CC" },
   { symbol: "ETH", name: "Ethereum", eodhdSymbol: "ETH-USD.CC" },
-  { symbol: "XRP", name: "XRP", eodhdSymbol: "XRP-USD.CC" },
+  { symbol: "USDT", name: "Tether", eodhdSymbol: "USDT-USD.CC", eodhdAltSymbols: ["USDT-USDT.CC"] },
   { symbol: "BNB", name: "BNB", eodhdSymbol: "BNB-USD.CC" },
+  { symbol: "XRP", name: "XRP", eodhdSymbol: "XRP-USD.CC" },
+  { symbol: "USDC", name: "USD Coin", eodhdSymbol: "USDC-USD.CC", eodhdAltSymbols: ["USDC-USDT.CC"] },
   { symbol: "SOL", name: "Solana", eodhdSymbol: "SOL-USD.CC" },
-  { symbol: "DOGE", name: "Dogecoin", eodhdSymbol: "DOGE-USD.CC" },
-  { symbol: "ADA", name: "Cardano", eodhdSymbol: "ADA-USD.CC" },
   { symbol: "TRX", name: "TRON", eodhdSymbol: "TRX-USD.CC" },
+  {
+    symbol: "HYPE",
+    name: "Hyperliquid",
+    eodhdSymbol: "HYPE32196-USD.CC",
+    eodhdAltSymbols: ["HYPE-USD.CC", "HYPE-USDT.CC"],
+  },
+  { symbol: "ZEC", name: "Zcash", eodhdSymbol: "ZEC-USD.CC" },
+  { symbol: "DOGE", name: "Dogecoin", eodhdSymbol: "DOGE-USD.CC" },
+  { symbol: "XMR", name: "Monero", eodhdSymbol: "XMR-USD.CC" },
   { symbol: "LINK", name: "Chainlink", eodhdSymbol: "LINK-USD.CC" },
-  { symbol: "AVAX", name: "Avalanche", eodhdSymbol: "AVAX-USD.CC" },
-];
-
-/** Additional liquid names for global search + asset pages (same loaders as TOP10). */
-export const CRYPTO_SEARCH_EXTRA: CryptoMeta[] = [
+  { symbol: "LEO", name: "UNUS SED LEO", eodhdSymbol: "LEO-USD.CC" },
+  { symbol: "ADA", name: "Cardano", eodhdSymbol: "ADA-USD.CC" },
   {
     symbol: "TON",
     name: "Toncoin",
     eodhdSymbol: "TON11419-USD.CC",
     eodhdAltSymbols: ["TON-USD.CC", "TONCOIN-USD.CC"],
   },
-  {
-    symbol: "POL",
-    name: "Polygon",
-    eodhdSymbol: "POL28321-USD.CC",
-    eodhdAltSymbols: ["POL-USD.CC", "MATIC-USD.CC"],
-  },
-  { symbol: "DOT", name: "Polkadot", eodhdSymbol: "DOT-USD.CC" },
-  { symbol: "ATOM", name: "Cosmos", eodhdSymbol: "ATOM-USD.CC" },
-  { symbol: "LTC", name: "Litecoin", eodhdSymbol: "LTC-USD.CC" },
+  { symbol: "AVAX", name: "Avalanche", eodhdSymbol: "AVAX-USD.CC" },
   { symbol: "BCH", name: "Bitcoin Cash", eodhdSymbol: "BCH-USD.CC" },
-  { symbol: "NEAR", name: "NEAR Protocol", eodhdSymbol: "NEAR-USD.CC" },
+  { symbol: "LTC", name: "Litecoin", eodhdSymbol: "LTC-USD.CC" },
+  { symbol: "DOT", name: "Polkadot", eodhdSymbol: "DOT-USD.CC" },
+];
+
+/** Additional liquid names for global search + asset pages (same loaders as hot seed). */
+export const CRYPTO_SEARCH_EXTRA: CryptoMeta[] = [
+  { symbol: "SUI", name: "Sui", eodhdSymbol: "SUI-USD.CC" },
   {
     symbol: "UNI",
     name: "Uniswap",
     eodhdSymbol: "UNI7083-USD.CC",
     eodhdAltSymbols: ["UNI-USD.CC"],
   },
+  /**
+   * Toncoin is in {@link CRYPTO_TOP10}. Do **not** map to GRAM-USD — separate EODHD listing.
+   */
+  {
+    symbol: "POL",
+    name: "Polygon",
+    eodhdSymbol: "POL28321-USD.CC",
+    eodhdAltSymbols: ["POL-USD.CC", "MATIC-USD.CC"],
+  },
+  { symbol: "ATOM", name: "Cosmos", eodhdSymbol: "ATOM-USD.CC" },
+  { symbol: "NEAR", name: "NEAR Protocol", eodhdSymbol: "NEAR-USD.CC" },
   { symbol: "XLM", name: "Stellar", eodhdSymbol: "XLM-USD.CC" },
   { symbol: "FIL", name: "Filecoin", eodhdSymbol: "FIL-USD.CC" },
   { symbol: "APT", name: "Aptos", eodhdSymbol: "APT-USD.CC" },
   { symbol: "ARB", name: "Arbitrum", eodhdSymbol: "ARB-USD.CC" },
   { symbol: "OP", name: "Optimism", eodhdSymbol: "OP-USD.CC" },
   { symbol: "INJ", name: "Injective", eodhdSymbol: "INJ-USD.CC" },
-  { symbol: "SUI", name: "Sui", eodhdSymbol: "SUI-USD.CC" },
   { symbol: "TIA", name: "Celestia", eodhdSymbol: "TIA-USD.CC" },
   { symbol: "AAVE", name: "Aave", eodhdSymbol: "AAVE-USD.CC" },
   { symbol: "MKR", name: "Maker", eodhdSymbol: "MKR-USD.CC" },
@@ -125,7 +144,6 @@ export const CRYPTO_SEARCH_TOP100_REST: CryptoMeta[] = [
   { symbol: "PENDLE", name: "Pendle", eodhdSymbol: "PENDLE-USD.CC" },
   { symbol: "JTO", name: "Jito", eodhdSymbol: "JTO-USD.CC" },
   { symbol: "TWT", name: "Trust Wallet Token", eodhdSymbol: "TWT-USD.CC" },
-  { symbol: "ZEC", name: "Zcash", eodhdSymbol: "ZEC-USD.CC" },
   { symbol: "DASH", name: "Dash", eodhdSymbol: "DASH-USD.CC" },
   { symbol: "COMP", name: "Compound", eodhdSymbol: "COMP-USD.CC" },
   { symbol: "YFI", name: "yearn.finance", eodhdSymbol: "YFI-USD.CC" },
@@ -159,13 +177,25 @@ export const CRYPTO_SEARCH_TOP100_REST: CryptoMeta[] = [
 ];
 
 /**
- * Screener Crypto tab page 2 — 40 names after {@link CRYPTO_TOP10} (50 screener assets; paginated 15 per page on Markets).
- * Prefix matches {@link CRYPTO_SEARCH_EXTRA}; tail from {@link CRYPTO_SEARCH_TOP100_REST} (no duplicate symbols).
+ * Rest of the liquid screener universe after the hot quote seed.
+ * Capped so cron `crypto_derived` stays ~60 symbols (snapshot budget).
+ * **Ranks** come from global market-cap sort of {@link CRYPTO_SCREENER_ALL}, not this order.
  */
-export const CRYPTO_SCREENER_PAGE2: CryptoMeta[] = [
-  ...CRYPTO_SEARCH_EXTRA.slice(0, 26),
-  ...CRYPTO_SEARCH_TOP100_REST.slice(0, 14),
-];
+export const CRYPTO_SCREENER_PAGE2: CryptoMeta[] = (() => {
+  const top = new Set(CRYPTO_TOP10.map((m) => m.symbol.toUpperCase()));
+  const merged = [...CRYPTO_SEARCH_EXTRA, ...CRYPTO_SEARCH_TOP100_REST];
+  const out: CryptoMeta[] = [];
+  const seen = new Set<string>();
+  const maxPage2 = 40; // hot seed (~20) + page2 (~40) ≈ 60 for cron
+  for (const m of merged) {
+    const s = m.symbol.toUpperCase();
+    if (top.has(s) || seen.has(s)) continue;
+    seen.add(s);
+    out.push(m);
+    if (out.length >= maxPage2) break;
+  }
+  return out;
+})();
 
 /** Full screener crypto grid (page 1 + page 2). */
 export const CRYPTO_SCREENER_ALL: CryptoMeta[] = [...CRYPTO_TOP10, ...CRYPTO_SCREENER_PAGE2];

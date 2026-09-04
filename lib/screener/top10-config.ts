@@ -1,4 +1,4 @@
-/** Fixed screener universe — order is display rank. */
+/** Hot-quote / featured seed for stocks — not screener display rank (ranks = universe mcap order). */
 export const TOP10_TICKERS = [
   "AAPL",
   "MSFT",

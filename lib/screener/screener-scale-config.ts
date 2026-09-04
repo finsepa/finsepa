@@ -8,9 +8,9 @@ export { EODHD_REALTIME_SYMBOLS_PER_REQUEST };
  * **Quotes:** `simple-market-layer` batches EODHD realtime using `EODHD_REALTIME_SYMBOLS_PER_REQUEST`
  * (~ceil(totalSymbols/batch) HTTP calls per refresh).
  *
- * **Page-2 stocks:** Only the first `SCREENER_PAGE2_STOCK_QUOTE_COUNT` names after TOP10 join the hot
- * cached path. A large static universe does not imply that many quote fetches — raise carefully
- * (EODHD hourly budget). Prefer paginated/on-demand quote slices over one giant batch.
+ * **Page-2 stocks (hot quote batch):** First `SCREENER_PAGE2_STOCK_QUOTE_COUNT` names after the
+ * TOP10 hot seed join the shared realtime snapshot. Companies **display ranks** use the full
+ * top-by-mcap universe with per-page quote slices (snapshot-first) — not a fixed TOP10 band.
  *
  * **Crypto EOD bars:** Derived metrics use concurrent daily-bar fetches; raising crypto concurrency
  * reduces wall time when the screener crypto list grows (still N upstream calls per refresh).

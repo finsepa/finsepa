@@ -575,7 +575,7 @@ export async function getSimpleMarketDataScreenerStocks(): Promise<SimpleMarketD
 async function getSimpleMarketDataCryptoTabCached(): Promise<SimpleMarketData> {
   return unstable_cache(
     loadSimpleMarketDataCryptoTabUncached,
-    ["simple-market-data-v17-crypto-tab-usable-prices"],
+    ["simple-market-data-v20-crypto-with-stables"],
     { revalidate: REVALIDATE_SCREENER_MARKET },
   )();
 }
@@ -879,7 +879,7 @@ async function loadSimpleCryptoDerivedUncached(): Promise<SimpleCryptoDerived> {
 }
 
 async function getSimpleCryptoDerivedCached(): Promise<SimpleCryptoDerived> {
-  return unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v10-reject-empty-hub"], {
+  return unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v13-with-stables"], {
     revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
   })();
 }

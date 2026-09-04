@@ -10,12 +10,18 @@ import {
 const DOMAIN_BY_SYMBOL: Record<string, string> = {
   BTC: "bitcoin.org",
   ETH: "ethereum.org",
+  USDT: "tether.to",
+  USDC: "circle.com",
   XRP: "ripple.com",
   BNB: "binance.com",
   SOL: "solana.com",
   DOGE: "dogecoin.com",
   ADA: "cardano.org",
   TRX: "tron.network",
+  HYPE: "hyperliquid.xyz",
+  ZEC: "z.cash",
+  XMR: "getmonero.org",
+  LEO: "leo.bitfinex.com",
   TON: "ton.org",
   LINK: "chain.link",
   AVAX: "avax.network",
@@ -81,8 +87,6 @@ export function googleFaviconHostForCryptoSymbol(symbol: string): string {
 export function getCryptoLogoUrl(symbol: string): string {
   const u = cryptoRouteBase(symbol.trim().toUpperCase());
   const domain = DOMAIN_BY_SYMBOL[u];
-  if (domain) return logoDevDomainLogoUrl(domain) ?? companyLogoUrlFromDomain(domain);
-  const dev = logoDevCryptoLogoUrl(u);
-  if (dev) return dev;
-  return companyLogoUrlFromDomain(`${u.toLowerCase()}.org`);
+  if (domain) return companyLogoUrlFromDomain(domain) || logoDevDomainLogoUrl(domain);
+  return logoDevCryptoLogoUrl(u.toLowerCase()) || companyLogoUrlFromDomain(`${u.toLowerCase()}.org`);
 }

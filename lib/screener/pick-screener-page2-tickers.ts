@@ -5,7 +5,8 @@ import { TOP10_TICKERS } from "@/lib/screener/top10-config";
 export const SCREENER_PAGE2_TICKER_COUNT = SCREENER_PAGE2_STOCK_QUOTE_COUNT;
 
 /**
- * Next N US names by market cap after the curated page-1 list (same rule as screener realtime + EOD derived).
+ * Next N US names by market cap after the hot-quote seed (TOP10).
+ * Used for bounded hot realtime batches / earnings — Companies tab ranks the full universe by mcap.
  */
 export function pickScreenerPage2Tickers(universe: readonly { ticker: string }[]): string[] {
   const page1 = new Set(TOP10_TICKERS.map((t) => t.toUpperCase()));

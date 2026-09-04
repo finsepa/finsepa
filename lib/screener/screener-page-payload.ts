@@ -20,14 +20,12 @@ import {
   type ScreenerCompanyIdentity,
 } from "@/lib/screener/screener-companies-layers";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
-import { CRYPTO_SCREENER_PAGE2, CRYPTO_TOP10 } from "@/lib/market/eodhd-crypto";
-import { pickScreenerPage2Tickers } from "@/lib/screener/pick-screener-page2-tickers";
+import { CRYPTO_SCREENER_ALL } from "@/lib/market/eodhd-crypto";
 import { TOP10_META, TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { REDUCED_STOCKS } from "@/lib/market/reduced-universe";
 import {
-  getSimpleCryptoDerivedForMetas,
-  getSimpleCryptoDerivedTop10,
+  getSimpleCryptoDerived,
   getSimpleIndicesDerived,
   getSimpleMarketDataCryptoScreenerPage2,
   getSimpleMarketDataCryptoTab,
@@ -35,13 +33,11 @@ import {
   getSimpleEtfsDerived,
   getSimpleMarketDataEtfsTab,
   getSimpleMarketDataIndicesTab,
-  getSimpleMarketDataScreenerStocks,
-  getSimpleScreenerDerivedTop10,
   getSimpleScreenerStockDerivedForTickers,
 } from "@/lib/market/simple-market-layer";
 import { getSimpleIndexCards } from "@/lib/screener/simple-index-cards";
 import {
-  cryptoScreenerRowsFromMetas,
+  cryptoScreenerRowsFromMetasByMarketCap,
   etfsTableRowsFromSimpleLayers,
   indicesTableRowsFromSimpleLayers,
 } from "@/lib/screener/simple-screener-crypto-indices-rows";
@@ -244,9 +240,9 @@ export type ScreenerCompaniesApiResponseBody = {
 };
 
 /**
- * Paginated screener company rows — loads market slices per page so we do not fan out quotes/EOD for the full page-2 set unless needed.
- * With `sector`, lists the universe subset for that canonical GICS sector (market cap order), any page via {@link buildScreenerPage2RowsForTickers}.
- * With `industry` + `industrySector`, lists that industry inside the canonical sector (takes precedence over `sector`).
+ * Paginated screener company rows — loads market slices per page so we do not fan out quotes/EOD for the full universe unless needed.
+ * **All / sector / industry** list modes: universe (or filtered) in market-cap order; each page loads only that slice (snapshot-first).
+ * TOP10 remains a hot-quote seed elsewhere — it no longer owns display ranks 1–10.
  */
 async function buildScreenerCompaniesApiResponseUncached(
   page: number,
@@ -323,43 +319,23 @@ async function buildScreenerCompaniesApiResponseUncached(
     };
   }
 
-  const page2Tickers = pickScreenerPage2Tickers(staticLayer.universe);
-  const top10Len = TOP10_TICKERS.length;
-  const total = top10Len + page2Tickers.length;
+  // All companies: universe is already market-cap desc (EODHD screener snapshot).
+  // Paginate that list globally — no curated TOP10 band owning ranks 1–10.
+  // Quotes/derived: snapshot-first per page slice (same as sector/industry) — no full-universe fan-out.
+  const universe = staticLayer.universe;
+  const total = universe.length;
   const globalStart = (page - 1) * pageSize;
   if (globalStart >= total) {
     return { page, pageSize, total, rows: [], sector: null, industry: null, industrySector: null };
   }
   const globalEnd = Math.min(globalStart + pageSize, total);
-  const rows: ScreenerTableRow[] = [];
-
-  if (globalStart < top10Len) {
-    const [data, derived] = await Promise.all([
-      getSimpleMarketDataScreenerStocks(),
-      getSimpleScreenerDerivedTop10(),
-    ]);
-    const { page1 } = await buildStockScreenerTablePages(data, staticLayer.universe, derived);
-    for (let g = globalStart; g < Math.min(globalEnd, top10Len); g++) {
-      rows.push(page1[g]!);
-    }
-  }
-
-  if (globalEnd > top10Len) {
-    const p2From = Math.max(0, globalStart - top10Len);
-    const p2To = Math.min(page2Tickers.length, globalEnd - top10Len);
-    const tickers = page2Tickers.slice(p2From, p2To);
-    if (tickers.length) {
-      const rankStart = top10Len + p2From + 1;
-      const p2Rows = await buildScreenerPage2RowsForTickers(
-        tickers,
-        staticLayer.universe,
-        rankStart,
-        staticLayer.identityByTicker,
-      );
-      rows.push(...p2Rows);
-    }
-  }
-
+  const tickers = universe.slice(globalStart, globalEnd).map((u) => u.ticker);
+  const rows = await buildScreenerPage2RowsForTickers(
+    tickers,
+    universe,
+    globalStart + 1,
+    staticLayer.identityByTicker,
+  );
   return { page, pageSize, total, rows, sector: null, industry: null, industrySector: null };
 }
 
@@ -377,51 +353,38 @@ export async function buildScreenerCompaniesApiResponse(
   const list = resolveScreenerCompaniesListMode(opts);
   const listKey = list.mode === "all" ? "all" : list.mode === "sector" ? `sector:${list.sector}` : `industry:${list.sector}:${list.industry}`;
   return withScreenerUsMarketCache(
-    "screener-companies-api-response-v6-session",
+    "screener-companies-api-response-v7-global-mcap",
     () => buildScreenerCompaniesApiResponseUncached(p, ps, list),
     [String(p), String(ps), listKey],
   );
 }
 
-/** Paginated screener crypto rows — page 1 uses cached tab layers; page 2 loads on demand. */
+/** Paginated screener crypto — full liquid universe ranked by snapshot market cap (CMC-style). */
 export async function buildCryptoScreenerApiResponse(
   page: number,
   pageSize: number,
 ): Promise<{ page: number; pageSize: number; total: number; rows: CryptoTop10Row[] }> {
-  const topLen = CRYPTO_TOP10.length;
-  const total = topLen + CRYPTO_SCREENER_PAGE2.length;
+  const universe = CRYPTO_SCREENER_ALL;
+  const total = universe.length;
   const globalStart = (page - 1) * pageSize;
   if (globalStart >= total) {
     return { page, pageSize, total, rows: [] };
   }
   const globalEnd = Math.min(globalStart + pageSize, total);
-  const rows: CryptoTop10Row[] = [];
 
-  if (globalStart < topLen) {
-    const [data, derived] = await Promise.all([
-      getSimpleMarketDataCryptoTab(),
-      getSimpleCryptoDerivedTop10(),
-    ]);
-    const all = cryptoScreenerRowsFromMetas(CRYPTO_TOP10, data, derived);
-    for (let g = globalStart; g < Math.min(globalEnd, topLen); g++) {
-      rows.push(all[g]!);
-    }
-  }
-
-  if (globalEnd > topLen) {
-    const p2From = Math.max(0, globalStart - topLen);
-    const p2To = Math.min(CRYPTO_SCREENER_PAGE2.length, globalEnd - topLen);
-    const metas = CRYPTO_SCREENER_PAGE2.slice(p2From, p2To);
-    if (metas.length) {
-      const [data, derived] = await Promise.all([
-        getSimpleMarketDataCryptoScreenerPage2(),
-        getSimpleCryptoDerivedForMetas(metas),
-      ]);
-      rows.push(...cryptoScreenerRowsFromMetas(metas, data, derived));
-    }
-  }
-
-  return { page, pageSize, total, rows };
+  // Quotes: merge hot tab + page2 snapshots. Caps/metrics: full `crypto_derived` hub (cron).
+  // Sort is in-memory only — no per-visitor EODHD.
+  const [tabData, page2Data, derived] = await Promise.all([
+    getSimpleMarketDataCryptoTab(),
+    getSimpleMarketDataCryptoScreenerPage2(),
+    getSimpleCryptoDerived(),
+  ]);
+  const data = {
+    ...tabData,
+    crypto: { ...tabData.crypto, ...page2Data.crypto },
+  };
+  const ranked = cryptoScreenerRowsFromMetasByMarketCap(universe, data, derived);
+  return { page, pageSize, total, rows: ranked.slice(globalStart, globalEnd) };
 }
 
 export async function buildScreenerPagePayload(

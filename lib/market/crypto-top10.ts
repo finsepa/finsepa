@@ -64,18 +64,26 @@ async function buildCryptoRow(meta: (typeof CRYPTO_TOP10)[number]): Promise<Cryp
 }
 
 async function loadCryptoTop10Uncached(): Promise<CryptoTop10Row[]> {
-  const rows = await Promise.all(
-    CRYPTO_TOP10.map((meta) => buildCryptoRow(meta)),
-  );
-
-  // Keep stable order exactly as requested.
-  const indexBySymbol = new Map(rows.map((r, i) => [r.symbol, i]));
-  void indexBySymbol;
-
-  return rows;
+  const rows = await Promise.all(CRYPTO_TOP10.map((meta) => buildCryptoRow(meta)));
+  // Display order = market cap (same as screener snapshot path).
+  return [...rows].sort((a, b) => {
+    const parse = (s: string) => {
+      const t = s.trim().toUpperCase().replace(/,/g, "");
+      const m = /^([\d.]+)\s*([KMBT])?$/.exec(t);
+      if (!m) return -1;
+      const n = Number(m[1]);
+      if (!Number.isFinite(n)) return -1;
+      const u = m[2];
+      const mult = u === "T" ? 1e12 : u === "B" ? 1e9 : u === "M" ? 1e6 : u === "K" ? 1e3 : 1;
+      return n * mult;
+    };
+    const d = parse(b.marketCap) - parse(a.marketCap);
+    if (d !== 0) return d;
+    return a.symbol.localeCompare(b.symbol);
+  });
 }
 
-export const getCryptoTop10 = unstable_cache(loadCryptoTop10Uncached, ["crypto-top10-v4-ton-pol-eodhd"], {
+export const getCryptoTop10 = unstable_cache(loadCryptoTop10Uncached, ["crypto-top10-v5-mcap-sort-hype-zec"], {
   revalidate: REVALIDATE_HOT,
 });
 

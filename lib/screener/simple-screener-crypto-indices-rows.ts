@@ -13,9 +13,12 @@ import type {
 } from "@/lib/market/simple-market-layer";
 import { reducedCryptoMarketCapDisplay } from "@/lib/market/reduced-universe";
 import { formatMarketCapCompactNoCurrency } from "@/lib/screener/eod-derived-metrics";
+import { sortCryptoMetasByMarketCap } from "@/lib/screener/crypto-mcap-sort";
 import type { EtfTableRow, ScreenerEtfMeta } from "@/lib/screener/screener-etfs-universe";
 import { SCREENER_INDICES_10 } from "@/lib/screener/screener-indices-universe";
 import type { SimpleEtfsDerived } from "@/lib/market/simple-market-layer";
+
+export { cryptoMarketCapSortKey, sortCryptoMetasByMarketCap } from "@/lib/screener/crypto-mcap-sort";
 
 /** When realtime is missing, use last EOD close from the spark strip; 1D % needs two closes. */
 function sparkFallbackPriceAnd1d(d: CryptoDerivedSlice | undefined): { price: number | null; change1d: number | null } {
@@ -70,12 +73,21 @@ export function cryptoScreenerRowsFromMetas(
   });
 }
 
-/** Screener crypto rows — same mapping as `/api/screener/crypto-top10`. */
+/** Like {@link cryptoScreenerRowsFromMetas} but ordered by snapshot market cap (Yahoo/CMC-style). */
+export function cryptoScreenerRowsFromMetasByMarketCap(
+  metas: readonly CryptoMeta[],
+  data: SimpleMarketData,
+  derived: SimpleCryptoDerived,
+): CryptoTop10Row[] {
+  return cryptoScreenerRowsFromMetas(sortCryptoMetasByMarketCap(metas, derived), data, derived);
+}
+
+/** Screener crypto rows — hot-seed quotes path; prefer {@link cryptoScreenerRowsFromMetasByMarketCap} on full universe. */
 export function cryptoTop10RowsFromSimpleLayers(
   data: SimpleMarketData,
   derived: SimpleCryptoDerived,
 ): CryptoTop10Row[] {
-  return cryptoScreenerRowsFromMetas(CRYPTO_TOP10, data, derived);
+  return cryptoScreenerRowsFromMetasByMarketCap(CRYPTO_TOP10, data, derived);
 }
 
 /** Screener indices rows — same mapping as `/api/screener/indices-top10` (10 benchmarks). */

@@ -10,14 +10,14 @@ import { isCustomPortfolioSymbol } from "@/lib/portfolio/custom-asset-symbol";
 export const CRYPTO_PICKER_TOP: readonly { symbol: string; name: string }[] = [
   { symbol: "BTC", name: "Bitcoin" },
   { symbol: "ETH", name: "Ethereum" },
-  { symbol: "XRP", name: "XRP" },
   { symbol: "BNB", name: "BNB" },
+  { symbol: "XRP", name: "XRP" },
   { symbol: "SOL", name: "Solana" },
+  { symbol: "TRX", name: "TRON" },
+  { symbol: "HYPE", name: "Hyperliquid" },
   { symbol: "DOGE", name: "Dogecoin" },
   { symbol: "ADA", name: "Cardano" },
-  { symbol: "TRX", name: "TRON" },
   { symbol: "LINK", name: "Chainlink" },
-  { symbol: "AVAX", name: "Avalanche" },
 ];
 
 const CRYPTO_ASSET_PAGE_SYMBOLS = new Set(ALL_CRYPTO_METAS.map((m) => m.symbol.toUpperCase()));
