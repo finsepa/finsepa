@@ -33,13 +33,17 @@ type SnapTradeCredentials = {
   userSecret: string;
 };
 
+let snaptradeSdkSingleton: Snaptrade | null = null;
+
 function getSnaptradeSdk(): Snaptrade {
+  if (snaptradeSdkSingleton) return snaptradeSdkSingleton;
   const clientId = getSnapTradeClientId();
   const consumerKey = getSnapTradeConsumerKey();
   if (!clientId || !consumerKey) {
     throw new SnapTradeNotConfiguredError();
   }
-  return new Snaptrade({ clientId, consumerKey });
+  snaptradeSdkSingleton = new Snaptrade({ clientId, consumerKey });
+  return snaptradeSdkSingleton;
 }
 
 export { getSnaptradeSdk };
@@ -120,6 +124,32 @@ export async function ensureSnapTradeUser(userId: string): Promise<SnapTradeCred
   return credentials;
 }
 
+async function deleteStoredCredentials(userId: string): Promise<void> {
+  const admin = getSupabaseAdminClient();
+  if (!admin) return;
+  const { error } = await admin.from("snaptrade_users").delete().eq("user_id", userId);
+  if (error) console.error("[snaptrade] deleteStoredCredentials", error.message);
+}
+
+/**
+ * Drop local + SnapTrade user so the next {@link ensureSnapTradeUser} registers a fresh secret.
+ * Used when login fails with stale credentials (common cause of portal “Unexpected Error”).
+ */
+async function resetSnapTradeUser(userId: string): Promise<void> {
+  const existing = await readStoredCredentials(userId);
+  const snaptradeUserId = existing?.snaptradeUserId ?? snaptradeUserIdForFinsepaUser(userId);
+  try {
+    const snaptrade = getSnaptradeSdk();
+    await snaptrade.authentication.deleteSnapTradeUser({ userId: snaptradeUserId });
+  } catch (e) {
+    console.warn(
+      "[snaptrade] deleteSnapTradeUser during reset",
+      e instanceof Error ? e.message : e,
+    );
+  }
+  await deleteStoredCredentials(userId);
+}
+
 function extractRedirectUri(data: unknown): string {
   if (!data || typeof data !== "object") {
     throw new Error("SnapTrade login response was empty.");
@@ -131,17 +161,14 @@ function extractRedirectUri(data: unknown): string {
   return redirectUri.trim();
 }
 
-
-export async function createSnapTradePortalLink(
-  userId: string,
+async function loginSnapTradePortalUri(
+  credentials: SnapTradeCredentials,
   options?: {
     reconnectAuthorizationId?: string | null;
     darkMode?: boolean;
   },
 ): Promise<string> {
-  const credentials = await ensureSnapTradeUser(userId);
   const snaptrade = getSnaptradeSdk();
-
   const loginResponse = await snaptrade.authentication.loginSnapTradeUser({
     userId: credentials.snaptradeUserId,
     userSecret: credentials.userSecret,
@@ -152,8 +179,37 @@ export async function createSnapTradePortalLink(
     // Finsepa modal/sheet provides close — hide duplicate X inside SnapTrade (web + iOS).
     showCloseButton: false,
   });
-
   return extractRedirectUri(loginResponse.data);
+}
+
+export async function createSnapTradePortalLink(
+  userId: string,
+  options?: {
+    reconnectAuthorizationId?: string | null;
+    darkMode?: boolean;
+  },
+): Promise<string> {
+  const t0 = Date.now();
+  const credentials = await ensureSnapTradeUser(userId);
+  try {
+    const uri = await loginSnapTradePortalUri(credentials, options);
+    console.info("[snaptrade] portal link ok", { ms: Date.now() - t0 });
+    return uri;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    // Only reset on auth/credential failures — avoid doubling SnapTrade round-trips on blips.
+    const stale =
+      /\b(401|403|1012|1066)\b/i.test(msg) ||
+      /unauthorized|invalid.*(secret|credential|token)|userSecret/i.test(msg);
+    if (!stale) throw e;
+
+    console.warn("[snaptrade] loginSnapTradeUser auth failure; resetting user and retrying", msg);
+    await resetSnapTradeUser(userId);
+    const fresh = await ensureSnapTradeUser(userId);
+    const uri = await loginSnapTradePortalUri(fresh, options);
+    console.info("[snaptrade] portal link ok after reset", { ms: Date.now() - t0 });
+    return uri;
+  }
 }
 
 export async function listSnapTradeConnections(userId: string) {

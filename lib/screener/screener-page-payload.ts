@@ -34,6 +34,7 @@ import {
   getSimpleMarketDataEtfsTab,
   getSimpleMarketDataIndicesTab,
   getSimpleScreenerStockDerivedForTickers,
+  mergeCryptoMarketDataLayers,
 } from "@/lib/market/simple-market-layer";
 import { getSimpleIndexCards } from "@/lib/screener/simple-index-cards";
 import {
@@ -379,10 +380,8 @@ export async function buildCryptoScreenerApiResponse(
     getSimpleMarketDataCryptoScreenerPage2(),
     getSimpleCryptoDerived(),
   ]);
-  const data = {
-    ...tabData,
-    crypto: { ...tabData.crypto, ...page2Data.crypto },
-  };
+  // Prefer tab prices — page2 used to stub the full universe with nulls and wipe TOP10 quotes.
+  const data = mergeCryptoMarketDataLayers(tabData, page2Data);
   const ranked = cryptoScreenerRowsFromMetasByMarketCap(universe, data, derived);
   return { page, pageSize, total, rows: ranked.slice(globalStart, globalEnd) };
 }

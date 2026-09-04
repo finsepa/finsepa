@@ -16,15 +16,63 @@ function isAppDarkMode(): boolean {
   return document.documentElement.classList.contains("dark");
 }
 
-/** Align iframe URL query with the theme requested when the session was created. */
+/**
+ * Prefer darkMode already baked into the login link (from `loginSnapTradeUser`).
+ * Only add the query flag when missing — don’t rewrite SnapTrade redeem-token URLs.
+ */
 function withSnapTradePortalParams(loginLink: string, darkMode: boolean): string {
   try {
     const url = new URL(loginLink);
-    url.searchParams.set("darkMode", darkMode ? "true" : "false");
+    if (!url.searchParams.has("darkMode")) {
+      url.searchParams.set("darkMode", darkMode ? "true" : "false");
+    }
     return url.toString();
   } catch {
     return loginLink;
   }
+}
+
+/**
+ * Match default AppModalShell footprint (Add Manual Transaction): max-w 480.
+ *
+ * SnapTrade’s official SDK iframe is **600px**. Our body is **640px** =
+ * 20px top + 600 iframe + 20px bottom so the SDK is centered. Finsepa chrome
+ * never scrolls — only SnapTrade’s internal scroll. Cap by viewport on small screens.
+ */
+const PORTAL_MODAL_WIDTH = "w-full max-w-[480px]";
+const PORTAL_BODY_LOADING_PX = 240;
+/** Official snaptrade-react Connection Portal iframe height. */
+const SNAPTRADE_IFRAME_DEFAULT_PX = 600;
+/** Padding around the SDK iframe (top / sides / bottom) → body = 600 + 40 = 640. */
+const PORTAL_IFRAME_INSET_PX = 20;
+const PORTAL_BODY_EXPANDED_DEFAULT_PX = SNAPTRADE_IFRAME_DEFAULT_PX + PORTAL_IFRAME_INSET_PX * 2;
+/** SnapTrade portal dark canvas (sampled) — Finsepa `--fs-page` is pure #000 and shows as a ring. */
+const SNAPTRADE_PORTAL_DARK_BG = "#0a0a0a";
+const SNAPTRADE_PORTAL_LIGHT_BG = "#ffffff";
+/** SnapTrade API has been 10–46s locally — don’t surface timeout mid-wait. */
+const PORTAL_IFRAME_TIMEOUT_MS = 60_000;
+const PORTAL_CHROME_RESERVE_PX = 60;
+
+const SNAPTRADE_MESSAGE_ORIGINS = new Set([
+  "https://app.snaptrade.com",
+  "https://app.staging.snaptrade.com",
+  "https://app.local.snaptrade.com",
+  "https://connect.snaptrade.com",
+  "http://localhost:5173",
+]);
+
+function portalMaxBodyPx(): number {
+  if (typeof window === "undefined") return PORTAL_BODY_EXPANDED_DEFAULT_PX;
+  return Math.max(360, Math.floor(window.innerHeight * 0.9 - PORTAL_CHROME_RESERVE_PX));
+}
+
+function readSnapTradePostedHeight(data: unknown): number | null {
+  if (!data || typeof data !== "object") return null;
+  const row = data as Record<string, unknown>;
+  const raw = row.height ?? row.frameHeight ?? row.contentHeight ?? row.iframeHeight;
+  const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+  if (!Number.isFinite(n) || n < 240 || n > 2000) return null;
+  return Math.round(n);
 }
 
 function SnapTradePortalModal({
@@ -35,7 +83,8 @@ function SnapTradePortalModal({
   onSuccess,
   onError,
 }: {
-  loginLink: string;
+  /** Null while `/api/snaptrade/portal` is in flight. */
+  loginLink: string | null;
   darkMode: boolean;
   open: boolean;
   onDismiss: () => void;
@@ -45,12 +94,15 @@ function SnapTradePortalModal({
   const titleId = useId();
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const [iframeTimedOut, setIframeTimedOut] = useState(false);
+  /** Optional height from SnapTrade postMessage; otherwise SDK default 600. */
+  const [snaptradeHeightPx, setSnaptradeHeightPx] = useState<number | null>(null);
+  const [viewportMaxPx, setViewportMaxPx] = useState(portalMaxBodyPx);
   const loadedRef = useRef(false);
   const closedByHostRef = useRef(false);
   const portalOutcomeRef = useRef<"open" | "success">("open");
 
   const portalSrc = useMemo(
-    () => withSnapTradePortalParams(loginLink, darkMode),
+    () => (loginLink ? withSnapTradePortalParams(loginLink, darkMode) : null),
     [loginLink, darkMode],
   );
 
@@ -82,15 +134,56 @@ function SnapTradePortalModal({
     loadedRef.current = false;
     setIframeLoaded(false);
     setIframeTimedOut(false);
+    setSnaptradeHeightPx(null);
     closedByHostRef.current = false;
     portalOutcomeRef.current = "open";
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const sync = () => setViewportMaxPx(portalMaxBodyPx());
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, [open]);
+
+  // SnapTrade doesn’t document height messages today; listen in case portal posts one.
+  useEffect(() => {
+    if (!open) return;
+    const onMessage = (e: MessageEvent) => {
+      if (!SNAPTRADE_MESSAGE_ORIGINS.has(e.origin)) return;
+      const h = readSnapTradePostedHeight(e.data);
+      if (h != null) setSnaptradeHeightPx(h);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !portalSrc) return;
+    loadedRef.current = false;
+    setIframeLoaded(false);
+    setIframeTimedOut(false);
+    setSnaptradeHeightPx(null);
     const timer = window.setTimeout(() => {
       if (!loadedRef.current) setIframeTimedOut(true);
-    }, 12_000);
+    }, PORTAL_IFRAME_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
   }, [open, portalSrc]);
 
   if (!open) return null;
+
+  const showLoading = !iframeTimedOut && (!portalSrc || !iframeLoaded);
+  const showTimeout = Boolean(portalSrc) && iframeTimedOut && !iframeLoaded;
+  const expanded = iframeLoaded || showTimeout;
+  // Prefer SDK 600 (+ optional posted height); keep 20px pad; never exceed viewport.
+  const desiredIframePx = snaptradeHeightPx ?? SNAPTRADE_IFRAME_DEFAULT_PX;
+  const iframePx = Math.min(desiredIframePx, Math.max(240, viewportMaxPx - PORTAL_IFRAME_INSET_PX * 2));
+  const bodyHeightPx = expanded
+    ? Math.min(iframePx + PORTAL_IFRAME_INSET_PX * 2, viewportMaxPx)
+    : PORTAL_BODY_LOADING_PX;
+  const iframeInset = iframeLoaded ? PORTAL_IFRAME_INSET_PX : 0;
+  const portalSurfaceBg = darkMode ? SNAPTRADE_PORTAL_DARK_BG : SNAPTRADE_PORTAL_LIGHT_BG;
 
   return (
     <AppModalOverlay open onClose={onDismiss} zIndex={200} closeOnBackdropClick={false}>
@@ -98,51 +191,78 @@ function SnapTradePortalModal({
         titleId={titleId}
         title="Connect brokerage"
         onClose={onDismiss}
-        maxWidthClass="w-full max-w-[min(450px,calc(100vw-2rem))]"
-        maxHeightClass="h-[min(920px,92dvh)] max-h-[min(920px,92dvh)]"
-        dialogClassName="min-h-0 flex-1"
-        cardClassName="min-h-0 flex-1"
+        maxWidthClass={PORTAL_MODAL_WIDTH}
+        maxHeightClass="max-h-[90dvh] overflow-hidden"
+        dialogClassName="overflow-hidden"
         bodyScroll={false}
-        bodyClassName="!flex min-h-0 flex-1 flex-col !overflow-hidden !p-5"
+        cardClassName={cn(
+          "!flex-none overflow-hidden",
+          darkMode ? "dark:!bg-[#0a0a0a]" : "!bg-white",
+        )}
+        bodyClassName="!flex-none !overflow-hidden !p-0"
       >
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl bg-surface">
-          {!iframeLoaded && !iframeTimedOut ? (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-surface">
-              <Spinner className="size-6 text-fg-muted" />
-              <p className="text-sm text-fg-muted">Loading…</p>
+        <div
+          className="relative w-full overflow-hidden transition-[height] duration-300 ease-out"
+          style={{ height: bodyHeightPx, backgroundColor: portalSurfaceBg }}
+        >
+          {showLoading ? (
+            <div
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3"
+              style={{ backgroundColor: portalSurfaceBg }}
+              role="status"
+              aria-live="polite"
+            >
+              <Spinner className="size-8 text-[#71717A]" />
+              <p className="text-sm font-medium text-fg-muted">Loading SnapTrade</p>
             </div>
           ) : null}
-          {iframeTimedOut && !iframeLoaded ? (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-surface px-6 text-center">
+          {showTimeout ? (
+            <div
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 px-6 text-center"
+              style={{ backgroundColor: portalSurfaceBg }}
+            >
               <p className="text-sm text-fg">Broker connection didn&apos;t load.</p>
               <p className="text-xs text-fg-muted">
                 Check your connection, then close and try again — or open it in a new tab.
               </p>
-              <a
-                href={portalSrc}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium text-accent underline-offset-2 hover:underline"
-              >
-                Open in a new tab
-              </a>
+              {portalSrc ? (
+                <a
+                  href={portalSrc}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-accent underline-offset-2 hover:underline"
+                >
+                  Open in a new tab
+                </a>
+              ) : null}
             </div>
           ) : null}
-          <iframe
-            id="snaptrade-react-connection-portal"
-            title="Connect brokerage"
-            src={portalSrc}
-            className={cn(
-              "block min-h-0 w-full flex-1 rounded-xl border-0 bg-surface",
-              !iframeLoaded && "opacity-0",
-            )}
-            allow="clipboard-write"
-            onLoad={() => {
-              loadedRef.current = true;
-              setIframeLoaded(true);
-              setIframeTimedOut(false);
-            }}
-          />
+          {portalSrc ? (
+            <iframe
+              id="snaptrade-react-connection-portal"
+              title="Connect brokerage"
+              src={portalSrc}
+              className={cn(
+                "absolute border-0",
+                !iframeLoaded && "pointer-events-none opacity-0",
+              )}
+              style={{
+                top: iframeInset,
+                left: iframeInset,
+                right: iframeInset,
+                width: `calc(100% - ${iframeInset * 2}px)`,
+                height: iframeLoaded ? iframePx : 0,
+                backgroundColor: portalSurfaceBg,
+              }}
+              referrerPolicy="no-referrer"
+              allow="clipboard-read; clipboard-write"
+              onLoad={() => {
+                loadedRef.current = true;
+                setIframeLoaded(true);
+                setIframeTimedOut(false);
+              }}
+            />
+          ) : null}
         </div>
       </AppModalShell>
     </AppModalOverlay>
@@ -163,14 +283,15 @@ export function useSnapTradeConnectPortal({
   const pendingRef = useRef<{
     name: string;
     privacy: PortfolioPrivacy;
-    /** Reconnect an existing linked portfolio instead of creating a new one. */
     reconnectAuthorizationId?: string;
     reconnectPortfolioId?: string;
   } | null>(null);
-  /** SnapTrade sends CLOSE_MODAL right after SUCCESS — don't treat that as cancel. */
   const portalOutcomeRef = useRef<"open" | "success" | "closed">("open");
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+
+  const prefetchRef = useRef<{ redirectUri: string; darkMode: boolean; at: number } | null>(null);
+  const prefetchInFlightRef = useRef<Promise<void> | null>(null);
 
   const reset = useCallback(() => {
     setPortalOpen(false);
@@ -186,6 +307,31 @@ export function useSnapTradeConnectPortal({
     onClose();
   }, [onClose, reset]);
 
+  const prefetchPortal = useCallback(async () => {
+    if (prefetchRef.current && Date.now() - prefetchRef.current.at < 45_000) return;
+    if (prefetchInFlightRef.current) return prefetchInFlightRef.current;
+    const darkMode = isAppDarkMode();
+    const run = (async () => {
+      try {
+        const res = await fetch("/api/snaptrade/portal", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ darkMode }),
+        });
+        const data = (await res.json()) as { redirectUri?: string };
+        if (res.ok && data.redirectUri) {
+          prefetchRef.current = { redirectUri: data.redirectUri, darkMode, at: Date.now() };
+        }
+      } catch {
+        /* warm path only */
+      } finally {
+        prefetchInFlightRef.current = null;
+      }
+    })();
+    prefetchInFlightRef.current = run;
+    return run;
+  }, []);
+
   const startPortal = useCallback(
     async (pending: {
       name: string;
@@ -194,26 +340,44 @@ export function useSnapTradeConnectPortal({
       reconnectPortfolioId?: string;
     }) => {
       pendingRef.current = pending;
-      setPortalLoading(true);
       const darkMode = isAppDarkMode();
+      // Open shell immediately so the spinner is visible while SnapTrade login (often 8–20s) runs.
+      setPortalDarkMode(darkMode);
+      setPortalLink(null);
+      setPortalOpen(true);
+      setPortalLoading(true);
+      portalOutcomeRef.current = "open";
       try {
-        const res = await fetch("/api/snaptrade/portal", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            darkMode,
-            ...(pending.reconnectAuthorizationId
-              ? { reconnectAuthorizationId: pending.reconnectAuthorizationId }
-              : {}),
-          }),
-        });
-        const data = (await res.json()) as { redirectUri?: string; error?: string };
-        if (!res.ok || !data.redirectUri) {
-          throw new Error(data.error ?? "Could not open brokerage connection.");
+        if (!pending.reconnectAuthorizationId && prefetchInFlightRef.current) {
+          await prefetchInFlightRef.current;
         }
-        setPortalDarkMode(darkMode);
-        setPortalLink(data.redirectUri);
-        setPortalOpen(true);
+        const cached = prefetchRef.current;
+        const useCache =
+          !pending.reconnectAuthorizationId &&
+          cached != null &&
+          cached.darkMode === darkMode &&
+          Date.now() - cached.at < 45_000;
+        if (useCache && cached) {
+          prefetchRef.current = null;
+          setPortalLink(cached.redirectUri);
+        } else {
+          prefetchRef.current = null;
+          const res = await fetch("/api/snaptrade/portal", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              darkMode,
+              ...(pending.reconnectAuthorizationId
+                ? { reconnectAuthorizationId: pending.reconnectAuthorizationId }
+                : {}),
+            }),
+          });
+          const data = (await res.json()) as { redirectUri?: string; error?: string };
+          if (!res.ok || !data.redirectUri) {
+            throw new Error(data.error ?? "Could not open brokerage connection.");
+          }
+          setPortalLink(data.redirectUri);
+        }
       } catch (e) {
         const message = e instanceof Error ? e.message : "Could not open brokerage connection.";
         toast.error(message);
@@ -303,23 +467,23 @@ export function useSnapTradeConnectPortal({
     [closeAll],
   );
 
-  const portalNode =
-    portalOpen && portalLink ? (
-      <SnapTradePortalModal
-        loginLink={portalLink}
-        darkMode={portalDarkMode}
-        open={portalOpen}
-        onDismiss={onPortalDismiss}
-        onSuccess={onPortalSuccess}
-        onError={onPortalError}
-      />
-    ) : null;
+  const portalNode = portalOpen ? (
+    <SnapTradePortalModal
+      loginLink={portalLink}
+      darkMode={portalDarkMode}
+      open={portalOpen}
+      onDismiss={onPortalDismiss}
+      onSuccess={onPortalSuccess}
+      onError={onPortalError}
+    />
+  ) : null;
 
   return {
     portalLoading,
-    portalActive: portalOpen && portalLink != null,
+    portalActive: portalOpen,
     portalNode,
     reset,
     startPortal,
+    prefetchPortal,
   };
 }

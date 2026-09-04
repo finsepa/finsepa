@@ -10,7 +10,10 @@ import { cn } from "@/lib/utils";
 function withSnapTradePortalParams(loginLink: string, darkMode: boolean): string {
   try {
     const url = new URL(loginLink);
-    url.searchParams.set("darkMode", darkMode ? "true" : "false");
+    if (!url.searchParams.has("reactSDK")) url.searchParams.set("reactSDK", "finsepa-ios-embed");
+    if (!url.searchParams.has("darkMode")) {
+      url.searchParams.set("darkMode", darkMode ? "true" : "false");
+    }
     return url.toString();
   } catch {
     return loginLink;

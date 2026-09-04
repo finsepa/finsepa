@@ -28,6 +28,7 @@ import { fetchEodhdEodDailyScreener, type EodhdDailyBar } from "@/lib/market/eod
 import {
   deriveMetricsFromDailyBars,
   eodFetchWindowUtc,
+  CRYPTO_HUB_MIN_FILL_RATIO,
   isUsableCryptoDerivedHub,
 } from "@/lib/screener/eod-derived-metrics";
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
@@ -46,6 +47,7 @@ import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
 import { readMarketSnapshot, readMarketSnapshotSlow } from "@/lib/market/market-snapshot-store";
 import { rebuildMarketSnapshotBlobSingleFlight } from "@/lib/market/market-snapshot-rebuild";
 import { readCryptoDerivedSnapshot, upsertCryptoDerivedSnapshot, isUsableCryptoDerivedSnapshot } from "@/lib/market/crypto-derived-snapshot";
+import { mergeCryptoQuoteMaps } from "@/lib/market/merge-crypto-quotes";
 import {
   mergeWatchlistStockMarketSlice,
   pickScreenerDerivedForTickers,
@@ -132,7 +134,7 @@ function hasPositiveCryptoPrice(d: SimpleMarketDatum | null | undefined): boolea
 }
 
 /**
- * Hub `crypto_tab` must have prices for a majority of TOP10 — partial null rows
+ * Hub `crypto_tab` must have prices for enough of TOP10 — partial null rows
  * (ETH/XRP/BNB empty while BTC present) were treated as valid weekend cache hits.
  */
 export function isUsableCryptoTabMarketData(data: SimpleMarketData | null | undefined): boolean {
@@ -141,7 +143,16 @@ export function isUsableCryptoTabMarketData(data: SimpleMarketData | null | unde
   for (const m of CRYPTO_TOP10) {
     if (hasPositiveCryptoPrice(data.crypto[m.symbol] ?? data.crypto[m.symbol.toUpperCase()])) ok += 1;
   }
-  return ok >= Math.ceil(CRYPTO_TOP10.length * 0.5);
+  return ok >= Math.ceil(CRYPTO_TOP10.length * CRYPTO_HUB_MIN_FILL_RATIO);
+}
+
+export { mergeCryptoQuoteMaps };
+
+export function mergeCryptoMarketDataLayers(tab: SimpleMarketData, page2: SimpleMarketData): SimpleMarketData {
+  return {
+    ...tab,
+    crypto: mergeCryptoQuoteMaps(tab.crypto ?? {}, page2.crypto ?? {}),
+  };
 }
 
 function datumFromEodDailyBars(bars: EodhdDailyBar[]): SimpleMarketDatum {
@@ -287,8 +298,8 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
         includeIndices ? loadIndexDatumsFromEodDaily() : null,
       ]);
 
+      // Only keys for this batch — null stubs for the full universe overwrite sibling hubs on merge.
       const crypto: Record<string, SimpleMarketDatum> = {};
-      for (const c of CRYPTO_SCREENER_ALL) crypto[c.symbol] = emptyDatum();
       if (includeCrypto) {
         const cryptoMetas = cryptoMetasForBatch(cryptoBatch);
         const symbolList = cryptoRealtimeRequestSymbols(cryptoMetas);
@@ -352,9 +363,6 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
       extraScreenerStocks[t] = toDatum(payload);
     }
     const crypto: Record<string, SimpleMarketDatum> = {};
-    for (const c of CRYPTO_SCREENER_ALL) {
-      crypto[c.symbol] = emptyDatum();
-    }
     if (includeCrypto) {
       for (const c of cryptoMetas) {
         crypto[c.symbol] = toDatum(pickCryptoRealtimePayload(map, c));

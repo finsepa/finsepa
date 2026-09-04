@@ -2100,12 +2100,26 @@ export function PortfolioWorkspaceProvider({
     portalActive: reconnectPortalActive,
     portalNode: reconnectPortalNode,
     startPortal: startReconnectPortal,
+    prefetchPortal: prefetchReconnectPortal,
   } = useSnapTradeConnectPortal({
     onComplete: finalizeConnectBrokerage,
     onClose: () => {
       /* portal owns close; no modal shell for reconnect */
     },
   });
+
+  // SnapTrade login is often 8–20s — warm the link while empty-setup is visible.
+  useEffect(() => {
+    if (plan && !plan.canConnectBrokerage) return;
+    const p = portfolios.find((x) => x.id === selectedPortfolioId);
+    if (!p || portfolioIsCombined(p) || portfolioIsDemo(p)) return;
+    const txs = transactionsByPortfolioId[selectedPortfolioId] ?? [];
+    if (txs.length > 0) return;
+    const t = window.setTimeout(() => {
+      void prefetchReconnectPortal();
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [plan, portfolios, prefetchReconnectPortal, selectedPortfolioId, transactionsByPortfolioId]);
 
   const openReconnectBrokerage = useCallback(
     (portfolioId: string) => {

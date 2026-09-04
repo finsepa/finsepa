@@ -5,7 +5,11 @@ import {
   getScreenerUsMarketCacheEpoch,
   type ScreenerUsMarketCacheEpoch,
 } from "@/lib/screener/screener-us-market-cache";
-import { isUsableCryptoDerivedHub, type CryptoDerivedMetricsSnapshot } from "@/lib/screener/eod-derived-metrics";
+import {
+  CRYPTO_HUB_MIN_FILL_RATIO,
+  isUsableCryptoDerivedHub,
+  type CryptoDerivedMetricsSnapshot,
+} from "@/lib/screener/eod-derived-metrics";
 import { CRYPTO_TOP10 } from "@/lib/market/crypto-meta";
 
 import { MARKET_SNAPSHOT_KEY, type MarketSnapshotKey } from "@/lib/market/market-snapshot-keys";
@@ -20,7 +24,7 @@ function isUsableCryptoTabPayload(payload: unknown): boolean {
     const p = row?.price;
     if (typeof p === "number" && Number.isFinite(p) && p > 0) ok += 1;
   }
-  return ok >= Math.ceil(CRYPTO_TOP10.length * 0.5);
+  return ok >= Math.ceil(CRYPTO_TOP10.length * CRYPTO_HUB_MIN_FILL_RATIO);
 }
 
 export type MarketSnapshotRow = {

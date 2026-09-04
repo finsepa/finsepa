@@ -131,7 +131,14 @@ export function isUsableCryptoDerivedSnapshot(
 }
 
 /**
- * Hub blob `crypto_derived` is usable when a majority of listed symbols have real metrics.
+ * Minimum fill ratio for crypto hub blobs (quotes + derived).
+ * 50% was too weak after TOP10 expanded (stables/HYPE): old hubs still “passed”
+ * while new seed symbols stayed missing.
+ */
+export const CRYPTO_HUB_MIN_FILL_RATIO = 0.75;
+
+/**
+ * Hub blob `crypto_derived` is usable when enough listed symbols have real metrics.
  * Partial empty hubs (e.g. only DOGE filled) were served all weekend under frozen segments.
  */
 export function isUsableCryptoDerivedHub(
@@ -148,5 +155,5 @@ export function isUsableCryptoDerivedHub(
   for (const sym of symbols) {
     if (isUsableCryptoDerivedSnapshot(hub[sym] ?? hub[sym.toUpperCase()])) ok += 1;
   }
-  return ok >= Math.ceil(symbols.length * 0.5);
+  return ok >= Math.ceil(symbols.length * CRYPTO_HUB_MIN_FILL_RATIO);
 }

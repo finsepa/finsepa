@@ -57,9 +57,26 @@ test("isUsableCryptoDerivedHub rejects mostly-empty TOP10 hubs", () => {
     AVAX: empty,
   };
   assert.equal(isUsableCryptoDerivedHub(hub, Object.keys(hub)), false);
+  // 75% of 10 ⇒ need ≥8 usable rows (5+DOGE is not enough after seed expansion).
   assert.equal(
     isUsableCryptoDerivedHub(
       { ...hub, BTC: good, ETH: good, XRP: good, BNB: good, SOL: good },
+      Object.keys(hub),
+    ),
+    false,
+  );
+  assert.equal(
+    isUsableCryptoDerivedHub(
+      {
+        ...hub,
+        BTC: good,
+        ETH: good,
+        XRP: good,
+        BNB: good,
+        SOL: good,
+        ADA: good,
+        TRX: good,
+      },
       Object.keys(hub),
     ),
     true,

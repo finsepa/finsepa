@@ -10,6 +10,7 @@ import {
   getSimpleMarketDataCryptoTab,
   getSimpleMarketDataScreenerStocksAllPages,
   getSimpleScreenerDerived,
+  mergeCryptoMarketDataLayers,
   type SimpleMarketData,
 } from "@/lib/market/simple-market-layer";
 import { REDUCED_CRYPTO } from "@/lib/market/reduced-universe";
@@ -188,10 +189,7 @@ async function buildCryptoLeaves(metric: HeatmapMetric): Promise<HeatmapLeaf[]> 
     getSimpleCryptoDerived(),
   ]);
 
-  const data: SimpleMarketData = {
-    ...tabData,
-    crypto: { ...tabData.crypto, ...p2Data.crypto },
-  };
+  const data = mergeCryptoMarketDataLayers(tabData, p2Data);
 
   const rows = cryptoScreenerRowsFromMetas(CRYPTO_SCREENER_ALL, data, derived);
   const bySym = new Map(rows.map((r) => [r.symbol.toUpperCase(), r] as const));
