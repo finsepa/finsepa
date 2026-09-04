@@ -87,6 +87,6 @@ export function googleFaviconHostForCryptoSymbol(symbol: string): string {
 export function getCryptoLogoUrl(symbol: string): string {
   const u = cryptoRouteBase(symbol.trim().toUpperCase());
   const domain = DOMAIN_BY_SYMBOL[u];
-  if (domain) return companyLogoUrlFromDomain(domain) || logoDevDomainLogoUrl(domain);
-  return logoDevCryptoLogoUrl(u.toLowerCase()) || companyLogoUrlFromDomain(`${u.toLowerCase()}.org`);
+  if (domain) return logoDevDomainLogoUrl(domain) ?? companyLogoUrlFromDomain(domain);
+  return logoDevCryptoLogoUrl(u.toLowerCase()) ?? companyLogoUrlFromDomain(`${u.toLowerCase()}.org`);
 }
