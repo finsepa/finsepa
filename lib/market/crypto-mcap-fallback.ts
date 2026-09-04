@@ -1,5 +1,6 @@
 /**
- * Approximate USD market caps for screener ranking/display when `crypto_derived` is missing a symbol.
+ * Approximate USD market caps for screener ranking/display when `crypto_derived` is missing a symbol
+ * or EODHD returns a junk/tiny cap (e.g. HYPE ~$8k from bad supply × price).
  * Kept free of `server-only` so client-safe sorters can import it.
  */
 export const CRYPTO_MCAP_FALLBACK_USD: Readonly<Record<string, number>> = {
@@ -42,4 +43,22 @@ export const CRYPTO_MCAP_FALLBACK_USD: Readonly<Record<string, number>> = {
 export function cryptoMcapFallbackUsd(symbol: string): number | null {
   const n = CRYPTO_MCAP_FALLBACK_USD[symbol.trim().toUpperCase()];
   return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Prefer a real provider cap when sane; if it's missing or absurdly below our curated
+ * estimate (bad EODHD supply×price), use the fallback so majors stay near CMC order.
+ */
+export function resolveCryptoMarketCapUsd(
+  symbol: string,
+  derivedOrFetched: number | null | undefined,
+): number | null {
+  const fallback = cryptoMcapFallbackUsd(symbol);
+  const mc =
+    typeof derivedOrFetched === "number" && Number.isFinite(derivedOrFetched) && derivedOrFetched > 0
+      ? derivedOrFetched
+      : null;
+  if (mc == null) return fallback;
+  if (fallback != null && mc < fallback * 0.01) return fallback;
+  return mc;
 }

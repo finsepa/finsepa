@@ -12,6 +12,7 @@ import type {
   SimpleMarketData,
 } from "@/lib/market/simple-market-layer";
 import { reducedCryptoMarketCapDisplay } from "@/lib/market/reduced-universe";
+import { resolveCryptoMarketCapUsd } from "@/lib/market/crypto-mcap-fallback";
 import { formatMarketCapCompactNoCurrency } from "@/lib/screener/eod-derived-metrics";
 import { sortCryptoMetasByMarketCap } from "@/lib/screener/crypto-mcap-sort";
 import type { EtfTableRow, ScreenerEtfMeta } from "@/lib/screener/screener-etfs-universe";
@@ -64,8 +65,8 @@ export function cryptoScreenerRowsFromMetas(
       changePercent1M: d?.changePercent1M ?? null,
       changePercentYTD: d?.changePercentYTD ?? null,
       marketCap: (() => {
-        const mc = d?.marketCapUsd;
-        if (mc != null && Number.isFinite(mc) && mc > 0) return formatMarketCapCompactNoCurrency(mc);
+        const resolved = resolveCryptoMarketCapUsd(sym, d?.marketCapUsd ?? null);
+        if (resolved != null) return formatMarketCapCompactNoCurrency(resolved);
         return reducedCryptoMarketCapDisplay(sym);
       })(),
       sparkline5d: d?.last5DailyCloses ?? [],

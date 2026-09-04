@@ -887,7 +887,7 @@ async function loadSimpleCryptoDerivedUncached(): Promise<SimpleCryptoDerived> {
 }
 
 async function getSimpleCryptoDerivedCached(): Promise<SimpleCryptoDerived> {
-  return unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v13-with-stables"], {
+  return unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v14-sane-mcap"], {
     revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
   })();
 }

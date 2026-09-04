@@ -164,7 +164,7 @@ function GoalProjectionConfigBadges({
           `${GOAL_USD.format(goal.monthlyContributionUsd)} / m`
         : "No"}
       </GoalSettingBadge>
-      <GoalSettingBadge>Dividends reinvest: {goal.reinvestDividends ? "On" : "Off"}</GoalSettingBadge>
+      <GoalSettingBadge>Dividends reinvest: {goal.reinvestDividends ? "Yes" : "No"}</GoalSettingBadge>
     </>
   );
 }

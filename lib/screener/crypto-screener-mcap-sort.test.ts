@@ -48,3 +48,17 @@ test("sortCryptoMetasByMarketCap uses fallback caps for stables when derived mis
     ["BTC", "USDT", "USDC", "DOGE"],
   );
 });
+
+test("sortCryptoMetasByMarketCap replaces junk tiny HYPE mcap with fallback", () => {
+  const metas = [meta("DOGE"), meta("HYPE"), meta("BTC")];
+  const derived = {
+    BTC: { marketCapUsd: 1e12 },
+    // Bad EODHD implied cap (~price × wrong supply)
+    HYPE: { marketCapUsd: 8105.71 },
+    DOGE: { marketCapUsd: 14e9 },
+  };
+  assert.deepEqual(
+    sortCryptoMetasByMarketCap(metas, derived).map((m) => m.symbol),
+    ["BTC", "HYPE", "DOGE"],
+  );
+});

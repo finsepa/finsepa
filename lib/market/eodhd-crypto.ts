@@ -11,6 +11,7 @@ import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import { fetchEodhdCryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
 import type { EodhdDailyBar, EodhdOpenOnDateResult } from "@/lib/market/eodhd-eod";
 import { readCryptoMarketCapSnapshot, upsertCryptoMarketCapSnapshot } from "@/lib/market/crypto-market-cap-snapshot";
+import { resolveCryptoMarketCapUsd } from "@/lib/market/crypto-mcap-fallback";
 import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
 /**
@@ -166,28 +167,33 @@ export function lastPositiveCloseFromCryptoBars(bars: EodhdDailyBar[] | null | u
 /**
  * Tries primary + alternate EODHD symbols until a market cap is resolved:
  * reported cap → fully diluted cap → implied (circulating or total supply × last EOD close).
+ * Rejects absurdly small caps vs curated fallback (bad EODHD supply for HYPE etc.).
  */
 export async function fetchCryptoMarketCapUsdForMeta(
   meta: CryptoMeta,
   lastCloseUsd: number | null = null,
 ): Promise<number | null> {
   const snap = await readCryptoMarketCapSnapshot(meta.symbol);
-  if (snap !== undefined) return snap;
+  if (snap !== undefined) {
+    return resolveCryptoMarketCapUsd(meta.symbol, snap);
+  }
 
   for (const sym of eodhdSymbolsForMeta(meta)) {
     const m = await fetchEodhdCryptoFundamentalsMeta(sym);
     if (!m) continue;
     if (m.marketCapUsd != null && Number.isFinite(m.marketCapUsd) && m.marketCapUsd > 0) {
-      void upsertCryptoMarketCapSnapshot(meta.symbol, m.marketCapUsd);
-      return m.marketCapUsd;
+      const resolved = resolveCryptoMarketCapUsd(meta.symbol, m.marketCapUsd);
+      void upsertCryptoMarketCapSnapshot(meta.symbol, resolved);
+      return resolved;
     }
     if (
       m.fullyDilutedMarketCapUsd != null &&
       Number.isFinite(m.fullyDilutedMarketCapUsd) &&
       m.fullyDilutedMarketCapUsd > 0
     ) {
-      void upsertCryptoMarketCapSnapshot(meta.symbol, m.fullyDilutedMarketCapUsd);
-      return m.fullyDilutedMarketCapUsd;
+      const resolved = resolveCryptoMarketCapUsd(meta.symbol, m.fullyDilutedMarketCapUsd);
+      void upsertCryptoMarketCapSnapshot(meta.symbol, resolved);
+      return resolved;
     }
     const sup = m.circulatingSupply ?? m.totalSupply;
     if (
@@ -199,11 +205,13 @@ export async function fetchCryptoMarketCapUsdForMeta(
     ) {
       const implied = lastCloseUsd * sup;
       if (Number.isFinite(implied) && implied > 0) {
-        void upsertCryptoMarketCapSnapshot(meta.symbol, implied);
-        return implied;
+        const resolved = resolveCryptoMarketCapUsd(meta.symbol, implied);
+        void upsertCryptoMarketCapSnapshot(meta.symbol, resolved);
+        return resolved;
       }
     }
   }
-  void upsertCryptoMarketCapSnapshot(meta.symbol, null);
-  return null;
+  const fallbackOnly = resolveCryptoMarketCapUsd(meta.symbol, null);
+  void upsertCryptoMarketCapSnapshot(meta.symbol, fallbackOnly);
+  return fallbackOnly;
 }
