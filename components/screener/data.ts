@@ -58,4 +58,5 @@ export const logoColors: Record<string, { bg: string; text: string; border: stri
   TSMC: { bg: "bg-[#e8002d]", text: "text-white", border: "border-red-300" },
   "Eli Lilly": { bg: "bg-[#d52b1e]", text: "text-white", border: "border-red-300" },
   Tesla: { bg: "bg-[#cc0000]", text: "text-white", border: "border-red-400" },
+  Broadcom: { bg: "bg-[#CF2032]", text: "text-white", border: "border-red-400" },
 };

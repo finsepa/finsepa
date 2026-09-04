@@ -28,6 +28,7 @@
     "loops:diagnose": "node --env-file=.env.local scripts/diagnose-loops-transactional.mjs",
     "eodhd:estimate": "node scripts/eodhd-load-estimate.mjs",
     "eodhd:probe": "node scripts/eodhd-traffic-probe.mjs",
+    "eodhd:fanout-probe": "node scripts/screener-fanout-probe.mjs",
     "key-indicators:check": "node --env-file=.env.local scripts/key-indicators-rollout-check.mjs",
     "key-indicators:spike": "node --env-file=.env.local scripts/key-indicators-sample-spike.mjs",
     "superinvestors:test": "node --test --experimental-strip-types lib/superinvestors/superinvestor-13f-validate.test.ts lib/superinvestors/superinvestor-13f-options.test.ts lib/superinvestors/default-superinvestor-follows.test.ts",

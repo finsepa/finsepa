@@ -10,6 +10,11 @@ import { logoColors } from "./data";
 
 const LOGO_INSET_TICKERS = new Set(["AAPL", "GOOGL", "GOOG", "MSFT", "MU"]);
 
+/** Per-ticker tile background (brand color behind transparent / white marks). */
+const LOGO_TILE_BG: Partial<Record<string, string>> = {
+  AVGO: "bg-[#CF2032]",
+};
+
 /** Per-ticker zoom inside the fixed frame (logos with baked-in whitespace). */
 const LOGO_SCALE_BOOST: Partial<Record<string, number>> = {
   INTC: 1.16,
@@ -20,6 +25,12 @@ const LOGO_SCALE_BOOST: Partial<Record<string, number>> = {
   LTC: 1.28,
   BCH: 1.3,
 };
+
+function logoTileBgClass(symbol: string | undefined): string {
+  const sym = symbol?.trim().toUpperCase();
+  if (!sym) return "bg-surface";
+  return LOGO_TILE_BG[sym] ?? "bg-surface";
+}
 
 function logoScaleBoost(symbol: string | undefined): number | null {
   const sym = symbol?.trim().toUpperCase();
@@ -201,7 +212,8 @@ export function CompanyLogo({
       <div
         className={cn(
           imgBox,
-          "relative shrink-0 overflow-hidden border border-stroke-muted bg-surface",
+          "relative shrink-0 overflow-hidden border border-stroke-muted",
+          logoTileBgClass(sym),
           className,
         )}
       >
@@ -234,7 +246,8 @@ export function CompanyLogo({
       fetchPriority={eagerLoad ? "high" : undefined}
       className={cn(
         imgBox,
-        "shrink-0 border border-stroke-muted bg-surface object-contain",
+        "shrink-0 border border-stroke-muted object-contain",
+        logoTileBgClass(sym),
         brandLogoInsetClass(symbol, size),
         className,
       )}

@@ -327,7 +327,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
     isProScheduledCancellation && periodEndLabel
       ? `Active until ${periodEndLabel}`
       : subscriptionMeta;
-  const actionLabel = billingPlan === "pro" ? "Manage Subscription" : "Upgrade to Pro";
+  const actionLabel = billingPlan === "pro" ? "Manage Subscription" : "Get Pro";
   const showManageOnPaymentCard = billingPlan === "pro";
   const showUpgradeOnPaymentCard = billingPlan !== "pro";
   const recurringAmount =

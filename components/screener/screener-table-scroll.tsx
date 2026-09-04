@@ -18,8 +18,8 @@ import { cn } from "@/lib/utils";
 export const SCREENER_TABLE_HEADER_STICKY_CLASS =
   "sticky z-30 isolate bg-surface top-[var(--mobile-topbar-offset,0px)] border-b border-solid border-table-row-stroke md:top-0";
 
-/** Top corners for the header inside a 16px-radius screener table card. */
-export const SCREENER_TABLE_ROUNDED_HEADER_CLASS = "max-md:rounded-t-2xl md:rounded-t-2xl";
+/** Top corners for the header inside a 16px-radius screener table card (pairs with card `overflow-clip`). */
+export const SCREENER_TABLE_ROUNDED_HEADER_CLASS = "rounded-t-2xl";
 
 /**
  * Sticky header inside an overflow scroller (e.g. Financials viewport table).
@@ -86,9 +86,10 @@ export const SCREENER_TABLE_OUTER_BORDER_CLASS =
   "border border-solid border-stroke-subtle";
 
 /** 16px rounded surface + shared card chrome (stroke + shadow).
- * No `overflow-hidden` — sticky column labels must stick to `<main>` / page scroll. */
+ * Prefer `overflow-clip` (not `hidden`) so corners stay rounded without creating a
+ * scrollport that would break sticky headers against `<main>` / page scroll. */
 export const SCREENER_TABLE_MOBILE_SURFACE_CLASS = cn(
-  "rounded-2xl bg-surface",
+  "overflow-clip rounded-2xl bg-surface",
   MOBILE_CARD_SURFACE_CLASS,
 );
 

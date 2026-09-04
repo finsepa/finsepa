@@ -74,7 +74,7 @@ export function TopbarUpgradeButton({
   if (!planReady) return null;
 
   return (
-    <TopbarDelayedTooltip label="Upgrade" className="hidden shrink-0 md:block">
+    <TopbarDelayedTooltip label="Get Pro" className="hidden shrink-0 md:block">
       <button
         type="button"
         onClick={() => {
@@ -87,7 +87,7 @@ export function TopbarUpgradeButton({
         )}
       >
         <Sparkles className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
-        Upgrade
+        Get Pro
       </button>
     </TopbarDelayedTooltip>
   );
