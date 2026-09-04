@@ -46,6 +46,15 @@ export const MARKET_SNAPSHOT_HOT_INGEST_KEYS: readonly MarketSnapshotKey[] = [
   MARKET_SNAPSHOT_KEY.screenerGainersLosers,
 ];
 
+/**
+ * Crypto screener hot quotes (page 1 + page 2) — refresh on the 15m cron even when US equities are frozen
+ * (crypto trades 24/7). Not `crypto_derived` (slow EOD/mcap).
+ */
+export const MARKET_SNAPSHOT_CRYPTO_HOT_INGEST_KEYS: readonly MarketSnapshotKey[] = [
+  MARKET_SNAPSHOT_KEY.cryptoTab,
+  MARKET_SNAPSHOT_KEY.cryptoPage2,
+];
+
 /** EOD-bar derived blobs — once per regular session day during live hours. */
 export const MARKET_SNAPSHOT_SLOW_INGEST_KEYS: readonly MarketSnapshotKey[] = [
   MARKET_SNAPSHOT_KEY.screenerDerived,

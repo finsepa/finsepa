@@ -1,6 +1,7 @@
 import "server-only";
 
 import {
+  MARKET_SNAPSHOT_CRYPTO_HOT_INGEST_KEYS,
   MARKET_SNAPSHOT_HOT_INGEST_KEYS,
   MARKET_SNAPSHOT_INGEST_KEYS,
   MARKET_SNAPSHOT_KEY,
@@ -17,6 +18,7 @@ import {
 } from "@/lib/market/market-snapshot-store";
 import { runWithProviderTrace } from "@/lib/market/provider-trace";
 import {
+  buildMarketSnapshotCryptoHotPayloadsForIngest,
   buildMarketSnapshotHotPayloadsForIngest,
   buildMarketSnapshotSlowPayloadsForIngest,
 } from "@/lib/market/market-snapshot-ingest-sources";
@@ -29,6 +31,10 @@ const LIVE_HOT_INGEST_MIN_INTERVAL_MS = MARKET_SNAPSHOT_HOT_STALE_MS;
 const FROZEN_INGEST_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 /** Live session: derived EOD bars need at most one cron fill per regular day. */
 const LIVE_SLOW_INGEST_MAX_AGE_MS = 20 * 60 * 60 * 1000;
+
+const EQUITY_HOT_SKIP_KEYS: readonly MarketSnapshotKey[] = MARKET_SNAPSHOT_HOT_INGEST_KEYS.filter(
+  (k) => !MARKET_SNAPSHOT_CRYPTO_HOT_INGEST_KEYS.includes(k),
+);
 
 export type MarketSnapshotIngestSkipState = {
   hotSkipReason: string | null;
@@ -82,15 +88,66 @@ export async function getMarketSnapshotIngestSkipState(
   };
 }
 
-/** True only when both hot and slow tiers are fresh — full cron skip. */
+/**
+ * True when equity hot+slow can skip **and** crypto hot hubs are still fresh.
+ * Frozen US session still refreshes `crypto_tab` / `crypto_page2` on the 15m cadence.
+ */
 export async function shouldSkipMarketSnapshotIngest(now: Date = new Date()): Promise<string | null> {
   const { hotSkipReason, slowSkipReason } = await getMarketSnapshotIngestSkipState(now);
-  if (hotSkipReason && slowSkipReason) return `${hotSkipReason};${slowSkipReason}`;
-  return null;
+  if (!(hotSkipReason && slowSkipReason)) return null;
+
+  if (hotSkipReason === "frozen_segment_fresh") {
+    const epoch = getScreenerUsMarketCacheEpoch(now);
+    const hotSeg = marketSnapshotHotSegment(epoch);
+    const cryptoFresh = await Promise.all(
+      MARKET_SNAPSHOT_CRYPTO_HOT_INGEST_KEYS.map((k) =>
+        marketSnapshotKeyIsFresh(k, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS),
+      ),
+    );
+    if (!cryptoFresh.every(Boolean)) return null;
+  }
+
+  return `${hotSkipReason};${slowSkipReason}`;
 }
 
 function skippedKeys(keys: readonly MarketSnapshotKey[]): Record<string, "skipped"> {
   return Object.fromEntries(keys.map((k) => [k, "skipped"] as const));
+}
+
+async function upsertCryptoHotIfStale(
+  hotSeg: string,
+  keys: Record<string, "ok" | "skipped" | string>,
+): Promise<boolean> {
+  const cryptoEntries: ["cryptoTab" | "cryptoPage2", MarketSnapshotKey][] = [
+    ["cryptoTab", MARKET_SNAPSHOT_KEY.cryptoTab],
+    ["cryptoPage2", MARKET_SNAPSHOT_KEY.cryptoPage2],
+  ];
+  const pendingFetch: typeof cryptoEntries = [];
+  for (const entry of cryptoEntries) {
+    const [, snapshotKey] = entry;
+    if (await marketSnapshotKeyIsFresh(snapshotKey, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)) {
+      keys[snapshotKey] = "ok";
+      continue;
+    }
+    const retagged = await retagRecentMarketSnapshotSegment(
+      snapshotKey,
+      hotSeg,
+      LIVE_HOT_INGEST_MIN_INTERVAL_MS,
+    );
+    if (retagged) {
+      keys[snapshotKey] = "segment_retagged";
+      continue;
+    }
+    pendingFetch.push(entry);
+  }
+  if (!pendingFetch.length) return false;
+
+  const crypto = await buildMarketSnapshotCryptoHotPayloadsForIngest();
+  for (const [name, snapshotKey] of pendingFetch) {
+    const res = await upsertMarketSnapshot(snapshotKey, hotSeg, crypto[name]);
+    keys[snapshotKey] = res.ok ? "ok" : res.reason;
+  }
+  return true;
 }
 
 export async function ingestMarketSnapshots(now: Date = new Date()): Promise<MarketSnapshotIngestResult> {
@@ -112,6 +169,7 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
     }
 
     const { hotSkipReason, slowSkipReason } = await getMarketSnapshotIngestSkipState(now);
+    let cryptoRefreshedWhileFrozen = false;
 
     if (!hotSkipReason) {
       const hotEntries: [keyof Awaited<ReturnType<typeof buildMarketSnapshotHotPayloadsForIngest>>, MarketSnapshotKey][] = [
@@ -146,7 +204,13 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
         }
       }
     } else {
-      Object.assign(keys, skippedKeys(MARKET_SNAPSHOT_HOT_INGEST_KEYS));
+      Object.assign(keys, skippedKeys(EQUITY_HOT_SKIP_KEYS));
+      // Crypto 24/7: keep refreshing screener page1/page2 while US equities stay frozen.
+      if (hotSkipReason === "frozen_segment_fresh") {
+        cryptoRefreshedWhileFrozen = await upsertCryptoHotIfStale(hotSeg, keys);
+      } else {
+        Object.assign(keys, skippedKeys(MARKET_SNAPSHOT_CRYPTO_HOT_INGEST_KEYS));
+      }
     }
 
     if (!slowSkipReason) {
@@ -215,13 +279,18 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
       }
     }
 
-    const skipped = Boolean(hotSkipReason && slowSkipReason);
+    const equitySkipped = Boolean(hotSkipReason && slowSkipReason);
+    const skipped = equitySkipped && !cryptoRefreshedWhileFrozen;
     return {
       segment: hotSeg,
       slowSegment: slowSeg,
       mode: epoch.mode,
       skipped,
-      skipReason: skipped ? `${hotSkipReason};${slowSkipReason}` : undefined,
+      skipReason: equitySkipped
+        ? cryptoRefreshedWhileFrozen
+          ? `${hotSkipReason};${slowSkipReason};crypto_hot_refreshed`
+          : `${hotSkipReason};${slowSkipReason}`
+        : undefined,
       hotSkipReason: hotSkipReason ?? undefined,
       slowSkipReason: slowSkipReason ?? undefined,
       keys,

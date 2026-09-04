@@ -50,6 +50,17 @@ export async function buildMarketSnapshotHotPayloadsForIngest(): Promise<MarketS
   return { stocksAllPages, cryptoTab, cryptoPage2, indicesTab };
 }
 
+/** Crypto screener hot hubs only (US-frozen off-hours refresh). */
+export async function buildMarketSnapshotCryptoHotPayloadsForIngest(): Promise<
+  Pick<MarketSnapshotHotIngestPayloads, "cryptoTab" | "cryptoPage2">
+> {
+  const [cryptoTab, cryptoPage2] = await Promise.all([
+    buildMarketSnapshotCryptoTabForIngest(),
+    buildMarketSnapshotCryptoPage2ForIngest(),
+  ]);
+  return { cryptoTab, cryptoPage2 };
+}
+
 /** EOD-derived blobs — cron only; never reads Supabase. */
 export async function buildMarketSnapshotSlowPayloadsForIngest(): Promise<MarketSnapshotSlowIngestPayloads> {
   const [screenerDerived, cryptoDerived, indicesDerived, currenciesTab] = await Promise.all([
