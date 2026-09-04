@@ -188,12 +188,12 @@ export function BillingPlansPageClient({ plan }: { plan: BillingPlansViewState }
     proPrimaryAction === "upgrade-cycle"
       ? plan.isPro
         ? "Switch to yearly"
-        : "Upgrade to Pro"
+        : "Get Pro"
       : proPrimaryAction === "downgrade-cycle"
         ? "Switch to monthly"
         : proPrimaryAction === "current"
           ? "Current plan"
-          : "Upgrade to Pro";
+          : "Get Pro";
 
   async function onUpgradeCheckout() {
     setCheckoutLoading(true);
@@ -384,7 +384,7 @@ export function BillingPlansPageClient({ plan }: { plan: BillingPlansViewState }
                   {checkoutLoading ? (
                     <SpinnerLabel>Redirecting…</SpinnerLabel>
                   ) : (
-                    "Upgrade to Pro"
+                    "Get Pro"
                   )}
                 </button>
               )}

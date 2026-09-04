@@ -39,7 +39,7 @@ export function ActivateSubscriptionClient() {
             onClick={() => router.push(PATH_ACCOUNT_PLANS)}
             className="mt-8 h-11 w-full rounded-[10px] bg-fg text-sm font-semibold text-surface transition-colors hover:bg-[#18181B] dark:hover:bg-fg/90"
           >
-            Upgrade to Pro
+            Get Pro
           </button>
           <button
             type="button"

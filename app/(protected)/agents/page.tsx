@@ -30,7 +30,7 @@ export default function AgentPage() {
             className={cn(accentFillButtonClassName, "mt-6")}
             onClick={() => router.push(PATH_ACCOUNT_PLANS)}
           >
-            Upgrade to Pro
+            Get Pro
           </button>
         </div>
       </div>

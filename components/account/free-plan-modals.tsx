@@ -175,7 +175,7 @@ export function FreePlanLimitsIntroModal() {
               onClick={openUpgradePlans}
               className={cn(appModalCancelButtonClass, "disabled:cursor-not-allowed disabled:opacity-50")}
             >
-              Upgrade to Pro
+              Get Pro
             </button>
             <button
               type="button"
@@ -379,7 +379,7 @@ export function FreePortfolioPickModal({
                 onClick={() => router.push(PATH_ACCOUNT_PLANS)}
                 className={appModalPrimaryButtonClass(true)}
               >
-                Upgrade to Pro
+                Get Pro
               </button>
             ) : (
               <button

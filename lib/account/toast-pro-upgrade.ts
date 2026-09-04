@@ -17,7 +17,7 @@ export function toastProUpgrade(args: {
   toast.error(args.title, {
     description: args.description,
     action: {
-      label: "Upgrade",
+      label: "Get Pro",
       onClick: () => {
         if (args.onUpgrade) {
           args.onUpgrade();
