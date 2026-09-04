@@ -309,7 +309,13 @@ export async function forceIngestCryptoDerived(now: Date = new Date()): Promise<
   sampleMcaps: Record<string, number | null>;
   symbolCount: number;
 }> {
-  return runWithProviderTrace("cron/market-snapshots-force-crypto-derived", async () => {
+  type ForceDerivedResult = {
+    segment: string;
+    result: "ok" | string;
+    sampleMcaps: Record<string, number | null>;
+    symbolCount: number;
+  };
+  return runWithProviderTrace("cron/market-snapshots-force-crypto-derived", async (): Promise<ForceDerivedResult> => {
     const epoch = getScreenerUsMarketCacheEpoch(now);
     const slowSeg = marketSnapshotSlowSegment(epoch);
     if (!getSupabaseAdminClient()) {
@@ -317,16 +323,20 @@ export async function forceIngestCryptoDerived(now: Date = new Date()): Promise<
     }
     const derived = await buildMarketSnapshotCryptoDerivedForIngest();
     const res = await upsertMarketSnapshot(MARKET_SNAPSHOT_KEY.cryptoDerived, slowSeg, derived);
+    const mcap = (sym: string): number | null => {
+      const v = derived[sym]?.marketCapUsd;
+      return typeof v === "number" && Number.isFinite(v) ? v : null;
+    };
     return {
       segment: slowSeg,
       result: res.ok ? "ok" : res.reason,
       symbolCount: Object.keys(derived).length,
       sampleMcaps: {
-        USDT: derived.USDT?.marketCapUsd ?? null,
-        SUI: derived.SUI?.marketCapUsd ?? null,
-        PEPE: derived.PEPE?.marketCapUsd ?? null,
-        HYPE: derived.HYPE?.marketCapUsd ?? null,
-        BTC: derived.BTC?.marketCapUsd ?? null,
+        USDT: mcap("USDT"),
+        SUI: mcap("SUI"),
+        PEPE: mcap("PEPE"),
+        HYPE: mcap("HYPE"),
+        BTC: mcap("BTC"),
       },
     };
   });
