@@ -98,7 +98,12 @@ export const CRYPTO_SEARCH_EXTRA: CryptoMeta[] = [
   { symbol: "LDO", name: "Lido DAO", eodhdSymbol: "LDO-USD.CC" },
   { symbol: "STX", name: "Stacks", eodhdSymbol: "STX-USD.CC" },
   { symbol: "IMX", name: "Immutable", eodhdSymbol: "IMX-USD.CC", eodhdAltSymbols: ["IMX-USDT.CC"] },
-  { symbol: "GRT", name: "The Graph", eodhdSymbol: "GRT-USD.CC", eodhdAltSymbols: ["GRT-USDT.CC"] },
+  {
+    symbol: "GRT",
+    name: "The Graph",
+    eodhdSymbol: "GRT6719-USD.CC",
+    eodhdAltSymbols: ["GRT-USD.CC", "GRT-USDT.CC"],
+  },
   { symbol: "FET", name: "Fetch.ai", eodhdSymbol: "FET-USD.CC" },
   { symbol: "RNDR", name: "Render", eodhdSymbol: "RNDR-USD.CC" },
   { symbol: "SNX", name: "Synthetix", eodhdSymbol: "SNX-USD.CC" },

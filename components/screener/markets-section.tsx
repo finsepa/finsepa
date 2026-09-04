@@ -1054,7 +1054,12 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       <MarketTabs
         active={displayTab}
         onChange={setMarketTab}
-        trailing={<UsMarketsSessionLabel className="hidden md:inline-flex" />}
+        trailing={
+          <UsMarketsSessionLabel
+            className="hidden md:inline-flex"
+            market={displayTab === "Crypto" ? "crypto" : "us-equity"}
+          />
+        }
       />
 
       {!contentReady ? (
