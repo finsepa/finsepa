@@ -2111,9 +2111,11 @@ export function PortfolioWorkspaceProvider({
   // SnapTrade login is often 8–20s — warm the link while empty-setup is visible.
   useEffect(() => {
     if (plan && !plan.canConnectBrokerage) return;
-    const p = portfolios.find((x) => x.id === selectedPortfolioId);
+    if (!selectedPortfolioId) return;
+    const portfolioId = selectedPortfolioId;
+    const p = portfolios.find((x) => x.id === portfolioId);
     if (!p || portfolioIsCombined(p) || portfolioIsDemo(p)) return;
-    const txs = transactionsByPortfolioId[selectedPortfolioId] ?? [];
+    const txs = transactionsByPortfolioId[portfolioId] ?? [];
     if (txs.length > 0) return;
     const t = window.setTimeout(() => {
       void prefetchReconnectPortal();
