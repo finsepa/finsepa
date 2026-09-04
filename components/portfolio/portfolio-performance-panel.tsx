@@ -509,7 +509,7 @@ function PortfolioPerformancePanelInner({
       />
 
       <PerformanceChartSection
-        title="Portfolio return"
+        title="Time-weighted return"
         metric="return"
         range={range}
         onRangeChange={applyRange}

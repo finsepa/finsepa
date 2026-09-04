@@ -13,7 +13,6 @@ import {
 import { createPortal } from "react-dom";
 
 import { usePortfolioOverviewAthPublisher } from "@/components/portfolio/portfolio-overview-ath-context";
-import { ChevronDown } from "@/lib/icons";
 
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
@@ -32,9 +31,7 @@ import {
   lifetimeEquityProfitUsd,
   tradeSymbolsFromHistory,
 } from "@/lib/portfolio/realized-pnl-from-trades";
-import type { OverviewProfitPeriod } from "@/lib/portfolio/overview-market-types";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
-import { fetchPortfolioDietzReturnsClient } from "@/lib/portfolio/returns/fetch-dietz-returns-client";
 import { cn } from "@/lib/utils";
 
 const SPY_BENCHMARK = "SPY";
@@ -51,14 +48,6 @@ const pctFmt = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
-const PERIOD_OPTIONS: { id: OverviewProfitPeriod; label: string }[] = [
-  { id: "all", label: "All time" },
-  { id: "m1", label: "1M" },
-  { id: "ytd", label: "YTD" },
-  { id: "y1", label: "1Y" },
-  { id: "y5", label: "5Y" },
-];
-
 /** Matches elevated card chrome; 16px inset (denser than 20px multichart panels). */
 const OVERVIEW_METRIC_CARD_CLASS = cn(
   "flex flex-col items-start gap-1 overflow-hidden p-4",
@@ -72,15 +61,13 @@ function totalProfitTooltipPosition(trigger: HTMLElement) {
   return { left, top: rect.bottom + 8, maxWidth };
 }
 
-function TotalProfitBreakdownTooltip({
+function TradingProfitBreakdownTooltip({
   tooltipId,
-  period,
   realizedLifetimeUsd,
   unrealizedLifetimeUsd,
   children,
 }: {
   tooltipId: string;
-  period: OverviewProfitPeriod;
   realizedLifetimeUsd: number;
   unrealizedLifetimeUsd: number;
   children: ReactNode;
@@ -127,11 +114,10 @@ function TotalProfitBreakdownTooltip({
         )}
         style={{ left: pos.left, top: pos.top, maxWidth: pos.maxWidth }}
       >
-        {period !== "all" ? (
-          <p className="mb-2 border-b border-surface-muted pb-2 text-[11px] font-medium leading-4 text-fg-muted">
-            Lifetime equity P&amp;L (open vs sold). Headline uses the period you selected.
-          </p>
-        ) : null}
+        <p className="mb-2 border-b border-surface-muted pb-2 text-[11px] font-medium leading-4 text-fg-muted">
+          Trading P&amp;L on cost: realized (sold) + unrealized (still held). Percent is profit ÷
+          historical cost — not time-weighted return.
+        </p>
         <div className="flex items-baseline justify-between gap-4">
           <span className="shrink-0 text-fg-muted">Realized (sold)</span>
           <span
@@ -178,11 +164,6 @@ function TotalProfitBreakdownTooltip({
   );
 }
 
-type DietzPeriodSlice = {
-  pct: number | null;
-  gainUsd: number | null;
-};
-
 function PortfolioOverviewCardsInner({
   holdings,
   transactions,
@@ -195,17 +176,17 @@ function PortfolioOverviewCardsInner({
   const cash = useMemo(() => netCashUsd(transactions), [transactions]);
   const netWorth = useMemo(() => totalNetWorth(holdings, cash), [holdings, cash]);
   const invested = useMemo(() => totalCostBasisInvested(holdings), [holdings]);
-  const profitAllUsd = useMemo(
+  const tradingProfitUsd = useMemo(
     () => lifetimeEquityProfitUsd(holdings, transactions),
     [holdings, transactions],
   );
-  /** Lifetime equity ROC — reconciles with All $ (not flow-adjusted Dietz). */
-  const profitAllPct = useMemo(() => {
+  /** Simple return on historical equity cost — Trading profit %. */
+  const tradingProfitPct = useMemo(() => {
     const pct = lifetimeEquityProfitPct(holdings, transactions);
     if (pct != null) return pct;
-    if (profitAllUsd === 0) return 0;
+    if (tradingProfitUsd === 0) return 0;
     return null;
-  }, [holdings, transactions, profitAllUsd]);
+  }, [holdings, transactions, tradingProfitUsd]);
   const realizedLifetimeUsd = useMemo(
     () => cumulativeRealizedGainUsd(transactions),
     [transactions],
@@ -217,21 +198,15 @@ function PortfolioOverviewCardsInner({
     [transactions],
   );
 
-  const [period, setPeriod] = useState<OverviewProfitPeriod>("all");
   /** False until overview-market finishes when any symbols need a quote. */
   const [overviewReady, setOverviewReady] = useState(false);
   const lastOverviewLoadKeyRef = useRef("");
   const lastOverviewLoadStateRef = useRef<"idle" | "inflight" | "done" | "error">("idle");
   const overviewLoadGenRef = useRef(0);
-  const overviewReadyRef = useRef(false);
-  overviewReadyRef.current = overviewReady;
-  /** Retained from overview-market payload (benchmark path); period cards use Dietz. */
+  /** Retained from overview-market payload (benchmark path). */
   const [, setPerfBySymbol] = useState<Record<string, StockPerformance | null>>({});
   const [, setSpyPerf] = useState<StockPerformance | null>(null);
   const [yieldBySymbol, setYieldBySymbol] = useState<Record<string, number | null>>({});
-  const [dietzByPeriod, setDietzByPeriod] = useState<
-    Partial<Record<Exclude<OverviewProfitPeriod, "all">, DietzPeriodSlice>>
-  >({});
   const [benchmarkCompare, setBenchmarkCompare] = useState<{
     portfolioPct: number | null;
     benchmarkPct: number | null;
@@ -337,7 +312,6 @@ function PortfolioOverviewCardsInner({
       }
     } catch {
       if (gen !== overviewLoadGenRef.current) return;
-      // Keep prior market/yield snapshot on failure — avoid dividend flash to "—".
       lastOverviewLoadStateRef.current = "error";
     } finally {
       if (gen === overviewLoadGenRef.current) {
@@ -350,39 +324,7 @@ function PortfolioOverviewCardsInner({
     void loadMarket();
   }, [loadMarket]);
 
-  /** Phase 2: Modified Dietz for 1M / YTD / 1Y / 5Y overview cards. */
-  useEffect(() => {
-    if (transactions.length === 0) {
-      setDietzByPeriod({});
-      return;
-    }
-    let cancelled = false;
-    const run = async () => {
-      try {
-        const data = await fetchPortfolioDietzReturnsClient(transactions, [
-          "m1",
-          "ytd",
-          "y1",
-          "y5",
-        ]);
-        if (cancelled) return;
-        const next: Partial<Record<Exclude<OverviewProfitPeriod, "all">, DietzPeriodSlice>> = {};
-        for (const key of ["m1", "ytd", "y1", "y5"] as const) {
-          const row = data[key];
-          if (row) next[key] = { pct: row.pct, gainUsd: row.gainUsd };
-        }
-        setDietzByPeriod(next);
-      } catch {
-        // Keep prior successful Dietz slices — avoid flashing "—" on transient failure.
-      }
-    };
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [transactions]);
-
-  /** Phase 3: contribution-model Dietz vs Dietz (Ahead / S&P card). */
+  /** Contribution-model Dietz vs Dietz (time-weighted return / Ahead of S&P). */
   useEffect(() => {
     if (transactions.length === 0) {
       setBenchmarkCompare(null);
@@ -439,7 +381,6 @@ function PortfolioOverviewCardsInner({
           if (!cancelled) void run(attempt + 1);
           return;
         }
-        // Keep prior successful compare on hard failure — avoid flashing "—".
         setBenchmarkLoading(false);
       }
     };
@@ -449,37 +390,8 @@ function PortfolioOverviewCardsInner({
     };
   }, [transactions]);
 
-  const dietzPeriod = period === "all" ? null : (dietzByPeriod[period] ?? null);
-
-  /**
-   * Lifetime equity ROC — aligns with Total Profit $ (cost-basis simple return).
-   * Kept as fallback when Dietz is unavailable.
-   */
-  const lifetimeReturnPct = profitAllPct;
-
-  const inceptionBenchmarkMetrics = useMemo(() => {
-    const rSpy = benchmarkCompare?.benchmarkPct ?? null;
-    const rPort = benchmarkCompare?.portfolioPct ?? null;
-    const diff = benchmarkCompare?.aheadPct ?? null;
-    return { rPort, rSpy, diff };
-  }, [benchmarkCompare]);
-
-  /**
-   * Headline % under Total profit $ (All) — Phase 2/3 Modified Dietz (same as chart Return
-   * and the portfolio leg of Ahead). Comparable to S&P card. Falls back to lifetime ROC
-   * only when Dietz cannot be computed.
-   */
-  const allPeriodProfitPct = inceptionBenchmarkMetrics.rPort ?? lifetimeReturnPct;
-
-  const profitDisplayUsd = useMemo(() => {
-    if (period === "all") return profitAllUsd;
-    return dietzPeriod?.gainUsd ?? null;
-  }, [period, profitAllUsd, dietzPeriod]);
-
-  const profitDisplayPct = useMemo(() => {
-    if (period === "all") return profitAllPct;
-    return dietzPeriod?.pct ?? null;
-  }, [period, profitAllPct, dietzPeriod]);
+  const timeWeightedReturnPct = benchmarkCompare?.portfolioPct ?? null;
+  const aheadOfSpyPct = benchmarkCompare?.aheadPct ?? null;
 
   const { annualUsd: dividendAnnualUsd, yieldPct: dividendWeightedYield } = useMemo(
     () => portfolioDividendIncome(holdings, yieldBySymbol),
@@ -488,28 +400,13 @@ function PortfolioOverviewCardsInner({
 
   const isEmptyOverview = holdings.length === 0;
   const showEmptyPortfolioMetrics = isEmptyOverview && !hasTradeHistory;
-  /**
-   * Dividends need `overview-market` yields. Value / lifetime Total profit $ come from
-   * local holdings — paint them immediately so the row doesn’t wait ~7s on that API.
-   */
   const showDividendsSkeleton = symbols.length > 0 && !overviewReady;
-  /** S&P card: skeleton while first compare loads — never show "—" during that wait. */
-  const showSpySkeleton =
+  const showTimeWeightedSkeleton =
     !showEmptyPortfolioMetrics &&
     transactions.length > 0 &&
     benchmarkLoading &&
-    inceptionBenchmarkMetrics.rSpy == null &&
-    inceptionBenchmarkMetrics.diff == null;
-  /**
-   * All-time profit % uses Dietz (same as chart Return). Skeleton until first Dietz arrives
-   * so we don't flash lifetime ~27% then jump to ~38%.
-   */
-  const showAllProfitPctSkeleton =
-    !showEmptyPortfolioMetrics &&
-    period === "all" &&
-    transactions.length > 0 &&
-    benchmarkLoading &&
-    inceptionBenchmarkMetrics.rPort == null;
+    timeWeightedReturnPct == null &&
+    aheadOfSpyPct == null;
 
   const totalProfitBreakdownId = useId();
 
@@ -521,32 +418,28 @@ function PortfolioOverviewCardsInner({
     }
     setAthSnapshot({
       marketReady: true,
-      athReturnPct: lifetimeReturnPct,
+      athReturnPct: tradingProfitPct,
     });
-  }, [symbols.length, lifetimeReturnPct, setAthSnapshot]);
+  }, [symbols.length, tradingProfitPct, setAthSnapshot]);
 
-  const mobileProfitLine = useMemo(() => {
-    if (showEmptyPortfolioMetrics) return `+${usd.format(0)} (+${pctFmt.format(0)}%)`;
-    const pUsd = profitAllUsd;
-    if (pUsd == null || !Number.isFinite(pUsd)) return "—";
-    if (showAllProfitPctSkeleton) return null;
-    const pPct = allPeriodProfitPct;
-    if (pPct == null || !Number.isFinite(pPct)) {
-      const usdLabel = `${pUsd >= 0 ? "+" : ""}${usd.format(pUsd)}`;
-      return usdLabel;
-    }
-    const usdLabel = `${pUsd >= 0 ? "+" : ""}${usd.format(pUsd)}`;
-    const pctLabel = `${pPct >= 0 ? "+" : ""}${pctFmt.format(pPct)}%`;
-    return `${usdLabel} (${pctLabel})`;
-  }, [showEmptyPortfolioMetrics, profitAllUsd, showAllProfitPctSkeleton, allPeriodProfitPct]);
+  const mobileProfitUsdLabel = useMemo(() => {
+    if (showEmptyPortfolioMetrics) return `+${usd.format(0)}`;
+    if (!Number.isFinite(tradingProfitUsd)) return "—";
+    return `${tradingProfitUsd >= 0 ? "+" : ""}${usd.format(tradingProfitUsd)}`;
+  }, [showEmptyPortfolioMetrics, tradingProfitUsd]);
 
-  const mobileBenchmarkPct = useMemo(() => {
+  const mobileProfitPctLabel = useMemo(() => {
     if (showEmptyPortfolioMetrics) return `+${pctFmt.format(0)}%`;
-    if (showSpySkeleton) return null;
-    const r = inceptionBenchmarkMetrics.rSpy;
-    if (r == null || !Number.isFinite(r)) return "—";
-    return `${r >= 0 ? "+" : ""}${pctFmt.format(r)}%`;
-  }, [showEmptyPortfolioMetrics, showSpySkeleton, inceptionBenchmarkMetrics.rSpy]);
+    if (tradingProfitPct == null || !Number.isFinite(tradingProfitPct)) return null;
+    return `${tradingProfitPct >= 0 ? "+" : ""}${pctFmt.format(tradingProfitPct)}%`;
+  }, [showEmptyPortfolioMetrics, tradingProfitPct]);
+
+  const mobileTimeWeightedLine = useMemo(() => {
+    if (showEmptyPortfolioMetrics) return `+${pctFmt.format(0)}%`;
+    if (showTimeWeightedSkeleton) return null;
+    if (timeWeightedReturnPct == null || !Number.isFinite(timeWeightedReturnPct)) return "—";
+    return `${timeWeightedReturnPct >= 0 ? "+" : ""}${pctFmt.format(timeWeightedReturnPct)}%`;
+  }, [showEmptyPortfolioMetrics, showTimeWeightedSkeleton, timeWeightedReturnPct]);
 
   const mobileDividendsRight = useMemo(() => {
     if (showEmptyPortfolioMetrics) return `${usd.format(0)} · ${pctFmt.format(0)}%`;
@@ -559,7 +452,6 @@ function PortfolioOverviewCardsInner({
 
   return (
     <div className="w-full min-w-0 max-md:mb-2 sm:mb-5">
-      {/* Mobile: compact summary (matches design reference). */}
       <div className="sm:hidden">
         <div className="w-full min-w-0">
           <div className="flex items-start justify-between gap-3">
@@ -568,14 +460,23 @@ function PortfolioOverviewCardsInner({
               <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-fg">
                 {usd.format(normalizeUsdForDisplay(netWorth))}
               </p>
-              <p className="mt-1 text-sm font-normal tabular-nums text-up">
-                {showEmptyPortfolioMetrics ? (
-                  `+${usd.format(0)} (+${pctFmt.format(0)}%)`
-                ) : showAllProfitPctSkeleton || mobileProfitLine == null ? (
-                  <span className="inline-block h-4 w-40 animate-pulse rounded bg-skeleton align-middle" aria-hidden />
-                ) : (
-                  mobileProfitLine
+              <p
+                className={cn(
+                  "mt-1 text-sm font-normal tabular-nums",
+                  tradingProfitUsd >= 0 ? "text-up" : "text-down",
                 )}
+              >
+                {mobileProfitUsdLabel}
+                {mobileProfitPctLabel != null ? (
+                  <>
+                    {" "}
+                    (
+                    <span className={(tradingProfitPct ?? 0) >= 0 ? "text-up" : "text-down"}>
+                      {mobileProfitPctLabel}
+                    </span>{" "}
+                    <span className="text-fg-muted">on cost</span>)
+                  </>
+                ) : null}
               </p>
             </div>
             {mobileToolbarActions ? (
@@ -585,25 +486,25 @@ function PortfolioOverviewCardsInner({
 
           <div className="max-md:mt-2 sm:mt-4 space-y-0">
             <div className="flex items-center justify-between gap-4 max-md:py-2 sm:py-3">
-              <span className="text-[14px] font-medium leading-5 text-fg-muted">S&amp;P 500</span>
+              <span className="text-[14px] font-medium leading-5 text-fg-muted">Time-weighted return</span>
               {showEmptyPortfolioMetrics ? (
                 <span className="text-[14px] font-medium leading-5 tabular-nums text-up">
                   +{pctFmt.format(0)}%
                 </span>
-              ) : showSpySkeleton || mobileBenchmarkPct == null ? (
+              ) : showTimeWeightedSkeleton || mobileTimeWeightedLine == null ? (
                 <div className="h-4 w-14 animate-pulse rounded bg-skeleton" aria-hidden />
               ) : (
                 <span
                   className={cn(
                     "text-[14px] font-medium leading-5 tabular-nums",
-                    inceptionBenchmarkMetrics.rSpy == null
+                    timeWeightedReturnPct == null
                       ? "text-fg"
-                      : inceptionBenchmarkMetrics.rSpy >= 0
+                      : timeWeightedReturnPct >= 0
                         ? "text-up"
                         : "text-down",
                   )}
                 >
-                  {mobileBenchmarkPct}
+                  {mobileTimeWeightedLine}
                 </span>
               )}
             </div>
@@ -621,167 +522,127 @@ function PortfolioOverviewCardsInner({
         </div>
       </div>
 
-      {/* sm+: existing tile grid */}
       <div className="hidden grid-cols-2 gap-4 md:grid-cols-2 xl:grid-cols-4 [&>*]:min-w-0 sm:grid">
-          <div className={OVERVIEW_METRIC_CARD_CLASS}>
-            <p className="text-xs font-medium text-fg-muted">Value</p>
-            <p className="text-2xl font-semibold tabular-nums tracking-tight text-fg">
-              {usd.format(normalizeUsdForDisplay(netWorth))}
-            </p>
-            <p className="text-sm text-fg-muted">{usd.format(invested)} invested</p>
-          </div>
+        <div className={OVERVIEW_METRIC_CARD_CLASS}>
+          <p className="text-xs font-medium text-fg-muted">Value</p>
+          <p className="text-2xl font-semibold tabular-nums tracking-tight text-fg">
+            {usd.format(normalizeUsdForDisplay(netWorth))}
+          </p>
+          <p className="text-sm text-fg-muted">{usd.format(invested)} invested</p>
+        </div>
 
-          {/* Total profit */}
-          <div className={OVERVIEW_METRIC_CARD_CLASS}>
-            <p className="text-xs font-medium text-fg-muted">Total profit</p>
-            {showEmptyPortfolioMetrics ? (
-              <>
-                <p className="text-2xl font-semibold tabular-nums tracking-tight text-up">
-                  +{usd.format(0)}
-                </p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium tabular-nums text-up">+{pctFmt.format(0)}%</span>
-                </div>
-              </>
-            ) : (
-              <TotalProfitBreakdownTooltip
-                tooltipId={totalProfitBreakdownId}
-                period={period}
-                realizedLifetimeUsd={realizedLifetimeUsd}
-                unrealizedLifetimeUsd={unrealizedLifetimeUsd}
-              >
-                <p
-                  className={cn(
-                    "cursor-help text-2xl font-semibold tabular-nums tracking-tight",
-                    (profitDisplayUsd ?? 0) >= 0 ? "text-up" : "text-down",
-                  )}
-                >
-                  {profitDisplayUsd != null
-                    ? `${profitDisplayUsd >= 0 ? "+" : ""}${usd.format(profitDisplayUsd)}`
-                    : "—"}
-                </p>
-                {period === "all" ? (
-                  <div className="flex cursor-help flex-wrap items-center gap-2">
-                    {showAllProfitPctSkeleton ? (
-                      <div className="h-4 w-14 animate-pulse rounded bg-skeleton" aria-hidden />
-                    ) : (
-                      <span
-                        className={cn(
-                          "text-sm font-medium tabular-nums",
-                          (allPeriodProfitPct ?? 0) >= 0 ? "text-up" : "text-down",
-                        )}
-                      >
-                        {allPeriodProfitPct != null
-                          ? `${allPeriodProfitPct >= 0 ? "+" : ""}${pctFmt.format(allPeriodProfitPct)}%`
-                          : "—"}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={cn(
-                        "cursor-help text-sm font-medium tabular-nums",
-                        (profitDisplayPct ?? 0) >= 0 ? "text-up" : "text-down",
-                      )}
-                    >
-                      {profitDisplayPct != null
-                        ? `${profitDisplayPct >= 0 ? "+" : ""}${pctFmt.format(profitDisplayPct)}%`
-                        : "—"}
-                    </span>
-                    <div className="relative inline-flex items-center gap-0.5 rounded-md border border-stroke bg-canvas px-1.5 py-0.5">
-                      <select
-                        aria-label="Profit period"
-                        value={period}
-                        onChange={(e) => setPeriod(e.target.value as OverviewProfitPeriod)}
-                        className="cursor-pointer bg-transparent pr-5 text-xs font-medium text-fg outline-none"
-                      >
-                        {PERIOD_OPTIONS.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="pointer-events-none absolute right-1 h-3.5 w-3.5 text-fg-muted" aria-hidden />
-                    </div>
-                  </div>
+        <div className={OVERVIEW_METRIC_CARD_CLASS}>
+          <p className="text-xs font-medium text-fg-muted">Trading profit</p>
+          {showEmptyPortfolioMetrics ? (
+            <>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-up">
+                +{usd.format(0)}
+              </p>
+              <p className="text-sm tabular-nums">
+                <span className="text-up">+{pctFmt.format(0)}%</span>{" "}
+                <span className="text-fg-muted">on cost</span>
+              </p>
+            </>
+          ) : (
+            <TradingProfitBreakdownTooltip
+              tooltipId={totalProfitBreakdownId}
+              realizedLifetimeUsd={realizedLifetimeUsd}
+              unrealizedLifetimeUsd={unrealizedLifetimeUsd}
+            >
+              <p
+                className={cn(
+                  "cursor-help text-2xl font-semibold tabular-nums tracking-tight",
+                  tradingProfitUsd >= 0 ? "text-up" : "text-down",
                 )}
-              </TotalProfitBreakdownTooltip>
-            )}
-          </div>
+              >
+                {`${tradingProfitUsd >= 0 ? "+" : ""}${usd.format(tradingProfitUsd)}`}
+              </p>
+              <p className="cursor-help text-sm tabular-nums">
+                {tradingProfitPct != null ? (
+                  <>
+                    <span className={(tradingProfitPct ?? 0) >= 0 ? "text-up" : "text-down"}>
+                      {`${tradingProfitPct >= 0 ? "+" : ""}${pctFmt.format(tradingProfitPct)}%`}
+                    </span>{" "}
+                    <span className="text-fg-muted">on cost</span>
+                  </>
+                ) : (
+                  "—"
+                )}
+              </p>
+            </TradingProfitBreakdownTooltip>
+          )}
+        </div>
 
-          {/* S&P 500 */}
-          <div className={OVERVIEW_METRIC_CARD_CLASS}>
-            <p className="text-xs font-medium text-fg-muted">S&amp;P 500</p>
-            {showEmptyPortfolioMetrics ? (
-              <>
-                <p className="text-2xl font-semibold tabular-nums tracking-tight text-up">
-                  +{pctFmt.format(0)}%
-                </p>
-                <p className="text-sm leading-snug text-fg-muted">Compare to S&amp;P 500</p>
-              </>
-            ) : showSpySkeleton ? (
-              <>
-                <div className="h-8 w-[min(100%,7rem)] max-w-full animate-pulse rounded-md bg-skeleton" aria-hidden />
-                <div className="h-4 w-28 animate-pulse rounded bg-skeleton" aria-hidden />
-              </>
-            ) : (
-              <>
-                <p
-                  className={cn(
-                    "text-2xl font-semibold tabular-nums tracking-tight",
-                    inceptionBenchmarkMetrics.rSpy == null
-                      ? "text-fg"
-                      : inceptionBenchmarkMetrics.rSpy >= 0
-                        ? "text-up"
-                        : "text-down",
-                  )}
-                >
-                  {inceptionBenchmarkMetrics.rSpy != null
-                    ? `${inceptionBenchmarkMetrics.rSpy >= 0 ? "+" : ""}${pctFmt.format(inceptionBenchmarkMetrics.rSpy)}%`
-                    : "—"}
-                </p>
-                <p className="text-sm leading-snug text-fg-muted">
-                  {inceptionBenchmarkMetrics.diff != null ? (
-                    inceptionBenchmarkMetrics.diff >= 0 ? (
-                      <>Ahead on {pctFmt.format(inceptionBenchmarkMetrics.diff)}%</>
-                    ) : (
-                      <>Behind on {pctFmt.format(Math.abs(inceptionBenchmarkMetrics.diff))}%</>
-                    )
+        <div className={OVERVIEW_METRIC_CARD_CLASS}>
+          <p className="text-xs font-medium text-fg-muted">Time-weighted return</p>
+          {showEmptyPortfolioMetrics ? (
+            <>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-up">
+                +{pctFmt.format(0)}%
+              </p>
+              <p className="text-sm text-fg-muted">Compare to S&amp;P 500</p>
+            </>
+          ) : showTimeWeightedSkeleton ? (
+            <>
+              <div className="h-8 w-[min(100%,7rem)] max-w-full animate-pulse rounded-md bg-skeleton" aria-hidden />
+              <div className="h-4 w-28 animate-pulse rounded bg-skeleton" aria-hidden />
+            </>
+          ) : (
+            <>
+              <p
+                className={cn(
+                  "text-2xl font-semibold tabular-nums tracking-tight",
+                  timeWeightedReturnPct == null
+                    ? "text-fg"
+                    : timeWeightedReturnPct >= 0
+                      ? "text-up"
+                      : "text-down",
+                )}
+              >
+                {timeWeightedReturnPct != null
+                  ? `${timeWeightedReturnPct >= 0 ? "+" : ""}${pctFmt.format(timeWeightedReturnPct)}%`
+                  : "—"}
+              </p>
+              <p className="text-sm text-fg-muted">
+                {aheadOfSpyPct != null ? (
+                  aheadOfSpyPct >= 0 ? (
+                    <>Ahead of S&amp;P by {pctFmt.format(aheadOfSpyPct)}%</>
                   ) : (
-                    "—"
-                  )}
-                </p>
-              </>
-            )}
-          </div>
+                    <>Behind S&amp;P by {pctFmt.format(Math.abs(aheadOfSpyPct))}%</>
+                  )
+                ) : (
+                  "—"
+                )}
+              </p>
+            </>
+          )}
+        </div>
 
-          {/* Dividends */}
-          <div className={OVERVIEW_METRIC_CARD_CLASS}>
-            <p className="text-xs font-medium text-fg-muted">Dividends</p>
-            {showEmptyPortfolioMetrics ? (
-              <>
-                <p className="text-2xl font-semibold tabular-nums tracking-tight text-fg">
-                  {pctFmt.format(0)}%
-                </p>
-                <p className="text-sm text-fg-muted">{usd.format(0)} annually</p>
-              </>
-            ) : showDividendsSkeleton ? (
-              <>
-                <div className="h-8 w-[min(100%,7rem)] max-w-full animate-pulse rounded-md bg-skeleton" aria-hidden />
-                <div className="h-4 w-28 animate-pulse rounded bg-skeleton" aria-hidden />
-              </>
-            ) : (
-              <>
-                <p className="text-2xl font-semibold tabular-nums tracking-tight text-fg">
-                  {dividendWeightedYield != null ? `${pctFmt.format(dividendWeightedYield)}%` : "—"}
-                </p>
-                <p className="text-sm text-fg-muted">
-                  {dividendAnnualUsd != null ? `${usd.format(dividendAnnualUsd)} annually` : "No dividend data"}
-                </p>
-              </>
-            )}
-          </div>
+        <div className={OVERVIEW_METRIC_CARD_CLASS}>
+          <p className="text-xs font-medium text-fg-muted">Dividends</p>
+          {showEmptyPortfolioMetrics ? (
+            <>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-fg">
+                {pctFmt.format(0)}%
+              </p>
+              <p className="text-sm text-fg-muted">{usd.format(0)} annually</p>
+            </>
+          ) : showDividendsSkeleton ? (
+            <>
+              <div className="h-8 w-[min(100%,7rem)] max-w-full animate-pulse rounded-md bg-skeleton" aria-hidden />
+              <div className="h-4 w-28 animate-pulse rounded bg-skeleton" aria-hidden />
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-semibold tabular-nums tracking-tight text-fg">
+                {dividendWeightedYield != null ? `${pctFmt.format(dividendWeightedYield)}%` : "—"}
+              </p>
+              <p className="text-sm text-fg-muted">
+                {dividendAnnualUsd != null ? `${usd.format(dividendAnnualUsd)} annually` : "No dividend data"}
+              </p>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
