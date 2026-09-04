@@ -36,3 +36,15 @@ test("sortCryptoMetasByMarketCap puts missing mcap last", () => {
     ["BTC", "ZZZ"],
   );
 });
+
+test("sortCryptoMetasByMarketCap uses fallback caps for stables when derived missing", () => {
+  const metas = [meta("DOGE"), meta("USDT"), meta("USDC"), meta("BTC")];
+  const derived = {
+    BTC: { marketCapUsd: 1e12 },
+    DOGE: { marketCapUsd: 14e9 },
+  };
+  assert.deepEqual(
+    sortCryptoMetasByMarketCap(metas, derived).map((m) => m.symbol),
+    ["BTC", "USDT", "USDC", "DOGE"],
+  );
+});

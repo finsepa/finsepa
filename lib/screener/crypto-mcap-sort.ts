@@ -1,16 +1,17 @@
 import type { CryptoMeta } from "@/lib/market/crypto-meta";
+import { cryptoMcapFallbackUsd } from "@/lib/market/crypto-mcap-fallback";
 
 /** Minimal derived shape needed for mcap sort (avoids importing server-only layers). */
 export type CryptoMcapDerived = Readonly<Record<string, { marketCapUsd?: number | null } | undefined>>;
 
 /**
- * Sort key for screener crypto — snapshot `marketCapUsd` only (no EODHD, no server-only imports).
- * Missing caps sort last; cron/`crypto_derived` normally fills these.
+ * Sort key for screener crypto — prefer snapshot `marketCapUsd`, else curated fallback
+ * (so USDT/USDC still rank near the top when `crypto_derived` was frozen without them).
  */
 export function cryptoMarketCapSortKey(symbol: string, derived: CryptoMcapDerived): number {
   const mc = derived[symbol]?.marketCapUsd;
   if (typeof mc === "number" && Number.isFinite(mc) && mc > 0) return mc;
-  return -1;
+  return cryptoMcapFallbackUsd(symbol) ?? -1;
 }
 
 /** Largest market cap first; stable by symbol. */
