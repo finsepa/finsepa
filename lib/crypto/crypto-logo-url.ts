@@ -12,6 +12,7 @@ const DOMAIN_BY_SYMBOL: Record<string, string> = {
   ETH: "ethereum.org",
   USDT: "tether.to",
   USDC: "circle.com",
+  DAI: "makerdao.com",
   XRP: "ripple.com",
   BNB: "binance.com",
   SOL: "solana.com",

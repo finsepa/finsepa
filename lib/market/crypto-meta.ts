@@ -1,4 +1,5 @@
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
+import { cryptoMcapFallbackUsd } from "@/lib/market/crypto-mcap-fallback";
 
 /** Normalized upper-case ticker (BTC, ETH, …) — universe includes search-only assets. */
 export type SupportedCryptoTicker = string;
@@ -68,7 +69,14 @@ export const CRYPTO_TOP10: CryptoMeta[] = [
 
 /** Additional liquid names for global search + asset pages (same loaders as hot seed). */
 export const CRYPTO_SEARCH_EXTRA: CryptoMeta[] = [
-  { symbol: "SUI", name: "Sui", eodhdSymbol: "SUI-USD.CC" },
+  { symbol: "DAI", name: "Dai", eodhdSymbol: "DAI-USD.CC", eodhdAltSymbols: ["DAI-USDT.CC"] },
+  /** EODHD lists many majors under CMC-style ids; plain `SUI-USD.CC` returns empty realtime. */
+  {
+    symbol: "SUI",
+    name: "Sui",
+    eodhdSymbol: "SUI20947-USD.CC",
+    eodhdAltSymbols: ["SUI-USD.CC", "SUI-USDT.CC"],
+  },
   {
     symbol: "UNI",
     name: "Uniswap",
@@ -88,16 +96,36 @@ export const CRYPTO_SEARCH_EXTRA: CryptoMeta[] = [
   { symbol: "NEAR", name: "NEAR Protocol", eodhdSymbol: "NEAR-USD.CC" },
   { symbol: "XLM", name: "Stellar", eodhdSymbol: "XLM-USD.CC" },
   { symbol: "FIL", name: "Filecoin", eodhdSymbol: "FIL-USD.CC" },
-  { symbol: "APT", name: "Aptos", eodhdSymbol: "APT-USD.CC" },
-  { symbol: "ARB", name: "Arbitrum", eodhdSymbol: "ARB-USD.CC" },
+  {
+    symbol: "APT",
+    name: "Aptos",
+    eodhdSymbol: "APT21794-USD.CC",
+    eodhdAltSymbols: ["APT-USD.CC", "APT-USDT.CC"],
+  },
+  {
+    symbol: "ARB",
+    name: "Arbitrum",
+    eodhdSymbol: "ARB11841-USD.CC",
+    eodhdAltSymbols: ["ARB-USD.CC", "ARB-USDT.CC"],
+  },
   { symbol: "OP", name: "Optimism", eodhdSymbol: "OP-USD.CC" },
   { symbol: "INJ", name: "Injective", eodhdSymbol: "INJ-USD.CC" },
   { symbol: "TIA", name: "Celestia", eodhdSymbol: "TIA-USD.CC" },
   { symbol: "AAVE", name: "Aave", eodhdSymbol: "AAVE-USD.CC" },
   { symbol: "MKR", name: "Maker", eodhdSymbol: "MKR-USD.CC" },
   { symbol: "LDO", name: "Lido DAO", eodhdSymbol: "LDO-USD.CC" },
-  { symbol: "STX", name: "Stacks", eodhdSymbol: "STX-USD.CC" },
-  { symbol: "IMX", name: "Immutable", eodhdSymbol: "IMX-USD.CC", eodhdAltSymbols: ["IMX-USDT.CC"] },
+  {
+    symbol: "STX",
+    name: "Stacks",
+    eodhdSymbol: "STX4847-USD.CC",
+    eodhdAltSymbols: ["STX-USD.CC", "STX-USDT.CC"],
+  },
+  {
+    symbol: "IMX",
+    name: "Immutable",
+    eodhdSymbol: "IMX10603-USD.CC",
+    eodhdAltSymbols: ["IMX-USD.CC", "IMX-USDT.CC"],
+  },
   {
     symbol: "GRT",
     name: "The Graph",
@@ -105,7 +133,7 @@ export const CRYPTO_SEARCH_EXTRA: CryptoMeta[] = [
     eodhdAltSymbols: ["GRT-USD.CC", "GRT-USDT.CC"],
   },
   { symbol: "FET", name: "Fetch.ai", eodhdSymbol: "FET-USD.CC" },
-  { symbol: "RNDR", name: "Render", eodhdSymbol: "RNDR-USD.CC" },
+  { symbol: "RNDR", name: "Render", eodhdSymbol: "RNDR-USD.CC", eodhdAltSymbols: ["RENDER-USD.CC"] },
   { symbol: "SNX", name: "Synthetix", eodhdSymbol: "SNX-USD.CC" },
   { symbol: "CRV", name: "Curve", eodhdSymbol: "CRV-USD.CC" },
 ];
@@ -122,15 +150,34 @@ export const CRYPTO_SEARCH_TOP100_REST: CryptoMeta[] = [
   { symbol: "ICP", name: "Internet Computer", eodhdSymbol: "ICP-USD.CC" },
   { symbol: "ALGO", name: "Algorand", eodhdSymbol: "ALGO-USD.CC" },
   { symbol: "QNT", name: "Quant", eodhdSymbol: "QNT-USD.CC" },
-  /** EODHD lists Mantle Network under MANTLE-USD; MNT-USD may be a different asset or empty. */
-  { symbol: "MNT", name: "Mantle", eodhdSymbol: "MANTLE-USD.CC", eodhdAltSymbols: ["MNT-USD.CC", "MNT-USDT.CC"] },
+  {
+    symbol: "MNT",
+    name: "Mantle",
+    eodhdSymbol: "MNT27075-USD.CC",
+    eodhdAltSymbols: ["MANTLE-USD.CC", "MNT-USD.CC", "MNT-USDT.CC"],
+  },
   { symbol: "SEI", name: "Sei", eodhdSymbol: "SEI-USD.CC" },
   { symbol: "PYTH", name: "Pyth Network", eodhdSymbol: "PYTH-USD.CC" },
-  { symbol: "JUP", name: "Jupiter", eodhdSymbol: "JUP-USD.CC" },
-  { symbol: "STRK", name: "Starknet", eodhdSymbol: "STRK-USD.CC" },
+  {
+    symbol: "JUP",
+    name: "Jupiter",
+    eodhdSymbol: "JUP29210-USD.CC",
+    eodhdAltSymbols: ["JUP-USD.CC", "JUP-USDT.CC"],
+  },
+  {
+    symbol: "STRK",
+    name: "Starknet",
+    eodhdSymbol: "STRK22691-USD.CC",
+    eodhdAltSymbols: ["STRK-USD.CC", "STRK-USDT.CC"],
+  },
   { symbol: "WLD", name: "Worldcoin", eodhdSymbol: "WLD-USD.CC" },
   { symbol: "ONDO", name: "Ondo", eodhdSymbol: "ONDO-USD.CC" },
-  { symbol: "PEPE", name: "Pepe", eodhdSymbol: "PEPE-USD.CC" },
+  {
+    symbol: "PEPE",
+    name: "Pepe",
+    eodhdSymbol: "PEPE24478-USD.CC",
+    eodhdAltSymbols: ["PEPE-USD.CC", "PEPE-USDT.CC"],
+  },
   { symbol: "BONK", name: "Bonk", eodhdSymbol: "BONK-USD.CC" },
   { symbol: "WIF", name: "dogwifhat", eodhdSymbol: "WIF-USD.CC" },
   { symbol: "ENS", name: "Ethereum Name Service", eodhdSymbol: "ENS-USD.CC" },
@@ -150,14 +197,25 @@ export const CRYPTO_SEARCH_TOP100_REST: CryptoMeta[] = [
   { symbol: "JTO", name: "Jito", eodhdSymbol: "JTO-USD.CC" },
   { symbol: "TWT", name: "Trust Wallet Token", eodhdSymbol: "TWT-USD.CC" },
   { symbol: "DASH", name: "Dash", eodhdSymbol: "DASH-USD.CC" },
-  { symbol: "COMP", name: "Compound", eodhdSymbol: "COMP-USD.CC" },
+  {
+    symbol: "COMP",
+    name: "Compound",
+    eodhdSymbol: "COMP5692-USD.CC",
+    eodhdAltSymbols: ["COMP-USD.CC", "COMP-USDT.CC"],
+  },
   { symbol: "YFI", name: "yearn.finance", eodhdSymbol: "YFI-USD.CC" },
   { symbol: "1INCH", name: "1inch", eodhdSymbol: "1INCH-USD.CC" },
   { symbol: "BAT", name: "Basic Attention Token", eodhdSymbol: "BAT-USD.CC" },
   { symbol: "ZRX", name: "0x", eodhdSymbol: "ZRX-USD.CC" },
   { symbol: "CELO", name: "Celo", eodhdSymbol: "CELO-USD.CC" },
   { symbol: "KAVA", name: "Kava", eodhdSymbol: "KAVA-USD.CC" },
-  { symbol: "FTM", name: "Fantom", eodhdSymbol: "FTM-USD.CC" },
+  /** Fantom rebranded to Sonic on EODHD; keep FTM route + Sonic pair for quotes. */
+  {
+    symbol: "FTM",
+    name: "Fantom",
+    eodhdSymbol: "S32684-USD.CC",
+    eodhdAltSymbols: ["FTM-USD.CC", "S-USD.CC", "FTM-USDT.CC"],
+  },
   { symbol: "MINA", name: "Mina", eodhdSymbol: "MINA-USD.CC" },
   { symbol: "ROSE", name: "Oasis Network", eodhdSymbol: "ROSE-USD.CC" },
   { symbol: "AR", name: "Arweave", eodhdSymbol: "AR-USD.CC" },
@@ -165,10 +223,15 @@ export const CRYPTO_SEARCH_TOP100_REST: CryptoMeta[] = [
   { symbol: "LRC", name: "Loopring", eodhdSymbol: "LRC-USD.CC" },
   { symbol: "ANKR", name: "Ankr", eodhdSymbol: "ANKR-USD.CC" },
   { symbol: "SKL", name: "SKALE", eodhdSymbol: "SKL-USD.CC" },
-  { symbol: "CRO", name: "Cronos", eodhdSymbol: "CRO-USD.CC" },
+  { symbol: "CRO", name: "Cronos", eodhdSymbol: "CRO-USD.CC", eodhdAltSymbols: ["CRO-USDT.CC"] },
   { symbol: "NEO", name: "NEO", eodhdSymbol: "NEO-USD.CC" },
   { symbol: "QTUM", name: "Qtum", eodhdSymbol: "QTUM-USD.CC" },
-  { symbol: "GMX", name: "GMX", eodhdSymbol: "GMX-USD.CC" },
+  {
+    symbol: "GMX",
+    name: "GMX",
+    eodhdSymbol: "GMX11857-USD.CC",
+    eodhdAltSymbols: ["GMX-USD.CC", "GMX-USDT.CC"],
+  },
   { symbol: "DYDX", name: "dYdX", eodhdSymbol: "DYDX-USD.CC" },
   { symbol: "CAKE", name: "PancakeSwap", eodhdSymbol: "CAKE-USD.CC" },
   { symbol: "BLUR", name: "Blur", eodhdSymbol: "BLUR-USD.CC" },
@@ -183,23 +246,30 @@ export const CRYPTO_SEARCH_TOP100_REST: CryptoMeta[] = [
 
 /**
  * Rest of the liquid screener universe after the hot quote seed.
- * Capped so cron `crypto_derived` stays ~60 symbols (snapshot budget).
+ * Capped at ~80 so cron stays ≈100 symbols (2 UI pages × 50) — EODHD snapshot budget,
+ * not “only 100 coins exist”. Asset pages can still resolve the wider CC/search universe.
+ * Fill PAGE2 by curated mcap estimate so CMC majors (DAI, XLM, …) aren’t crowded out by list order.
  * **Ranks** come from global market-cap sort of {@link CRYPTO_SCREENER_ALL}, not this order.
  */
 export const CRYPTO_SCREENER_PAGE2: CryptoMeta[] = (() => {
   const top = new Set(CRYPTO_TOP10.map((m) => m.symbol.toUpperCase()));
   const merged = [...CRYPTO_SEARCH_EXTRA, ...CRYPTO_SEARCH_TOP100_REST];
-  const out: CryptoMeta[] = [];
+  const candidates: CryptoMeta[] = [];
   const seen = new Set<string>();
-  const maxPage2 = 40; // hot seed (~20) + page2 (~40) ≈ 60 for cron
   for (const m of merged) {
     const s = m.symbol.toUpperCase();
     if (top.has(s) || seen.has(s)) continue;
     seen.add(s);
-    out.push(m);
-    if (out.length >= maxPage2) break;
+    candidates.push(m);
   }
-  return out;
+  candidates.sort((a, b) => {
+    const ka = cryptoMcapFallbackUsd(a.symbol) ?? -1;
+    const kb = cryptoMcapFallbackUsd(b.symbol) ?? -1;
+    if (kb !== ka) return kb - ka;
+    return a.symbol.localeCompare(b.symbol);
+  });
+  const maxPage2 = 80; // hot seed (~20) + page2 (~80) ≈ 100 for cron / 2×50 UI pages
+  return candidates.slice(0, maxPage2);
 })();
 
 /** Full screener crypto grid (page 1 + page 2). */

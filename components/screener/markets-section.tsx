@@ -365,7 +365,7 @@ function CryptoTabBody({
   useEffect(() => {
     let cancelled = false;
     // Full screener crypto universe (~50) so gainers/losers aren't limited to page-1 tops.
-    void fetch("/api/screener/crypto-rows?page=1&pageSize=50", { credentials: "include" })
+    void fetch("/api/screener/crypto-rows?page=1&pageSize=100", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((json: { rows?: CryptoTop10Row[] } | null) => {
         if (cancelled) return;
@@ -401,10 +401,6 @@ function CryptoTabBody({
         initialRows={cryptoRowsResolved}
         rankOffset={(safeCryptoPage - 1) * pageSize}
       />
-
-      {cryptoRemoteLoading && cryptoRowsResolved.length > 0 ? (
-        <p className="mt-3 text-sm font-medium text-fg-muted">Loading…</p>
-      ) : null}
 
       <ScreenerPagination
         page={safeCryptoPage}
@@ -500,7 +496,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     async (
       market: ScreenerMarketTabParam,
       params: URLSearchParams,
-      opts?: { force?: boolean },
+      opts?: { force?: boolean; quiet?: boolean },
     ) => {
       const { stocksSector, stocksIndustry } = stocksFiltersFromUrl(params);
       const cacheKey = buildScreenerMarketTabCacheKey(market, stocksSector, stocksIndustry);
@@ -520,7 +516,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
         }
       }
 
-      setTabLoading(true);
+      if (!opts?.quiet) setTabLoading(true);
       try {
         const next = await fetchScreenerMarketTabPayload(market, url, cacheKey);
         setActivePayload(next);
@@ -530,18 +526,26 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       } catch {
         /* keep prior tab content */
       } finally {
-        setTabLoading(false);
+        if (!opts?.quiet) setTabLoading(false);
       }
     },
     [activePayload, stocksFiltersFromUrl],
   );
 
-  // Cold SSR deadline shell — finish loading via the same API path as tab switches.
+  // Cold SSR deadline shell → skeleton. Undersized page-1 (e.g. stale 20-row cache after 50/page) → quiet refetch.
   useEffect(() => {
-    if (!isEmptyScreenerMarketTabPayload(payload)) return;
     const params = new URLSearchParams(searchParams.toString());
-    void ensureMarketTabPayload(payload.market, params, { force: true });
-    // Only bootstrap once per empty SSR payload identity.
+    if (isEmptyScreenerMarketTabPayload(payload)) {
+      void ensureMarketTabPayload(payload.market, params, { force: true });
+      return;
+    }
+    const stocksNeedsFullPage =
+      payload.market === "stocks" &&
+      payload.stocksTotalCount > 0 &&
+      payload.stockRows.length < Math.min(SCREENER_COMPANIES_PAGE_SIZE, payload.stocksTotalCount);
+    if (stocksNeedsFullPage) {
+      void ensureMarketTabPayload(payload.market, params, { force: true, quiet: true });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount/bootstrap
   }, [payload]);
 
@@ -624,6 +628,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   const [cryptoPage, setCryptoPage] = useState(1);
   const [fetchedCryptoPages, setFetchedCryptoPages] = useState<Record<number, CryptoTop10Row[]>>({});
   const [cryptoRemoteLoading, setCryptoRemoteLoading] = useState(false);
+  const [cryptoTotalCountOverride, setCryptoTotalCountOverride] = useState<number | null>(null);
   const [companiesKeyStatMetricIds, setCompaniesKeyStatMetricIds] = useState<string[]>([]);
   const [companiesKeyStatValuesByMetric, setCompaniesKeyStatValuesByMetric] = useState<
     Record<string, Record<string, string>>
@@ -635,7 +640,10 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     activePayload.market === "stocks" ? activePayload.companiesMarketCacheSegment : "";
   const stocksTotalCount = activePayload.market === "stocks" ? activePayload.stocksTotalCount : 0;
   const cryptoRows = activePayload.market === "crypto" ? activePayload.cryptoRows : [];
-  const cryptoTotalCount = activePayload.market === "crypto" ? activePayload.cryptoTotalCount : 0;
+  const cryptoTotalCount =
+    activePayload.market === "crypto"
+      ? (cryptoTotalCountOverride ?? activePayload.cryptoTotalCount)
+      : 0;
 
   const stocksSectorFilter = useMemo((): ScreenerCanonicalSector | null => {
     if (activePayload.market !== "stocks") return null;
@@ -707,7 +715,13 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     resetScreenerCompaniesPageCacheIfStale(companiesMarketCacheSegment, companiesListKey);
     resetScreenerStocksSubtabCacheIfStale(companiesMarketCacheSegment);
     if (stockRows.length) {
-      writeScreenerCompaniesPageCache(companiesMarketCacheSegment, companiesListKey, 1, stockRows);
+      writeScreenerCompaniesPageCache(
+        companiesMarketCacheSegment,
+        companiesListKey,
+        1,
+        SCREENER_COMPANIES_PAGE_SIZE,
+        stockRows,
+      );
     }
   }, [activePayload.market, companiesMarketCacheSegment, companiesListKey, stockRows]);
 
@@ -726,6 +740,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       setIndustriesRows(null);
       setCryptoPage(1);
       setFetchedCryptoPages({});
+      setCryptoTotalCountOverride(null);
       setCompaniesKeyStatMetricIds([]);
       setCompaniesKeyStatValuesByMetric({});
       setCompaniesKeyStatLoading(false);
@@ -759,6 +774,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       companiesMarketCacheSegment,
       companiesListKey,
       companiesPage,
+      SCREENER_COMPANIES_PAGE_SIZE,
     );
     if (cached) {
       setFetchedCompanyPages((m) =>
@@ -787,7 +803,14 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       companiesPage,
       SCREENER_COMPANIES_PAGE_SIZE,
     );
-    fetchScreenerCompaniesPageCached(cacheKey, companiesMarketCacheSegment, companiesListKey, companiesPage, url)
+    fetchScreenerCompaniesPageCached(
+      cacheKey,
+      companiesMarketCacheSegment,
+      companiesListKey,
+      companiesPage,
+      SCREENER_COMPANIES_PAGE_SIZE,
+      url,
+    )
       .then((rows) => {
         if (cancelled) return;
         setFetchedCompanyPages((m) => ({ ...m, [companiesPage]: rows }));
@@ -916,7 +939,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
   const cryptoRowsForTable = useMemo(() => {
     if (activePayload.market !== "crypto") return [];
-    if (cryptoPage <= 1) return cryptoRows;
+    if (cryptoPage <= 1) return fetchedCryptoPages[1] ?? cryptoRows;
     return fetchedCryptoPages[cryptoPage] ?? [];
   }, [activePayload.market, cryptoPage, cryptoRows, fetchedCryptoPages]);
 
@@ -927,6 +950,38 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
   useEffect(() => {
     if (activePayload.market !== "crypto") return;
+    // Always refresh page 1 from API — weekend/frozen SSR mem can stick with a stale universe.
+    if (cryptoPage !== 1) return;
+
+    let cancelled = false;
+    const loadId = requestAnimationFrame(() => {
+      if (!cancelled) setCryptoRemoteLoading(true);
+    });
+    fetch(`/api/screener/crypto-rows?page=1&pageSize=${SCREENER_CRYPTO_PAGE_SIZE}`, {
+      credentials: "include",
+    })
+      .then((r) => r.json())
+      .then((data: { rows?: CryptoTop10Row[]; total?: number }) => {
+        if (cancelled) return;
+        const rows = Array.isArray(data.rows) ? data.rows : [];
+        if (rows.length > 0) {
+          setFetchedCryptoPages((m) => ({ ...m, 1: rows }));
+        }
+        if (typeof data.total === "number" && Number.isFinite(data.total) && data.total > 0) {
+          setCryptoTotalCountOverride(data.total);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCryptoRemoteLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(loadId);
+    };
+  }, [activePayload.market, cryptoPage]);
+
+  useEffect(() => {
+    if (activePayload.market !== "crypto") return;
     if (cryptoPage <= 1) return;
     if (fetchedCryptoPages[cryptoPage] !== undefined) return;
 
@@ -934,14 +989,16 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     const loadId = requestAnimationFrame(() => {
       if (!cancelled) setCryptoRemoteLoading(true);
     });
-    fetch(`/api/screener/crypto-rows?page=${cryptoPage}&pageSize=${SCREENER_CRYPTO_PAGE_SIZE}`)
+    fetch(`/api/screener/crypto-rows?page=${cryptoPage}&pageSize=${SCREENER_CRYPTO_PAGE_SIZE}`, {
+      credentials: "include",
+    })
       .then((r) => r.json())
       .then((data: { rows?: CryptoTop10Row[] }) => {
         if (cancelled) return;
         setFetchedCryptoPages((m) => ({ ...m, [cryptoPage]: data.rows ?? [] }));
       })
       .finally(() => {
-        setCryptoRemoteLoading(false);
+        if (!cancelled) setCryptoRemoteLoading(false);
       });
     return () => {
       cancelled = true;

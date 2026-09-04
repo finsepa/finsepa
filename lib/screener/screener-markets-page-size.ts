@@ -1,8 +1,8 @@
-/** Rows per page — Screener → Companies (shared `unstable_cache` key includes pageSize). */
-export const SCREENER_COMPANIES_PAGE_SIZE = 20;
+/** Rows per page — Screener → Companies (slice of snapshot hub; UI size ≠ EODHD cost). */
+export const SCREENER_COMPANIES_PAGE_SIZE = 50;
 
-/** Rows per page — Screener → Crypto. */
-export const SCREENER_CRYPTO_PAGE_SIZE = 20;
+/** Rows per page — Screener → Crypto (100 curated ≈ 2 pages). */
+export const SCREENER_CRYPTO_PAGE_SIZE = 50;
 
 /** Rows per page — Screener → Indices (client-sliced from full cached payload). */
 export const SCREENER_INDICES_PAGE_SIZE = 15;

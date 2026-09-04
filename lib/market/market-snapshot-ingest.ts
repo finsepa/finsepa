@@ -22,6 +22,7 @@ import {
   buildMarketSnapshotHotPayloadsForIngest,
   buildMarketSnapshotSlowPayloadsForIngest,
 } from "@/lib/market/market-snapshot-ingest-sources";
+import { buildMarketSnapshotCryptoDerivedForIngest } from "@/lib/market/simple-market-layer";
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 import { buildMarketSnapshotIndexCardsForIngest } from "@/lib/screener/simple-index-cards";
 import { buildScreenerStocksSubtabSnapshotsForIngest } from "@/lib/screener/screener-stocks-subtab-snapshot-ingest";
@@ -294,6 +295,67 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
       hotSkipReason: hotSkipReason ?? undefined,
       slowSkipReason: slowSkipReason ?? undefined,
       keys,
+    };
+  });
+}
+
+/**
+ * Force-rebuild `crypto_derived` even when the US session is frozen / slow tier is “fresh”.
+ * Manual repair path — not the regular 15m cron.
+ */
+export async function forceIngestCryptoDerived(now: Date = new Date()): Promise<{
+  segment: string;
+  result: "ok" | string;
+  sampleMcaps: Record<string, number | null>;
+  symbolCount: number;
+}> {
+  return runWithProviderTrace("cron/market-snapshots-force-crypto-derived", async () => {
+    const epoch = getScreenerUsMarketCacheEpoch(now);
+    const slowSeg = marketSnapshotSlowSegment(epoch);
+    if (!getSupabaseAdminClient()) {
+      return { segment: slowSeg, result: "no_supabase_admin", sampleMcaps: {}, symbolCount: 0 };
+    }
+    const derived = await buildMarketSnapshotCryptoDerivedForIngest();
+    const res = await upsertMarketSnapshot(MARKET_SNAPSHOT_KEY.cryptoDerived, slowSeg, derived);
+    return {
+      segment: slowSeg,
+      result: res.ok ? "ok" : res.reason,
+      symbolCount: Object.keys(derived).length,
+      sampleMcaps: {
+        USDT: derived.USDT?.marketCapUsd ?? null,
+        SUI: derived.SUI?.marketCapUsd ?? null,
+        PEPE: derived.PEPE?.marketCapUsd ?? null,
+        HYPE: derived.HYPE?.marketCapUsd ?? null,
+        BTC: derived.BTC?.marketCapUsd ?? null,
+      },
+    };
+  });
+}
+
+/** Force-rebuild crypto quote hubs (`crypto_tab` + `crypto_page2`) for the current universe. */
+export async function forceIngestCryptoHot(now: Date = new Date()): Promise<{
+  segment: string;
+  cryptoTab: string;
+  cryptoPage2: string;
+  page2Priced: number;
+}> {
+  return runWithProviderTrace("cron/market-snapshots-force-crypto-hot", async () => {
+    const epoch = getScreenerUsMarketCacheEpoch(now);
+    const hotSeg = marketSnapshotHotSegment(epoch);
+    const empty = { segment: hotSeg, cryptoTab: "no_supabase_admin", cryptoPage2: "no_supabase_admin", page2Priced: 0 };
+    if (!getSupabaseAdminClient()) return empty;
+    const crypto = await buildMarketSnapshotCryptoHotPayloadsForIngest();
+    const tabRes = await upsertMarketSnapshot(MARKET_SNAPSHOT_KEY.cryptoTab, hotSeg, crypto.cryptoTab);
+    const page2Res = await upsertMarketSnapshot(MARKET_SNAPSHOT_KEY.cryptoPage2, hotSeg, crypto.cryptoPage2);
+    let page2Priced = 0;
+    for (const d of Object.values(crypto.cryptoPage2.crypto ?? {})) {
+      if (typeof d?.price === "number" && Number.isFinite(d.price) && d.price > 0) page2Priced += 1;
+    }
+    return {
+      segment: hotSeg,
+      cryptoTab: tabRes.ok ? "ok" : tabRes.reason,
+      cryptoPage2: page2Res.ok ? "ok" : page2Res.reason,
+      page2Priced,
     };
   });
 }

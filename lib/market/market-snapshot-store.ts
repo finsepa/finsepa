@@ -10,7 +10,7 @@ import {
   isUsableCryptoDerivedHub,
   type CryptoDerivedMetricsSnapshot,
 } from "@/lib/screener/eod-derived-metrics";
-import { CRYPTO_TOP10 } from "@/lib/market/crypto-meta";
+import { CRYPTO_SCREENER_ALL, CRYPTO_SCREENER_PAGE2, CRYPTO_TOP10 } from "@/lib/market/crypto-meta";
 
 import { MARKET_SNAPSHOT_KEY, type MarketSnapshotKey } from "@/lib/market/market-snapshot-keys";
 
@@ -25,6 +25,20 @@ function isUsableCryptoTabPayload(payload: unknown): boolean {
     if (typeof p === "number" && Number.isFinite(p) && p > 0) ok += 1;
   }
   return ok >= Math.ceil(CRYPTO_TOP10.length * CRYPTO_HUB_MIN_FILL_RATIO);
+}
+
+function isUsableCryptoPage2Payload(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  const crypto = (payload as { crypto?: Record<string, { price?: number | null }> }).crypto;
+  if (!crypto || typeof crypto !== "object") return false;
+  if (CRYPTO_SCREENER_PAGE2.length === 0) return true;
+  let ok = 0;
+  for (const m of CRYPTO_SCREENER_PAGE2) {
+    const row = crypto[m.symbol] ?? crypto[m.symbol.toUpperCase()];
+    const p = row?.price;
+    if (typeof p === "number" && Number.isFinite(p) && p > 0) ok += 1;
+  }
+  return ok >= Math.ceil(CRYPTO_SCREENER_PAGE2.length * CRYPTO_HUB_MIN_FILL_RATIO);
 }
 
 export type MarketSnapshotRow = {
@@ -166,11 +180,16 @@ export async function upsertMarketSnapshot(
       return { ok: false, reason: "unusable_crypto_tab" };
     }
   }
+  if (key === MARKET_SNAPSHOT_KEY.cryptoPage2) {
+    if (!isUsableCryptoPage2Payload(payload)) {
+      return { ok: false, reason: "unusable_crypto_page2" };
+    }
+  }
   if (key === MARKET_SNAPSHOT_KEY.cryptoDerived) {
     if (
       !isUsableCryptoDerivedHub(
         payload as Record<string, CryptoDerivedMetricsSnapshot | null | undefined>,
-        CRYPTO_TOP10.map((c) => c.symbol),
+        CRYPTO_SCREENER_ALL.map((c) => c.symbol),
       )
     ) {
       return { ok: false, reason: "unusable_crypto_derived" };

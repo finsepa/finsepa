@@ -354,7 +354,7 @@ export async function buildScreenerCompaniesApiResponse(
   const list = resolveScreenerCompaniesListMode(opts);
   const listKey = list.mode === "all" ? "all" : list.mode === "sector" ? `sector:${list.sector}` : `industry:${list.sector}:${list.industry}`;
   return withScreenerUsMarketCache(
-    "screener-companies-api-response-v7-global-mcap",
+    "screener-companies-api-response-v8-page50",
     () => buildScreenerCompaniesApiResponseUncached(p, ps, list),
     [String(p), String(ps), listKey],
   );
@@ -541,7 +541,7 @@ export async function buildScreenerMarketTabApiResponse(
   }
   const listKey = market === "stocks" ? stocksMarketTabCacheKey(opts) : market;
   return withScreenerUsMarketCache(
-    "screener-market-tab-payload-v1",
+    "screener-market-tab-payload-v4-companies-50",
     () => buildScreenerPagePayload(market, opts),
     [market, listKey],
   );

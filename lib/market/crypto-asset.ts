@@ -13,6 +13,7 @@ import {
   readCryptoMarketCapSnapshot,
   upsertCryptoMarketCapSnapshot,
 } from "@/lib/market/crypto-market-cap-snapshot";
+import { resolveCryptoMarketCapUsd } from "@/lib/market/crypto-mcap-fallback";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import type { CryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
 import { fetchEodhdCryptoFundamentalsMeta } from "@/lib/market/eodhd-crypto-fundamentals-meta";
@@ -155,27 +156,30 @@ export async function buildCryptoAssetRowFromDailyBars(
   ]);
 
   const lastClose = lastPositiveCloseFromCryptoBars(sorted);
-  let marketCapUsd: number | null =
+  let marketCapRawUsd: number | null =
     typeof capSnap === "number" && Number.isFinite(capSnap) && capSnap > 0 ? capSnap : null;
 
-  if (marketCapUsd == null && fund) {
+  if (marketCapRawUsd == null && fund) {
     if (fund.marketCapUsd != null && Number.isFinite(fund.marketCapUsd) && fund.marketCapUsd > 0) {
-      marketCapUsd = fund.marketCapUsd;
+      marketCapRawUsd = fund.marketCapUsd;
     } else if (
       fund.fullyDilutedMarketCapUsd != null &&
       Number.isFinite(fund.fullyDilutedMarketCapUsd) &&
       fund.fullyDilutedMarketCapUsd > 0
     ) {
-      marketCapUsd = fund.fullyDilutedMarketCapUsd;
+      marketCapRawUsd = fund.fullyDilutedMarketCapUsd;
     } else {
       const sup = fund.circulatingSupply ?? fund.totalSupply;
       if (lastClose != null && lastClose > 0 && sup != null && Number.isFinite(sup) && sup > 0) {
-        marketCapUsd = lastClose * sup;
+        marketCapRawUsd = lastClose * sup;
       }
     }
-    if (marketCapUsd != null) {
-      void upsertCryptoMarketCapSnapshot(meta.symbol, marketCapUsd);
-    }
+  }
+
+  // Reject junk provider/snapshot caps (e.g. HYPE ~$8k) so Key Stats match CMC-ish ranks.
+  const marketCapUsd = resolveCryptoMarketCapUsd(meta.symbol, marketCapRawUsd);
+  if (marketCapUsd != null) {
+    void upsertCryptoMarketCapSnapshot(meta.symbol, marketCapUsd);
   }
 
   const marketCapRaw = formatMarketCapDisplay(marketCapUsd);
@@ -204,6 +208,6 @@ async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAs
   return buildCryptoAssetRowFromDailyBars(meta, dailyBars);
 }
 
-export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v7-ton-pol-eodhd"], {
+export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v8-sane-mcap"], {
   revalidate: REVALIDATE_HOT,
 });

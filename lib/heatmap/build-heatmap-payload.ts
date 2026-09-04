@@ -177,7 +177,7 @@ async function buildCryptoBaseLeavesUncached(): Promise<HeatmapBaseLeaf[]> {
   });
 }
 
-const getCryptoBaseLeaves = unstable_cache(buildCryptoBaseLeavesUncached, ["heatmap-crypto-base-leaves-v1"], {
+const getCryptoBaseLeaves = unstable_cache(buildCryptoBaseLeavesUncached, ["heatmap-crypto-base-leaves-v2-universe-100"], {
   revalidate: REVALIDATE_TIER_STATIC,
 });
 

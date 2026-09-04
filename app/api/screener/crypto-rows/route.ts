@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
   const pageSizeRaw =
     Number(url.searchParams.get("pageSize") ?? String(SCREENER_CRYPTO_PAGE_SIZE)) || SCREENER_CRYPTO_PAGE_SIZE;
-  const pageSize = Math.min(50, Math.max(1, pageSizeRaw));
+  const pageSize = Math.min(100, Math.max(1, pageSizeRaw));
 
   const body = await buildCryptoScreenerApiResponse(page, pageSize);
 

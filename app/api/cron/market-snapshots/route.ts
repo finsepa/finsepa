@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { ingestHubSnapshots } from "@/lib/market/hub-snapshot-ingest";
-import { ingestMarketSnapshots } from "@/lib/market/market-snapshot-ingest";
+import {
+  forceIngestCryptoDerived,
+  forceIngestCryptoHot,
+  ingestMarketSnapshots,
+} from "@/lib/market/market-snapshot-ingest";
 import { pickProcessEnv } from "@/lib/env/pick-process-env";
 
 export const runtime = "nodejs";
@@ -20,6 +24,24 @@ export async function GET(request: Request) {
   }
 
   try {
+    const url = new URL(request.url);
+    const force = url.searchParams.get("force");
+    if (force === "crypto_derived") {
+      const cryptoDerived = await forceIngestCryptoDerived();
+      return NextResponse.json({ at: new Date().toISOString(), force, cryptoDerived });
+    }
+    if (force === "crypto_hot") {
+      const cryptoHot = await forceIngestCryptoHot();
+      return NextResponse.json({ at: new Date().toISOString(), force, cryptoHot });
+    }
+    if (force === "crypto_screener") {
+      const [cryptoHot, cryptoDerived] = await Promise.all([
+        forceIngestCryptoHot(),
+        forceIngestCryptoDerived(),
+      ]);
+      return NextResponse.json({ at: new Date().toISOString(), force, cryptoHot, cryptoDerived });
+    }
+
     const [market, hub] = await Promise.all([ingestMarketSnapshots(), ingestHubSnapshots()]);
     return NextResponse.json({ at: new Date().toISOString(), market, hub });
   } catch (e) {

@@ -45,6 +45,7 @@ export const REDUCED_CRYPTO: Record<string, { symbol: string; name: string; mark
   BCH: { symbol: "BCH", name: "Bitcoin Cash", marketCapUsd: 5.1 * 1e9 },
   LTC: { symbol: "LTC", name: "Litecoin", marketCapUsd: 4.0 * 1e9 },
   DOT: { symbol: "DOT", name: "Polkadot", marketCapUsd: 6.5 * 1e9 },
+  DAI: { symbol: "DAI", name: "Dai", marketCapUsd: 4.6 * 1e9 },
   SUI: { symbol: "SUI", name: "Sui", marketCapUsd: 5.0 * 1e9 },
   UNI: { symbol: "UNI", name: "Uniswap", marketCapUsd: 3.9 * 1e9 },
   POL: { symbol: "POL", name: "Polygon", marketCapUsd: 2.1 * 1e9 },

@@ -7,6 +7,7 @@ import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import type { ScreenerIndustryDrill } from "@/lib/screener/screener-industry-url";
 import type { CurrencyTableRow } from "@/lib/screener/screener-currencies-universe";
+import { SCREENER_COMPANIES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 
 export type ScreenerMarketTab = "stocks" | "crypto" | "indices" | "etfs" | "currencies";
 
@@ -118,5 +119,13 @@ export function isUsableCryptoScreenerRows(rows: readonly CryptoTop10Row[] | nul
 export function isUsableScreenerMarketTabPayload(payload: ScreenerPagePayload | null | undefined): boolean {
   if (!payload) return false;
   if (payload.market === "crypto") return isUsableCryptoScreenerRows(payload.cryptoRows);
+  if (payload.market === "stocks") {
+    if (isEmptyScreenerMarketTabPayload(payload)) return false;
+    const total = payload.stocksTotalCount;
+    const need = Math.min(SCREENER_COMPANIES_PAGE_SIZE, Math.max(0, total));
+    // Stale session LRU from 20/page must not stick after Companies grew to 50/page.
+    if (need > 0 && payload.stockRows.length < need) return false;
+    return true;
+  }
   return !isEmptyScreenerMarketTabPayload(payload);
 }

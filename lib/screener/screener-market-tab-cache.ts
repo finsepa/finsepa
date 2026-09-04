@@ -16,8 +16,8 @@ import { buildScreenerCompaniesListKey } from "@/lib/screener/screener-companies
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import type { ScreenerIndustryDrill } from "@/lib/screener/screener-industry-url";
 
-/** v3: drop weekend-frozen sparse crypto payloads stuck under v2 + same segment. */
-const STORAGE_KEY = "finsepa:screener:market-tabs:v3-lru";
+/** v6: Companies 50/page (invalidate v5 tabs that cached 20 stockRows). */
+const STORAGE_KEY = "finsepa:screener:market-tabs:v6-lru";
 
 const inflight = new Map<string, Promise<ScreenerPagePayload>>();
 

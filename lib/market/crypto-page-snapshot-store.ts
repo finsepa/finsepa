@@ -18,10 +18,11 @@ export function cryptoPageSnapshotKey(symbol: string): string {
   return sym ? `asset_crypto_${sym}` : "";
 }
 
-/** 15m UTC slots — crypto trades 24/7, so equity market sessions are a poor fit. */
+/** 15m UTC slots — crypto trades 24/7, so equity market sessions are a poor fit.
+ * v2: invalidate pages that cached junk EODHD mcaps (e.g. HYPE ~$8k). */
 export function getCryptoPageCacheSegment(now: Date = new Date()): string {
   const slot = Math.floor(now.getTime() / (15 * 60 * 1000));
-  return `crypto_page_v1:${slot}`;
+  return `crypto_page_v2:${slot}`;
 }
 
 export function stripCryptoPageSnapshotHotFields(data: CryptoPageInitialData): CryptoPageSnapshotPayload {

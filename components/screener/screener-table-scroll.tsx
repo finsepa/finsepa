@@ -13,12 +13,13 @@ import {
 import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
 
-/** Column label row — sticky in desktop `<main>`; static on mobile (avoids topbar-offset gap in card). */
+/** Column label row — sticky while `<main>` (desktop) / page (mobile) scrolls.
+ * Opaque `bg-surface` so rows don’t show through. Mobile offsets under the fixed topbar. */
 export const SCREENER_TABLE_HEADER_STICKY_CLASS =
-  "z-30 isolate bg-surface max-md:static md:sticky md:top-0 md:border-b md:border-solid md:border-table-row-stroke";
+  "sticky z-30 isolate bg-surface top-[var(--mobile-topbar-offset,0px)] border-b border-solid border-table-row-stroke md:top-0";
 
 /** Top corners for the header inside a 16px-radius screener table card. */
-export const SCREENER_TABLE_ROUNDED_HEADER_CLASS = "md:rounded-t-2xl";
+export const SCREENER_TABLE_ROUNDED_HEADER_CLASS = "max-md:rounded-t-2xl md:rounded-t-2xl";
 
 /**
  * Sticky header inside an overflow scroller (e.g. Financials viewport table).
@@ -84,9 +85,10 @@ export const SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS =
 export const SCREENER_TABLE_OUTER_BORDER_CLASS =
   "border border-solid border-stroke-subtle";
 
-/** 16px rounded surface + shared card chrome (stroke + shadow). Outer border class is optional when this is used alone. */
+/** 16px rounded surface + shared card chrome (stroke + shadow).
+ * No `overflow-hidden` — sticky column labels must stick to `<main>` / page scroll. */
 export const SCREENER_TABLE_MOBILE_SURFACE_CLASS = cn(
-  "overflow-hidden rounded-2xl bg-surface",
+  "rounded-2xl bg-surface",
   MOBILE_CARD_SURFACE_CLASS,
 );
 
@@ -335,7 +337,6 @@ export function ScreenerTableScroll({
         "w-full min-w-0 max-w-full",
         SCREENER_TABLE_OUTER_BORDER_CLASS,
         SCREENER_TABLE_MOBILE_SURFACE_CLASS,
-        !scrollAlignEnd && "max-md:overflow-hidden",
         embeddedInMobileCard &&
           "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
         // `mobile-scroll-x` is mobile-only in CSS; earnings summary needs pan on all breakpoints.

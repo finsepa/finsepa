@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "@/lib/icons";
 
 import { whiteSurfaceButtonChromeClass } from "@/components/design-system";
@@ -56,6 +57,7 @@ const PAGE_NUM_ACTIVE = cn(
 
 /**
  * Screener: prev/next icon buttons (left/right) · page numbers (centered).
+ * Renders only after mount so SSR/client page-count drift (e.g. crypto universe resize) cannot hydrate-mismatch.
  */
 export function ScreenerPagination({
   page,
@@ -73,7 +75,12 @@ export function ScreenerPagination({
   className?: string;
   "aria-label"?: string;
 }) {
-  if (totalPages <= 1) return null;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || totalPages <= 1) return null;
 
   const safePage = Math.min(Math.max(1, page), totalPages);
   const canPrev = safePage > 1;

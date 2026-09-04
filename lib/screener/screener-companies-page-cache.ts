@@ -10,7 +10,7 @@ import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import type { ScreenerIndustryDrill } from "@/lib/screener/screener-industry-url";
 
-const STORAGE_KEY = "finsepa:screener:companies-pages:v2-lru";
+const STORAGE_KEY = "finsepa:screener:companies-pages:v3-lru";
 
 const inflight = new Map<string, Promise<ScreenerTableRow[]>>();
 
@@ -23,8 +23,8 @@ export function buildScreenerCompaniesListKey(
   return "all";
 }
 
-function pageCacheKey(listKey: string, page: number): string {
-  return `${listKey}|p${page}`;
+function pageCacheKey(listKey: string, page: number, pageSize: number): string {
+  return `${listKey}|p${page}|ps${pageSize}`;
 }
 
 export function buildScreenerCompaniesPageCacheKey(
@@ -46,11 +46,12 @@ export function readScreenerCompaniesPageCache(
   marketSegment: string,
   listKey: string,
   page: number,
+  pageSize: number,
 ): ScreenerTableRow[] | null {
   const rows = readSegmentLruEntry<ScreenerTableRow[]>(
     STORAGE_KEY,
     marketSegment,
-    pageCacheKey(listKey, page),
+    pageCacheKey(listKey, page, pageSize),
   );
   return rows?.length ? rows : null;
 }
@@ -59,13 +60,14 @@ export function writeScreenerCompaniesPageCache(
   marketSegment: string,
   listKey: string,
   page: number,
+  pageSize: number,
   rows: ScreenerTableRow[],
 ): void {
   if (!rows.length) return;
   writeSegmentLruEntry(
     STORAGE_KEY,
     marketSegment,
-    pageCacheKey(listKey, page),
+    pageCacheKey(listKey, page, pageSize),
     rows,
     SCREENER_COMPANIES_PAGES_LRU_MAX,
   );
@@ -80,9 +82,10 @@ export function fetchScreenerCompaniesPageCached(
   marketSegment: string,
   listKey: string,
   page: number,
+  pageSize: number,
   url: string,
 ): Promise<ScreenerTableRow[]> {
-  const fromStore = readScreenerCompaniesPageCache(marketSegment, listKey, page);
+  const fromStore = readScreenerCompaniesPageCache(marketSegment, listKey, page, pageSize);
   if (fromStore) return Promise.resolve(fromStore);
 
   const pending = inflight.get(cacheKey);
@@ -95,7 +98,7 @@ export function fetchScreenerCompaniesPageCached(
     })
     .then((data) => {
       const rows = data.rows ?? [];
-      writeScreenerCompaniesPageCache(marketSegment, listKey, page, rows);
+      writeScreenerCompaniesPageCache(marketSegment, listKey, page, pageSize, rows);
       return rows;
     })
     .finally(() => {

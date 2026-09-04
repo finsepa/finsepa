@@ -22,6 +22,7 @@ import {
   pickCryptoRealtimePayload,
 } from "@/lib/market/eodhd-crypto";
 import { loadEodhdRealtimeQuotes } from "@/lib/market/eodhd-realtime-quotes";
+import { fetchEodhdRealtimeSymbolsRaw } from "@/lib/market/eodhd-realtime";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { fetchEodhdEodDailyScreener, type EodhdDailyBar } from "@/lib/market/eodhd-eod";
@@ -48,6 +49,7 @@ import { readMarketSnapshot, readMarketSnapshotSlow } from "@/lib/market/market-
 import { rebuildMarketSnapshotBlobSingleFlight } from "@/lib/market/market-snapshot-rebuild";
 import { readCryptoDerivedSnapshot, upsertCryptoDerivedSnapshot, isUsableCryptoDerivedSnapshot } from "@/lib/market/crypto-derived-snapshot";
 import { mergeCryptoQuoteMaps } from "@/lib/market/merge-crypto-quotes";
+import { resolveCryptoMarketCapUsd } from "@/lib/market/crypto-mcap-fallback";
 import {
   mergeWatchlistStockMarketSlice,
   pickScreenerDerivedForTickers,
@@ -146,6 +148,20 @@ export function isUsableCryptoTabMarketData(data: SimpleMarketData | null | unde
   return ok >= Math.ceil(CRYPTO_TOP10.length * CRYPTO_HUB_MIN_FILL_RATIO);
 }
 
+/**
+ * Hub `crypto_page2` must cover enough of the current PAGE2 universe — an older
+ * ~40-symbol snap must not stick after the curated list grows to ~80.
+ */
+export function isUsableCryptoPage2MarketData(data: SimpleMarketData | null | undefined): boolean {
+  if (!data?.crypto) return false;
+  if (CRYPTO_SCREENER_PAGE2.length === 0) return true;
+  let ok = 0;
+  for (const m of CRYPTO_SCREENER_PAGE2) {
+    if (hasPositiveCryptoPrice(data.crypto[m.symbol] ?? data.crypto[m.symbol.toUpperCase()])) ok += 1;
+  }
+  return ok >= Math.ceil(CRYPTO_SCREENER_PAGE2.length * CRYPTO_HUB_MIN_FILL_RATIO);
+}
+
 export { mergeCryptoQuoteMaps };
 
 export function mergeCryptoMarketDataLayers(tab: SimpleMarketData, page2: SimpleMarketData): SimpleMarketData {
@@ -193,6 +209,25 @@ function toDatum(p: EodhdRealtimePayload | undefined): SimpleMarketDatum {
       : null);
 
   return { price, previousClose, changePercent1D };
+}
+
+/** When realtime returns NA for a pair, fill price/1D from recent EOD bars (same pairs as derived). */
+async function fillMissingCryptoQuotesFromEod(
+  crypto: Record<string, SimpleMarketDatum>,
+  metas: readonly CryptoMeta[],
+): Promise<void> {
+  const missing = metas.filter((c) => !hasPositiveCryptoPrice(crypto[c.symbol]));
+  if (!missing.length) return;
+  const window = eodFetchWindowUtc();
+  const barsList = await runWithConcurrencyLimit(missing, SCREENER_EOD_DERIVED_CRYPTO_CONCURRENCY, (c) =>
+    fetchEodhdCryptoDailyBarsForMeta(c, window.from, window.to),
+  );
+  missing.forEach((c, i) => {
+    const bars = barsList[i];
+    if (!Array.isArray(bars) || !bars.length) return;
+    const datum = datumFromEodDailyBars(bars);
+    if (hasPositiveCryptoPrice(datum)) crypto[c.symbol] = datum;
+  });
 }
 
 function buildEmptyMarketData(): SimpleMarketData {
@@ -302,11 +337,13 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
       const crypto: Record<string, SimpleMarketDatum> = {};
       if (includeCrypto) {
         const cryptoMetas = cryptoMetasForBatch(cryptoBatch);
+        // Cron / scripts: use raw multi-fetch (not Next `unstable_cache` per-symbol batching).
         const symbolList = cryptoRealtimeRequestSymbols(cryptoMetas);
-        const map = await loadEodhdRealtimeQuotes(symbolList);
+        const map = await fetchEodhdRealtimeSymbolsRaw(symbolList);
         for (const c of cryptoMetas) {
           crypto[c.symbol] = toDatum(pickCryptoRealtimePayload(map, c));
         }
+        await fillMissingCryptoQuotesFromEod(crypto, cryptoMetas);
       }
 
       const indices: Record<string, SimpleMarketDatum> = {};
@@ -333,14 +370,17 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
     }
     symbolList.push(...page2Tickers.map((t) => toEodhdUsSymbol(t)));
     const cryptoMetas = includeCrypto ? cryptoMetasForBatch(cryptoBatch) : [];
-    if (includeCrypto) {
-      symbolList.push(...cryptoRealtimeRequestSymbols(cryptoMetas));
-    }
+    const cryptoSymbols = includeCrypto ? cryptoRealtimeRequestSymbols(cryptoMetas) : [];
     if (includeIndices) {
       symbolList.push(...SCREENER_INDEX_SYMBOLS);
     }
 
-    const map = await loadEodhdRealtimeQuotes(symbolList);
+    const [map, cryptoMap] = await Promise.all([
+      symbolList.length ? loadEodhdRealtimeQuotes(symbolList) : Promise.resolve(new Map<string, EodhdRealtimePayload>()),
+      cryptoSymbols.length
+        ? fetchEodhdRealtimeSymbolsRaw(cryptoSymbols)
+        : Promise.resolve(new Map<string, EodhdRealtimePayload>()),
+    ]);
 
     const stocks = {} as Record<Top10Ticker, SimpleMarketDatum>;
     for (const t of TOP10_TICKERS) {
@@ -365,8 +405,9 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
     const crypto: Record<string, SimpleMarketDatum> = {};
     if (includeCrypto) {
       for (const c of cryptoMetas) {
-        crypto[c.symbol] = toDatum(pickCryptoRealtimePayload(map, c));
+        crypto[c.symbol] = toDatum(pickCryptoRealtimePayload(cryptoMap, c));
       }
+      await fillMissingCryptoQuotesFromEod(crypto, cryptoMetas);
     }
 
     const indices: Record<string, SimpleMarketDatum> = {};
@@ -541,7 +582,7 @@ export async function getSimpleMarketDataForWatchlistStocks(stockTickers: string
 /** Screener Crypto tab page 2 — quotes for {@link CRYPTO_SCREENER_PAGE2} only (on-demand pagination). */
 export async function getSimpleMarketDataCryptoScreenerPage2(): Promise<SimpleMarketData> {
   const snap = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.cryptoPage2);
-  if (snap) return snap;
+  if (snap && isUsableCryptoPage2MarketData(snap)) return snap;
   return rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
     key: MARKET_SNAPSHOT_KEY.cryptoPage2,
     tier: "hot",
@@ -554,6 +595,7 @@ export async function getSimpleMarketDataCryptoScreenerPage2(): Promise<SimpleMa
         includeIndices: false,
       }),
     emptyFallback: () => buildEmptyMarketData(),
+    isUsable: (d) => isUsableCryptoPage2MarketData(d),
   });
 }
 
@@ -880,28 +922,45 @@ async function loadSimpleCryptoDerivedUncached(): Promise<SimpleCryptoDerived> {
   });
   const out: SimpleCryptoDerived = {};
   CRYPTO_SCREENER_ALL.forEach((c, i) => {
-    const mc = typeof mcList[i] === "number" && Number.isFinite(mcList[i]!) ? mcList[i]! : null;
+    const mcRaw = typeof mcList[i] === "number" && Number.isFinite(mcList[i]!) ? mcList[i]! : null;
+    const mc = resolveCryptoMarketCapUsd(c.symbol, mcRaw);
     out[c.symbol] = { ...(derivedList[i] ?? emptyCryptoDerived()), marketCapUsd: mc };
   });
   return out;
 }
 
 async function getSimpleCryptoDerivedCached(): Promise<SimpleCryptoDerived> {
-  return unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v14-sane-mcap"], {
+  return unstable_cache(loadSimpleCryptoDerivedUncached, ["simple-crypto-derived-v15-universe-100"], {
     revalidate: REVALIDATE_TIER_SCREENER_DERIVED,
   })();
 }
 
 export async function getSimpleCryptoDerived(): Promise<SimpleCryptoDerived> {
+  const required = CRYPTO_SCREENER_ALL.map((c) => c.symbol);
   const snap = await readMarketSnapshotSlow<SimpleCryptoDerived>(MARKET_SNAPSHOT_KEY.cryptoDerived);
-  if (snap && isUsableCryptoDerivedHub(snap, CRYPTO_TOP10.map((c) => c.symbol))) return snap;
+  if (snap && isUsableCryptoDerivedHub(snap, required)) {
+    return sanitizeCryptoDerivedMarketCaps(snap);
+  }
   return rebuildMarketSnapshotBlobSingleFlight<SimpleCryptoDerived>({
     key: MARKET_SNAPSHOT_KEY.cryptoDerived,
     tier: "slow",
     loadUncached: () => getSimpleCryptoDerivedCached(),
     emptyFallback: () => ({}),
-    isUsable: (d) => isUsableCryptoDerivedHub(d, CRYPTO_TOP10.map((c) => c.symbol)),
-  });
+    isUsable: (d) => isUsableCryptoDerivedHub(d, required),
+  }).then(sanitizeCryptoDerivedMarketCaps);
+}
+
+/** Apply curated mcap fallbacks on read so junk hub values never rank/display. */
+function sanitizeCryptoDerivedMarketCaps(hub: SimpleCryptoDerived): SimpleCryptoDerived {
+  const out: SimpleCryptoDerived = {};
+  for (const [sym, row] of Object.entries(hub)) {
+    if (!row) continue;
+    out[sym] = {
+      ...row,
+      marketCapUsd: resolveCryptoMarketCapUsd(sym, row.marketCapUsd ?? null),
+    };
+  }
+  return out;
 }
 
 export async function getSimpleCryptoDerivedTop10(): Promise<SimpleCryptoDerived> {

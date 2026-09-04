@@ -130,7 +130,7 @@ export function withScreenerUsMarketCache<T>(
   now: Date = new Date(),
 ): Promise<T> {
   const epoch = getScreenerUsMarketCacheEpoch(now);
-  const parts = [baseKey, "us-session-v1", epoch.segment, ...extraKeyParts];
+  const parts = [baseKey, "us-session-v2", epoch.segment, ...extraKeyParts];
   const memKey = parts.join("\0");
   const ttlMs = screenerSessionMemTtlMs(epoch);
 

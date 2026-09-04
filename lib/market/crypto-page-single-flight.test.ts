@@ -18,7 +18,7 @@ type Hit = { payload: { routeSymbol: string }; exactSegment: boolean };
 
 async function simulateCryptoCold(concurrency: number, symbol: string) {
   const key = `asset_crypto_${symbol}`;
-  const segment = "crypto_page_v1:1";
+  const segment = "crypto_page_v2:1";
   const lease = createMemoryRebuildLeaseStore({ now: () => Date.now() });
   const snapshots = new Map<string, Hit>();
   const metrics = createAssetColdMissMetrics();
