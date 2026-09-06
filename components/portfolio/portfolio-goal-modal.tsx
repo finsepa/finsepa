@@ -12,6 +12,7 @@ import {
   appModalPrimaryButtonClass,
 } from "@/components/ui/app-modal-shell";
 import { FormListboxSelect } from "@/components/ui/form-listbox-select";
+import { PillSwitch } from "@/components/ui/pill-switch";
 import type { PortfolioGoal, PortfolioGoalKind } from "@/components/portfolio/portfolio-types";
 import { GOAL_DEFAULT_DIVIDEND_GROWTH_PCT, GOAL_PORTFOLIO_ANNUAL_RETURN } from "@/lib/portfolio/portfolio-goal-projections";
 import { cn } from "@/lib/utils";
@@ -172,24 +173,7 @@ function GoalPillSwitch({
   "aria-label": string;
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={pressed}
-      aria-label={ariaLabel}
-      onClick={() => onPressedChange(!pressed)}
-      className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
-        pressed ? "bg-accent" : "bg-stroke",
-      )}
-    >
-      <span
-        className={cn(
-          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-switch-thumb-off shadow-sm transition-[transform,background-color]",
-          pressed ? "translate-x-4 bg-switch-thumb" : "translate-x-0",
-        )}
-      />
-    </button>
+    <PillSwitch pressed={pressed} onPressedChange={onPressedChange} aria-label={ariaLabel} />
   );
 }
 

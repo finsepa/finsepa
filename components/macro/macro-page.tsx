@@ -6,7 +6,8 @@ import { Check, ChevronDown } from "@/lib/icons";
 
 import { TabSwitcher } from "@/components/design-system";
 import type { MacroCardModel } from "@/components/macro/macro-card";
-import { formatMacroChange, formatMacroLatestDate, formatMacroPeriodCaption, formatMacroValue } from "@/components/macro/macro-format";
+import { MacroChangeDisplay } from "@/components/macro/macro-change-display";
+import { formatMacroLatestDate, formatMacroPeriodCaption, formatMacroValue } from "@/components/macro/macro-format";
 import {
   BTC_ETF_FLOW_RANGE_IDS,
   DEFAULT_BTC_ETF_FLOW_RANGE,
@@ -223,10 +224,7 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
   const latestText =
     latestValue == null || !windowedModel ? "—" : formatMacroValue(windowedModel.kind, latestValue);
 
-  const changeText = useMemo(() => {
-    if (!windowedModel?.change) return null;
-    return formatMacroChange(windowedModel.kind, windowedModel.change.abs, windowedModel.change.pct);
-  }, [windowedModel]);
+  const change = windowedModel?.change ?? null;
 
   const priorPeriodLabel = useMemo(() => {
     if (!windowedModel || windowedModel.points.length < 2) return null;
@@ -241,7 +239,7 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
     return formatMacroLatestDate(windowedModel.latest.time);
   }, [windowedModel]);
 
-  const changeDelta = windowedModel?.change?.abs ?? null;
+  const changeDelta = change?.abs ?? null;
 
   const chartList = (
     <div className="flex flex-col">
@@ -332,11 +330,13 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
                       >
                         {latestText}
                       </span>
-                      {selected.id !== "crypto_fear_greed" && changeText && changeDelta != null ? (
-                        <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 font-['Inter'] text-[14px] font-medium tabular-nums leading-5">
-                          <span className={changeDelta >= 0 ? "text-up" : "text-down"}>
-                            {changeText}
-                          </span>
+                      {selected.id !== "crypto_fear_greed" && change && changeDelta != null ? (
+                        <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 font-['Inter'] text-[14px] font-medium leading-5">
+                          <MacroChangeDisplay
+                            kind={windowedModel.kind}
+                            abs={change.abs}
+                            pct={change.pct}
+                          />
                           {priorPeriodLabel ? (
                             <span className={EARNINGS_CARD_PRIOR_LINE_CLASS}>vs {priorPeriodLabel}</span>
                           ) : null}

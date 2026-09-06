@@ -7,16 +7,7 @@ import { cn } from "@/lib/utils";
 import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
 import { CompanyLogo } from "@/components/screener/company-logo";
-
-function formatPct(value: number | null) {
-  if (value == null || !Number.isFinite(value)) return "-";
-  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
-}
-
-function pctClass(value: number | null) {
-  if (value == null || !Number.isFinite(value)) return "text-fg-muted";
-  return value >= 0 ? "text-up" : "text-down";
-}
+import { ChangePct } from "@/components/screener/change-pct";
 
 export function CryptoLargestMoversCard({
   title,
@@ -60,18 +51,14 @@ export function CryptoLargestMoversCard({
                 {r.name}
               </p>
             </div>
-            <p
-              className={cn(
-                "shrink-0 text-right text-[14px] font-normal leading-5 tabular-nums",
-                pctClass(r.changePercent1D),
-              )}
-            >
-              {formatPct(r.changePercent1D)}
-            </p>
+            <ChangePct
+              value={r.changePercent1D}
+              className="w-auto shrink-0"
+              textClassName="text-[14px] font-normal leading-5"
+            />
           </Link>
         ))}
       </div>
     </div>
   );
 }
-

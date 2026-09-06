@@ -12,6 +12,7 @@ import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { prefetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-client";
+import { prefetchStockInsiderTransactions } from "@/lib/market/stock-insiders-tab-client";
 import { prefetchStockTargetPricePayload } from "@/lib/market/stock-target-price-client";
 import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { coerceStockDetailTabForEtf, isStockDetailEtf, normalizeStockDetailTab } from "@/lib/stock/stock-etf";
@@ -418,6 +419,7 @@ export function StockPageContent({
       if (next === displayTab) return;
       // Warm data before mounting heavy tabs so the skeleton is usually skipped.
       if (next === "earnings") prefetchStockEarningsTabPayload(ticker, true);
+      if (next === "insiders") prefetchStockInsiderTransactions(ticker);
       if (next === "target-price") prefetchStockTargetPricePayload(ticker);
       setDisplayTab(next);
       setTabsMounted((m) => ({ ...m, [next]: true }));
@@ -429,6 +431,7 @@ export function StockPageContent({
   const handleTabIntent = useCallback(
     (tab: StockDetailTabId) => {
       if (tab === "earnings") prefetchStockEarningsTabPayload(ticker, true);
+      if (tab === "insiders") prefetchStockInsiderTransactions(ticker);
       if (tab === "target-price") prefetchStockTargetPricePayload(ticker);
     },
     [ticker],

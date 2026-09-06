@@ -41,14 +41,25 @@ export function formatMacroValue(kind: MacroValueKind, v: number): string {
   return v.toLocaleString("en-US", { maximumFractionDigits: 2 });
 }
 
-export function formatMacroChange(kind: MacroValueKind, abs: number, pct: number | null): string {
+export function formatMacroChangeAbs(kind: MacroValueKind, abs: number): string {
   const sign = abs > 0 ? "+" : abs < 0 ? "−" : "";
-  const absText =
-    kind === "percent"
-      ? `${sign}${Math.abs(abs).toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}pp`
-      : `${sign}${formatMacroValue(kind, Math.abs(abs))}`;
+  if (kind === "percent") {
+    return `${sign}${Math.abs(abs).toLocaleString("en-US", {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 2,
+    })}pp`;
+  }
+  return `${sign}${formatMacroValue(kind, Math.abs(abs))}`;
+}
+
+/** @deprecated Prefer {@link MacroChangeDisplay} — kept for string-only call sites. */
+export function formatMacroChange(kind: MacroValueKind, abs: number, pct: number | null): string {
+  const absText = formatMacroChangeAbs(kind, abs);
   if (pct == null || !Number.isFinite(pct) || kind === "percent") return absText;
-  const pctText = `${pct >= 0 ? "+" : ""}${pct.toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })}%`;
-  return `${absText} (${pctText})`;
+  const pctText = `${Math.abs(pct).toLocaleString("en-US", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+  })}%`;
+  return `${absText} ${pctText}`;
 }
 

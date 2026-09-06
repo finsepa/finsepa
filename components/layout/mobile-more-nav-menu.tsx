@@ -38,8 +38,8 @@ function MoreNavRow({
   pathname: string;
   onNavigate: () => void;
 }) {
-  const Icon = item.icon;
   const active = protectedNavItemIsActive(item, pathname);
+  const Icon = item.icon;
   const rowClass = cn(
     "flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 text-left text-[15px] font-medium leading-5 transition-colors",
     item.available ? "text-fg" : "cursor-not-allowed text-fg-subtle",

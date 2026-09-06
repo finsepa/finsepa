@@ -16,6 +16,7 @@ const NUMERIC_METRIC_KEYS = [
   "dividendsYieldPct",
   "holdingCount",
   "returnsAthPct",
+  "timeWeightedReturnPct",
 ] as const;
 
 /** Persists allowed keys only for `metrics` jsonb (numbers + owner + top symbols). */

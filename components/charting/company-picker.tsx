@@ -352,8 +352,8 @@ export function CompanyPicker({
                   >
                     <CompanyLogo name={row.name} logoUrl={row.logoUrl} symbol={row.ticker} />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium">{row.name}</div>
-                      <div className="truncate text-[12px] text-fg-muted">{row.ticker}</div>
+                      <div className="truncate font-medium">{row.ticker}</div>
+                      <div className="truncate text-[12px] text-fg-muted">{row.name}</div>
                     </div>
                     <span className="shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-fg-muted">
                       Stock
@@ -389,10 +389,10 @@ export function CompanyPicker({
                           symbol={row.symbol}
                         />
                         <div className="min-w-0 flex-1">
-                          <div className="truncate font-medium">{row.name}</div>
-                          <div className="truncate text-[12px] text-fg-muted">
+                          <div className="truncate font-medium">
                             {eodhdCryptoSpotTickerDisplay(row.symbol)}
                           </div>
+                          <div className="truncate text-[12px] text-fg-muted">{row.name}</div>
                         </div>
                         <span className="shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-fg-muted">
                           Crypto

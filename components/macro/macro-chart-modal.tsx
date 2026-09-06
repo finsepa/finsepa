@@ -5,7 +5,8 @@ import { TabSwitcher } from "@/components/design-system";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { AppModalShell } from "@/components/ui/app-modal-shell";
 import type { MacroCardModel } from "@/components/macro/macro-card";
-import { formatMacroChange, formatMacroPeriodCaption, formatMacroValue } from "@/components/macro/macro-format";
+import { MacroChangeDisplay } from "@/components/macro/macro-change-display";
+import { formatMacroPeriodCaption, formatMacroValue } from "@/components/macro/macro-format";
 import {
   MACRO_RANGE_IDS,
   MACRO_RANGE_LABELS,
@@ -69,17 +70,7 @@ export function MacroChartModal({
     [isBtcEtfFlow, model, rangeId],
   );
 
-  const changeText = useMemo(() => {
-    if (!windowedModel.change) return null;
-    return formatMacroChange(windowedModel.kind, windowedModel.change.abs, windowedModel.change.pct);
-  }, [windowedModel.change, windowedModel.kind]);
-
-  const changeTone =
-    windowedModel.change?.abs == null
-      ? "text-fg-muted"
-      : windowedModel.change.abs >= 0
-        ? "text-emerald-700"
-        : "text-red-700";
+  const change = windowedModel.change;
 
   const periodCaption = windowedModel.latest?.time
     ? formatMacroPeriodCaption(windowedModel.latest.time)
@@ -134,10 +125,13 @@ export function MacroChartModal({
               <span className="text-[18px] font-semibold leading-6 tracking-tight text-fg tabular-nums">
                 {latestText}
               </span>
-              {changeText ? (
-                <span className={`text-[12px] font-medium leading-5 tabular-nums ${changeTone}`}>
-                  {changeText}
-                </span>
+              {change ? (
+                <MacroChangeDisplay
+                  kind={windowedModel.kind}
+                  abs={change.abs}
+                  pct={change.pct}
+                  className="text-[12px] font-medium leading-5"
+                />
               ) : null}
             </div>
             {periodCaption ? (

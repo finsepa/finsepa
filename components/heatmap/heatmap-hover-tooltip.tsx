@@ -11,9 +11,9 @@ import {
   dropdownMenuSearchHeaderClassName,
   dropdownMenuSurfaceClassName,
 } from "@/components/design-system/dropdown-menu-styles";
+import { ChangePctParen } from "@/components/screener/change-pct";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import type { HeatmapLeaf, HeatmapMarket } from "@/lib/heatmap/heatmap-types";
-import { HEATMAP_LABEL_NEGATIVE_HEX, HEATMAP_LABEL_POSITIVE_HEX } from "@/lib/heatmap/heatmap-colors";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { cn } from "@/lib/utils";
@@ -31,12 +31,6 @@ function formatPrice(n: number | null, market: HeatmapMarket): string {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 6 }).format(n);
   }
   return usd2.format(n);
-}
-
-function pctLabel(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "—";
-  const s = Math.abs(n).toFixed(2);
-  return n >= 0 ? `+${s}%` : `-${s}%`;
 }
 
 function normalizeIndustryLabel(v: string | null | undefined): string {
@@ -193,14 +187,6 @@ export function HeatmapHoverTooltip({
               market === "crypto"
                 ? getCryptoLogoUrl(row.ticker)
                 : resolveEquityLogoUrlFromTicker(row.ticker);
-            const changeColor =
-              row.changePct == null || !Number.isFinite(row.changePct)
-                ? "var(--fs-fg-muted)"
-                : row.changePct > 0
-                  ? HEATMAP_LABEL_POSITIVE_HEX
-                  : row.changePct < 0
-                    ? HEATMAP_LABEL_NEGATIVE_HEX
-                    : "var(--fs-fg-muted)";
             return (
               <li key={row.id}>
                 <Link
@@ -209,16 +195,25 @@ export function HeatmapHoverTooltip({
                 >
                   <CompanyLogo name={row.name} logoUrl={logoUrl} symbol={row.ticker} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{row.name}</div>
-                    <div className="truncate text-[12px] text-fg-muted">{row.ticker}</div>
+                    <div className="truncate font-medium">{row.ticker}</div>
+                    <div className="truncate text-[12px] text-fg-muted">{row.name}</div>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end text-right tabular-nums">
+                  <div className="flex shrink-0 flex-col items-end gap-0.5 text-right tabular-nums">
                     <span className="text-[14px] font-medium leading-5 text-fg">
                       {formatPrice(row.price, market)}
                     </span>
-                    <span className="text-[12px] font-normal leading-4" style={{ color: changeColor }}>
-                      {pctLabel(row.changePct)}
-                    </span>
+                    {row.changePct == null || !Number.isFinite(row.changePct) ? (
+                      <span className="text-[12px] font-normal leading-4 text-fg-muted">—</span>
+                    ) : (
+                      <ChangePctParen
+                        value={row.changePct}
+                        caretSize={12}
+                        className={cn(
+                          "text-[12px] font-normal leading-4",
+                          row.changePct > 0 ? "text-up" : row.changePct < 0 ? "text-down" : "text-fg-muted",
+                        )}
+                      />
+                    )}
                   </div>
                 </Link>
               </li>

@@ -156,10 +156,10 @@ function PortfolioHoldingTransactionsPanelInner({
                           />
                           <div className="min-w-0">
                             <div className="truncate text-[14px] font-semibold leading-5 text-fg">
-                              {companyName}
-                            </div>
-                            <div className="text-[12px] font-normal leading-4 text-fg-muted">
                               {portfolioAssetSymbolCaption(holding.symbol)}
+                            </div>
+                            <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                              {companyName}
                             </div>
                           </div>
                         </div>

@@ -15,6 +15,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { ChangePctParen } from "@/components/screener/change-pct";
 import { UserAvatar } from "@/components/user/user-avatar";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import {
@@ -35,11 +36,6 @@ type PortfoliosDirectoryView = "cards" | "list";
 const usd = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-const pctFmt = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
@@ -74,15 +70,6 @@ function fmtUsd(n: number | null): string {
   return usd.format(n);
 }
 
-function fmtPct(n: number | null, signed: boolean): string {
-  if (n == null) return "—";
-  const body = pctFmt.format(Math.abs(n));
-  if (!signed) return `${pctFmt.format(n)}%`;
-  if (n > 0) return `+${body}%`;
-  if (n < 0) return `-${body}%`;
-  return `${body}%`;
-}
-
 function athReturnClass(n: number | null): string {
   if (n == null || !Number.isFinite(n)) return "text-fg";
   if (Math.abs(n) < 0.0005) return "text-fg";
@@ -105,11 +92,14 @@ function StatCell({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** Community directory card — layout aligned with Figma (avatar, portfolio title, owner, ATH return, stats row). */
+/** Community directory card — layout aligned with Figma (avatar, portfolio title, owner, TWR, stats row). */
 function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
   const m = listing.metrics;
   const value = metricNum(m, "valueUsd");
-  const ath = metricNum(m, "returnsAthPct") ?? metricNum(m, "totalProfitPct");
+  const twr =
+    metricNum(m, "timeWeightedReturnPct") ??
+    metricNum(m, "returnsAthPct") ??
+    metricNum(m, "totalProfitPct");
   const holdingCount = metricNum(m, "holdingCount");
   const ownerName = metricStr(m, "ownerDisplayName") ?? "Member";
   const ownerAvatar = metricStr(m, "ownerAvatarUrl");
@@ -155,15 +145,21 @@ function PublicPortfolioBlock({ listing }: { listing: PublicListingRow }) {
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-[4px] text-right">
-          <p
-            className={cn(
-              "text-base font-semibold leading-6 tabular-nums tracking-normal",
-              athReturnClass(ath),
-            )}
-          >
-            {fmtPct(ath, true)}
+          {twr == null || !Number.isFinite(twr) ? (
+            <p className="text-base font-semibold leading-6 tabular-nums tracking-normal text-fg">—</p>
+          ) : (
+            <ChangePctParen
+              value={twr}
+              caretSize={14}
+              className={cn(
+                "text-base font-semibold leading-6 tracking-normal",
+                athReturnClass(twr),
+              )}
+            />
+          )}
+          <p className="text-sm font-normal leading-6 tracking-normal text-fg-muted">
+            Time-weighted return
           </p>
-          <p className="text-sm font-normal leading-6 tracking-normal text-fg-muted">Returns (ATH)</p>
         </div>
       </div>
 

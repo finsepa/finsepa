@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import { screenerSectorDrillHref } from "@/lib/screener/screener-stocks-sub-tab-url";
+import { ChangePct } from "@/components/screener/change-pct";
 import {
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -27,29 +28,11 @@ function formatMarketWeightPct(value: number | null) {
   return `${value.toFixed(1)}%`;
 }
 
-function formatPctValue(value: number) {
-  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
-}
-
-/** Matches {@link ScreenerTable} `ChangeCell` (missing value + color rules). */
+/** Matches {@link ScreenerTable} change % cells (caret + color). */
 function PctCell({ value }: { value: number | null }) {
-  if (value == null || !Number.isFinite(value)) {
-    return (
-      <div className={cn("min-w-0 w-full text-right text-[14px] leading-5 font-medium text-fg-muted", TABLE_END_ALIGNED_PAD_CLASS)}>
-        -
-      </div>
-    );
-  }
-  const positive = value >= 0;
   return (
-    <div
-      className={cn(
-        "min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium",
-        TABLE_END_ALIGNED_PAD_CLASS,
-        positive ? "text-up" : "text-down",
-      )}
-    >
-      {formatPctValue(value)}
+    <div className={cn("min-w-0 w-full", TABLE_END_ALIGNED_PAD_CLASS)}>
+      <ChangePct value={value} />
     </div>
   );
 }

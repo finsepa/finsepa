@@ -12,6 +12,7 @@ import { validateSuperinvestorProfilePage } from "@/lib/superinvestors/superinve
 import { hasSuperinvestor13fProfileSnapshot } from "@/lib/superinvestors/superinvestor-13f-holdings-transactions-snapshot";
 import { cikPad10 } from "@/lib/superinvestors/superinvestor-13f-freshness";
 import { refreshSuperinvestorListSnapshot } from "@/lib/superinvestors/superinvestor-list-snapshot";
+import { refreshSuperinvestorStockIndexSnapshot } from "@/lib/superinvestors/superinvestor-stock-index-snapshot";
 import { rebuildSuperinvestorPerformanceSeries } from "@/lib/superinvestors/superinvestor-performance-series";
 import { isSuperinvestorPerformanceEnabled } from "@/lib/superinvestors/superinvestor-performance-types";
 import { withSuperinvestorSecRebuildAllowed } from "@/lib/superinvestors/superinvestor-sec-rebuild-gate";
@@ -120,6 +121,7 @@ export async function GET(request: Request) {
       }
       const one = await refreshOneSlug(slug, enrichOnly);
       const listRefresh = await refreshSuperinvestorListSnapshot();
+      const stockIndexRefresh = await refreshSuperinvestorStockIndexSnapshot();
       let performanceOk: boolean | undefined;
       if (isSuperinvestorPerformanceEnabled(slug) && !enrichOnly) {
         const perf = await withSuperinvestorSecRebuildAllowed(() =>
@@ -133,13 +135,24 @@ export async function GET(request: Request) {
         okCount: one.ok ? 1 : 0,
         listSnapshotOk: listRefresh.ok,
         listRowCount: listRefresh.rowCount,
+        stockIndexSnapshotOk: stockIndexRefresh.ok,
+        stockIndexTickerCount: stockIndexRefresh.tickerCount,
         performanceOk,
         results: [one],
       });
     }
 
-    const { at, durationMs, averageProcessingTimeMs, okCount, listSnapshotOk, listRowCount, results } =
-      await refreshAllSuperinvestor13fPortfolios();
+    const {
+      at,
+      durationMs,
+      averageProcessingTimeMs,
+      okCount,
+      listSnapshotOk,
+      listRowCount,
+      stockIndexSnapshotOk,
+      stockIndexTickerCount,
+      results,
+    } = await refreshAllSuperinvestor13fPortfolios();
 
     return NextResponse.json({
       at,
@@ -148,6 +161,8 @@ export async function GET(request: Request) {
       okCount,
       listSnapshotOk,
       listRowCount,
+      stockIndexSnapshotOk,
+      stockIndexTickerCount,
       results,
     });
   } catch (e) {

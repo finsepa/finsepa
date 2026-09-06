@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { readScreenerCompanyIdentity } from "@/lib/screener/screener-company-identity-storage";
 import { withLogoDevTheme } from "@/lib/screener/company-logo-url";
+import { indexLogoPublicPath } from "@/lib/market/index-logo-url";
 import { useClientMounted, useLogoDevTheme } from "@/lib/theme/use-logo-dev-theme";
 import { cn } from "@/lib/utils";
 import { logoColors } from "./data";
@@ -132,6 +133,53 @@ function UsdCashMark({
   );
 }
 
+/** Bundled index mark (iOS `IndexLogoAssets` PNGs under `/indices/`). */
+function BundledIndexMark({
+  src,
+  name,
+  size,
+  className,
+  eagerLoad = false,
+}: {
+  src: string;
+  name: string;
+  size: "xs" | "sm" | "28" | "md" | "40" | "lg";
+  className?: string;
+  eagerLoad?: boolean;
+}) {
+  const px =
+    size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : size === "40" ? 40 : 32;
+  const imgBox =
+    size === "xs"
+      ? "h-5 w-5 rounded-md"
+      : size === "sm"
+        ? "h-6 w-6 rounded-[8px]"
+        : size === "28"
+          ? "h-7 w-7 rounded-md"
+          : size === "40"
+            ? "h-10 w-10 rounded-[12px]"
+            : size === "lg"
+              ? "h-12 w-12 rounded-lg"
+              : "h-8 w-8 rounded-lg";
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- static public PNG
+    <img
+      src={src}
+      alt={name}
+      width={px}
+      height={px}
+      loading={eagerLoad ? "eager" : "lazy"}
+      decoding="async"
+      fetchPriority={eagerLoad ? "high" : undefined}
+      className={cn(
+        imgBox,
+        "shrink-0 border-0 object-cover shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]",
+        className,
+      )}
+    />
+  );
+}
+
 export function CompanyLogo({
   name,
   logoUrl,
@@ -172,6 +220,19 @@ export function CompanyLogo({
 
   if (symbol?.trim().toUpperCase() === "USD") {
     return <UsdCashMark size={size} className={className} />;
+  }
+
+  const bundledIndexSrc = indexLogoPublicPath(symbol);
+  if (bundledIndexSrc) {
+    return (
+      <BundledIndexMark
+        src={bundledIndexSrc}
+        name={displayName}
+        size={size}
+        className={className}
+        eagerLoad={eagerLoad}
+      />
+    );
   }
 
   const hasLogoUrl =

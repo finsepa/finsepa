@@ -661,10 +661,10 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                                   {t.operation}
                                 </div>
                                 <div className="hidden truncate text-[14px] font-semibold leading-5 text-fg sm:block">
-                                  {t.name}
-                                </div>
-                                <div className="text-[12px] font-normal leading-4 text-fg-muted">
                                   {portfolioAssetSymbolCaption(t.symbol)}
+                                </div>
+                                <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                                  {t.name}
                                   {showSourceType ? (
                                     <span className="sm:hidden">
                                       {" · "}

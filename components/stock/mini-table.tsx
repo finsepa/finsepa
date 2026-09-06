@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { ChangePct } from "@/components/screener/change-pct";
 import { cn } from "@/lib/utils";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
@@ -25,16 +26,6 @@ import {
   TABLE_END_ALIGNED_PAD_CLASS,
   TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
-
-function formatPerformancePct(value: number): string {
-  const isPositive = value >= 0;
-  const sign = isPositive ? "+" : "−";
-  const body = Math.abs(value).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `${sign}${body}%`;
-}
 
 type PerfField = keyof Pick<StockPerformance, "d1" | "d5" | "m1" | "m6" | "ytd" | "y1" | "y5" | "all">;
 
@@ -81,21 +72,16 @@ function PerfValue({
   hideCompanyColumn: boolean;
   isLast: boolean;
 }) {
-  const base = cn(
-    "w-full text-[14px] leading-5 tabular-nums",
-    hideCompanyColumn ? "text-center" : "text-right",
-    perfVisibilityClass(showOnMobile),
-    isLast && TABLE_END_ALIGNED_PAD_CLASS,
-  );
-
-  if (value == null || !Number.isFinite(value)) {
-    return <div className={cn(base, "text-fg-muted")}>—</div>;
-  }
-  const isPositive = value >= 0;
   return (
-    <div className={cn(base, isPositive ? "text-up" : "text-down")}>
-      {formatPerformancePct(value)}
-    </div>
+    <ChangePct
+      value={value}
+      textClassName="text-[14px] leading-5"
+      className={cn(
+        hideCompanyColumn ? "justify-center" : "justify-end",
+        perfVisibilityClass(showOnMobile),
+        isLast && TABLE_END_ALIGNED_PAD_CLASS,
+      )}
+    />
   );
 }
 
@@ -156,11 +142,11 @@ function CompanyCell({
         <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={symbol} />
       )}
       <div className="min-w-0 overflow-hidden">
-        <div className="truncate text-[14px] font-semibold leading-5 text-fg" title={displayName}>
-          {displayName}
-        </div>
-        <div className="truncate text-[12px] leading-4 text-fg-muted" title={symbol}>
+        <div className="truncate text-[14px] font-semibold leading-5 text-fg" title={symbol}>
           {isCryptoOverviewSymbol(symbol) ? eodhdCryptoSpotTickerDisplay(symbol) : symbol}
+        </div>
+        <div className="truncate text-[12px] leading-4 text-fg-muted" title={displayName}>
+          {displayName}
         </div>
       </div>
       {onRemove ? (

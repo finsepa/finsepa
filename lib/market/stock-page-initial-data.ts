@@ -416,13 +416,15 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
 
   if (cachedHit?.payload?.ticker === ticker) {
     const base = assetSnapshotPayloadToPageData(cachedHit.payload);
-    if (epoch.mode === "frozen" && base.chart.points.length > 0) {
-      const keyIndicators = await loadKeyIndicatorsForPage(ticker);
-      const out = { ...base, keyIndicators };
+    if (epoch.mode === "frozen") {
+      // Weekend / off-hours: return the snapshot immediately.
+      // Do not await Key Indicators or EODHD hot fields — they can stall soft navigations
+      // (screener → asset) while a hard refresh feels instant from a warm compile/cache.
+      // Key Indicators still load on the client via `/api/stocks/.../key-indicators`.
       if (!cachedHit.exactSegment) {
-        scheduleAssetSnapshotWrite(ticker, epoch.segment, out, epoch.mode);
+        scheduleAssetSnapshotWrite(ticker, epoch.segment, base, epoch.mode);
       }
-      return out;
+      return base;
     }
     const [hot, keyIndicators] = await Promise.all([
       loadStockPageHotFields(ticker, base.chart.range, [], new Date()),

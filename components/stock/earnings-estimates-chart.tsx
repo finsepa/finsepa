@@ -26,20 +26,26 @@ import {
   sliceLatestAnnualEstimates,
   sliceLatestQuarterlyEstimates,
 } from "@/lib/market/earnings-annual-display";
-import { cn } from "@/lib/utils";
-import {
-  formatChartingPeriodAxisLabel,
-  formatChartingPeriodLabel,
-} from "@/lib/market/charting-period-display";
+import { formatChartingPeriodLabel } from "@/lib/market/charting-period-display";
 import type { ChartingMetricKind } from "@/lib/market/stock-charting-metrics";
 import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { StockEarningsEstimatesChart, StockEarningsEstimatesPoint } from "@/lib/market/stock-earnings-types";
+import { cn } from "@/lib/utils";
 
-/** Estimate bars are grey; actual bars are blue. */
+/** Estimate bars are grey; actual bars use up/down/meet from beat vs miss. */
 const ESTIMATE_BAR = "#D4D4D8";
 
 const MEET_COLOR = "#5C5D5F";
+
+type EarningsOutcome = "beat" | "miss" | "met";
+
+function actualBarColor(outcome: EarningsOutcome | null): string {
+  if (outcome === "beat") return resolveFsColor("--fs-up");
+  if (outcome === "miss") return resolveFsColor("--fs-down");
+  if (outcome === "met") return MEET_COLOR;
+  return resolveFsColor("--fs-accent");
+}
 
 const BAR_WIDTH_QUARTERLY_PX = 11;
 const BAR_WIDTH_ANNUAL_PX = 18;
@@ -63,8 +69,6 @@ function estimatesBarLayout(periodMode: FundamentalsSeriesMode): {
     barHoverPadPx: annual ? BAR_HOVER_PAD_ANNUAL_PX : BAR_HOVER_PAD_QUARTERLY_PX,
   };
 }
-
-type EarningsOutcome = "beat" | "miss" | "met";
 
 /**
  * Compare using the same formatting as the tooltip so visually equal values
@@ -162,6 +166,7 @@ function EarningsPeriodBars({
   enterProgress,
   barWidthPx,
   pairBarWidthPx,
+  outcome,
 }: {
   estimate: number | null;
   actual: number | null;
@@ -170,6 +175,7 @@ function EarningsPeriodBars({
   enterProgress: number;
   barWidthPx: number;
   pairBarWidthPx: number;
+  outcome: EarningsOutcome | null;
 }) {
   const showActual = !isForecast && actual != null && valueHeightPct(actual, maxV) > 0;
   const showEstimate = estimate != null && valueHeightPct(estimate, maxV) > 0;
@@ -202,7 +208,7 @@ function EarningsPeriodBars({
             width: widthPx,
             height: `${valueHeightPct(actual, maxV) * enterProgress}%`,
             minHeight: 2,
-            backgroundColor: resolveFsColor("--fs-accent"),
+            backgroundColor: actualBarColor(outcome),
           }}
           aria-hidden
         />
@@ -213,9 +219,9 @@ function EarningsPeriodBars({
 
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
-const AXIS_LABEL_ROTATE_DEG = -42;
-const MULTICHART_AXIS_ROW_PX = 32;
-const MULTICHART_AXIS_BOTTOM_PAD_PX = 10;
+/** Two-line horizontal period labels (e.g. `Q2 2026` + `+$0.14`). */
+const MULTICHART_AXIS_ROW_PX = 44;
+const MULTICHART_AXIS_BOTTOM_PAD_PX = 8;
 const Y_AXIS_W_PX = 50;
 
 /** Match Key Stats revenue modal chart height on mobile. */
@@ -266,6 +272,10 @@ function tooltipLineClass(tone: BarTooltipLineTone, isFirst: boolean): string {
 type PeriodBar = {
   key: string;
   axisLabel: string;
+  /** Actual value line under the period (e.g. `+$0.14`); null when unreported. */
+  axisActualLabel: string | null;
+  /** Beat/miss vs estimate — colors the actual axis line. */
+  axisActualOutcome: EarningsOutcome | null;
   title: string;
   estimate: number | null;
   actual: number | null;
@@ -285,12 +295,20 @@ function buildPeriodBars(
 ): PeriodBar[] {
   const sliced =
     periodMode === "annual" ? sliceLatestAnnualEstimates(points) : sliceLatestQuarterlyEstimates(points);
+  const axisKind = METRIC_CONFIG[metric].axisKind;
   return sliced.map((p) => {
     const periodEnd = /^\d{4}-\d{2}-\d{2}$/.test(p.sortKey) ? p.sortKey : null;
     const { estimate, actual } = estimatesChartBarValues(p, metric);
+    const outcome =
+      estimate != null && actual != null ? earningsBeatMiss(estimate, actual, axisKind) : null;
     return {
       key: p.sortKey,
-      axisLabel: periodEnd ? formatChartingPeriodAxisLabel(periodEnd, periodMode) : p.label,
+      axisLabel: periodEnd ? formatChartingPeriodLabel(periodEnd, periodMode) : p.label,
+      axisActualLabel:
+        actual != null && Number.isFinite(actual)
+          ? formatBeatMissDeltaAmount(actual, axisKind)
+          : null,
+      axisActualOutcome: outcome,
       title: periodEnd ? formatChartingPeriodLabel(periodEnd, periodMode) : p.label,
       estimate,
       actual,
@@ -369,8 +387,8 @@ type Props = {
 };
 
 /**
- * Revenue / EPS estimate bar chart — grey estimate + blue actual bars.
- * plus beat/miss markers above the actual bar.
+ * Revenue / EPS estimate bar chart — grey estimate + green/red/grey actual bars
+ * (beat / miss / met), plus beat/miss markers above the actual bar.
  */
 export function EarningsEstimatesChart({ data, period, metric }: Props) {
   const plotAreaRef = useRef<HTMLDivElement>(null);
@@ -537,6 +555,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                           enterProgress={enterProgress}
                           barWidthPx={barLayout.barWidthPx}
                           pairBarWidthPx={barLayout.pairBarWidthPx}
+                          outcome={beatMiss}
                         />
                       </div>
                     </div>
@@ -593,26 +612,28 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
             <div className="flex w-full min-w-0 overflow-visible" style={{ height: MULTICHART_AXIS_ROW_PX }}>
               <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
                 {periods.map((p, i) => {
-                  const horizontalAxisLabels = period === "annual";
-                  const axisLabelRotateDeg = horizontalAxisLabels ? 0 : AXIS_LABEL_ROTATE_DEG;
                   return (
                     <div
                       key={`axis-${p.key}`}
-                      className={cn(
-                        "absolute flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible",
-                        horizontalAxisLabels ? "top-1.5" : "bottom-0.5",
-                      )}
+                      className="absolute top-1.5 flex max-w-[min(100%,5.5rem)] -translate-x-1/2 justify-center overflow-visible"
                       style={{ left: `${periodCenterLeftPercent(i, n)}%` }}
                       title={p.title}
                     >
-                      <span
-                        className="inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]"
-                        style={{
-                          transform: axisLabelRotateDeg === 0 ? undefined : `rotate(${axisLabelRotateDeg}deg)`,
-                          transformOrigin: horizontalAxisLabels ? undefined : "center bottom",
-                        }}
-                      >
-                        {p.axisLabel}
+                      <span className="inline-flex flex-col items-center gap-0.5 whitespace-nowrap text-center font-['Inter'] text-[11px] font-normal tabular-nums leading-tight text-fg-muted sm:text-[12px]">
+                        <span>{p.axisLabel}</span>
+                        {p.axisActualLabel ? (
+                          <span
+                            className={cn(
+                              "text-[10px] leading-tight sm:text-[11px]",
+                              p.axisActualOutcome === "beat" && "text-up",
+                              p.axisActualOutcome === "miss" && "text-down",
+                              (p.axisActualOutcome === "met" || p.axisActualOutcome == null) &&
+                                "text-fg-muted",
+                            )}
+                          >
+                            {p.axisActualLabel}
+                          </span>
+                        ) : null}
                       </span>
                     </div>
                   );

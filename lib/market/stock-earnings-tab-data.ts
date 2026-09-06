@@ -25,9 +25,15 @@ import {
   quarterlyEstimateMapsByQuarterLabel,
   resolveUpcomingFromEstimates,
 } from "@/lib/market/enrich-earnings-history-estimates";
+import { postReportOneSessionReturnPct } from "@/lib/market/earnings-post-report-return";
+import {
+  mergeEarningsPostReport1dSnapshot,
+  readEarningsPostReport1dSnapshot,
+} from "@/lib/market/earnings-post-report-1d-snapshot";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { parseEarningsDocumentHubFromFundamentalsRoot } from "@/lib/market/earnings-report-external-links";
 import { applyCuratedIrEarningsDocumentUrls } from "@/lib/market/earnings-ir-curated-lookup";
+import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import {
   SEC_ENRICHMENT_INDEX_FETCHES_FULL,
   SEC_ENRICHMENT_ROWS_FULL,
@@ -955,7 +961,67 @@ function historyRowFromRaw(
     epsActualRaw: epsAct,
     secSlidesUrl: null,
     secFilingsUrl: null,
+    postReport1dPct: null,
   };
+}
+
+/**
+ * Post-report 1D % is a one-time historical fact.
+ * Read durable snapshot first; only compute + merge missing report dates (never overwrite).
+ */
+async function attachPostReportOneDayReturns(
+  ticker: string,
+  history: StockEarningsHistoryRow[],
+): Promise<StockEarningsHistoryRow[]> {
+  const reportedDates = history
+    .filter((r) => r.reported && r.reportDateYmd)
+    .map((r) => r.reportDateYmd!);
+  if (!reportedDates.length) {
+    return history.map((r) => ({ ...r, postReport1dPct: r.postReport1dPct ?? null }));
+  }
+
+  const stored = (await readEarningsPostReport1dSnapshot(ticker))?.byReportDate ?? {};
+  const missing = [...new Set(reportedDates)].filter((ymd) => !(ymd in stored));
+
+  let byReportDate = stored;
+  if (missing.length > 0) {
+    const sortedMissing = [...missing].sort();
+    const earliest = sortedMissing[0]!;
+    const latest = sortedMissing[sortedMissing.length - 1]!;
+    // Small window around missing reports only — not a full history refresh.
+    const fromDate = new Date(`${earliest}T00:00:00.000Z`);
+    fromDate.setUTCDate(fromDate.getUTCDate() - 10);
+    const toDate = new Date(`${latest}T00:00:00.000Z`);
+    toDate.setUTCDate(toDate.getUTCDate() + 14);
+    const fromYmd = fromDate.toISOString().slice(0, 10);
+    const toYmd = toDate.toISOString().slice(0, 10);
+
+    let bars: Awaited<ReturnType<typeof loadPortfolioSymbolEodBars>> = [];
+    try {
+      bars = await loadPortfolioSymbolEodBars(ticker, fromYmd, toYmd);
+    } catch {
+      bars = [];
+    }
+    const sorted = bars.length ? [...bars].sort((a, b) => a.date.localeCompare(b.date)) : [];
+
+    const newlyComputed: Record<string, number> = {};
+    for (const ymd of missing) {
+      const pct = postReportOneSessionReturnPct(sorted, ymd);
+      if (pct != null) newlyComputed[ymd] = pct;
+    }
+
+    if (Object.keys(newlyComputed).length > 0) {
+      byReportDate = await mergeEarningsPostReport1dSnapshot(ticker, newlyComputed);
+    } else {
+      byReportDate = { ...stored };
+    }
+  }
+
+  return history.map((row) => ({
+    ...row,
+    postReport1dPct:
+      row.reported && row.reportDateYmd ? (byReportDate[row.reportDateYmd] ?? null) : null,
+  }));
 }
 
 function getYearlyIncomeBlock(root: Record<string, unknown>): Record<string, unknown> | null {
@@ -2016,6 +2082,7 @@ async function fetchStockEarningsTabPayloadUncached(
     } else if (upcoming) {
       upcoming = resolveUpcomingFromEstimates(upcoming, historyParsed, []);
     }
+    historyParsed = await attachPostReportOneDayReturns(ticker, historyParsed);
     if (calendarTiming && upcoming?.reportDateYmd) {
       const t = timingFromCalendar(calendarTiming);
       return {
@@ -2054,6 +2121,7 @@ async function fetchStockEarningsTabPayloadUncached(
   } else if (upcoming) {
     upcoming = resolveUpcomingFromEstimates(upcoming, historyParsed, []);
   }
+  historyParsed = await attachPostReportOneDayReturns(ticker, historyParsed);
   if (!preview && upcoming?.reportDateYmd) {
     const cal = await fetchEodhdEarningsCalendarForSymbol(eodhdListingCode(ticker));
     const calendarTiming = pickCalendarTimingForReport(cal, eodhdListingCode(ticker), upcoming.reportDateYmd);
@@ -2071,7 +2139,7 @@ async function fetchStockEarningsTabPayloadUncached(
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v49-future-periods-rows"],
+  ["stock-earnings-tab-payload-v51-post-report-1d-snapshot"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 

@@ -17,6 +17,7 @@ import { usePortfolioOverviewAthPublisher } from "@/components/portfolio/portfol
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import { ChangePctParen } from "@/components/screener/change-pct";
 import {
   lifetimeEquityProfitPct,
   netCashUsd,
@@ -48,6 +49,29 @@ const pctFmt = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
 
+/** Body / “on cost” line (~14px). */
+const OVERVIEW_PCT_CARET_SM = 14;
+/** Primary `text-2xl` metric line. */
+const OVERVIEW_PCT_CARET_LG = 18;
+
+function PctWithCaret({
+  value,
+  className,
+  caretSize = OVERVIEW_PCT_CARET_SM,
+}: {
+  value: number;
+  className?: string;
+  caretSize?: number;
+}) {
+  const positive = value >= 0;
+  return (
+    <ChangePctParen
+      value={value}
+      caretSize={caretSize}
+      className={cn(positive ? "text-up" : "text-down", className)}
+    />
+  );
+}
 /** Matches elevated card chrome; 16px inset (denser than 20px multichart panels). */
 const OVERVIEW_METRIC_CARD_CLASS = cn(
   "flex flex-col items-start gap-1 overflow-hidden p-4",
@@ -428,19 +452,6 @@ function PortfolioOverviewCardsInner({
     return `${tradingProfitUsd >= 0 ? "+" : ""}${usd.format(tradingProfitUsd)}`;
   }, [showEmptyPortfolioMetrics, tradingProfitUsd]);
 
-  const mobileProfitPctLabel = useMemo(() => {
-    if (showEmptyPortfolioMetrics) return `+${pctFmt.format(0)}%`;
-    if (tradingProfitPct == null || !Number.isFinite(tradingProfitPct)) return null;
-    return `${tradingProfitPct >= 0 ? "+" : ""}${pctFmt.format(tradingProfitPct)}%`;
-  }, [showEmptyPortfolioMetrics, tradingProfitPct]);
-
-  const mobileTimeWeightedLine = useMemo(() => {
-    if (showEmptyPortfolioMetrics) return `+${pctFmt.format(0)}%`;
-    if (showTimeWeightedSkeleton) return null;
-    if (timeWeightedReturnPct == null || !Number.isFinite(timeWeightedReturnPct)) return "—";
-    return `${timeWeightedReturnPct >= 0 ? "+" : ""}${pctFmt.format(timeWeightedReturnPct)}%`;
-  }, [showEmptyPortfolioMetrics, showTimeWeightedSkeleton, timeWeightedReturnPct]);
-
   const mobileDividendsRight = useMemo(() => {
     if (showEmptyPortfolioMetrics) return `${usd.format(0)} · ${pctFmt.format(0)}%`;
     if (showDividendsSkeleton) return null;
@@ -467,13 +478,14 @@ function PortfolioOverviewCardsInner({
                 )}
               >
                 {mobileProfitUsdLabel}
-                {mobileProfitPctLabel != null ? (
+                {showEmptyPortfolioMetrics ||
+                (tradingProfitPct != null && Number.isFinite(tradingProfitPct)) ? (
                   <>
                     {" "}
                     (
-                    <span className={(tradingProfitPct ?? 0) >= 0 ? "text-up" : "text-down"}>
-                      {mobileProfitPctLabel}
-                    </span>{" "}
+                    <PctWithCaret
+                      value={showEmptyPortfolioMetrics ? 0 : (tradingProfitPct as number)}
+                    />{" "}
                     <span className="text-fg-muted">on cost</span>)
                   </>
                 ) : null}
@@ -488,24 +500,16 @@ function PortfolioOverviewCardsInner({
             <div className="flex items-center justify-between gap-4 max-md:py-2 sm:py-3">
               <span className="text-[14px] font-medium leading-5 text-fg-muted">Time-weighted return</span>
               {showEmptyPortfolioMetrics ? (
-                <span className="text-[14px] font-medium leading-5 tabular-nums text-up">
-                  +{pctFmt.format(0)}%
-                </span>
-              ) : showTimeWeightedSkeleton || mobileTimeWeightedLine == null ? (
+                <PctWithCaret value={0} className="text-[14px] font-medium leading-5" />
+              ) : showTimeWeightedSkeleton ? (
                 <div className="h-4 w-14 animate-pulse rounded bg-skeleton" aria-hidden />
+              ) : timeWeightedReturnPct == null || !Number.isFinite(timeWeightedReturnPct) ? (
+                <span className="text-[14px] font-medium leading-5 tabular-nums text-fg">—</span>
               ) : (
-                <span
-                  className={cn(
-                    "text-[14px] font-medium leading-5 tabular-nums",
-                    timeWeightedReturnPct == null
-                      ? "text-fg"
-                      : timeWeightedReturnPct >= 0
-                        ? "text-up"
-                        : "text-down",
-                  )}
-                >
-                  {mobileTimeWeightedLine}
-                </span>
+                <PctWithCaret
+                  value={timeWeightedReturnPct}
+                  className="text-[14px] font-medium leading-5"
+                />
               )}
             </div>
             <div className="flex items-center justify-between gap-4 pb-0.5">
@@ -539,8 +543,7 @@ function PortfolioOverviewCardsInner({
                 +{usd.format(0)}
               </p>
               <p className="text-sm tabular-nums">
-                <span className="text-up">+{pctFmt.format(0)}%</span>{" "}
-                <span className="text-fg-muted">on cost</span>
+                <PctWithCaret value={0} /> <span className="text-fg-muted">on cost</span>
               </p>
             </>
           ) : (
@@ -560,9 +563,7 @@ function PortfolioOverviewCardsInner({
               <p className="cursor-help text-sm tabular-nums">
                 {tradingProfitPct != null ? (
                   <>
-                    <span className={(tradingProfitPct ?? 0) >= 0 ? "text-up" : "text-down"}>
-                      {`${tradingProfitPct >= 0 ? "+" : ""}${pctFmt.format(tradingProfitPct)}%`}
-                    </span>{" "}
+                    <PctWithCaret value={tradingProfitPct} />{" "}
                     <span className="text-fg-muted">on cost</span>
                   </>
                 ) : (
@@ -578,7 +579,7 @@ function PortfolioOverviewCardsInner({
           {showEmptyPortfolioMetrics ? (
             <>
               <p className="text-2xl font-semibold tabular-nums tracking-tight text-up">
-                +{pctFmt.format(0)}%
+                <PctWithCaret value={0} caretSize={OVERVIEW_PCT_CARET_LG} />
               </p>
               <p className="text-sm text-fg-muted">Compare to S&amp;P 500</p>
             </>
@@ -589,20 +590,13 @@ function PortfolioOverviewCardsInner({
             </>
           ) : (
             <>
-              <p
-                className={cn(
-                  "text-2xl font-semibold tabular-nums tracking-tight",
-                  timeWeightedReturnPct == null
-                    ? "text-fg"
-                    : timeWeightedReturnPct >= 0
-                      ? "text-up"
-                      : "text-down",
-                )}
-              >
-                {timeWeightedReturnPct != null
-                  ? `${timeWeightedReturnPct >= 0 ? "+" : ""}${pctFmt.format(timeWeightedReturnPct)}%`
-                  : "—"}
-              </p>
+              {timeWeightedReturnPct != null ? (
+                <p className="text-2xl font-semibold tabular-nums tracking-tight">
+                  <PctWithCaret value={timeWeightedReturnPct} caretSize={OVERVIEW_PCT_CARET_LG} />
+                </p>
+              ) : (
+                <p className="text-2xl font-semibold tabular-nums tracking-tight text-fg">—</p>
+              )}
               <p className="text-sm text-fg-muted">
                 {aheadOfSpyPct != null ? (
                   aheadOfSpyPct >= 0 ? (

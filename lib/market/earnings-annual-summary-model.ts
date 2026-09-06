@@ -134,7 +134,7 @@ function yoyPct(current: number | null, prior: number | null): number | null {
  * Forward P/E for a consensus period: price ÷ annualized EPS.
  * Quarterly EPS is annualized ×4 so the multiple stays on a yearly footing.
  */
-function forwardPeForPoint(
+export function forwardPeForPoint(
   point: StockEarningsEstimatesPoint,
   periodMode: FundamentalsSeriesMode,
   lastPrice: number | null,

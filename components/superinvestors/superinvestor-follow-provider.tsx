@@ -57,11 +57,14 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
   const [loaded, setLoaded] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [pendingRemoval, setPendingRemoval] = useState<string[]>([]);
+  const [pendingAdd, setPendingAdd] = useState<string[]>([]);
 
   const userIdRef = useRef<string | null>(null);
   userIdRef.current = userId;
   const pendingRemovalRef = useRef<string[]>([]);
   pendingRemovalRef.current = pendingRemoval;
+  const pendingAddRef = useRef<string[]>([]);
+  pendingAddRef.current = pendingAdd;
   const followedRef = useRef(followed);
   followedRef.current = followed;
 
@@ -97,6 +100,8 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
       } else if (event === "SIGNED_OUT") {
         setFollowed(new Set(readSuperinvestorFollowLocal(null)));
         setPendingRemoval([]);
+        setPendingAdd([]);
+        setLoaded(false);
       } else if (uid) {
         setFollowed(new Set(readSuperinvestorFollowLocal(uid)));
       } else {
@@ -114,6 +119,7 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
       return;
     }
     let cancelled = false;
+    setLoaded(false);
 
     void (async () => {
       try {
@@ -128,16 +134,21 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
         const server = new Set(
           items.map((i) => normalizeSuperinvestorFollowHref(i.profile_path)).filter(Boolean),
         );
-        setFollowed((prev) => {
-          const merged = new Set(prev);
-          const pending = new Set(pendingRemovalRef.current.map(normalizeSuperinvestorFollowHref));
-          for (const p of server) {
-            if (!pending.has(p)) merged.add(p);
-          }
-          return merged;
+        // Source of truth = server (same as iOS). Keep in-flight optimistic toggles only.
+        setFollowed(() => {
+          const next = new Set(server);
+          const pendingRemovals = new Set(
+            pendingRemovalRef.current.map(normalizeSuperinvestorFollowHref).filter(Boolean),
+          );
+          const pendingAdds = new Set(
+            pendingAddRef.current.map(normalizeSuperinvestorFollowHref).filter(Boolean),
+          );
+          for (const p of pendingRemovals) next.delete(p);
+          for (const p of pendingAdds) next.add(p);
+          return next;
         });
       } catch {
-        /* local follows still work */
+        /* local follows still work until server is reachable */
       } finally {
         if (!cancelled) setLoaded(true);
       }
@@ -169,7 +180,9 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
 
     if (removing) {
       setPendingRemoval((prev) => [...new Set([...prev, key])]);
+      setPendingAdd((prev) => prev.filter((p) => p !== key));
     } else {
+      setPendingAdd((prev) => [...new Set([...prev, key])]);
       setPendingRemoval((prev) => prev.filter((p) => p !== key));
     }
 
@@ -208,7 +221,10 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ profilePath: key }),
           });
-          if (!res.ok && userIdRef.current != null) {
+          if (res.ok) {
+            setPendingAdd((prev) => prev.filter((p) => p !== key));
+          } else if (userIdRef.current != null) {
+            setPendingAdd((prev) => prev.filter((p) => p !== key));
             setFollowed((prev) => {
               const next = new Set(prev);
               next.delete(key);
@@ -227,6 +243,7 @@ export function SuperinvestorFollowProvider({ children }: { children: ReactNode 
           });
           toast.error(`Could not unfollow ${name}. Please try again.`);
         } else {
+          setPendingAdd((prev) => prev.filter((p) => p !== key));
           setFollowed((prev) => {
             const next = new Set(prev);
             next.delete(key);

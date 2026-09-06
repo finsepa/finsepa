@@ -110,8 +110,8 @@ function HoldingCompanyCell({
       >
         <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym ?? undefined} size="md" />
         <div className="flex min-w-0 flex-col gap-0.5">
-          <span className={HOLDING_COMPANY_NAME_CLASS}>{displayName}</span>
-          <span className="text-[12px] font-normal leading-4 text-fg-muted">{sym ?? "—"}</span>
+          <span className={HOLDING_COMPANY_NAME_CLASS}>{sym ?? "—"}</span>
+          <span className="truncate text-[12px] font-normal leading-4 text-fg-muted">{displayName}</span>
         </div>
       </Link>
     </div>

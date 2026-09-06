@@ -128,9 +128,9 @@ function DividendRowMobile({
           <div className="relative z-[1] flex min-w-0 flex-1 items-center gap-3">
             <CompanyLogo name={companyName} logoUrl={logo} symbol={row.symbol} />
             <div className="min-w-0">
-              <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
+              <div className={HOLDING_COMPANY_NAME_CLASS}>{caption}</div>
               <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
-                {caption} · {formatShortDate(row.paymentDate)}
+                {companyName} · {formatShortDate(row.paymentDate)}
               </div>
             </div>
           </div>
@@ -175,8 +175,8 @@ function DividendDesktopRow({
           <div className={cn("flex min-w-0 max-w-full items-center gap-3", TABLE_START_ALIGNED_PAD_CLASS)}>
             <CompanyLogo name={companyName} logoUrl={logo} symbol={row.symbol} />
             <div className="min-w-0 text-left">
-              <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-              <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{caption}</div>
+              <div className={HOLDING_COMPANY_NAME_CLASS}>{caption}</div>
+              <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{companyName}</div>
             </div>
           </div>
           <div className={DIVIDENDS_NUMERIC_CELL}>

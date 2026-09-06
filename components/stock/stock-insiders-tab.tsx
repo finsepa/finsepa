@@ -28,8 +28,13 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { TABLE_PAGE_SIZE, TablePaginationBar, tablePageCount } from "@/components/ui/table-pagination";
 import { SkeletonBox, TextSkeleton } from "@/components/markets/skeleton";
 import type { InsiderTransactionKind, InsiderTransactionRow } from "@/lib/market/insider-transactions-types";
+import {
+  fetchStockInsiderTransactionsClient,
+  peekStockInsiderTransactionsClient,
+} from "@/lib/market/stock-insiders-tab-client";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
 import { cn } from "@/lib/utils";
 
@@ -84,7 +89,7 @@ function aggregateInsiderWindow(
     if (r.kind === "purchase") {
       buyCount += 1;
       buyValue += v;
-    } else {
+    } else if (r.kind === "sale" || r.kind === "planned_sale") {
       sellCount += 1;
       sellValue += v;
     }
@@ -168,8 +173,10 @@ function insiderKindLabel(kind: InsiderTransactionKind): string {
   return "Other";
 }
 
-function insiderMarkerSide(kind: InsiderTransactionKind): "buy" | "sell" {
-  return kind === "purchase" ? "buy" : "sell";
+function insiderMarkerSide(kind: InsiderTransactionKind): "buy" | "sell" | null {
+  if (kind === "purchase") return "buy";
+  if (kind === "sale" || kind === "planned_sale") return "sell";
+  return null;
 }
 
 function TransactionBadge({ kind }: { kind: InsiderTransactionKind }) {
@@ -334,32 +341,46 @@ function InsiderRow({
 
 export function StockInsidersTab({ ticker }: { ticker: string }) {
   const sym = ticker.trim().toUpperCase();
-  const [rows, setRows] = useState<InsiderTransactionRow[] | null>(null);
-  const [windowTo, setWindowTo] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const prefetched = peekStockInsiderTransactionsClient(sym);
+  const [rows, setRows] = useState<InsiderTransactionRow[] | null>(() => prefetched?.rows ?? null);
+  const [windowTo, setWindowTo] = useState<string | null>(() => prefetched?.windowTo ?? null);
+  const [loading, setLoading] = useState(() => !prefetched);
   const [error, setError] = useState<string | null>(null);
   const [insidersChartRange, setInsidersChartRange] = useState<StockChartRange>("1Y");
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    const warm = peekStockInsiderTransactionsClient(sym);
+    if (warm) {
+      setRows(warm.rows);
+      setWindowTo(warm.windowTo ?? null);
+      setLoading(false);
+      setError(null);
+      setPage(1);
+    } else {
+      setLoading(true);
+      setError(null);
+      setPage(1);
+    }
     try {
-      const res = await fetch(`/api/stocks/${encodeURIComponent(sym)}/insider-transactions`, {
-        cache: "no-store",
-      });
-      if (!res.ok) {
+      const payload = await fetchStockInsiderTransactionsClient(sym);
+      if (!payload) {
+        if (!warm) {
+          setRows([]);
+          setWindowTo(null);
+          setError("Could not load insider transactions.");
+        }
+        return;
+      }
+      setRows(payload.rows);
+      setWindowTo(payload.windowTo ?? null);
+      setError(null);
+    } catch {
+      if (!warm) {
         setRows([]);
         setWindowTo(null);
         setError("Could not load insider transactions.");
-        return;
       }
-      const json = (await res.json()) as { rows?: InsiderTransactionRow[]; windowTo?: string };
-      setRows(Array.isArray(json.rows) ? json.rows : []);
-      setWindowTo(typeof json.windowTo === "string" && /^\d{4}-\d{2}-\d{2}$/.test(json.windowTo) ? json.windowTo : null);
-    } catch {
-      setRows([]);
-      setWindowTo(null);
-      setError("Could not load insider transactions.");
     } finally {
       setLoading(false);
     }
@@ -379,11 +400,26 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
     };
   }, [rows, anchorYmd]);
 
+  const totalPages = tablePageCount(rows?.length ?? 0);
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const pagedRows = useMemo(() => {
+    const list = rows ?? [];
+    const start = (safePage - 1) * TABLE_PAGE_SIZE;
+    return list.slice(start, start + TABLE_PAGE_SIZE);
+  }, [rows, safePage]);
+
+  useEffect(() => {
+    if (page !== safePage) setPage(safePage);
+  }, [page, safePage]);
+
   const insiderTradeMarkers = useMemo((): readonly HoldingsTradeMarker[] => {
     const list = rows ?? [];
     return [...list]
       .sort((a, b) => a.transactionDate.localeCompare(b.transactionDate))
-      .map((r) => ({ date: r.transactionDate, side: insiderMarkerSide(r.kind) }));
+      .flatMap((r) => {
+        const side = insiderMarkerSide(r.kind);
+        return side ? [{ date: r.transactionDate, side }] : [];
+      });
   }, [rows]);
 
   const insiderTradeTooltipItems = useMemo((): HoldingsTradeTooltipItem[] => {
@@ -470,41 +506,48 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
           </EmptyHeader>
         </Empty>
       ) : (
-        <ScreenerTableScroll mobileScroll>
-          <div
-            className={cn(
-              SCREENER_TABLE_HEADER_STICKY_CLASS,
-              SCREENER_TABLE_ROUNDED_HEADER_CLASS,
-              SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
-              "md:border-b-0",
-            )}
-          >
-            <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
-              <div
-                className={cn(
-                  INSIDER_GRID,
-                  "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted",
-                )}
-              >
-                <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Date</div>
-                <div className="min-w-0 w-full text-right">Insider</div>
-                <div className="min-w-0 w-full text-right">Position</div>
-                <div className="min-w-0 w-full text-right">Transaction type</div>
-                <div className="min-w-0 w-full text-right">Number of shares</div>
-                <div className="min-w-0 w-full text-right">Price</div>
-                <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Value</div>
+        <div className="min-w-0 space-y-0">
+          <ScreenerTableScroll mobileScroll>
+            <div
+              className={cn(
+                SCREENER_TABLE_HEADER_STICKY_CLASS,
+                SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+                "md:border-b-0",
+              )}
+            >
+              <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
+                <div
+                  className={cn(
+                    INSIDER_GRID,
+                    "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted",
+                  )}
+                >
+                  <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Date</div>
+                  <div className="min-w-0 w-full text-right">Insider</div>
+                  <div className="min-w-0 w-full text-right">Position</div>
+                  <div className="min-w-0 w-full text-right">Transaction type</div>
+                  <div className="min-w-0 w-full text-right">Number of shares</div>
+                  <div className="min-w-0 w-full text-right">Price</div>
+                  <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Value</div>
+                </div>
               </div>
+              <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
             </div>
-            <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
-          </div>
-          {rows.map((row, i) => (
-            <InsiderRow
-              key={`${row.transactionDate}-${row.ownerName}-${row.transactionCode}-${i}`}
-              row={row}
-              showDivider={i < rows.length - 1}
-            />
-          ))}
-        </ScreenerTableScroll>
+            {pagedRows.map((row, i) => (
+              <InsiderRow
+                key={`${row.transactionDate}-${row.ownerName}-${row.transactionCode}-${(safePage - 1) * TABLE_PAGE_SIZE + i}`}
+                row={row}
+                showDivider={i < pagedRows.length - 1}
+              />
+            ))}
+          </ScreenerTableScroll>
+          <TablePaginationBar
+            page={safePage}
+            totalItems={rows.length}
+            onPageChange={setPage}
+          />
+        </div>
       )}
     </div>
   );

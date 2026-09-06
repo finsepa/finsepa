@@ -96,7 +96,7 @@ export function IndexHeader({
     <CompanyLogo
       name={displayName}
       logoUrl=""
-      symbol={displayCode}
+      symbol={symbol}
       size="lg"
       className="rounded-2xl shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]"
     />

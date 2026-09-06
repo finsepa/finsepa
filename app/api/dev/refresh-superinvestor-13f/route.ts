@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { pickProcessEnv } from "@/lib/env/pick-process-env";
 import { forceRefreshSuperinvestorProfilePage } from "@/lib/superinvestors/load-superinvestor-profile-data";
 import { refreshSuperinvestorListSnapshot } from "@/lib/superinvestors/superinvestor-list-snapshot";
+import { refreshSuperinvestorStockIndexSnapshot } from "@/lib/superinvestors/superinvestor-stock-index-snapshot";
 
 export const runtime = "nodejs";
 
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
     const page = await forceRefreshSuperinvestorProfilePage(slug);
     if (!page) return NextResponse.json({ error: "unknown_slug" }, { status: 404 });
     const list = await refreshSuperinvestorListSnapshot();
+    const stockIndex = await refreshSuperinvestorStockIndexSnapshot();
 
     return NextResponse.json({
       slug,
@@ -44,6 +46,8 @@ export async function POST(request: Request) {
       positionCount: page.comparison.positionCount,
       listSnapshotOk: list.ok,
       listRowCount: list.rowCount,
+      stockIndexSnapshotOk: stockIndex.ok,
+      stockIndexTickerCount: stockIndex.tickerCount,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "refresh_failed";

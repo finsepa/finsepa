@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { unstable_cache } from "next/cache";
-
 import { CACHE_CONTROL_PRIVATE_WARM_LONG } from "@/lib/data/cache-policy";
-import {
-  fetchEodhdInsiderTransactions,
-  resolveInsiderQueryWindow,
-} from "@/lib/market/eodhd-insider-transactions";
+import { resolveInsiderQueryWindow } from "@/lib/market/eodhd-insider-transactions";
+import { loadInsiderTransactionsForTicker } from "@/lib/market/insider-transactions-load";
 import { normalizeWatchlistTicker, WatchlistValidationError } from "@/lib/watchlist/operations";
 
 const YMD = /^\d{4}-\d{2}-\d{2}$/;
@@ -19,17 +15,6 @@ function parseLimit(raw: string | null): number | undefined {
   if (!Number.isFinite(n)) return undefined;
   return n;
 }
-
-const getCachedInsiderTransactions = unstable_cache(
-  async (ticker: string, from: string, to: string, limitKey: string) => {
-    const limit = limitKey ? Number.parseInt(limitKey, 10) : undefined;
-    const rows = await fetchEodhdInsiderTransactions(ticker, { from, to, limit });
-    return { ticker, rows, windowFrom: from, windowTo: to };
-  },
-  ["stock-insider-transactions-v1"],
-  // Insider feed changes slowly; cache long to avoid repeat tab burns.
-  { revalidate: 12 * 60 * 60 },
-);
 
 export async function GET(request: Request, { params }: Ctx) {
   const { ticker: raw } = await params;
@@ -59,15 +44,26 @@ export async function GET(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Invalid `limit` — use 1–1000." }, { status: 400 });
   }
 
-  const { from, to } = resolveInsiderQueryWindow({
+  // Canonical 1Y (no query dates) → snapshot-first. Explicit from/to still supported.
+  const payload = await loadInsiderTransactionsForTicker(routeTicker, {
     from: fromRaw ?? undefined,
     to: toRaw ?? undefined,
+    limit,
   });
 
-  const payload = await getCachedInsiderTransactions(routeTicker, from, to, limit != null ? String(limit) : "");
+  // Ensure window fields always present even if snapshot omitted them historically.
+  const window =
+    payload.windowFrom && payload.windowTo
+      ? { from: payload.windowFrom, to: payload.windowTo }
+      : resolveInsiderQueryWindow({ from: fromRaw ?? undefined, to: toRaw ?? undefined });
 
   return NextResponse.json(
-    payload,
+    {
+      ticker: payload.ticker,
+      rows: payload.rows,
+      windowFrom: window.from,
+      windowTo: window.to,
+    },
     { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_LONG } },
   );
 }

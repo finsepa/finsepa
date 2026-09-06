@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowUp, UserRound } from "@/lib/icons";
 import { format, isValid, parseISO } from "date-fns";
 
+import { ChangeCaretIcon } from "@/components/screener/change-pct";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
   SCREENER_TABLE_DATA_ROW_CLASS,
@@ -20,7 +21,6 @@ import {
 import { SuperinvestorFollowStarToggle } from "@/components/superinvestors/superinvestor-follow-star-toggle";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
-import { formatSuperinvestorPerformancePct } from "@/lib/superinvestors/superinvestor-performance-headline";
 import { cn } from "@/lib/utils";
 
 function avatarNeedsDarkTile(src: string): boolean {
@@ -142,16 +142,32 @@ function compareFundRows(
   return ad.localeCompare(bd) * mul;
 }
 
-function performanceCellLabel(pct: number | null | undefined): string {
-  if (pct == null || !Number.isFinite(pct)) return "—";
-  return formatSuperinvestorPerformancePct(pct);
+function formatPerfAbsPct(pct: number): string {
+  return `${Math.abs(pct).toLocaleString("en-US", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 1,
+  })}%`;
 }
 
+/** Kept for Turbopack HMR safety — stale chunks may still reference this name. */
 function performanceCellClass(pct: number | null | undefined): string {
-  if (pct == null || !Number.isFinite(pct)) return numericCellClass;
+  if (pct == null || !Number.isFinite(pct)) return cn(numericCellClass, "text-fg-muted");
   if (pct > 0) return cn(numericCellClass, "text-up");
   if (pct < 0) return cn(numericCellClass, "text-down");
   return numericCellClass;
+}
+
+function FundOneYearPerfCell({ value }: { value: number | null | undefined }) {
+  if (value == null || !Number.isFinite(value)) {
+    return <div className={cn(numericCellClass, "text-fg-muted")}>—</div>;
+  }
+  const positive = value >= 0;
+  return (
+    <div className={cn(performanceCellClass(value), "flex items-center justify-end gap-0.5")}>
+      <ChangeCaretIcon direction={positive ? "up" : "down"} />
+      <span className="shrink-0 whitespace-nowrap">{formatPerfAbsPct(value)}</span>
+    </div>
+  );
 }
 
 function FundSortHeader({
@@ -304,11 +320,18 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
                           <span> · </span>
                           <span
                             className={cn(
-                              "tabular-nums",
-                              r.bookReturnPct1y > 0 ? "text-up" : r.bookReturnPct1y < 0 ? "text-down" : "",
+                              "inline-flex items-baseline gap-0.5 tabular-nums",
+                              r.bookReturnPct1y >= 0 ? "text-up" : "text-down",
                             )}
                           >
-                            {formatSuperinvestorPerformancePct(r.bookReturnPct1y)} 1Y
+                            <ChangeCaretIcon
+                              direction={r.bookReturnPct1y >= 0 ? "up" : "down"}
+                              size={12}
+                              className="self-center"
+                            />
+                            <span>
+                              {formatPerfAbsPct(r.bookReturnPct1y)} 1Y
+                            </span>
                           </span>
                         </>
                       ) : null}
@@ -353,9 +376,7 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
 
                 <div className={numericCellClass}>{formatUsdCompact(r.totalValueUsd)}</div>
 
-                <div className={performanceCellClass(r.bookReturnPct1y)}>
-                  {performanceCellLabel(r.bookReturnPct1y)}
-                </div>
+                <FundOneYearPerfCell value={r.bookReturnPct1y} />
 
                 <div className={numericCellClass}>{stocksCountLabel(r.positionCount)}</div>
 
@@ -363,21 +384,26 @@ function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowMod
 
                 <div
                   className={cn(
-                    "flex min-h-0 min-w-0 max-h-[60px] shrink items-center justify-end gap-1 overflow-hidden",
+                    "flex min-h-0 min-w-0 max-h-[60px] shrink items-center justify-end overflow-hidden",
                     TABLE_END_ALIGNED_PAD_CLASS,
                   )}
                 >
-                  {r.topHoldings.slice(0, 5).map((h, i) => {
+                  {r.topHoldings.slice(0, 5).map((h, i, top) => {
                     const sym = h.ticker?.trim() ? h.ticker.trim().toUpperCase() : null;
                     const logoUrl = sym ? resolveEquityLogoUrlFromListingTicker(sym) : "";
                     return (
-                      <CompanyLogo
+                      <div
                         key={`${sym ?? h.issuer}-${i}`}
-                        name={h.issuer}
-                        logoUrl={logoUrl}
-                        symbol={sym ?? undefined}
-                        size="28"
-                      />
+                        className="-ml-1 first:ml-0"
+                        style={{ zIndex: top.length - i }}
+                      >
+                        <CompanyLogo
+                          name={h.issuer}
+                          logoUrl={logoUrl}
+                          symbol={sym ?? undefined}
+                          size="28"
+                        />
+                      </div>
                     );
                   })}
                 </div>

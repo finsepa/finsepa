@@ -174,9 +174,9 @@ function CompanyTickerCell({ companyName, ticker }: { companyName: string; ticke
       <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={sym ?? undefined} size="md" />
       <div className="flex min-w-0 max-w-[min(280px,45vw)] flex-col gap-0.5 py-0.5">
         <span className="line-clamp-1 text-[14px] font-semibold leading-5 text-fg underline-offset-[3px] decoration-fg group-hover:underline sm:line-clamp-2">
-          {displayName}
+          {sym ?? "—"}
         </span>
-        <span className="text-[12px] font-normal leading-4 text-fg-muted">{sym ?? "—"}</span>
+        <span className="truncate text-[12px] font-normal leading-4 text-fg-muted">{displayName}</span>
       </div>
     </div>
   );

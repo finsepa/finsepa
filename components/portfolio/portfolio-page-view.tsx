@@ -231,26 +231,15 @@ export function PortfolioPageView({
 
   useEffect(() => {
     const rawTab = searchParams.get("tab");
-    const fromUrl = tabFromUrl(rawTab);
-    const autoDemoGoal =
-      rawTab == null &&
-      !readOnly &&
-      selectedPortfolio != null &&
-      portfolioIsDemo(selectedPortfolio) &&
-      fromUrl === "Overview";
-    const nextTab: PortfolioViewTab = autoDemoGoal ? "Goal" : fromUrl;
+    const nextTab = tabFromUrl(rawTab);
     setViewTab(nextTab);
-
-    if (autoDemoGoal) {
-      setTabsVisited(initialTabsVisited("Goal"));
-    }
 
     if (nextTab === "Overview") {
       setOverviewHoldingsSubTab(
         overviewHoldingsSubTabFromSearchParam(searchParams.get("tab"), searchParams.get("view")),
       );
     }
-  }, [searchParams, tabFromUrl, readOnly, selectedPortfolio]);
+  }, [searchParams, tabFromUrl]);
 
   useEffect(() => {
     if (searchParams.get("tab")?.toLowerCase() !== "slices") return;

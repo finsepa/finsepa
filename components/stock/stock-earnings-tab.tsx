@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import { SkeletonBox } from "@/components/markets/skeleton";
 import { EarningsEstimatesSection } from "@/components/stock/earnings-estimates-section";
 import type { EstimatesMetric } from "@/components/stock/earnings-estimates-chart";
@@ -11,8 +13,11 @@ import {
   displayEps,
   displayRevenueUsd,
   isAnnualForecastPoint,
+  sliceForwardQuarterlyEstimates,
   sliceLatestQuarterlyEstimates,
 } from "@/lib/market/earnings-annual-display";
+import { forwardPeForPoint } from "@/lib/market/earnings-annual-summary-model";
+import { formatRatio } from "@/lib/market/key-stats-basic-format";
 import { pctChange } from "@/lib/market/stock-financials-annual-slice";
 import type {
   StockEarningsEstimatesChart,
@@ -37,16 +42,13 @@ import {
   ScreenerTableScroll,
   TABLE_END_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
+import { ChangePct, ChangePctParen } from "@/components/screener/change-pct";
 import { parseEarningsReportYmd } from "@/lib/market/earnings-countdown";
 import { cn } from "@/lib/utils";
 import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
 
 function metricSummaryValueFromPoint(p: StockEarningsEstimatesPoint, metric: EstimatesMetric): number | null {
   return metric === "revenue" ? displayRevenueUsd(p) : displayEps(p);
-}
-
-function formatSummaryChangePct(pct: number): string {
-  return `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`;
 }
 
 function summaryPriorChangePct(
@@ -144,15 +146,15 @@ const earningsHeaderStatValueClass =
 function EarningsHeaderChangePct({ changePct }: { changePct: number | null | undefined }) {
   if (changePct == null || !Number.isFinite(changePct)) return null;
   return (
-    <span
+    <ChangePctParen
+      value={changePct}
+      caretSize={12}
       className={cn(
         earningsHeaderStatLabelClass,
-        "font-semibold",
+        "self-center font-semibold",
         changePct > 0 ? "text-up" : changePct < 0 ? "text-down" : "text-fg-muted",
       )}
-    >
-      ({formatSummaryChangePct(changePct)})
-    </span>
+    />
   );
 }
 
@@ -164,6 +166,7 @@ function EarningsCountdownStats({
   epsEstimateDisplay,
   revenueEstimateChangePct,
   epsEstimateChangePct,
+  forwardPeDisplay,
 }: {
   reportDateYmd: string | null | undefined;
   fiscalPeriodLabel?: string | null;
@@ -171,6 +174,7 @@ function EarningsCountdownStats({
   epsEstimateDisplay?: string | null;
   revenueEstimateChangePct?: number | null;
   epsEstimateChangePct?: number | null;
+  forwardPeDisplay?: string | null;
 }) {
   /** Compute "today" on the client only so the SSR seed can't disagree on the day boundary. */
   const [nowUtcMs, setNowUtcMs] = useState<number | null>(null);
@@ -198,6 +202,10 @@ function EarningsCountdownStats({
     epsEstimateDisplay != null && String(epsEstimateDisplay).trim() !== ""
       ? String(epsEstimateDisplay).trim()
       : null;
+  const forwardPe =
+    forwardPeDisplay != null && String(forwardPeDisplay).trim() !== "" && String(forwardPeDisplay).trim() !== "-"
+      ? String(forwardPeDisplay).trim()
+      : null;
 
   return (
     <dl className="flex flex-row flex-wrap items-stretch gap-x-6 gap-y-4" suppressHydrationWarning>
@@ -219,12 +227,16 @@ function EarningsCountdownStats({
           {epsEstimate ? <EarningsHeaderChangePct changePct={epsEstimateChangePct} /> : null}
         </dd>
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 border-r border-stroke pr-6">
         <dt className={earningsHeaderStatLabelClass}>Revenue estimate</dt>
         <dd className="inline-flex flex-wrap items-baseline gap-x-1.5">
           <span className={earningsHeaderStatValueClass}>{revenueEstimate ?? "—"}</span>
           {revenueEstimate ? <EarningsHeaderChangePct changePct={revenueEstimateChangePct} /> : null}
         </dd>
+      </div>
+      <div className="flex flex-col gap-1">
+        <dt className={earningsHeaderStatLabelClass}>Forward P/E</dt>
+        <dd className={earningsHeaderStatValueClass}>{forwardPe ?? "—"}</dd>
       </div>
     </dl>
   );
@@ -248,7 +260,7 @@ const REPORTS_GRID_CLASS = "grid w-full min-w-0 items-center gap-x-1.5 sm:gap-x-
 /** Icon-only Slides/Filings — last track fits two `size-8` buttons + end pad. */
 const REPORTS_GRID_STYLE = {
   gridTemplateColumns:
-    "minmax(9rem, 1.15fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) 5.25rem",
+    "minmax(9rem, 1.15fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(5.5rem, 0.9fr) 5.25rem",
 } as const;
 
 const reportsHeaderLabelClass = cn(
@@ -329,10 +341,172 @@ function resolveReportsBeatMiss(args: {
   return { outcome, pctDisplay, pct };
 }
 
-/** Actual EPS / Revenue only (Surprise lives in its own column). */
-function ReportsActualCell({ actualDisplay }: { actualDisplay: string | null | undefined }) {
-  const act = tableCell(actualDisplay);
+function reportsTooltipTitle(row: StockEarningsHistoryRow): string {
+  const report = row.reportDateDisplay?.trim();
+  if (report) return report;
+  const fiscal = row.fiscalPeriodLabel?.trim();
+  if (fiscal) return fiscal;
+  return "Earnings";
+}
+
+function formatReportsSurpriseLine(args: {
+  estimateDisplay: string | null | undefined;
+  actualDisplay: string | null | undefined;
+  estimateRaw: number | null;
+  actualRaw: number | null;
+  surprisePct?: number | null;
+  surpriseDisplay?: string | null;
+}): string {
+  const { outcome, pctDisplay } = resolveReportsBeatMiss(args);
+  const outcomeLabel =
+    outcome === "beat" ? "Beat" : outcome === "miss" ? "Miss" : outcome === "met" ? "Met" : null;
+  if (outcomeLabel && pctDisplay) return `${outcomeLabel} ${pctDisplay}`;
+  if (outcomeLabel) return outcomeLabel;
+  if (pctDisplay) return pctDisplay;
+  return "-";
+}
+
+function reportsMetricTooltipPosition(trigger: HTMLElement) {
+  const rect = trigger.getBoundingClientRect();
+  const maxWidth = Math.min(window.innerWidth - 16, 220);
+  const left = Math.min(Math.max(8, rect.right - maxWidth), window.innerWidth - maxWidth - 8);
+  const top = Math.min(rect.bottom + 8, window.innerHeight - 8);
+  return { left, top, maxWidth };
+}
+
+function ReportsEstimateActualTooltip({
+  title,
+  estimated,
+  actual,
+  surprise,
+  children,
+}: {
+  title: string;
+  estimated: string;
+  actual: string;
+  surprise: string;
+  children: ReactNode;
+}) {
+  const tooltipId = useId();
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState({ left: 0, top: 0, maxWidth: 220 });
+
+  useEffect(() => setMounted(true), []);
+
+  const tooltipsDisabled = useCallback(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(hover: none), (pointer: coarse)").matches;
+  }, []);
+
+  const reposition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    setPos(reportsMetricTooltipPosition(trigger));
+  }, []);
+
+  const show = useCallback(() => {
+    if (tooltipsDisabled()) return;
+    reposition();
+    setOpen(true);
+  }, [reposition, tooltipsDisabled]);
+
+  const hide = useCallback(() => setOpen(false), []);
+
+  useEffect(() => {
+    if (!open) return;
+    reposition();
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [open, reposition]);
+
+  const tooltip =
+    open && mounted ? (
+      <div
+        id={tooltipId}
+        role="tooltip"
+        className={cn(
+          "pointer-events-none fixed z-[200] w-max min-w-[180px] px-3 py-2.5 text-left",
+          tooltipSurfaceClassName,
+        )}
+        style={{ left: pos.left, top: pos.top, maxWidth: pos.maxWidth }}
+      >
+        <p className="mb-2 border-b border-stroke pb-2 text-[12px] font-semibold leading-4 text-fg">
+          {title}
+        </p>
+        <div className="space-y-1.5 text-[12px] leading-4">
+          <div className="flex items-baseline justify-between gap-4">
+            <span className="shrink-0 text-fg-muted">Estimated</span>
+            <span className="tabular-nums text-fg">{estimated}</span>
+          </div>
+          <div className="flex items-baseline justify-between gap-4">
+            <span className="shrink-0 text-fg-muted">Actual</span>
+            <span className="tabular-nums text-fg">{actual}</span>
+          </div>
+          <div className="flex items-baseline justify-between gap-4">
+            <span className="shrink-0 text-fg-muted">Surprise</span>
+            <span className="tabular-nums text-fg">{surprise}</span>
+          </div>
+        </div>
+      </div>
+    ) : null;
+
   return (
+    <>
+      <div
+        ref={triggerRef}
+        className="w-full outline-none"
+        tabIndex={0}
+        aria-describedby={open ? tooltipId : undefined}
+        onMouseEnter={show}
+        onMouseLeave={hide}
+        onFocus={show}
+        onBlur={(event) => {
+          if (!triggerRef.current?.contains(event.relatedTarget as Node | null)) hide();
+        }}
+      >
+        {children}
+      </div>
+      {mounted && tooltip ? createPortal(tooltip, document.body) : null}
+    </>
+  );
+}
+
+/** Actual EPS / Revenue — hover shows estimate / actual / surprise. */
+function ReportsActualCell({
+  title,
+  estimateDisplay,
+  actualDisplay,
+  estimateRaw,
+  actualRaw,
+  surprisePct,
+  surpriseDisplay,
+}: {
+  title: string;
+  estimateDisplay: string | null | undefined;
+  actualDisplay: string | null | undefined;
+  estimateRaw: number | null;
+  actualRaw: number | null;
+  surprisePct?: number | null;
+  surpriseDisplay?: string | null;
+}) {
+  const act = tableCell(actualDisplay);
+  const est = tableCell(estimateDisplay);
+  const surprise = formatReportsSurpriseLine({
+    estimateDisplay,
+    actualDisplay,
+    estimateRaw,
+    actualRaw,
+    surprisePct,
+    surpriseDisplay,
+  });
+
+  const cell = (
     <div className={reportsNumCellClass}>
       {act === "-" ? (
         <div className="text-[14px] font-medium leading-5 text-fg-muted">-</div>
@@ -340,6 +514,19 @@ function ReportsActualCell({ actualDisplay }: { actualDisplay: string | null | u
         <div className="text-[14px] leading-5 tabular-nums text-fg">{act}</div>
       )}
     </div>
+  );
+
+  if (act === "-" && est === "-") return cell;
+
+  return (
+    <ReportsEstimateActualTooltip
+      title={title}
+      estimated={est}
+      actual={act}
+      surprise={surprise}
+    >
+      {cell}
+    </ReportsEstimateActualTooltip>
   );
 }
 
@@ -426,6 +613,12 @@ function ReportsHeaderRow() {
           <div className={cn(reportsHeaderNumClass, "whitespace-nowrap")}>Surprise</div>
           <div className={reportsHeaderNumClass}>Revenue</div>
           <div className={cn(reportsHeaderNumClass, "whitespace-nowrap")}>Surprise</div>
+          <div
+            className={cn(reportsHeaderNumClass, "whitespace-nowrap")}
+            title="Fixed stock % from that report’s session close to the next trading session close"
+          >
+            1D change
+          </div>
           <div className={cn(reportsHeaderNumClass, "whitespace-nowrap")}>
             <span className="sr-only">Document actions</span>
           </div>
@@ -470,12 +663,12 @@ function EstimatesHeaderSkeleton() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-stretch gap-x-6 gap-y-4">
-        {Array.from({ length: 4 }).map((_, i) => (
+        {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
             className={cn(
               "flex flex-col gap-1.5",
-              i < 3 && "border-r border-stroke pr-6",
+              i < 4 && "border-r border-stroke pr-6",
             )}
           >
             <SkeletonBox className="h-4 w-24 rounded" />
@@ -535,7 +728,7 @@ function TableSkeleton() {
                     <SkeletonBox className="h-3.5 w-[40%] rounded" />
                   </div>
                 </div>
-                {Array.from({ length: 4 }).map((__, c) => (
+                {Array.from({ length: 5 }).map((__, c) => (
                   <div key={c} className={reportsNumCellClass}>
                     <SkeletonBox className="ml-auto block h-4 w-[65%] max-w-16 rounded" />
                   </div>
@@ -729,6 +922,37 @@ export function StockEarningsTabContent({
     const upcomingEpsFallback = data.upcoming?.epsEstimateDisplay ?? null;
     const revenueEstimateChangePct = upcomingEstimateChangePct(data.estimatesChart, "revenue");
     const epsEstimateChangePct = upcomingEstimateChangePct(data.estimatesChart, "eps");
+
+    let forwardPeDisplay: string | null = null;
+    const forwardQuarter = data.estimatesChart
+      ? sliceForwardQuarterlyEstimates(data.estimatesChart.quarterly)[0]
+      : null;
+    if (forwardQuarter) {
+      const pe = forwardPeForPoint(forwardQuarter, "quarterly", data.lastPrice ?? null);
+      forwardPeDisplay = pe != null ? formatRatio(pe) : null;
+    } else {
+      const epsRaw =
+        data.history?.find((r) => !r.reported)?.epsEstimateRaw ??
+        data.history?.[0]?.epsEstimateRaw ??
+        null;
+      if (epsRaw != null && Number.isFinite(epsRaw) && epsRaw > 0) {
+        const pe = forwardPeForPoint(
+          {
+            sortKey: "upcoming",
+            label: "Upcoming",
+            revenueEstimateUsd: null,
+            revenueActualUsd: null,
+            epsEstimate: epsRaw,
+            epsActual: null,
+            reported: false,
+          },
+          "quarterly",
+          data.lastPrice ?? null,
+        );
+        forwardPeDisplay = pe != null ? formatRatio(pe) : null;
+      }
+    }
+
     const rows = data.history ?? [];
     if (data.upcoming) {
       return {
@@ -738,6 +962,7 @@ export function StockEarningsTabContent({
         upcomingEpsFallback,
         revenueEstimateChangePct,
         epsEstimateChangePct,
+        forwardPeDisplay,
       };
     }
     const nextUnreported = rows.find((r) => !r.reported);
@@ -749,6 +974,7 @@ export function StockEarningsTabContent({
         upcomingEpsFallback: nextUnreported.epsEstimateDisplay ?? null,
         revenueEstimateChangePct,
         epsEstimateChangePct,
+        forwardPeDisplay,
       };
     }
     /** All rows reported — still show summary cards from the latest quarter (first row). */
@@ -761,6 +987,7 @@ export function StockEarningsTabContent({
       upcomingEpsFallback: latest.epsEstimateDisplay ?? null,
       revenueEstimateChangePct,
       epsEstimateChangePct,
+      forwardPeDisplay,
     };
   }, [data]);
 
@@ -816,6 +1043,7 @@ export function StockEarningsTabContent({
                 epsEstimateDisplay={summaryForCards.upcomingEpsFallback}
                 revenueEstimateChangePct={summaryForCards.revenueEstimateChangePct}
                 epsEstimateChangePct={summaryForCards.epsEstimateChangePct}
+                forwardPeDisplay={summaryForCards.forwardPeDisplay}
               />
             ) : null
           }
@@ -830,6 +1058,7 @@ export function StockEarningsTabContent({
           epsEstimateDisplay={summaryForCards.upcomingEpsFallback}
           revenueEstimateChangePct={summaryForCards.revenueEstimateChangePct}
           epsEstimateChangePct={summaryForCards.epsEstimateChangePct}
+          forwardPeDisplay={summaryForCards.forwardPeDisplay}
         />
       ) : null}
 
@@ -877,7 +1106,15 @@ export function StockEarningsTabContent({
                             {reportDayLineFromDisplay(entry.row.reportDateDisplay)}
                           </div>
                         </div>
-                        <ReportsActualCell actualDisplay={entry.row.epsActualDisplay} />
+                        <ReportsActualCell
+                          title={reportsTooltipTitle(entry.row)}
+                          estimateDisplay={entry.row.epsEstimateDisplay}
+                          actualDisplay={entry.row.epsActualDisplay}
+                          estimateRaw={entry.row.epsEstimateRaw}
+                          actualRaw={entry.row.epsActualRaw}
+                          surprisePct={entry.row.surprisePct}
+                          surpriseDisplay={entry.row.surpriseDisplay}
+                        />
                         <ReportsBeatMissCell
                           estimateDisplay={entry.row.epsEstimateDisplay}
                           actualDisplay={entry.row.epsActualDisplay}
@@ -886,13 +1123,28 @@ export function StockEarningsTabContent({
                           surprisePct={entry.row.surprisePct}
                           surpriseDisplay={entry.row.surpriseDisplay}
                         />
-                        <ReportsActualCell actualDisplay={entry.row.revenueActualDisplay} />
+                        <ReportsActualCell
+                          title={reportsTooltipTitle(entry.row)}
+                          estimateDisplay={entry.row.revenueEstimateDisplay}
+                          actualDisplay={entry.row.revenueActualDisplay}
+                          estimateRaw={entry.row.revenueEstimateUsd}
+                          actualRaw={entry.row.revenueActualUsd}
+                        />
                         <ReportsBeatMissCell
                           estimateDisplay={entry.row.revenueEstimateDisplay}
                           actualDisplay={entry.row.revenueActualDisplay}
                           estimateRaw={entry.row.revenueEstimateUsd}
                           actualRaw={entry.row.revenueActualUsd}
                         />
+                        <div
+                          className={reportsNumCellClass}
+                          title="Fixed stock % from that report’s session close to the next trading session close"
+                        >
+                          <ChangePct
+                            value={entry.row.postReport1dPct}
+                            textClassName="text-[14px] font-normal leading-5"
+                          />
+                        </div>
                         <div className={reportsActionsCellClass}>
                           <EarningsReportRowActions listingTicker={sym} row={entry.row} />
                         </div>

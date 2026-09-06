@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { ChangeCaretIcon, ChangePct, formatSignedChangePct } from "@/components/screener/change-pct";
+import { IntentPrefetchLink } from "@/components/layout/intent-prefetch-link";
 import {
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -55,23 +56,8 @@ function formatPrice(n: number | null, kind: "stock" | "crypto" | "index" | "for
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function formatPercentValue(value: number | null) {
-  if (value == null || !Number.isFinite(value)) return "-";
-  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
-}
-
 function ChangeCell({ value }: { value: number | null }) {
-  const isMissing = value == null || !Number.isFinite(value);
-  const positive = !isMissing && value! >= 0;
-  return (
-    <div
-      className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
-        isMissing ? "text-fg-muted" : positive ? "text-up" : "text-down"
-      }`}
-    >
-      {formatPercentValue(value)}
-    </div>
-  );
+  return <ChangePct value={value} />;
 }
 
 function PriceAndChangeCell({
@@ -96,11 +82,19 @@ function PriceAndChangeCell({
         {hasPrice ? formatPrice(price, kind) : "-"}
       </div>
       <div
-        className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
-          !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down"
-        }`}
+        className={cn(
+          "mt-0.5 inline-flex min-w-0 w-full items-center justify-end gap-1 text-[12px] font-medium leading-4 tabular-nums",
+          !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down",
+        )}
       >
-        {formatPercentValue(change1D)}
+        {hasChange ? (
+          <>
+            <ChangeCaretIcon direction={positive ? "up" : "down"} />
+            <span className="min-w-0 truncate">{formatSignedChangePct(change1D!)}</span>
+          </>
+        ) : (
+          "-"
+        )}
       </div>
     </div>
   );
@@ -258,8 +252,9 @@ function WatchlistTableRow({
             dragOver ? "bg-stroke" : "max-md:hover:bg-table-row-hover",
           )}
         >
-          <Link
+          <IntentPrefetchLink
             href={row.href}
+            prefetch={false}
             draggable={false}
             className={cn(
               "col-span-2 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-fg visited:text-fg sm:col-span-7 sm:col-start-1 sm:min-h-[60px]",
@@ -276,10 +271,10 @@ function WatchlistTableRow({
               <CompanyLogo name={row.name} logoUrl={row.logoUrl ?? ""} symbol={row.symbol} />
               <div className="min-w-0">
                 <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
-                  {row.name}
-                </div>
-                <div className="text-[12px] font-normal leading-4 text-fg-muted underline-offset-2 decoration-fg-muted group-hover:underline">
                   {row.kind === "crypto" ? eodhdCryptoSpotTickerDisplay(row.symbol) : row.symbol}
+                </div>
+                <div className="truncate text-[12px] font-normal leading-4 text-fg-muted underline-offset-2 decoration-fg-muted group-hover:underline">
+                  {row.name}
                 </div>
               </div>
             </div>
@@ -323,7 +318,7 @@ function WatchlistTableRow({
             >
               {row.peDisplay}
             </div>
-          </Link>
+          </IntentPrefetchLink>
 
           <div
             className={cn(

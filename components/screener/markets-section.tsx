@@ -55,12 +55,7 @@ import { ScreenerIndustriesTable } from "@/components/screener/screener-industri
 import { ScreenerSectorsTable } from "@/components/screener/screener-sectors-table";
 import { ScreenerTabs, type StocksSubTab } from "@/components/screener/screener-tabs";
 import { ScreenerStocksSubTabMobileCard } from "@/components/screener/screener-stocks-sub-tab-mobile-card";
-import { ScreenerCompaniesKeyStatToolbar } from "@/components/screener/screener-companies-key-stat-toolbar";
-import { ScreenerTable, type ScreenerTableKeyStatColumn } from "@/components/screener/screener-table";
-import {
-  getScreenerKeyStatMetricById,
-  isScreenerBuiltinTableMetricId,
-} from "@/lib/screener/screener-key-stats-metric-catalog";
+import { ScreenerTable } from "@/components/screener/screener-table";
 import { mergeScreenerCompanyIdentities } from "@/lib/screener/screener-company-identity-storage";
 import {
   buildScreenerCompaniesListKey,
@@ -118,7 +113,6 @@ function StocksTabBody({
   sectorsLoading,
   industriesRows,
   industriesLoading,
-  companiesKeyStatColumns,
   companiesSectorFilter,
   companiesIndustryFilter,
   onClearCompaniesSector,
@@ -136,7 +130,6 @@ function StocksTabBody({
   sectorsLoading: boolean;
   industriesRows: ScreenerIndustryRow[] | null;
   industriesLoading: boolean;
-  companiesKeyStatColumns: ScreenerTableKeyStatColumn[];
   companiesSectorFilter: ScreenerCanonicalSector | null;
   companiesIndustryFilter: ScreenerIndustryDrill | null;
   onClearCompaniesSector: () => void;
@@ -184,7 +177,6 @@ function StocksTabBody({
           <ScreenerTable
             rows={companiesRows}
             rankOffset={(safeCompaniesPage - 1) * companiesPageSize}
-            keyStatColumns={companiesKeyStatColumns}
           />
         ) : null}
 
@@ -259,7 +251,6 @@ function StocksTabBody({
           <ScreenerTable
             rows={companiesRows}
             rankOffset={(safeCompaniesPage - 1) * companiesPageSize}
-            keyStatColumns={companiesKeyStatColumns}
             {...mobileTableChrome}
           />
         ) : null}
@@ -629,11 +620,6 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   const [fetchedCryptoPages, setFetchedCryptoPages] = useState<Record<number, CryptoTop10Row[]>>({});
   const [cryptoRemoteLoading, setCryptoRemoteLoading] = useState(false);
   const [cryptoTotalCountOverride, setCryptoTotalCountOverride] = useState<number | null>(null);
-  const [companiesKeyStatMetricIds, setCompaniesKeyStatMetricIds] = useState<string[]>([]);
-  const [companiesKeyStatValuesByMetric, setCompaniesKeyStatValuesByMetric] = useState<
-    Record<string, Record<string, string>>
-  >({});
-  const [companiesKeyStatLoading, setCompaniesKeyStatLoading] = useState(false);
 
   const stockRows = activePayload.market === "stocks" ? activePayload.stockRows : [];
   const companiesMarketCacheSegment =
@@ -741,9 +727,6 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       setCryptoPage(1);
       setFetchedCryptoPages({});
       setCryptoTotalCountOverride(null);
-      setCompaniesKeyStatMetricIds([]);
-      setCompaniesKeyStatValuesByMetric({});
-      setCompaniesKeyStatLoading(false);
     });
     return () => cancelAnimationFrame(id);
   }, [activePayload.market]);
@@ -1025,84 +1008,8 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     mergeScreenerCompanyIdentities(companiesRowsResolved);
   }, [activePayload.market, companiesTickerKey, companiesRowsResolved]);
 
-  const companiesKeyStatTabActive =
-    displayStocksSubTab === "Companies" || isSectorsDrill || isIndustriesDrill;
-
-  const companiesKeyStatMetricKey = companiesKeyStatMetricIds.join("\u001f");
-
-  useEffect(() => {
-    if (activePayload.market !== "stocks" || !companiesKeyStatTabActive || !companiesKeyStatMetricIds.length) {
-      if (!companiesKeyStatMetricIds.length) {
-        setCompaniesKeyStatValuesByMetric({});
-        setCompaniesKeyStatLoading(false);
-      }
-      return;
-    }
-    const tickers = companiesTickerKey.split("\u001f").filter(Boolean);
-    if (!tickers.length) return;
-
-    let cancelled = false;
-    setCompaniesKeyStatLoading(true);
-    fetch("/api/screener/companies-key-stat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tickers, metricIds: companiesKeyStatMetricIds }),
-      credentials: "include",
-    })
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Request failed");
-        const data = (await res.json()) as { valuesByMetric?: Record<string, Record<string, string>> };
-        if (cancelled) return;
-        setCompaniesKeyStatValuesByMetric(data.valuesByMetric ?? {});
-      })
-      .catch(() => {
-        if (!cancelled) setCompaniesKeyStatValuesByMetric({});
-      })
-      .finally(() => {
-        setCompaniesKeyStatLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [activePayload.market, companiesKeyStatTabActive, companiesKeyStatMetricKey, companiesTickerKey, companiesKeyStatMetricIds]);
-
-  const resetCompaniesKeyStat = useCallback(() => {
-    setCompaniesKeyStatMetricIds([]);
-    setCompaniesKeyStatValuesByMetric({});
-    setCompaniesKeyStatLoading(false);
-  }, []);
-
-  const toggleCompaniesKeyStat = useCallback((id: string) => {
-    if (isScreenerBuiltinTableMetricId(id)) return;
-    setCompaniesKeyStatMetricIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
-  }, []);
-
-  const companiesKeyStatMetricIdSet = useMemo(
-    () => new Set(companiesKeyStatMetricIds),
-    [companiesKeyStatMetricIds],
-  );
-
-  const companiesKeyStatColumns = useMemo((): ScreenerTableKeyStatColumn[] => {
-    return companiesKeyStatMetricIds
-      .map((id) => {
-        const def = getScreenerKeyStatMetricById(id);
-        if (!def) return null;
-        return {
-          header: def.label,
-          valuesByTicker: companiesKeyStatValuesByMetric[id] ?? {},
-          loading: companiesKeyStatLoading,
-        };
-      })
-      .filter((col): col is ScreenerTableKeyStatColumn => col != null);
-  }, [companiesKeyStatMetricIds, companiesKeyStatValuesByMetric, companiesKeyStatLoading]);
-
   const companiesLoadingActive = awaitingRemoteCompanies || companiesRemoteLoading;
   const cryptoLoadingActive = awaitingRemoteCrypto || cryptoRemoteLoading;
-
-  const showCompaniesKeyStatToolbar =
-    displayStocksSubTab === "Companies" || isSectorsDrill || isIndustriesDrill;
 
   const useMobileStocksSubTabCard = !isStocksDrill;
 
@@ -1129,54 +1036,31 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
             marketCacheSegment={activePayload.companiesMarketCacheSegment}
           />
           {!isStocksDrill ? (
-            <div className="mb-5 flex min-w-0 w-full max-w-full flex-row flex-nowrap items-center justify-between gap-3 max-md:mb-4 sm:gap-4">
-              {/**
-               * Keep sub-tabs + key-stat control on one row at every breakpoint.
-               * `flex-col` on mobile used to stack the toolbar under the pills and add
-               * ~36px + gap-3 on top of the 16px margin (looked like a fat empty band).
-               */}
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <ScreenerTabs active={displayStocksSubTab} onChange={setStocksSubTabWithUrl} />
-              </div>
-              {showCompaniesKeyStatToolbar ? (
-                <ScreenerCompaniesKeyStatToolbar
-                  selectedMetricIds={companiesKeyStatMetricIdSet}
-                  onToggleMetricId={toggleCompaniesKeyStat}
-                  onReset={resetCompaniesKeyStat}
-                  disabled={companiesLoadingActive && companiesRowsResolved.length === 0}
-                />
-              ) : null}
+            <div className="mb-5 min-w-0 w-full max-w-full max-md:mb-4">
+              <ScreenerTabs active={displayStocksSubTab} onChange={setStocksSubTabWithUrl} />
             </div>
           ) : null}
           {isStocksDrill ? (
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <div className="flex min-w-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={isIndustriesDrill ? clearCompaniesIndustryFilter : clearCompaniesSectorFilter}
-                  title={isIndustriesDrill ? "Back to all industries" : "Back to all sectors"}
-                  aria-label={isIndustriesDrill ? "Back to all industries" : "Back to all sectors"}
-                  className={topbarSquircleIconClass}
-                >
-                  <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
-                </button>
-                <h2
-                  className={cn(
-                    STOCK_OVERVIEW_SECTION_HEADING_CLASS,
-                    "min-w-0 truncate",
-                  )}
-                >
-                  {isIndustriesDrill && stocksIndustryFilter
-                    ? stocksIndustryFilter.industry
-                    : stocksSectorFilter}
-                </h2>
-              </div>
-              <ScreenerCompaniesKeyStatToolbar
-                selectedMetricIds={companiesKeyStatMetricIdSet}
-                onToggleMetricId={toggleCompaniesKeyStat}
-                onReset={resetCompaniesKeyStat}
-                disabled={companiesLoadingActive && companiesRowsResolved.length === 0}
-              />
+            <div className="mb-5 flex min-w-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={isIndustriesDrill ? clearCompaniesIndustryFilter : clearCompaniesSectorFilter}
+                title={isIndustriesDrill ? "Back to all industries" : "Back to all sectors"}
+                aria-label={isIndustriesDrill ? "Back to all industries" : "Back to all sectors"}
+                className={topbarSquircleIconClass}
+              >
+                <ChevronLeft className="h-5 w-5 shrink-0" aria-hidden />
+              </button>
+              <h2
+                className={cn(
+                  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+                  "min-w-0 truncate",
+                )}
+              >
+                {isIndustriesDrill && stocksIndustryFilter
+                  ? stocksIndustryFilter.industry
+                  : stocksSectorFilter}
+              </h2>
             </div>
           ) : null}
           <StocksTabBody
@@ -1192,7 +1076,6 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
             sectorsLoading={sectorsLoading}
             industriesRows={industriesRows}
             industriesLoading={industriesLoading}
-            companiesKeyStatColumns={showCompaniesKeyStatToolbar ? companiesKeyStatColumns : []}
             companiesSectorFilter={stocksSectorFilter}
             companiesIndustryFilter={stocksIndustryFilter}
             onClearCompaniesSector={clearCompaniesSectorFilter}

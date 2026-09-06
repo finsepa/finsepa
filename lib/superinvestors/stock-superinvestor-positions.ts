@@ -4,6 +4,12 @@ import { unstable_cache } from "next/cache";
 
 import type { Berkshire13fComparisonRow, Holding13fComparisonStatus } from "@/lib/superinvestors/types";
 import { SUPERINVESTOR_REGISTRY } from "@/lib/superinvestors/superinvestor-registry";
+import {
+  buildSuperinvestorStockIndexFromProfileSnapshots,
+  lookupStockSuperinvestorPositionsFromIndex,
+  readSuperinvestorStockIndexSnapshot,
+  upsertSuperinvestorStockIndexSnapshot,
+} from "@/lib/superinvestors/superinvestor-stock-index-snapshot";
 
 /** Matches per-fund 13F comparison caches in `berkshire-13f.ts`. */
 const INDEX_REVALIDATE_SEC = 21_600;
@@ -78,7 +84,11 @@ function pushIndex(
   else map[key] = [position];
 }
 
-async function buildStockSuperinvestorIndexUncached(): Promise<StockSuperinvestorIndex> {
+/**
+ * Last-resort index via per-fund comparison loaders (SEC when snapshots miss).
+ * Prefer {@link readSuperinvestorStockIndexSnapshot} / profile-snapshot build.
+ */
+async function buildStockSuperinvestorIndexViaRegistryLoad(): Promise<StockSuperinvestorIndex> {
   const byTicker: Record<string, StockSuperinvestorPosition[]> = {};
   const byNameExact: Record<string, StockSuperinvestorPosition[]> = {};
   const nameRows: NameIndexRow[] = [];
@@ -111,15 +121,43 @@ async function buildStockSuperinvestorIndexUncached(): Promise<StockSuperinvesto
 }
 
 const getStockSuperinvestorIndexCached = unstable_cache(
-  buildStockSuperinvestorIndexUncached,
-  ["stock-superinvestor-index-v1"],
+  buildStockSuperinvestorIndexViaRegistryLoad,
+  ["stock-superinvestor-index-v2-registry-fallback"],
   { revalidate: INDEX_REVALIDATE_SEC },
 );
 
-const DEV_INDEX_MEMO_KEY = "13f:stock-superinvestor-index:v1";
-const DEV_INDEX_TTL_MS = 5 * 60 * 1000;
+const DEV_INDEX_MEMO_KEY = "13f:stock-superinvestor-index:v2";
+const DEV_INDEX_TTL_MS = 30 * 60 * 1000;
+const PROCESS_INDEX_MEMO_KEY = "13f:stock-superinvestor-index:process-v1";
+const PROCESS_INDEX_TTL_MS = 30 * 60 * 1000;
 
-async function getStockSuperinvestorIndex(): Promise<StockSuperinvestorIndex> {
+type ProcessIndexMemo = {
+  byTicker: Record<string, StockSuperinvestorPosition[]>;
+  byNameExact: Record<string, StockSuperinvestorPosition[]>;
+};
+
+function readProcessIndexMemo(): ProcessIndexMemo | null {
+  const g = globalThis as unknown as {
+    __finsepaDevMemo?: Map<string, { exp: number; v: unknown }>;
+  };
+  if (!g.__finsepaDevMemo) return null;
+  const hit = g.__finsepaDevMemo.get(PROCESS_INDEX_MEMO_KEY);
+  if (!hit || hit.exp <= Date.now()) return null;
+  return hit.v as ProcessIndexMemo;
+}
+
+function writeProcessIndexMemo(index: ProcessIndexMemo): void {
+  const g = globalThis as unknown as {
+    __finsepaDevMemo?: Map<string, { exp: number; v: unknown }>;
+  };
+  if (!g.__finsepaDevMemo) g.__finsepaDevMemo = new Map();
+  g.__finsepaDevMemo.set(PROCESS_INDEX_MEMO_KEY, {
+    exp: Date.now() + PROCESS_INDEX_TTL_MS,
+    v: index,
+  });
+}
+
+async function getStockSuperinvestorIndexFallback(): Promise<StockSuperinvestorIndex> {
   if (process.env.NODE_ENV === "production") {
     return getStockSuperinvestorIndexCached();
   }
@@ -130,31 +168,15 @@ async function getStockSuperinvestorIndex(): Promise<StockSuperinvestorIndex> {
   const now = Date.now();
   const hit = g.__finsepaDevMemo.get(DEV_INDEX_MEMO_KEY);
   if (hit && hit.exp > now) return hit.v as Promise<StockSuperinvestorIndex>;
-  const v = buildStockSuperinvestorIndexUncached();
+  const v = buildStockSuperinvestorIndexViaRegistryLoad();
   g.__finsepaDevMemo.set(DEV_INDEX_MEMO_KEY, { exp: now + DEV_INDEX_TTL_MS, v });
   return v;
 }
 
-function fuzzyNameMatch(nameRows: NameIndexRow[], targetNameNorm: string): StockSuperinvestorPosition[] {
-  const out: StockSuperinvestorPosition[] = [];
-  const seen = new Set<string>();
-  for (const { nameNorm, position } of nameRows) {
-    if (!nameNorm) continue;
-    if (
-      nameNorm !== targetNameNorm &&
-      !nameNorm.includes(targetNameNorm) &&
-      !targetNameNorm.includes(nameNorm)
-    ) {
-      continue;
-    }
-    const key = position.superinvestorSlug;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(position);
-  }
-  return out;
-}
-
+/**
+ * Fast path: process memo → durable inverted index (cron) → profile snapshots → registry load.
+ * No EODHD on any path; SEC only on last-resort cold miss.
+ */
 export async function getStockSuperinvestorPositions(
   ticker: string,
   companyNameNorm: string | null = null,
@@ -162,14 +184,67 @@ export async function getStockSuperinvestorPositions(
   const sym = ticker.trim().toUpperCase();
   if (!sym) return { ticker: "", positions: [] };
 
-  const index = await getStockSuperinvestorIndex();
-  let positions = index.byTicker[sym] ?? [];
+  const memo = readProcessIndexMemo();
+  if (memo) {
+    return {
+      ticker: sym,
+      positions: lookupStockSuperinvestorPositionsFromIndex(
+        memo.byTicker,
+        memo.byNameExact,
+        sym,
+        companyNameNorm,
+      ),
+    };
+  }
 
-  if (positions.length === 0 && companyNameNorm) {
-    positions = index.byNameExact[companyNameNorm] ?? [];
-    if (positions.length === 0) {
-      positions = fuzzyNameMatch(index.nameRows, companyNameNorm);
+  const snap = await readSuperinvestorStockIndexSnapshot();
+  if (snap) {
+    writeProcessIndexMemo({ byTicker: snap.byTicker, byNameExact: snap.byNameExact });
+    return {
+      ticker: sym,
+      positions: lookupStockSuperinvestorPositionsFromIndex(
+        snap.byTicker,
+        snap.byNameExact,
+        sym,
+        companyNameNorm,
+      ),
+    };
+  }
+
+  // Cold miss without durable index: build from per-CIK profile snapshots (Supabase reads only).
+  try {
+    const fromProfiles = await buildSuperinvestorStockIndexFromProfileSnapshots();
+    if (fromProfiles.fundCount > 0) {
+      writeProcessIndexMemo({
+        byTicker: fromProfiles.byTicker,
+        byNameExact: fromProfiles.byNameExact,
+      });
+      // Self-heal durable index so other instances skip the profile fan-out.
+      void upsertSuperinvestorStockIndexSnapshot(fromProfiles.byTicker, fromProfiles.byNameExact);
+      return {
+        ticker: sym,
+        positions: lookupStockSuperinvestorPositionsFromIndex(
+          fromProfiles.byTicker,
+          fromProfiles.byNameExact,
+          sym,
+          companyNameNorm,
+        ),
+      };
     }
+  } catch {
+    /* fall through to registry load */
+  }
+
+  const index = await getStockSuperinvestorIndexFallback();
+  writeProcessIndexMemo({ byTicker: index.byTicker, byNameExact: index.byNameExact });
+  let positions = index.byTicker[sym] ?? [];
+  if (positions.length === 0 && companyNameNorm) {
+    positions = lookupStockSuperinvestorPositionsFromIndex(
+      index.byTicker,
+      index.byNameExact,
+      sym,
+      companyNameNorm,
+    );
   }
 
   return { ticker: sym, positions };

@@ -45,6 +45,11 @@ export type StockEarningsHistoryRow = {
   secSlidesUrl: string | null;
   /** SEC filing PDF, IR quarterly report PDF, or SEC Exhibit 99.1 HTML press release */
   secFilingsUrl: string | null;
+  /**
+   * Fixed stock % from report-session close → next trading session close.
+   * Immutable once stored; null when bars / next session missing.
+   */
+  postReport1dPct: number | null;
 };
 
 /** One category on the Estimates bar chart (annual year or fiscal quarter). */

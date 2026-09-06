@@ -2,42 +2,8 @@
 
 import type { ChartScreenshotExportOptions } from "@/lib/chart/chart-screenshot-export-options";
 import type { ChartScreenshotSnapshotVariant } from "@/lib/chart/chart-screenshot-types";
+import { PillSwitch } from "@/components/ui/pill-switch";
 import { cn } from "@/lib/utils";
-
-function PillSwitch({
-  pressed,
-  onPressedChange,
-  disabled,
-  "aria-label": ariaLabel,
-}: {
-  pressed: boolean;
-  onPressedChange: (next: boolean) => void;
-  disabled?: boolean;
-  "aria-label": string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={pressed}
-      aria-label={ariaLabel}
-      disabled={disabled}
-      onClick={() => onPressedChange(!pressed)}
-      className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:cursor-not-allowed disabled:opacity-40",
-        pressed ? "bg-accent" : "bg-stroke",
-      )}
-    >
-      <span
-        className={cn(
-          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-switch-thumb-off shadow-sm transition-[transform,background-color]",
-          pressed && "translate-x-4 bg-switch-thumb",
-        )}
-        aria-hidden
-      />
-    </button>
-  );
-}
 
 type SettingRowProps = {
   label: string;

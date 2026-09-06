@@ -83,6 +83,7 @@ import {
   sortBenchmarkChartPoints,
 } from "@/lib/portfolio/benchmark/benchmark-chart-points";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+import { PillSwitch } from "@/components/ui/pill-switch";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 import {
   Empty,
@@ -972,47 +973,6 @@ function resolveGoalPaneEndBadges(
 ): GoalYAxisEndBadge[] {
   if (plotLayout !== "goal" || !goalExtents) return [];
   return computeGoalYAxisEndBadges(badgeSpecs);
-}
-
-function PillSwitch({
-  pressed,
-  onPressedChange,
-  disabled = false,
-  "aria-label": ariaLabel,
-  title,
-}: {
-  pressed: boolean;
-  onPressedChange: (next: boolean) => void;
-  disabled?: boolean;
-  "aria-label": string;
-  title?: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={pressed}
-      aria-label={ariaLabel}
-      title={title}
-      disabled={disabled}
-      onClick={() => {
-        if (disabled) return;
-        onPressedChange(!pressed);
-      }}
-      className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
-        pressed ? "bg-accent" : "bg-stroke",
-        disabled && "cursor-not-allowed opacity-50",
-      )}
-    >
-      <span
-        className={cn(
-          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-switch-thumb-off shadow-sm transition-[transform,background-color]",
-          pressed ? "translate-x-4 bg-switch-thumb" : "translate-x-0",
-        )}
-      />
-    </button>
-  );
 }
 
 const PORTFOLIO_CHART_SETTINGS_ROWS = [

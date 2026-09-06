@@ -3,8 +3,10 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 import { AllocationDonutChart } from "@/components/portfolio/allocation-donut-chart";
+import { AllocationWeightValue } from "@/components/portfolio/allocation-weight-pie";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { PortfolioHoldingsEmptyState } from "@/components/portfolio/portfolio-holdings-empty-state";
+import { ChangePctParen } from "@/components/screener/change-pct";
 import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import {
@@ -66,12 +68,6 @@ const pct1 = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
-/** Matches the overview cards' percent formatter. */
-const pct2 = new Intl.NumberFormat("en-US", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
 const usd2 = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -85,16 +81,6 @@ function formatSignedUsd2(n: number): string {
   const v = normalizeUsdForDisplay(n);
   const s = usd2.format(Math.abs(v));
   return v >= 0 ? `+${s}` : `-${s}`;
-}
-
-function formatSignedPct1(n: number): string {
-  const s = pct1.format(Math.abs(n));
-  return n >= 0 ? `+${s}%` : `-${s}%`;
-}
-
-function formatSignedPct2(n: number): string {
-  const s = pct2.format(Math.abs(n));
-  return n >= 0 ? `+${s}%` : `-${s}%`;
 }
 
 /** Chart edge length — sized so the donut plus label pills fit the 320px card column. */
@@ -579,14 +565,14 @@ function PortfolioSlicesViewInner({
                     {chartCenterGainUsd === null ? EM_DASH : formatSignedUsd2(chartCenterGainUsd)}
                   </div>
                   {chartCenterGainPct !== null ? (
-                    <div
+                    <ChangePctParen
+                      value={chartCenterGainPct}
+                      caretSize={12}
                       className={cn(
                         "text-[12px] font-medium tabular-nums",
                         chartCenterGainPct >= 0 ? "text-up" : "text-down",
                       )}
-                    >
-                      {formatSignedPct2(chartCenterGainPct)}
-                    </div>
+                    />
                   ) : (
                     <div className="text-[12px] tabular-nums text-fg-muted">{EM_DASH}</div>
                   )}
@@ -704,10 +690,10 @@ function PortfolioSlicesViewInner({
                             </div>
                             <div className="min-w-0">
                               <div className="truncate text-[14px] font-semibold leading-5 text-fg">
-                                {hRow.name}
-                              </div>
-                              <div className="text-[12px] font-normal leading-4 text-fg-muted">
                                 {hRow.symbol}
+                              </div>
+                              <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                                {hRow.name}
                               </div>
                             </div>
                           </div>
@@ -736,14 +722,13 @@ function PortfolioSlicesViewInner({
                                 {formatSignedUsd2(hRow.gainUsd)}
                               </div>
                               {hRow.gainPct !== null ? (
-                                <div
+                                <ChangePctParen
+                                  value={hRow.gainPct}
                                   className={cn(
-                                    "text-[14px] font-medium leading-5 tabular-nums",
+                                    "justify-end text-[14px] font-medium leading-5",
                                     hRow.gainUsd >= 0 ? "text-up" : "text-down",
                                   )}
-                                >
-                                  {formatSignedPct1(hRow.gainPct)}
-                                </div>
+                                />
                               ) : null}
                             </>
                           )}
@@ -754,7 +739,10 @@ function PortfolioSlicesViewInner({
                             slicesEndCellClass,
                           )}
                         >
-                          {pct1.format(hRow.allocationPct)}%
+                          <AllocationWeightValue
+                            pct={hRow.allocationPct}
+                            label={pct1.format(hRow.allocationPct)}
+                          />
                         </div>
                       </div>
                     </div>
@@ -879,14 +867,13 @@ function PortfolioSlicesViewInner({
                                 {formatSignedUsd2(row.gainUsd)}
                               </div>
                               {row.gainPct !== null ? (
-                                <div
+                                <ChangePctParen
+                                  value={row.gainPct}
                                   className={cn(
-                                    "text-[14px] font-medium leading-5 tabular-nums",
+                                    "justify-end text-[14px] font-medium leading-5",
                                     row.gainUsd >= 0 ? "text-up" : "text-down",
                                   )}
-                                >
-                                  {formatSignedPct1(row.gainPct)}
-                                </div>
+                                />
                               ) : null}
                             </>
                           )}
@@ -897,7 +884,10 @@ function PortfolioSlicesViewInner({
                             slicesEndCellClass,
                           )}
                         >
-                          {pct1.format(row.allocationPct)}%
+                          <AllocationWeightValue
+                            pct={row.allocationPct}
+                            label={pct1.format(row.allocationPct)}
+                          />
                         </div>
                       </button>
                     </div>

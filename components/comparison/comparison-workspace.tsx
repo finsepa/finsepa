@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { X, Plus } from "@/lib/icons";
 
+import { ChangePct } from "@/components/screener/change-pct";
 import { ChartingCompanyAddDropdown } from "@/components/charting/charting-company-add-dropdown";
 import type { CompanyPickerOpenControls } from "@/components/charting/company-picker";
 import {
@@ -101,17 +102,6 @@ const RETURN_WINDOWS = [
   { key: "all" as const, label: "Max" },
 ] as const;
 
-function perfCellClass(v: number | null): string {
-  if (v == null || !Number.isFinite(v)) return "text-fg-muted";
-  return v >= 0 ? "text-up" : "text-down";
-}
-
-function formatPerfCell(v: number | null): string {
-  if (v == null || !Number.isFinite(v)) return "-";
-  const sign = v >= 0 ? "+" : "";
-  return `${sign}${v.toFixed(2)}%`;
-}
-
 /** Matches screener companies: 8px row inset; first/last cells add 12px via start/end pad tokens. */
 
 /** Matches `screener-table` column rhythm: `gap-x-2`, horizontal rules via inset strokes. */
@@ -160,8 +150,8 @@ function ComparisonCompanyBlock({
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={ticker} />
         <div className="min-w-0">
-          <div className="truncate text-[14px] font-semibold leading-5 text-fg">{displayName}</div>
-          <div className="text-[12px] font-normal leading-4 text-fg-muted">{ticker}</div>
+          <div className="truncate text-[14px] font-semibold leading-5 text-fg">{ticker}</div>
+          <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{displayName}</div>
         </div>
       </div>
     </div>
@@ -777,12 +767,12 @@ export function ComparisonWorkspace({
                     seriesColor={r.color}
                   />
                   {r.returns.map((v, i) => (
-                    <div
+                    <ChangePct
                       key={RETURN_WINDOWS[i]!.key}
-                      className={cn(comparisonMetricCellClass, perfCellClass(v))}
-                    >
-                      {formatPerfCell(v)}
-                    </div>
+                      value={v}
+                      className={comparisonMetricCellClass}
+                      textClassName="font-['Inter'] text-[14px] font-normal leading-5"
+                    />
                   ))}
                 </Link>
               </div>

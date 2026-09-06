@@ -21,8 +21,10 @@ import {
   TABLE_START_ALIGNED_PAD_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
+import { AllocationWeightValue } from "@/components/portfolio/allocation-weight-pie";
 import { HoldingRowActionsMenu } from "@/components/portfolio/holding-row-actions-menu";
 import { PortfolioHoldingTransactionsPanel } from "@/components/portfolio/portfolio-holding-transactions-panel";
+import { ChangeCaretIcon } from "@/components/screener/change-pct";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { RemoveAssetModal } from "@/components/portfolio/remove-asset-modal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -49,7 +51,7 @@ import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfo
 
 const EM_DASH = "\u2014";
 
-/** Matches screener company column (`screener-table.tsx`). */
+/** Matches screener asset column — primary ticker, muted company (`screener-table.tsx`). */
 const HOLDING_COMPANY_NAME_CLASS =
   "truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline group-hover/row:underline";
 
@@ -224,11 +226,12 @@ function PortfolioPnlBreakdownTooltip({
         </div>
         <div
           className={cn(
-            "text-[12px] font-medium leading-4 tabular-nums",
+            "inline-flex items-center justify-end gap-0.5 text-[12px] font-medium leading-4 tabular-nums",
             unrealizedPct >= 0 ? "text-up" : "text-down",
           )}
         >
-          {formatSignedPct(unrealizedPct)}
+          <ChangeCaretIcon direction={unrealizedPct >= 0 ? "up" : "down"} />
+          <span>{formatAbsPct(unrealizedPct)}</span>
         </div>
       </div>
       {mounted && tooltip ? createPortal(tooltip, document.body) : null}
@@ -272,9 +275,8 @@ function formatSignedUsd(n: number): string {
   return n >= 0 ? `+${s}` : `-${s}`;
 }
 
-function formatSignedPct(n: number): string {
-  const s = pct.format(Math.abs(n));
-  return n >= 0 ? `+${s}%` : `-${s}%`;
+function formatAbsPct(n: number): string {
+  return `${pct.format(Math.abs(n))}%`;
 }
 
 type HoldingsSortKey = "holdings" | "pnl" | "weight";
@@ -448,9 +450,9 @@ function PortfolioHoldingsTableInner({
               <div className="flex min-w-0 items-center gap-3">
                 <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                 <div className="min-w-0">
-                  <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
+                  <div className={HOLDING_COMPANY_NAME_CLASS}>{caption}</div>
                   <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
-                    {caption} · {formatSharesAsShares(h.shares)}
+                    {companyName} · {formatSharesAsShares(h.shares)}
                   </div>
                 </div>
               </div>
@@ -463,11 +465,16 @@ function PortfolioHoldingsTableInner({
                 </div>
                 <div
                   className={cn(
-                    "mt-0.5 truncate text-[12px] font-medium leading-4 tabular-nums",
+                    "mt-0.5 inline-flex max-w-full items-center justify-end gap-1 truncate text-[12px] font-medium leading-4 tabular-nums",
                     unrealizedUsd >= 0 ? "text-up" : "text-down",
                   )}
                 >
-                  {formatSignedUsd(unrealizedUsd)} ({formatSignedPct(unrealizedPct)})
+                  <span className="truncate">{formatSignedUsd(unrealizedUsd)}</span>
+                  <span className="inline-flex shrink-0 items-center gap-0.5">
+                    (
+                    <ChangeCaretIcon direction={unrealizedPct >= 0 ? "up" : "down"} />
+                    {formatAbsPct(unrealizedPct)})
+                  </span>
                 </div>
               </div>
             );
@@ -637,9 +644,9 @@ function PortfolioHoldingsTableInner({
                         >
                           <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                           <div className="min-w-0 text-left">
-                            <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                            <div className="text-[12px] font-normal leading-4 text-fg-muted">
-                              {caption}
+                            <div className={HOLDING_COMPANY_NAME_CLASS}>{caption}</div>
+                            <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                              {companyName}
                             </div>
                           </div>
                         </div>
@@ -691,7 +698,7 @@ function PortfolioHoldingsTableInner({
                             TABLE_END_ALIGNED_PAD_CLASS,
                           )}
                         >
-                          {pct.format(weightPct)}%
+                          <AllocationWeightValue pct={weightPct} label={pct.format(weightPct)} />
                         </div>
                         {!selectedPortfolioReadOnly ? (
                           <div
@@ -804,7 +811,7 @@ function PortfolioHoldingsTableInner({
                       TABLE_END_ALIGNED_PAD_CLASS,
                     )}
                   >
-                    {pct.format(cashWeightPct)}%
+                    <AllocationWeightValue pct={cashWeightPct} label={pct.format(cashWeightPct)} />
                   </div>
                   {!selectedPortfolioReadOnly ? (
                     <div className={TABLE_END_ALIGNED_PAD_CLASS} aria-hidden />

@@ -46,45 +46,40 @@ function roundEps(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-function signedUsdCompact(delta: number): string {
-  const body = formatUsdCompact(delta);
-  if (delta > 0 && body.startsWith("$")) return `+${body}`;
-  return body;
+function unsignedUsdCompact(delta: number): string {
+  return formatUsdCompact(Math.abs(delta));
 }
 
-function formatSignedEpsDelta(delta: number): string {
+function formatUnsignedEpsDelta(delta: number): string {
   if (!Number.isFinite(delta)) return "—";
-  const sign = delta >= 0 ? "+" : "-";
   const body = Math.abs(delta).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  return `${sign}$${body}`;
+  return `$${body}`;
 }
 
-function formatSignedPercentPointDelta(deltaPoints: number): string {
+function formatUnsignedPercentPointDelta(deltaPoints: number): string {
   if (!Number.isFinite(deltaPoints)) return "—";
-  const sign = deltaPoints >= 0 ? "+" : "-";
   const body = Math.abs(deltaPoints).toLocaleString("en-US", {
     minimumFractionDigits: 1,
     maximumFractionDigits: 2,
   });
-  return `${sign}${body}%`;
+  return `${body}%`;
 }
 
-function formatSignedRatioPointDelta(delta: number): string {
+function formatUnsignedRatioPointDelta(delta: number): string {
   if (!Number.isFinite(delta)) return "—";
-  const sign = delta >= 0 ? "+" : "-";
-  const body = Math.abs(delta).toLocaleString("en-US", {
+  return Math.abs(delta).toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  return `${sign}${body}`;
 }
 
 /**
  * Period-over-period change for Multichart card subtitles vs the prior chart column.
  * Values are rounded to the same precision as headline/tooltip formatting before differencing.
+ * Display omits `+/-` — the card trend icon carries direction.
  */
 export function multichartComparisonFromLastTwo(
   rows: ChartingSeriesPoint[],
@@ -101,34 +96,34 @@ export function multichartComparisonFromLastTwo(
     const current = roundToUsdCompactPrecision(currentRaw);
     const prior = roundToUsdCompactPrecision(priorRaw);
     const delta = current - prior;
-    return { display: signedUsdCompact(delta), delta };
+    return { display: unsignedUsdCompact(delta), delta };
   }
 
   if (kind === "eps") {
     const current = roundEps(currentRaw);
     const prior = roundEps(priorRaw);
     const delta = current - prior;
-    return { display: formatSignedEpsDelta(delta), delta };
+    return { display: formatUnsignedEpsDelta(delta), delta };
   }
 
   if (kind === "percent") {
     const current = roundPercentPoints(currentRaw);
     const prior = roundPercentPoints(priorRaw);
     const delta = current - prior;
-    return { display: formatSignedPercentPointDelta(delta), delta };
+    return { display: formatUnsignedPercentPointDelta(delta), delta };
   }
 
   if (kind === "multiple" || kind === "ratio") {
     const current = Math.round(currentRaw * 100) / 100;
     const prior = Math.round(priorRaw * 100) / 100;
     const delta = current - prior;
-    return { display: formatSignedRatioPointDelta(delta), delta };
+    return { display: formatUnsignedRatioPointDelta(delta), delta };
   }
 
   if (priorRaw === 0) return null;
   const pct = ((currentRaw / priorRaw) - 1) * 100;
   return {
-    display: `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`,
+    display: `${Math.abs(pct).toFixed(1)}%`,
     delta: pct,
   };
 }

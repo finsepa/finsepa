@@ -69,7 +69,7 @@ import { parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
 const TABS = ["Trades", "Incomes", "Expenses", "Cash"] as const;
 
 const TRADE_ASSET_TABS = [
-  { value: "listed" as const, label: "Company / Ticker" },
+  { value: "listed" as const, label: "Ticker" },
   { value: "custom" as const, label: "Custom Asset" },
 ] as const;
 type TradeAssetSource = (typeof TRADE_ASSET_TABS)[number]["value"];
@@ -802,8 +802,9 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                       min="0"
                       value={price}
                       onChange={setPrice}
-                      placeholder="Price"
+                      placeholder="0.00"
                       clearLabel="Clear price"
+                      leadingAdornment="$"
                     />
                   </Field>
                 </div>
@@ -812,7 +813,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                   <UsdMoneyClearableInput
                     value={fees}
                     onChange={setFees}
-                    placeholder="Fee"
+                    placeholder="0.00"
                     clearLabel="Clear fees"
                   />
                 </Field>
@@ -855,7 +856,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                   <UsdMoneyClearableInput
                     value={incomeFees}
                     onChange={setIncomeFees}
-                    placeholder="Fee"
+                    placeholder="0.00"
                     clearLabel="Clear fees"
                   />
                 </Field>
@@ -878,7 +879,7 @@ export function NewTransactionModal({ open, presetCompany = null, onClose }: Pro
                   <UsdMoneyClearableInput
                     value={expenseAmount}
                     onChange={setExpenseAmount}
-                    placeholder="Amount"
+                    placeholder="0.00"
                     clearLabel="Clear amount"
                   />
                 </Field>

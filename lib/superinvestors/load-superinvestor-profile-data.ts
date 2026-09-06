@@ -24,6 +24,7 @@ import { writeSuperinvestor13fHealthFromCron } from "@/lib/superinvestors/superi
 import { finalizeSuperinvestorProfileIngest } from "@/lib/superinvestors/superinvestor-13f-ingest";
 import { validateSuperinvestorProfilePage } from "@/lib/superinvestors/superinvestor-13f-validate";
 import { refreshSuperinvestorListSnapshot } from "@/lib/superinvestors/superinvestor-list-snapshot";
+import { refreshSuperinvestorStockIndexSnapshot } from "@/lib/superinvestors/superinvestor-stock-index-snapshot";
 import {
   withSuperinvestorForceSnapshotRebuild,
   withSuperinvestorSecRebuildAllowed,
@@ -322,6 +323,7 @@ export async function refreshAllSuperinvestor13fPortfolios(): Promise<Superinves
   }
 
   const listRefresh = await refreshSuperinvestorListSnapshot();
+  const stockIndexRefresh = await refreshSuperinvestorStockIndexSnapshot();
 
   const okTimes = results.filter((r) => r.ok && r.ingestMs != null).map((r) => r.ingestMs!);
   const averageProcessingTimeMs =
@@ -341,6 +343,8 @@ export async function refreshAllSuperinvestor13fPortfolios(): Promise<Superinves
     okCount: results.filter((r) => r.ok).length,
     listSnapshotOk: listRefresh.ok,
     listRowCount: listRefresh.rowCount,
+    stockIndexSnapshotOk: stockIndexRefresh.ok,
+    stockIndexTickerCount: stockIndexRefresh.tickerCount,
     results,
   };
 }

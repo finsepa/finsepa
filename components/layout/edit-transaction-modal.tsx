@@ -299,7 +299,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
                 <UsdMoneyClearableInput
                   value={shares}
                   onChange={setShares}
-                  placeholder="Amount"
+                  placeholder="0.00"
                   clearLabel="Clear amount"
                 />
               </Field>
@@ -337,8 +337,9 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
                     min="0"
                     value={price}
                     onChange={setPrice}
-                    placeholder="Price"
+                    placeholder="0.00"
                     clearLabel="Clear price"
+                    leadingAdornment="$"
                   />
                 </Field>
               </div>
@@ -346,7 +347,7 @@ export function EditTransactionModal({ open, onClose, transaction }: Props) {
                 <UsdMoneyClearableInput
                   value={fees}
                   onChange={setFees}
-                  placeholder="Fee"
+                  placeholder="0.00"
                   clearLabel="Clear fees"
                 />
               </Field>

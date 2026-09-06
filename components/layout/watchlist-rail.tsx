@@ -30,6 +30,7 @@ import { readWatchlistDragData, writeWatchlistDragData } from "@/lib/watchlist/w
 import { resolveWatchlistRailHref } from "@/lib/watchlist/watchlist-rail-href";
 import { useWatchlistEnrichedItems } from "@/lib/watchlist/use-watchlist-enriched-items";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
+import { ChangePctParen } from "@/components/screener/change-pct";
 import { cn } from "@/lib/utils";
 
 function globalTickerIndex(watchedTickers: string[], storageKey: string): number {
@@ -52,16 +53,11 @@ function formatRailPrice(n: number | null, kind: WatchlistEnrichedItem["kind"]):
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function formatRailPercent(value: number | null): string {
-  if (value == null || !Number.isFinite(value)) return "";
-  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
-}
-
 function RailPriceSkeleton() {
   return (
-    <div className="ml-auto flex shrink-0 items-center gap-3">
+    <div className="ml-auto flex shrink-0 items-center gap-4">
       <div className="h-5 w-[4.5rem] animate-pulse rounded bg-stroke" />
-      <div className="h-5 w-12 animate-pulse rounded bg-stroke" />
+      <div className="h-5 w-16 animate-pulse rounded bg-stroke" />
     </div>
   );
 }
@@ -84,14 +80,14 @@ function RailChange({ value }: { value: number | null }) {
   }
   const positive = value >= 0;
   return (
-    <span
+    <ChangePctParen
+      value={value}
+      caretSize={12}
       className={cn(
-        "flex h-5 w-full items-center justify-end text-[14px] font-normal leading-5 tabular-nums",
+        "h-5 shrink-0 justify-end text-[14px] font-normal leading-5",
         positive ? "text-up" : "text-down",
       )}
-    >
-      {formatRailPercent(value)}
-    </span>
+    />
   );
 }
 
@@ -176,14 +172,14 @@ function WatchlistRailRow({
       {showQuoteSkeleton ? (
         <RailPriceSkeleton />
       ) : (
-        <div className="ml-auto flex shrink-0 items-center gap-3 font-['Inter'] tabular-nums">
+        <div className="ml-auto flex shrink-0 items-center gap-4 font-['Inter'] tabular-nums">
           {priceText ? (
             <span className="shrink-0 text-right text-[14px] font-normal leading-5 text-fg">
               {priceText}
             </span>
           ) : null}
-          <div className="relative h-5 w-12 shrink-0">
-            <span className="absolute inset-0 flex items-center justify-end group-hover:invisible">
+          <div className="relative h-5 w-16 shrink-0">
+            <span className="absolute inset-0 flex items-center justify-end overflow-hidden group-hover:invisible">
               <RailChange value={row.pct1d} />
             </span>
             <div className="absolute inset-0 hidden items-center justify-end gap-0.5 group-hover:flex">

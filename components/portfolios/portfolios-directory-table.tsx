@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { ChangePctParen } from "@/components/screener/change-pct";
 import {
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
@@ -52,18 +53,30 @@ function metricStringArray(m: Record<string, unknown>, key: string): string[] {
   return v.filter((x): x is string => typeof x === "string").map((s) => s.trim()).filter(Boolean);
 }
 
-function fmtPct(n: number | null): string {
-  if (n == null) return "—";
-  const body = Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (n > 0) return `+${body}%`;
-  if (n < 0) return `-${body}%`;
-  return `${body}%`;
-}
-
 function athReturnClass(n: number | null): string {
   if (n == null || !Number.isFinite(n)) return "text-fg";
   if (Math.abs(n) < 0.0005) return "text-fg";
   return n >= 0 ? "text-up" : "text-down";
+}
+
+function AthReturnCell({ value, className }: { value: number | null; className?: string }) {
+  if (value == null || !Number.isFinite(value)) {
+    return <span className={cn("text-fg-muted", className)}>—</span>;
+  }
+  return (
+    <ChangePctParen
+      value={value}
+      className={cn("justify-end", athReturnClass(value), className)}
+    />
+  );
+}
+
+function listingReturnPct(m: Record<string, unknown>): number | null {
+  return (
+    metricNum(m, "timeWeightedReturnPct") ??
+    metricNum(m, "returnsAthPct") ??
+    metricNum(m, "totalProfitPct")
+  );
 }
 
 function initialsFromOwnerName(name: string): string {
@@ -115,7 +128,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
             )}
           >
             <div className={startCellClass}>Investor</div>
-            <div className={numericHeaderClass}>ATH</div>
+            <div className={numericHeaderClass}>TWR</div>
           </div>
           <div
             className={cn(
@@ -126,7 +139,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
             <div className={startCellClass}>Investor</div>
             <div className={numericHeaderClass}>Value</div>
             <div className={numericHeaderClass}>No. of Holdings</div>
-            <div className={numericHeaderClass}>ATH</div>
+            <div className={numericHeaderClass}>TWR</div>
             <div className={numericHeaderClass}>Top 5 Holdings</div>
           </div>
         </div>
@@ -136,7 +149,7 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
       {listings.map((listing, rowIdx) => {
         const m = listing.metrics;
         const value = metricNum(m, "valueUsd");
-        const ath = metricNum(m, "returnsAthPct") ?? metricNum(m, "totalProfitPct");
+        const twr = listingReturnPct(m);
         const holdingCount = metricNum(m, "holdingCount");
         const ownerName = metricStr(m, "ownerDisplayName") ?? "Member";
         const ownerAvatar = metricStr(m, "ownerAvatarUrl");
@@ -182,10 +195,9 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                   className={cn(
                     "min-w-0 text-right text-[14px] font-medium leading-5 tabular-nums",
                     TABLE_END_ALIGNED_PAD_CLASS,
-                    athReturnClass(ath),
                   )}
                 >
-                  {fmtPct(ath)}
+                  <AthReturnCell value={twr} />
                 </div>
               </div>
 
@@ -221,10 +233,9 @@ export function PortfoliosDirectoryTable({ listings }: { listings: PublicListing
                   className={cn(
                     "min-w-0 text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums",
                     TABLE_END_ALIGNED_PAD_CLASS,
-                    athReturnClass(ath),
                   )}
                 >
-                  {fmtPct(ath)}
+                  <AthReturnCell value={twr} />
                 </div>
 
                 <div

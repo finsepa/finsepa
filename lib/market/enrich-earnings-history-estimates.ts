@@ -250,6 +250,7 @@ function historyRowFromUpcoming(
     epsActualRaw: null,
     secSlidesUrl: null,
     secFilingsUrl: null,
+    postReport1dPct: null,
   };
 }
 
@@ -323,17 +324,37 @@ export function enrichReportedHistoryRevenueFromEstimatesChart(
   }
 
   return history.map((row) => {
-    if (!row.reported || row.revenueActualUsd != null) return row;
+    if (!row.reported) return row;
     const pt =
       (row.fiscalPeriodEndYmd && bySortKey.get(row.fiscalPeriodEndYmd)) ||
       (row.fiscalPeriodLabel && byLabel.get(row.fiscalPeriodLabel)) ||
       null;
-    if (pt?.revenueActualUsd == null) return row;
-    return {
-      ...row,
-      revenueActualUsd: pt.revenueActualUsd,
-      revenueActualDisplay: formatUsdCompact(pt.revenueActualUsd),
-    };
+    if (!pt) return row;
+
+    let next = row;
+    if (next.revenueActualUsd == null && pt.revenueActualUsd != null) {
+      next = {
+        ...next,
+        revenueActualUsd: pt.revenueActualUsd,
+        revenueActualDisplay: formatUsdCompact(pt.revenueActualUsd),
+      };
+    }
+    // History often lacks revenueEstimate while Trend (estimates chart) still has consensus.
+    if (next.revenueEstimateUsd == null && pt.revenueEstimateUsd != null) {
+      next = {
+        ...next,
+        revenueEstimateUsd: pt.revenueEstimateUsd,
+        revenueEstimateDisplay: formatUsdCompact(pt.revenueEstimateUsd),
+      };
+    }
+    if (next.epsEstimateRaw == null && pt.epsEstimate != null) {
+      next = {
+        ...next,
+        epsEstimateRaw: pt.epsEstimate,
+        epsEstimateDisplay: formatEps(pt.epsEstimate),
+      };
+    }
+    return next;
   });
 }
 
@@ -347,6 +368,10 @@ export function buildReportsTableRows(
   upcoming: StockEarningsUpcoming | null,
 ): StockEarningsHistoryRow[] {
   const resolved = resolveUpcomingFromEstimates(upcoming, history, quarterly);
-  const enriched = enrichUnreportedHistoryEstimates(history, quarterly, resolved);
-  return enriched.filter((row) => row.reported);
+  const withUnreported = enrichUnreportedHistoryEstimates(history, quarterly, resolved);
+  const withReportedEstimates = enrichReportedHistoryRevenueFromEstimatesChart(
+    withUnreported,
+    quarterly,
+  );
+  return withReportedEstimates.filter((row) => row.reported);
 }

@@ -86,6 +86,10 @@
     {
       "path": "/api/cron/key-indicators-warm?shard=3",
       "schedule": "30 6 * * 3"
+    },
+    {
+      "path": "/api/cron/insider-transactions-warm",
+      "schedule": "45 11 * * 1-5"
     }
   ]
 }

@@ -64,15 +64,16 @@ export function SuperinvestorsPageShell({ children }: { children: ReactNode }) {
 
 export function SuperinvestorsFundTableSection({ rows }: { rows: SuperinvestorsFundRowModel[] }) {
   const { view } = useSuperinvestorsListView();
-  const { followed, hydrated, isFollowing } = useSuperinvestorFollow();
+  const { followed, hydrated, loaded, isFollowing } = useSuperinvestorFollow();
 
   const visibleRows = useMemo(() => {
     if (view === "all") return rows;
-    if (!hydrated) return [];
+    // Wait for server sync when signed in so localStorage leftovers (e.g. Buffett) don't flash.
+    if (!hydrated || !loaded) return [];
     return rows.filter((r) => isFollowing(r.href));
-  }, [view, rows, hydrated, isFollowing, followed]);
+  }, [view, rows, hydrated, loaded, isFollowing, followed]);
 
-  if (view === "following" && hydrated && visibleRows.length === 0) {
+  if (view === "following" && hydrated && loaded && visibleRows.length === 0) {
     return (
       <Empty variant="card" className="min-h-[min(40vh,320px)]">
         <EmptyHeader>

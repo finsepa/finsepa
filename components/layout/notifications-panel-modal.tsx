@@ -23,6 +23,7 @@ import {
 import { EarningsNotificationCard } from "@/components/layout/earnings-notification-card";
 import { SuperinvestorActivityNotificationCard } from "@/components/layout/superinvestor-activity-notification-card";
 import { Spinner } from "@/components/ui/spinner";
+import { PillSwitch } from "@/components/ui/pill-switch";
 import {
   parseEarningsNotificationPayload,
   resolveNotificationTicker,
@@ -78,31 +79,14 @@ function NotificationPillSwitch({
   "aria-label": string;
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={pressed}
-      aria-label={ariaLabel}
+    <PillSwitch
+      pressed={pressed}
+      onPressedChange={onPressedChange}
       disabled={disabled}
-      onClick={(e) => {
-        e.stopPropagation();
-        onPressedChange(!pressed);
-      }}
-      className={cn(
-        "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
-        pressed ? "bg-accent" : "bg-stroke",
-        disabled && "cursor-not-allowed opacity-50",
-        className,
-      )}
-    >
-      <span
-        className={cn(
-          "pointer-events-none absolute left-0.5 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-switch-thumb-off shadow-sm transition-[transform,background-color]",
-          pressed && "translate-x-4 bg-switch-thumb",
-        )}
-        aria-hidden
-      />
-    </button>
+      className={className}
+      aria-label={ariaLabel}
+      stopPropagation
+    />
   );
 }
 

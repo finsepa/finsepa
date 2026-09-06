@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDown, ArrowUp } from "@/lib/icons";
 import { useEffect, useMemo, useState } from "react";
 
+import { ChangeCaretIcon } from "@/components/screener/change-pct";
 import { FadeIn } from "@/components/markets/skeleton";
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { IndexCardData } from "@/lib/screener/indices-today";
@@ -40,8 +40,7 @@ function formatIndexValue(price: number | null): string {
 
 function formatChangePercent(changePercent1D: number | null): string {
   if (changePercent1D == null || !Number.isFinite(changePercent1D)) return "—";
-  const sign = changePercent1D >= 0 ? "+" : "";
-  return `${sign}${changePercent1D.toFixed(2)}%`;
+  return `${Math.abs(changePercent1D).toFixed(2)}%`;
 }
 
 function entriesFromCards(cards: IndexCardData[]): IndexEntry[] {
@@ -50,9 +49,10 @@ function entriesFromCards(cards: IndexCardData[]): IndexEntry[] {
   return SCREENER_INDEX_CARD_LABELS.map((name) => {
     const c = byName.get(name);
     const value = formatIndexValue(c?.price ?? null);
-    const change = formatChangePercent(c?.changePercent1D ?? null);
+    const pct = c?.changePercent1D ?? null;
+    const change = formatChangePercent(pct);
     const neutral = change === "—" || value === "—";
-    const positive = !neutral && !change.startsWith("-");
+    const positive = !neutral && (pct ?? 0) >= 0;
     return { name, value, change, positive, neutral };
   });
 }
@@ -132,7 +132,6 @@ export function IndexCards({
       <div className={INDEX_CARDS_SCROLL_CLASS} aria-label="Market indices">
         <div className={INDEX_CARDS_GRID_CLASS}>
         {entries.map(({ name, value, change, positive, neutral }) => {
-          const TrendIcon = neutral ? null : positive ? ArrowUp : ArrowDown;
           const symbol = MARKET_INDICES_TODAY.find((row) => row.name === name)?.eodhdSymbol;
           const href = symbol ? indexAssetHref(symbol) : null;
           const body = (
@@ -150,13 +149,15 @@ export function IndexCards({
               </FadeIn>
               <FadeIn show={fadeIn}>
                 <div
-                  className={`flex w-full items-center gap-1 text-left text-[13px] font-medium leading-4 tabular-nums sm:text-[14px] sm:leading-5 ${
+                  className={`inline-flex w-full items-center gap-1 text-left text-[13px] font-medium leading-4 tabular-nums sm:text-[14px] sm:leading-5 ${
                     neutral ? "text-fg-muted" : positive ? "text-up" : "text-down"
                   }`}
                   suppressHydrationWarning
                 >
+                  {neutral ? null : (
+                    <ChangeCaretIcon direction={positive ? "up" : "down"} />
+                  )}
                   <span className="truncate">{change}</span>
-                  {TrendIcon ? <TrendIcon className="h-4 w-4 shrink-0" aria-hidden /> : null}
                 </div>
               </FadeIn>
             </>

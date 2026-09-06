@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 
+import { ChangePct } from "@/components/screener/change-pct";
 import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import {
   DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
@@ -43,25 +44,13 @@ const numCellClass = cn(
   TABLE_END_ALIGNED_PAD_CLASS,
 );
 
-function formatYoyPct(pct: number | null): { text: string; tone: "up" | "down" | "muted" } {
-  if (pct == null || !Number.isFinite(pct)) return { text: "-", tone: "muted" };
-  const text = `${pct > 0 ? "+" : ""}${pct.toFixed(2)}%`;
-  if (pct > 0) return { text, tone: "up" };
-  if (pct < 0) return { text, tone: "down" };
-  return { text, tone: "muted" };
-}
-
 function YoyCell({ pct }: { pct: number | null }) {
-  const { text, tone } = formatYoyPct(pct);
   return (
-    <div
-      className={cn(
-        numCellClass,
-        tone === "up" ? "text-up" : tone === "down" ? "text-down" : "text-fg-muted",
-      )}
-    >
-      {text}
-    </div>
+    <ChangePct
+      value={pct}
+      className={numCellClass}
+      textClassName="font-['Inter'] text-[14px] font-normal leading-5"
+    />
   );
 }
 

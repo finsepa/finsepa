@@ -299,6 +299,7 @@ export function getNvdaStockEarningsTabPayload(): StockEarningsTabPayload {
         epsActualRaw: 1.05,
         secSlidesUrl: null,
         secFilingsUrl: null,
+        postReport1dPct: null,
       },
       {
         fiscalPeriodEndYmd: "2025-07-31",
@@ -318,6 +319,7 @@ export function getNvdaStockEarningsTabPayload(): StockEarningsTabPayload {
         epsActualRaw: 0.82,
         secSlidesUrl: null,
         secFilingsUrl: null,
+        postReport1dPct: null,
       },
       {
         fiscalPeriodEndYmd: "2025-04-30",
@@ -337,6 +339,7 @@ export function getNvdaStockEarningsTabPayload(): StockEarningsTabPayload {
         epsActualRaw: 0.76,
         secSlidesUrl: null,
         secFilingsUrl: null,
+        postReport1dPct: null,
       },
     ]),
     estimatesChart: nvdaEstimatesChartFixture(),

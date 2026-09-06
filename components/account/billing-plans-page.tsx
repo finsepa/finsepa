@@ -115,6 +115,8 @@ function BilledYearlyToggle({
   checked: boolean;
   onCheckedChange: (next: boolean) => void;
 }) {
+  const [hot, setHot] = useState(false);
+
   return (
     <button
       type="button"
@@ -122,6 +124,10 @@ function BilledYearlyToggle({
       aria-checked={checked}
       aria-label="Billed yearly"
       onClick={() => onCheckedChange(!checked)}
+      onMouseEnter={() => setHot(true)}
+      onMouseLeave={() => setHot(false)}
+      onFocus={() => setHot(true)}
+      onBlur={() => setHot(false)}
       className="group flex min-h-[22px] items-center gap-2.5 text-left"
     >
       <span
@@ -132,8 +138,9 @@ function BilledYearlyToggle({
       >
         <span
           className={cn(
-            "absolute top-[3px] left-[3px] size-4 rounded-full bg-white shadow-sm transition-transform duration-150",
-            checked && "translate-x-[18px]",
+            "absolute top-[3px] h-4 rounded-full bg-white shadow-sm transition-[width] duration-150 ease-out motion-reduce:transition-none",
+            hot ? "w-[18px]" : "w-4",
+            checked ? "right-[3px]" : "left-[3px]",
           )}
         />
       </span>

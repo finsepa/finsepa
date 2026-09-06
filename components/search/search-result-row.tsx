@@ -5,6 +5,7 @@ import Link from "next/link";
 import { X } from "@/lib/icons";
 
 import { dropdownMenuRichItemClassName } from "@/components/design-system/dropdown-menu-styles";
+import { CompanyLogo } from "@/components/screener/company-logo";
 import { SuperinvestorFollowStarToggle } from "@/components/superinvestors/superinvestor-follow-star-toggle";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
 import type { WatchlistCollection } from "@/lib/watchlist/collections";
@@ -16,7 +17,23 @@ import { withLogoDevTheme } from "@/lib/screener/company-logo-url";
 import { useClientMounted, useLogoDevTheme } from "@/lib/theme/use-logo-dev-theme";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 
+/** Same 32×32 `CompanyLogo` chrome as Markets screener rows (incl. BTC fill scale). */
 export function SearchResultLogo({ item }: { item: SearchAssetItem }) {
+  if (item.type !== "superinvestor") {
+    return (
+      <CompanyLogo
+        name={item.name}
+        logoUrl={item.logoUrl ?? ""}
+        symbol={item.symbol}
+        size="md"
+      />
+    );
+  }
+
+  return <SearchSuperinvestorLogo item={item} />;
+}
+
+function SearchSuperinvestorLogo({ item }: { item: SearchAssetItem }) {
   const logoTheme = useLogoDevTheme();
   const mounted = useClientMounted();
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -33,18 +50,15 @@ export function SearchResultLogo({ item }: { item: SearchAssetItem }) {
 
   if (src && !imgErr) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- remote favicon or public superinvestor avatar
+      // eslint-disable-next-line @next/next/no-img-element -- public superinvestor avatar
       <img
         src={src}
         alt=""
         width={32}
         height={32}
         className={cn(
-          "h-8 w-8 shrink-0 border border-stroke-muted bg-surface object-contain",
-          item.type === "superinvestor" ? "rounded-full object-cover" : "rounded-lg",
-          item.type === "superinvestor" &&
-            (src.includes("blackrock") || src.includes("baillie-gifford")) &&
-            "bg-[#141414] p-1",
+          "h-8 w-8 shrink-0 rounded-full border border-stroke-muted bg-surface object-cover",
+          (src.includes("blackrock") || src.includes("baillie-gifford")) && "bg-[#141414] p-1",
         )}
         onError={() => {
           setFailedSrc(src);
@@ -53,18 +67,15 @@ export function SearchResultLogo({ item }: { item: SearchAssetItem }) {
       />
     );
   }
-  const initials =
-    item.type === "superinvestor"
-      ? item.name
-          .split(/\s+/)
-          .filter(Boolean)
-          .slice(0, 2)
-          .map((w) => w[0])
-          .join("")
-          .toUpperCase()
-      : item.symbol.slice(0, 2).toUpperCase();
+  const initials = item.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-stroke bg-surface-muted text-[10px] font-bold text-fg">
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-stroke bg-surface-muted text-[10px] font-bold text-fg">
       {initials}
     </div>
   );
@@ -243,10 +254,10 @@ function SearchResultRowInner({
       <SearchResultLogo item={item} />
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium text-fg underline-offset-2 decoration-fg group-hover:underline group-data-[active=true]:underline">
-          {item.name}
+          {item.type === "crypto" ? eodhdCryptoSpotTickerDisplay(item.symbol) : item.symbol}
         </div>
         <div className="truncate text-[12px] text-fg-muted">
-          {item.type === "crypto" ? eodhdCryptoSpotTickerDisplay(item.symbol) : item.symbol}
+          {item.name}
         </div>
       </div>
     </Link>

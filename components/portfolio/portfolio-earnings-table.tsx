@@ -19,7 +19,7 @@ import {
 import { SkeletonBox } from "@/components/markets/skeleton";
 import { EarningsCountdownBars } from "@/components/stock/earnings-countdown-bars";
 import {
-  formatPortfolioEarningsDateLabel,
+  normalizePortfolioFiscalQuarter,
   type PortfolioEarningsDateEntry,
 } from "@/lib/portfolio/portfolio-earnings-dates";
 import type { PortfolioHoldingAssetLinkTab } from "@/lib/crypto/crypto-picker-universe";
@@ -143,6 +143,56 @@ function DaysLeftCell({
   );
 }
 
+function EarningsDateCell({
+  dateLabel,
+  quarterLabel,
+  loading,
+  compact = false,
+}: {
+  dateLabel: string | null;
+  quarterLabel: string | null;
+  loading: boolean;
+  compact?: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className={cn("flex flex-col", compact ? "items-end gap-1" : "items-end gap-0.5")}>
+        <SkeletonBox className={cn("rounded", compact ? "h-3 w-20" : "h-4 w-24")} />
+        {!compact ? <SkeletonBox className="h-3 w-8 rounded" /> : null}
+      </div>
+    );
+  }
+  if (!dateLabel || dateLabel === EM_DASH) {
+    return (
+      <span
+        className={cn(
+          "tabular-nums",
+          compact ?
+            "font-['Inter'] text-[12px] font-medium leading-4 text-fg-muted"
+          : "font-['Inter'] text-[14px] font-medium leading-5 text-fg",
+        )}
+      >
+        {EM_DASH}
+      </span>
+    );
+  }
+  return (
+    <div className="flex min-w-0 flex-col items-end">
+      <div
+        className={cn(
+          "font-['Inter'] font-medium tabular-nums",
+          compact ? "text-[12px] leading-4 text-fg-muted" : "text-[14px] leading-5 text-fg",
+        )}
+      >
+        {dateLabel}
+      </div>
+      {quarterLabel ?
+        <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{quarterLabel}</div>
+      : null}
+    </div>
+  );
+}
+
 function PortfolioEarningsTableInner({
   holdings,
   className,
@@ -219,21 +269,24 @@ function PortfolioEarningsTableInner({
   }, [stockSymbolsKey]);
 
   function rowMeta(symbol: string): {
-    earningsLabel: string;
+    dateLabel: string | null;
+    quarterLabel: string | null;
     daysLeft: number | null;
     metaLoading: boolean;
   } {
     const entry = bySymbol?.[holdingLookupKey(symbol)];
     if (entry?.notApplicable) {
-      return { earningsLabel: EM_DASH, daysLeft: null, metaLoading: false };
+      return { dateLabel: EM_DASH, quarterLabel: null, daysLeft: null, metaLoading: false };
     }
     const metaLoading = entry == null;
-    const display = formatPortfolioEarningsDateLabel({
-      earningsDateDisplay: entry?.earningsDateDisplay ?? null,
-      fiscalQuarter: entry?.fiscalQuarter ?? null,
-    });
-    const earningsLabel = display ? display : metaLoading ? "…" : EM_DASH;
-    return { earningsLabel, daysLeft: entry?.daysLeft ?? null, metaLoading };
+    const dateLabel = entry?.earningsDateDisplay?.trim() || null;
+    const quarterLabel = normalizePortfolioFiscalQuarter(entry?.fiscalQuarter);
+    return {
+      dateLabel: dateLabel ?? (metaLoading ? null : EM_DASH),
+      quarterLabel,
+      daysLeft: entry?.daysLeft ?? null,
+      metaLoading,
+    };
   }
 
   function openEarningsPreview(holding: PortfolioHolding) {
@@ -277,7 +330,7 @@ function PortfolioEarningsTableInner({
             const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
             const caption = portfolioAssetSymbolCaption(h.symbol);
             const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
-            const { earningsLabel, daysLeft, metaLoading } = rowMeta(h.symbol);
+            const { dateLabel, quarterLabel, daysLeft, metaLoading } = rowMeta(h.symbol);
 
             return (
               <div key={h.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
@@ -296,17 +349,18 @@ function PortfolioEarningsTableInner({
                   <div className="flex min-w-0 flex-1 items-center gap-3">
                     <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                     <div className="min-w-0">
-                      <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                      <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{caption}</div>
+                      <div className={HOLDING_COMPANY_NAME_CLASS}>{caption}</div>
+                      <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{companyName}</div>
                     </div>
                   </div>
                   <div className="flex min-w-0 shrink-0 flex-col items-end gap-1">
                     <DaysLeftCell daysLeft={daysLeft} loading={metaLoading} compact />
-                    <div className="font-['Inter'] text-[12px] font-medium leading-4 tabular-nums text-fg-muted">
-                      {earningsLabel === "…" ?
-                        <SkeletonBox className="ml-auto h-3 w-20 rounded" />
-                      : earningsLabel}
-                    </div>
+                    <EarningsDateCell
+                      dateLabel={dateLabel}
+                      quarterLabel={quarterLabel}
+                      loading={metaLoading}
+                      compact
+                    />
                   </div>
                 </div>
                 {i < sortedHoldings.length - 1 ? (
@@ -350,7 +404,7 @@ function PortfolioEarningsTableInner({
               const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
               const caption = portfolioAssetSymbolCaption(h.symbol);
               const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
-              const { earningsLabel, daysLeft, metaLoading } = rowMeta(h.symbol);
+              const { dateLabel, quarterLabel, daysLeft, metaLoading } = rowMeta(h.symbol);
               return (
                 <div key={h.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
                   <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
@@ -373,22 +427,19 @@ function PortfolioEarningsTableInner({
                       <div className={cn("flex min-w-0 items-center gap-3", TABLE_START_ALIGNED_PAD_CLASS)}>
                         <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
                         <div className="min-w-0 text-left">
-                          <div className={HOLDING_COMPANY_NAME_CLASS}>{companyName}</div>
-                          <div className="text-[12px] font-normal leading-4 text-fg-muted">{caption}</div>
+                          <div className={HOLDING_COMPANY_NAME_CLASS}>{caption}</div>
+                          <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{companyName}</div>
                         </div>
                       </div>
                       <div className="min-w-0">
                         <DaysLeftCell daysLeft={daysLeft} loading={metaLoading} />
                       </div>
-                      <div
-                        className={cn(
-                          "min-w-0 w-full text-right font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-fg",
-                          TABLE_END_ALIGNED_PAD_CLASS,
-                        )}
-                      >
-                        {earningsLabel === "…" ?
-                          <SkeletonBox className="ml-auto h-4 w-24 rounded" />
-                        : earningsLabel}
+                      <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
+                        <EarningsDateCell
+                          dateLabel={dateLabel}
+                          quarterLabel={quarterLabel}
+                          loading={metaLoading}
+                        />
                       </div>
                     </div>
                   </div>

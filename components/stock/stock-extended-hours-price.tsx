@@ -4,7 +4,8 @@ import { isPositivePriceChange } from "@/lib/chart/reconcile-price-change";
 import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours-header-types";
-import { formatSignedPercent2dp, formatSignedUsdAmountGrouped2dp, formatUsdPrice } from "@/lib/market/key-stats-basic-format";
+import { ChangePctParen } from "@/components/screener/change-pct";
+import { formatSignedUsdAmountGrouped2dp, formatUsdPrice } from "@/lib/market/key-stats-basic-format";
 
 const EXTENDED_HOURS_TIMING_ICON_PX = 14;
 
@@ -37,15 +38,18 @@ export function StockExtendedHoursPrice({ quote, loading = false }: Props) {
 
   const isPositive = isPositivePriceChange(quote.extendedChangeAbs, quote.extendedChangePct);
   const changeClass = isPositive ? "text-up" : "text-down";
-  const changeText = `${formatSignedUsdAmountGrouped2dp(quote.extendedChangeAbs)} (${formatSignedPercent2dp(quote.extendedChangePct)})`;
 
   return (
     <div className={extendedHoursShellClass}>
-      <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className="text-[22px] font-semibold leading-8 tabular-nums text-fg sm:text-[24px] sm:leading-8">
           {formatUsdPrice(quote.extendedPrice)}
         </span>
-        <span className={`text-[15px] font-medium tabular-nums ${changeClass}`}>{changeText}</span>
+        <ChangePctParen
+          absText={formatSignedUsdAmountGrouped2dp(quote.extendedChangeAbs)}
+          value={quote.extendedChangePct}
+          className={`text-[15px] font-medium tabular-nums ${changeClass}`}
+        />
       </div>
       <p className="mt-0.5 flex items-center gap-1.5 text-[13px] leading-5 text-fg-muted">
         {quote.session === "pre" ? (

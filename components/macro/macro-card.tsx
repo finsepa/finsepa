@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Maximize2, TrendingDown, TrendingUp } from "@/lib/icons";
+import { Maximize2 } from "@/lib/icons";
 
+import { MacroChangeDisplay } from "@/components/macro/macro-change-display";
 import { MacroChartModal } from "@/components/macro/macro-chart-modal";
 import { MacroSparkline, type MacroChartVariant } from "@/components/macro/macro-sparkline";
 import {
@@ -10,7 +11,7 @@ import {
   prepareMacroPointsForRange,
   type MacroRangeId,
 } from "@/components/macro/macro-range";
-import { formatMacroChange, formatMacroPeriodCaption, formatMacroValue } from "@/components/macro/macro-format";
+import { formatMacroPeriodCaption, formatMacroValue } from "@/components/macro/macro-format";
 import {
   EARNINGS_CARD_LABEL_CLASS,
   EARNINGS_CARD_PRIOR_LINE_CLASS,
@@ -53,17 +54,14 @@ export function MacroCard({
   const latestValue = windowedModel.latest?.value ?? null;
   const latestText = latestValue == null ? "—" : formatMacroValue(windowedModel.kind, latestValue);
 
-  const changeText = useMemo(() => {
-    if (!windowedModel.change) return null;
-    return formatMacroChange(windowedModel.kind, windowedModel.change.abs, windowedModel.change.pct);
-  }, [windowedModel.change, windowedModel.kind]);
+  const change = windowedModel.change;
 
   const priorPeriodLabel = useMemo(() => {
     if (windowedModel.points.length < 2) return null;
     return formatMacroPeriodCaption(windowedModel.points[windowedModel.points.length - 2]!.time);
   }, [windowedModel.points]);
 
-  const changeDelta = windowedModel.change?.abs ?? null;
+  const changeDelta = change?.abs ?? null;
 
   return (
     <>
@@ -74,14 +72,13 @@ export function MacroCard({
             {latestValue != null && Number.isFinite(latestValue) ? (
               <div className="mt-1 flex min-w-0 flex-col items-start gap-0.5">
                 <span className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}>{latestText}</span>
-                {changeText && changeDelta != null ? (
-                  <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 font-['Inter'] text-[14px] font-medium tabular-nums leading-5">
-                    {changeDelta > 0 ? (
-                      <TrendingUp className="h-3.5 w-3.5 shrink-0 text-up" strokeWidth={2.25} aria-hidden />
-                    ) : changeDelta < 0 ? (
-                      <TrendingDown className="h-3.5 w-3.5 shrink-0 text-down" strokeWidth={2.25} aria-hidden />
-                    ) : null}
-                    <span className={changeDelta >= 0 ? "text-up" : "text-down"}>{changeText}</span>
+                {change && changeDelta != null ? (
+                  <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 font-['Inter'] text-[14px] font-medium leading-5">
+                    <MacroChangeDisplay
+                      kind={windowedModel.kind}
+                      abs={change.abs}
+                      pct={change.pct}
+                    />
                     {priorPeriodLabel ? (
                       <span className={EARNINGS_CARD_PRIOR_LINE_CLASS}>vs {priorPeriodLabel}</span>
                     ) : null}

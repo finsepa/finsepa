@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { memo, useRef, type UIEvent } from "react";
 import type { ScreenerTableRow } from "@/lib/screener/screener-static";
 import type { WatchlistCollection } from "@/lib/watchlist/collections";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
+import { IntentPrefetchLink } from "@/components/layout/intent-prefetch-link";
+import { ChangePct, formatSignedChangePct, ChangeCaretIcon } from "@/components/screener/change-pct";
 import { CompanyLogo } from "./company-logo";
 import { TABLE_END_ALIGNED_PAD_CLASS } from "@/components/screener/screener-table-pad";
 import {
@@ -21,10 +22,6 @@ import {
 } from "@/components/screener/screener-table-scroll";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
-
-function formatPercentValue(value: number) {
-  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
-}
 
 /** Keep header/body columns aligned when the table is wider than the viewport. */
 function useSyncedHorizontalScroll() {
@@ -59,21 +56,7 @@ const screenerTableWideHeaderScrollClass =
   "overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
 
 function ChangeCell({ value }: { value: number | null }) {
-  if (value == null || !Number.isFinite(value)) {
-    return (
-      <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-fg-muted">-</div>
-    );
-  }
-  const positive = value >= 0;
-  return (
-    <div
-      className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
-        positive ? "text-up" : "text-down"
-      }`}
-    >
-      {formatPercentValue(value)}
-    </div>
-  );
+  return <ChangePct value={value} />;
 }
 
 function PriceAndChangeCell({ price, change1D }: { price: number | null; change1D: number | null }) {
@@ -86,11 +69,19 @@ function PriceAndChangeCell({ price, change1D }: { price: number | null; change1
         {hasPrice ? `$${price!.toFixed(2)}` : "-"}
       </div>
       <div
-        className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
-          !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down"
-        }`}
+        className={cn(
+          "mt-0.5 inline-flex min-w-0 w-full items-center justify-end gap-1 text-[12px] font-medium leading-4 tabular-nums",
+          !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down",
+        )}
       >
-        {hasChange ? formatPercentValue(change1D!) : "-"}
+        {hasChange ? (
+          <>
+            <ChangeCaretIcon direction={positive ? "up" : "down"} />
+            <span className="min-w-0 truncate">{formatSignedChangePct(change1D!)}</span>
+          </>
+        ) : (
+          "-"
+        )}
       </div>
     </div>
   );
@@ -212,7 +203,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
           activeWatchlistId={activeWatchlistId}
         />
 
-        <Link
+        <IntentPrefetchLink
           href={`/stock/${encodeURIComponent(item.ticker)}`}
           prefetch={false}
           className={cn(
@@ -227,10 +218,10 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
             <CompanyLogo name={item.name} logoUrl={item.logoUrl} symbol={item.ticker} />
             <div className="min-w-0">
               <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
-                {item.name}
+                {item.ticker}
               </div>
-              <div className="text-[12px] font-normal leading-4 text-fg-muted">
-                <span>{item.ticker}</span>
+              <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                <span>{item.name}</span>
                 <span className="sm:hidden">
                   {typeof item.marketCap === "string" && item.marketCap.trim() && item.marketCap.trim() !== "-" ?
                     ` · ${item.marketCap.trim()}`
@@ -282,7 +273,7 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
               {keyStatDisplays[i]}
             </div>
           ))}
-        </Link>
+        </IntentPrefetchLink>
         </div>
       </div>
       {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}

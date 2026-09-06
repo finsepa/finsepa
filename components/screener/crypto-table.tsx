@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
 
 import { CompanyLogo } from "./company-logo";
+import { IntentPrefetchLink } from "@/components/layout/intent-prefetch-link";
+import { ChangeCaretIcon, ChangePct, formatSignedChangePct } from "@/components/screener/change-pct";
 import { TABLE_END_ALIGNED_PAD_CLASS } from "@/components/screener/screener-table-pad";
 import {
   SCREENER_TABLE_DATA_ROW_CLASS,
@@ -24,11 +25,6 @@ import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
 
-function formatPercent(value: number | null) {
-  if (value == null || !Number.isFinite(value)) return "-";
-  return `${value > 0 ? "+" : ""}${value.toFixed(2)}%`;
-}
-
 /** Sub-cent meme coins need more precision than 2–4 fixed decimals (avoids `$0`). */
 function formatCryptoScreenerUsdPrice(value: number): string {
   if (!Number.isFinite(value) || value <= 0) return "-";
@@ -42,17 +38,7 @@ function formatCryptoScreenerUsdPrice(value: number): string {
 }
 
 function ChangeCell({ value }: { value: number | null }) {
-  const isMissing = value == null || !Number.isFinite(value);
-  const positive = !isMissing && value! >= 0;
-  return (
-    <div
-      className={`min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium ${
-        isMissing ? "text-fg-muted" : positive ? "text-up" : "text-down"
-      }`}
-    >
-      {formatPercent(value)}
-    </div>
-  );
+  return <ChangePct value={value} />;
 }
 
 function PriceAndChangeCell({
@@ -75,11 +61,19 @@ function PriceAndChangeCell({
         {hasPrice ? formatCryptoScreenerUsdPrice(price!) : "-"}
       </div>
       <div
-        className={`mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums ${
-          !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down"
-        }`}
+        className={cn(
+          "mt-0.5 inline-flex min-w-0 w-full items-center justify-end gap-1 text-[12px] font-medium leading-4 tabular-nums",
+          !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down",
+        )}
       >
-        {formatPercent(change1D)}
+        {hasChange ? (
+          <>
+            <ChangeCaretIcon direction={positive ? "up" : "down"} />
+            <span className="min-w-0 truncate">{formatSignedChangePct(change1D!)}</span>
+          </>
+        ) : (
+          "-"
+        )}
       </div>
     </div>
   );
@@ -165,7 +159,7 @@ export function CryptoTable({
                       watchlists={watchlists}
                       activeWatchlistId={activeWatchlistId}
                     />
-                    <Link
+                    <IntentPrefetchLink
                       href={`/crypto/${encodeURIComponent(r.symbol)}`}
                       prefetch={false}
                       className={cn(
@@ -180,10 +174,10 @@ export function CryptoTable({
                         <CompanyLogo name={r.symbol} logoUrl={r.logoUrl} symbol={r.symbol} />
                         <div className="min-w-0">
                           <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
-                            {r.name}
-                          </div>
-                          <div className="text-[12px] font-normal leading-4 text-fg-muted">
                             {eodhdCryptoSpotTickerDisplay(r.symbol)}
+                          </div>
+                          <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                            {r.name}
                           </div>
                         </div>
                       </div>
@@ -221,7 +215,7 @@ export function CryptoTable({
                       >
                         {r.marketCap === "-" ? "-" : r.marketCap}
                       </div>
-                    </Link>
+                    </IntentPrefetchLink>
                   </div>
                 </div>
                 {i < safeRows.length - 1 ? (

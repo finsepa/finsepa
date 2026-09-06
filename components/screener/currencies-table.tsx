@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
+import { ChangeCaretIcon, ChangePct, formatSignedChangePct } from "@/components/screener/change-pct";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
 import { TABLE_END_ALIGNED_PAD_CLASS } from "@/components/screener/screener-table-pad";
 import {
@@ -28,27 +29,8 @@ function formatFxRate(v: number): string {
   return v.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
-function formatPercent(v: number | null): string {
-  if (v == null || !Number.isFinite(v)) return "-";
-  const sign = v >= 0 ? "+" : "";
-  return `${sign}${v.toFixed(2)}%`;
-}
-
 function ChangeCell({ value }: { value: number | null }) {
-  if (value == null || !Number.isFinite(value)) {
-    return <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-fg-muted">-</div>;
-  }
-  const positive = value >= 0;
-  return (
-    <div
-      className={cn(
-        "min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium",
-        positive ? "text-up" : "text-down",
-      )}
-    >
-      {formatPercent(value)}
-    </div>
-  );
+  return <ChangePct value={value} />;
 }
 
 function ValueAndChangeCell({ value, change1D }: { value: number; change1D: number | null }) {
@@ -62,11 +44,18 @@ function ValueAndChangeCell({ value, change1D }: { value: number; change1D: numb
       </div>
       <div
         className={cn(
-          "mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums",
+          "mt-0.5 inline-flex min-w-0 w-full items-center justify-end gap-1 text-[12px] font-medium leading-4 tabular-nums",
           !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down",
         )}
       >
-        {formatPercent(change1D)}
+        {hasChange ? (
+          <>
+            <ChangeCaretIcon direction={positive ? "up" : "down"} />
+            <span className="min-w-0 truncate">{formatSignedChangePct(change1D!)}</span>
+          </>
+        ) : (
+          "-"
+        )}
       </div>
     </div>
   );
@@ -156,9 +145,9 @@ export function CurrenciesTable({
                           href={currencyAssetHref(r.symbol)}
                           className="block min-w-0 truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted hover:underline group-hover/row:underline"
                         >
-                          {r.name}
+                          {r.code}
                         </Link>
-                        <div className="mt-0.5 truncate text-[12px] font-medium leading-4 text-fg-muted">{r.code}</div>
+                        <div className="mt-0.5 truncate text-[12px] font-medium leading-4 text-fg-muted">{r.name}</div>
                       </div>
                       <div className="block sm:hidden">
                         <ValueAndChangeCell value={r.value} change1D={r.change1D} />

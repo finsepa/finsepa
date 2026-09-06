@@ -249,9 +249,7 @@ function IndicesRowSkeleton({ showDivider }: { showDivider: boolean }) {
         <div className="flex justify-center">
           <TextSkeleton wClass="w-4" hClass="h-3.5" />
         </div>
-        <div className="flex min-w-0 justify-start">
-          <TextSkeleton wClass="w-[45%] max-w-[180px]" />
-        </div>
+        <CompanyCellSkeleton nameWidth="w-14" />
         <div className="flex justify-end sm:hidden">
           <TextSkeleton wClass="w-20" />
         </div>

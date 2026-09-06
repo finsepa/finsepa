@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
+import { ChangeCaretIcon, ChangePct, formatSignedChangePct } from "@/components/screener/change-pct";
+import { CompanyLogo } from "@/components/screener/company-logo";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
+import { IntentPrefetchLink } from "@/components/layout/intent-prefetch-link";
 import { TABLE_END_ALIGNED_PAD_CLASS } from "@/components/screener/screener-table-pad";
 import {
   SCREENER_TABLE_DATA_ROW_CLASS,
@@ -15,7 +17,7 @@ import {
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { WatchlistStarToggle } from "@/components/watchlist/watchlist-star-button";
-import { indexAssetHref } from "@/lib/market/index-page-shared";
+import { indexAssetHref, indexDisplayCode } from "@/lib/market/index-page-shared";
 import { indexWatchlistKey } from "@/lib/watchlist/constants";
 import { SCREENER_INDICES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
@@ -35,27 +37,8 @@ function formatValue(v: number): string {
   return v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function formatPercent(v: number | null): string {
-  if (v == null || !Number.isFinite(v)) return "-";
-  const sign = v >= 0 ? "+" : "";
-  return `${sign}${v.toFixed(2)}%`;
-}
-
 function ChangeCell({ value }: { value: number | null }) {
-  if (value == null || !Number.isFinite(value)) {
-    return <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-fg-muted">-</div>;
-  }
-  const positive = value >= 0;
-  return (
-    <div
-      className={cn(
-        "min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium",
-        positive ? "text-up" : "text-down",
-      )}
-    >
-      {formatPercent(value)}
-    </div>
-  );
+  return <ChangePct value={value} />;
 }
 
 function ValueAndChangeCell({ value, change1D }: { value: number; change1D: number | null }) {
@@ -69,11 +52,18 @@ function ValueAndChangeCell({ value, change1D }: { value: number; change1D: numb
       </div>
       <div
         className={cn(
-          "mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums",
+          "mt-0.5 inline-flex min-w-0 w-full items-center justify-end gap-1 text-[12px] font-medium leading-4 tabular-nums",
           !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down",
         )}
       >
-        {formatPercent(change1D)}
+        {hasChange ? (
+          <>
+            <ChangeCaretIcon direction={positive ? "up" : "down"} />
+            <span className="min-w-0 truncate">{formatSignedChangePct(change1D!)}</span>
+          </>
+        ) : (
+          "-"
+        )}
       </div>
     </div>
   );
@@ -161,10 +151,20 @@ export function IndicesTable({
                     />
                     <div className={cn(rowGrid, "min-h-[56px] w-full items-center sm:min-h-[60px]")}>
                       <div className={mobileRankCellClass}>{rankOffset + i + 1}</div>
-                      <div className="min-w-0 w-full text-left text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
-                        <Link href={indexAssetHref(r.symbol)} className="block min-w-0 truncate hover:underline">
-                          {r.name}
-                        </Link>
+                      <div className="flex min-w-0 items-center justify-start gap-[12px] pr-0 text-left sm:pr-4">
+                        <CompanyLogo name={r.name} logoUrl="" symbol={r.symbol} />
+                        <div className="min-w-0">
+                          <IntentPrefetchLink
+                            href={indexAssetHref(r.symbol)}
+                            prefetch={false}
+                            className="block min-w-0 truncate text-[14px] font-semibold leading-5 text-fg no-underline underline-offset-2 decoration-fg-muted hover:underline group-hover/row:underline visited:text-fg"
+                          >
+                            {indexDisplayCode(r.symbol)}
+                          </IntentPrefetchLink>
+                          <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                            {r.name}
+                          </div>
+                        </div>
                       </div>
                       <div className="block sm:hidden">
                         <ValueAndChangeCell value={r.value} change1D={r.change1D} />

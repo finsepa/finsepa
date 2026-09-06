@@ -1,5 +1,8 @@
+import { format, parseISO, subDays } from "date-fns";
+
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import type { PublicPortfolioListingSnapshot } from "@/lib/portfolio/public-listing-snapshot";
+import { portfolioDietzForWindow } from "@/lib/portfolio/benchmark/benchmark-engine";
 import {
   lifetimeEquityProfitPct,
   netCashUsd,
@@ -20,13 +23,50 @@ export type PublicPortfolioListingMetrics = {
   holdingCount?: number | null;
   /** Up to 5 tickers by current value (desc). */
   topSymbols?: string[];
-  /** Shown as “Returns (ATH)” on the directory card; uses open P/L % until a true ATH snapshot is wired. */
+  /**
+   * Legacy cost-based open P/L %. Kept for older listings; directory UI prefers
+   * {@link timeWeightedReturnPct}.
+   */
   returnsAthPct?: number | null;
+  /**
+   * Inception Modified Dietz % (same methodology as overview “Time-weighted return”),
+   * using current net worth as V_end and V_start = 0 before first activity.
+   */
+  timeWeightedReturnPct?: number | null;
   ownerDisplayName?: string | null;
   ownerAvatarUrl?: string | null;
   /** Read-only community detail view (`/portfolios/[id]`). */
   snapshot?: PublicPortfolioListingSnapshot;
 };
+
+const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Inception Dietz % from ledger + current NAV — no historical EOD bars required. */
+export function inceptionTimeWeightedReturnPct(
+  transactions: readonly PortfolioTransaction[],
+  portfolioValueEnd: number,
+): number | null {
+  if (!Number.isFinite(portfolioValueEnd)) return null;
+  let firstYmd: string | null = null;
+  for (const t of transactions) {
+    if (!YMD_RE.test(t.date)) continue;
+    if (firstYmd == null || t.date < firstYmd) firstYmd = t.date;
+  }
+  if (!firstYmd) return null;
+  const firstDt = parseISO(firstYmd);
+  if (Number.isNaN(firstDt.getTime())) return null;
+  const startYmd = format(subDays(firstDt, 1), "yyyy-MM-dd");
+  const endYmd = format(new Date(), "yyyy-MM-dd");
+  if (startYmd >= endYmd) return null;
+  const { pct } = portfolioDietzForWindow({
+    transactions,
+    vStart: 0,
+    vEnd: portfolioValueEnd,
+    startYmd,
+    endYmd,
+  });
+  return pct != null && Number.isFinite(pct) ? pct : null;
+}
 
 function topSymbolsByValue(holdings: PortfolioHolding[], limit: number): string[] {
   return [...holdings]
@@ -50,6 +90,8 @@ export function computePublicPortfolioListingMetrics(
 
   const pct = lifetimeEquityProfitPct(holdings, transactions);
   const totalProfitPct = pct != null && Number.isFinite(pct) ? pct : null;
+  const timeWeightedReturnPct =
+    valueUsd != null ? inceptionTimeWeightedReturnPct(transactions, valueUsd) : null;
 
   const holdingCount = holdings.length;
 
@@ -62,6 +104,7 @@ export function computePublicPortfolioListingMetrics(
     holdingCount,
     topSymbols: topSymbolsByValue(holdings, 5),
     returnsAthPct: totalProfitPct,
+    timeWeightedReturnPct,
   };
 }
 
@@ -74,10 +117,12 @@ function metricNum(metrics: Record<string, unknown>, key: string): number | null
 export function publicListingCardMetricsReady(metrics: Record<string, unknown>): boolean {
   if (parsePublicListingSnapshotFromMetrics(metrics)) return true;
   const valueUsd = metricNum(metrics, "valueUsd");
-  const returnsAth =
-    metricNum(metrics, "returnsAthPct") ?? metricNum(metrics, "totalProfitPct");
+  const returnPct =
+    metricNum(metrics, "timeWeightedReturnPct") ??
+    metricNum(metrics, "returnsAthPct") ??
+    metricNum(metrics, "totalProfitPct");
   const holdingCount = metricNum(metrics, "holdingCount");
-  return valueUsd != null && returnsAth != null && holdingCount != null;
+  return valueUsd != null && returnPct != null && holdingCount != null;
 }
 
 /**

@@ -17,7 +17,8 @@ import {
 } from "@/lib/market/stock-header-meta";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
 import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours-header-types";
-import { formatUsdCompact, formatUsdPrice, formatSignedUsdAmountGrouped2dp, formatSignedPercent2dp } from "@/lib/market/key-stats-basic-format";
+import { formatUsdCompact, formatUsdPrice, formatSignedUsdAmountGrouped2dp } from "@/lib/market/key-stats-basic-format";
+import { ChangePctParen } from "@/components/screener/change-pct";
 import { StockExtendedHoursPrice } from "@/components/stock/stock-extended-hours-price";
 import { ScreenerRankBadge } from "@/components/earnings/screener-rank-badge";
 import { CompanyLogo } from "@/components/screener/company-logo";
@@ -72,8 +73,24 @@ function formatHeaderChangeAbs(abs: number, metric: StockChartSeries): string {
   return formatSignedUsdAmountGrouped2dp(abs);
 }
 
-function formatHeaderChangePair(abs: number, pct: number, metric: StockChartSeries): string {
-  return `${formatHeaderChangeAbs(abs, metric)} (${formatSignedPercent2dp(pct)})`;
+function HeaderChangePair({
+  abs,
+  pct,
+  metric,
+  className,
+}: {
+  abs: number;
+  pct: number;
+  metric: StockChartSeries;
+  className?: string;
+}) {
+  return (
+    <ChangePctParen
+      absText={formatHeaderChangeAbs(abs, metric)}
+      value={pct}
+      className={className}
+    />
+  );
 }
 
 export function StockHeader({
@@ -245,8 +262,8 @@ export function StockHeader({
 
   const periodChangeAbsText =
     !hasChange || anim.abs == null ? "—" : formatHeaderChangeAbs(anim.abs, headerChartMetric);
-  const periodChangePctText =
-    !hasChange || anim.pct == null ? null : `(${formatSignedPercent2dp(anim.pct)})`;
+  const periodChangePct =
+    !hasChange || anim.pct == null || !Number.isFinite(anim.pct) ? null : anim.pct;
 
   const periodChangeClass = `text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
     hasChange ? (isPositive ? "text-up" : "text-down") : "text-fg-muted"
@@ -262,13 +279,16 @@ export function StockHeader({
     ) : (
       <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0">
         <LivePriceFlashWrap flash={liveFlash} animationKey={liveFlashKey}>
-          <span className={periodChangeClass}>{periodChangeAbsText}</span>
+          {periodChangePct != null ? (
+            <ChangePctParen
+              absText={periodChangeAbsText}
+              value={periodChangePct}
+              className={periodChangeClass}
+            />
+          ) : (
+            <span className={periodChangeClass}>{periodChangeAbsText}</span>
+          )}
         </LivePriceFlashWrap>
-        {periodChangePctText ? (
-          <LivePriceFlashWrap flash={liveFlash} animationKey={liveFlashKey}>
-            <span className={periodChangeClass}>{periodChangePctText}</span>
-          </LivePriceFlashWrap>
-        ) : null}
         {movementRangeBadge && !hasSelectionSecondary ? (
           <span className={periodLabelClass}>{movementRangeBadge}</span>
         ) : null}
@@ -285,13 +305,14 @@ export function StockHeader({
           <span className={periodLabelClass} aria-hidden>
             ·
           </span>
-          <span
+          <HeaderChangePair
+            abs={selectionChangeAbs!}
+            pct={selectionChangePct!}
+            metric={headerChartMetric}
             className={`text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
               isSelPositive ? "text-up" : "text-down"
             }`}
-          >
-            {formatHeaderChangePair(selectionChangeAbs!, selectionChangePct!, headerChartMetric)}
-          </span>
+          />
           <span className={periodLabelClass}>Selected range</span>
         </div>
       );
@@ -307,7 +328,7 @@ export function StockHeader({
 
   const priceLoadingSkeleton = (
     <div className="space-y-1" aria-busy="true" aria-label="Loading chart value">
-      <div className="flex flex-wrap items-baseline gap-3">
+      <div className="flex flex-wrap items-baseline gap-x-2">
         <div className="h-9 w-[7.5rem] rounded-md bg-skeleton animate-pulse" aria-hidden />
         {showPeriodChange ? (
           <div className="h-5 w-[8rem] rounded-md bg-skeleton animate-pulse" aria-hidden />
@@ -345,7 +366,7 @@ export function StockHeader({
 
   const mainPriceBlock = (
     <div className="min-w-0">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         {priceValue}
         {inlinePeriodChange}
       </div>
@@ -355,7 +376,7 @@ export function StockHeader({
 
   const mobileMainPriceBlock = (
     <div className="min-w-0">
-      <div className={`flex flex-wrap items-baseline gap-x-3 gap-y-0.5 ${priceMotionClass}`}>
+      <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 ${priceMotionClass}`}>
         {mobilePriceValue}
         {inlinePeriodChange}
       </div>

@@ -81,8 +81,8 @@ export function WatchlistSavedList() {
                   {meta.initials}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[14px] font-semibold leading-5 text-fg">{meta.displayName}</div>
-                  <div className="text-[12px] font-normal leading-4 text-fg-muted">{ticker}</div>
+                  <div className="truncate text-[14px] font-semibold leading-5 text-fg">{ticker}</div>
+                  <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{meta.displayName}</div>
                 </div>
               </Link>
             </li>

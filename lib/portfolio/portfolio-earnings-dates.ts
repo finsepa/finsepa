@@ -11,16 +11,23 @@ export type PortfolioEarningsDateEntry = {
   notApplicable: boolean;
 };
 
-/** e.g. "Q2, Jul 22, 2026" when quarter is known. */
+/** Normalized fiscal quarter label e.g. "Q3", or null when unknown. */
+export function normalizePortfolioFiscalQuarter(
+  fiscalQuarter: string | null | undefined,
+): string | null {
+  const quarter = fiscalQuarter?.trim() || null;
+  if (quarter && /^Q[1-4]$/i.test(quarter)) return quarter.toUpperCase();
+  return null;
+}
+
+/** e.g. "Q2, Jul 22, 2026" when quarter is known (single-line callers). */
 export function formatPortfolioEarningsDateLabel(entry: {
   earningsDateDisplay: string | null;
   fiscalQuarter: string | null;
 }): string | null {
   const display = entry.earningsDateDisplay?.trim() || null;
   if (!display) return null;
-  const quarter = entry.fiscalQuarter?.trim() || null;
-  if (quarter && /^Q[1-4]$/i.test(quarter)) {
-    return `${quarter.toUpperCase()}, ${display}`;
-  }
+  const quarter = normalizePortfolioFiscalQuarter(entry.fiscalQuarter);
+  if (quarter) return `${quarter}, ${display}`;
   return display;
 }

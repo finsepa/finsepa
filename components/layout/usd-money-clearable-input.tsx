@@ -44,6 +44,7 @@ export function UsdMoneyClearableInput({
       placeholder={placeholder}
       clearLabel={clearLabel}
       aria-label={ariaLabel}
+      leadingAdornment="$"
     />
   );
 }

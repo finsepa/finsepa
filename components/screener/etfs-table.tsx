@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo } from "react";
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { IntentPrefetchLink } from "@/components/layout/intent-prefetch-link";
+import { ChangeCaretIcon, ChangePct, formatSignedChangePct } from "@/components/screener/change-pct";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
 import { TABLE_END_ALIGNED_PAD_CLASS } from "@/components/screener/screener-table-pad";
 import {
@@ -26,27 +27,8 @@ function formatValue(v: number): string {
   return v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function formatPercent(v: number | null): string {
-  if (v == null || !Number.isFinite(v)) return "-";
-  const sign = v >= 0 ? "+" : "";
-  return `${sign}${v.toFixed(2)}%`;
-}
-
 function ChangeCell({ value }: { value: number | null }) {
-  if (value == null || !Number.isFinite(value)) {
-    return <div className="min-w-0 w-full text-right text-[14px] leading-5 font-medium text-fg-muted">-</div>;
-  }
-  const positive = value >= 0;
-  return (
-    <div
-      className={cn(
-        "min-w-0 w-full text-right tabular-nums text-[14px] leading-5 font-medium",
-        positive ? "text-up" : "text-down",
-      )}
-    >
-      {formatPercent(value)}
-    </div>
-  );
+  return <ChangePct value={value} />;
 }
 
 function ValueAndChangeCell({ value, change1D }: { value: number; change1D: number | null }) {
@@ -60,11 +42,18 @@ function ValueAndChangeCell({ value, change1D }: { value: number; change1D: numb
       </div>
       <div
         className={cn(
-          "mt-0.5 min-w-0 w-full text-[12px] font-medium leading-4 tabular-nums",
+          "mt-0.5 inline-flex min-w-0 w-full items-center justify-end gap-1 text-[12px] font-medium leading-4 tabular-nums",
           !hasChange ? "text-fg-muted" : positive ? "text-up" : "text-down",
         )}
       >
-        {formatPercent(change1D)}
+        {hasChange ? (
+          <>
+            <ChangeCaretIcon direction={positive ? "up" : "down"} />
+            <span className="min-w-0 truncate">{formatSignedChangePct(change1D!)}</span>
+          </>
+        ) : (
+          "-"
+        )}
       </div>
     </div>
   );
@@ -150,7 +139,7 @@ export function EtfsTable({
                       watchlists={watchlists}
                       activeWatchlistId={activeWatchlistId}
                     />
-                    <Link
+                    <IntentPrefetchLink
                       href={`/stock/${encodeURIComponent(wlKey)}`}
                       prefetch={false}
                       className={cn(
@@ -164,10 +153,10 @@ export function EtfsTable({
                         <CompanyLogo name={r.name} logoUrl="" symbol={wlKey} />
                         <div className="min-w-0">
                           <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
-                            {r.name}
+                            {wlKey}
                           </div>
-                          <div className="text-[12px] font-normal leading-4 text-fg-muted">
-                            <span>{wlKey}</span>
+                          <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                            <span>{r.name}</span>
                           </div>
                         </div>
                       </div>
@@ -191,7 +180,7 @@ export function EtfsTable({
                       <div className={desktopNumericCellClass}>
                         <ChangeCell value={r.changeYTD} />
                       </div>
-                    </Link>
+                    </IntentPrefetchLink>
                   </div>
                 </div>
                 {i < safeRows.length - 1 ? (
