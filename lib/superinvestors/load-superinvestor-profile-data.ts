@@ -60,6 +60,8 @@ export type Superinvestor13fRefreshSummary = {
   okCount: number;
   listSnapshotOk?: boolean;
   listRowCount?: number;
+  stockIndexSnapshotOk?: boolean;
+  stockIndexTickerCount?: number;
   results: Superinvestor13fRefreshResult[];
 };
 
