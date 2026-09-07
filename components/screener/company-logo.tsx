@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { readScreenerCompanyIdentity } from "@/lib/screener/screener-company-identity-storage";
 import { withLogoDevTheme } from "@/lib/screener/company-logo-url";
@@ -27,14 +28,22 @@ const LOGO_SCALE_BOOST: Partial<Record<string, number>> = {
   BCH: 1.3,
 };
 
+/** Normalize `BTC-USD` / `ETH.CC` → base for tile/scale lookups. */
+function logoLookupSymbol(symbol: string | undefined): string | undefined {
+  const raw = symbol?.trim().toUpperCase();
+  if (!raw) return undefined;
+  const base = cryptoRouteBase(raw);
+  return base || raw;
+}
+
 function logoTileBgClass(symbol: string | undefined): string {
-  const sym = symbol?.trim().toUpperCase();
+  const sym = logoLookupSymbol(symbol);
   if (!sym) return "bg-surface";
   return LOGO_TILE_BG[sym] ?? "bg-surface";
 }
 
 function logoScaleBoost(symbol: string | undefined): number | null {
-  const sym = symbol?.trim().toUpperCase();
+  const sym = logoLookupSymbol(symbol);
   if (!sym) return null;
   return LOGO_SCALE_BOOST[sym] ?? null;
 }
