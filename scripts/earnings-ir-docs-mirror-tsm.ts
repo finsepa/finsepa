@@ -14,12 +14,12 @@ import {
   earningsIrDocObjectPath,
   earningsIrDocPublicUrl,
   type EarningsIrDocKind,
-} from "../lib/market/earnings-ir-docs-storage.ts";
+} from "../lib/market/earnings-ir-docs-storage";
 import {
   TSMC_IR_QUARTER_DOCS,
   tsmcFilingsUrlFromPackage,
   type TsmcQuarterDocs,
-} from "../lib/market/ir-seed-tsmc-catalog.ts";
+} from "../lib/market/ir-seed-tsmc-catalog";
 
 function fiscalEnd(docs: TsmcQuarterDocs): string {
   const ends: Record<number, string> = {
