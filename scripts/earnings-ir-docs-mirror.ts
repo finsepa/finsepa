@@ -20,7 +20,7 @@ import {
   earningsIrDocPublicUrl,
   isEarningsIrDocsHostedUrl,
   type EarningsIrDocKind,
-} from "../lib/market/earnings-ir-docs-storage.ts";
+} from "../lib/market/earnings-ir-docs-storage";
 
 type VaultRow = {
   ticker: string;
