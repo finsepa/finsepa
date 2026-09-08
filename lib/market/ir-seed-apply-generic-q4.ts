@@ -23,6 +23,7 @@ import {
   IR_SEED_GENERIC_Q4_ROWS_FULL,
   IR_SEED_GENERIC_Q4_ROWS_KNOWN_BASE_FULL,
 } from "@/lib/market/ir-seed-limits";
+import { resolveQ4CdnBaseForTicker } from "@/lib/market/q4cdn-learned-bases";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 const HEAD_MS = 2500;
