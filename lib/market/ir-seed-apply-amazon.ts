@@ -31,7 +31,10 @@ function fiscalFromAmazonPeriodEndYmd(ymd: string | null): { calendarYear: numbe
 function amazonWebslidesPdfCandidates(calendarYear: number, fq: 1 | 2 | 3 | 4): string[] {
   const yy = String(calendarYear % 100).padStart(2, "0");
   const base = `${AMZN_Q4CDN_FINANCIALS}/${calendarYear}/q${fq}`;
+  // FY2026+ presentations live under `doc_earnings/.../presentation/` on IR.
+  const earningsPresentation = `${AMZN_Q4CDN_FILES}/doc_earnings/${calendarYear}/q${fq}/presentation/Webslides_Q${fq}${yy}.pdf`;
   return [
+    earningsPresentation,
     `${base}/Webslides_Q${fq}${yy}.pdf`,
     `${base}/Webslides_Q${fq}${yy}-FINAL.pdf`,
     `${base}/Webslides_Q${fq}${yy}_FINAL.pdf`,
@@ -39,13 +42,29 @@ function amazonWebslidesPdfCandidates(calendarYear: number, fq: 1 | 2 | 3 | 4): 
   ];
 }
 
-/** Earnings release (Exhibit 99.1) PDFs — these are the most consistent “SEC Forms” artifacts on Amazon IR. */
-function amazonEarningsReleaseCandidates(calendarYear: number, fq: 1 | 2 | 3 | 4): string[] {
+/**
+ * Filings slot on Amazon IR:
+ * - Prefer IR-hosted Form 10-Q / 10-K when present (labeled “SEC Forms” on ir.aboutamazon.com).
+ * - Fall back to earnings-release PDFs (older quarters often lack a stable 10-Q CDN name).
+ */
+function amazonFilingsPdfCandidates(calendarYear: number, fq: 1 | 2 | 3 | 4): string[] {
   const base = `${AMZN_Q4CDN_FINANCIALS}/${calendarYear}/q${fq}`;
   const v = `AMZN-Q${fq}-${calendarYear}-Earnings-Release.pdf`;
-  // Some quarters (e.g. FY2025 Q4) are stored under `doc_earnings/.../earnings-result/`.
   const vAlt = `${AMZN_Q4CDN_FILES}/doc_earnings/${calendarYear}/q${fq}/earnings-result/${v}`;
-  return [vAlt, `${base}/${v}`];
+  const legacy = `${base}/Q${fq}-${calendarYear}-Amazon-Earnings-Release.pdf`;
+  // Q1/Q2 2026 10-Qs are on Amazon’s IR CloudFront (not q4cdn UUID paths).
+  const known10q: string[] = [];
+  if (calendarYear === 2026 && fq === 1) {
+    known10q.push(
+      "https://d18rn0p25nwr6d.cloudfront.net/CIK-0001018724/e5b7de6a-55b0-4300-b981-4e5a8857972d.pdf",
+    );
+  }
+  if (calendarYear === 2026 && fq === 2) {
+    known10q.push(
+      "https://d18rn0p25nwr6d.cloudfront.net/CIK-0001018724/8b65cc1d-13ba-4465-ab3b-7b408e2fcdaf.pdf",
+    );
+  }
+  return [...known10q, vAlt, `${base}/${v}`, legacy];
 }
 
 async function headOk(url: string): Promise<boolean> {
@@ -65,9 +84,7 @@ async function headOk(url: string): Promise<boolean> {
 /**
  * AMZN only:
  * - Slides: Amazon “Webslides” earnings deck PDF on Q4 CDN for the quarter.
- * - Filings: Amazon earnings release PDF (often the IR “SEC Forms” document for the quarter).
- *
- * Periodic Form 10-Q / 10-K on EDGAR are often HTML/XBRL without companion PDFs; we prefer the IR-hosted earnings release PDF.
+ * - Filings: IR-hosted 10-Q/10-K when known (SEC Forms); else earnings-release PDF.
  */
 export async function applyIrSeedAmazonDocumentUrls(
   rows: StockEarningsHistoryRow[],
@@ -78,7 +95,7 @@ export async function applyIrSeedAmazonDocumentUrls(
     if (!p) return { slides: [] as string[], filings: [] as string[] };
     return {
       slides: amazonWebslidesPdfCandidates(p.calendarYear, p.fq),
-      filings: amazonEarningsReleaseCandidates(p.calendarYear, p.fq),
+      filings: amazonFilingsPdfCandidates(p.calendarYear, p.fq),
     };
   });
 

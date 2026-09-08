@@ -30,6 +30,9 @@
     "eodhd:probe": "node scripts/eodhd-traffic-probe.mjs",
     "eodhd:fanout-probe": "node scripts/screener-fanout-probe.mjs",
     "key-indicators:check": "node --env-file=.env.local scripts/key-indicators-rollout-check.mjs",
+    "earnings:ir-vault": "npx tsx --env-file=.env.local scripts/earnings-ir-vault-report.ts",
+    "earnings:ir-docs-mirror": "npx tsx --env-file=.env.local scripts/earnings-ir-docs-mirror.ts",
+    "earnings:ir-docs-mirror-tsm": "npx tsx --env-file=.env.local scripts/earnings-ir-docs-mirror-tsm.ts",
     "key-indicators:spike": "node --env-file=.env.local scripts/key-indicators-sample-spike.mjs",
     "superinvestors:test": "node --test --experimental-strip-types lib/superinvestors/superinvestor-13f-validate.test.ts lib/superinvestors/superinvestor-13f-options.test.ts lib/superinvestors/default-superinvestor-follows.test.ts",
     "superinvestors:metrics": "node --env-file=.env.local scripts/superinvestor-phase1-metrics.mjs",
@@ -97,6 +100,7 @@
     "eslint-config-next": "16.2.1",
     "patch-package": "^8.0.1",
     "pg": "^8.22.0",
+    "playwright": "^1.55.0",
     "supabase": "^2.107.0",
     "tailwindcss": "^4",
     "typescript": "^5"

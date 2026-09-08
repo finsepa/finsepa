@@ -69,6 +69,16 @@ export async function getMarketSnapshotIngestSkipState(
     if (fresh) {
       return { hotSkipReason: "frozen_segment_fresh", slowSkipReason: "frozen_segment_fresh" };
     }
+    // Live→frozen flip (e.g. holiday deploy): keep serving the last live blob — retag below
+    // instead of cold-rebuilding hundreds of EODHD symbols.
+    const retagged = await retagRecentMarketSnapshotSegment(
+      MARKET_SNAPSHOT_KEY.stocksAllPages,
+      hotSeg,
+      FROZEN_INGEST_MAX_AGE_MS,
+    );
+    if (retagged || (await marketSnapshotKeyIsFresh(MARKET_SNAPSHOT_KEY.stocksAllPages, hotSeg, FROZEN_INGEST_MAX_AGE_MS))) {
+      return { hotSkipReason: "frozen_segment_fresh", slowSkipReason: "frozen_segment_fresh" };
+    }
     return { hotSkipReason: null, slowSkipReason: null };
   }
 
@@ -179,17 +189,21 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
         ["cryptoPage2", MARKET_SNAPSHOT_KEY.cryptoPage2],
         ["indicesTab", MARKET_SNAPSHOT_KEY.indicesTab],
       ];
+      // Frozen (weekend/holiday): allow retag from any recent live-* row up to 48h so we
+      // never pay a full equity realtime/EOD fan-out just to rename the segment.
+      const retagMaxAgeMs =
+        epoch.mode === "frozen" ? FROZEN_INGEST_MAX_AGE_MS : LIVE_HOT_INGEST_MIN_INTERVAL_MS;
       const pendingFetch: typeof hotEntries = [];
       for (const entry of hotEntries) {
         const [, snapshotKey] = entry;
-        if (await marketSnapshotKeyIsFresh(snapshotKey, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)) {
+        if (await marketSnapshotKeyIsFresh(snapshotKey, hotSeg, retagMaxAgeMs)) {
           keys[snapshotKey] = "ok";
           continue;
         }
         const retagged = await retagRecentMarketSnapshotSegment(
           snapshotKey,
           hotSeg,
-          LIVE_HOT_INGEST_MIN_INTERVAL_MS,
+          retagMaxAgeMs,
         );
         if (retagged) {
           keys[snapshotKey] = "segment_retagged";

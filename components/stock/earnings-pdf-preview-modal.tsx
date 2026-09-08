@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import { ExternalLink } from "@/lib/icons";
 
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
-import { AppModalCloseButton, AppModalShell, APP_MODAL_RULE_CLASS } from "@/components/ui/app-modal-shell";
+import { AppModalCloseButton, AppModalShell } from "@/components/ui/app-modal-shell";
 import {
   earningsDocumentPreviewKind,
   type EarningsDocumentPreviewKind,
@@ -71,22 +70,10 @@ export function EarningsPdfPreviewModal({ open, title, sourceUrl, onClose }: Pro
             >
               {title}
             </h2>
-            <div className="flex shrink-0 items-center gap-1">
-              <a
-                href={sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-stroke bg-surface px-2.5 text-[12px] font-semibold text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] transition-colors hover:bg-surface-muted sm:px-3"
-                title="Open document in a new tab"
-              >
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                <span className="hidden sm:inline">New tab</span>
-              </a>
-              <AppModalCloseButton onClick={onClose} />
-            </div>
+            <AppModalCloseButton onClick={onClose} />
           </div>
         }
-        headerClassName={`border-b px-4 py-3 sm:px-5 ${APP_MODAL_RULE_CLASS}`}
+        headerClassName="px-4 py-3 sm:px-5"
         bodyClassName="min-h-0 flex-1 bg-surface-muted p-0"
         cardClassName="overflow-hidden"
       >

@@ -1,0 +1,60 @@
+{
+  "session": "bench-20260908-151050",
+  "url": "http://localhost:3000/",
+  "total_credits": 1542,
+  "total_http": 546,
+  "pollution_credits_excluded": 38,
+  "pollution_http_excluded": 17,
+  "baseline": {
+    "session": "bench-20260908-125010",
+    "total_credits": 2966,
+    "total_http": 1565
+  },
+  "delta": {
+    "credits": -1424,
+    "http": -1019,
+    "credits_pct": -48.0
+  },
+  "families": {
+    "RealtimeSymbolsRaw": {
+      "base_http": 65,
+      "base_credits": 666,
+      "new_http": 20,
+      "new_credits": 268
+    },
+    "BothCloses": {
+      "base_http": 781,
+      "new_http": 92
+    },
+    "CryptoDailyBars": {
+      "base_http": 272,
+      "new_http": 60
+    },
+    "Intraday": {
+      "base_http": 116,
+      "new_http": 124
+    }
+  },
+  "top_fns": {
+    "fetchEodhdEodDaily": 163,
+    "fetchEodhdIntraday": 124,
+    "fetchEodhdEodDailyBothCloses": 92,
+    "fetchEodhdCryptoDailyBars": 60,
+    "fetchEodhdUsQuoteDelayed": 27,
+    "fetchEodhdFundamentalsJsonUncached": 26,
+    "fetchEodhdScreenerUncached": 25,
+    "fetchEodhdRealtimeSymbolsRaw": 20,
+    "fetchUstYieldYear20Y": 4,
+    "fetchEodhdCryptoFundamentalsMeta": 2,
+    "fetchUst10YGbondUncached": 1,
+    "fetchEodhdSearch": 1,
+    "fetchEodhdExchangeSymbolListUncached": 1
+  },
+  "caveats": [
+    "Credits from .next/dev/logs/next-development.json message conversion (routes/markers not in that log; terminal buffer only kept end).",
+    "Step breakdown unavailable; journey pages confirmed via analytics views through NVDA revisit + idle/background markers.",
+    "Hidden-tab CDP spoof blocked by auto-review; idle/background ran with tab visible (Move 5 not fully exercised).",
+    "POST live-quotes/stock-splits counts incomplete without full terminal log; UI showed $171k session marks on deferred hubs (screener/crypto/macro)."
+  ],
+  "ui_signal_deferred_quotes": "Portfolio chip showed $171,617.59 on heatmaps/news/macro/crypto without busy loading"
+}

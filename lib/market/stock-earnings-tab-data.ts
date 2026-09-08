@@ -52,6 +52,11 @@ import {
   persistResolvedEarningsDocuments,
 } from "@/lib/market/earnings-document-cache-store";
 import {
+  applyEarningsIrVaultToHistory,
+  loadEarningsIrVaultForTicker,
+} from "@/lib/market/earnings-ir-vault-store";
+import { EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS } from "@/lib/market/earnings-ir-vault-types";
+import {
   fiscalQuarterLabelFromPeriodEndYmd,
   inferDominantFiscalYearEndMonthDay,
 } from "@/lib/market/fiscal-quarter-label";
@@ -351,7 +356,13 @@ function ymdDaysAgoUtc(days: number): string {
 }
 
 /** Cached fundamentals; fresh retry on cache miss or recent statement gaps after earnings. */
-async function fetchFundamentalsRootForEarningsTab(ticker: string): Promise<Record<string, unknown> | null> {
+async function fetchFundamentalsRootForEarningsTab(
+  ticker: string,
+  options?: { fresh?: boolean },
+): Promise<Record<string, unknown> | null> {
+  if (options?.fresh) {
+    return fetchEodhdFundamentalsJsonFresh(ticker);
+  }
   let root = await fetchEodhdFundamentalsJson(ticker);
   if (!root) return fetchEodhdFundamentalsJsonFresh(ticker);
   if (fundamentalsNeedsFreshForRevenueGap(root)) {
@@ -1906,7 +1917,7 @@ export function resolveEarningsPeriodMetricsFromFundamentals(
   };
 }
 
-export type StockEarningsTabFetchMode = "full" | "preview";
+export type StockEarningsTabFetchMode = "full" | "preview" | "ir_only";
 
 /**
  * Earnings tab: `Earnings.History` from fundamentals plus optional calendar timing (BMO/AMC).
@@ -1915,14 +1926,19 @@ export type StockEarningsTabFetchMode = "full" | "preview";
  * `preview` skips SEC index crawls, IR seed HTTP, and earnings-calendar timing — used by the
  * earnings calendar modal for a fast first paint. Documents come from DB cache + curated URLs only;
  * full SEC/IR resolution still runs on the stock earnings tab (`full` mode).
+ *
+ * `ir_only` runs IR seed first, then SEC exhibit gap-fill for vault backfill
+ * (Tesla / TSMC / UNH class: 8-K EX-99 HTML or PDF when IR has only one slot).
+ * AMAT / MRK stay IR-PDF-only — SEC HTML is not a filings fallback.
  */
 async function fetchStockEarningsTabPayloadUncached(
   listingTicker: string,
   mode: StockEarningsTabFetchMode = "full",
 ): Promise<StockEarningsTabPayload | null> {
   const preview = mode === "preview";
+  const irOnly = mode === "ir_only";
   const ticker = listingTicker.trim().toUpperCase();
-  const root = await fetchFundamentalsRootForEarningsTab(ticker);
+  const root = await fetchFundamentalsRootForEarningsTab(ticker, { fresh: irOnly });
   if (!root) return null;
 
   const rootRec = root as Record<string, unknown>;
@@ -1971,10 +1987,17 @@ async function fetchStockEarningsTabPayloadUncached(
 
   const docCache = await loadEarningsDocumentCacheForHistory(ticker, historyParsed);
   historyParsed = applyEarningsDocumentCacheToHistory(ticker, historyParsed, docCache);
+  const vault = await loadEarningsIrVaultForTicker(ticker);
+  historyParsed = applyEarningsIrVaultToHistory(ticker, historyParsed, vault);
   const afterCacheApply = historyParsed;
 
+  // User traffic: vault + document cache are the source of truth for IR docs.
+  // SEC crawl / IR scrape belong to cron (`ir_only`) and cold tickers with an empty vault.
   const needsDocumentEnrichment =
-    !preview && historyParsed.some(reportedRowMissingEarningsDocuments);
+    !preview &&
+    !irOnly &&
+    vault.size === 0 &&
+    historyParsed.some(reportedRowMissingEarningsDocuments);
 
   if (needsDocumentEnrichment) {
     try {
@@ -1988,37 +2011,67 @@ async function fetchStockEarningsTabPayloadUncached(
     }
   }
   const afterSec = historyParsed;
-  historyParsed = applyCuratedIrEarningsDocumentUrls(ticker, historyParsed);
-  const afterCurated = historyParsed;
 
-  const needsIrSeed = !preview && historyParsed.some(reportedRowNeedsIrDocumentSeed);
+  // IR seed before curated so QA curated fills always win last.
+  const needsIrSeed =
+    irOnly ||
+    (!preview && vault.size === 0 && historyParsed.some(reportedRowNeedsIrDocumentSeed));
   let afterIrSeed = historyParsed;
   if (needsIrSeed) {
     try {
-      const [irRows, revenueRows] = await Promise.all([
-        applyIrSeedDocumentUrls(ticker, historyParsed, documentHub, {
+      if (irOnly) {
+        // Vault: IR first-party PDFs, then SEC exhibits only for still-empty slots.
+        const stripped = historyParsed.map((row) => ({
+          ...row,
+          secSlidesUrl:
+            row.secSlidesUrl && !/sec\.gov/i.test(row.secSlidesUrl) ? row.secSlidesUrl : null,
+          secFilingsUrl:
+            row.secFilingsUrl && !/sec\.gov/i.test(row.secFilingsUrl) ? row.secFilingsUrl : null,
+        }));
+        historyParsed = await applyIrSeedDocumentUrls(ticker, stripped, documentHub, {
           preview: false,
           fyEndMonthDay,
-        }),
-        enrichReportedHistoryRevenueFromSec8k(historyParsed, documentHub.cik, {
-          maxRows: SEC_ENRICHMENT_ROWS_FULL,
-        }),
-      ]);
-      afterIrSeed = irRows;
-      historyParsed = irRows.map((row, i) => {
-        const rev = revenueRows[i]!;
-        if (rev.revenueActualUsd == null || row.revenueActualUsd != null) return row;
-        return {
-          ...row,
-          revenueActualUsd: rev.revenueActualUsd,
-          revenueActualDisplay: rev.revenueActualDisplay,
-        };
-      });
-      afterIrSeed = historyParsed;
+          allowGenericQ4: true,
+        });
+        afterIrSeed = historyParsed;
+        if (
+          !EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS.has(ticker) &&
+          historyParsed.some(reportedRowMissingEarningsDocuments)
+        ) {
+          historyParsed = await enrichEarningsHistoryWithSecDocuments(
+            historyParsed,
+            documentHub.cik,
+            { maxRows: SEC_ENRICHMENT_ROWS_FULL, maxIndexFetches: SEC_ENRICHMENT_INDEX_FETCHES_FULL },
+          );
+          afterIrSeed = historyParsed;
+        }
+      } else {
+        const [irRows, revenueRows] = await Promise.all([
+          applyIrSeedDocumentUrls(ticker, historyParsed, documentHub, {
+            preview: false,
+            fyEndMonthDay,
+            allowGenericQ4: false,
+          }),
+          enrichReportedHistoryRevenueFromSec8k(historyParsed, documentHub.cik, {
+            maxRows: SEC_ENRICHMENT_ROWS_FULL,
+          }),
+        ]);
+        afterIrSeed = irRows;
+        historyParsed = irRows.map((row, i) => {
+          const rev = revenueRows[i]!;
+          if (rev.revenueActualUsd == null || row.revenueActualUsd != null) return row;
+          return {
+            ...row,
+            revenueActualUsd: rev.revenueActualUsd,
+            revenueActualDisplay: rev.revenueActualDisplay,
+          };
+        });
+        afterIrSeed = historyParsed;
+      }
     } catch {
       /* Best-effort */
     }
-  } else if (!preview) {
+  } else if (!preview && !irOnly) {
     try {
       historyParsed = await enrichReportedHistoryRevenueFromSec8k(historyParsed, documentHub.cik, {
         maxRows: SEC_ENRICHMENT_ROWS_FULL,
@@ -2028,13 +2081,23 @@ async function fetchStockEarningsTabPayloadUncached(
     }
   }
 
+  historyParsed = applyCuratedIrEarningsDocumentUrls(ticker, historyParsed);
+  const afterCurated = historyParsed;
+  // Locked vault fields win after curated; unlocked vault rows leave curated/SEC/IR as-is.
+  historyParsed = applyEarningsIrVaultToHistory(ticker, historyParsed, vault);
+
   const irSeedSource = earningsIrSeedResolutionSource(ticker);
-  if (!preview) {
+  if (!preview && !irOnly) {
     void persistResolvedEarningsDocuments(ticker, historyParsed, afterCacheApply, docCache, [
       { step: "sec", rows: afterSec },
-      { step: "curated", rows: afterCurated },
       { step: irSeedSource, rows: afterIrSeed },
+      { step: "curated", rows: afterCurated },
     ]);
+  }
+
+  // Vault backfill only needs history document URLs — skip chart/calendar (Next cache).
+  if (irOnly) {
+    return { ticker, upcoming: null, history: historyParsed, estimatesChart: null, documentHub, lastPrice };
   }
 
   let estimatesChart = buildEstimatesChart(
@@ -2063,7 +2126,7 @@ async function fetchStockEarningsTabPayloadUncached(
         epsTrendMaps,
         historyParsed,
       ),
-      !preview && upcomingForCalendar?.reportDateYmd
+      !preview && !irOnly && upcomingForCalendar?.reportDateYmd
         ? fetchEodhdEarningsCalendarForSymbol(eodhdListingCode(ticker)).then((cal) =>
             pickCalendarTimingForReport(cal, eodhdListingCode(ticker), upcomingForCalendar.reportDateYmd!),
           )
@@ -2082,7 +2145,9 @@ async function fetchStockEarningsTabPayloadUncached(
     } else if (upcoming) {
       upcoming = resolveUpcomingFromEstimates(upcoming, historyParsed, []);
     }
-    historyParsed = await attachPostReportOneDayReturns(ticker, historyParsed);
+    historyParsed = irOnly
+      ? historyParsed
+      : await attachPostReportOneDayReturns(ticker, historyParsed);
     if (calendarTiming && upcoming?.reportDateYmd) {
       const t = timingFromCalendar(calendarTiming);
       return {
@@ -2121,8 +2186,10 @@ async function fetchStockEarningsTabPayloadUncached(
   } else if (upcoming) {
     upcoming = resolveUpcomingFromEstimates(upcoming, historyParsed, []);
   }
-  historyParsed = await attachPostReportOneDayReturns(ticker, historyParsed);
-  if (!preview && upcoming?.reportDateYmd) {
+  historyParsed = irOnly
+    ? historyParsed
+    : await attachPostReportOneDayReturns(ticker, historyParsed);
+  if (!preview && !irOnly && upcoming?.reportDateYmd) {
     const cal = await fetchEodhdEarningsCalendarForSymbol(eodhdListingCode(ticker));
     const calendarTiming = pickCalendarTimingForReport(cal, eodhdListingCode(ticker), upcoming.reportDateYmd);
     const t = timingFromCalendar(calendarTiming);
@@ -2139,7 +2206,7 @@ async function fetchStockEarningsTabPayloadUncached(
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v51-post-report-1d-snapshot"],
+  ["stock-earnings-tab-payload-v65-vault-ir-pdf-filings"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 
@@ -2150,6 +2217,13 @@ export async function fetchStockEarningsTabPayload(
   const ticker = listingTicker.trim().toUpperCase();
   const mode: StockEarningsTabFetchMode = options?.preview ? "preview" : "full";
   return fetchStockEarningsTabPayloadCached(ticker, mode);
+}
+
+/** Phase-1 IR vault backfill — IR seed only, no SEC, bypasses Next cache. */
+export async function fetchStockEarningsTabPayloadIrOnly(
+  listingTicker: string,
+): Promise<StockEarningsTabPayload | null> {
+  return fetchStockEarningsTabPayloadUncached(listingTicker.trim().toUpperCase(), "ir_only");
 }
 
 export type EarningsDocumentWarmStats = {

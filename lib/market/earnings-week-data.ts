@@ -902,7 +902,9 @@ async function persistHubEarningsWeekSnapshotIfReady(
 async function getEarningsWeekDataPackage(weekMondayUtc: Date): Promise<EarningsWeekDataPackage> {
   const ymd = toYmdUtc(mondayOfWeekUtc(weekMondayUtc));
   const segment = earningsWeekHubSegment(ymd);
-  const snap = await readHubSnapshot<EarningsWeekDataPackage>(hubEarningsWeekKey(ymd), segment);
+  const snap = await readHubSnapshot<EarningsWeekDataPackage>(hubEarningsWeekKey(ymd), segment, {
+    allowStale: true,
+  });
   if (snap) return snap;
 
   const mode: EarningsCacheMode = isEarningsFundamentalsMcFilterEnabled() ? "fund" : "universe";

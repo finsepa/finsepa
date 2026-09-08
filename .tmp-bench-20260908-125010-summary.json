@@ -1,0 +1,258 @@
+{
+  "session": "bench-20260908-125010",
+  "total_credits": 2966,
+  "total_http": 1565,
+  "steps": [
+    {
+      "name": "01 Shell / login hydrate",
+      "credits": 189,
+      "http": 141,
+      "cumul": 189,
+      "top_fn": "fetchEodhdEodDailyBothCloses\u00d798, fetchEodhdCryptoDailyBars\u00d738, fetchEodhdRealtimeSymbolsRaw\u00d75",
+      "top_routes": "POST /api/portfolio/live-quotes\u00d714, POST /api/portfolio/stock-splits\u00d78, PUT /api/portfolio/workspace\u00d78, GET /api/watchlist\u00d77"
+    },
+    {
+      "name": "02 Screener view",
+      "credits": 0,
+      "http": 0,
+      "cumul": 189,
+      "top_fn": "\u2014",
+      "top_routes": "\u2014"
+    },
+    {
+      "name": "03\u201304 Open stock + Overview (NVDA)",
+      "credits": 300,
+      "http": 166,
+      "cumul": 489,
+      "top_fn": "fetchEodhdEodDailyBothCloses\u00d798, fetchEodhdCryptoDailyBars\u00d739, fetchEodhdIntraday\u00d711, fetchEodhdRealtimeSymbolsRaw\u00d76",
+      "top_routes": "POST /api/portfolio/live-quotes\u00d714, POST /api/portfolio/stock-splits\u00d78, GET /api/search/recent\u00d78, GET /api/watchlist\u00d76"
+    },
+    {
+      "name": "05 Chart range (5D)",
+      "credits": 18,
+      "http": 6,
+      "cumul": 507,
+      "top_fn": "fetchEodhdIntraday\u00d73, fetchEodhdUsQuoteDelayed\u00d72, fetchEodhdEodDaily\u00d71",
+      "top_routes": "GET /api/stocks/NVDA/chart\u00d75, GET /api/stocks/NVDA/extended-hours\u00d72, GET /api/stocks/NVDA/live-price\u00d72, GET /stock/NVDA\u00d71"
+    },
+    {
+      "name": "06 Earnings tab",
+      "credits": 54,
+      "http": 10,
+      "cumul": 561,
+      "top_fn": "fetchEodhdFundamentalsJsonUncached\u00d74, fetchEodhdEodDaily\u00d73, fetchEodhdIntraday\u00d72, fetchEodhdUsQuoteDelayed\u00d71",
+      "top_routes": "GET /stock/NVDA\u00d72, GET /api/stocks/NVDA/chart\u00d72, GET /api/stocks/NVDA/earnings\u00d72, GET /api/stocks/NVDA/live-price\u00d72"
+    },
+    {
+      "name": "07 Research tabs (Financials/Peers)",
+      "credits": 228,
+      "http": 91,
+      "cumul": 789,
+      "top_fn": "fetchEodhdEodDailyBothCloses\u00d749, fetchEodhdCryptoDailyBars\u00d715, fetchEodhdFundamentalsJsonUncached\u00d711, fetchEodhdEodDaily\u00d76",
+      "top_routes": "GET /api/search/recent\u00d75, POST /api/portfolio/stock-splits\u00d74, GET /api/watchlist\u00d74, GET /api/notifications\u00d73"
+    },
+    {
+      "name": "08 Second stock (AAPL)",
+      "credits": 80,
+      "http": 27,
+      "cumul": 869,
+      "top_fn": "fetchEodhdScreenerUncached\u00d710, fetchEodhdCryptoDailyBars\u00d78, fetchEodhdEodDaily\u00d72, fetchEodhdFundamentalsJsonUncached\u00d72",
+      "top_routes": "POST /api/portfolio/live-quotes\u00d74, PUT /api/portfolios/listings\u00d72, PUT /api/portfolio/workspace\u00d71, GET /api/stocks/AAPL/earnings\u00d71"
+    },
+    {
+      "name": "09 Watchlist expand/enrich",
+      "credits": 220,
+      "http": 126,
+      "cumul": 1089,
+      "top_fn": "fetchEodhdEodDailyBothCloses\u00d749, fetchEodhdEodDaily\u00d732, fetchEodhdCryptoDailyBars\u00d728, fetchEodhdIntraday\u00d713",
+      "top_routes": "POST /api/portfolio/live-quotes\u00d75, POST /api/portfolio/stock-splits\u00d74, GET /api/watchlist\u00d74, PUT /api/portfolio/workspace\u00d74"
+    },
+    {
+      "name": "10 Portfolio page",
+      "credits": 4,
+      "http": 4,
+      "cumul": 1093,
+      "top_fn": "fetchEodhdCryptoDailyBars\u00d74",
+      "top_routes": "POST /api/portfolio/live-quotes\u00d72, PUT /api/portfolios/listings\u00d72, POST /api/portfolio/value-history\u00d71, GET /api/notifications\u00d71"
+    },
+    {
+      "name": "11 Switch portfolio",
+      "credits": 394,
+      "http": 153,
+      "cumul": 1487,
+      "top_fn": "fetchEodhdEodDaily\u00d755, fetchEodhdEodDailyBothCloses\u00d749, fetchEodhdIntraday\u00d727, fetchEodhdFundamentalsJsonUncached\u00d710",
+      "top_routes": "POST /api/portfolio/stock-splits\u00d74, POST /api/portfolio/live-quotes\u00d74, PUT /api/portfolio/workspace\u00d72, GET /api/media/logo\u00d72"
+    },
+    {
+      "name": "12 Open holding (GOOGL)",
+      "credits": 225,
+      "http": 132,
+      "cumul": 1712,
+      "top_fn": "fetchEodhdEodDailyBothCloses\u00d798, fetchEodhdCryptoDailyBars\u00d716, fetchEodhdIntraday\u00d77, fetchEodhdRealtimeSymbolsRaw\u00d77",
+      "top_routes": "POST /api/portfolio/live-quotes\u00d79, PUT /api/portfolio/workspace\u00d78, POST /api/portfolio/stock-splits\u00d78, GET /api/watchlist\u00d78"
+    },
+    {
+      "name": "13 Return to Portfolio",
+      "credits": 260,
+      "http": 133,
+      "cumul": 1972,
+      "top_fn": "fetchEodhdEodDailyBothCloses\u00d749, fetchEodhdEodDaily\u00d728, fetchEodhdIntraday\u00d722, fetchEodhdCryptoDailyBars\u00d720",
+      "top_routes": "POST /api/portfolio/live-quotes\u00d78, POST /api/portfolio/stock-splits\u00d74, GET /api/watchlist\u00d74, PUT /api/portfolio/workspace\u00d73"
+    },
+    {
+      "name": "14 Hubs (heatmaps/news/macro)",
+      "credits": 292,
+      "http": 186,
+      "cumul": 2264,
+      "top_fn": "fetchEodhdEodDailyBothCloses\u00d798, fetchEodhdCryptoDailyBars\u00d736, fetchUstYieldYear20Y\u00d734, fetchEodhdRealtimeSymbolsRaw\u00d713",
+      "top_routes": "POST /api/portfolio/live-quotes\u00d719, PUT /api/portfolio/workspace\u00d711, PUT /api/portfolios/listings\u00d79, POST /api/portfolio/stock-splits\u00d78"
+    },
+    {
+      "name": "15 Crypto screener + BTC",
+      "credits": 354,
+      "http": 205,
+      "cumul": 2618,
+      "top_fn": "fetchEodhdEodDailyBothCloses\u00d7146, fetchEodhdCryptoDailyBars\u00d738, fetchEodhdIntraday\u00d710, fetchEodhdRealtimeSymbolsRaw\u00d79",
+      "top_routes": "POST /api/portfolio/live-quotes\u00d715, POST /api/portfolio/stock-splits\u00d711, GET /api/watchlist\u00d79, PUT /api/portfolio/workspace\u00d79"
+    },
+    {
+      "name": "16 Search + open MSFT",
+      "credits": 299,
+      "http": 149,
+      "cumul": 2917,
+      "top_fn": "fetchEodhdEodDailyBothCloses\u00d798, fetchEodhdCryptoDailyBars\u00d712, fetchEodhdScreenerUncached\u00d710, fetchEodhdRealtimeSymbolsRaw\u00d79",
+      "top_routes": "POST /api/portfolio/stock-splits\u00d78, POST /api/portfolio/live-quotes\u00d78, GET /api/watchlist\u00d78, GET /api/search/recent\u00d77"
+    },
+    {
+      "name": "17 Revisit NVDA (warm)",
+      "credits": 26,
+      "http": 13,
+      "cumul": 2943,
+      "top_fn": "fetchEodhdCryptoDailyBars\u00d712, fetchEodhdRealtimeSymbolsRaw\u00d71",
+      "top_routes": "POST /api/portfolio/live-quotes\u00d76, PUT /api/portfolio/workspace\u00d73, PUT /api/portfolios/listings\u00d73, GET /api/stocks/NVDA/earnings\u00d71"
+    },
+    {
+      "name": "18 Idle 2.5 min on NVDA",
+      "credits": 70,
+      "http": 30,
+      "cumul": 3013,
+      "top_fn": "fetchEodhdIntraday\u00d710, fetchEodhdEodDaily\u00d710, fetchEodhdUsQuoteDelayed\u00d710",
+      "top_routes": "GET /api/stocks/NVDA/live-price\u00d710, GET /api/stocks/NVDA/extended-hours\u00d710, GET /api/notifications\u00d74"
+    },
+    {
+      "name": "19 Background ~20s + return",
+      "credits": 7,
+      "http": 3,
+      "cumul": 3020,
+      "top_fn": "fetchEodhdIntraday\u00d71, fetchEodhdEodDaily\u00d71, fetchEodhdUsQuoteDelayed\u00d71",
+      "top_routes": "GET /api/stocks/NVDA/live-price\u00d71, GET /api/stocks/NVDA/extended-hours\u00d71, GET /api/notifications\u00d71"
+    }
+  ],
+  "top_fns": [
+    {
+      "fn": "fetchEodhdEodDailyBothCloses",
+      "http": 832,
+      "credits": 832
+    },
+    {
+      "fn": "fetchEodhdCryptoDailyBars",
+      "http": 272,
+      "credits": 272
+    },
+    {
+      "fn": "fetchEodhdEodDaily",
+      "http": 145,
+      "credits": 145
+    },
+    {
+      "fn": "fetchEodhdIntraday",
+      "http": 119,
+      "credits": 595
+    },
+    {
+      "fn": "fetchEodhdRealtimeSymbolsRaw",
+      "http": 65,
+      "credits": 666
+    },
+    {
+      "fn": "fetchUstYieldYear20Y",
+      "http": 34,
+      "credits": 34
+    },
+    {
+      "fn": "fetchEodhdFundamentalsJsonUncached",
+      "http": 32,
+      "credits": 320
+    },
+    {
+      "fn": "fetchEodhdScreenerUncached",
+      "http": 30,
+      "credits": 30
+    },
+    {
+      "fn": "fetchEodhdUsQuoteDelayed",
+      "http": 25,
+      "credits": 25
+    },
+    {
+      "fn": "fetchSpxDailyBarsForShillerCape",
+      "http": 4,
+      "credits": 4
+    },
+    {
+      "fn": "fetchEodhdCryptoFundamentalsMeta",
+      "http": 3,
+      "credits": 30
+    },
+    {
+      "fn": "fetchUst10YGbondUncached",
+      "http": 1,
+      "credits": 1
+    },
+    {
+      "fn": "loadCryptoNewsUncached",
+      "http": 1,
+      "credits": 10
+    },
+    {
+      "fn": "fetchEodhdSearch",
+      "http": 1,
+      "credits": 1
+    },
+    {
+      "fn": "fetchEodhdExchangeSymbolListUncached",
+      "http": 1,
+      "credits": 1
+    }
+  ],
+  "idle": {
+    "http": 30,
+    "credits": 70,
+    "by_fn": {
+      "fetchEodhdIntraday": 10,
+      "fetchEodhdEodDaily": 10,
+      "fetchEodhdUsQuoteDelayed": 10
+    },
+    "routes": {
+      "GET /api/stocks/NVDA/live-price": 10,
+      "GET /api/stocks/NVDA/extended-hours": 10,
+      "GET /api/notifications": 4
+    },
+    "scopes": []
+  },
+  "background": {
+    "http": 3,
+    "credits": 7,
+    "by_fn": {
+      "fetchEodhdIntraday": 1,
+      "fetchEodhdEodDaily": 1,
+      "fetchEodhdUsQuoteDelayed": 1
+    },
+    "routes": {
+      "GET /api/stocks/NVDA/live-price": 1,
+      "GET /api/stocks/NVDA/extended-hours": 1,
+      "GET /api/notifications": 1
+    },
+    "scopes": []
+  }
+}

@@ -46,7 +46,8 @@ export function isStock1DLiveMinuteChartTicker(ticker: string): boolean {
 
 /**
  * Single gate for the live 1D WS pipeline (chart, header spot poll, client tail pin).
- * Uses allowlist + regular session clock only — no per-symbol EODHD holiday probes.
+ * Uses allowlist + session clock (weekends + full NYSE/Nasdaq holidays → closed).
+ * No per-symbol EODHD holiday probes.
  */
 export function usesStock1DLiveWsMinutePipeline(
   ticker: string,

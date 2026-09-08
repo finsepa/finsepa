@@ -5,7 +5,7 @@ import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-compani
 import { TOP10_TICKERS } from "@/lib/screener/top10-config";
 
 /** Extra tickers outside top-cap list that we always include in the warm universe. */
-const WARM_EXTRA_TICKERS = ["MU", "AMD", "CMCSA", "PYPL", "RACE", "COIN", "MAR"] as const;
+const WARM_EXTRA_TICKERS = ["MU", "AMD", "CMCSA", "PYPL", "RACE", "COIN", "MAR", "PG", "ORCL", "WMT", "MA", "UNH"] as const;
 
 /** How many equities to include from the screener top-500 snapshot. */
 export const EARNINGS_WARM_UNIVERSE_CAP = 100;
@@ -14,6 +14,9 @@ export const EARNINGS_WARM_SHARD_COUNT = 7;
 
 /** Max tickers processed per cron invocation (serverless time budget). */
 export const EARNINGS_WARM_TICKERS_PER_RUN = 10;
+
+/** Slots reserved for partial slides-gap backfill within each cron run. */
+export const EARNINGS_WARM_GAP_BACKFILL_PER_RUN = 3;
 
 function hashTicker(ticker: string): number {
   let h = 0;

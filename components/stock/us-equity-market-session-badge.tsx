@@ -35,6 +35,11 @@ function MarketOpenStatusDot({ dotSizeClass }: { dotSizeClass: string }) {
   );
 }
 
+function BadgeLabel({ display }: { display: UsEquitySessionBadgeDisplay }) {
+  // Countdown text drifts between SSR and hydrate — same pattern as UsMarketsSessionLabel.
+  return <span suppressHydrationWarning>{formatUsEquitySessionBadgeLabel(display)}</span>;
+}
+
 function BadgeRow({
   display,
   iconSize = 20,
@@ -49,35 +54,35 @@ function BadgeRow({
       return (
         <>
           <PreMarketEarningsIcon size={iconSize} />
-          <span>{formatUsEquitySessionBadgeLabel(display)}</span>
+          <BadgeLabel display={display} />
         </>
       );
     case "regular":
       return (
         <>
           <MarketOpenStatusDot dotSizeClass={dotSizeClass} />
-          <span>{formatUsEquitySessionBadgeLabel(display)}</span>
+          <BadgeLabel display={display} />
         </>
       );
     case "post":
       return (
         <>
           <PostMarketEarningsIcon size={iconSize} />
-          <span>{formatUsEquitySessionBadgeLabel(display)}</span>
+          <BadgeLabel display={display} />
         </>
       );
     case "pre_opens_soon":
       return (
         <>
           <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-fg-muted")} aria-hidden />
-          <span>{formatUsEquitySessionBadgeLabel(display)}</span>
+          <BadgeLabel display={display} />
         </>
       );
     default:
       return (
         <>
           <span className={cn(dotSizeClass, "shrink-0 rounded-full bg-fg-muted")} aria-hidden />
-          <span>{formatUsEquitySessionBadgeLabel(display)}</span>
+          <BadgeLabel display={display} />
         </>
       );
   }

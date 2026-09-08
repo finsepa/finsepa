@@ -108,31 +108,45 @@ export async function fetchLiveMarketPriceClient(symbol: string): Promise<number
   return p ?? null;
 }
 
+/** Single-flight identical symbol sets (Strict Mode / double hydrate). */
+const liveQuotesInflight = new Map<string, Promise<Record<string, number | null>>>();
+
 /** One POST for all holding symbols — EODHD realtime batch (1 credit/symbol), not N× intraday. */
 export async function fetchPortfolioLivePricesClient(
   symbols: string[],
 ): Promise<Record<string, number | null>> {
-  const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))];
+  const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].sort();
   if (!unique.length) return {};
 
-  try {
-    const res = await fetch("/api/portfolio/live-quotes", {
-      method: "POST",
-      credentials: "include",
-      cache: "no-store",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ symbols: unique }),
-    });
-    if (!res.ok) return Object.fromEntries(unique.map((s) => [s, null]));
-    const data = (await res.json()) as { prices?: Record<string, number | null> };
-    const prices = data.prices ?? {};
-    const out: Record<string, number | null> = {};
-    for (const s of unique) {
-      const p = prices[s];
-      out[s] = typeof p === "number" && Number.isFinite(p) && p > 0 ? p : null;
+  const flightKey = unique.join(",");
+  const pending = liveQuotesInflight.get(flightKey);
+  if (pending) return pending;
+
+  const promise = (async (): Promise<Record<string, number | null>> => {
+    try {
+      const res = await fetch("/api/portfolio/live-quotes", {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ symbols: unique }),
+      });
+      if (!res.ok) return Object.fromEntries(unique.map((s) => [s, null]));
+      const data = (await res.json()) as { prices?: Record<string, number | null> };
+      const prices = data.prices ?? {};
+      const out: Record<string, number | null> = {};
+      for (const s of unique) {
+        const p = prices[s];
+        out[s] = typeof p === "number" && Number.isFinite(p) && p > 0 ? p : null;
+      }
+      return out;
+    } catch {
+      return Object.fromEntries(unique.map((s) => [s, null]));
+    } finally {
+      liveQuotesInflight.delete(flightKey);
     }
-    return out;
-  } catch {
-    return Object.fromEntries(unique.map((s) => [s, null]));
-  }
+  })();
+
+  liveQuotesInflight.set(flightKey, promise);
+  return promise;
 }

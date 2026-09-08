@@ -25,18 +25,25 @@ function firstPartyEarningsDocumentUrls(
   row: StockEarningsHistoryRow,
 ): { slidesUrl: string | null; filingsUrl: string | null } {
   const curated = getCuratedIrEarningsRowUrls(listingTicker, row);
-  if (curated) {
-    return {
-      slidesUrl: curated.presentationPdfUrl ?? null,
-      filingsUrl: curated.quarterlyReportPdfUrl ?? null,
-    };
-  }
-  const s = row.secSlidesUrl;
-  const f = row.secFilingsUrl;
-  return {
-    slidesUrl: s && s.startsWith("https://") && isEarningsSlidesPreviewUrl(s) ? s : null,
-    filingsUrl: isEarningsFilingsPreviewUrl(f) ? f : null,
-  };
+  const rowSlides =
+    row.secSlidesUrl &&
+    row.secSlidesUrl.startsWith("https://") &&
+    isEarningsSlidesPreviewUrl(row.secSlidesUrl)
+      ? row.secSlidesUrl
+      : null;
+  const rowFilings = isEarningsFilingsPreviewUrl(row.secFilingsUrl) ? row.secFilingsUrl : null;
+
+  // Curated fills win per field; missing curated field falls back to resolved row URL.
+  const slidesUrl =
+    (curated?.presentationPdfUrl && isEarningsSlidesPreviewUrl(curated.presentationPdfUrl)
+      ? curated.presentationPdfUrl
+      : null) ?? rowSlides;
+  const filingsUrl =
+    (curated?.quarterlyReportPdfUrl && isEarningsFilingsPreviewUrl(curated.quarterlyReportPdfUrl)
+      ? curated.quarterlyReportPdfUrl
+      : null) ?? rowFilings;
+
+  return { slidesUrl, filingsUrl };
 }
 
 type PreviewState = { url: string; title: string } | null;

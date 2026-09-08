@@ -1,19 +1,22 @@
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
-export type KnownCdnSlidePlan = {
-  candidates: string[];
+export type KnownCdnDocPlan = {
+  slideCandidates: string[];
+  filingCandidates: string[];
 };
 
-type KnownCdnSlideResolver = (
+type KnownCdnDocResolver = (
   row: StockEarningsHistoryRow,
   ctx: { fyEndMonthDay: string | null },
-) => KnownCdnSlidePlan | null;
+) => KnownCdnDocPlan | null;
 
 /**
  * Microsoft fiscal year ends in June.
  * Period ending Jul–Sep → FY(Y+1) Q1; Oct–Dec → Q2; Jan–Mar → Q3; Apr–Jun → Q4.
  */
-function microsoftFiscalFromPeriodEndYmd(ymd: string | null): { fy: number; fq: 1 | 2 | 3 | 4 } | null {
+export function microsoftFiscalFromPeriodEndYmd(
+  ymd: string | null,
+): { fy: number; fq: 1 | 2 | 3 | 4 } | null {
   if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
   const [ys, ms] = ymd.split("-");
   const y = Number(ys);
@@ -29,20 +32,33 @@ function microsoftFiscalFromPeriodEndYmd(ymd: string | null): { fy: number; fq: 
   return { fy, fq };
 }
 
-const MSFT_SLIDES_CDN = "https://cdn-dynmedia-1.microsoft.com/is/content/microsoftcorp";
+const MSFT_CDN = "https://cdn-dynmedia-1.microsoft.com/is/content/microsoftcorp";
 
 function microsoftSlideDeckCandidates(fy: number, fq: 1 | 2 | 3 | 4): string[] {
   const yy = String(fy % 100).padStart(2, "0");
-  const upper = `${MSFT_SLIDES_CDN}/SlidesFY${yy}Q${fq}`;
-  const lower = `${MSFT_SLIDES_CDN}/SlidesFY${yy}q${fq}`;
+  const upper = `${MSFT_CDN}/SlidesFY${yy}Q${fq}`;
+  const lower = `${MSFT_CDN}/SlidesFY${yy}q${fq}`;
   return fq === 4 ? [lower, upper] : [upper, lower];
 }
 
-const RESOLVERS_BY_TICKER: Record<string, KnownCdnSlideResolver> = {
+function microsoftPressReleaseCandidates(fy: number, fq: 1 | 2 | 3 | 4): string[] {
+  const yy = String(fy % 100).padStart(2, "0");
+  const upper = `${MSFT_CDN}/PressReleaseFY${yy}Q${fq}`;
+  const lower = `${MSFT_CDN}/PressReleaseFY${yy}q${fq}`;
+  // Older quarters (e.g. FY22 Q3) use an underscore: PressReleaseFY22_Q3.
+  const underscore = `${MSFT_CDN}/PressReleaseFY${yy}_Q${fq}`;
+  // Q4 often uses lowercase q on CDN (same quirk as slides).
+  return fq === 4 ? [lower, upper, underscore] : [upper, lower, underscore];
+}
+
+const RESOLVERS_BY_TICKER: Record<string, KnownCdnDocResolver> = {
   MSFT: (row) => {
     const p = microsoftFiscalFromPeriodEndYmd(row.fiscalPeriodEndYmd);
     if (!p) return null;
-    return { candidates: microsoftSlideDeckCandidates(p.fy, p.fq) };
+    return {
+      slideCandidates: microsoftSlideDeckCandidates(p.fy, p.fq),
+      filingCandidates: microsoftPressReleaseCandidates(p.fy, p.fq),
+    };
   },
   PLTR: (row) => {
     const m = row.fiscalPeriodLabel?.trim().match(/^Q([1-4])\s+(\d{4})$/i);
@@ -50,18 +66,35 @@ const RESOLVERS_BY_TICKER: Record<string, KnownCdnSlideResolver> = {
     const fq = m[1]!;
     const fy = m[2]!;
     return {
-      candidates: [
+      slideCandidates: [
         `https://investors.palantir.com/files/Palantir%20-%20Q${fq}%20${fy}%20Business%20Update.pdf`,
       ],
+      filingCandidates: [],
     };
   },
 };
 
+/** @deprecated Prefer {@link knownCdnDocPlanForRow}. */
+export type KnownCdnSlidePlan = {
+  candidates: string[];
+};
+
+/** @deprecated Prefer {@link knownCdnDocPlanForRow}. */
 export function knownCdnSlidePlanForRow(
   listingTicker: string,
   row: StockEarningsHistoryRow,
   ctx: { fyEndMonthDay: string | null },
 ): KnownCdnSlidePlan | null {
+  const plan = knownCdnDocPlanForRow(listingTicker, row, ctx);
+  if (!plan?.slideCandidates.length) return null;
+  return { candidates: plan.slideCandidates };
+}
+
+export function knownCdnDocPlanForRow(
+  listingTicker: string,
+  row: StockEarningsHistoryRow,
+  ctx: { fyEndMonthDay: string | null },
+): KnownCdnDocPlan | null {
   const t = listingTicker.trim().toUpperCase();
   const resolver = RESOLVERS_BY_TICKER[t];
   if (!resolver) return null;

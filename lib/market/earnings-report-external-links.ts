@@ -121,16 +121,32 @@ export function parseEarningsDocumentHubFromFundamentalsRoot(root: Record<string
   if (!g) return { irWebsite: null, cik: null, companyWebsite: null };
 
   const irRaw = g.IRWebsite ?? g.IrWebsite ?? g.InvestorRelationsURL ?? g.InvestorRelations;
-  const ir = typeof irRaw === "string" && irRaw.trim() ? irRaw.trim() : null;
+  const ir =
+    typeof irRaw === "string" && irRaw.trim()
+      ? normalizeHttpUrlLoose(irRaw.trim())
+      : null;
 
   const webRaw = g.WebURL ?? g.Website ?? g.URL;
   const companyWebsite =
-    typeof webRaw === "string" && /^https?:\/\//i.test(webRaw.trim()) ? webRaw.trim() : null;
+    typeof webRaw === "string" && webRaw.trim() ? normalizeHttpUrlLoose(webRaw.trim()) : null;
 
   const cik = normalizeSecCik(
     g.CIK ?? g.Cik ?? g.cik ?? g.CentralIndexKey ?? g.SEC_CIK ?? g.SecCik ?? g.CIKCode ?? g.cikCode,
   );
   return { irWebsite: ir, cik, companyWebsite };
+}
+
+function normalizeHttpUrlLoose(raw: string): string | null {
+  const t = raw.trim();
+  if (!t) return null;
+  const withScheme = /^https?:\/\//i.test(t) ? t : `https://${t}`;
+  try {
+    const u = new URL(withScheme);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return u.toString();
+  } catch {
+    return null;
+  }
 }
 
 export function buildEarningsReportRowLinkTargets(

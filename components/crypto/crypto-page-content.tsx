@@ -208,6 +208,7 @@ export function CryptoPageContent({
     let cancelled = false;
     const debug = process.env.NODE_ENV === "development" && isCryptoLive1DSymbol(symUpper);
     const tick = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
       try {
         const res = await fetch(`/api/crypto/${encodeURIComponent(symUpper)}/live-price`, {
           credentials: "include",
@@ -265,9 +266,14 @@ export function CryptoPageContent({
     // BTC (live 1D) polls faster so the header keeps pace with the ~60s chart.
     const pollMs = isCryptoLive1DSymbol(symUpper) ? 30_000 : 90_000;
     const id = window.setInterval(tick, pollMs);
+    const onVisibility = () => {
+      if (!document.hidden) void tick();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [symUpper]);
 

@@ -90,6 +90,22 @@
     {
       "path": "/api/cron/insider-transactions-warm",
       "schedule": "45 11 * * 1-5"
+    },
+    {
+      "path": "/api/cron/earnings-ir-vault?mode=pull",
+      "schedule": "31 13 * * 1-5"
+    },
+    {
+      "path": "/api/cron/earnings-ir-vault?mode=pull",
+      "schedule": "31 14 * * 1-5"
+    },
+    {
+      "path": "/api/cron/earnings-ir-vault?mode=pull",
+      "schedule": "1 20 * * 1-5"
+    },
+    {
+      "path": "/api/cron/earnings-ir-vault?mode=pull",
+      "schedule": "1 21 * * 1-5"
     }
   ]
 }

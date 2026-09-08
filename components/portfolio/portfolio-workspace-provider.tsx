@@ -114,11 +114,20 @@ import {
 import { computePublicPortfolioListingMetrics, withListingOwner } from "@/lib/portfolio/public-listing-metrics";
 import { buildPublicListingSnapshot } from "@/lib/portfolio/public-listing-snapshot";
 import { dispatchPublicListingsChanged, putPublicPortfolioListingRequest } from "@/lib/portfolio/sync-public-listing-client";
+import { applyLivePricesToHoldings } from "@/lib/portfolio/apply-live-prices-to-holdings";
 import {
   holdingsSliceForPortfolioLiveQuotes,
+  portfolioPathnameAllowsStockSplitsHeal,
   portfolioPathnameUsesEagerLiveQuotes,
 } from "@/lib/portfolio/portfolio-live-quotes-paths";
 import { portfolioLedgerFingerprint } from "@/lib/portfolio/portfolio-ledger-fingerprint";
+import {
+  portfolioQuoteSessionIsFresh,
+  portfolioSliceHasSessionMarks,
+  PORTFOLIO_QUOTE_SESSION_TTL_MS,
+  readPortfolioQuoteSession,
+  writePortfolioQuoteSession,
+} from "@/lib/portfolio/portfolio-quote-session";
 import {
   refreshHoldingsByPortfolioIdMarketPrices,
   refreshHoldingMarketPrices,
@@ -491,7 +500,8 @@ export function PortfolioWorkspaceProvider({
   const quotedLedgerFingerprintRef = useRef<string | null>(null);
   /** Selection last covered by a deferred-route quote refresh (avoids duplicate fetches on hydrate). */
   const prevQuotedSelectionRef = useRef<string | null | undefined>(undefined);
-  const QUOTE_DEDUPE_TTL_MS = 60_000;
+  /** In-flight quote key — collapses Strict Mode / local+cloud double hydrate into one POST. */
+  const quotesInFlightKeyRef = useRef<string | null>(null);
   const quoteSessionKey = useMemo(() => `finsepa.portfolio.quotedLedger.${userId}`, [userId]);
   /** True after {@link applyWorkspaceState} skipped live quotes on a read-mostly route; cleared when catch-up runs. */
   const [deferredQuotesPending, setDeferredQuotesPending] = useState(false);
@@ -550,15 +560,33 @@ export function PortfolioWorkspaceProvider({
   const runHoldingsQuoteRefresh = useCallback(
     (
       slice: Record<string, PortfolioHolding[]>,
-      opts?: { recordQuotedLedger?: string },
+      opts?: { recordQuotedLedger?: string; keepReady?: boolean },
     ) => {
       if (!Object.values(slice).some((h) => h.length > 0)) {
         setHoldingsMarkToMarketReady(true);
         return;
       }
 
+      const symbolsKey = [
+        ...new Set(
+          Object.values(slice)
+            .flat()
+            .map((h) => h.symbol.trim().toUpperCase())
+            .filter(Boolean),
+        ),
+      ]
+        .sort()
+        .join(",");
+      const flightKey = `${opts?.recordQuotedLedger ?? ""}|${symbolsKey}`;
+      if (quotesInFlightKeyRef.current === flightKey) {
+        return;
+      }
+      quotesInFlightKeyRef.current = flightKey;
+
       const refreshGen = ++holdingsQuoteRefreshGenRef.current;
-      setHoldingsMarkToMarketReady(false);
+      if (!opts?.keepReady) {
+        setHoldingsMarkToMarketReady(false);
+      }
 
       void (async () => {
         try {
@@ -568,16 +596,31 @@ export function PortfolioWorkspaceProvider({
           }
           if (opts?.recordQuotedLedger && holdingsQuoteRefreshGenRef.current === refreshGen) {
             quotedLedgerFingerprintRef.current = opts.recordQuotedLedger;
-            try {
-              sessionStorage.setItem(
-                quoteSessionKey,
-                JSON.stringify({ ledger: opts.recordQuotedLedger, at: Date.now() }),
-              );
-            } catch {
-              // ignore
+            const prices: Record<string, number> = {};
+            for (const holds of Object.values(quoted)) {
+              for (const h of holds) {
+                const sym = h.symbol.trim().toUpperCase();
+                if (
+                  sym &&
+                  typeof h.marketPrice === "number" &&
+                  Number.isFinite(h.marketPrice) &&
+                  h.marketPrice > 0
+                ) {
+                  prices[sym] = h.marketPrice;
+                }
+              }
             }
+            const prevSession = readPortfolioQuoteSession(quoteSessionKey);
+            writePortfolioQuoteSession(quoteSessionKey, {
+              ledger: opts.recordQuotedLedger,
+              at: Date.now(),
+              prices: { ...(prevSession?.prices ?? {}), ...prices },
+            });
           }
         } finally {
+          if (quotesInFlightKeyRef.current === flightKey) {
+            quotesInFlightKeyRef.current = null;
+          }
           if (holdingsQuoteRefreshGenRef.current === refreshGen) {
             setHoldingsMarkToMarketReady(true);
           }
@@ -587,6 +630,21 @@ export function PortfolioWorkspaceProvider({
     [quoteSessionKey],
   );
 
+  const applySessionMarksToHoldings = useCallback(
+    (rebuilt: Record<string, PortfolioHolding[]>, prices: Record<string, number>) => {
+      if (!Object.keys(prices).length) return;
+      setHoldingsByPortfolioId((prev) => {
+        const next: Record<string, PortfolioHolding[]> = { ...prev };
+        for (const [pid, holds] of Object.entries(rebuilt)) {
+          const base = prev[pid] ?? holds;
+          next[pid] = applyLivePricesToHoldings(base.length ? base : holds, prices);
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
   const scheduleHoldingsQuoteRefresh = useCallback(
     (
       rebuilt: Record<string, PortfolioHolding[]>,
@@ -594,60 +652,56 @@ export function PortfolioWorkspaceProvider({
       scope: { selectedPortfolioId: string | null; portfolios: PortfolioEntry[] },
     ) => {
       const eagerQuotes = portfolioPathnameUsesEagerLiveQuotes(pathnameRef.current);
+      const session = readPortfolioQuoteSession(quoteSessionKey);
+      const topbarSlice = holdingsSliceForPortfolioLiveQuotes(
+        rebuilt,
+        scope.portfolios,
+        scope.selectedPortfolioId,
+      );
 
-      const skipForRecentSessionQuote = (): boolean => {
-        try {
-          const raw = sessionStorage.getItem(quoteSessionKey);
-          if (raw) {
-            const parsed = JSON.parse(raw) as { ledger: string; at: number } | null;
-            if (
-              parsed &&
-              parsed.ledger === ledgerFingerprint &&
-              typeof parsed.at === "number" &&
-              Date.now() - parsed.at < QUOTE_DEDUPE_TTL_MS
-            ) {
-              quotedLedgerFingerprintRef.current = ledgerFingerprint;
-              setHoldingsMarkToMarketReady(true);
-              return true;
-            }
-          }
-        } catch {
-          // ignore
+      const paintSessionMarks = () => {
+        if (session?.prices && Object.keys(session.prices).length) {
+          applySessionMarksToHoldings(rebuilt, session.prices);
         }
-        if (quotedLedgerFingerprintRef.current === ledgerFingerprint) {
-          setHoldingsMarkToMarketReady(true);
-          return true;
-        }
-        return false;
       };
 
       if (!eagerQuotes) {
         setDeferredQuotesPending(true);
-        if (skipForRecentSessionQuote()) {
-          prevQuotedSelectionRef.current = scope.selectedPortfolioId;
+        // Never block top-bar chrome waiting on live quotes on Screener/hubs.
+        setHoldingsMarkToMarketReady(true);
+        paintSessionMarks();
+        prevQuotedSelectionRef.current = scope.selectedPortfolioId;
+
+        if (portfolioQuoteSessionIsFresh(session, ledgerFingerprint)) {
+          quotedLedgerFingerprintRef.current = ledgerFingerprint;
           return;
         }
-        const topbarSlice = holdingsSliceForPortfolioLiveQuotes(
-          rebuilt,
-          scope.portfolios,
-          scope.selectedPortfolioId,
-        );
-        quotedLedgerFingerprintRef.current = ledgerFingerprint;
-        runHoldingsQuoteRefresh(topbarSlice, { recordQuotedLedger: ledgerFingerprint });
-        prevQuotedSelectionRef.current = scope.selectedPortfolioId;
+
+        // Cold: no marks for the selected slice — one fetch so $ isn't fill-price forever.
+        if (!portfolioSliceHasSessionMarks(topbarSlice, session?.prices ?? {})) {
+          quotedLedgerFingerprintRef.current = ledgerFingerprint;
+          runHoldingsQuoteRefresh(topbarSlice, {
+            recordQuotedLedger: ledgerFingerprint,
+            keepReady: true,
+          });
+        }
+        // Stale marks: keep painting them; TTL / Portfolio / switch will refresh.
         return;
       }
 
       setDeferredQuotesPending(false);
 
-      if (skipForRecentSessionQuote()) {
+      if (portfolioQuoteSessionIsFresh(session, ledgerFingerprint)) {
+        paintSessionMarks();
+        quotedLedgerFingerprintRef.current = ledgerFingerprint;
+        setHoldingsMarkToMarketReady(true);
         return;
       }
 
       quotedLedgerFingerprintRef.current = ledgerFingerprint;
       runHoldingsQuoteRefresh(rebuilt, { recordQuotedLedger: ledgerFingerprint });
     },
-    [quoteSessionKey, runHoldingsQuoteRefresh],
+    [quoteSessionKey, runHoldingsQuoteRefresh, applySessionMarksToHoldings],
   );
 
   const applyWorkspaceState = useCallback(
@@ -722,6 +776,42 @@ export function PortfolioWorkspaceProvider({
     runHoldingsQuoteRefresh,
   ]);
 
+  /**
+   * Deferred chrome TTL: while staying on Screener/hubs, refresh selected-portfolio marks
+   * about every 3 minutes (paused when the tab is hidden).
+   */
+  useEffect(() => {
+    if (portfolioPathnameUsesEagerLiveQuotes(pathname)) return;
+    if (!workspaceHydrated && !portfolioBootstrapFromLocal) return;
+
+    const tick = () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      const ledger = appliedLedgerFingerprintRef.current;
+      if (!ledger) return;
+      const session = readPortfolioQuoteSession(quoteSessionKey);
+      if (portfolioQuoteSessionIsFresh(session, ledger)) return;
+      const slice = holdingsSliceForPortfolioLiveQuotes(
+        holdingsByPortfolioId,
+        portfolios,
+        selectedPortfolioId,
+      );
+      if (!Object.values(slice).some((h) => h.length > 0)) return;
+      runHoldingsQuoteRefresh(slice, { recordQuotedLedger: ledger, keepReady: true });
+    };
+
+    const id = window.setInterval(tick, PORTFOLIO_QUOTE_SESSION_TTL_MS);
+    return () => window.clearInterval(id);
+  }, [
+    pathname,
+    workspaceHydrated,
+    portfolioBootstrapFromLocal,
+    portfolios,
+    holdingsByPortfolioId,
+    selectedPortfolioId,
+    quoteSessionKey,
+    runHoldingsQuoteRefresh,
+  ]);
+
   /** On deferred routes, refresh quotes when the user switches portfolio in the top bar. */
   useEffect(() => {
     if (!workspaceHydrated && !portfolioBootstrapFromLocal) return;
@@ -737,7 +827,8 @@ export function PortfolioWorkspaceProvider({
       portfolios,
       selectedPortfolioId,
     );
-    runHoldingsQuoteRefresh(slice);
+    const ledger = appliedLedgerFingerprintRef.current;
+    runHoldingsQuoteRefresh(slice, ledger ? { recordQuotedLedger: ledger, keepReady: true } : { keepReady: true });
   }, [
     selectedPortfolioId,
     pathname,
@@ -750,11 +841,12 @@ export function PortfolioWorkspaceProvider({
 
   /**
    * Demo seed uses early-2023 fill prices as provisional marks. Ensure the selected demo is
-   * live-quoted even when hydrate skipped a refresh (session dedupe) or after first seed.
+   * live-quoted on Portfolio (eager) routes — not on Screener/hubs.
    */
   const demoLiveQuoteAttemptedRef = useRef(new Set<string>());
   useEffect(() => {
     if (!workspaceHydrated && !portfolioBootstrapFromLocal) return;
+    if (!portfolioPathnameUsesEagerLiveQuotes(pathname)) return;
     if (!selectedPortfolioId) return;
     const selected = portfolios.find((p) => p.id === selectedPortfolioId);
     if (!selected || !portfolioIsDemo(selected)) return;
@@ -762,9 +854,14 @@ export function PortfolioWorkspaceProvider({
     const holds = holdingsByPortfolioId[selectedPortfolioId] ?? [];
     if (!holds.length) return;
     demoLiveQuoteAttemptedRef.current.add(selectedPortfolioId);
-    runHoldingsQuoteRefresh({ [selectedPortfolioId]: holds });
+    const ledger = appliedLedgerFingerprintRef.current;
+    runHoldingsQuoteRefresh(
+      { [selectedPortfolioId]: holds },
+      ledger ? { recordQuotedLedger: ledger } : undefined,
+    );
   }, [
     selectedPortfolioId,
+    pathname,
     portfolios,
     holdingsByPortfolioId,
     workspaceHydrated,
@@ -1336,6 +1433,7 @@ export function PortfolioWorkspaceProvider({
 
   useEffect(() => {
     if (!workspaceHydrated && !portfolioBootstrapFromLocal) return;
+    if (!portfolioPathnameAllowsStockSplitsHeal(pathname)) return;
     for (const p of portfolios) {
       if (portfolioIsDemo(p)) {
         if (reseedDemoLedgerIfNeeded(p.id)) continue;
@@ -1347,6 +1445,7 @@ export function PortfolioWorkspaceProvider({
   }, [
     workspaceHydrated,
     portfolioBootstrapFromLocal,
+    pathname,
     portfolios,
     transactionsByPortfolioId,
     syncStockSplitsForPortfolio,

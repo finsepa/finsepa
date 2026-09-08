@@ -9,11 +9,9 @@ import {
   pickExhibit99PresentationHtmlUrl,
 } from "@/lib/market/sec-earnings-press-release-revenue";
 import {
-  isDirectEarningsPdfUrl,
   isEarningsFilingsPreviewUrl,
   isEarningsSlidesPreviewUrl,
   isSecEdgarExhibitHtmlUrl,
-  isSecEdgarEarningsReleaseExhibitHtml,
   isSecEdgarPresentationExhibitHtml,
 } from "@/lib/market/earnings-document-url";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
@@ -203,45 +201,63 @@ export function parseFilingIndexPdfLinks(html: string, cikNumeric: string, acces
 function scoreSlidePdfName(file: string): number {
   const n = file.toLowerCase();
   if (!/\.pdf$/i.test(n)) return -1;
-  if (/ex-?99|exhibit.?99|ex99|slide|present|decks|deck|earnings?release|investor|result|q\d+fy|fy\d+q/i.test(n)) return 500;
-  if (/ex-?9[0-1]|exhibit|graphic|g\d+.*\.pdf/i.test(n)) return 200;
-  if (/8k|8-?k|press|releas/i.test(n)) return 100;
+  // Prefer true decks / Exhibit 99.2 — never treat 99.1 press releases as slides.
+  if (/slide|slides|present|presentation|deck|webslides/i.test(n)) return 800;
+  if (/ex-?99\.?2|exhibit[-_.]?99[-_.]?2|ex992/i.test(n)) return 700;
+  if (
+    /ex-?99\.?1|exhibit[-_.]?99[-_.]?1|ex991|earnings?[-_]?release|press[-_]?releas/i.test(n) &&
+    !/slide|present|deck/i.test(n)
+  ) {
+    return -1;
+  }
+  if (/investor|result|q\d+fy|fy\d+q/i.test(n)) return 200;
+  if (/ex-?9[0-1]|exhibit|graphic|g\d+.*\.pdf/i.test(n)) return 100;
   return 40;
 }
 
 function scoreFilingPdfName(file: string): number {
   const n = file.toLowerCase();
   if (!/\.pdf$/i.test(n)) return -1;
-  if (/10-?q|10-?k|annual|quarter|financial|complete|q\d+fy|fy\d+|report|8-?k|8k|filing|ex99|earnings|releas|10q|10k/i.test(
-    n,
-  ))
+  // Prefer releases / 99.1; demote pure presentation decks so they stay slides-only.
+  if (/slide|slides|present|presentation|deck|webslides/i.test(n) && !/release|ex-?99\.?1|exhibit[-_.]?99[-_.]?1/i.test(n)) {
+    return 80;
+  }
+  if (/earnings?[-_]?release|press[-_]?releas|ex-?99\.?1|exhibit[-_.]?99[-_.]?1|ex991|financial[-_]?results/i.test(n)) {
+    return 800;
+  }
+  if (/10-?q|10-?k|annual|quarter|financial|complete|report|8-?k|8k|filing|ex99|10q|10k/i.test(n)) {
     return 500;
+  }
   if (/ex-?9|exhibit|graphic|table/i.test(n)) return 200;
   return 30;
 }
 
 /**
  * Pick up to two distinct `https://www.sec.gov/Archives/.../*.pdf` URLs.
- * The browser will open them with native PDF preview. When a filing is HTML-only, both stay null.
+ * Slides require a presentation-like name (score ≥ 500); press-release-only 8-Ks leave slides null.
  */
 export function pickEarningsSlideAndFilingPdfs(pdfs: ParsedFilingDoc[]): { slides: string | null; filings: string | null } {
   if (pdfs.length === 0) return { slides: null, filings: null };
   const slideRanked = [...pdfs]
     .map((d) => ({ d, s: scoreSlidePdfName(d.file) }))
-    .filter((x) => x.s >= 0)
+    .filter((x) => x.s >= 500)
     .sort((a, b) => b.s - a.s);
   const filingRanked = [...pdfs]
     .map((d) => ({ d, s: scoreFilingPdfName(d.file) }))
     .filter((x) => x.s >= 0)
     .sort((a, b) => b.s - a.s);
 
-  const slides = slideRanked[0]!.d.url;
-  const primaryFiling = filingRanked[0]!.d.url;
-  if (primaryFiling !== slides) {
+  const slides = slideRanked[0]?.d.url ?? null;
+  const primaryFiling = filingRanked[0]?.d.url ?? null;
+  if (!slides && !primaryFiling) return { slides: null, filings: null };
+  if (slides && primaryFiling && primaryFiling !== slides) {
     return { slides, filings: primaryFiling };
   }
-  const other = pdfs.find((d) => d.url !== slides);
-  return { slides, filings: other ? other.url : slides };
+  if (slides && !primaryFiling) {
+    const other = pdfs.find((d) => d.url !== slides);
+    return { slides, filings: other ? other.url : null };
+  }
+  return { slides: null, filings: primaryFiling };
 }
 
 function filingIndexHtmUrl(cikNumeric: string, accessionDashed: string): string {
@@ -354,28 +370,26 @@ export async function enrichEarningsHistoryWithSecDocuments(
       }
     }
     const { slides, filings } = pickEarningsSlideAndFilingPdfs(pdfs);
-    if (slides) row.secSlidesUrl = slides;
     if (!isEarningsSlidesPreviewUrl(row.secSlidesUrl)) {
-      const slidesHtml = pickExhibit99PresentationHtmlUrl(html, cikNum, flat);
-      if (slidesHtml) row.secSlidesUrl = slidesHtml;
+      if (slides) row.secSlidesUrl = slides;
       else {
-        const releaseHtml = pickExhibit99PressReleaseHtmlUrl(html, cikNum, flat);
-        if (releaseHtml && isSecEdgarEarningsReleaseExhibitHtml(releaseHtml)) {
-          row.secSlidesUrl = releaseHtml;
-        }
+        const slidesHtml = pickExhibit99PresentationHtmlUrl(html, cikNum, flat);
+        if (slidesHtml) row.secSlidesUrl = slidesHtml;
       }
     }
-    if (filings) {
-      row.secFilingsUrl = filings;
-    } else if (
+    if (
       !isEarningsFilingsPreviewUrl(row.secFilingsUrl) ||
       isSecEdgarPresentationExhibitHtml(row.secFilingsUrl)
     ) {
-      const exhibitHtml = pickExhibit99PressReleaseHtmlUrl(html, cikNum, flat);
-      if (exhibitHtml) row.secFilingsUrl = exhibitHtml;
-      else {
-        const primary8k = issuerPrimary8kBodyHtmlUrl(m.primaryDocument, cikNum, flat);
-        if (primary8k) row.secFilingsUrl = primary8k;
+      if (filings && filings !== row.secSlidesUrl) {
+        row.secFilingsUrl = filings;
+      } else {
+        const exhibitHtml = pickExhibit99PressReleaseHtmlUrl(html, cikNum, flat);
+        if (exhibitHtml && exhibitHtml !== row.secSlidesUrl) row.secFilingsUrl = exhibitHtml;
+        else {
+          const primary8k = issuerPrimary8kBodyHtmlUrl(m.primaryDocument, cikNum, flat);
+          if (primary8k && primary8k !== row.secSlidesUrl) row.secFilingsUrl = primary8k;
+        }
       }
     }
 
@@ -409,6 +423,12 @@ export async function enrichReportedHistoryRevenueFromSec8k(
 ): Promise<StockEarningsHistoryRow[]> {
   const cik10 = normalizeSecCik(cikRaw);
   if (!cik10) return rows;
+
+  // Avoid a submissions.json round-trip when EODHD already has revenue for reported rows.
+  const needsRevenue = rows.some(
+    (r) => r.reported && r.revenueActualUsd == null && Boolean(r.reportDateYmd),
+  );
+  if (!needsRevenue) return rows;
 
   const body = await secFetchText(submissionsJsonUrl(cik10));
   if (!body) return rows;

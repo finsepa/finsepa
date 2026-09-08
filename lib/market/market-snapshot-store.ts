@@ -112,15 +112,21 @@ async function readMarketSnapshotWithStaleFallback<T>(
 
 /**
  * Read a hot-tier snapshot when segment matches the current US market window.
- * Falls back to the previous segment when still within {@link MARKET_SNAPSHOT_HOT_STALE_MS}.
+ * Falls back to the latest row when still within the stale window — including frozen
+ * weekends/holidays so a live→frozen segment flip does not cold-rebuild EODHD.
+ *
+ * Frozen / holiday windows use the slow (20h) stale budget so a prod cron that still
+ * tagged `live-*` on a closed day does not force a ~500-symbol rebuild on every refresh.
  */
 export async function readMarketSnapshot<T>(key: MarketSnapshotKey): Promise<T | null> {
   const epoch = getScreenerUsMarketCacheEpoch();
+  const maxStaleMs =
+    epoch.mode === "frozen" ? MARKET_SNAPSHOT_SLOW_STALE_MS : MARKET_SNAPSHOT_HOT_STALE_MS;
   return readMarketSnapshotWithStaleFallback<T>(
     key,
     marketSnapshotHotSegment(epoch),
-    MARKET_SNAPSHOT_HOT_STALE_MS,
-    epoch.mode !== "frozen",
+    maxStaleMs,
+    true,
   );
 }
 

@@ -45,6 +45,9 @@ export type UseWatchlistEnrichedItemsOptions = {
   enabled?: boolean;
 };
 
+/** Skip re-fetch when collapsing/expanding the rail within this window (same membership). */
+const WATCHLIST_ENRICH_TTL_MS = 180_000;
+
 function primeItemsFromCacheOrShell(tickers: string[], membershipKey: string): WatchlistEnrichedItem[] {
   const watchedSet = new Set(tickers);
 
@@ -84,6 +87,7 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
   watchedRef.current = watchedTickers;
   const loadGenRef = useRef(0);
   const lastLoadedMembershipKeyRef = useRef("");
+  const lastLoadedAtRef = useRef(0);
 
   const load = useCallback(async () => {
     const tickers = [...watchedRef.current];
@@ -120,6 +124,7 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
       });
       everHadRowsRef.current = merged.length > 0;
       lastLoadedMembershipKeyRef.current = keyForLoad;
+      lastLoadedAtRef.current = Date.now();
       setError(null);
     } catch {
       if (gen !== loadGenRef.current) return;
@@ -144,6 +149,7 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
       loadGenRef.current += 1;
       everHadRowsRef.current = false;
       lastLoadedMembershipKeyRef.current = "";
+      lastLoadedAtRef.current = 0;
       clearWatchlistEnrichedCache();
       setItems([]);
       setLoading(false);
@@ -159,6 +165,15 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     setItems(primed);
     setReady(primed.length > 0);
     everHadRowsRef.current = primed.length > 0;
+
+    const freshSameMembership =
+      lastLoadedMembershipKeyRef.current === membershipKey &&
+      lastLoadedAtRef.current > 0 &&
+      Date.now() - lastLoadedAtRef.current < WATCHLIST_ENRICH_TTL_MS;
+    if (freshSameMembership) {
+      setReady(true);
+      return;
+    }
 
     void load();
   }, [storageHydrated, membershipKey, load, enabled]);

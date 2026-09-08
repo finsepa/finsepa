@@ -611,6 +611,7 @@ export function StockPageContent({
     if (session === "regular" && !liveRegularSessionActive) return;
     let cancelled = false;
     const tick = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
       try {
         const res = await fetch(`/api/stocks/${encodeURIComponent(ticker)}/live-price`, {
           credentials: "include",
@@ -664,9 +665,14 @@ export function StockPageContent({
       void tick();
       id = window.setInterval(tick, STOCK_1D_LIVE_PRICE_POLL_MS);
     }
+    const onVisibility = () => {
+      if (!document.hidden) void tick();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [ticker, liveRegularSessionActive, regularSessionClock, initialPageData]);
 
@@ -963,6 +969,7 @@ export function StockPageContent({
     let cancelled = false;
 
     const load = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
       const params = new URLSearchParams();
       if (headerMeta?.exchange?.trim()) params.set("exchange", headerMeta.exchange.trim());
       if (headerMeta?.countryIso?.trim()) params.set("country", headerMeta.countryIso.trim());
@@ -993,9 +1000,14 @@ export function StockPageContent({
     setExtendedHoursLoading(true);
     void load();
     const id = window.setInterval(() => void load(), STOCK_1D_LIVE_PRICE_POLL_MS);
+    const onVisibility = () => {
+      if (!document.hidden) void load();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [
     ticker,

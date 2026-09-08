@@ -1,4 +1,5 @@
 import { STOCK_DISPLAY_TZ, usSessionWallClockUnix, usSessionYmdFromUnixSeconds } from "@/lib/market/chart-timestamp-format";
+import { isUsEquityExchangeHolidayYmd } from "@/lib/market/us-equity-exchange-holidays";
 
 export type UsEquityMarketSession = "pre" | "regular" | "post" | "closed";
 
@@ -74,12 +75,14 @@ export function getUsMarketsHeaderStatus(now: Date): UsMarketsHeaderStatus {
 
 /**
  * US equities session in America/New_York (NYSE-style hours, weekdays only).
- * Pre 4:00–9:30, regular 9:30–16:00, post 16:00–20:00; weekends and outside those windows → closed.
+ * Pre 4:00–9:30, regular 9:30–16:00, post 16:00–20:00; weekends, full exchange holidays,
+ * and outside those windows → closed.
  */
 export function getUsEquityMarketSession(now: Date): UsEquityMarketSession {
   const { weekdayShort, dayMinutes } = nyWeekdayAndMinutes(now);
 
   if (weekdayShort === "Sat" || weekdayShort === "Sun") return "closed";
+  if (isUsEquityExchangeHolidayYmd(nySessionYmdFromDate(now))) return "closed";
 
   const preStart = 4 * 60;
   const regularOpen = 9 * 60 + 30;
@@ -116,6 +119,7 @@ export function getUsEquitySessionBadgeDisplay(now: Date): UsEquitySessionBadgeD
 
   const { weekdayShort, dayMinutes } = nyWeekdayAndMinutes(now);
   if (weekdayShort === "Sat" || weekdayShort === "Sun") return { kind: "closed" };
+  if (isUsEquityExchangeHolidayYmd(nySessionYmdFromDate(now))) return { kind: "closed" };
 
   const preStart = 4 * 60;
   if (dayMinutes < preStart) {
@@ -146,6 +150,33 @@ function nySessionYmdFromDate(date: Date): string {
   }).format(date);
 }
 
+/** YYYY-MM-DD in America/New_York (earnings calendar day, not UTC). */
+export function usEquityNyCalendarYmd(now: Date = new Date()): string {
+  return nySessionYmdFromDate(now);
+}
+
+const REGULAR_OPEN_PLUS_1_MIN = 9 * 60 + 31;
+const REGULAR_CLOSE_PLUS_1_MIN = 16 * 60 + 1;
+/** Vercel cron is minute-level; allow a couple of minutes of jitter. */
+const SESSION_BOUNDARY_SLACK_MIN = 2;
+
+export type UsEquitySessionBoundaryPullKind = "open" | "close";
+
+/**
+ * True at ~9:31 ET (open+1) or ~16:01 ET (close+1) on a US trading day.
+ * Used so DST twin crons no-op when New York is not at that clock time.
+ */
+export function usEquitySessionBoundaryPullKind(
+  now: Date = new Date(),
+): UsEquitySessionBoundaryPullKind | null {
+  const { weekdayShort, dayMinutes } = nyWeekdayAndMinutes(now);
+  if (weekdayShort === "Sat" || weekdayShort === "Sun") return null;
+  if (isUsEquityExchangeHolidayYmd(nySessionYmdFromDate(now))) return null;
+  if (Math.abs(dayMinutes - REGULAR_OPEN_PLUS_1_MIN) <= SESSION_BOUNDARY_SLACK_MIN) return "open";
+  if (Math.abs(dayMinutes - REGULAR_CLOSE_PLUS_1_MIN) <= SESSION_BOUNDARY_SLACK_MIN) return "close";
+  return null;
+}
+
 function nyWeekdayShortFromDate(date: Date): string {
   return new Intl.DateTimeFormat("en-US", {
     timeZone: "America/New_York",
@@ -166,16 +197,24 @@ export function lastUsRegularSessionCloseUnix(
   }
 
   const { weekdayShort, dayMinutes } = nyWeekdayAndMinutes(now);
-  if (session === "closed" && weekdayShort !== "Sat" && weekdayShort !== "Sun" && dayMinutes >= 20 * 60) {
+  if (
+    session === "closed" &&
+    weekdayShort !== "Sat" &&
+    weekdayShort !== "Sun" &&
+    dayMinutes >= 20 * 60 &&
+    !isUsEquityExchangeHolidayYmd(todayYmd)
+  ) {
     return usSessionWallClockUnix(todayYmd, 16, 0, timeZone);
   }
 
   let cursor = new Date(now.getTime());
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 14; i++) {
     cursor = new Date(cursor.getTime() - 86_400_000);
     const wd = nyWeekdayShortFromDate(cursor);
     if (wd === "Sat" || wd === "Sun") continue;
-    return usSessionWallClockUnix(nySessionYmdFromDate(cursor), 16, 0, timeZone);
+    const ymd = nySessionYmdFromDate(cursor);
+    if (isUsEquityExchangeHolidayYmd(ymd)) continue;
+    return usSessionWallClockUnix(ymd, 16, 0, timeZone);
   }
 
   return usSessionWallClockUnix(todayYmd, 16, 0, timeZone);
@@ -186,6 +225,8 @@ export function usEquityTodayRegularSessionComplete(now: Date = new Date()): boo
   const session = getUsEquityMarketSession(now);
   if (session === "regular" || session === "post") return true;
   if (session !== "closed") return false;
+  const todayYmd = nySessionYmdFromDate(now);
+  if (isUsEquityExchangeHolidayYmd(todayYmd)) return false;
   const { weekdayShort, dayMinutes } = nyWeekdayAndMinutes(now);
   return weekdayShort !== "Sat" && weekdayShort !== "Sun" && dayMinutes >= 20 * 60;
 }
@@ -199,23 +240,25 @@ export function lastCompletedUsRegularSessionYmd(
   return usSessionYmdFromUnixSeconds(closeSec);
 }
 
-/** Prior US trading session before `ymd` (skips Sat/Sun; does not know exchange holidays). */
+/** Prior US trading session before `ymd` (skips Sat/Sun and full exchange holidays). */
 export function previousUsTradingSessionYmd(
   ymd: string,
   timeZone: string = STOCK_DISPLAY_TZ,
 ): string {
   const [y, m, d] = ymd.split("-").map((x) => Number(x));
   let cursor = new Date(Date.UTC(y!, m! - 1, d!, 12, 0, 0));
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 14; i++) {
     cursor = new Date(cursor.getTime() - 86_400_000);
     const wd = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short" }).format(cursor);
     if (wd === "Sat" || wd === "Sun") continue;
-    return new Intl.DateTimeFormat("en-CA", {
+    const prior = new Intl.DateTimeFormat("en-CA", {
       timeZone,
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
     }).format(cursor);
+    if (isUsEquityExchangeHolidayYmd(prior)) continue;
+    return prior;
   }
   return ymd;
 }

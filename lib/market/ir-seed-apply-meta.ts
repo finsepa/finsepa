@@ -1,11 +1,11 @@
 import "server-only";
 
+import { metaFilingCandidates, metaSlidesCandidates } from "@/lib/market/ir-seed-meta-match";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
-const HEAD_MS = 2500;
+export { metaFilingCandidates, metaSlidesCandidates } from "@/lib/market/ir-seed-meta-match";
 
-/** Meta IR (investor.atmeta.com) slide decks are served via Q4 CDN. */
-const META_Q4CDN_FINANCIALS = "https://s21.q4cdn.com/399680738/files/doc_financials";
+const HEAD_MS = 2500;
 
 /**
  * Meta fiscal year ends December 31 (calendar-aligned).
@@ -26,48 +26,12 @@ function fiscalFromMetaPeriodEndYmd(ymd: string | null): { calendarYear: number;
   return { calendarYear: y, fq };
 }
 
-function metaSlidesCandidates(calendarYear: number, fq: 1 | 2 | 3 | 4): string[] {
-  const base = `${META_Q4CDN_FINANCIALS}/${calendarYear}/q${fq}`;
-  return [
-    `${base}/Earnings-Presentation-Q${fq}-${calendarYear}.pdf`,
-    `${base}/Earnings-Presentation-Q${fq}-${calendarYear}-FINAL.pdf`,
-    `${base}/Earnings-Presentation-Q${fq}-${calendarYear}-Final.pdf`,
-  ];
-}
-
-/**
- * Meta earnings release (often “Exhibit 99.1”) PDFs are posted under `doc_financials/{year}/q{q}`.
- * Example: `.../2025/q4/Meta-12-31-2025-Exhibit-99-1-FINAL.pdf`.
- */
-function metaFilingCandidates(calendarYear: number, fq: 1 | 2 | 3 | 4): string[] {
-  const mmdd = fq === 1 ? "03-31" : fq === 2 ? "06-30" : fq === 3 ? "09-30" : "12-31";
-  const core = `Meta-${mmdd}-${calendarYear}-Exhibit-99-1`;
-  const bases = [
-    `${META_Q4CDN_FINANCIALS}/${calendarYear}/q${fq}`,
-    // Some quarters post the exhibit under doc_downloads instead of doc_financials.
-    `https://s21.q4cdn.com/399680738/files/doc_downloads`,
-    // Some items appear under doc_news (less common for Exhibit 99.1, but cheap to probe).
-    `https://s21.q4cdn.com/399680738/files/doc_news`,
-  ];
-  const names = [
-    `${core}-FINAL.pdf`,
-    `${core}-Final.pdf`,
-    `${core}.pdf`,
-    `${core}_FINAL.pdf`,
-    `${core}_Final.pdf`,
-    // Older quarters sometimes used all-caps `META-...`
-    `${core.replace(/^Meta-/, "META-")}-FINAL.pdf`,
-    `${core.replace(/^Meta-/, "META-")}_FINAL.pdf`,
-  ];
-  return bases.flatMap((b) => names.map((n) => `${b}/${n}`));
-}
-
 async function headOk(url: string): Promise<boolean> {
   try {
     const res = await fetch(url, {
       method: "HEAD",
       redirect: "follow",
-      headers: { Accept: "application/pdf,*/*" },
+      headers: { Accept: "application/pdf,*/*", "User-Agent": "Mozilla/5.0" },
       signal: AbortSignal.timeout(HEAD_MS),
     });
     return res.ok;
@@ -79,8 +43,7 @@ async function headOk(url: string): Promise<boolean> {
 /**
  * META only:
  * - Slides: Meta earnings presentation PDF on Q4 CDN.
- *
- * Form 10-Q / 10-K on EDGAR are typically HTML/XBRL without companion PDFs; **Filings** stay on SEC 8-K enrichment.
+ * - Filings: Exhibit 99.1 or `doc_news/Meta-Reports-…` press-release PDF.
  */
 export async function applyIrSeedMetaDocumentUrls(
   rows: StockEarningsHistoryRow[],
@@ -111,4 +74,3 @@ export async function applyIrSeedMetaDocumentUrls(
     return { ...row, secSlidesUrl: nextSlides, secFilingsUrl: nextFilings };
   });
 }
-

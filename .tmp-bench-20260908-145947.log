@@ -1,0 +1,24 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://0.0.0.0:3000
+- Environments: .env.local
+✓ Ready in 407ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+ GET /login 200 in 637ms (next.js: 317ms, proxy.ts: 51ms, application-code: 269ms)
+ GET /login 200 in 65ms (next.js: 4ms, proxy.ts: 10ms, application-code: 51ms)
+===== JOURNEY_START 2026-09-08T11:07:02Z =====
+ GET /login?next=%2Fscreener 200 in 104ms (next.js: 28ms, proxy.ts: 11ms, application-code: 65ms)
+⚠ Blocked cross-origin request to Next.js dev resource /_next/webpack-hmr from "127.0.0.1".
+Cross-origin access to Next.js dev resources is blocked by default for safety.
+
+To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+
+// next.config.js
+module.exports = {
+  allowedDevOrigins: ['127.0.0.1'],
+}
+
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ GET /portfolio 200 in 1573ms (next.js: 275ms, proxy.ts: 466ms, application-code: 832ms)

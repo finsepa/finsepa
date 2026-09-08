@@ -17,6 +17,7 @@ import {
 } from "./lib/stock-ws-priority-universe.mjs";
 import { normalizeStockTicker, parseEodhdUsWsMessage } from "./lib/eodhd-ws-parse.mjs";
 import { createStockMinuteWriteController } from "./lib/stock-minute-ingest-write-core.mjs";
+import { isUsEquityExchangeHolidayYmd } from "./lib/us-equity-exchange-holidays.mjs";
 
 // Railway/containers: prefer IPv4 for Supabase REST (avoids intermittent `fetch failed`).
 dns.setDefaultResultOrder("ipv4first");
@@ -249,6 +250,13 @@ function getUsEquityMarketSession(now = new Date()) {
   }).formatToParts(now);
   const weekday = parts.find((p) => p.type === "weekday")?.value ?? "";
   if (weekday === "Sat" || weekday === "Sun") return "closed";
+  const ymd = new Intl.DateTimeFormat("en-CA", {
+    timeZone: DISPLAY_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  if (isUsEquityExchangeHolidayYmd(ymd)) return "closed";
   const hour = Number(parts.find((p) => p.type === "hour")?.value ?? NaN);
   const minute = Number(parts.find((p) => p.type === "minute")?.value ?? NaN);
   const mins = hour * 60 + minute;

@@ -7,6 +7,7 @@ import {
 import {
   fiscalQuarterFromLabel,
   fiscalQuarterFromPeriodEndYmd,
+  fiscalQuarterProbeKeysForRow,
 } from "@/lib/market/fiscal-quarter-label";
 import {
   buildQ4CdnFilingsCandidates,
@@ -14,7 +15,7 @@ import {
   filterQ4CdnPdfLinksForQuarter,
   q4CdnQuarterDir,
 } from "@/lib/market/q4cdn-earnings-pdf-patterns";
-import { knownQ4CdnBaseForTicker } from "@/lib/market/q4cdn-known-issuer-bases";
+import { earningsPdfHrefMatchesQuarterLabels } from "@/lib/market/gcs-web-earnings-presentations";
 import { buildCommonQuarterlyEarningsPages, buildIrSeedUrls } from "@/lib/market/ir-seed-hosts";
 import {
   IR_SEED_GENERIC_Q4_HEAD_PROBES_FULL,
@@ -78,7 +79,17 @@ function scoreSlidePdfName(file: string): number {
   const n = file.toLowerCase();
   if (!n.endsWith(".pdf")) return -1;
   if (/ir\+overview\+presentation|overview\+presentation/.test(n)) return 900;
-  if (/present|presentation|slides|deck|webslides|earnings\+deck|earnings.deck/i.test(n)) return 800;
+  if (/scriptslides|webslides|present|presentation|slides|deck|earnings\+deck|earnings.deck/i.test(n)) {
+    return 800;
+  }
+  if (/ex-?99\.?2|exhibit[-_.]?99[-_.]?2|ex992/i.test(n)) return 700;
+  // Press release / 99.1 → filings only (never count as slides).
+  if (
+    /ex-?99\.?1|exhibit[-_.]?99[-_.]?1|ex991|earnings?[-_]?release|press[-_]?releas/i.test(n) &&
+    !/slide|present|deck/i.test(n)
+  ) {
+    return -1;
+  }
   if (/supplement|operational|data/.test(n)) return 300;
   return 40;
 }
@@ -92,10 +103,14 @@ function scoreFilingPdfName(file: string): number {
   return 30;
 }
 
-function pickBestPdfFromList(urls: string[], score: (file: string) => number): string | null {
+function pickBestPdfFromList(
+  urls: string[],
+  score: (file: string) => number,
+  minScore = 0,
+): string | null {
   const ranked = urls
     .map((u) => ({ u, s: score(decodeURIComponent(u.split("/").pop()?.split("?")[0] ?? "")) }))
-    .filter((x) => x.s >= 0)
+    .filter((x) => x.s >= minScore)
     .sort((a, b) => b.s - a.s);
   return ranked[0]?.u ?? null;
 }
@@ -146,6 +161,21 @@ function parseRowFiscalQuarter(
   return fiscalQuarterFromLabel(row.fiscalPeriodLabel);
 }
 
+/** Issuer FY + calendar + label — HEAD/scrape all dirs that might hold the deck. */
+function probeKeysForRow(
+  row: StockEarningsHistoryRow,
+  fyEndMonthDay: string | null,
+): { fq: number; fy: number }[] {
+  const keys = fiscalQuarterProbeKeysForRow({
+    fiscalPeriodEndYmd: row.fiscalPeriodEndYmd,
+    fiscalPeriodLabel: row.fiscalPeriodLabel,
+    fyEndMonthDay,
+  });
+  if (keys.length > 0) return keys;
+  const fallback = parseRowFiscalQuarter(row, fyEndMonthDay);
+  return fallback ? [fallback] : [];
+}
+
 function rowNeedsSlides(row: StockEarningsHistoryRow): boolean {
   return row.reported && !isEarningsSlidesPreviewUrl(row.secSlidesUrl);
 }
@@ -170,7 +200,8 @@ export async function applyIrSeedGenericQ4DocumentUrls(
 ): Promise<StockEarningsHistoryRow[]> {
   const preview = options?.preview === true;
   const fyEndMonthDay = options?.fyEndMonthDay ?? null;
-  const knownBase = knownQ4CdnBaseForTicker(listingTicker);
+  const historyUrls = rows.flatMap((r) => [r.secSlidesUrl, r.secFilingsUrl]);
+  const knownBase = await resolveQ4CdnBaseForTicker(listingTicker, historyUrls);
   const maxRows = knownBase ? IR_SEED_GENERIC_Q4_ROWS_KNOWN_BASE_FULL : preview ? 2 : IR_SEED_GENERIC_Q4_ROWS_FULL;
   const maxHeadProbes = knownBase
     ? IR_SEED_GENERIC_Q4_HEAD_PROBES_KNOWN_FULL
@@ -219,41 +250,42 @@ export async function applyIrSeedGenericQ4DocumentUrls(
       return { slides: [] as string[], filings: [] as string[] };
     }
 
-    const p = parseRowFiscalQuarter(row, fyEndMonthDay);
-    if (!p) return { slides: [] as string[], filings: [] as string[] };
+    const probes = probeKeysForRow(row, fyEndMonthDay);
+    if (probes.length === 0) return { slides: [] as string[], filings: [] as string[] };
+    const allowedLabels = probes.map((p) => `Q${p.fq} ${p.fy}`);
+    const matchesRow = (u: string) => earningsPdfHrefMatchesQuarterLabels(u, allowedLabels);
 
     const needsSlides = rowNeedsSlides(row);
     const needsFilings = rowNeedsFilings(row);
 
-    const fuzzyQuarter = filterQ4CdnPdfLinksForQuarter(uniquePdfLinks, p.fq, p.fy);
-    const inQuarterDir = base
-      ? uniquePdfLinks.filter((u) => u.startsWith(`${q4CdnQuarterDir(base.financialsBase, p.fy, p.fq)}/`))
-      : [];
-    const scraped = [...new Set([...inQuarterDir, ...fuzzyQuarter])];
+    const scraped: string[] = [];
+    const slideCandidates: string[] = [];
+    const filingCandidates: string[] = [];
 
-    const slideFromIr = needsSlides ? pickBestPdfFromList(scraped, scoreSlidePdfName) : null;
-    const filingFromIr = needsFilings ? pickBestPdfFromList(scraped, scoreFilingPdfName) : null;
+    for (const p of probes) {
+      const fuzzyQuarter = filterQ4CdnPdfLinksForQuarter(uniquePdfLinks, p.fq, p.fy);
+      const inQuarterDir = base
+        ? uniquePdfLinks.filter((u) => u.startsWith(`${q4CdnQuarterDir(base.financialsBase, p.fy, p.fq)}/`))
+        : [];
+      scraped.push(...inQuarterDir, ...fuzzyQuarter);
+
+      if (needsSlides && base) {
+        slideCandidates.push(...buildQ4CdnSlidesCandidates(base.financialsBase, listingTicker, p.fq, p.fy));
+      }
+      if (needsFilings && base) {
+        filingCandidates.push(...buildQ4CdnFilingsCandidates(base.financialsBase, listingTicker, p.fq, p.fy));
+      }
+    }
+
+    const scrapedUnique = [...new Set(scraped)].filter(matchesRow);
+    const slideFromIr = needsSlides ? pickBestPdfFromList(scrapedUnique, scoreSlidePdfName, 500) : null;
+    const filingFromIr = needsFilings ? pickBestPdfFromList(scrapedUnique, scoreFilingPdfName) : null;
 
     const slides = needsSlides
-      ? slideFromIr
-        ? [
-            slideFromIr,
-            ...(base ? buildQ4CdnSlidesCandidates(base.financialsBase, listingTicker, p.fq, p.fy) : []),
-          ]
-        : base
-          ? buildQ4CdnSlidesCandidates(base.financialsBase, listingTicker, p.fq, p.fy)
-          : []
+      ? [...(slideFromIr ? [slideFromIr] : []), ...new Set(slideCandidates)]
       : [];
-
     const filings = needsFilings
-      ? filingFromIr
-        ? [
-            filingFromIr,
-            ...(base ? buildQ4CdnFilingsCandidates(base.financialsBase, listingTicker, p.fq, p.fy) : []),
-          ]
-        : base
-          ? buildQ4CdnFilingsCandidates(base.financialsBase, listingTicker, p.fq, p.fy)
-          : []
+      ? [...(filingFromIr ? [filingFromIr] : []), ...new Set(filingCandidates)]
       : [];
 
     return { slides, filings };
@@ -268,7 +300,8 @@ export async function applyIrSeedGenericQ4DocumentUrls(
     const slideHit = slides.map((u) => resolved.get(u) ?? null).find((u): u is string => !!u) ?? null;
     const filingHit = filings.map((u) => resolved.get(u) ?? null).find((u): u is string => !!u) ?? null;
     const nextSlides = slideHit ?? row.secSlidesUrl;
-    const nextFilings = filingHit ?? row.secFilingsUrl;
+    const nextFilings =
+      filingHit && filingHit !== (slideHit ?? row.secSlidesUrl) ? filingHit : row.secFilingsUrl;
     if (nextSlides === row.secSlidesUrl && nextFilings === row.secFilingsUrl) return row;
     return { ...row, secSlidesUrl: nextSlides, secFilingsUrl: nextFilings };
   });

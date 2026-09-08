@@ -20,6 +20,9 @@ export function buildQ4CdnSlidesCandidates(
   const sym = ticker.trim().toUpperCase();
   const qDir = q4CdnQuarterDir(financialsBase, fy, fq);
   return [
+    // Mastercard: `2Q26-Mastercard-Earnings-Presentation.pdf`
+    `${qDir}/${fq}Q${yy}-Mastercard-Earnings-Presentation.pdf`,
+    `${qDir}/${fq}Q${yy}-${sym}-Earnings-Presentation.pdf`,
     `${qDir}/${sym}-${fq}Q-${yy}-Earnings-Presentation.pdf`,
     `${qDir}/${sym}-${fq}Q-${yy}-Earnings-Presentation-FINAL.pdf`,
     `${qDir}/${sym}-Q${fq}-${fy}-Earnings-Presentation.pdf`,
@@ -45,6 +48,9 @@ export function buildQ4CdnFilingsCandidates(
   const qDir = q4CdnQuarterDir(financialsBase, fy, fq);
   const sym = ticker.trim().toUpperCase();
   return [
+    // Mastercard: `2Q26-Mastercard-Earnings-Release.pdf`
+    `${qDir}/${fq}Q${yy}-Mastercard-Earnings-Release.pdf`,
+    `${qDir}/${fq}Q${yy}-${sym}-Earnings-Release.pdf`,
     `${qDir}/${sym}-Q${fq}-${fy}-Earnings-Release.pdf`,
     `${qDir}/${sym}-Q${fq}-${fy}-Earnings-Release-FINAL.pdf`,
     `${qDir}/${sym}-Q${fq}-${fy}-Earnings-Release-Final.pdf`,
@@ -64,14 +70,20 @@ export function filterQ4CdnPdfLinksForQuarter(
 ): string[] {
   const yy = fySuffix(fy);
   const qPath = `/${fy}/q${fq}/`.toLowerCase();
-  const re = new RegExp(
-    `(?:^|[/_-])q${fq}(?:[^0-9]|$)|(?:^|[/_-])${fq}q-?${yy}(?:[^0-9]|$)|(?:^|[/_-])${fq}q(?:[^0-9]|$)|(?:^|[/_-])fy${yy}(?:[^0-9]|$)|f${fq}q${yy}|q${fq}[-_ ]${fy}\\b`,
+  // qN / Nq alone matches every year (LRCX Q4_2026 on every Dec quarter). Require the year too.
+  const yearToken = new RegExp(
+    `${fy}|(?:^|[^0-9])fy${yy}(?:[^0-9]|$)|${fq}q-?${yy}|(?:^|[/_-])q${fq}[-_'. ]?${yy}(?:[^0-9]|$)|q${fq}[-_ ]${fy}\\b|f${fq}q${yy}`,
+    "i",
+  );
+  const quarterToken = new RegExp(
+    `(?:^|[/_-])q${fq}(?:[^0-9]|$)|(?:^|[/_-])${fq}q(?:[^0-9]|$)`,
     "i",
   );
   return urls.filter((u) => {
     const lower = u.toLowerCase();
     if (lower.includes(qPath)) return true;
     const file = decodeURIComponent(lower.split("/").pop()?.split("?")[0] ?? "");
-    return re.test(file) || re.test(lower);
+    const hay = `${file} ${lower}`;
+    return yearToken.test(hay) && quarterToken.test(hay);
   });
 }

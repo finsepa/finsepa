@@ -137,10 +137,10 @@ function quarterLabelFromPdfHref(hrefRaw: string): string | null {
   const compact = quarterLabelFromCompactToken(decoded);
   if (compact) return compact;
 
-  const qApostrophe = decoded.match(/\bQ([1-4])['%27](\d{2})\b/i);
+  const qApostrophe = decoded.match(/\bQ([1-4])(?:'|%27)(\d{2})\b/i);
   if (qApostrophe) return `Q${qApostrophe[1]} 20${qApostrophe[2]}`;
 
-  const qUnderscore = decoded.match(/\bQ([1-4])_(\d{4})\b/i);
+  const qUnderscore = decoded.match(/\bQ([1-4])_(\d{4})(?![0-9])/i);
   if (qUnderscore) return `Q${qUnderscore[1]} ${qUnderscore[2]}`;
 
   const fullYear = decoded.match(/\b([1-4])Q(\d{4})\b/i);
@@ -150,6 +150,16 @@ function quarterLabelFromPdfHref(hrefRaw: string): string | null {
   if (!spaced) return null;
   if (spaced[1]!.length === 2) return `Q${spaced[2]} 20${spaced[1]}`;
   return `Q${spaced[1]} 20${spaced[2]}`;
+}
+
+/** False when the filename names a different quarter than the row (LRCX Q4_2026 on a Q2 row). */
+export function earningsPdfHrefMatchesQuarterLabels(
+  href: string,
+  allowedLabels: readonly string[],
+): boolean {
+  const label = quarterLabelFromPdfHref(href);
+  if (!label) return true;
+  return allowedLabels.includes(label);
 }
 
 function quarterLabelFromAnchorContext(raw: string): string | null {

@@ -281,3 +281,49 @@ export async function upsertEarningsDocumentCache(
     .upsert(payload, { onConflict: "ticker,fiscal_period_end" });
   if (error) throw new Error(`earnings_document_cache_upsert_failed: ${error.message}`);
 }
+
+/**
+ * Tickers that already have some document cache rows but are missing slides on ≥1 quarter.
+ * Cheap Supabase aggregate — no EODHD. Used to prioritize warm backfill at small DAU scale.
+ */
+export async function listTickersWithPartialSlidesGaps(
+  universe: readonly string[],
+  limit = 8,
+): Promise<string[]> {
+  if (universe.length === 0 || limit <= 0) return [];
+  const admin = getSupabaseAdminClient();
+  if (!admin) return [];
+
+  const allowed = new Set(universe.map((t) => t.trim().toUpperCase()).filter(Boolean));
+  const { data, error } = await admin
+    .from("earnings_document_cache")
+    .select("ticker,presentation_pdf_url")
+    .in("ticker", [...allowed]);
+
+  if (error) {
+    console.warn(`earnings_document_cache_gap_scan_failed: ${error.message}`);
+    return [];
+  }
+
+  const stats = new Map<string, { total: number; withSlides: number }>();
+  for (const row of data ?? []) {
+    const t = typeof row.ticker === "string" ? row.ticker.trim().toUpperCase() : "";
+    if (!t || !allowed.has(t)) continue;
+    const cur = stats.get(t) ?? { total: 0, withSlides: 0 };
+    cur.total += 1;
+    if (typeof row.presentation_pdf_url === "string" && row.presentation_pdf_url.length > 0) {
+      cur.withSlides += 1;
+    }
+    stats.set(t, cur);
+  }
+
+  return [...stats.entries()]
+    .filter(([, s]) => s.total >= 2 && s.withSlides < s.total)
+    .sort((a, b) => {
+      const missA = a[1].total - a[1].withSlides;
+      const missB = b[1].total - b[1].withSlides;
+      return missB - missA;
+    })
+    .slice(0, limit)
+    .map(([ticker]) => ticker);
+}

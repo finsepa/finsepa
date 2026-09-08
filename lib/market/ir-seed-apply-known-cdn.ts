@@ -2,10 +2,12 @@ import "server-only";
 
 import {
   isDirectEarningsPdfUrl,
+  isEarningsFilingsPreviewUrl,
   isEarningsSlidesPreviewUrl,
+  isKnownEarningsFilingDocUrl,
   isSecEdgarEarningsReleaseExhibitHtml,
 } from "@/lib/market/earnings-document-url";
-import { knownCdnSlidePlanForRow } from "@/lib/market/ir-seed-known-cdn-patterns";
+import { knownCdnDocPlanForRow } from "@/lib/market/ir-seed-known-cdn-patterns";
 import { irSeedSlideRowCap } from "@/lib/market/ir-seed-limits";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
@@ -34,9 +36,26 @@ async function headOk(url: string): Promise<boolean> {
   }
 }
 
+function needsSlides(row: StockEarningsHistoryRow): boolean {
+  if (!row.reported) return false;
+  if (!isEarningsSlidesPreviewUrl(row.secSlidesUrl)) return true;
+  return (
+    isSecEdgarEarningsReleaseExhibitHtml(row.secSlidesUrl) && !isDirectEarningsPdfUrl(row.secSlidesUrl)
+  );
+}
+
+function needsFilings(row: StockEarningsHistoryRow): boolean {
+  if (!row.reported) return false;
+  if (!isEarningsFilingsPreviewUrl(row.secFilingsUrl)) return true;
+  if (isSecEdgarEarningsReleaseExhibitHtml(row.secFilingsUrl) && !isDirectEarningsPdfUrl(row.secFilingsUrl)) {
+    return true;
+  }
+  return false;
+}
+
 /**
- * HEAD-probe issuer-specific CDN slide paths (Microsoft PPTX, etc.).
- * Runs for any ticker with a registered pattern when slides are still missing.
+ * HEAD-probe issuer-specific CDN paths (Microsoft PPTX slides + DOCX press releases, etc.).
+ * Runs when slides and/or filings are still missing.
  */
 export async function applyKnownCdnSlideDeckUrls(
   listingTicker: string,
@@ -50,36 +69,43 @@ export async function applyKnownCdnSlideDeckUrls(
 
   const needing = rows
     .map((row, idx) => ({ row, idx }))
-    .filter(({ row }) => {
-      if (!row.reported) return false;
-      if (!isEarningsSlidesPreviewUrl(row.secSlidesUrl)) return true;
-      return (
-        isSecEdgarEarningsReleaseExhibitHtml(row.secSlidesUrl) &&
-        !isDirectEarningsPdfUrl(row.secSlidesUrl)
-      );
-    })
+    .filter(({ row }) => needsSlides(row) || needsFilings(row))
     .sort((a, b) => (b.row.reportDateYmd ?? "").localeCompare(a.row.reportDateYmd ?? ""))
     .slice(0, maxRows);
 
   if (needing.length === 0) return rows;
 
-  const slidePlans = rows.map((row) => {
-    const plan = knownCdnSlidePlanForRow(listingTicker, row, { fyEndMonthDay });
-    return plan?.candidates ?? [];
-  });
+  const plans = rows.map((row) => knownCdnDocPlanForRow(listingTicker, row, { fyEndMonthDay }));
+  const unique = [
+    ...new Set(plans.flatMap((p) => [...(p?.slideCandidates ?? []), ...(p?.filingCandidates ?? [])])),
+  ];
+  if (unique.length === 0) return rows;
 
-  const uniqueSlides = [...new Set(slidePlans.flat())];
-  if (uniqueSlides.length === 0) return rows;
-
-  const slideOk = new Map<string, boolean>();
-  await Promise.all(uniqueSlides.map(async (u) => slideOk.set(u, await headOk(u))));
+  const ok = new Map<string, boolean>();
+  await Promise.all(unique.map(async (u) => ok.set(u, await headOk(u))));
 
   const needingIdx = new Set(needing.map((n) => n.idx));
 
   return rows.map((row, i) => {
     if (!needingIdx.has(i)) return row;
-    const slideHit = slidePlans[i]!.find((u) => slideOk.get(u));
-    if (!slideHit || slideHit === row.secSlidesUrl) return row;
-    return { ...row, secSlidesUrl: slideHit };
+    const plan = plans[i];
+    if (!plan) return row;
+
+    let nextSlides = row.secSlidesUrl;
+    let nextFilings = row.secFilingsUrl;
+
+    if (needsSlides(row)) {
+      const slideHit = plan.slideCandidates.find((u) => ok.get(u));
+      if (slideHit) nextSlides = slideHit;
+    }
+    if (needsFilings(row)) {
+      const filingHit = plan.filingCandidates.find((u) => ok.get(u));
+      if (filingHit && (isDirectEarningsPdfUrl(filingHit) || isKnownEarningsFilingDocUrl(filingHit))) {
+        nextFilings = filingHit;
+      }
+    }
+
+    if (nextSlides === row.secSlidesUrl && nextFilings === row.secFilingsUrl) return row;
+    return { ...row, secSlidesUrl: nextSlides, secFilingsUrl: nextFilings };
   });
 }

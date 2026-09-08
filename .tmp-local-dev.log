@@ -1,0 +1,379 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+- Environments: .env.local
+✓ Ready in 288ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+○ Compiling / ...
+ GET / 307 in 1641ms (next.js: 1532ms, application-code: 109ms)
+ GET / 307 in 3.0s (next.js: 2.8s, application-code: 187ms)
+ GET /login?next=%2Fscreener 200 in 3.0s (next.js: 2.7s, proxy.ts: 50ms, application-code: 214ms)
+ GET /login 200 in 111ms (next.js: 10ms, proxy.ts: 4ms, application-code: 98ms)
+ GET /login?next=%2Fscreener 200 in 103ms (next.js: 26ms, proxy.ts: 3ms, application-code: 74ms)
+ GET /login?next=%2Fscreener 200 in 56ms (next.js: 3ms, proxy.ts: 4ms, application-code: 49ms)
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at SupabaseAuthClient.fetchJwk (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8677:234)
+    at SupabaseAuthClient.getClaims (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8777:172)
+    at async getMiddlewareAuth (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:168:31)
+    at async middleware (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:282:18)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:18978:20
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7789:28
+    at async adapter (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7744:16)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:115:26
+    at async runWithTaggedErrors (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:112:9)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:1207:22)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:278:28)
+    at async NextNodeServer.handleCatchallMiddlewareRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:392:26)
+    at async DevServer.handleRequestImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/base-server.js:940:28)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:394:20
+    at async Span.traceAsyncFn (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/trace/trace.js:164:20)
+    at async DevServer.handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:390:24)
+    at async handleRoute (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:352:33)
+    at async resolveRoutes (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:608:28)
+    at async handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:301:96)
+    at async requestHandlerImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:501:13)
+    at async Server.requestListener (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/start-server.js:225:13) {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6210:225
+    at SupabaseAuthClient._useSession (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6010:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async SupabaseAuthClient._getUser (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6195:20)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6179:20 {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at SupabaseAuthClient.fetchJwk (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8677:234)
+    at SupabaseAuthClient.getClaims (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8777:172)
+    at async getMiddlewareAuth (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:168:31)
+    at async middleware (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:282:18)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:18978:20
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7789:28
+    at async adapter (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7744:16)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:115:26
+    at async runWithTaggedErrors (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:112:9)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:1207:22)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:278:28)
+    at async NextNodeServer.handleCatchallMiddlewareRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:392:26)
+    at async DevServer.handleRequestImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/base-server.js:940:28)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:394:20
+    at async Span.traceAsyncFn (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/trace/trace.js:164:20)
+    at async DevServer.handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:390:24)
+    at async handleRoute (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:352:33)
+    at async resolveRoutes (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:608:28)
+    at async handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:301:96)
+    at async requestHandlerImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:501:13)
+    at async Server.requestListener (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/start-server.js:225:13) {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6210:225
+    at SupabaseAuthClient._useSession (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6010:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async SupabaseAuthClient._getUser (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6195:20)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6179:20 {
+  
+}
+ GET /login 200 in 182ms (next.js: 60ms, proxy.ts: 12ms, application-code: 110ms)
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at SupabaseAuthClient.fetchJwk (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8677:234)
+    at SupabaseAuthClient.getClaims (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8777:172)
+    at async getMiddlewareAuth (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:168:31)
+    at async middleware (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:282:18)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:18978:20
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7789:28
+    at async adapter (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7744:16)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:115:26
+    at async runWithTaggedErrors (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:112:9)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:1207:22)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:278:28)
+    at async NextNodeServer.handleCatchallMiddlewareRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:392:26)
+    at async DevServer.handleRequestImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/base-server.js:940:28)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:394:20
+    at async Span.traceAsyncFn (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/trace/trace.js:164:20)
+    at async DevServer.handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:390:24)
+    at async handleRoute (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:352:33)
+    at async resolveRoutes (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:608:28)
+    at async handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:301:96)
+    at async requestHandlerImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:501:13)
+    at async Server.requestListener (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/start-server.js:225:13) {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6210:225
+    at SupabaseAuthClient._useSession (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6010:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async SupabaseAuthClient._getUser (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6195:20)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6179:20 {
+  
+}
+ GET / 307 in 303ms (next.js: 15ms, application-code: 288ms)
+ GET /json/version 404 in 293ms (next.js: 20ms, application-code: 273ms)
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at SupabaseAuthClient.fetchJwk (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8677:234)
+    at SupabaseAuthClient.getClaims (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8777:172)
+    at async getMiddlewareAuth (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:168:31)
+    at async middleware (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:282:18)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:18978:20
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7789:28
+    at async adapter (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7744:16)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:115:26
+    at async runWithTaggedErrors (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:112:9)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:1207:22)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:278:28)
+    at async NextNodeServer.handleCatchallMiddlewareRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:392:26)
+    at async DevServer.handleRequestImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/base-server.js:940:28)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:394:20
+    at async Span.traceAsyncFn (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/trace/trace.js:164:20)
+    at async DevServer.handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:390:24)
+    at async handleRoute (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:352:33)
+    at async resolveRoutes (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:608:28)
+    at async handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:301:96)
+    at async requestHandlerImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:501:13)
+    at async Server.requestListener (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/start-server.js:225:13) {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6210:225
+    at SupabaseAuthClient._useSession (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6010:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async SupabaseAuthClient._getUser (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6195:20)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6179:20 {
+  
+}
+ GET /login?next=%2Fscreener 200 in 186ms (next.js: 27ms, proxy.ts: 8ms, application-code: 150ms)
+ GET /login?next=%2Fscreener 200 in 173ms (next.js: 6ms, proxy.ts: 2ms, application-code: 165ms)
+ GET /login?next=%2Fscreener 200 in 190ms (next.js: 4ms, proxy.ts: 6ms, application-code: 180ms)
+ GET / 307 in 104ms (next.js: 5ms, application-code: 99ms)
+ GET /login?next=%2Fscreener 200 in 171ms (next.js: 9ms, proxy.ts: 5ms, application-code: 157ms)
+ GET /login 200 in 101ms (next.js: 9ms, proxy.ts: 1901µs, application-code: 91ms)
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at SupabaseAuthClient.fetchJwk (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8677:234)
+    at SupabaseAuthClient.getClaims (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8777:172)
+    at async getMiddlewareAuth (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:168:31)
+    at async middleware (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:282:18)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:18978:20
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7789:28
+    at async adapter (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7744:16)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:115:26
+    at async runWithTaggedErrors (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:112:9)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:1207:22)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:278:28)
+    at async NextNodeServer.handleCatchallMiddlewareRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:392:26)
+    at async DevServer.handleRequestImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/base-server.js:940:28)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:394:20
+    at async Span.traceAsyncFn (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/trace/trace.js:164:20)
+    at async DevServer.handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:390:24)
+    at async handleRoute (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:352:33)
+    at async resolveRoutes (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:608:28)
+    at async handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:301:96)
+    at async requestHandlerImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:501:13)
+    at async Server.requestListener (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/start-server.js:225:13) {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6210:225
+    at SupabaseAuthClient._useSession (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6010:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async SupabaseAuthClient._getUser (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6195:20)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6179:20 {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at SupabaseAuthClient.fetchJwk (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8677:234)
+    at SupabaseAuthClient.getClaims (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8777:172)
+    at async getMiddlewareAuth (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:168:31)
+    at async middleware (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:282:18)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:18978:20
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7789:28
+    at async adapter (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7744:16)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:115:26
+    at async runWithTaggedErrors (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:112:9)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:1207:22)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:278:28)
+    at async NextNodeServer.handleCatchallMiddlewareRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:392:26)
+    at async DevServer.handleRequestImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/base-server.js:940:28)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:394:20
+    at async Span.traceAsyncFn (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/trace/trace.js:164:20)
+    at async DevServer.handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:390:24)
+    at async handleRoute (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:352:33)
+    at async resolveRoutes (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:608:28)
+    at async handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:301:96)
+    at async requestHandlerImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:501:13)
+    at async Server.requestListener (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/start-server.js:225:13) {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6210:225
+    at SupabaseAuthClient._useSession (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6010:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async SupabaseAuthClient._getUser (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6195:20)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6179:20 {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at SupabaseAuthClient.fetchJwk (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8677:234)
+    at SupabaseAuthClient.getClaims (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8777:172)
+    at async getMiddlewareAuth (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:168:31)
+    at async middleware (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:282:18)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:18978:20
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7789:28
+    at async adapter (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7744:16)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:115:26
+    at async runWithTaggedErrors (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:112:9)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:1207:22)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:278:28)
+    at async NextNodeServer.handleCatchallMiddlewareRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:392:26)
+    at async DevServer.handleRequestImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/base-server.js:940:28)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:394:20
+    at async Span.traceAsyncFn (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/trace/trace.js:164:20)
+    at async DevServer.handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:390:24)
+    at async handleRoute (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:352:33)
+    at async resolveRoutes (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:608:28)
+    at async handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:301:96)
+    at async requestHandlerImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:501:13)
+    at async Server.requestListener (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/start-server.js:225:13) {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6210:225
+    at SupabaseAuthClient._useSession (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6010:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async SupabaseAuthClient._getUser (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6195:20)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6179:20 {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at SupabaseAuthClient.fetchJwk (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8677:234)
+    at SupabaseAuthClient.getClaims (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:8777:172)
+    at async getMiddlewareAuth (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:168:31)
+    at async middleware (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:282:18)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:18978:20
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7789:28
+    at async adapter (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_next_dist_0ce1z8~._.js:7744:16)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:115:26
+    at async runWithTaggedErrors (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/sandbox.js:112:9)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:1207:22)
+    at async DevServer.runMiddleware (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:278:28)
+    at async NextNodeServer.handleCatchallMiddlewareRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/next-server.js:392:26)
+    at async DevServer.handleRequestImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/base-server.js:940:28)
+    at async /Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:394:20
+    at async Span.traceAsyncFn (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/trace/trace.js:164:20)
+    at async DevServer.handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/dev/next-dev-server.js:390:24)
+    at async handleRoute (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:352:33)
+    at async resolveRoutes (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-utils/resolve-routes.js:608:28)
+    at async handleRequest (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:301:96)
+    at async requestHandlerImpl (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/router-server.js:501:13)
+    at async Server.requestListener (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/lib/start-server.js:225:13) {
+  
+}
+Error: fetch failed
+    at context.fetch (/Users/rakshamann/Desktop/Finsepa/node_modules/next/dist/server/web/sandbox/context.js:321:60)
+    at supabaseAuthTimedFetch (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/[root-of-the-server]__0.iqea_._.js:128:22)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:583:27
+    at _handleRequest (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:953:24)
+    at _request (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:940:24)
+    at /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6210:225
+    at SupabaseAuthClient._useSession (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6010:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async SupabaseAuthClient._getUser (/Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6195:20)
+    at async /Users/rakshamann/Desktop/Finsepa/.next/dev/server/edge/chunks/node_modules_@supabase_auth-js_dist_module_08zxyu.._.js:6179:20 {
+  
+}
+ GET /login?next=%2Fscreener 200 in 215ms (next.js: 23ms, proxy.ts: 5ms, application-code: 187ms)
+ GET /login?next=%2Fscreener 200 in 173ms (next.js: 14ms, proxy.ts: 5ms, application-code: 154ms)
+ GET /login?next=%2Fscreener 200 in 112ms (next.js: 15ms, proxy.ts: 3ms, application-code: 94ms)
+ GET /login?next=%2Fscreener 200 in 62ms (next.js: 5ms, proxy.ts: 4ms, application-code: 54ms)
+ GET /login 200 in 32ms (next.js: 2ms, proxy.ts: 1605µs, application-code: 29ms)
+[TypeError: fetch failed] {
+  [cause]: Error: getaddrinfo ENOTFOUND pjwzvqvrqqvjgwuouoxy.supabase.co
+      at ignore-listed frames {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'pjwzvqvrqqvjgwuouoxy.supabase.co'
+  }
+}
+[send-otp] generateLink fetch failed
+ POST /api/auth/send-otp 500 in 275ms (next.js: 252ms, application-code: 23ms)
+ GET /login 200 in 37ms (next.js: 3ms, proxy.ts: 3ms, application-code: 32ms)
+ GET /login 200 in 36ms (next.js: 5ms, proxy.ts: 3ms, application-code: 28ms)
+ GET /login 200 in 32ms (next.js: 3ms, proxy.ts: 2ms, application-code: 26ms)

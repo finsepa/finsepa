@@ -1,41 +1,22 @@
 import "server-only";
 
 import { parseNvidiaFiscalQuarterFromLabel } from "@/lib/market/ir-seed-apply-nvidia-q4";
+import { visaFilingsCandidates, visaSlidesCandidates } from "@/lib/market/ir-seed-visa-match";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
+export { visaFilingsCandidates, visaSlidesCandidates } from "@/lib/market/ir-seed-visa-match";
+
 const HEAD_MS = 2500;
-
-const VISA_IR_FILES = "https://investor.visa.com/files/doc_financials";
-
-function quarterOrdinalWord(fq: 1 | 2 | 3 | 4): "First" | "Second" | "Third" | "Fourth" {
-  return fq === 1 ? "First" : fq === 2 ? "Second" : fq === 3 ? "Third" : "Fourth";
-}
-
-function visaSlidesCandidates(fy: number, fq: 1 | 2 | 3 | 4): string[] {
-  const base = `${VISA_IR_FILES}/${fy}/q${fq}`;
-  const ord = quarterOrdinalWord(fq);
-  return [
-    `${base}/Visa-Inc-${ord}-Quarter-${fy}-Financial-Results-Presentation.pdf`,
-    // Some older quarters used “Fiscal” prefix; cheap to probe.
-    `${base}/Visa-Inc-Fiscal-${ord}-Quarter-${fy}-Financial-Results-Presentation.pdf`,
-  ];
-}
-
-function visaFilingsCandidates(fy: number, fq: 1 | 2 | 3 | 4): string[] {
-  const base = `${VISA_IR_FILES}/${fy}/q${fq}`;
-  return [
-    `${base}/Q${fq}-${fy}-Earnings-Release_vF.pdf`,
-    `${base}/Q${fq}-${fy}-Earnings-Release.pdf`,
-    `${base}/Q${fq}-${fy}-Earnings-Release_vF1.pdf`,
-  ];
-}
 
 async function headResolvePdfUrl(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
       method: "HEAD",
       redirect: "follow",
-      headers: { Accept: "application/pdf,*/*" },
+      headers: {
+        Accept: "application/pdf,*/*",
+        "User-Agent": "Mozilla/5.0",
+      },
       signal: AbortSignal.timeout(HEAD_MS),
     });
     if (!res.ok) return null;
@@ -51,8 +32,8 @@ async function headResolvePdfUrl(url: string): Promise<string | null> {
 
 /**
  * V only:
- * - Slides: Visa “Financial Results Presentation” PDF on investor.visa.com.
- * - Filings: Visa “Earnings Release” PDF (`Q{q}-{fy}-Earnings-Release_vF.pdf`).
+ * - Slides: Visa “Financial Results Presentation” / earnings deck PDF on q4cdn.
+ * - Filings: Visa “Earnings Release” PDF (`Q{q}-{fy}-Earnings-Release*.pdf`).
  */
 export async function applyIrSeedVisaDocumentUrls(
   rows: StockEarningsHistoryRow[],
@@ -80,4 +61,3 @@ export async function applyIrSeedVisaDocumentUrls(
     return { ...row, secSlidesUrl: nextSlides, secFilingsUrl: nextFilings };
   });
 }
-

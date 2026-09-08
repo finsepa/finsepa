@@ -77,7 +77,10 @@ export async function readMarketBlobForRebuild<T>(
   const row = await readMarketSnapshotRow(key);
   if (!row?.data) return null;
   const updated = Date.parse(row.updated_at);
-  const maxAge = tier === "hot" ? MARKET_SNAPSHOT_HOT_STALE_MS * 4 : MARKET_SNAPSHOT_SLOW_STALE_MS;
+  const maxAge =
+    tier === "hot"
+      ? Math.max(MARKET_SNAPSHOT_HOT_STALE_MS * 4, MARKET_SNAPSHOT_SLOW_STALE_MS)
+      : MARKET_SNAPSHOT_SLOW_STALE_MS;
   if (!Number.isFinite(updated) || Date.now() - updated > maxAge) return null;
   return { payload: row.data as T, exactSegment: false };
 }

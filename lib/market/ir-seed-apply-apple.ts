@@ -1,10 +1,19 @@
 import "server-only";
 
+import {
+  appleFilingsCandidates,
+  appleNewsroomConsolidatedStatementsCandidates,
+} from "@/lib/market/ir-seed-apple-match";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
-const HEAD_MS = 2500;
+export {
+  apple10kCandidates,
+  apple10qCandidates,
+  appleFilingsCandidates,
+  appleNewsroomConsolidatedStatementsCandidates,
+} from "@/lib/market/ir-seed-apple-match";
 
-const APPLE_Q4CDN = "https://s2.q4cdn.com/470004039/files";
+const HEAD_MS = 2500;
 
 function fiscalFromApplePeriodEndYmd(ymd: string | null): { fy: number; fq: 1 | 2 | 3 | 4 } | null {
   if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
@@ -21,35 +30,12 @@ function fiscalFromApplePeriodEndYmd(ymd: string | null): { fy: number; fq: 1 | 
   return { fy, fq };
 }
 
-function appleNewsroomConsolidatedStatementsPdfUrl(fy: number, fq: number): string {
-  const yy2 = String(fy % 100).padStart(2, "0");
-  return `https://www.apple.com/newsroom/pdfs/fy${fy}-q${fq}/FY${yy2}_Q${fq}_Consolidated_Financial_Statements.pdf`;
-}
-
-function apple10qCandidates(fy: number, fq: number): string[] {
-  // Apple has used multiple naming conventions over time; HEAD probe picks the winner.
-  return [
-    `${APPLE_Q4CDN}/doc_earnings/${fy}/q${fq}/filing/10Q-Q${fq}-${fy}-as-filed.pdf`,
-    `${APPLE_Q4CDN}/doc_earnings/${fy}/q${fq}/filing/_10-Q-Q${fq}-${fy}-As-Filed.pdf`,
-    `${APPLE_Q4CDN}/doc_financials/${fy}/q${fq}/_10-Q-Q${fq}-${fy}-(As-Filed).pdf`,
-  ];
-}
-
-function apple10kCandidates(fy: number): string[] {
-  return [
-    `${APPLE_Q4CDN}/doc_earnings/${fy}/q4/filing/10K-Q4-${fy}-as-filed.pdf`,
-    `${APPLE_Q4CDN}/doc_earnings/${fy}/q4/filing/_10-K-Q4-${fy}-As-Filed.pdf`,
-    `${APPLE_Q4CDN}/doc_earnings/${fy}/q4/filing/10-K-Q4-${fy}-As-Filed.pdf`,
-    `${APPLE_Q4CDN}/doc_financials/${fy}/ar/_10-K-${fy}-As-Filed.pdf`,
-  ];
-}
-
 async function headOk(url: string): Promise<boolean> {
   try {
     const res = await fetch(url, {
       method: "HEAD",
       redirect: "follow",
-      headers: { Accept: "application/pdf,*/*" },
+      headers: { Accept: "application/pdf,*/*", "User-Agent": "Mozilla/5.0" },
       signal: AbortSignal.timeout(HEAD_MS),
     });
     return res.ok;
@@ -72,9 +58,10 @@ export async function applyIrSeedAppleDocumentUrls(
   const byRow = rows.map((row) => {
     const p = fiscalFromApplePeriodEndYmd(row.fiscalPeriodEndYmd);
     if (!p) return { slides: [] as string[], filings: [] as string[] };
-    const slides = [appleNewsroomConsolidatedStatementsPdfUrl(p.fy, p.fq)];
-    const filings = p.fq === 4 ? apple10kCandidates(p.fy) : apple10qCandidates(p.fy, p.fq);
-    return { slides, filings };
+    return {
+      slides: appleNewsroomConsolidatedStatementsCandidates(p.fy, p.fq),
+      filings: appleFilingsCandidates(p.fy, p.fq),
+    };
   });
 
   const unique = [...new Set(byRow.flatMap((x) => [...x.slides, ...x.filings]))];
@@ -92,4 +79,3 @@ export async function applyIrSeedAppleDocumentUrls(
     return { ...row, secSlidesUrl: nextSlides, secFilingsUrl: nextFilings };
   });
 }
-

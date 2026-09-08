@@ -3,6 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { REVALIDATE_SCREENER_MARKET_LIVE } from "@/lib/data/cache-policy";
+import { isUsEquityExchangeHolidayYmd } from "@/lib/market/us-equity-exchange-holidays";
 import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 
 export type ScreenerUsMarketCacheMode = "live" | "frozen";
@@ -30,24 +31,30 @@ function nyWeekdayShort(now: Date): string {
   return new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short" }).format(now);
 }
 
-/** Previous NY weekday (skips Sat/Sun), up to 10 days back. */
+/** Previous NY trading day (skips Sat/Sun and full exchange holidays), up to 14 days back. */
 export function previousNyTradingDayYmd(now: Date): string {
   let cursor = now;
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 14; i++) {
     cursor = new Date(cursor.getTime() - 24 * 60 * 60 * 1000);
     const wd = nyWeekdayShort(cursor);
-    if (wd !== "Sat" && wd !== "Sun") return nyCalendarYmd(cursor);
+    if (wd === "Sat" || wd === "Sun") continue;
+    const ymd = nyCalendarYmd(cursor);
+    if (isUsEquityExchangeHolidayYmd(ymd)) continue;
+    return ymd;
   }
   return nyCalendarYmd(now);
 }
 
 /**
  * Trading day whose **regular close** should be shown when quotes are frozen
- * (pre-market, post-market, overnight, weekends).
+ * (pre-market, post-market, overnight, weekends, exchange holidays).
  */
 export function getUsEquityLastRegularSessionYmd(now: Date): string {
   const session = getUsEquityMarketSession(now);
-  if (session === "regular" || session === "post") return nyCalendarYmd(now);
+  const todayYmd = nyCalendarYmd(now);
+  // Holidays are `closed` — never treat the holiday calendar day as the last regular session.
+  if (isUsEquityExchangeHolidayYmd(todayYmd)) return previousNyTradingDayYmd(now);
+  if (session === "regular" || session === "post") return todayYmd;
   return previousNyTradingDayYmd(now);
 }
 
@@ -58,11 +65,24 @@ export function isScreenerUsMarketLiveSession(now: Date = new Date()): boolean {
 /**
  * Screener US market data cache window:
  * - **regular** (9:30–16:00 ET): refresh every 15m, one shared snapshot per slot for all users.
- * - **pre / post / closed**: freeze until next regular session; segment keyed by last regular close day.
+ * - **pre / post / closed / exchange holidays**: freeze until next regular session; segment keyed by last regular close day.
  */
 export function getScreenerUsMarketCacheEpoch(now: Date = new Date()): ScreenerUsMarketCacheEpoch {
-  const session = getUsEquityMarketSession(now);
+  const todayYmd = nyCalendarYmd(now);
   const lastRegularSessionYmd = getUsEquityLastRegularSessionYmd(now);
+
+  // Belt-and-suspenders: never write/read live 15m slots on full exchange holidays
+  // even if session helpers regress to "regular".
+  if (isUsEquityExchangeHolidayYmd(todayYmd)) {
+    return {
+      mode: "frozen",
+      lastRegularSessionYmd,
+      segment: `frozen-${lastRegularSessionYmd}`,
+      revalidateSec: false,
+    };
+  }
+
+  const session = getUsEquityMarketSession(now);
 
   if (session === "regular") {
     const fmt = new Intl.DateTimeFormat("en-US", {
@@ -76,11 +96,10 @@ export function getScreenerUsMarketCacheEpoch(now: Date = new Date()): ScreenerU
     const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
     const dayMinutes = hour * 60 + minute;
     const slot = Math.floor((dayMinutes - 9 * 60 - 30) / 15);
-    const ymd = nyCalendarYmd(now);
     return {
       mode: "live",
       lastRegularSessionYmd,
-      segment: `live-${ymd}-s${Math.max(0, slot)}`,
+      segment: `live-${todayYmd}-s${Math.max(0, slot)}`,
       revalidateSec: REVALIDATE_SCREENER_MARKET_LIVE,
     };
   }

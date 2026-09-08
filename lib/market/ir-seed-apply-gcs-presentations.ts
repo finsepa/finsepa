@@ -9,6 +9,7 @@ import {
   fetchGcsWebEarningsEvents,
   gcsEventForReportDate,
   headPdfLikeUrl,
+  earningsPdfHrefMatchesQuarterLabels,
 } from "@/lib/market/gcs-web-earnings-presentations";
 import { earningsDeckLookupLabels } from "@/lib/market/earnings-deck-quarter-labels";
 import {
@@ -152,8 +153,9 @@ export async function applyGcsWebPresentationUrls(
   const slideCandidateLists = needingSlides.map(({ row }) => {
     const candidates: string[] = [];
     const label = row.fiscalPeriodLabel?.trim();
+    const allowed = label ? earningsDeckLookupLabels(label) : [];
     if (label) {
-      for (const key of earningsDeckLookupLabels(label)) {
+      for (const key of allowed) {
         const labeled = decksByQuarter.get(key);
         if (labeled) candidates.push(labeled);
       }
@@ -164,19 +166,24 @@ export async function applyGcsWebPresentationUrls(
         if (hit?.presentationUrl) candidates.push(hit.presentationUrl);
       }
     }
-    return [...new Set(candidates)];
+    return [...new Set(candidates)].filter((u) =>
+      allowed.length === 0 ? true : earningsPdfHrefMatchesQuarterLabels(u, allowed),
+    );
   });
 
   const filingCandidateLists = needingFilings.map(({ row }) => {
     const candidates: string[] = [];
     const label = row.fiscalPeriodLabel?.trim();
+    const allowed = label ? earningsDeckLookupLabels(label) : [];
     if (label) {
-      for (const key of earningsDeckLookupLabels(label)) {
+      for (const key of allowed) {
         const labeled = filingsByQuarter.get(key);
         if (labeled) candidates.push(labeled);
       }
     }
-    return [...new Set(candidates)];
+    return [...new Set(candidates)].filter((u) =>
+      allowed.length === 0 ? true : earningsPdfHrefMatchesQuarterLabels(u, allowed),
+    );
   });
 
   const unique = [
@@ -204,7 +211,7 @@ export async function applyGcsWebPresentationUrls(
       const listIdx = needingFilings.findIndex((n) => n.idx === i);
       const list = filingCandidateLists[listIdx] ?? [];
       const hit = list.map((u) => resolved.get(u) ?? null).find((u): u is string => !!u) ?? null;
-      if (hit) nextFilings = hit;
+      if (hit && hit !== nextSlides) nextFilings = hit;
     }
 
     if (nextSlides === row.secSlidesUrl && nextFilings === row.secFilingsUrl) return row;

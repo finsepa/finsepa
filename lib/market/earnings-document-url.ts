@@ -1,6 +1,10 @@
-import { isDirectEarningsPdfUrl, isKnownEarningsSlideDeckUrl } from "@/lib/market/earnings-pdf-url";
+import {
+  isDirectEarningsPdfUrl,
+  isKnownEarningsFilingDocUrl,
+  isKnownEarningsSlideDeckUrl,
+} from "@/lib/market/earnings-pdf-url";
 
-export { isDirectEarningsPdfUrl, isKnownEarningsSlideDeckUrl };
+export { isDirectEarningsPdfUrl, isKnownEarningsFilingDocUrl, isKnownEarningsSlideDeckUrl };
 
 /** SEC exhibit HTML that is not an earnings release / interim report (e.g. Ferrari `prcov` notices). */
 export function isLowQualitySecEarningsExhibitHtml(href: string): boolean {
@@ -15,7 +19,11 @@ function secEdgarExhibitHtmlFileName(href: string): string {
 function looksLikeSecEdgarEarningsReleaseExhibit(href: string): boolean {
   const file = secEdgarExhibitHtmlFileName(href);
   if (/shareholder\s*letter|shareholderletter/i.test(file)) return false;
-  if (/slide|slides|slidesfin|presentation|deck|992|ex[-_.]?99[-_.]?2/i.test(file)) return false;
+  if (/slide|slides|slidesfin|presentation|deck|992|ex[-_.]?99[-_.]?2|vpower|powerpoint/i.test(file)) {
+    return false;
+  }
+  // UNH EX-99.2 decks are often `uhgearningsreleaseq12026.htm` (no "press"); 99.1 uses *press*.
+  if (/uhgearnings/i.test(file) && !/press/i.test(file)) return false;
   return /earningsrel|earningsrelease|earningsreleaseex|earnings[-_.]?release|ex99.*earn|ex-\d+.*earn|ex991pressrelease|ex991earningsrelease|q[1-4]\d{2,3}ex991(?:press|earnings)release/i.test(
     file,
   );
@@ -32,17 +40,21 @@ export function isSecEdgarPresentationExhibitHtml(href: string | null | undefine
   if (!isSecEdgarExhibitHtmlUrl(href)) return false;
   if (looksLikeSecEdgarEarningsReleaseExhibit(href)) return false;
   const file = secEdgarExhibitHtmlFileName(href);
-  if (/slide|slides|slidesfin|presentation|deck|992|ex[-_.]?99[-_.]?2/i.test(file)) return true;
+  if (/slide|slides|slidesfin|presentation|deck|992|ex[-_.]?99[-_.]?2|vpower|powerpoint/i.test(file)) {
+    return true;
+  }
+  // UNH: EX-99.2 HTML named `uhgearnings_q*` / `uhgearningsreleaseq*` (no press).
+  if (/uhgearnings/i.test(file) && !/press/i.test(file)) return true;
   if (/shareholder\s*letter|shareholderletter/i.test(file)) return true;
   return false;
 }
 
-/** Slides preview: PDF, SEC Exhibit 99.2 HTML, or known issuer deck URLs (e.g. MSFT PPTX). */
+/** Slides preview: PDF decks, SEC Exhibit 99.2 HTML, or known issuer deck URLs (e.g. MSFT PPTX).
+ *  Press-release / Exhibit 99.1 HTML is filings-only — never counts as slides done. */
 export function isEarningsSlidesPreviewUrl(href: string | null | undefined): href is string {
   return (
     isDirectEarningsPdfUrl(href) ||
     isSecEdgarPresentationExhibitHtml(href) ||
-    isSecEdgarEarningsReleaseExhibitHtml(href) ||
     isKnownEarningsSlideDeckUrl(href)
   );
 }
@@ -67,6 +79,7 @@ export function isSecEdgarExhibitHtmlUrl(href: string | null | undefined): href 
 
 export function isEarningsFilingsPreviewUrl(href: string | null | undefined): href is string {
   if (isDirectEarningsPdfUrl(href)) return true;
+  if (isKnownEarningsFilingDocUrl(href)) return true;
   if (isSecEdgarPresentationExhibitHtml(href)) return false;
   return isSecEdgarExhibitHtmlUrl(href);
 }
@@ -77,8 +90,8 @@ export function earningsDocumentPreviewKind(
   url: string,
 ): EarningsDocumentPreviewKind | null {
   if (isDirectEarningsPdfUrl(url)) return "pdf";
-  // PPTX / known issuer decks (e.g. MSFT dynmedia) — embed via Office Online in the preview modal.
-  if (isKnownEarningsSlideDeckUrl(url)) return "office";
+  // PPTX / DOCX on issuer CDNs (e.g. MSFT dynmedia) — embed via Office Online in the preview modal.
+  if (isKnownEarningsSlideDeckUrl(url) || isKnownEarningsFilingDocUrl(url)) return "office";
   if (isSecEdgarExhibitHtmlUrl(url)) return "sec-html";
   return null;
 }

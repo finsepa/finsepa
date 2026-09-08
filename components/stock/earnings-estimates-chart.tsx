@@ -88,13 +88,17 @@ function earningsBeatMiss(
   return "met";
 }
 
-function formatBeatMissDeltaAmount(delta: number, axisKind: ChartingMetricKind): string {
-  const sign = delta > 0 ? "+" : delta < 0 ? "-" : "+";
-  const abs = Math.abs(delta);
+function formatUnsignedChartAmount(value: number, axisKind: ChartingMetricKind): string {
+  const abs = Math.abs(value);
   if (axisKind === "eps") {
-    return `${sign}$${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `$${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
-  return `${sign}${formatUsdCompact(abs)}`;
+  return formatUsdCompact(abs);
+}
+
+/** Tooltip delta — magnitude only; beat/miss color + label carry the direction. */
+function formatBeatMissDeltaAmount(delta: number, axisKind: ChartingMetricKind): string {
+  return formatUnsignedChartAmount(delta, axisKind);
 }
 
 function formatBeatMissLabel(
@@ -219,7 +223,7 @@ function EarningsPeriodBars({
 
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
-/** Two-line horizontal period labels (e.g. `Q2 2026` + `+$0.14`). */
+/** Two-line horizontal period labels (e.g. `Q2 2026` + `$0.14` — color = beat/miss). */
 const MULTICHART_AXIS_ROW_PX = 44;
 const MULTICHART_AXIS_BOTTOM_PAD_PX = 8;
 const Y_AXIS_W_PX = 50;
@@ -272,7 +276,7 @@ function tooltipLineClass(tone: BarTooltipLineTone, isFirst: boolean): string {
 type PeriodBar = {
   key: string;
   axisLabel: string;
-  /** Actual value line under the period (e.g. `+$0.14`); null when unreported. */
+  /** Actual value line under the period (e.g. `$0.14`); null when unreported. */
   axisActualLabel: string | null;
   /** Beat/miss vs estimate — colors the actual axis line. */
   axisActualOutcome: EarningsOutcome | null;
@@ -306,7 +310,7 @@ function buildPeriodBars(
       axisLabel: periodEnd ? formatChartingPeriodLabel(periodEnd, periodMode) : p.label,
       axisActualLabel:
         actual != null && Number.isFinite(actual)
-          ? formatBeatMissDeltaAmount(actual, axisKind)
+          ? formatUnsignedChartAmount(actual, axisKind)
           : null,
       axisActualOutcome: outcome,
       title: periodEnd ? formatChartingPeriodLabel(periodEnd, periodMode) : p.label,

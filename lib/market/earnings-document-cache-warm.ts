@@ -1,11 +1,13 @@
 import "server-only";
 
+import { listTickersWithPartialSlidesGaps } from "@/lib/market/earnings-document-cache-store";
 import {
   aggregateWarmFailureTaxonomy,
   classifyEarningsDocumentWarmResult,
   type EarningsDocumentWarmTickerResult,
 } from "@/lib/market/earnings-document-warm-taxonomy";
 import {
+  EARNINGS_WARM_GAP_BACKFILL_PER_RUN,
   EARNINGS_WARM_SHARD_COUNT,
   EARNINGS_WARM_TICKERS_PER_RUN,
   listEarningsDocumentWarmUniverse,
@@ -29,6 +31,7 @@ export type EarningsDocumentCacheWarmResult = {
   universeSize: number;
   totalInShard: number;
   processed: number;
+  gapBackfill: string[];
   taxonomy: ReturnType<typeof aggregateWarmFailureTaxonomy>;
   coverage: {
     recentReportedRows: number;
@@ -41,33 +44,49 @@ export type EarningsDocumentCacheWarmResult = {
 
 /**
  * Pre-resolve earnings slides/filings for screener universe tickers (sharded daily cron).
- * Rotates through each shard across days so the full top-100 list is warmed over a week.
+ * Rotates shards across the week; reserves a few slots for partial slides-gap backfill.
+ * Cap stays low (≤10/run) so EODHD + SEC budget fits ~500–1000 DAU.
  */
 export async function warmEarningsDocumentCacheBatch(
   options?: EarningsDocumentCacheWarmOptions,
 ): Promise<EarningsDocumentCacheWarmResult> {
   const universe = await listEarningsDocumentWarmUniverse();
   const shardCount = options?.shardCount ?? EARNINGS_WARM_SHARD_COUNT;
-  const shard =
-    options?.shard ?? new Date().getUTCDay() % shardCount;
+  const shard = options?.shard ?? new Date().getUTCDay() % shardCount;
+  const perRun = options?.perRun ?? EARNINGS_WARM_TICKERS_PER_RUN;
 
-  const shardPick =
-    options?.tickers != null
-      ? {
-          shard,
-          shardCount,
-          tickers: [...options.tickers],
-          totalInShard: options.tickers.length,
-        }
-      : tickersForWarmShard(universe, shard, {
-          shardCount,
-          perRun: options?.perRun ?? EARNINGS_WARM_TICKERS_PER_RUN,
-        });
+  let gapBackfill: string[] = [];
+  let tickers: string[];
+  let totalInShard: number;
+
+  if (options?.tickers != null) {
+    tickers = [...options.tickers];
+    totalInShard = options.tickers.length;
+  } else {
+    const shardPick = tickersForWarmShard(universe, shard, {
+      shardCount,
+      perRun,
+    });
+    totalInShard = shardPick.totalInShard;
+
+    const gapSlots = Math.min(EARNINGS_WARM_GAP_BACKFILL_PER_RUN, Math.max(0, perRun - 1));
+    gapBackfill = await listTickersWithPartialSlidesGaps(universe, gapSlots);
+
+    const seen = new Set(gapBackfill);
+    const remainder: string[] = [];
+    for (const t of shardPick.tickers) {
+      if (seen.has(t)) continue;
+      seen.add(t);
+      remainder.push(t);
+      if (gapBackfill.length + remainder.length >= perRun) break;
+    }
+    tickers = [...gapBackfill, ...remainder].slice(0, perRun);
+  }
 
   const perTicker: EarningsDocumentWarmTickerResult[] = [];
   const errors: string[] = [];
 
-  for (const ticker of shardPick.tickers) {
+  for (const ticker of tickers) {
     try {
       perTicker.push(await warmStockEarningsDocumentCache(ticker));
     } catch (e) {
@@ -101,8 +120,9 @@ export async function warmEarningsDocumentCacheBatch(
   console.info(
     "[earnings-document-cache-warm]",
     JSON.stringify({
-      shard: shardPick.shard,
+      shard,
       processed: perTicker.length,
+      gapBackfill,
       taxonomy,
       coverage,
       errors: errors.length,
@@ -111,11 +131,12 @@ export async function warmEarningsDocumentCacheBatch(
 
   return {
     at: new Date().toISOString(),
-    shard: shardPick.shard,
+    shard,
     shardCount,
     universeSize: universe.length,
-    totalInShard: shardPick.totalInShard,
+    totalInShard,
     processed: perTicker.length,
+    gapBackfill,
     taxonomy,
     coverage,
     perTicker,
