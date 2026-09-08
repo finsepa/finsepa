@@ -1,3 +1,0 @@
-[FINSEPA_PROVIDER_TRACE] EODHD fetchEodhdUsQuoteDelayed {"symbol":"GOOGL.US"}
- GET /api/stocks/V/extended-hours?exchange=NYSE&country=US&close=375.07 200 in 1966ms (next.js: 3ms, application-code: 1963ms)
- GET /api/stocks/GOOGL/extended-hours?exchange=NASDAQ&country=US&close=338.46 200 in 1970ms (next.js: 5ms, application-code: 1965ms)
