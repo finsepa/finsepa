@@ -69,6 +69,7 @@ export function isTrustedEarningsAnnouncementYmd(args: {
   calendarByPeriodEnd?: ReadonlyMap<string, string>;
 }): args is { announcementYmd: string; fiscalPeriodEndYmd: string } {
   const { announcementYmd, fiscalPeriodEndYmd, form10FilingYmd, calendarByPeriodEnd } = args;
+  if (!fiscalPeriodEndYmd || !announcementYmd) return false;
   if (!isPlausibleEarningsAnnouncementYmd(fiscalPeriodEndYmd, announcementYmd)) return false;
   if (form10FilingYmd && absDeltaDays(announcementYmd, form10FilingYmd) <= 1) return false;
   if (calendarByPeriodEnd) {
