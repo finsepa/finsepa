@@ -26,6 +26,9 @@ export type EarningsDocumentCacheRow = {
   presentation_pdf_url: string | null;
   quarterly_report_pdf_url: string | null;
   quarterly_report_html_url: string | null;
+  eight_k_url: string | null;
+  form10_url: string | null;
+  form10_kind: "10-Q" | "10-K" | null;
   resolution_source: EarningsDocumentResolutionSource;
   report_date: string | null;
   verified_at: string;
@@ -71,7 +74,7 @@ export async function loadEarningsDocumentCacheForHistory(
   const { data, error } = await admin
     .from("earnings_document_cache")
     .select(
-      "ticker,fiscal_period_end,presentation_pdf_url,quarterly_report_pdf_url,quarterly_report_html_url,resolution_source,report_date,verified_at,updated_at",
+      "ticker,fiscal_period_end,presentation_pdf_url,quarterly_report_pdf_url,quarterly_report_html_url,eight_k_url,form10_url,form10_kind,resolution_source,report_date,verified_at,updated_at",
     )
     .eq("ticker", sym)
     .in("fiscal_period_end", fiscalEnds);
@@ -115,9 +118,21 @@ export function applyEarningsDocumentCacheToHistory(
       ? hit.quarterly_report_html_url
       : null;
     const filings = filingsFromPdf ?? filingsFromHtml ?? row.secFilingsUrl;
+    const eightK = isEarningsFilingsPreviewUrl(hit.eight_k_url) ? hit.eight_k_url : row.eightKUrl;
+    const form10 = isEarningsFilingsPreviewUrl(hit.form10_url) ? hit.form10_url : row.form10Url;
+    const form10Kind =
+      hit.form10_kind === "10-Q" || hit.form10_kind === "10-K" ? hit.form10_kind : row.form10Kind;
 
-    if (slides === row.secSlidesUrl && filings === row.secFilingsUrl) return row;
-    return { ...row, secSlidesUrl: slides, secFilingsUrl: filings };
+    if (
+      slides === row.secSlidesUrl &&
+      filings === row.secFilingsUrl &&
+      eightK === row.eightKUrl &&
+      form10 === row.form10Url &&
+      form10Kind === row.form10Kind
+    ) {
+      return row;
+    }
+    return { ...row, secSlidesUrl: slides, secFilingsUrl: filings, eightKUrl: eightK, form10Url: form10, form10Kind };
   });
 }
 
@@ -129,11 +144,15 @@ type EnrichmentStepSnapshot = {
 function urlAt(rows: readonly StockEarningsHistoryRow[], idx: number): {
   slides: string | null;
   filings: string | null;
+  eightK: string | null;
+  form10: string | null;
 } {
   const row = rows[idx];
   return {
     slides: row?.secSlidesUrl ?? null,
     filings: row?.secFilingsUrl ?? null,
+    eightK: row?.eightKUrl ?? null,
+    form10: row?.form10Url ?? null,
   };
 }
 
@@ -150,7 +169,10 @@ function inferResolutionSource(
     const filingsNew =
       (isDirectEarningsPdfUrl(curr.filings) || isSecEdgarExhibitHtmlUrl(curr.filings)) &&
       curr.filings !== baseline.filings;
-    if (slidesNew || filingsNew) return step;
+    const reportsNew =
+      (isEarningsFilingsPreviewUrl(curr.eightK) && curr.eightK !== baseline.eightK) ||
+      (isEarningsFilingsPreviewUrl(curr.form10) && curr.form10 !== baseline.form10);
+    if (slidesNew || filingsNew || reportsNew) return step;
   }
   return "unknown";
 }
@@ -162,6 +184,7 @@ export async function persistResolvedEarningsDocuments(
   baselineAfterCache: readonly StockEarningsHistoryRow[],
   priorCache: ReadonlyMap<string, EarningsDocumentCacheRow>,
   steps: readonly EnrichmentStepSnapshot[],
+  options?: { replaceSecReports?: boolean },
 ): Promise<void> {
   if (!earningsDocumentCacheWriteEnabled()) return;
 
@@ -176,6 +199,9 @@ export async function persistResolvedEarningsDocuments(
     presentation_pdf_url: string | null;
     quarterly_report_pdf_url: string | null;
     quarterly_report_html_url: string | null;
+    eight_k_url: string | null;
+    form10_url: string | null;
+    form10_kind: "10-Q" | "10-K" | null;
     resolution_source: EarningsDocumentResolutionSource;
     report_date: string | null;
     verified_at: string;
@@ -191,16 +217,28 @@ export async function persistResolvedEarningsDocuments(
     const filingsPdf = isDirectEarningsPdfUrl(row.secFilingsUrl) ? row.secFilingsUrl : null;
     const filingsHtml =
       !filingsPdf && isSecEdgarExhibitHtmlUrl(row.secFilingsUrl) ? row.secFilingsUrl : null;
-    if (!slides && !filingsPdf && !filingsHtml) continue;
+    const eightK = isEarningsFilingsPreviewUrl(row.eightKUrl) ? row.eightKUrl : null;
+    const form10 = isEarningsFilingsPreviewUrl(row.form10Url) ? row.form10Url : null;
+    const form10Kind = form10 && (row.form10Kind === "10-Q" || row.form10Kind === "10-K") ? row.form10Kind : null;
 
     const prior = priorCache.get(cacheKey(sym, fiscal));
-    const priorSlides = prior?.presentation_pdf_url ?? null;
-    const priorFilingsPdf = prior?.quarterly_report_pdf_url ?? null;
-    const priorFilingsHtml = prior?.quarterly_report_html_url ?? null;
+    const replaceSecReports = Boolean(options?.replaceSecReports);
+    const nextSlides = slides ?? prior?.presentation_pdf_url ?? null;
+    const nextFilingsPdf = filingsPdf ?? prior?.quarterly_report_pdf_url ?? null;
+    const nextFilingsHtml = filingsHtml ?? prior?.quarterly_report_html_url ?? null;
+    const nextEightK = replaceSecReports ? eightK : (eightK ?? prior?.eight_k_url ?? null);
+    const nextForm10 = replaceSecReports ? form10 : (form10 ?? prior?.form10_url ?? null);
+    const nextForm10Kind = replaceSecReports ? form10Kind : (form10Kind ?? prior?.form10_kind ?? null);
+
+    if (!nextSlides && !nextFilingsPdf && !nextFilingsHtml && !nextEightK && !nextForm10) continue;
+
     if (
-      slides === priorSlides &&
-      filingsPdf === priorFilingsPdf &&
-      filingsHtml === priorFilingsHtml
+      nextSlides === (prior?.presentation_pdf_url ?? null) &&
+      nextFilingsPdf === (prior?.quarterly_report_pdf_url ?? null) &&
+      nextFilingsHtml === (prior?.quarterly_report_html_url ?? null) &&
+      nextEightK === (prior?.eight_k_url ?? null) &&
+      nextForm10 === (prior?.form10_url ?? null) &&
+      nextForm10Kind === (prior?.form10_kind ?? null)
     ) {
       continue;
     }
@@ -208,9 +246,12 @@ export async function persistResolvedEarningsDocuments(
     payload.push({
       ticker: sym,
       fiscal_period_end: fiscal,
-      presentation_pdf_url: slides,
-      quarterly_report_pdf_url: filingsPdf,
-      quarterly_report_html_url: filingsHtml,
+      presentation_pdf_url: nextSlides,
+      quarterly_report_pdf_url: nextFilingsPdf,
+      quarterly_report_html_url: nextFilingsHtml,
+      eight_k_url: nextEightK,
+      form10_url: nextForm10,
+      form10_kind: nextForm10Kind,
       resolution_source: inferResolutionSource(i, [...baselineAfterCache], steps),
       report_date: row.reportDateYmd,
       verified_at: now,
@@ -243,6 +284,9 @@ export async function upsertEarningsDocumentCache(
     presentationPdfUrl: string | null;
     quarterlyReportPdfUrl: string | null;
     quarterlyReportHtmlUrl?: string | null;
+    eightKUrl?: string | null;
+    form10Url?: string | null;
+    form10Kind?: "10-Q" | "10-K" | null;
     resolutionSource: EarningsDocumentResolutionSource;
     reportDateYmd: string | null;
   }[],
@@ -259,13 +303,19 @@ export async function upsertEarningsDocumentCache(
         !filingsPdf && isSecEdgarExhibitHtmlUrl(row.quarterlyReportHtmlUrl)
           ? row.quarterlyReportHtmlUrl
           : null;
-      if (!slides && !filingsPdf && !filingsHtml) return null;
+      const eightK = isEarningsFilingsPreviewUrl(row.eightKUrl) ? row.eightKUrl : null;
+      const form10 = isEarningsFilingsPreviewUrl(row.form10Url) ? row.form10Url : null;
+      const form10Kind = form10 && (row.form10Kind === "10-Q" || row.form10Kind === "10-K") ? row.form10Kind : null;
+      if (!slides && !filingsPdf && !filingsHtml && !eightK && !form10) return null;
       return {
         ticker: normalizeTicker(row.ticker),
         fiscal_period_end: row.fiscalPeriodEndYmd,
         presentation_pdf_url: slides,
         quarterly_report_pdf_url: filingsPdf,
         quarterly_report_html_url: filingsHtml,
+        eight_k_url: eightK,
+        form10_url: form10,
+        form10_kind: form10Kind,
         resolution_source: row.resolutionSource,
         report_date: row.reportDateYmd,
         verified_at: now,

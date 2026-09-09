@@ -250,6 +250,9 @@ function historyRowFromUpcoming(
     epsActualRaw: null,
     secSlidesUrl: null,
     secFilingsUrl: null,
+    eightKUrl: null,
+    form10Url: null,
+    form10Kind: null,
     postReport1dPct: null,
   };
 }

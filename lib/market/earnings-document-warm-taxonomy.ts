@@ -25,6 +25,9 @@ export type EarningsDocumentWarmTickerResult = {
   withFilings: number;
   missingSlides: number;
   missingFilings: number;
+  withEightK: number;
+  withForm10: number;
+  bothReports: number;
   slideFormats: Record<string, number>;
 };
 
@@ -61,6 +64,9 @@ export function classifyEarningsDocumentWarmResult(
       withFilings: 0,
       missingSlides: 0,
       missingFilings: 0,
+      withEightK: 0,
+      withForm10: 0,
+      bothReports: 0,
       slideFormats: {},
     };
   }
@@ -81,6 +87,9 @@ export function classifyEarningsDocumentWarmResult(
       withFilings: 0,
       missingSlides: 0,
       missingFilings: 0,
+      withEightK: 0,
+      withForm10: 0,
+      bothReports: 0,
       slideFormats: {},
     };
   }
@@ -89,6 +98,11 @@ export function classifyEarningsDocumentWarmResult(
   const withFilings = recent.filter((r) => isEarningsFilingsPreviewUrl(r.secFilingsUrl)).length;
   const missingSlides = recent.length - withSlides;
   const missingFilings = recent.length - withFilings;
+  const withEightK = reported.filter((r) => isEarningsFilingsPreviewUrl(r.eightKUrl)).length;
+  const withForm10 = reported.filter((r) => isEarningsFilingsPreviewUrl(r.form10Url)).length;
+  const bothReports = reported.filter(
+    (r) => isEarningsFilingsPreviewUrl(r.eightKUrl) && isEarningsFilingsPreviewUrl(r.form10Url),
+  ).length;
 
   const slideFormats: Record<string, number> = {};
   for (const row of recent) {
@@ -120,6 +134,9 @@ export function classifyEarningsDocumentWarmResult(
     withFilings,
     missingSlides,
     missingFilings,
+    withEightK,
+    withForm10,
+    bothReports,
     slideFormats,
   };
 }

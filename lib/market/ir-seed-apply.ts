@@ -30,6 +30,9 @@ import { applyIrSeedWalmartDocumentUrls } from "@/lib/market/ir-seed-apply-walma
 import { applyIrSeedXomDocumentUrls } from "@/lib/market/ir-seed-apply-xom";
 import { applyIrSeedAmatDocumentUrls } from "@/lib/market/ir-seed-apply-amat";
 import { applyIrSeedMerckDocumentUrls } from "@/lib/market/ir-seed-apply-merck";
+import { applyIrSeedCostDocumentUrls } from "@/lib/market/ir-seed-apply-cost";
+import { applyIrSeedKoDocumentUrls } from "@/lib/market/ir-seed-apply-ko";
+import { applyIrSeedCatDocumentUrls } from "@/lib/market/ir-seed-apply-cat";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 /** Tickers with bespoke IR seed modules (run before universal layers). */
@@ -62,6 +65,9 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
   "CSCO",
   "AMAT",
   "MRK",
+  "COST",
+  "KO",
+  "CAT",
 ]);
 
 export function earningsIrSeedResolutionSource(
@@ -104,6 +110,9 @@ async function applyDedicatedIrSeedDocumentUrls(
   if (t === "CSCO") return applyIrSeedCscoDocumentUrls(rows, hub);
   if (t === "AMAT") return applyIrSeedAmatDocumentUrls(rows, hub);
   if (t === "MRK") return applyIrSeedMerckDocumentUrls(rows, hub);
+  if (t === "COST") return applyIrSeedCostDocumentUrls(rows, hub);
+  if (t === "KO") return applyIrSeedKoDocumentUrls(rows, hub);
+  if (t === "CAT") return applyIrSeedCatDocumentUrls(rows, hub);
   if (t === "RACE") {
     return applyIrSeedFerrariPresentationUrls(rows, {
       preview: options?.preview,

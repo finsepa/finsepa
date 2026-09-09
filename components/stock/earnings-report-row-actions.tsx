@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { FileSearch, Presentation } from "@/lib/icons";
 
-import { EarningsPdfPreviewModal } from "@/components/stock/earnings-pdf-preview-modal";
+import {
+  EarningsPdfPreviewModal,
+  type EarningsDocumentPreviewTab,
+} from "@/components/stock/earnings-pdf-preview-modal";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { getCuratedIrEarningsRowUrls } from "@/lib/market/earnings-ir-curated-lookup";
 import {
   earningsDocumentPreviewKind,
-  isEarningsFilingsPreviewUrl,
   isEarningsSlidesPreviewUrl,
 } from "@/lib/market/earnings-document-url";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
@@ -20,10 +22,7 @@ const iconButtonClass = cn(
   "size-8 min-w-0 gap-0 p-0 active:bg-surface focus-visible:ring-neutral-900/10",
 );
 
-function firstPartyEarningsDocumentUrls(
-  listingTicker: string,
-  row: StockEarningsHistoryRow,
-): { slidesUrl: string | null; filingsUrl: string | null } {
+function slidesUrlForRow(listingTicker: string, row: StockEarningsHistoryRow): string | null {
   const curated = getCuratedIrEarningsRowUrls(listingTicker, row);
   const rowSlides =
     row.secSlidesUrl &&
@@ -31,22 +30,22 @@ function firstPartyEarningsDocumentUrls(
     isEarningsSlidesPreviewUrl(row.secSlidesUrl)
       ? row.secSlidesUrl
       : null;
-  const rowFilings = isEarningsFilingsPreviewUrl(row.secFilingsUrl) ? row.secFilingsUrl : null;
-
-  // Curated fills win per field; missing curated field falls back to resolved row URL.
-  const slidesUrl =
+  return (
     (curated?.presentationPdfUrl && isEarningsSlidesPreviewUrl(curated.presentationPdfUrl)
       ? curated.presentationPdfUrl
-      : null) ?? rowSlides;
-  const filingsUrl =
-    (curated?.quarterlyReportPdfUrl && isEarningsFilingsPreviewUrl(curated.quarterlyReportPdfUrl)
-      ? curated.quarterlyReportPdfUrl
-      : null) ?? rowFilings;
-
-  return { slidesUrl, filingsUrl };
+      : null) ?? rowSlides
+  );
 }
 
-type PreviewState = { url: string; title: string } | null;
+function previewable(url: string | null): url is string {
+  return url != null && earningsDocumentPreviewKind(url) != null;
+}
+
+type PreviewState = {
+  url: string;
+  title: string;
+  tabs?: EarningsDocumentPreviewTab[];
+} | null;
 
 function ActionButton({
   label,
@@ -66,42 +65,38 @@ function ActionButton({
   );
 }
 
-function ActionDisabled({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <TopbarDelayedTooltip label={label} multiline className="shrink-0">
-      <span
-        className={cn(iconButtonClass, "cursor-not-allowed opacity-45")}
-        aria-label={label}
-        aria-disabled
-      >
-        {children}
-      </span>
-    </TopbarDelayedTooltip>
-  );
-}
-
 type Props = {
   row: StockEarningsHistoryRow;
   listingTicker: string;
 };
 
 /**
- * Slides / Filings — in-app preview when a PDF, SEC HTML exhibit, or known PPTX deck URL is known.
- * PDFs use `/api/ir-pdf`; SEC HTML uses `/api/sec-exhibit`; PPTX decks use Office Online embed.
+ * Slides (Company IR) + Reports (HIGH SEC 8-K / 10-Q/10-K).
+ * Does not show empty actions. Vault IR filings are preserved in the payload but are not a v1 action.
  */
 export function EarningsReportRowActions({ row, listingTicker }: Props) {
   const released = row.reported;
-  const { slidesUrl, filingsUrl } = firstPartyEarningsDocumentUrls(listingTicker, row);
+  const slidesUrl = slidesUrlForRow(listingTicker, row);
+  const eightKUrl = previewable(row.eightKUrl) ? row.eightKUrl : null;
+  const form10Url = previewable(row.form10Url) ? row.form10Url : null;
+  const form10Label = row.form10Kind === "10-K" ? "10-K" : "10-Q";
   const [preview, setPreview] = useState<PreviewState>(null);
 
-  const slidesDisabledLabel = released
-    ? "No presentation PDF for this report yet"
-    : "Presentation not available until this report is released";
-  const filingsDisabledLabel = released
-    ? "No quarterly report for this report yet"
-    : "Filings not available until this report is released";
+  const showSlides = released && previewable(slidesUrl);
+  const showReportsPair = released && eightKUrl && form10Url;
+  const showReportSingle = released && !showReportsPair && (eightKUrl != null || form10Url != null);
 
-  const canPreview = (url: string | null) => url != null && earningsDocumentPreviewKind(url) != null;
+  if (!showSlides && !showReportsPair && !showReportSingle) return null;
+
+  const reportsTabs: EarningsDocumentPreviewTab[] | undefined = showReportsPair
+    ? [
+        { id: "8-k", label: "8-K", url: eightKUrl },
+        { id: "form10", label: form10Label, url: form10Url },
+      ]
+    : undefined;
+
+  const singleReportUrl = eightKUrl ?? form10Url;
+  const singleReportTitle = eightKUrl ? "8-K" : form10Label;
 
   return (
     <>
@@ -109,33 +104,40 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
         open={preview != null}
         title={preview?.title ?? "Document"}
         sourceUrl={preview?.url ?? null}
+        tabs={preview?.tabs}
         onClose={() => setPreview(null)}
       />
       <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2">
-        {released && canPreview(slidesUrl) ? (
+        {showSlides ? (
           <ActionButton
             label="Slides"
-            onClick={() => setPreview({ url: slidesUrl!, title: "Earnings presentation" })}
+            onClick={() => setPreview({ url: slidesUrl, title: "Slides" })}
           >
             <Presentation className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
           </ActionButton>
-        ) : (
-          <ActionDisabled label={slidesDisabledLabel}>
-            <Presentation className="h-4 w-4 shrink-0" aria-hidden />
-          </ActionDisabled>
-        )}
-        {released && canPreview(filingsUrl) ? (
+        ) : null}
+        {showReportsPair ? (
           <ActionButton
-            label="Filings"
-            onClick={() => setPreview({ url: filingsUrl!, title: "Quarterly report" })}
+            label="Reports"
+            onClick={() =>
+              setPreview({
+                url: eightKUrl,
+                title: "Reports",
+                tabs: reportsTabs,
+              })
+            }
           >
             <FileSearch className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
           </ActionButton>
-        ) : (
-          <ActionDisabled label={filingsDisabledLabel}>
-            <FileSearch className="h-4 w-4 shrink-0" aria-hidden />
-          </ActionDisabled>
-        )}
+        ) : null}
+        {showReportSingle && singleReportUrl ? (
+          <ActionButton
+            label="Report"
+            onClick={() => setPreview({ url: singleReportUrl, title: singleReportTitle })}
+          >
+            <FileSearch className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
+          </ActionButton>
+        ) : null}
       </div>
     </>
   );

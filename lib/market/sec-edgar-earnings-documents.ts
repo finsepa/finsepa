@@ -14,9 +14,33 @@ import {
   isSecEdgarExhibitHtmlUrl,
   isSecEdgarPresentationExhibitHtml,
 } from "@/lib/market/earnings-document-url";
+import { resolveSecEarningsCik } from "@/lib/market/sec-earnings-cik";
+import {
+  form10KindFromForm,
+  matchEarningsForm10High,
+  resolveEarningsAnnouncementYmd,
+  resolveEarningsEightKMatch,
+  type SecSubmissionsFiling,
+} from "@/lib/market/sec-earnings-reports-match";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 const SEC_ORIGIN = "https://www.sec.gov";
+
+export type SecFetchCounters = {
+  http: number;
+  submissionsFileChunks: number;
+};
+
+const secFetchCounters: SecFetchCounters = { http: 0, submissionsFileChunks: 0 };
+
+export function resetSecFetchCounters(): void {
+  secFetchCounters.http = 0;
+  secFetchCounters.submissionsFileChunks = 0;
+}
+
+export function getSecFetchCounters(): SecFetchCounters {
+  return { ...secFetchCounters };
+}
 
 /** SEC company submissions JSON (data.sec.gov). */
 function submissionsJsonUrl(cik10: string): string {
@@ -42,15 +66,11 @@ type SubmissionsRecent = {
   filingDate: string[];
   accessionNumber: string[];
   primaryDocument: string[];
+  reportDate: string[];
+  items: string[];
 };
 
-function parseSubmissionsRecent(root: unknown): SubmissionsRecent | null {
-  if (!root || typeof root !== "object") return null;
-  const filings = (root as Record<string, unknown>).filings;
-  if (!filings || typeof filings !== "object") return null;
-  const recent = (filings as Record<string, unknown>).recent;
-  if (!recent || typeof recent !== "object") return null;
-  const r = recent as Record<string, unknown>;
+function parseSubmissionsColumnar(r: Record<string, unknown>): SubmissionsRecent | null {
   const form = r.form;
   const filingDate = r.filingDate;
   const accessionNumber = r.accessionNumber;
@@ -58,12 +78,26 @@ function parseSubmissionsRecent(root: unknown): SubmissionsRecent | null {
   if (!Array.isArray(form) || !Array.isArray(filingDate) || !Array.isArray(accessionNumber) || !Array.isArray(primaryDocument)) {
     return null;
   }
+  const n = form.length;
+  const pad = (arr: unknown, fallback: string) =>
+    Array.isArray(arr) ? arr.map((x) => String(x ?? fallback)) : form.map(() => fallback);
   return {
     form: form.map(String),
     filingDate: filingDate.map(String),
     accessionNumber: accessionNumber.map(String),
     primaryDocument: primaryDocument.map(String),
+    reportDate: pad(r.reportDate, "").slice(0, n),
+    items: pad(r.items, "").slice(0, n),
   };
+}
+
+function parseSubmissionsRecent(root: unknown): SubmissionsRecent | null {
+  if (!root || typeof root !== "object") return null;
+  const filings = (root as Record<string, unknown>).filings;
+  if (!filings || typeof filings !== "object") return null;
+  const recent = (filings as Record<string, unknown>).recent;
+  if (!recent || typeof recent !== "object") return null;
+  return parseSubmissionsColumnar(recent as Record<string, unknown>);
 }
 
 function scoreEarningsFilingPrimaryDocument(file: string): number {
@@ -117,6 +151,7 @@ export function findBestIssuer8kNearReportDate(
 }
 
 async function secFetchText(url: string): Promise<string | null> {
+  secFetchCounters.http += 1;
   try {
     const res = await fetch(url, {
       headers: {
@@ -473,4 +508,222 @@ export async function enrichReportedHistoryRevenueFromSec8k(
   }
 
   return next;
+}
+
+const FILES_CHUNK_DELAY_MS = 80;
+
+type SubmissionsFileChunk = {
+  name?: string;
+  filingFrom?: string;
+  filingTo?: string;
+};
+
+function columnarToFilings(col: SubmissionsRecent): SecSubmissionsFiling[] {
+  const out: SecSubmissionsFiling[] = [];
+  for (let i = 0; i < col.form.length; i++) {
+    const acc = col.accessionNumber[i]?.trim();
+    if (!acc) continue;
+    out.push({
+      form: String(col.form[i] ?? "").toUpperCase(),
+      filingDate: String(col.filingDate[i] ?? ""),
+      reportDate: String(col.reportDate[i] ?? ""),
+      accessionNumber: acc,
+      primaryDocument: String(col.primaryDocument[i] ?? ""),
+      items: String(col.items[i] ?? ""),
+    });
+  }
+  return out;
+}
+
+function chunkOverlapsRange(chunk: SubmissionsFileChunk, fromYmd: string, toYmd: string): boolean {
+  const from = chunk.filingFrom;
+  const to = chunk.filingTo;
+  if (!from || !to) return true;
+  return to >= fromYmd && from <= toYmd;
+}
+
+function parseSubmissionsFilesList(root: unknown): SubmissionsFileChunk[] {
+  if (!root || typeof root !== "object") return [];
+  const filings = (root as Record<string, unknown>).filings;
+  if (!filings || typeof filings !== "object") return [];
+  const files = (filings as Record<string, unknown>).files;
+  if (!Array.isArray(files)) return [];
+  return files
+    .map((raw) => {
+      if (!raw || typeof raw !== "object") return null;
+      const o = raw as Record<string, unknown>;
+      return {
+        name: typeof o.name === "string" ? o.name : undefined,
+        filingFrom: typeof o.filingFrom === "string" ? o.filingFrom : undefined,
+        filingTo: typeof o.filingTo === "string" ? o.filingTo : undefined,
+      };
+    })
+    .filter((x): x is SubmissionsFileChunk => x != null);
+}
+
+function mergeFilingsByAccession(into: Map<string, SecSubmissionsFiling>, extra: SecSubmissionsFiling[]): void {
+  for (const f of extra) {
+    if (!into.has(f.accessionNumber)) into.set(f.accessionNumber, f);
+  }
+}
+
+/**
+ * Load `filings.recent` plus `filings.files` chunks that overlap the needed date window.
+ * Required for high-volume filers (e.g. JPM) whose recent array is a 424B2 flood.
+ */
+export async function loadSecSubmissionsFilings(
+  cik10: string,
+  fromYmd: string,
+  toYmd: string,
+): Promise<SecSubmissionsFiling[]> {
+  const body = await secFetchText(submissionsJsonUrl(cik10));
+  if (!body) return [];
+  let root: unknown;
+  try {
+    root = JSON.parse(body) as unknown;
+  } catch {
+    return [];
+  }
+
+  const byAcc = new Map<string, SecSubmissionsFiling>();
+  const recent = parseSubmissionsRecent(root);
+  if (recent) mergeFilingsByAccession(byAcc, columnarToFilings(recent));
+
+  const windowFrom = fromYmd || "2000-01-01";
+  const windowTo = toYmd || "9999-12-31";
+  for (const chunk of parseSubmissionsFilesList(root)) {
+    const name = chunk.name?.trim();
+    if (!name) continue;
+    if (!chunkOverlapsRange(chunk, windowFrom, windowTo)) continue;
+    secFetchCounters.submissionsFileChunks += 1;
+    await sleep(FILES_CHUNK_DELAY_MS);
+    const chunkBody = await secFetchText(`https://data.sec.gov/submissions/${name}`);
+    if (!chunkBody) continue;
+    let payload: unknown;
+    try {
+      payload = JSON.parse(chunkBody) as unknown;
+    } catch {
+      continue;
+    }
+    const col =
+      parseSubmissionsRecent(payload) ??
+      (payload && typeof payload === "object"
+        ? parseSubmissionsColumnar(payload as Record<string, unknown>)
+        : null);
+    if (col) mergeFilingsByAccession(byAcc, columnarToFilings(col));
+  }
+
+  return [...byAcc.values()];
+}
+
+export function secArchivesPrimaryDocumentUrl(
+  cik10: string,
+  accessionNumber: string,
+  primaryDocument: string,
+): string | null {
+  const cikNum = cikToNumericPathSegment(cik10);
+  const flat = accessionToFlat(accessionNumber);
+  const file = primaryDocument.trim().replace(/^\//, "");
+  if (!cikNum || !flat) return null;
+  if (!file) return `${SEC_ORIGIN}/Archives/edgar/data/${cikNum}/${flat}/${accessionNumber}-index.htm`;
+  return `${SEC_ORIGIN}/Archives/edgar/data/${cikNum}/${flat}/${file}`;
+}
+
+function reportedRowNeedsSecReports(row: StockEarningsHistoryRow): boolean {
+  if (!row.reported) return false;
+  return !row.eightKUrl || !row.form10Url;
+}
+
+/**
+ * HIGH-only 8-K (Item 2.02) + 10-Q/10-K reportDate matching.
+ * Does not use the ±45-day date-only 8-K picker. Does not write into IR vault fields.
+ */
+export async function enrichEarningsHistoryWithSecReports(
+  listingTicker: string,
+  rows: StockEarningsHistoryRow[],
+  fundamentalsCik: string | null,
+  announcementByPeriodEnd: ReadonlyMap<string, string>,
+  options?: { replaceExisting?: boolean },
+): Promise<StockEarningsHistoryRow[]> {
+  const cik10 = resolveSecEarningsCik(listingTicker, fundamentalsCik);
+  if (!cik10) return rows;
+
+  const replaceExisting = Boolean(options?.replaceExisting);
+  const needIdx: number[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]!;
+    if (!row.reported) continue;
+    if (replaceExisting || reportedRowNeedsSecReports(row)) needIdx.push(i);
+  }
+  if (needIdx.length === 0) return rows;
+
+  const ymds: string[] = [];
+  for (const i of needIdx) {
+    const row = rows[i]!;
+    if (row.fiscalPeriodEndYmd) ymds.push(row.fiscalPeriodEndYmd);
+    if (row.reportDateYmd) ymds.push(row.reportDateYmd);
+  }
+  ymds.sort();
+  const fromYmd = ymds[0] ? addDaysUtcYmd(ymds[0], -40) ?? ymds[0] : "2020-01-01";
+  const toYmd = ymds[ymds.length - 1] ? addDaysUtcYmd(ymds[ymds.length - 1]!, 14) ?? ymds[ymds.length - 1]! : "2099-12-31";
+
+  const filings = await loadSecSubmissionsFilings(cik10, fromYmd, toYmd);
+  if (filings.length === 0) return rows;
+
+  const next = rows.map((r) => ({ ...r }));
+  for (const i of needIdx) {
+    const row = next[i]!;
+    const announcement = resolveEarningsAnnouncementYmd({
+      fiscalPeriodEndYmd: row.fiscalPeriodEndYmd,
+      historyReportDateYmd: row.reportDateYmd,
+      calendarByPeriodEnd: announcementByPeriodEnd,
+    });
+
+    const form10 = matchEarningsForm10High(filings, row.fiscalPeriodEndYmd);
+    if (replaceExisting || !row.form10Url) {
+      if (form10.grade === "HIGH") {
+        const url = secArchivesPrimaryDocumentUrl(cik10, form10.pick.accessionNumber, form10.pick.primaryDocument);
+        const kind = form10KindFromForm(form10.pick.form);
+        if (url && kind) {
+          row.form10Url = url;
+          row.form10Kind = kind;
+        } else if (replaceExisting) {
+          row.form10Url = null;
+          row.form10Kind = null;
+        }
+      } else if (replaceExisting) {
+        row.form10Url = null;
+        row.form10Kind = null;
+      }
+    }
+
+    if (replaceExisting || !row.eightKUrl) {
+      const eight = resolveEarningsEightKMatch(filings, {
+        announcementYmd: announcement,
+        fiscalPeriodEndYmd: row.fiscalPeriodEndYmd,
+        form10FilingYmd: form10.grade === "HIGH" ? form10.pick.filingDate : null,
+        calendarByPeriodEnd: announcementByPeriodEnd,
+      });
+      if (eight.grade === "HIGH") {
+        const url = secArchivesPrimaryDocumentUrl(cik10, eight.pick.accessionNumber, eight.pick.primaryDocument);
+        row.eightKUrl = url;
+      } else if (replaceExisting) {
+        row.eightKUrl = null;
+      }
+    }
+  }
+
+  return next;
+}
+
+function addDaysUtcYmd(ymd: string, deltaDays: number): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
+  const t = Date.parse(`${ymd}T12:00:00.000Z`);
+  if (!Number.isFinite(t)) return null;
+  const d = new Date(t);
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }

@@ -45,6 +45,12 @@ export type StockEarningsHistoryRow = {
   secSlidesUrl: string | null;
   /** SEC filing PDF, IR quarterly report PDF, or SEC Exhibit 99.1 HTML press release */
   secFilingsUrl: string | null;
+  /** HIGH-confidence Item 2.02 Form 8-K primary document (SEC Archives). Not IR vault. */
+  eightKUrl: string | null;
+  /** HIGH-confidence Form 10-Q or 10-K primary document (SEC Archives). Not IR vault. */
+  form10Url: string | null;
+  /** Kind of `form10Url` from the SEC form itself, not the Finsepa quarter label. */
+  form10Kind: "10-Q" | "10-K" | null;
   /**
    * Fixed stock % from report-session close → next trading session close.
    * Immutable once stored; null when bars / next session missing.

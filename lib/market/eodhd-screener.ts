@@ -138,7 +138,7 @@ async function fetchEodhdScreenerUncached(args: {
   if (!key) return [];
 
   const limit = Math.max(1, Math.min(100, Math.trunc(args.limit)));
-  const offset = Math.max(0, Math.min(999, Math.trunc(args.offset)));
+  const offset = Math.max(0, Math.min(2500, Math.trunc(args.offset)));
 
   const filters = JSON.stringify([["exchange", "=", args.exchangeFilter]]);
   const params = new URLSearchParams({
@@ -205,6 +205,19 @@ export async function fetchEodhdTopByMarketCap(args: {
   exchangeFilter?: "us" | "NYSE" | "NASDAQ";
 }): Promise<EodhdTopUniverseRow[]> {
   return fetchEodhdScreenerCached({
+    limit: args.limit,
+    offset: args.offset,
+    exchangeFilter: args.exchangeFilter ?? "us",
+  });
+}
+
+/** CLI / cron: same screener page without Next `unstable_cache`. */
+export async function fetchEodhdTopByMarketCapUncached(args: {
+  limit: number;
+  offset: number;
+  exchangeFilter?: "us" | "NYSE" | "NASDAQ";
+}): Promise<EodhdTopUniverseRow[]> {
+  return fetchEodhdScreenerUncached({
     limit: args.limit,
     offset: args.offset,
     exchangeFilter: args.exchangeFilter ?? "us",

@@ -58,6 +58,36 @@ const fetchEodhdExchangeSymbolListCached = unstable_cache(
   { revalidate: REVALIDATE_STATIC },
 );
 
+export async function fetchEodhdExchangeSymbolListUncachedDirect(exchange = "US"): Promise<
+  Array<{
+    ticker: string;
+    name: string;
+    marketCapUsd: number | null;
+    type: string | null;
+    exchange: string | null;
+  }>
+> {
+  const rows = await fetchEodhdExchangeSymbolListUncached(exchange);
+  const cleaned: Array<{
+    ticker: string;
+    name: string;
+    marketCapUsd: number | null;
+    type: string | null;
+    exchange: string | null;
+  }> = [];
+  for (const r of rows) {
+    const ticker = typeof r.Code === "string" ? r.Code.trim().toUpperCase() : "";
+    if (!ticker) continue;
+    const name = typeof r.Name === "string" ? r.Name.trim() : "";
+    const marketCapUsd =
+      num(r.MarketCapitalization) ?? num(r.MarketCapitalisation) ?? num(r.MarketCap) ?? null;
+    const type = typeof r.Type === "string" ? r.Type.trim() : null;
+    const listedExchange = typeof r.Exchange === "string" ? r.Exchange.trim() : null;
+    cleaned.push({ ticker, name: name || ticker, marketCapUsd, type, exchange: listedExchange });
+  }
+  return cleaned;
+}
+
 /**
  * Provider symbol universe for an exchange (cached cross-request).
  * This is used to build "top N by market cap" without hardcoding tickers.

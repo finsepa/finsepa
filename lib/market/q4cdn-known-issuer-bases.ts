@@ -12,6 +12,8 @@ export const Q4CDN_KNOWN_FINANCIALS_BASE_BY_TICKER: Record<string, string> = {
   MA: "https://s25.q4cdn.com/479285134/files/doc_financials",
   /** investor.jnj.com is Cloudflare-walled; earnings decks on s203. */
   JNJ: "https://s203.q4cdn.com/636242992/files/doc_financials",
+  /** investors.caterpillar.com is Cloudflare-walled; analyst decks on s25. */
+  CAT: "https://s25.q4cdn.com/358376879/files/doc_financials",
 };
 
 export function knownQ4CdnBaseForTicker(ticker: string): {

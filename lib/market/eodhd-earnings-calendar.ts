@@ -142,3 +142,60 @@ const fetchEodhdEarningsCalendarForSymbolCached = unstable_cache(
 export async function fetchEodhdEarningsCalendarForSymbol(eodhdSymbol: string): Promise<EodhdRawEarningRow[]> {
   return fetchEodhdEarningsCalendarForSymbolCached(eodhdSymbol);
 }
+
+/**
+ * Historical announcement dates for one listing (`date` = fiscal period end, `report_date` = announcement).
+ * `from`/`to` are required — the symbols-only calendar often returns only upcoming rows.
+ */
+export async function fetchEodhdEarningsAnnouncementCalendar(
+  eodhdSymbol: string,
+  fromYmd: string,
+  toYmd: string,
+): Promise<EodhdRawEarningRow[]> {
+  const symbol = eodhdSymbol.trim().toUpperCase();
+  if (!symbol || !/^\d{4}-\d{2}-\d{2}$/.test(fromYmd) || !/^\d{4}-\d{2}-\d{2}$/.test(toYmd)) return [];
+
+  const key = getEodhdApiKey();
+  if (!key) return [];
+
+  const params = new URLSearchParams({
+    symbols: symbol,
+    from: fromYmd,
+    to: toYmd,
+    api_token: key,
+    fmt: "json",
+  });
+  const url = `https://eodhd.com/api/calendar/earnings?${params.toString()}`;
+
+  try {
+    if (!traceEodhdHttp("fetchEodhdEarningsAnnouncementCalendar", { symbols: symbol, from: fromYmd, to: toYmd })) {
+      return [];
+    }
+    const res = await fetchEodhd(url, { cache: "no-store" });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { earnings?: unknown };
+    const rows = json?.earnings;
+    if (!Array.isArray(rows)) return [];
+    return rows.map(parseRawRow).filter(Boolean) as EodhdRawEarningRow[];
+  } catch {
+    return [];
+  }
+}
+
+/** Map fiscal period end (`date`) → announcement (`report_date`). */
+export function earningsAnnouncementByPeriodEnd(
+  rows: readonly EodhdRawEarningRow[],
+): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const r of rows) {
+    const period = ymdPrefix(r.date);
+    const announced = ymdPrefix(r.report_date);
+    if (period && announced) out.set(period, announced);
+  }
+  return out;
+}
+
+function ymdPrefix(raw: string | undefined): string | null {
+  const s = raw?.trim().slice(0, 10) ?? "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+}

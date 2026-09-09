@@ -10,7 +10,7 @@ import {
   formatEarningsDateEnUS,
   parseUnknownDateToUtcMs,
 } from "@/lib/market/eodhd-fundamentals";
-import { fetchEodhdEarningsCalendarForSymbol, type EodhdRawEarningRow } from "@/lib/market/eodhd-earnings-calendar";
+import { fetchEodhdEarningsCalendarForSymbol, fetchEodhdEarningsAnnouncementCalendar, earningsAnnouncementByPeriodEnd, type EodhdRawEarningRow } from "@/lib/market/eodhd-earnings-calendar";
 import type {
   StockEarningsEstimatesChart,
   StockEarningsEstimatesPoint,
@@ -32,6 +32,7 @@ import {
 } from "@/lib/market/earnings-post-report-1d-snapshot";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { parseEarningsDocumentHubFromFundamentalsRoot } from "@/lib/market/earnings-report-external-links";
+import { isUsSecTenQTenKIssuer, secEarningsUsFilerSignalsFromFundamentals } from "@/lib/market/sec-earnings-us-filers";
 import { applyCuratedIrEarningsDocumentUrls } from "@/lib/market/earnings-ir-curated-lookup";
 import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import {
@@ -44,7 +45,7 @@ import {
 } from "@/lib/market/earnings-document-url";
 import {
   classifyEarningsDocumentWarmResult,
-  type EarningsDocumentWarmFailureClass,
+  type EarningsDocumentWarmTickerResult,
 } from "@/lib/market/earnings-document-warm-taxonomy";
 import {
   applyEarningsDocumentCacheToHistory,
@@ -63,6 +64,7 @@ import {
 import { applyIrSeedDocumentUrls, earningsIrSeedResolutionSource } from "@/lib/market/ir-seed-apply";
 import {
   enrichEarningsHistoryWithSecDocuments,
+  enrichEarningsHistoryWithSecReports,
   enrichReportedHistoryRevenueFromSec8k,
 } from "@/lib/market/sec-edgar-earnings-documents";
 import { fetchChartingSeries } from "@/lib/market/eodhd-charting-series";
@@ -972,6 +974,9 @@ function historyRowFromRaw(
     epsActualRaw: epsAct,
     secSlidesUrl: null,
     secFilingsUrl: null,
+    eightKUrl: null,
+    form10Url: null,
+    form10Kind: null,
     postReport1dPct: null,
   };
 }
@@ -1934,11 +1939,13 @@ export type StockEarningsTabFetchMode = "full" | "preview" | "ir_only";
 async function fetchStockEarningsTabPayloadUncached(
   listingTicker: string,
   mode: StockEarningsTabFetchMode = "full",
+  options?: { forceSecReports?: boolean; forWarm?: boolean; persist?: boolean },
 ): Promise<StockEarningsTabPayload | null> {
   const preview = mode === "preview";
   const irOnly = mode === "ir_only";
+  const forWarm = Boolean(options?.forWarm);
   const ticker = listingTicker.trim().toUpperCase();
-  const root = await fetchFundamentalsRootForEarningsTab(ticker, { fresh: irOnly });
+  const root = await fetchFundamentalsRootForEarningsTab(ticker, { fresh: irOnly || forWarm });
   if (!root) return null;
 
   const rootRec = root as Record<string, unknown>;
@@ -2086,17 +2093,63 @@ async function fetchStockEarningsTabPayloadUncached(
   // Locked vault fields win after curated; unlocked vault rows leave curated/SEC/IR as-is.
   historyParsed = applyEarningsIrVaultToHistory(ticker, historyParsed, vault);
 
+  const reportedNeedSecReports = historyParsed.filter(
+    (r) => r.reported && (!r.eightKUrl || !r.form10Url),
+  );
+  const cacheAlreadyHasSecReports = historyParsed.some(
+    (r) => r.reported && (r.eightKUrl || r.form10Url),
+  );
+  const eligibleUsSecReports = isUsSecTenQTenKIssuer(
+    secEarningsUsFilerSignalsFromFundamentals(ticker, rootRec),
+  );
+  // After a warm/persist, cache apply fills HIGH URLs. Remaining empty slots are
+  // intentional (ambiguous/missing) — do not re-paginate EDGAR on every user full load (JPM).
+  // First miss (no cached Reports yet) still runs the matcher.
+  // FPIs / ADRs / 20-F issuers never enter this warmer (no 6-K/20-F support).
+  if (
+    !preview &&
+    !irOnly &&
+    eligibleUsSecReports &&
+    (options?.forceSecReports || (reportedNeedSecReports.length > 0 && !cacheAlreadyHasSecReports))
+  ) {
+    try {
+      const periods = historyParsed
+        .map((r) => r.fiscalPeriodEndYmd)
+        .filter((x): x is string => typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x))
+        .sort();
+      const fromYmd = periods[0] ?? "2022-01-01";
+      const toYmd = new Date().toISOString().slice(0, 10);
+      const calRows = await fetchEodhdEarningsAnnouncementCalendar(
+        eodhdListingCode(ticker),
+        fromYmd,
+        toYmd,
+      );
+      historyParsed = await enrichEarningsHistoryWithSecReports(
+        ticker,
+        historyParsed,
+        documentHub.cik,
+        earningsAnnouncementByPeriodEnd(calRows),
+        { replaceExisting: Boolean(options?.forceSecReports) },
+      );
+    } catch {
+      /* Best-effort — HIGH-only Reports; leave empty on failure */
+    }
+  }
+  const afterSecReports = historyParsed;
+
+  const persistDocs = options?.persist !== false;
   const irSeedSource = earningsIrSeedResolutionSource(ticker);
-  if (!preview && !irOnly) {
-    void persistResolvedEarningsDocuments(ticker, historyParsed, afterCacheApply, docCache, [
+  if (!preview && !irOnly && persistDocs) {
+    await persistResolvedEarningsDocuments(ticker, historyParsed, afterCacheApply, docCache, [
       { step: "sec", rows: afterSec },
       { step: irSeedSource, rows: afterIrSeed },
       { step: "curated", rows: afterCurated },
-    ]);
+      { step: "sec", rows: afterSecReports },
+    ], { replaceSecReports: forWarm });
   }
 
   // Vault backfill only needs history document URLs — skip chart/calendar (Next cache).
-  if (irOnly) {
+  if (irOnly || forWarm) {
     return { ticker, upcoming: null, history: historyParsed, estimatesChart: null, documentHub, lastPrice };
   }
 
@@ -2206,7 +2259,7 @@ async function fetchStockEarningsTabPayloadUncached(
 
 const fetchStockEarningsTabPayloadCached = unstable_cache(
   fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v65-vault-ir-pdf-filings"],
+  ["stock-earnings-tab-payload-v69-sec-reports-high"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 
@@ -2226,23 +2279,36 @@ export async function fetchStockEarningsTabPayloadIrOnly(
   return fetchStockEarningsTabPayloadUncached(listingTicker.trim().toUpperCase(), "ir_only");
 }
 
-export type EarningsDocumentWarmStats = {
-  ticker: string;
-  failureClass: EarningsDocumentWarmFailureClass;
-  reportedRows: number;
-  recentReportedRows: number;
-  withSlides: number;
-  withFilings: number;
-  missingSlides: number;
-  missingFilings: number;
-  slideFormats: Record<string, number>;
-};
+export type EarningsDocumentWarmStats = EarningsDocumentWarmTickerResult;
+
+/** Matcher-only: SEC Reports enrich, no document-cache writes. */
+export async function fetchStockEarningsSecReportsDry(
+  listingTicker: string,
+): Promise<StockEarningsTabPayload | null> {
+  return fetchStockEarningsTabPayloadUncached(listingTicker.trim().toUpperCase(), "full", {
+    forceSecReports: true,
+    forWarm: true,
+    persist: false,
+  });
+}
 
 /** Bypass Next cache — runs full SEC + IR pipeline and persists document cache rows. */
 export async function warmStockEarningsDocumentCache(
   listingTicker: string,
 ): Promise<EarningsDocumentWarmStats> {
+  const { stats } = await warmStockEarningsDocumentCacheWithHistory(listingTicker);
+  return stats;
+}
+
+/** Same persist warm, also returns history so callers can audit accessions without a second fetch. */
+export async function warmStockEarningsDocumentCacheWithHistory(
+  listingTicker: string,
+): Promise<{ stats: EarningsDocumentWarmStats; history: StockEarningsHistoryRow[] }> {
   const ticker = listingTicker.trim().toUpperCase();
-  const payload = await fetchStockEarningsTabPayloadUncached(ticker, "full");
-  return classifyEarningsDocumentWarmResult(ticker, payload?.history ?? null);
+  const payload = await fetchStockEarningsTabPayloadUncached(ticker, "full", {
+    forceSecReports: true,
+    forWarm: true,
+  });
+  const history = payload?.history ?? [];
+  return { stats: classifyEarningsDocumentWarmResult(ticker, history), history };
 }

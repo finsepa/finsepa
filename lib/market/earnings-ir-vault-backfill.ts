@@ -22,7 +22,12 @@ import {
 
 function vaultUrlPreferringIrPdf(ticker: string, url: string | null | undefined): string | null {
   if (!isIrVaultAllowedUrl(url)) return null;
-  if (EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS.has(ticker) && /sec\.gov/i.test(url)) return null;
+  if (
+    EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS.has(ticker) &&
+    (/sec\.gov/i.test(url) || /\.html?(?:$|[?#])/i.test(url))
+  ) {
+    return null;
+  }
   return url;
 }
 

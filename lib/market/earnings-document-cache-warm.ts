@@ -101,6 +101,9 @@ export async function warmEarningsDocumentCacheBatch(
         withFilings: 0,
         missingSlides: 0,
         missingFilings: 0,
+        withEightK: 0,
+        withForm10: 0,
+        bothReports: 0,
         slideFormats: {},
       });
     }

@@ -27,6 +27,9 @@ function row(partial: Partial<StockEarningsHistoryRow>): StockEarningsHistoryRow
     postReport1dChangePct: null,
     secSlidesUrl: null,
     secFilingsUrl: null,
+    eightKUrl: null,
+    form10Url: null,
+    form10Kind: null,
     ...partial,
   };
 }

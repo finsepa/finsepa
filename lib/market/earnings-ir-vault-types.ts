@@ -6,7 +6,7 @@ export const EARNINGS_IR_VAULT_START_YMD = "2022-01-01";
 export const EARNINGS_IR_VAULT_TOP_N = 35;
 
 /** Issuers with first-party IR PDFs — do not lock SEC HTML as a filings/slides fallback. */
-export const EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS = new Set(["AMAT", "MRK"]);
+export const EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS = new Set(["AMAT", "MRK", "COST", "KO", "CAT"]);
 
 export type EarningsIrVaultDocStatus = "locked" | "found" | "missing";
 
