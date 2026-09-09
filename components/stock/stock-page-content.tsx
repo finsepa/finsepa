@@ -3,8 +3,9 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import dynamic from "next/dynamic";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, type ReadonlyURLSearchParams } from "next/navigation";
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
+import { SearchParamsBridge } from "@/components/navigation/search-params-bridge";
 import type { ChartDisplayState } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
@@ -230,8 +231,9 @@ export function StockPageContent({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const prevTickerRef = useRef<string | null>(null);
+  /** Serialized query from `SearchParamsBridge` — null until the bridge mounts. */
+  const [clientQuery, setClientQuery] = useState<string | null>(null);
 
   const [range, setRange] = useState<StockChartRange>(
     () => initialPageData?.chart?.range ?? "1D",
@@ -250,13 +252,19 @@ export function StockPageContent({
     initialTabsMounted(initialActiveTab),
   );
 
+  const onSearchParamsChange = useCallback((params: ReadonlyURLSearchParams) => {
+    setClientQuery(params.toString());
+  }, []);
+
   useEffect(() => {
-    const raw = parseStockDetailTabQuery(searchParams.get("tab")) ?? initialActiveTab;
+    if (clientQuery === null) return;
+    const params = new URLSearchParams(clientQuery);
+    const raw = parseStockDetailTabQuery(params.get("tab")) ?? initialActiveTab;
     queueMicrotask(() => {
       setSearchSyncedTab(raw);
       setTabsMounted((m) => ({ ...m, [raw]: true }));
     });
-  }, [searchParams, initialActiveTab]);
+  }, [clientQuery, initialActiveTab]);
 
   const serverHeader =
     initialPageData?.ticker === ticker ? initialPageData.headerMeta : null;
@@ -286,8 +294,9 @@ export function StockPageContent({
 
   const [chartingMetricParam, setChartingMetricParam] = useState<string | null>(initialChartingMetric);
   useEffect(() => {
-    setChartingMetricParam(searchParams.get("metric"));
-  }, [searchParams]);
+    if (clientQuery === null) return;
+    setChartingMetricParam(new URLSearchParams(clientQuery).get("metric"));
+  }, [clientQuery]);
 
   const refetchHeaderMeta = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setHeaderMetaLoading(true);
@@ -377,14 +386,14 @@ export function StockPageContent({
   }, []);
 
   useEffect(() => {
-    if (!isEtf) return;
-    const tabParam = searchParams.get("tab");
+    if (!isEtf || clientQuery === null) return;
+    const params = new URLSearchParams(clientQuery);
+    const tabParam = params.get("tab");
     if (!tabParam) return;
     const parsed = parseStockDetailTabQuery(tabParam);
     if (!parsed) return;
     const coerced = coerceStockDetailTabForEtf(parsed);
     if (coerced === parsed) return;
-    const params = new URLSearchParams(searchParams.toString());
     if (coerced === "overview") {
       params.delete("tab");
       params.delete("metric");
@@ -394,12 +403,14 @@ export function StockPageContent({
     }
     const q = params.toString();
     router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
-  }, [isEtf, searchParams, pathname, router]);
+  }, [isEtf, clientQuery, pathname, router]);
 
   const setTabInUrl = useCallback(
     (tab: StockDetailTabId) => {
       const next = isEtf ? coerceStockDetailTabForEtf(tab) : tab;
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(
+        typeof window !== "undefined" ? window.location.search.replace(/^\?/, "") : (clientQuery ?? ""),
+      );
       if (next === "overview") {
         params.delete("tab");
         params.delete("metric");
@@ -410,7 +421,7 @@ export function StockPageContent({
       const q = params.toString();
       router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
     },
-    [pathname, router, searchParams, isEtf],
+    [pathname, router, clientQuery, isEtf],
   );
 
   const handleTabChange = useCallback(
@@ -1203,6 +1214,7 @@ export function StockPageContent({
         onClose={() => setOverviewDownloadOpen(false)}
         snapshot={overviewDownloadSnapshot}
       />
+      <SearchParamsBridge onChange={onSearchParamsChange} />
       <Suspense fallback={null}>
         <AssetPageTopLoader />
       </Suspense>

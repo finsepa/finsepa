@@ -2,9 +2,10 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CompanyPick } from "@/components/charting/company-picker";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, type ReadonlyURLSearchParams } from "next/navigation";
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
+import { SearchParamsBridge } from "@/components/navigation/search-params-bridge";
 import type { ChartDisplayState } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
 import { CryptoBreadcrumbs } from "@/components/crypto/crypto-breadcrumbs";
@@ -79,7 +80,7 @@ export function CryptoPageContent({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [clientQuery, setClientQuery] = useState<string | null>(null);
   const symKey = routeSymbol.trim().toUpperCase();
   const serverMatch =
     initialData != null && initialData.routeSymbol.trim().toUpperCase() === symKey ? initialData : null;
@@ -117,18 +118,25 @@ export function CryptoPageContent({
   /** URL tab from the client router — applied after mount so the first paint matches SSR (`initialActiveTab`). */
   const [searchSyncedTab, setSearchSyncedTab] = useState<CryptoDetailTabId | null>(null);
 
+  const onSearchParamsChange = useCallback((params: ReadonlyURLSearchParams) => {
+    setClientQuery(params.toString());
+  }, []);
+
   useEffect(() => {
-    const next = parseCryptoDetailTabQuery(searchParams.get("tab")) ?? initialActiveTab;
+    if (clientQuery === null) return;
+    const next = parseCryptoDetailTabQuery(new URLSearchParams(clientQuery).get("tab")) ?? initialActiveTab;
     queueMicrotask(() => {
       setSearchSyncedTab(next);
     });
-  }, [searchParams, initialActiveTab]);
+  }, [clientQuery, initialActiveTab]);
 
   const activeTab: CryptoDetailTabId = searchSyncedTab ?? initialActiveTab;
 
   const setTabInUrl = useCallback(
     (tab: CryptoDetailTabId) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(
+        typeof window !== "undefined" ? window.location.search.replace(/^\?/, "") : (clientQuery ?? ""),
+      );
       if (tab === "overview") {
         params.delete("tab");
       } else {
@@ -137,7 +145,7 @@ export function CryptoPageContent({
       const q = params.toString();
       router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
     },
-    [pathname, router, searchParams],
+    [pathname, router, clientQuery],
   );
 
   const onSessionHeaderDisplay = useCallback((s: ChartDisplayState) => {
@@ -518,6 +526,7 @@ export function CryptoPageContent({
 
   return (
     <div className="relative min-w-0">
+      <SearchParamsBridge onChange={onSearchParamsChange} />
       <ChartScreenshotDownloadModal
         open={overviewDownloadOpen}
         onClose={() => setOverviewDownloadOpen(false)}
