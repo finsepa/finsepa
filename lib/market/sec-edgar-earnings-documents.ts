@@ -91,7 +91,7 @@ function parseSubmissionsColumnar(r: Record<string, unknown>): SubmissionsRecent
   };
 }
 
-function parseSubmissionsRecent(root: unknown): SubmissionsRecent | null {
+export function parseSubmissionsRecent(root: unknown): SubmissionsRecent | null {
   if (!root || typeof root !== "object") return null;
   const filings = (root as Record<string, unknown>).filings;
   if (!filings || typeof filings !== "object") return null;
@@ -548,17 +548,17 @@ function parseSubmissionsFilesList(root: unknown): SubmissionsFileChunk[] {
   if (!filings || typeof filings !== "object") return [];
   const files = (filings as Record<string, unknown>).files;
   if (!Array.isArray(files)) return [];
-  return files
-    .map((raw) => {
-      if (!raw || typeof raw !== "object") return null;
-      const o = raw as Record<string, unknown>;
-      return {
-        name: typeof o.name === "string" ? o.name : undefined,
-        filingFrom: typeof o.filingFrom === "string" ? o.filingFrom : undefined,
-        filingTo: typeof o.filingTo === "string" ? o.filingTo : undefined,
-      };
-    })
-    .filter((x): x is SubmissionsFileChunk => x != null);
+  const out: SubmissionsFileChunk[] = [];
+  for (const raw of files) {
+    if (!raw || typeof raw !== "object") continue;
+    const o = raw as Record<string, unknown>;
+    out.push({
+      name: typeof o.name === "string" ? o.name : undefined,
+      filingFrom: typeof o.filingFrom === "string" ? o.filingFrom : undefined,
+      filingTo: typeof o.filingTo === "string" ? o.filingTo : undefined,
+    });
+  }
+  return out;
 }
 
 function mergeFilingsByAccession(into: Map<string, SecSubmissionsFiling>, extra: SecSubmissionsFiling[]): void {

@@ -15,7 +15,10 @@ import {
   extractTotalRevenueUsdFromPressReleaseHtml,
   pickExhibit99PressReleaseHtmlUrl,
 } from "@/lib/market/sec-earnings-press-release-revenue";
-import { findBestIssuer8kNearReportDate } from "@/lib/market/sec-edgar-earnings-documents";
+import {
+  findBestIssuer8kNearReportDate,
+  parseSubmissionsRecent,
+} from "@/lib/market/sec-edgar-earnings-documents";
 import { getSecEdgarUserAgent } from "@/lib/env/server";
 
 export type ReportedEarningsActual = {
@@ -317,36 +320,6 @@ function filingIndexHtmUrl(cikNumeric: string, accessionDashed: string): string 
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
-}
-
-type SubmissionsRecent = {
-  form: string[];
-  filingDate: string[];
-  accessionNumber: string[];
-  primaryDocument: string[];
-};
-
-function parseSubmissionsRecent(root: unknown): SubmissionsRecent | null {
-  if (!root || typeof root !== "object") return null;
-  const filings = (root as Record<string, unknown>).filings;
-  if (!filings || typeof filings !== "object") return null;
-  const recent = (filings as Record<string, unknown>).recent;
-  if (!recent || typeof recent !== "object") return null;
-  const r = recent as Record<string, unknown>;
-  if (
-    !Array.isArray(r.form) ||
-    !Array.isArray(r.filingDate) ||
-    !Array.isArray(r.accessionNumber) ||
-    !Array.isArray(r.primaryDocument)
-  ) {
-    return null;
-  }
-  return {
-    form: r.form.map(String),
-    filingDate: r.filingDate.map(String),
-    accessionNumber: r.accessionNumber.map(String),
-    primaryDocument: r.primaryDocument.map(String),
-  };
 }
 
 /** SEC Exhibit 99.1 when EODHD has EPS but income statement / history omit revenue. */
