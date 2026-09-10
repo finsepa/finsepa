@@ -2,7 +2,9 @@
 //  ir-seed-apply-avgo.ts
 //
 //  Broadcom — scrape quarterly-results news links, then resolve each release's
-//  `/node/{id}/pdf` press-release PDF for Filings. No public quarterly slide decks.
+//  `/node/{id}/pdf` press-release PDF for Filings.
+//  No public quarterly earnings slide decks (evergreen “Company Presentation” is
+//  not a quarter deck). Leave Slides empty; never lock SEC HTML as Slides.
 //
 
 import "server-only";

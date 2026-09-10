@@ -60,18 +60,6 @@ const RESOLVERS_BY_TICKER: Record<string, KnownCdnDocResolver> = {
       filingCandidates: microsoftPressReleaseCandidates(p.fy, p.fq),
     };
   },
-  PLTR: (row) => {
-    const m = row.fiscalPeriodLabel?.trim().match(/^Q([1-4])\s+(\d{4})$/i);
-    if (!m) return null;
-    const fq = m[1]!;
-    const fy = m[2]!;
-    return {
-      slideCandidates: [
-        `https://investors.palantir.com/files/Palantir%20-%20Q${fq}%20${fy}%20Business%20Update.pdf`,
-      ],
-      filingCandidates: [],
-    };
-  },
 };
 
 /** @deprecated Prefer {@link knownCdnDocPlanForRow}. */

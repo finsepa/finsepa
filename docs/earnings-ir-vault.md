@@ -61,7 +61,7 @@ Working method: **three tickers at a time**.
 
 ```bash
 npm run earnings:ir-vault -- --tickers=COST,KO,CAT
-npm run earnings:ir-docs-mirror -- --tickers=COST,KO,CAT
+npm run earnings:ir-docs-mirror -- --tickers=COST,KO,CAT --plain-only
 ```
 
 Merge is **lock-once**: a correct lock is never overwritten. Wrong SEC locks must be unlocked first or they stick forever.
@@ -78,7 +78,7 @@ Merge is **lock-once**: a correct lock is never overwritten. Wrong SEC locks mus
 
 These must never get SEC HTML as a “helpful” fallback:
 
-`AMAT` · `MRK` · `COST` · `KO` · `CAT`
+`AMAT` · `MRK` · `COST` · `KO` · `CAT` · `PLTR` · `UNH` · `LRCX` · `CVX` · `HSBC` · `GOOGL`/`GOOG` · `AVGO` · `ORCL` · `ABBV` · `DELL` · `MS` · `GE` · `PG` · `NFLX` · `HD` · `GS` · `PM` · `RY` · `ARM` · `BABA` · `PANW` · `SHEL` · `WFC` · `RTX` · `NVS` · `MUFG` · `SNDK` · `NSRGY` · `GEV` · `AZN` · `ANET` · `SIEGY` · `SAP` · `LVMUY` · `LRLCY` · `KLAC` · `TXN` · `SFTBY` · `BHP` · `C` · `TM` · `IBM` · `TMO` · `AXP` · `LIN` · `SAN` · `CRWD` · `AMGN`
 
 Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-types.ts`).
 
@@ -94,12 +94,16 @@ Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-
 | Wire-up | `lib/market/ir-seed-apply.ts` (`DEDICATED_IR_SEED_TICKERS`) |
 | Preview proxy | `GET /api/ir-pdf` + `lib/market/ir-pdf-proxy-allowlist.ts` |
 
-## Status snapshot (2026-09-08)
+## Status snapshot (2026-09-10)
 
-Last hand pass: **COST, KO, CAT** — IR PDFs only.
+Last hand pass: screener mcap order — **AXP, LIN, SAN, CRWD, AMGN**. HTTP GET only (no Browser tabs / Playwright). Empty Slides left empty; SEC stays on Reports (`0` `sec.gov` in `slides_url` / `filings_url`). Mirror `--plain-only`: 105 hosted; 30 AMGN/CRWD `static-files` WAF timeouts (source URLs still locked).
 
-- **COST** 8/18 green (supplements + operating-results news PDFs; older quarters have no IR PDF)
-- **KO** 2/18 green (earnings-release PDFs Q2’22–Q2’26; overview decks only Q1–Q2’26; Q1’22 has no IR press PDF)
-- **CAT** 2/18 green (analyst decks all 18; press PDF only Q1–Q2’26 — older press is HTML)
+- **AXP** GREEN — G18/Y0/R0 (18q). Calendar FY. q4cdn earnings presentation + press. Never tables / 10-Q / fixed-income.
+- **LIN** YELLOW — G17/Y1/R0 (18q). Calendar FY. Teleconference slides + earnings-release tables PDF. Never 10-Q / transcript / annual report. Q4 2023 deck 403.
+- **SAN** YELLOW — G16/Y2/R0 (18q). Calendar FY. English `earnings-presentation-en` + `press-release-en`. Never institutional / FI / financial-report / ES-only. Q1–Q2 2022 decks not recovered.
+- **CRWD** YELLOW — G5/Y3/R11 (19q). Issuer FY ends 31 Jan (Q2 2027 = period ended 31 Jul 2026). Earnings presentation + press `static-files`. Never 8-K / Fal.Con / 10-Q. Q2 2027 not published; Q1 2027 press is an 8-K wrapper. GCS HTML is JS-only — older UUID decks not recovered.
+- **AMGN** YELLOW — G5/Y7/R6 (18q). Calendar FY. Earnings-call slides + earnings-release `static-files`. Never 8-K wrapper / 10-Q. Q2 2026 press is an 8-K; older GCS UUIDs not recovered.
 
-Still on the “do next, three at a time” list from the failed +10 batch: **PLTR, UNH, LRCX, CVX, HSBC**.
+Prior pass: **LVMUY, LRLCY, KLAC, TXN, SFTBY, BHP, C, TM, IBM, TMO**.
+
+Next by screener mcap: **MRVL, VZ, TTE, STX, CRM** (skip `RTNTF` / `KXIAY` / `IDEXY` OTC noise).

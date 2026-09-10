@@ -399,7 +399,8 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
 /**
  * P5: shared per-ticker snapshot in Supabase (`market_snapshot` key `asset_{TICKER}`).
  * Miss → distributed single-flight rebuild (one uncached load per ticker/segment); hit →
- * refresh 1D chart + live spot only (live session).
+ * return snapshot immediately (live + frozen). Client refreshes 1D chart, live spot, and
+ * Key Indicators — avoids stalling soft-nav on EODHD hot fields.
  */
 export async function loadStockPageInitialData(routeTicker: string): Promise<StockPageInitialData | null> {
   const ticker = routeTicker.trim().toUpperCase();
@@ -416,37 +417,14 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
 
   if (cachedHit?.payload?.ticker === ticker) {
     const base = assetSnapshotPayloadToPageData(cachedHit.payload);
-    if (epoch.mode === "frozen") {
-      // Weekend / off-hours: return the snapshot immediately.
-      // Do not await Key Indicators or EODHD hot fields — they can stall soft navigations
-      // (screener → asset) while a hard refresh feels instant from a warm compile/cache.
-      // Key Indicators still load on the client via `/api/stocks/.../key-indicators`.
-      if (!cachedHit.exactSegment) {
-        scheduleAssetSnapshotWrite(ticker, epoch.segment, base, epoch.mode);
-      }
-      return base;
+    // Live and frozen: paint from snapshot immediately.
+    // Live snapshots store empty 1D points + null spot/KI by design (`stripAssetSnapshotHotFields`);
+    // StockPageContent + PriceChart + KeyIndicators refresh those via existing APIs (cached / single-flight).
+    // Do not await loadStockPageHotFields / Key Indicators here — that stalled screener → asset soft-nav.
+    if (!cachedHit.exactSegment) {
+      scheduleAssetSnapshotWrite(ticker, epoch.segment, base, epoch.mode);
     }
-    const [hot, keyIndicators] = await Promise.all([
-      loadStockPageHotFields(ticker, base.chart.range, [], new Date()),
-      loadKeyIndicatorsForPage(ticker),
-    ]);
-    const chart =
-      base.chart.range === "1D"
-        ? hot.chart
-        : hot.chart.points.length > 0
-          ? hot.chart
-          : base.chart;
-    const merged = {
-      ...base,
-      ...hot,
-      chart,
-      keyIndicators,
-      liveRegularSessionActive: hot.liveRegularSessionActive,
-    };
-    if (!cachedHit.exactSegment || (base.chart.range === "1D" && chart.points.length >= 2)) {
-      scheduleAssetSnapshotWrite(ticker, epoch.segment, merged, epoch.mode);
-    }
-    return merged;
+    return base;
   }
 
   const snapKey = assetSnapshotKey(ticker);

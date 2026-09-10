@@ -1,7 +1,14 @@
-/** Broadcom IR print URLs are PDFs without a `.pdf` suffix (`/node/123/pdf`). */
-function isBroadcomNodePdfPath(host: string, pathname: string): boolean {
+/** GCS IR print URLs that are PDFs without a `.pdf` suffix (`/node/123/pdf`). */
+function isGcsNodePdfPath(host: string, pathname: string): boolean {
   const h = host.toLowerCase();
-  if (h !== "investors.broadcom.com" && h !== "broadcom.gcs-web.com") return false;
+  if (
+    h !== "investors.broadcom.com" &&
+    h !== "broadcom.gcs-web.com" &&
+    h !== "investor.sandisk.com" &&
+    h !== "sandisk.gcs-web.com"
+  ) {
+    return false;
+  }
   return /\/node\/\d+\/pdf\/?$/i.test(pathname);
 }
 
@@ -19,14 +26,16 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
       if (host === "investors.micron.com" || host.endsWith(".micron.com")) return false;
       return true;
     }
-    if (isBroadcomNodePdfPath(u.hostname, u.pathname)) return true;
+    if (isGcsNodePdfPath(u.hostname, u.pathname)) return true;
     return /\.pdf(?:$|[?#])/i.test(u.pathname) || /\.pdf(?:$|[?#])/i.test(t);
   } catch {
     if (/investors\.micron\.com\/static-files\//i.test(t)) return false;
     return (
       /\.pdf(?:$|[?#])/i.test(t) ||
       /\/static-files\/[a-f0-9-]{36}/i.test(t) ||
-      /(?:investors\.broadcom\.com|broadcom\.gcs-web\.com)\/node\/\d+\/pdf/i.test(t)
+      /(?:investors\.broadcom\.com|broadcom\.gcs-web\.com|investor\.sandisk\.com|sandisk\.gcs-web\.com)\/node\/\d+\/pdf/i.test(
+        t,
+      )
     );
   }
 }

@@ -1,7 +1,8 @@
 /**
  * AbbVie IR static-files UUIDs (press releases = Filings).
  * Slides = earnings-day Pipeline Update from investors.abbvie.com/presentations
- * (matched by "As of {report date}"). Do not reuse JPM / acquisition decks.
+ * (matched by "As of {report date}"). Q1–Q3 historically have no pipeline deck —
+ * leave Slides empty. Do not reuse JPM / acquisition decks.
  */
 
 export type AbbvQuarterDocs = {

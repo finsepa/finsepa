@@ -28,6 +28,7 @@ export function alphabetSlidesCandidates(fiscalYear: number, fiscalQuarter: numb
     `${folder}/${fy}q${fq}-alphabet-earnings-slides.pdf`,
     `${folder}/${fy}Q${fq}-alphabet-earnings-slides.pdf`,
     // Pre-2025 quarters published an earnings-release PDF instead of a slide deck.
+    // Q1 2024: `2024q1-alphabet-earnings-release.pdf` 404s (GET-verified) — leave Slides empty.
     `${folder}/${fy}q${fq}-alphabet-earnings-release.pdf`,
   ];
 }

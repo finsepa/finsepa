@@ -371,7 +371,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     year: "numeric",
                   })}`
                 : "Next payment date will appear soon."
-      : "No upcoming payment on Free. Upgrade to Pro anytime.";
+      : "No upcoming payment on Free.";
 
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">

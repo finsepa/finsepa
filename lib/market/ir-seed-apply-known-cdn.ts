@@ -67,6 +67,45 @@ export async function applyKnownCdnSlideDeckUrls(
   const fyEndMonthDay = options?.fyEndMonthDay ?? null;
   const maxRows = irSeedSlideRowCap(preview);
 
+  const ticker = listingTicker.trim().toUpperCase();
+  if (
+    ticker === "HD" ||
+    ticker === "NFLX" ||
+    ticker === "UNH" ||
+    ticker === "ARM" ||
+    ticker === "BABA" ||
+    ticker === "PANW" ||
+    ticker === "SHEL" ||
+    ticker === "WFC" ||
+    ticker === "RTX" ||
+    ticker === "NVS" ||
+    ticker === "MUFG" ||
+    ticker === "SNDK" ||
+    ticker === "NSRGY" ||
+    ticker === "GEV" ||
+    ticker === "AZN" ||
+    ticker === "ANET" ||
+    ticker === "SIEGY" ||
+    ticker === "SAP" ||
+    ticker === "LVMUY" ||
+    ticker === "LRLCY" ||
+    ticker === "KLAC" ||
+    ticker === "TXN" ||
+    ticker === "SFTBY" ||
+    ticker === "BHP" ||
+    ticker === "C" ||
+    ticker === "TM" ||
+    ticker === "IBM" ||
+    ticker === "TMO" ||
+    ticker === "AXP" ||
+    ticker === "LIN" ||
+    ticker === "SAN" ||
+    ticker === "CRWD" ||
+    ticker === "AMGN"
+  ) {
+    return rows;
+  }
+
   const needing = rows
     .map((row, idx) => ({ row, idx }))
     .filter(({ row }) => needsSlides(row) || needsFilings(row))

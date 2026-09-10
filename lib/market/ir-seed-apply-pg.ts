@@ -1,8 +1,9 @@
 //
 //  ir-seed-apply-pg.ts
 //
-//  Procter & Gamble — June FY-end; Q4 CDN uses ScriptSlides-{JAS|OND|JFM|AMJ}-YYYY
-//  and Q#-FY2425-RELEASE naming (IR pages are JS-only, so HEAD-probe CDN dirs).
+//  Procter & Gamble — June FY-end. Prefer Q#-FY-YYYY-Earnings-Slides-*.pdf, then
+//  ScriptSlides-{JAS|OND|JFM|AMJ}-YYYY. Filings: RELEASE / AMJ Press-Release.
+//  IR pages are JS-only, so HEAD-probe CDN dirs.
 //
 
 import "server-only";
@@ -38,7 +39,10 @@ export function pgSlidesCandidateUrls(fq: number, fy: number): string[] {
   const { code, year } = pgSeason(fq, fy);
   return [
     `${base}/Q${fq}-FY-${fy}-Earnings-Slides-web.pdf`,
+    `${base}/Q${fq}-FY-${fy}-Earnings-Slides-Web-A.pdf`,
     `${base}/Q${fq}-FY${fy}-Earnings-Slides-web.pdf`,
+    `${base}/Q${fq}-FY-${fy}-Earnings-Slides-Reg-G.pdf`,
+    `${base}/Q${fq}-FY${fy}-Earnings-Slides-Reg-G.pdf`,
     `${base}/ScriptSlides-${code}-${year}-Reg-G-FINAL.pdf`,
     `${base}/ScriptSlides-${code}-${year}-Reg-G-Final.pdf`,
     `${base}/ScriptSlides-${code}-${year}-Reg-G.pdf`,
@@ -49,7 +53,9 @@ export function pgFilingsCandidateUrls(fq: number, fy: number): string[] {
   const base = `${PG_Q4CDN_FINANCIALS}/${fy}/q${fq}`;
   const prev2 = String((fy - 1) % 100).padStart(2, "0");
   const yy2 = String(fy % 100).padStart(2, "0");
+  const { code } = pgSeason(fq, fy);
   return [
+    `${base}/FY${prev2}${yy2}-Q${fq}-${code}-Press-Release.pdf`,
     `${base}/Q${fq}-FY${prev2}${yy2}-RELEASE-Final.pdf`,
     `${base}/Q${fq}-FY${prev2}${yy2}-RELEASE-FINAL.pdf`,
     `${base}/Q${fq}-FY${fy}-RELEASE-Final.pdf`,
@@ -97,7 +103,7 @@ export async function applyIrSeedPgDocumentUrls(
     };
   });
 
-  const unique = [...new Set(plans.flatMap((p) => [...p.slides, ...p.filings]))].slice(0, 80);
+  const unique = [...new Set(plans.flatMap((p) => [...p.slides, ...p.filings]))].slice(0, 140);
   const ok = new Map<string, boolean>();
   await Promise.all(unique.map(async (u) => ok.set(u, await headPdfExists(u))));
 

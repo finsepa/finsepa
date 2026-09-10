@@ -65,7 +65,6 @@ import {
 import { STOCK_1D_LIVE_PRICE_POLL_MS } from "@/lib/chart/stock-live-poll-intervals";
 import { usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
 import {
-  stockPageSsrHas1DChartSeed,
   stockPageSsrHasLiveSpotSeed,
   stockPageSsrHasPerformanceSeed,
 } from "@/lib/market/stock-page-ssr-live-seed";
@@ -687,33 +686,19 @@ export function StockPageContent({
     };
   }, [ticker, liveRegularSessionActive, regularSessionClock, initialPageData]);
 
-  // Prime minute-bar worker watch + live chart path when SSR did not already seed hot fields.
+  // Prime minute-bar worker watch when SSR did not seed live spot.
+  // Chart: PriceChart already loads 1D when snapshot points are empty — do not duplicate that EODHD path.
   useEffect(() => {
     if (!liveRegularSessionActive) return;
 
     const hasSpot = stockPageSsrHasLiveSpotSeed(initialPageData, ticker);
-    const hasChart = stockPageSsrHas1DChartSeed(initialPageData, ticker);
-    if (hasSpot && hasChart) return;
+    if (hasSpot) return;
 
     const enc = encodeURIComponent(ticker);
-    const fetches: Promise<Response>[] = [];
-    if (!hasSpot) {
-      fetches.push(
-        fetch(`/api/stocks/${enc}/live-price`, {
-          credentials: "include",
-          cache: "no-store",
-        }),
-      );
-    }
-    if (!hasChart) {
-      fetches.push(
-        fetch(`/api/stocks/${enc}/chart?range=1D&series=price`, {
-          credentials: "include",
-          cache: "no-store",
-        }),
-      );
-    }
-    if (fetches.length) void Promise.all(fetches).catch(() => {});
+    void fetch(`/api/stocks/${enc}/live-price`, {
+      credentials: "include",
+      cache: "no-store",
+    }).catch(() => {});
   }, [ticker, liveRegularSessionActive, initialPageData]);
 
   useEffect(() => {

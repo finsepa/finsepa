@@ -6,7 +6,7 @@
  *   2) Playwright download (TSM path) — only if plain fetch fails (403 / CF / HTML)
  *
  * Usage:
- *   npx tsx --env-file=.env.local scripts/earnings-ir-docs-mirror.ts --tickers=AMZN,ASML
+ *   npx tsx --env-file=.env.local scripts/earnings-ir-docs-mirror.ts --tickers=AMZN,ASML --plain-only
  *   npx tsx --env-file=.env.local scripts/earnings-ir-docs-mirror.ts --greens
  *   npx tsx --env-file=.env.local scripts/earnings-ir-docs-mirror.ts --greens --limit=1 --dry-run
  */
@@ -61,6 +61,7 @@ async function fetchPdfPlain(url: string): Promise<Buffer> {
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
     },
     redirect: "follow",
+    signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) throw new Error(`http ${res.status}`);
   const ct = (res.headers.get("content-type") ?? "").toLowerCase();
@@ -114,12 +115,14 @@ async function fetchPdfAuto(
   opts: {
     ensureBrowser: () => Promise<Page>;
     warmHostIfNeeded: (src: string) => Promise<void>;
+    plainOnly: boolean;
   },
 ): Promise<{ body: Buffer; mode: FetchMode }> {
   try {
     const body = await fetchPdfPlain(src);
     return { body, mode: "plain" };
   } catch (plainErr) {
+    if (opts.plainOnly) throw plainErr;
     await opts.warmHostIfNeeded(src);
     const page = await opts.ensureBrowser();
     try {
@@ -139,6 +142,7 @@ async function main() {
   const limit = parseLimit();
   const dryRun = hasFlag("--dry-run");
   const includeHosted = hasFlag("--include-hosted"); // usually skip; hosted URLs can't re-source issuer
+  const plainOnly = hasFlag("--plain-only"); // HTTP GET only — no Playwright
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
@@ -277,7 +281,7 @@ async function main() {
 
       try {
         console.log(`  fetch ${row.ticker} ${row.fiscal_period_end} ${kind}`);
-        const result = await fetchPdfAuto(src, { ensureBrowser, warmHostIfNeeded });
+        const result = await fetchPdfAuto(src, { ensureBrowser, warmHostIfNeeded, plainOnly });
 
         if (result.mode === "plain") plainOk += 1;
         else browserOk += 1;

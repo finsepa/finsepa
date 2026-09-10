@@ -1,6 +1,6 @@
 //
 // Cold-miss single-flight orchestration (testable deps).
-// Leader: uncached rebuild → persist snapshot → then release lease.
+// Leader: uncached rebuild → return page immediately → persist snapshot → then release lease.
 // Waiter: never calls uncached; polls snapshot / stale / one re-acquire / fallback.
 //
 
@@ -94,21 +94,33 @@ async function runAsLeader<TPage, THit>(
   try {
     if (m) m.uncachedRebuilds += 1;
     const fresh = await deps.loadUncached();
-    if (fresh) {
-      const persisted = await deps.persistSnapshot(fresh);
-      if (persisted.ok) {
-        if (m) m.persistOk += 1;
-      } else {
-        if (m) m.persistFail += 1;
-        // Awaited persist attempt (not fire-and-forget); mark failed so waiters can recover.
-        await deps.markFailed(ownerId);
-        return fresh;
-      }
-    } else {
+    if (!fresh) {
       await deps.markFailed(ownerId);
       return null;
     }
-    await deps.release(ownerId);
+
+    // Return the page immediately; keep the lease until persist finishes so waiters
+    // poll the snapshot instead of starting a second uncached (EODHD) rebuild.
+    void (async () => {
+      try {
+        const persisted = await deps.persistSnapshot(fresh);
+        if (persisted.ok) {
+          if (m) m.persistOk += 1;
+          await deps.release(ownerId);
+        } else {
+          if (m) m.persistFail += 1;
+          await deps.markFailed(ownerId);
+        }
+      } catch {
+        if (m) m.leaderFailures += 1;
+        try {
+          await deps.markFailed(ownerId);
+        } catch {
+          /* ignore */
+        }
+      }
+    })();
+
     return fresh;
   } catch (err) {
     if (m) m.leaderFailures += 1;

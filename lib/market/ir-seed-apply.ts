@@ -33,6 +33,49 @@ import { applyIrSeedMerckDocumentUrls } from "@/lib/market/ir-seed-apply-merck";
 import { applyIrSeedCostDocumentUrls } from "@/lib/market/ir-seed-apply-cost";
 import { applyIrSeedKoDocumentUrls } from "@/lib/market/ir-seed-apply-ko";
 import { applyIrSeedCatDocumentUrls } from "@/lib/market/ir-seed-apply-cat";
+import { applyIrSeedPltrDocumentUrls } from "@/lib/market/ir-seed-apply-pltr";
+import { applyIrSeedUnhDocumentUrls } from "@/lib/market/ir-seed-apply-unh";
+import { applyIrSeedLrcxDocumentUrls } from "@/lib/market/ir-seed-apply-lrcx";
+import { applyIrSeedCvxDocumentUrls } from "@/lib/market/ir-seed-apply-cvx";
+import { applyIrSeedHsbcDocumentUrls } from "@/lib/market/ir-seed-apply-hsbc";
+import { applyIrSeedDellDocumentUrls } from "@/lib/market/ir-seed-apply-dell";
+import { applyIrSeedMsDocumentUrls } from "@/lib/market/ir-seed-apply-ms";
+import { applyIrSeedGeDocumentUrls } from "@/lib/market/ir-seed-apply-ge";
+import { applyIrSeedNflxDocumentUrls } from "@/lib/market/ir-seed-apply-nflx";
+import { applyIrSeedHdDocumentUrls } from "@/lib/market/ir-seed-apply-hd";
+import { applyIrSeedGsDocumentUrls } from "@/lib/market/ir-seed-apply-gs";
+import { applyIrSeedPmDocumentUrls } from "@/lib/market/ir-seed-apply-pm";
+import { applyIrSeedRyDocumentUrls } from "@/lib/market/ir-seed-apply-ry";
+import { applyIrSeedArmDocumentUrls } from "@/lib/market/ir-seed-apply-arm";
+import { applyIrSeedBabaDocumentUrls } from "@/lib/market/ir-seed-apply-baba";
+import { applyIrSeedPanwDocumentUrls } from "@/lib/market/ir-seed-apply-panw";
+import { applyIrSeedShelDocumentUrls } from "@/lib/market/ir-seed-apply-shel";
+import { applyIrSeedWfcDocumentUrls } from "@/lib/market/ir-seed-apply-wfc";
+import { applyIrSeedRtxDocumentUrls } from "@/lib/market/ir-seed-apply-rtx";
+import { applyIrSeedNvsDocumentUrls } from "@/lib/market/ir-seed-apply-nvs";
+import { applyIrSeedMufgDocumentUrls } from "@/lib/market/ir-seed-apply-mufg";
+import { applyIrSeedSndkDocumentUrls } from "@/lib/market/ir-seed-apply-sndk";
+import { applyIrSeedNsrgyDocumentUrls } from "@/lib/market/ir-seed-apply-nsrgy";
+import { applyIrSeedGevDocumentUrls } from "@/lib/market/ir-seed-apply-gev";
+import { applyIrSeedAznDocumentUrls } from "@/lib/market/ir-seed-apply-azn";
+import { applyIrSeedAnetDocumentUrls } from "@/lib/market/ir-seed-apply-anet";
+import { applyIrSeedSiegyDocumentUrls } from "@/lib/market/ir-seed-apply-siegy";
+import { applyIrSeedSapDocumentUrls } from "@/lib/market/ir-seed-apply-sap";
+import { applyIrSeedLvmuyDocumentUrls } from "@/lib/market/ir-seed-apply-lvmuy";
+import { applyIrSeedLrlcyDocumentUrls } from "@/lib/market/ir-seed-apply-lrlcy";
+import { applyIrSeedKlacDocumentUrls } from "@/lib/market/ir-seed-apply-klac";
+import { applyIrSeedTxnDocumentUrls } from "@/lib/market/ir-seed-apply-txn";
+import { applyIrSeedSftbyDocumentUrls } from "@/lib/market/ir-seed-apply-sftby";
+import { applyIrSeedBhpDocumentUrls } from "@/lib/market/ir-seed-apply-bhp";
+import { applyIrSeedCDocumentUrls } from "@/lib/market/ir-seed-apply-c";
+import { applyIrSeedTmDocumentUrls } from "@/lib/market/ir-seed-apply-tm";
+import { applyIrSeedIbmDocumentUrls } from "@/lib/market/ir-seed-apply-ibm";
+import { applyIrSeedTmoDocumentUrls } from "@/lib/market/ir-seed-apply-tmo";
+import { applyIrSeedAxpDocumentUrls } from "@/lib/market/ir-seed-apply-axp";
+import { applyIrSeedLinDocumentUrls } from "@/lib/market/ir-seed-apply-lin";
+import { applyIrSeedSanDocumentUrls } from "@/lib/market/ir-seed-apply-san";
+import { applyIrSeedCrwdDocumentUrls } from "@/lib/market/ir-seed-apply-crwd";
+import { applyIrSeedAmgnDocumentUrls } from "@/lib/market/ir-seed-apply-amgn";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 /** Tickers with bespoke IR seed modules (run before universal layers). */
@@ -68,6 +111,49 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
   "COST",
   "KO",
   "CAT",
+  "PLTR",
+  "UNH",
+  "LRCX",
+  "CVX",
+  "HSBC",
+  "DELL",
+  "MS",
+  "GE",
+  "NFLX",
+  "HD",
+  "GS",
+  "PM",
+  "RY",
+  "ARM",
+  "BABA",
+  "PANW",
+  "SHEL",
+  "WFC",
+  "RTX",
+  "NVS",
+  "MUFG",
+  "SNDK",
+  "NSRGY",
+  "GEV",
+  "AZN",
+  "ANET",
+  "SIEGY",
+  "SAP",
+  "LVMUY",
+  "LRLCY",
+  "KLAC",
+  "TXN",
+  "SFTBY",
+  "BHP",
+  "C",
+  "TM",
+  "IBM",
+  "TMO",
+  "AXP",
+  "LIN",
+  "SAN",
+  "CRWD",
+  "AMGN",
 ]);
 
 export function earningsIrSeedResolutionSource(
@@ -113,6 +199,49 @@ async function applyDedicatedIrSeedDocumentUrls(
   if (t === "COST") return applyIrSeedCostDocumentUrls(rows, hub);
   if (t === "KO") return applyIrSeedKoDocumentUrls(rows, hub);
   if (t === "CAT") return applyIrSeedCatDocumentUrls(rows, hub);
+  if (t === "PLTR") return applyIrSeedPltrDocumentUrls(rows, hub);
+  if (t === "UNH") return applyIrSeedUnhDocumentUrls(rows, hub);
+  if (t === "LRCX") return applyIrSeedLrcxDocumentUrls(rows, hub);
+  if (t === "CVX") return applyIrSeedCvxDocumentUrls(rows, hub);
+  if (t === "HSBC") return applyIrSeedHsbcDocumentUrls(rows, hub);
+  if (t === "DELL") return applyIrSeedDellDocumentUrls(rows, hub);
+  if (t === "MS") return applyIrSeedMsDocumentUrls(rows, hub);
+  if (t === "GE") return applyIrSeedGeDocumentUrls(rows, hub);
+  if (t === "NFLX") return applyIrSeedNflxDocumentUrls(rows, hub);
+  if (t === "HD") return applyIrSeedHdDocumentUrls(rows, hub);
+  if (t === "GS") return applyIrSeedGsDocumentUrls(rows, hub);
+  if (t === "PM") return applyIrSeedPmDocumentUrls(rows, hub);
+  if (t === "RY") return applyIrSeedRyDocumentUrls(rows, hub);
+  if (t === "ARM") return applyIrSeedArmDocumentUrls(rows, hub);
+  if (t === "BABA") return applyIrSeedBabaDocumentUrls(rows, hub);
+  if (t === "PANW") return applyIrSeedPanwDocumentUrls(rows, hub);
+  if (t === "SHEL") return applyIrSeedShelDocumentUrls(rows, hub);
+  if (t === "WFC") return applyIrSeedWfcDocumentUrls(rows, hub);
+  if (t === "RTX") return applyIrSeedRtxDocumentUrls(rows, hub);
+  if (t === "NVS") return applyIrSeedNvsDocumentUrls(rows, hub);
+  if (t === "MUFG") return applyIrSeedMufgDocumentUrls(rows, hub);
+  if (t === "SNDK") return applyIrSeedSndkDocumentUrls(rows, hub);
+  if (t === "NSRGY") return applyIrSeedNsrgyDocumentUrls(rows, hub);
+  if (t === "GEV") return applyIrSeedGevDocumentUrls(rows, hub);
+  if (t === "AZN") return applyIrSeedAznDocumentUrls(rows, hub);
+  if (t === "ANET") return applyIrSeedAnetDocumentUrls(rows, hub);
+  if (t === "SIEGY") return applyIrSeedSiegyDocumentUrls(rows, hub);
+  if (t === "SAP") return applyIrSeedSapDocumentUrls(rows, hub);
+  if (t === "LVMUY") return applyIrSeedLvmuyDocumentUrls(rows, hub);
+  if (t === "LRLCY") return applyIrSeedLrlcyDocumentUrls(rows, hub);
+  if (t === "KLAC") return applyIrSeedKlacDocumentUrls(rows, hub);
+  if (t === "TXN") return applyIrSeedTxnDocumentUrls(rows, hub);
+  if (t === "SFTBY") return applyIrSeedSftbyDocumentUrls(rows, hub);
+  if (t === "BHP") return applyIrSeedBhpDocumentUrls(rows, hub);
+  if (t === "C") return applyIrSeedCDocumentUrls(rows, hub);
+  if (t === "TM") return applyIrSeedTmDocumentUrls(rows, hub);
+  if (t === "IBM") return applyIrSeedIbmDocumentUrls(rows, hub);
+  if (t === "TMO") return applyIrSeedTmoDocumentUrls(rows, hub);
+  if (t === "AXP") return applyIrSeedAxpDocumentUrls(rows, hub);
+  if (t === "LIN") return applyIrSeedLinDocumentUrls(rows, hub);
+  if (t === "SAN") return applyIrSeedSanDocumentUrls(rows, hub);
+  if (t === "CRWD") return applyIrSeedCrwdDocumentUrls(rows, hub);
+  if (t === "AMGN") return applyIrSeedAmgnDocumentUrls(rows, hub);
   if (t === "RACE") {
     return applyIrSeedFerrariPresentationUrls(rows, {
       preview: options?.preview,

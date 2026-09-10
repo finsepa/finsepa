@@ -6,7 +6,62 @@ export const EARNINGS_IR_VAULT_START_YMD = "2022-01-01";
 export const EARNINGS_IR_VAULT_TOP_N = 35;
 
 /** Issuers with first-party IR PDFs — do not lock SEC HTML as a filings/slides fallback. */
-export const EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS = new Set(["AMAT", "MRK", "COST", "KO", "CAT"]);
+export const EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS = new Set([
+  "AMAT",
+  "MRK",
+  "COST",
+  "KO",
+  "CAT",
+  "PLTR",
+  "UNH",
+  "LRCX",
+  "CVX",
+  "HSBC",
+  "GOOGL",
+  "GOOG",
+  "AVGO",
+  "ORCL",
+  "ABBV",
+  "DELL",
+  "MS",
+  "GE",
+  "PG",
+  "NFLX",
+  "HD",
+  "GS",
+  "PM",
+  "RY",
+  "ARM",
+  "BABA",
+  "PANW",
+  "SHEL",
+  "WFC",
+  "RTX",
+  "NVS",
+  "MUFG",
+  "SNDK",
+  "NSRGY",
+  "GEV",
+  "AZN",
+  "ANET",
+  "SIEGY",
+  "SAP",
+  "LVMUY",
+  "LRLCY",
+  "KLAC",
+  "TXN",
+  "SFTBY",
+  "BHP",
+  "C",
+  "TM",
+  "IBM",
+  "TMO",
+  "AXP",
+  "LIN",
+  "SAN",
+  "CRWD",
+  "AMGN",
+]);
 
 export type EarningsIrVaultDocStatus = "locked" | "found" | "missing";
 
@@ -112,7 +167,10 @@ export function isIrVaultAllowedUrl(url: string | null | undefined): url is stri
     }
     if (/\.pdf(?:$|[?#])/i.test(u.pathname) || /\.pdf(?:$|[?#])/i.test(t)) return true;
     if (
-      (host === "investors.broadcom.com" || host === "broadcom.gcs-web.com") &&
+      (host === "investors.broadcom.com" ||
+        host === "broadcom.gcs-web.com" ||
+        host === "investor.sandisk.com" ||
+        host === "sandisk.gcs-web.com") &&
       /\/node\/\d+\/pdf\/?$/i.test(u.pathname)
     ) {
       return true;
@@ -130,7 +188,9 @@ export function isIrVaultAllowedUrl(url: string | null | undefined): url is stri
     return (
       /\.pdf(?:$|[?#])/i.test(t) ||
       (/\/static-files\/[a-f0-9-]{36}/i.test(t) && !/investors\.micron\.com\/static-files\//i.test(t)) ||
-      /(?:investors\.broadcom\.com|broadcom\.gcs-web\.com)\/node\/\d+\/pdf/i.test(t) ||
+      /(?:investors\.broadcom\.com|broadcom\.gcs-web\.com|investor\.sandisk\.com|sandisk\.gcs-web\.com)\/node\/\d+\/pdf/i.test(
+        t,
+      ) ||
       /cdn-dynmedia-1\.microsoft\.com\/is\/content\/microsoftcorp\/(?:Slides|PressRelease)FY\d{2}_?[qQ][1-4]/i.test(
         t,
       )
