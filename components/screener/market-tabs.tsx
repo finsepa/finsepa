@@ -15,6 +15,8 @@ const TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
 export type UnderlineTabOption<T extends string> = {
   value: T;
   label: string;
+  /** Optional trailing adornment (e.g. Pro badge). */
+  end?: ReactNode;
 };
 
 function normalizeUnderlineTabs<T extends string>(
@@ -103,7 +105,7 @@ export function UnderlineTabs<T extends string>({
           className="relative flex min-w-0 flex-1 flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden pb-px [-webkit-overflow-scrolling:touch] [scrollbar-width:none] sm:gap-5 md:overflow-visible [&::-webkit-scrollbar]:hidden"
           aria-label={ariaLabel}
         >
-          {options.map(({ value, label }) => {
+          {options.map(({ value, label, end }) => {
             const isActive = value === active;
             return (
               <button
@@ -118,7 +120,14 @@ export function UnderlineTabs<T extends string>({
                   isActive ? "font-semibold text-fg opacity-100" : "text-fg-muted opacity-100"
                 }`}
               >
-                {label}
+                {end ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    {label}
+                    {end}
+                  </span>
+                ) : (
+                  label
+                )}
               </button>
             );
           })}

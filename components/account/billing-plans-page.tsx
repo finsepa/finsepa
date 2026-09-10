@@ -93,14 +93,7 @@ function FeatureList({ features }: { features: readonly string[] }) {
             className="h-5 w-5 shrink-0"
             aria-hidden
           />
-          <span
-            className={cn(
-              "text-[14px] leading-5 text-fg",
-              item === "All Free features +" && "font-semibold",
-            )}
-          >
-            {item}
-          </span>
+          <span className="text-[14px] leading-5 text-fg">{item}</span>
         </li>
       ))}
     </ul>

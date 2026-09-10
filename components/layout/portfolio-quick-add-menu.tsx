@@ -106,7 +106,7 @@ export function PortfolioQuickAddMenu({
       disabled: Boolean(plan?.isFree && !plan.canCreatePortfolio),
       title:
         plan?.isFree && !plan.canCreatePortfolio
-          ? "Free includes Demo + 1 manual portfolio — upgrade to Pro to add more"
+          ? "Free includes 1 manual portfolio — upgrade to Pro to add more"
           : undefined,
     },
     {

@@ -83,7 +83,7 @@ function tableCell(v: string | null | undefined): string {
   return s || "-";
 }
 
-/** Month + day for stacked "Report date" cell (year omitted; fiscal line carries year). */
+/** Month + day for the Date column (year omitted; year bands carry the year). */
 function reportDayLineFromDisplay(reportDateDisplay: string | null | undefined): string {
   const raw = reportDateDisplay != null && String(reportDateDisplay).trim() !== "" ? String(reportDateDisplay).trim() : "";
   if (!raw || raw === "-") return "-";
@@ -260,7 +260,7 @@ const REPORTS_GRID_CLASS = "grid w-full min-w-0 items-center gap-x-1.5 sm:gap-x-
 /** Icon-only Slides/Filings — last track fits two `size-8` buttons + end pad. */
 const REPORTS_GRID_STYLE = {
   gridTemplateColumns:
-    "minmax(9rem, 1.15fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(5.5rem, 0.9fr) 5.25rem",
+    "minmax(5.75rem, 0.75fr) minmax(5.25rem, 0.7fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(5.5rem, 0.9fr) 5.25rem",
 } as const;
 
 const reportsHeaderLabelClass = cn(
@@ -608,6 +608,7 @@ function ReportsHeaderRow() {
           className={cn(REPORTS_GRID_CLASS, "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted")}
           style={REPORTS_GRID_STYLE}
         >
+          <div className={reportsHeaderLabelClass}>Quarter</div>
           <div className={reportsHeaderLabelClass}>Date</div>
           <div className={reportsHeaderNumClass}>EPS</div>
           <div className={cn(reportsHeaderNumClass, "whitespace-nowrap")}>Surprise</div>
@@ -723,10 +724,10 @@ function TableSkeleton() {
                 style={REPORTS_GRID_STYLE}
               >
                 <div className={reportsLabelCellClass}>
-                  <div className="flex min-w-0 flex-col gap-1.5">
-                    <SkeletonBox className="h-4 w-[55%] rounded" />
-                    <SkeletonBox className="h-3.5 w-[40%] rounded" />
-                  </div>
+                  <SkeletonBox className="h-4 w-[70%] rounded" />
+                </div>
+                <div className={reportsLabelCellClass}>
+                  <SkeletonBox className="h-4 w-[55%] rounded" />
                 </div>
                 {Array.from({ length: 5 }).map((__, c) => (
                   <div key={c} className={reportsNumCellClass}>
@@ -1033,7 +1034,6 @@ export function StockEarningsTabContent({
       {!loading && data?.estimatesChart ? (
         <EarningsEstimatesSection
           data={data.estimatesChart}
-          lastPrice={data.lastPrice ?? null}
           aboveHeader={
             summaryForCards ? (
               <EarningsCountdownStats
@@ -1102,7 +1102,9 @@ export function StockEarningsTabContent({
                           <div className="truncate font-semibold leading-5 text-fg">
                             {formatReportsFiscalPeriodLabel(entry.row.fiscalPeriodLabel)}
                           </div>
-                          <div className="truncate font-['Inter'] text-[14px] font-medium leading-5 text-fg-muted">
+                        </div>
+                        <div className={reportsLabelCellClass}>
+                          <div className="truncate font-['Inter'] text-[14px] font-medium leading-5 text-fg">
                             {reportDayLineFromDisplay(entry.row.reportDateDisplay)}
                           </div>
                         </div>

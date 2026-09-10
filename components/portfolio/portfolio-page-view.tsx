@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Download, Pencil } from "@/lib/icons";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 
@@ -27,6 +27,7 @@ import {
   PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS,
   type OverviewHoldingsSubTab,
   type PortfolioViewTab,
+  isPortfolioDemoProTab,
   overviewHoldingsSubTabFromSearchParam,
   portfolioPageSearchHref,
   portfolioViewTabFromSearchParam,
@@ -50,6 +51,7 @@ import {
 } from "@/components/portfolio/portfolio-types";
 import { countUniqueOpenHoldingSymbols } from "@/lib/account/free-plan-asset-limits";
 import { FREE_MAX_HOLDINGS_PER_PORTFOLIO } from "@/lib/account/plan-entitlements";
+import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { totalCostBasisInvested } from "@/lib/portfolio/overview-metrics";
 import {
   ALLOCATION_RETURN_PERIOD_DEFAULT,
@@ -180,10 +182,11 @@ export function PortfolioPageView({
   publicListingId?: string;
 }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const tabFromUrl = useCallback(
     (param: string | null) => {
       const tab = portfolioViewTabFromSearchParam(param);
-      if (readOnly && (tab === "Cash" || tab === "Goal")) return "Overview";
+      if (readOnly && (tab === "Cash" || isPortfolioDemoProTab(tab))) return "Overview";
       return tab;
     },
     [readOnly],
@@ -228,6 +231,14 @@ export function PortfolioPageView({
       (selectedPortfolioReadOnly && selectedPortfolio.snaptrade != null));
   const showDemoBanner =
     !isPublicView && selectedPortfolio != null && portfolioIsDemo(selectedPortfolio);
+  /**
+   * Insights / My Goal / Dividends:
+   * - Demo: unrestricted for everyone
+   * - Free non-demo: visible with Pro badges; click → billing
+   * - Pro: unrestricted
+   */
+  const canOpenDemoProTabs = showDemoBanner || plan?.isPro === true;
+  const showDemoProTabBadges = !isPublicView && !canOpenDemoProTabs;
 
   useEffect(() => {
     const rawTab = searchParams.get("tab");
@@ -256,6 +267,13 @@ export function PortfolioPageView({
   }, [viewTab]);
 
   useEffect(() => {
+    if (!isPortfolioDemoProTab(viewTab)) return;
+    if (canOpenDemoProTabs) return;
+    setViewTab("Overview");
+    replacePortfolioPageUrl(portfolioPageSearchHref(tabBasePath, "Overview", overviewHoldingsSubTab));
+  }, [viewTab, canOpenDemoProTabs, tabBasePath, overviewHoldingsSubTab]);
+
+  useEffect(() => {
     if (viewTab === "Insights") return;
     const t = window.setTimeout(() => {
       void import("@/components/portfolio/portfolio-performance-panel");
@@ -265,11 +283,15 @@ export function PortfolioPageView({
 
   const onTabChange = useCallback(
     (tab: PortfolioViewTab) => {
-      if (readOnly && (tab === "Cash" || tab === "Goal")) return;
+      if (readOnly && (tab === "Cash" || isPortfolioDemoProTab(tab))) return;
+      if (isPortfolioDemoProTab(tab) && !canOpenDemoProTabs) {
+        router.push(PATH_ACCOUNT_PLANS);
+        return;
+      }
       setViewTab(tab);
       replacePortfolioPageUrl(portfolioPageSearchHref(tabBasePath, tab, overviewHoldingsSubTab));
     },
-    [readOnly, tabBasePath, overviewHoldingsSubTab],
+    [readOnly, canOpenDemoProTabs, router, tabBasePath, overviewHoldingsSubTab],
   );
 
   const onOverviewHoldingsSubTabChange = useCallback(
@@ -490,7 +512,12 @@ export function PortfolioPageView({
               transactions={transactions}
               mobileToolbarActions={portfolioToolbarActions}
             />
-            <PortfolioPageTabs active={viewTab} onChange={onTabChange} publicView={readOnly} />
+            <PortfolioPageTabs
+              active={viewTab}
+              onChange={onTabChange}
+              publicView={readOnly}
+              showProBadges={showDemoProTabBadges}
+            />
           </>
         )}
 

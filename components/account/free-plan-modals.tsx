@@ -194,7 +194,7 @@ export function FreePlanLimitsIntroModal() {
           </p>
           <ul className="list-disc space-y-2 pl-5 text-[14px] leading-5 text-fg-muted">
             <li>
-              <span className="text-fg">Demo + 1 manual portfolio (up to 15 holdings)</span> and{" "}
+              <span className="text-fg">1 manual portfolio (up to 15 holdings)</span> and{" "}
               <span className="text-fg">1 watchlist (up to 15 assets)</span> stay active
             </li>
             <li>

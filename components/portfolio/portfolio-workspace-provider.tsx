@@ -1730,7 +1730,7 @@ export function PortfolioWorkspaceProvider({
     if (plan?.isFree && !plan.canCreatePortfolio) {
       toastProUpgrade({
         title: "Free plan limit",
-        description: "Free includes Demo + 1 manual portfolio. Upgrade to Pro to add more.",
+        description: "Free includes 1 manual portfolio. Upgrade to Pro to add more.",
         onUpgrade: openUpgradePlans,
       });
       return;

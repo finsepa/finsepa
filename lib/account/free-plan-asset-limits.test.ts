@@ -32,8 +32,8 @@ describe("Free plan asset entitlements", () => {
     assert.equal(pro.maxWatchlistAssets, null);
   });
 
-  it("documents Free Demo + holdings caps in plan comparison copy", () => {
-    assert.ok(FREE_PLAN_CARD_FEATURES.some((f) => f === "Demo + 1 manual portfolio"));
+  it("documents Free portfolio + holdings caps in plan comparison copy", () => {
+    assert.ok(FREE_PLAN_CARD_FEATURES.some((f) => f === "1 manual portfolio"));
     assert.ok(FREE_PLAN_CARD_FEATURES.some((f) => f === "Up to 15 holdings"));
     assert.ok(PRO_PLAN_CARD_FEATURES.some((f) => f === "Unlimited holdings"));
   });

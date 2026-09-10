@@ -1,5 +1,6 @@
 "use client";
 
+import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import { UnderlineTabs } from "@/components/screener/market-tabs";
 import type { SecondaryTabItem } from "@/components/ui/secondary-tabs";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,14 @@ export const portfolioViewTabs = [
   "Transactions",
 ] as const;
 export type PortfolioViewTab = (typeof portfolioViewTabs)[number];
+
+/** Insights / My Goal / Dividends — Pro-gated on Free (except demo portfolio). */
+export const PORTFOLIO_DEMO_PRO_TABS = ["Insights", "Goal", "Dividends"] as const;
+export type PortfolioDemoProTab = (typeof PORTFOLIO_DEMO_PRO_TABS)[number];
+
+export function isPortfolioDemoProTab(tab: PortfolioViewTab): tab is PortfolioDemoProTab {
+  return tab === "Insights" || tab === "Goal" || tab === "Dividends";
+}
 
 /** Visible tab label (internal tab id stays `Goal` for routing/state). */
 export function portfolioViewTabLabel(tab: PortfolioViewTab): string {
@@ -28,11 +37,9 @@ export const PORTFOLIO_HOLDINGS_SUB_TAB_ITEMS = [
   { id: "slices", label: "Slices" },
 ] as const satisfies readonly SecondaryTabItem<OverviewHoldingsSubTab>[];
 
-/** Community `/portfolios/[id]` read-only view — no Cash tab. */
+/** Community `/portfolios/[id]` read-only view — no Cash / Goal / Pro-gated tabs. */
 export const publicPortfolioViewTabs = [
   "Overview",
-  "Insights",
-  "Dividends",
   "Transactions",
 ] as const satisfies readonly PortfolioViewTab[];
 
@@ -128,16 +135,26 @@ export function PortfolioPageTabs({
   active,
   onChange,
   publicView = false,
+  showProBadges = false,
 }: {
   active: PortfolioViewTab;
   onChange: (tab: PortfolioViewTab) => void;
   /** Hides Cash (and related deep links) on `/portfolios/[id]`. */
   publicView?: boolean;
+  /** Free non-demo: Pro pill next to Insights / My Goal / Dividends. */
+  showProBadges?: boolean;
 }) {
   const tabList = publicView ? publicPortfolioViewTabs : portfolioViewTabs;
   return (
     <UnderlineTabs
-      tabs={tabList.map((t) => ({ value: t, label: portfolioViewTabLabel(t) }))}
+      tabs={tabList.map((t) => ({
+        value: t,
+        label: portfolioViewTabLabel(t),
+        end:
+          showProBadges && isPortfolioDemoProTab(t) ? (
+            <ProFeatureBadge className="translate-y-px" />
+          ) : undefined,
+      }))}
       active={active}
       onChange={onChange}
       ariaLabel="Portfolio"

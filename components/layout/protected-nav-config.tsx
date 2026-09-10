@@ -7,7 +7,6 @@ import {
   Globe01,
   Globe04,
   Grid01,
-  NavigationPointer01,
   PieChart01,
   Rows01,
   Users01,
@@ -30,23 +29,13 @@ export type ProtectedNavItem = {
   activePathPrefixes?: readonly string[];
 };
 
-/** Top of sidebar, above Agent (same destination as top-bar portfolio control). */
+/** Top of sidebar (same destination as top-bar portfolio control). */
 export const protectedPortfolioItem: ProtectedNavItem = {
   label: "My Portfolio",
   icon: PieChart01,
   href: "/portfolio",
   available: true,
   activePathPrefix: true,
-};
-
-/** Top of sidebar, above Markets (Linear-style primary entry). */
-export const protectedAgentItem: ProtectedNavItem = {
-  label: "Agent",
-  icon: NavigationPointer01,
-  href: "/agents",
-  available: true,
-  activePathPrefix: true,
-  badge: "Beta",
 };
 
 export const protectedMarketItems: ProtectedNavItem[] = [
@@ -129,7 +118,6 @@ function itemByLabel(items: readonly ProtectedNavItem[], label: string): Protect
 /** Mobile bottom-nav “More” menu — same order as desktop sidebar extras. */
 export const protectedMobileMoreNavItems: ProtectedNavItem[] = (
   [
-    "Agent",
     "Heatmaps",
     "News",
     "Earnings",
@@ -141,7 +129,6 @@ export const protectedMobileMoreNavItems: ProtectedNavItem[] = (
     "Portfolios",
   ] as const
 ).map((label) => {
-  if (label === "Agent") return protectedAgentItem;
   const item =
     itemByLabel(protectedMarketItems, label) ??
     itemByLabel(protectedCalendarItems, label) ??

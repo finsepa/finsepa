@@ -9,7 +9,6 @@ import { FinsepaLogo } from "@/components/brand/finsepa-logo";
 import { DWELL_TOOLTIP_DELAY_MS } from "@/components/layout/topbar-delayed-tooltip";
 import { tooltipDwellSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import {
-  protectedAgentItem,
   protectedPortfolioItem,
   protectedCalendarItems,
   protectedCommunityItems,
@@ -396,7 +395,6 @@ export function Sidebar() {
       >
         <div className={cn("space-y-0.5", collapsed && "flex flex-col items-center")}>
           <SidebarRow item={protectedPortfolioItem} pathname={pathname} collapsed={collapsed} />
-          <SidebarRow item={protectedAgentItem} pathname={pathname} collapsed={collapsed} />
         </div>
         <SidebarSection title="Markets" items={protectedMarketItems} pathname={pathname} collapsed={collapsed} />
         <SidebarSection title="Calendar" items={protectedCalendarItems} pathname={pathname} collapsed={collapsed} />
