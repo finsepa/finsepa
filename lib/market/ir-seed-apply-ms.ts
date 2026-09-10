@@ -115,9 +115,9 @@ export async function applyIrSeedMsDocumentUrls(
       hit.slides,
       fq === 4 ? msStrategicUpdateUrl(fy) : null,
       msFinancialSupplementUrl(fq, fy),
-    ].filter((u): u is string => Boolean(u) && ok.get(u) === true && isDirectEarningsPdfUrl(u));
+    ].filter((u): u is string => typeof u === "string" && ok.get(u) === true && isDirectEarningsPdfUrl(u));
     const filingCandidates = [hit.filings, msEarningsReleaseUrl(fq, fy)].filter(
-      (u): u is string => Boolean(u) && ok.get(u) === true && isDirectEarningsPdfUrl(u),
+      (u): u is string => typeof u === "string" && ok.get(u) === true && isDirectEarningsPdfUrl(u),
     );
     const nextSlides =
       (isDirectEarningsPdfUrl(row.secSlidesUrl) ? row.secSlidesUrl : null) ?? slideCandidates[0] ?? row.secSlidesUrl;

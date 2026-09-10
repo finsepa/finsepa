@@ -30,7 +30,7 @@ function lrcxRowLabel(row: StockEarningsHistoryRow): string | null {
 }
 
 function lrcxExistingSlidesMatchRow(url: string | null | undefined, label: string): boolean {
-  if (!isDirectEarningsPdfUrl(url)) return false;
+  if (typeof url !== "string" || !isDirectEarningsPdfUrl(url)) return false;
   return earningsPdfHrefMatchesQuarterLabels(url, [label]);
 }
 

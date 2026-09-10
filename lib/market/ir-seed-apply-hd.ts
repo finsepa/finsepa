@@ -97,7 +97,7 @@ export async function applyIrSeedHdDocumentUrls(
     const candidates = [
       byLabel.get(label)?.filings,
       m ? hdPressReleaseUrl(Number(m[1]), Number(m[2])) : null,
-    ].filter((u): u is string => Boolean(u) && ok.get(u) === true && isDirectEarningsPdfUrl(u));
+    ].filter((u): u is string => typeof u === "string" && ok.get(u) === true && isDirectEarningsPdfUrl(u));
     const nextFilings =
       (isMatchingHdPressPdf(row.secFilingsUrl, row) ? row.secFilingsUrl : null) ??
       candidates[0] ??

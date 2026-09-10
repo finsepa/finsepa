@@ -72,7 +72,7 @@ export async function applyIrSeedNflxDocumentUrls(
     const candidates = [
       byLabel.get(label)?.filings,
       ...(m ? nflxShareholderLetterCandidates(Number(m[1]), Number(m[2])) : []),
-    ].filter((u): u is string => Boolean(u) && ok.get(u) === true && isDirectEarningsPdfUrl(u));
+    ].filter((u): u is string => typeof u === "string" && ok.get(u) === true && isDirectEarningsPdfUrl(u));
     const nextFilings =
       (isDirectEarningsPdfUrl(row.secFilingsUrl) ? row.secFilingsUrl : null) ?? candidates[0] ?? row.secFilingsUrl;
     if (nextFilings === row.secFilingsUrl && row.secSlidesUrl == null) return row;

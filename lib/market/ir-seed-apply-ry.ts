@@ -71,10 +71,10 @@ export async function applyIrSeedRyDocumentUrls(
     const fq = m ? Number(m[1]) : 0;
     const fy = m ? Number(m[2]) : 0;
     const slideCandidates = [byLabel.get(label)?.slides, m ? rySlidesUrl(fq, fy) : null].filter(
-      (u): u is string => Boolean(u) && ok.get(u) === true && isDirectEarningsPdfUrl(u),
+      (u): u is string => typeof u === "string" && ok.get(u) === true && isDirectEarningsPdfUrl(u),
     );
     const filingCandidates = [byLabel.get(label)?.filings, m ? ryFilingsUrl(fq, fy) : null].filter(
-      (u): u is string => Boolean(u) && ok.get(u) === true && isDirectEarningsPdfUrl(u),
+      (u): u is string => typeof u === "string" && ok.get(u) === true && isDirectEarningsPdfUrl(u),
     );
     const nextSlides =
       (isDirectEarningsPdfUrl(row.secSlidesUrl) ? row.secSlidesUrl : null) ?? slideCandidates[0] ?? row.secSlidesUrl;
