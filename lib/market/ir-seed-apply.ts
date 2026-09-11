@@ -4,6 +4,7 @@ import { applyKnownCdnSlideDeckUrls } from "@/lib/market/ir-seed-apply-known-cdn
 import { applyIrSeedGoogleAlphabetDocumentUrls } from "@/lib/market/ir-seed-apply-google-alphabet";
 import { applyIrSeedGenericQ4DocumentUrls } from "@/lib/market/ir-seed-apply-generic-q4";
 import { applyIrSeedAbbvDocumentUrls } from "@/lib/market/ir-seed-apply-abbv";
+import { applyIrSeedAdbeDocumentUrls } from "@/lib/market/ir-seed-apply-adbe";
 import { applyIrSeedAmazonDocumentUrls } from "@/lib/market/ir-seed-apply-amazon";
 import { applyIrSeedAppleDocumentUrls } from "@/lib/market/ir-seed-apply-apple";
 import { applyIrSeedAsmlDocumentUrls } from "@/lib/market/ir-seed-apply-asml";
@@ -105,6 +106,7 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
   "JPM",
   "TCEHY",
   "ABBV",
+  "ADBE",
   "CSCO",
   "AMAT",
   "MRK",
@@ -193,6 +195,7 @@ async function applyDedicatedIrSeedDocumentUrls(
   if (t === "JPM") return applyIrSeedJpmDocumentUrls(rows, hub);
   if (t === "TCEHY") return applyIrSeedTcehyDocumentUrls(rows, hub);
   if (t === "ABBV") return applyIrSeedAbbvDocumentUrls(rows, hub);
+  if (t === "ADBE") return applyIrSeedAdbeDocumentUrls(rows, hub);
   if (t === "CSCO") return applyIrSeedCscoDocumentUrls(rows, hub);
   if (t === "AMAT") return applyIrSeedAmatDocumentUrls(rows, hub);
   if (t === "MRK") return applyIrSeedMerckDocumentUrls(rows, hub);

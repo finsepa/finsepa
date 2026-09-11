@@ -24,6 +24,7 @@ const CURATED_IR_HOSTS_BY_TICKER: Record<string, readonly string[]> = {
   ADBE: [
     "https://www.adobe.com/investor-relations.html",
     "https://www.adobe.com/investor-relations/",
+    "https://www.adobe.com/investor-relations/financial-documents.html",
   ],
   INTC: [
     "https://www.intc.com/",

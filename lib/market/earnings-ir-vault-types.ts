@@ -22,6 +22,7 @@ export const EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS = new Set([
   "AVGO",
   "ORCL",
   "ABBV",
+  "ADBE",
   "DELL",
   "MS",
   "GE",
