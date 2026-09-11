@@ -20,6 +20,8 @@ export type ScreenerTableRow = {
   name: string;
   ticker: string;
   logoUrl: string;
+  /** Listing exchange when known from screener universe (`NYSE`, `NASDAQ`, …). */
+  exchange?: string | null;
   price: number | null;
   change1D: number | null;
   change1M: number | null;

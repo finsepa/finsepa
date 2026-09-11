@@ -229,102 +229,127 @@ function positiveUsd(n: unknown): number | null {
   return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : null;
 }
 
-async function loadStockPageHotFields(
-  ticker: string,
-  range: StockChartRange,
-  sortedDailyFallback: EodhdDailyBar[],
-  now: Date,
-): Promise<
-  Pick<
-    StockPageInitialData,
-    "chart" | "headerLiveSpotUsd" | "headerPriorCloseUsd" | "liveRegularSessionActive"
-  >
-> {
-  const [chartPointsResult, spotResult] = await Promise.allSettled([
-    getStockChartPointsForApi(ticker, range, "price"),
-    getStockSpotQuoteForApi(ticker),
-  ]);
-  const chartPointsRaw = fromSettled(chartPointsResult, "chart1D");
-  const spotQuote = fromSettled(spotResult, "headerLiveSpot");
-
-  const points = resolveOverviewChartPoints(range, chartPointsRaw, sortedDailyFallback, now);
-
-  const liveSessionMinute = range === "1D" && isStock1DLiveSessionMinuteChart(ticker, now);
-  const liveRegularSessionActive =
-    usesStock1DLiveWsMinutePipeline(ticker, now) || getUsEquityMarketSession(now) === "regular";
-
-  return {
-    chart: { range, points, liveSessionMinute },
-    headerLiveSpotUsd: positiveUsd(spotQuote?.price),
-    headerPriorCloseUsd: positiveUsd(spotQuote?.previousClose),
-    liveRegularSessionActive,
-  };
-}
-
 /**
  * One EOD daily fetch (same lookback as chart `ALL` / performance) powers overview chart + mini-table together.
  * Header + key-stats share one fundamentals fetch inside their respective loaders (bundle pulls once and passes root to sections).
+ *
+ * Slim SSR (roadmap B): cold miss returns above-fold as soon as header/bars/chart/spot settle;
+ * fat arms (news, profile, fundamentals, key stats, peers, KI) keep running and are awaited only
+ * for snapshot persist so warm hits still paint the full overview.
  */
-/** Full SSR fan-out (no Supabase asset snapshot). Used by traffic probes. */
-export async function loadStockPageInitialDataUncached(routeTicker: string): Promise<StockPageInitialData | null> {
-  const ticker = routeTicker.trim().toUpperCase();
-  if (!ticker) return null;
 
-  const now = new Date();
+type StockPageRebuildHandle = {
+  /** Header + price + chart + performance (+ empty fat shells). */
+  aboveFold: Promise<StockPageInitialData>;
+  /** Full page including deferred fat sections. */
+  full: Promise<StockPageInitialData>;
+};
+
+/** Page object → in-flight full rebuild (for cold-miss persist without poisoning snaps). */
+const coldMissFullByPage = new WeakMap<StockPageInitialData, Promise<StockPageInitialData>>();
+
+function loadNvdaFixturePage(ticker: string, range: StockChartRange): StockPageInitialData {
+  const nvda1d = getNvdaChartPoints("1D");
+  const nvdaLast = nvda1d.length ? nvda1d[nvda1d.length - 1]!.value : null;
+  const headerLiveSpotUsd =
+    typeof nvdaLast === "number" && Number.isFinite(nvdaLast) && nvdaLast > 0 ? nvdaLast : null;
+  return {
+    ticker,
+    isEtf: false,
+    headerMeta: getNvdaHeaderMeta(),
+    chart: { range, points: getNvdaChartPoints(range) },
+    performance: getNvdaPerformance(),
+    keyStatsBundle: getNvdaKeyStatsBundle(),
+    keyIndicators: null,
+    news: getNvdaStockNews(),
+    profile: getNvdaProfile(),
+    fundamentalsSeriesAnnual: getNvdaChartingSeriesPoints("annual"),
+    fundamentalsSeriesQuarterly: getNvdaChartingSeriesPoints("quarterly"),
+    fundamentalsTtmPoint: null,
+    peersCompareRows: [],
+    headerLiveSpotUsd,
+    headerPriorCloseUsd: null,
+    liveRegularSessionActive: true,
+    earningsTabPayload: null,
+  };
+}
+
+function startStockPageRebuild(ticker: string, now: Date): StockPageRebuildHandle {
   const to = ymdUtc(now);
   const fromDate = new Date(now);
   fromDate.setUTCFullYear(fromDate.getUTCFullYear() - STOCK_CHART_ALL_LOOKBACK_YEARS);
   const from = ymdUtc(fromDate);
-
   const range: StockChartRange = DEFAULT_OVERVIEW_RANGE;
 
-  if (isSingleAssetMode()) {
-    if (!isSupportedAsset(ticker)) return null;
-    // Single-asset NVDA mode: avoid broad EODHD calls (serve one deterministic fixture).
-    const nvda1d = getNvdaChartPoints("1D");
-    const nvdaLast = nvda1d.length ? nvda1d[nvda1d.length - 1]!.value : null;
-    const headerLiveSpotUsd =
-      typeof nvdaLast === "number" && Number.isFinite(nvdaLast) && nvdaLast > 0 ? nvdaLast : null;
+  const barsPromise = loadPortfolioSymbolEodBars(ticker, from, to);
+  const sortedBarsPromise = barsPromise.then((barsRaw) =>
+    barsRaw.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [],
+  );
+  const performancePromise = sortedBarsPromise.then((sorted) =>
+    computeStockPerformanceFromSortedDailyBars(sorted, ticker, now),
+  );
+  const annualFromBars = sortedBarsPromise.then((sorted) =>
+    fetchChartingSeriesWithDailyBars(ticker, "annual", sorted, { secBackfill: false }),
+  );
+  const quarterlyFromBars = sortedBarsPromise.then((sorted) =>
+    fetchChartingSeriesWithDailyBars(ticker, "quarterly", sorted, { secBackfill: false }),
+  );
+
+  const headerMetaPromise = getStockDetailHeaderMetaForPage(ticker);
+  const chartPointsPromise = getStockChartPointsForApi(ticker, range, "price");
+  const spotPromise = getStockSpotQuoteForApi(ticker);
+  // SSR / cold rebuild: skip SEC press-release backfill (roadmap C). Client key-stats +
+  // fundamentals-series APIs still run the full path when the user opens those panels.
+  const keyStatsPromise = buildStockKeyStatsBundle(ticker, { secBackfill: false });
+  const keyIndicatorsPromise = loadKeyIndicatorsForPage(ticker, { stockPerformance: performancePromise });
+  const newsPromise = getStockNews(ticker);
+  const profilePromise = fetchEodhdStockProfile(ticker);
+  const peersPromise = getPeersCompareRowsCached(ticker);
+
+  const aboveFold = (async (): Promise<StockPageInitialData> => {
+    const [headerMetaResult, barsResult, chartPointsResult, spotResult] = await Promise.allSettled([
+      headerMetaPromise,
+      barsPromise,
+      chartPointsPromise,
+      spotPromise,
+    ]);
+
+    const headerMeta = fromSettled(headerMetaResult, "headerMeta") ?? headerMetaShell(ticker);
+    const barsRaw = fromSettled(barsResult, "eodDaily") ?? [];
+    const chartPointsRaw = fromSettled(chartPointsResult, "chart1D");
+    const spotQuote = fromSettled(spotResult, "headerLiveSpot");
+    const sorted = barsRaw.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
+    const performance = await performancePromise;
+    const points = resolveOverviewChartPoints(range, chartPointsRaw, sorted, now);
+    const liveRegularSessionActive =
+      usesStock1DLiveWsMinutePipeline(ticker, now) || getUsEquityMarketSession(now) === "regular";
+    const liveSessionMinute =
+      range === "1D" ? isStock1DLiveSessionMinuteChart(ticker, now) : false;
+
     return {
       ticker,
-      isEtf: false,
-      headerMeta: getNvdaHeaderMeta(),
-      chart: { range, points: getNvdaChartPoints(range) },
-      performance: getNvdaPerformance(),
-      keyStatsBundle: getNvdaKeyStatsBundle(),
+      isEtf: isStockDetailEtf(ticker, headerMeta),
+      headerMeta,
+      chart: { range, points, liveSessionMinute },
+      performance,
+      keyStatsBundle: { ...EMPTY_KEY_STATS },
       keyIndicators: null,
-      news: getNvdaStockNews(),
-      profile: getNvdaProfile(),
-      fundamentalsSeriesAnnual: getNvdaChartingSeriesPoints("annual"),
-      fundamentalsSeriesQuarterly: getNvdaChartingSeriesPoints("quarterly"),
+      news: [],
+      profile: null,
+      fundamentalsSeriesAnnual: [],
+      fundamentalsSeriesQuarterly: [],
       fundamentalsTtmPoint: null,
       peersCompareRows: [],
-      headerLiveSpotUsd,
-      headerPriorCloseUsd: null,
-      liveRegularSessionActive: true,
+      headerLiveSpotUsd: positiveUsd(spotQuote?.price),
+      headerPriorCloseUsd: positiveUsd(spotQuote?.previousClose),
+      liveRegularSessionActive,
       earningsTabPayload: null,
     };
-  }
+  })();
 
-  try {
-    const barsPromise = loadPortfolioSymbolEodBars(ticker, from, to);
-    const sortedBarsPromise = barsPromise.then((barsRaw) =>
-      barsRaw.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [],
-    );
-    const performancePromise = sortedBarsPromise.then((sorted) =>
-      computeStockPerformanceFromSortedDailyBars(sorted, ticker, now),
-    );
-    const annualFromBars = sortedBarsPromise.then((sorted) =>
-      fetchChartingSeriesWithDailyBars(ticker, "annual", sorted),
-    );
-    const quarterlyFromBars = sortedBarsPromise.then((sorted) =>
-      fetchChartingSeriesWithDailyBars(ticker, "quarterly", sorted),
-    );
-
+  const full = (async (): Promise<StockPageInitialData> => {
+    const base = await aboveFold;
     const [
-      headerMetaResult,
-      barsResult,
-      chartPointsResult,
       keyStatsResult,
       keyIndicatorsResult,
       newsResult,
@@ -332,24 +357,16 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       annualResult,
       quarterlyResult,
       peersResult,
-      spotResult,
     ] = await Promise.allSettled([
-      getStockDetailHeaderMetaForPage(ticker),
-      barsPromise,
-      getStockChartPointsForApi(ticker, range, "price"),
-      buildStockKeyStatsBundle(ticker),
-      loadKeyIndicatorsForPage(ticker, { stockPerformance: performancePromise }),
-      getStockNews(ticker),
-      fetchEodhdStockProfile(ticker),
+      keyStatsPromise,
+      keyIndicatorsPromise,
+      newsPromise,
+      profilePromise,
       annualFromBars,
       quarterlyFromBars,
-      getPeersCompareRowsCached(ticker),
-      getStockSpotQuoteForApi(ticker),
+      peersPromise,
     ]);
 
-    const headerMeta = fromSettled(headerMetaResult, "headerMeta") ?? headerMetaShell(ticker);
-    const barsRaw = fromSettled(barsResult, "eodDaily") ?? [];
-    const chartPointsRaw = fromSettled(chartPointsResult, "chart1D");
     const keyStatsBundle = fromSettled(keyStatsResult, "keyStats") ?? { ...EMPTY_KEY_STATS };
     const keyIndicators = fromSettled(keyIndicatorsResult, "keyIndicators");
     const news = fromSettled(newsResult, "news");
@@ -357,26 +374,9 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
     const annualSeries = fromSettled(annualResult, "fundamentalsAnnual");
     const quarterlySeries = fromSettled(quarterlyResult, "fundamentalsQuarterly");
     const peersCompareRows = fromSettled(peersResult, "peers");
-    const spotQuote = fromSettled(spotResult, "headerLiveSpot");
-    const liveRegularSessionActive =
-      usesStock1DLiveWsMinutePipeline(ticker, now) || getUsEquityMarketSession(now) === "regular";
-    const liveSessionMinute =
-      range === "1D" ? isStock1DLiveSessionMinuteChart(ticker, now) : false;
-
-    const sorted = barsRaw.length ? [...barsRaw].sort((a, b) => a.date.localeCompare(b.date)) : [];
-    const performance = await performancePromise;
-    const points = resolveOverviewChartPoints(range, chartPointsRaw, sorted, now);
 
     return {
-      ticker,
-      isEtf: isStockDetailEtf(ticker, headerMeta),
-      headerMeta,
-      chart: {
-        range,
-        points,
-        liveSessionMinute,
-      },
-      performance,
+      ...base,
       keyStatsBundle,
       keyIndicators,
       news: Array.isArray(news) ? news : [],
@@ -385,14 +385,71 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
       fundamentalsSeriesQuarterly: quarterlySeries?.points ?? [],
       fundamentalsTtmPoint: annualSeries?.ttmPoint ?? null,
       peersCompareRows: Array.isArray(peersCompareRows) ? peersCompareRows : [],
-      headerLiveSpotUsd: positiveUsd(spotQuote?.price),
-      headerPriorCloseUsd: positiveUsd(spotQuote?.previousClose),
-      liveRegularSessionActive,
-      earningsTabPayload: null,
     };
+  })();
+
+  return { aboveFold, full };
+}
+
+/** Full SSR fan-out (no Supabase asset snapshot). Used by traffic probes. */
+export async function loadStockPageInitialDataUncached(routeTicker: string): Promise<StockPageInitialData | null> {
+  const ticker = routeTicker.trim().toUpperCase();
+  if (!ticker) return null;
+
+  const now = new Date();
+  const range: StockChartRange = DEFAULT_OVERVIEW_RANGE;
+
+  if (isSingleAssetMode()) {
+    if (!isSupportedAsset(ticker)) return null;
+    return loadNvdaFixturePage(ticker, range);
+  }
+
+  try {
+    return await startStockPageRebuild(ticker, now).full;
   } catch (err) {
     console.error("[loadStockPageInitialData] unexpected failure; serving fallback shell", { ticker, err });
     return fallbackStockPageInitialData(ticker, now);
+  }
+}
+
+/**
+ * Cold miss: return above-fold ASAP; keep fat arms running for snapshot persist.
+ * Associates `forPersist` with the returned page via WeakMap for the single-flight leader.
+ */
+async function loadStockPageColdMissAboveFold(routeTicker: string): Promise<StockPageInitialData | null> {
+  const ticker = routeTicker.trim().toUpperCase();
+  if (!ticker) return null;
+
+  const now = new Date();
+  if (isSingleAssetMode()) {
+    if (!isSupportedAsset(ticker)) return null;
+    return loadNvdaFixturePage(ticker, DEFAULT_OVERVIEW_RANGE);
+  }
+
+  try {
+    const handle = startStockPageRebuild(ticker, now);
+    const page = await handle.aboveFold;
+    coldMissFullByPage.set(page, handle.full);
+    return page;
+  } catch (err) {
+    console.error("[loadStockPageInitialData] cold slim failure; serving fallback shell", { ticker, err });
+    return fallbackStockPageInitialData(ticker, now);
+  }
+}
+
+async function resolveStockPageForPersist(page: StockPageInitialData): Promise<StockPageInitialData> {
+  const full = coldMissFullByPage.get(page);
+  if (!full) return page;
+  try {
+    return await full;
+  } catch (err) {
+    console.warn("[loadStockPageInitialData] fat persist enrich failed; writing slim shell", {
+      ticker: page.ticker,
+      err,
+    });
+    return page;
+  } finally {
+    coldMissFullByPage.delete(page);
   }
 }
 
@@ -401,6 +458,9 @@ export async function loadStockPageInitialDataUncached(routeTicker: string): Pro
  * Miss → distributed single-flight rebuild (one uncached load per ticker/segment); hit →
  * return snapshot immediately (live + frozen). Client refreshes 1D chart, live spot, and
  * Key Indicators — avoids stalling soft-nav on EODHD hot fields.
+ *
+ * Cold miss (slim SSR): HTML returns above-fold first; fat sections finish in the background
+ * and are written into the snapshot so the next warm hit still paints news/stats/etc.
  */
 export async function loadStockPageInitialData(routeTicker: string): Promise<StockPageInitialData | null> {
   const ticker = routeTicker.trim().toUpperCase();
@@ -420,7 +480,7 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
     // Live and frozen: paint from snapshot immediately.
     // Live snapshots store empty 1D points + null spot/KI by design (`stripAssetSnapshotHotFields`);
     // StockPageContent + PriceChart + KeyIndicators refresh those via existing APIs (cached / single-flight).
-    // Do not await loadStockPageHotFields / Key Indicators here — that stalled screener → asset soft-nav.
+    // Do not await hot chart/spot/KI here — that stalled screener → asset soft-nav.
     if (!cachedHit.exactSegment) {
       scheduleAssetSnapshotWrite(ticker, epoch.segment, base, epoch.mode);
     }
@@ -440,8 +500,11 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
     release: (ownerId) => releaseAssetRebuildLease(snapKey, epoch.segment, ownerId),
     markFailed: (ownerId) => failAssetRebuildLease(snapKey, epoch.segment, ownerId),
     newOwnerId: newAssetRebuildLeaseOwner,
-    loadUncached: () => loadStockPageInitialDataUncached(ticker),
-    persistSnapshot: (page) => persistAssetSnapshotAwaited(ticker, epoch.segment, page, epoch.mode),
+    loadUncached: () => loadStockPageColdMissAboveFold(ticker),
+    persistSnapshot: async (page) => {
+      const full = await resolveStockPageForPersist(page);
+      return persistAssetSnapshotAwaited(ticker, epoch.segment, full, epoch.mode);
+    },
     readSnapshot: () => readAssetSnapshotForPage(ticker, epoch.segment, { allowStale: true }),
     pageFromSnapshot: async (hit) => {
       // Waiter / coalesced path — no EODHD hot refresh.

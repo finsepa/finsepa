@@ -162,6 +162,14 @@ export function CryptoTable({
                     <IntentPrefetchLink
                       href={`/crypto/${encodeURIComponent(r.symbol)}`}
                       prefetch={false}
+                      pendingAsset={{
+                        kind: "crypto",
+                        symbol: r.symbol,
+                        name: r.name,
+                        price: r.price,
+                        changePct: r.changePercent1D,
+                        logoUrl: r.logoUrl,
+                      }}
                       className={cn(
                         rowLinkGrid,
                         "min-h-[56px] w-full cursor-pointer items-center justify-items-stretch no-underline text-fg visited:text-fg sm:min-h-[60px]",

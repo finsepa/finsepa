@@ -16,6 +16,7 @@ import {
   type IndexChartRange,
   type IndexPageInitialData,
 } from "@/lib/market/index-page-shared";
+import { clearPendingAssetShellIfMatch } from "@/lib/navigation/pending-asset-shell";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
 
 const EMPTY_CHART_DISPLAY: ChartDisplayState = {
@@ -43,6 +44,10 @@ function IndexPageContentInner({
   const symKey = routeSymbol.trim().toUpperCase();
   const serverMatch =
     initialData != null && initialData.routeSymbol.trim().toUpperCase() === symKey ? initialData : null;
+
+  useEffect(() => {
+    if (serverMatch) clearPendingAssetShellIfMatch("index", symKey);
+  }, [serverMatch, symKey]);
 
   const [range, setRange] = useState<IndexChartRange>(() => "1D");
   const [chartSeries, setChartSeries] = useState<StockChartSeries>("price");

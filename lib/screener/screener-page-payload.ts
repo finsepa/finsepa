@@ -131,6 +131,7 @@ export async function buildStockScreenerTablePages(
         changeYTD: pickScreenerPct(u?.refundYtdP, bar?.changePercentYTD),
         marketCap: formatUsdCompact(mcapUsd),
         pe: peByTop10Ticker.get(ticker) ?? "—",
+        exchange: u?.exchange ?? null,
         trend: [] as ScreenerTableRow["trend"],
       } satisfies Omit<ScreenerTableRow, "id">,
     };

@@ -22,6 +22,7 @@ import {
 } from "@/lib/notifications/earnings-release-snapshot-store";
 import { enrichEarningsReleaseNotifications } from "@/lib/notifications/earnings-release-enrich";
 import { insertEarningsReleaseNotifications } from "@/lib/notifications/user-notifications-store";
+import { scheduleEarningsTabWarmAfterRelease } from "@/lib/market/earnings-tab-release-warm";
 
 /**
  * Detect new earnings actuals for watchlist + holdings tickers via batched EODHD calendar/earnings.
@@ -103,6 +104,11 @@ export async function ingestEarningsReleaseNotifications(): Promise<EarningsNoti
     const notificationsCreated = await insertEarningsReleaseNotifications(admin, interest, enrichedReleases);
 
     await upsertEarningsReleaseSnapshots(admin, recentReportedRows);
+
+    // Bounded: only newly detected releases — warm docs/fundamentals once (not per visitor).
+    for (const release of releases) {
+      scheduleEarningsTabWarmAfterRelease(release.row.ticker);
+    }
 
     return {
       skipped: false,

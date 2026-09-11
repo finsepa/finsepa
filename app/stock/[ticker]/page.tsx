@@ -1,11 +1,11 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
-import { loadStockPageInitialData } from "@/lib/market/stock-page-initial-data";
-import { fetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-data";
-import { StockPageClient } from "./stock-page-client";
+import { StockPageSkeleton } from "@/components/stock/stock-page-skeleton";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { parseStockDetailTabQuery, type StockDetailTabId } from "@/lib/stock/stock-detail-tab";
-import { normalizeStockDetailTab } from "@/lib/stock/stock-etf";
+
+import { StockPageData } from "./stock-page-data";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +30,11 @@ function chartingMetricFromSearchParams(
   return trimmed.length > 0 ? trimmed : null;
 }
 
+/**
+ * Stream shell first (route `loading.tsx` + Suspense fallback share StockPageSkeleton /
+ * pending soft-nav). Slim SSR runs in {@link StockPageData}; nested Suspense streams
+ * overview below-fold after header/chart.
+ */
 export default async function StockTickerPage({ params, searchParams }: PageProps) {
   const { ticker: tickerParam } = await params;
   if (typeof tickerParam !== "string" || !tickerParam.trim()) {
@@ -53,28 +58,13 @@ export default async function StockTickerPage({ params, searchParams }: PageProp
     );
   }
 
-  const [initialPageData, earningsTabPayload] = await Promise.all([
-    loadStockPageInitialData(routeTicker),
-    // Preview seed for fast first paint — client upgrades to full (SEC/IR docs + BMO/AMC) after.
-    tabFromUrl === "earnings"
-      ? fetchStockEarningsTabPayload(routeTicker, { preview: true })
-      : Promise.resolve(null),
-  ]);
-  if (!initialPageData) {
-    notFound();
-  }
-  if (earningsTabPayload) {
-    initialPageData.earningsTabPayload = earningsTabPayload;
-  }
-
-  const initialActiveTab = normalizeStockDetailTab(tabFromUrl, initialPageData.isEtf);
-
   return (
-    <StockPageClient
-      routeTicker={routeTicker}
-      initialPageData={initialPageData}
-      initialActiveTab={initialActiveTab}
-      initialChartingMetric={chartingMetricFromSearchParams(sp)}
-    />
+    <Suspense fallback={<StockPageSkeleton />}>
+      <StockPageData
+        routeTicker={routeTicker}
+        tabFromUrl={tabFromUrl}
+        initialChartingMetric={chartingMetricFromSearchParams(sp)}
+      />
+    </Suspense>
   );
 }

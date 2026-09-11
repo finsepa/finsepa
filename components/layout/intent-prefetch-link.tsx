@@ -4,7 +4,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ComponentProps } from "react";
 
-type Props = ComponentProps<typeof Link>;
+import {
+  setPendingAssetShell,
+  type PendingAssetShellSeed,
+} from "@/lib/navigation/pending-asset-shell";
+
+type Props = ComponentProps<typeof Link> & {
+  /**
+   * Soft-nav optimistic shell: seed ticker/name/price before navigation so
+   * `loading.tsx` can paint a real header instead of anonymous skeletons.
+   */
+  pendingAsset?: PendingAssetShellSeed | null;
+};
 
 /**
  * Soft navigation helper: keep `prefetch={false}` so the screener doesn’t
@@ -15,6 +26,8 @@ export function IntentPrefetchLink({
   href,
   onPointerEnter,
   onFocus,
+  onClick,
+  pendingAsset,
   prefetch = false,
   ...rest
 }: Props) {
@@ -33,6 +46,12 @@ export function IntentPrefetchLink({
       onFocus={(e) => {
         if (hrefStr) router.prefetch(hrefStr);
         onFocus?.(e);
+      }}
+      onClick={(e) => {
+        if (pendingAsset && hrefStr) {
+          setPendingAssetShell({ ...pendingAsset, href: hrefStr });
+        }
+        onClick?.(e);
       }}
     />
   );

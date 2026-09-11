@@ -142,6 +142,13 @@ export function EtfsTable({
                     <IntentPrefetchLink
                       href={`/stock/${encodeURIComponent(wlKey)}`}
                       prefetch={false}
+                      pendingAsset={{
+                        kind: "stock",
+                        symbol: wlKey,
+                        name: r.name,
+                        price: r.value,
+                        changePct: r.change1D,
+                      }}
                       className={cn(
                         rowLinkGrid,
                         "min-h-[56px] w-full cursor-pointer items-center justify-items-stretch no-underline text-fg visited:text-fg sm:min-h-[60px]",

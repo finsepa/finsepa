@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, type ReadonlyURLSearchParams } from "next/navigation";
@@ -17,6 +17,7 @@ import { prefetchStockInsiderTransactions } from "@/lib/market/stock-insiders-ta
 import { prefetchStockTargetPricePayload } from "@/lib/market/stock-target-price-client";
 import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { coerceStockDetailTabForEtf, isStockDetailEtf, normalizeStockDetailTab } from "@/lib/stock/stock-etf";
+import { clearPendingAssetShellIfMatch } from "@/lib/navigation/pending-asset-shell";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
 import { StockDetailTabNav } from "./stock-detail-tab-nav";
 import { useRegisterStockDetailTabHost } from "./stock-detail-tab-host-context";
@@ -33,8 +34,8 @@ import { ChartControls } from "./chart-controls";
 import { MiniTable } from "./mini-table";
 import { StockComparePicker } from "./stock-compare-picker";
 import { StockCompareReturnChart } from "./stock-compare-return-chart";
-import { KeyIndicators } from "./key-indicators";
-import { KeyStats } from "./key-stats";
+import { StockOverviewMetricActionsProvider } from "./stock-overview-below-fold";
+import { StockOverviewBelowFoldSkeleton } from "./stock-overview-below-fold-skeleton";
 import { KeyStatsMetricChartModal } from "./key-stats-metric-chart-modal";
 import { StockDrawdownChartModal } from "./stock-drawdown-chart-modal";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
@@ -46,7 +47,6 @@ import {
   revalidateChartingFundamentalsSeriesCached,
   seedChartingFundamentalsSeriesCache,
 } from "@/lib/charting/charting-fundamentals-client-cache";
-import { LatestNews } from "./latest-news";
 import type { StockPageInitialData } from "@/lib/market/stock-page-initial-data";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours-header-types";
@@ -220,6 +220,8 @@ export function StockPageContent({
   initialPageData,
   initialActiveTab = "overview",
   initialChartingMetric = null,
+  overviewBelowFold = null,
+  earningsPanel = null,
 }: {
   routeTicker?: string;
   initialPageData?: StockPageInitialData | null;
@@ -227,6 +229,10 @@ export function StockPageContent({
   initialActiveTab?: StockDetailTabId;
   /** From server `searchParams.metric` — avoids hydration drift on Charting deep links. */
   initialChartingMetric?: string | null;
+  /** Server-streamed KI / key stats / news (nested Suspense). */
+  overviewBelowFold?: ReactNode;
+  /** Deep-link earnings: streamed preview via nested Suspense (null on overview / client tab switch). */
+  earningsPanel?: ReactNode;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -244,6 +250,10 @@ export function StockPageContent({
   comparePicksRef.current = comparePicks;
   const ticker = (routeTicker?.trim() ? routeTicker.trim() : "AAPL").toUpperCase();
   const pageDataReady = initialPageData?.ticker === ticker;
+
+  useEffect(() => {
+    if (pageDataReady) clearPendingAssetShellIfMatch("stock", ticker);
+  }, [pageDataReady, ticker]);
 
   /** URL tab from the client router — applied after mount so the first paint matches SSR (`initialActiveTab`). */
   const [searchSyncedTab, setSearchSyncedTab] = useState<StockDetailTabId | null>(null);
@@ -1385,28 +1395,15 @@ export function StockPageContent({
               onRemoveCompare={onRemoveComparePick}
             />
           ) : null}
-          {!isEtf ? (
-            <div>
-              <KeyIndicators
-                ticker={ticker}
-                initial={initialPageData?.ticker === ticker ? initialPageData.keyIndicators : null}
-              />
-              <KeyStats
-                ticker={ticker}
-                initialBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}
-                onOpenMetricChart={openRevenueProfitMetricModal}
-                onOpenDrawdownChart={openDrawdownChart}
-              />
-            </div>
-          ) : null}
-          {!isEtf ? (
-            <div>
-              <LatestNews
-                ticker={ticker}
-                initialItems={initialPageData?.ticker === ticker ? initialPageData.news : undefined}
-              />
-            </div>
-          ) : null}
+          <StockOverviewMetricActionsProvider
+            value={{
+              onOpenMetricChart: openRevenueProfitMetricModal,
+              onOpenDrawdownChart: openDrawdownChart,
+            }}
+          >
+            {overviewBelowFold ??
+              (isEtf ? null : <StockOverviewBelowFoldSkeleton isEtf={false} />)}
+          </StockOverviewMetricActionsProvider>
         </div>
       ) : null}
 
@@ -1436,12 +1433,16 @@ export function StockPageContent({
           aria-hidden={displayTab !== "earnings"}
           className={displayTab === "earnings" ? "block" : "hidden"}
         >
-          <StockEarningsTab
-            ticker={ticker}
-            initialPayload={
-              initialPageData?.ticker === ticker ? (initialPageData.earningsTabPayload ?? null) : null
-            }
-          />
+          {earningsPanel ?? (
+            <StockEarningsTab
+              ticker={ticker}
+              initialPayload={
+                initialPageData?.ticker === ticker
+                  ? (initialPageData.earningsTabPayload ?? null)
+                  : null
+              }
+            />
+          )}
         </div>
       ) : null}
 

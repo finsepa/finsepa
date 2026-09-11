@@ -7,6 +7,7 @@ import { Search } from "@/lib/icons";
 import { fetchSearchItems } from "@/lib/search/fetch-search-items";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { useSearchRecentStorage } from "@/lib/search/use-search-recent-storage";
+import { seedPendingAssetShellFromSearchItem } from "@/lib/navigation/seed-pending-asset-shell-from-search";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { AppModalShell, APP_MODAL_RULE_CLASS } from "@/components/ui/app-modal-shell";
 import { SearchPanelResults } from "@/components/search/search-panel-results";
@@ -111,6 +112,7 @@ export function SearchModal({
         onClose();
         return;
       }
+      seedPendingAssetShellFromSearchItem(item);
       router.push(item.route);
       onClose();
     },

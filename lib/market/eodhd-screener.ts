@@ -34,6 +34,8 @@ export type EodhdScreenerRow = {
 export type EodhdTopUniverseRow = {
   ticker: string;
   name: string;
+  /** Listing venue from screener when provided (`NYSE`, `NASDAQ`, …). */
+  exchange: string | null;
   /** GICS-style sector from EODHD screener row, when provided. */
   sector: string | null;
   /** EODHD screener industry (sub-sector), when provided. */
@@ -174,9 +176,11 @@ async function fetchEodhdScreenerUncached(args: {
       const sector = typeof r.sector === "string" && r.sector.trim() ? r.sector.trim() : null;
       const industry = typeof r.industry === "string" && r.industry.trim() ? r.industry.trim() : null;
       if (isLikelyEtfScreenerInstrument(name || ticker, sector, industry, rr)) continue;
+      const exchangeRaw = typeof r.exchange === "string" ? r.exchange.trim().toUpperCase() : "";
       out.push({
         ticker,
         name: name || ticker,
+        exchange: exchangeRaw && exchangeRaw !== "US" ? exchangeRaw : null,
         sector,
         industry,
         marketCapUsd: mc,
@@ -195,7 +199,7 @@ async function fetchEodhdScreenerUncached(args: {
   }
 }
 
-const fetchEodhdScreenerCached = unstable_cache(fetchEodhdScreenerUncached, ["eodhd-screener-v9-industry-field"], {
+const fetchEodhdScreenerCached = unstable_cache(fetchEodhdScreenerUncached, ["eodhd-screener-v10-exchange-field"], {
   revalidate: REVALIDATE_STATIC,
 });
 
@@ -305,9 +309,11 @@ function parseEodhdScreenerRowToUniverseRow(raw: unknown): EodhdTopUniverseRow |
   if (mc == null || mc <= 0) return null;
   const sector = typeof r.sector === "string" && r.sector.trim() ? r.sector.trim() : null;
   const industry = typeof r.industry === "string" && r.industry.trim() ? r.industry.trim() : null;
+  const exchangeRaw = typeof r.exchange === "string" ? r.exchange.trim().toUpperCase() : "";
   return {
     ticker,
     name: name || ticker,
+    exchange: exchangeRaw && exchangeRaw !== "US" ? exchangeRaw : null,
     sector,
     industry,
     marketCapUsd: mc,

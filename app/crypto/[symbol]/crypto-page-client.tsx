@@ -14,7 +14,8 @@ export function CryptoPageClient({
   initialActiveTab: CryptoDetailTabId;
 }) {
   // `useSearchParams` is isolated in SearchParamsBridge so soft-nav does not
-  // blank the page behind Suspense fallback={null}.
+  // blank the page behind Suspense fallback={null}. Route `loading.tsx` and the
+  // page-level Suspense share `StockPageSkeleton` while slim SSR streams.
   return (
     <CryptoPageContent
       key={routeSymbol}

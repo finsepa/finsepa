@@ -99,11 +99,22 @@ export function indicesTableRowsFromSimpleLayers(
   return SCREENER_INDICES_10.map(({ name, symbol }) => {
     const q = data.indices[symbol];
     const d = derived[symbol];
+    // Live quotes can be missing (partial realtime / frozen gaps) while 1M/YTD still
+    // exist on derived — fall back to last EOD closes like crypto rows.
+    const fb = sparkFallbackPriceAnd1d(d);
+    const livePx = positiveSpotOrNull(q?.price);
+    const value = livePx ?? positiveSpotOrNull(fb.price) ?? Number.NaN;
+    const change1D =
+      livePx != null && q?.changePercent1D != null && Number.isFinite(q.changePercent1D)
+        ? q.changePercent1D
+        : fb.change1d != null && Number.isFinite(fb.change1d)
+          ? fb.change1d
+          : Number.NaN;
     return {
       name,
       symbol,
-      value: q?.price ?? Number.NaN,
-      change1D: q?.changePercent1D ?? Number.NaN,
+      value,
+      change1D,
       change1M: d?.changePercent1M ?? null,
       changeYTD: d?.changePercentYTD ?? null,
     };

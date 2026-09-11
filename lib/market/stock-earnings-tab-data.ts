@@ -2,7 +2,8 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
+import { REVALIDATE_STATIC, REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
+import { decorateStockEarningsTabPayloadWithReleaseState } from "@/lib/market/earnings-release-snapshot-overlay";
 import {
   extractMarketCapUsdFromFundamentalsRoot,
   fetchEodhdFundamentalsJson,
@@ -1928,9 +1929,10 @@ export type StockEarningsTabFetchMode = "full" | "preview" | "ir_only";
  * Earnings tab: `Earnings.History` from fundamentals plus optional calendar timing (BMO/AMC).
  * Cached per ticker so the first viewer pays EODHD/SEC cost and others reuse the payload.
  *
- * `preview` skips SEC index crawls, IR seed HTTP, and earnings-calendar timing — used by the
- * earnings calendar modal for a fast first paint. Documents come from DB cache + curated URLs only;
- * full SEC/IR resolution still runs on the stock earnings tab (`full` mode).
+ * `preview` skips SEC index crawls, IR seed HTTP, earnings-calendar timing, and post-report
+ * 1D returns — used for a fast first paint (calendar modal + streamed `?tab=earnings` seed).
+ * Documents come from DB cache + curated URLs only; full SEC/IR + 1D returns still run on
+ * the stock earnings tab (`full` mode).
  *
  * `ir_only` runs IR seed first, then SEC exhibit gap-fill for vault backfill
  * (Tesla / TSMC / UNH class: 8-K EX-99 HTML or PDF when IR has only one slot).
@@ -2198,7 +2200,8 @@ async function fetchStockEarningsTabPayloadUncached(
     } else if (upcoming) {
       upcoming = resolveUpcomingFromEstimates(upcoming, historyParsed, []);
     }
-    historyParsed = irOnly
+    // Preview skips post-report 1D returns (extra EOD) — full fetch fills them in.
+    historyParsed = irOnly || preview
       ? historyParsed
       : await attachPostReportOneDayReturns(ticker, historyParsed);
     if (calendarTiming && upcoming?.reportDateYmd) {
@@ -2239,7 +2242,7 @@ async function fetchStockEarningsTabPayloadUncached(
   } else if (upcoming) {
     upcoming = resolveUpcomingFromEstimates(upcoming, historyParsed, []);
   }
-  historyParsed = irOnly
+  historyParsed = irOnly || preview
     ? historyParsed
     : await attachPostReportOneDayReturns(ticker, historyParsed);
   if (!preview && !irOnly && upcoming?.reportDateYmd) {
@@ -2257,9 +2260,21 @@ async function fetchStockEarningsTabPayloadUncached(
   return { ticker, upcoming, history: historyParsed, estimatesChart, documentHub, lastPrice };
 }
 
-const fetchStockEarningsTabPayloadCached = unstable_cache(
-  fetchStockEarningsTabPayloadUncached,
-  ["stock-earnings-tab-payload-v69-sec-reports-high"],
+/**
+ * Preview = history + chart shell (no SEC/IR crawl). Shared across users; long TTL
+ * because reported rows are stable between releases. Upcoming/forward estimates still
+ * refresh via the shorter full cache + client soft-refresh.
+ */
+const fetchStockEarningsTabPreviewCached = unstable_cache(
+  (ticker: string) => fetchStockEarningsTabPayloadUncached(ticker, "preview"),
+  ["stock-earnings-tab-preview-v70-history-sticky"],
+  { revalidate: REVALIDATE_STATIC },
+);
+
+/** Full = docs + calendar timing + 1D returns; warmer so IR/SEC fill-in and estimates rotate. */
+const fetchStockEarningsTabFullCached = unstable_cache(
+  (ticker: string) => fetchStockEarningsTabPayloadUncached(ticker, "full"),
+  ["stock-earnings-tab-full-v70-sec-reports-high"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 
@@ -2268,8 +2283,11 @@ export async function fetchStockEarningsTabPayload(
   options?: { preview?: boolean },
 ): Promise<StockEarningsTabPayload | null> {
   const ticker = listingTicker.trim().toUpperCase();
-  const mode: StockEarningsTabFetchMode = options?.preview ? "preview" : "full";
-  return fetchStockEarningsTabPayloadCached(ticker, mode);
+  const cached = options?.preview
+    ? await fetchStockEarningsTabPreviewCached(ticker)
+    : await fetchStockEarningsTabFullCached(ticker);
+  // Sticky Next cache can lag calendar actuals; overlay from push-cron snapshots (Supabase only).
+  return decorateStockEarningsTabPayloadWithReleaseState(cached);
 }
 
 /** Phase-1 IR vault backfill — IR seed only, no SEC, bypasses Next cache. */

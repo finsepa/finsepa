@@ -146,6 +146,7 @@ export function buildScreenerCompanyRowFromUniverse(
     name: u.name,
     ticker: u.ticker,
     logoUrl,
+    exchange: u.exchange?.trim() || null,
     price,
     change1D,
     change1M,

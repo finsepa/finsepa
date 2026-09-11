@@ -27,7 +27,11 @@ import type {
 } from "@/lib/market/stock-earnings-types";
 import { reportedRowMissingEarningsDocuments } from "@/lib/market/earnings-document-url";
 import { buildReportsTableRows } from "@/lib/market/enrich-earnings-history-estimates";
-import { fetchStockEarningsTabPayloadClient, peekStockEarningsTabPayloadClient } from "@/lib/market/stock-earnings-tab-client";
+import {
+  fetchStockEarningsTabPayloadClient,
+  isStockEarningsTabPayloadFreshClient,
+  peekStockEarningsTabPayloadClient,
+} from "@/lib/market/stock-earnings-tab-client";
 import { StockEarningsTabLoading } from "@/components/stock/stock-earnings-tab-loading";
 import { EarningsCountdownBars } from "@/components/stock/earnings-countdown-bars";
 import {
@@ -83,12 +87,11 @@ function tableCell(v: string | null | undefined): string {
   return s || "-";
 }
 
-/** Month + day for the Date column (year omitted; year bands carry the year). */
+/** Report date for the Date column — keep year (e.g. `Jun 24, 2026`). */
 function reportDayLineFromDisplay(reportDateDisplay: string | null | undefined): string {
   const raw = reportDateDisplay != null && String(reportDateDisplay).trim() !== "" ? String(reportDateDisplay).trim() : "";
   if (!raw || raw === "-") return "-";
-  const noYear = raw.replace(/,\s*\d{4}\s*$/, "").replace(/\s+\d{4}\s*$/, "").trim();
-  return noYear || raw;
+  return raw;
 }
 
 const EARNINGS_MONTH_ABBREV = [
@@ -818,8 +821,12 @@ export function StockEarningsTabContent({
       (!previewMode ? peekStockEarningsTabPayloadClient(sym, true) : null);
     const fullCached = !previewMode ? peekStockEarningsTabPayloadClient(sym, false) : null;
     const canSkipFetch = previewMode
-      ? !!painted && !seedNeedsDocumentRefresh(painted)
-      : !!fullCached && !seedNeedsDocumentRefresh(fullCached);
+      ? !!painted &&
+        isStockEarningsTabPayloadFreshClient(sym, true) &&
+        !seedNeedsDocumentRefresh(painted)
+      : !!fullCached &&
+        isStockEarningsTabPayloadFreshClient(sym, false) &&
+        !seedNeedsDocumentRefresh(fullCached);
 
     if (painted) {
       setData(painted);
@@ -838,13 +845,31 @@ export function StockEarningsTabContent({
         setLoadError(false);
         setEarningsHistoryVisible(EARNINGS_HISTORY_PAGE_SIZE);
       }
+      // Cold tab open: paint preview first (no SEC/IR), then upgrade to full.
+      // Soft revisit: paint sticky history, force network so upcoming/forward rotate.
+      let stagedPaint = painted;
+      const softRefresh = !!painted;
+      if (!previewMode && !stagedPaint) {
+        const previewJson = await fetchStockEarningsTabPayloadClient(sym, {
+          preview: true,
+          signal: controller.signal,
+        });
+        if (cancelled) return;
+        if (previewJson) {
+          setData(previewJson);
+          setLoading(false);
+          setLoadError(false);
+          stagedPaint = previewJson;
+        }
+      }
       const json = await fetchStockEarningsTabPayloadClient(sym, {
         preview: previewMode,
         signal: controller.signal,
+        force: softRefresh,
       });
       if (cancelled) return;
       if (!json) {
-        if (!painted) {
+        if (!stagedPaint) {
           setData(null);
           setLoadError(true);
         }

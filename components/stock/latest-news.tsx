@@ -250,6 +250,8 @@ function LatestNewsInner({
 
   const seed = useMemo(() => {
     if (!Array.isArray(initialItems)) return null;
+    // Empty SSR array is a slim-shell miss, not "no news" — refetch on mount.
+    if (initialItems.length === 0) return null;
     if (isStock) return initialItems.slice(0, PAGE_SIZE);
     return initialItems;
   }, [initialItems, isStock]);

@@ -1,6 +1,5 @@
 "use client";
 
-import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
@@ -38,13 +37,18 @@ const ESTIMATE_BAR = "#D4D4D8";
 
 const MEET_COLOR = "#5C5D5F";
 
+/** CSS vars — same on SSR and client (avoid `resolveFsColor` theme/DOM mismatch). */
+const FS_UP = "var(--fs-up)";
+const FS_DOWN = "var(--fs-down)";
+const FS_ACCENT = "var(--fs-accent)";
+
 type EarningsOutcome = "beat" | "miss" | "met";
 
 function actualBarColor(outcome: EarningsOutcome | null): string {
-  if (outcome === "beat") return resolveFsColor("--fs-up");
-  if (outcome === "miss") return resolveFsColor("--fs-down");
+  if (outcome === "beat") return FS_UP;
+  if (outcome === "miss") return FS_DOWN;
   if (outcome === "met") return MEET_COLOR;
-  return resolveFsColor("--fs-accent");
+  return FS_ACCENT;
 }
 
 const BAR_WIDTH_QUARTERLY_PX = 11;
@@ -131,8 +135,7 @@ function EarningsBeatMissIndicator({
   const bottomPct = valueHeightPct(value, maxV) * enterProgress;
   if (bottomPct <= 0) return null;
 
-  const color =
-    outcome === "beat" ? resolveFsColor("--fs-up") : outcome === "miss" ? resolveFsColor("--fs-down") : MEET_COLOR;
+  const color = outcome === "beat" ? FS_UP : outcome === "miss" ? FS_DOWN : MEET_COLOR;
   const gapAboveBarPx = 4;
 
   return (
@@ -188,18 +191,23 @@ function EarningsPeriodBars({
 
   if (!showActual && !showEstimate) return null;
 
+  const groupWidthPx = pair ? pairBarWidthPx * 2 + BAR_GAP_PX : barWidthPx;
+
   return (
     <div
       className="relative z-10 flex h-full min-h-0 items-end justify-center"
-      style={{ gap: pair ? BAR_GAP_PX : 0, width: pair ? pairBarWidthPx * 2 + BAR_GAP_PX : barWidthPx }}
+      style={{
+        gap: pair ? `${BAR_GAP_PX}px` : "0px",
+        width: `${groupWidthPx}px`,
+      }}
     >
       {showEstimate ? (
         <div
           className="mt-auto shrink-0 overflow-hidden rounded-t-[4px] rounded-b-none"
           style={{
-            width: widthPx,
+            width: `${widthPx}px`,
             height: `${valueHeightPct(estimate, maxV) * enterProgress}%`,
-            minHeight: 2,
+            minHeight: "2px",
             backgroundColor: ESTIMATE_BAR,
           }}
           aria-hidden
@@ -209,9 +217,9 @@ function EarningsPeriodBars({
         <div
           className="mt-auto shrink-0 rounded-t-[4px] rounded-b-none"
           style={{
-            width: widthPx,
+            width: `${widthPx}px`,
             height: `${valueHeightPct(actual, maxV) * enterProgress}%`,
-            minHeight: 2,
+            minHeight: "2px",
             backgroundColor: actualBarColor(outcome),
           }}
           aria-hidden
@@ -424,11 +432,13 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
 
   const n = periods.length;
   const showChart = n > 0;
-  const shouldAnimateBars = showChart && !prefersReducedFundamentalsBarMotion();
-  const [barEnterElapsedMs, setBarEnterElapsedMs] = useState(() =>
-    prefersReducedFundamentalsBarMotion() ? Number.POSITIVE_INFINITY : 0,
-  );
-  const [barsEnterComplete, setBarsEnterComplete] = useState(() => prefersReducedFundamentalsBarMotion());
+  /**
+   * SSR + first client paint must match: never read `matchMedia` during render
+   * (`prefersReducedFundamentalsBarMotion` is window-only). Animation / reduced-motion
+   * jump-to-complete happens only in the effect below.
+   */
+  const [barEnterElapsedMs, setBarEnterElapsedMs] = useState(0);
+  const [barsEnterComplete, setBarsEnterComplete] = useState(false);
 
   useEffect(() => {
     if (!showChart || prefersReducedFundamentalsBarMotion()) {
@@ -457,8 +467,8 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
     <section className="w-full min-w-0 max-w-full overflow-x-clip overflow-y-visible">
       {showChart ? (
         <div className="w-full min-w-0">
-          <div className="relative flex w-full min-w-0 flex-col overflow-visible" style={{ height: CHART_HEIGHT_PX }}>
-            <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
+          <div className="relative flex w-full min-w-0 flex-col overflow-visible" style={{ height: `${CHART_HEIGHT_PX}px` }}>
+            <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: `${plotHeight}px` }}>
               <div ref={plotAreaRef} className="relative min-h-0 min-w-0 flex-1" onPointerLeave={clearHover}>
                 <div
                   className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
@@ -480,9 +490,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                 >
                 {periods.map((p, i) => {
                   const leftPct = periodCenterLeftPercent(i, n);
-                  const enterProgress = shouldAnimateBars
-                    ? fundamentalsBarEnterProgress(i, n, barEnterElapsedMs)
-                    : 1;
+                  const enterProgress = fundamentalsBarEnterProgress(i, n, barEnterElapsedMs);
                   const beatMiss =
                     !p.isForecast && p.estimate != null && p.actual != null
                       ? earningsBeatMiss(p.estimate, p.actual, metricConfig.axisKind)
@@ -518,7 +526,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     <div
                       key={p.key}
                       className="absolute bottom-0 z-0 flex h-full min-h-0 -translate-x-1/2 flex-col items-center justify-end"
-                      style={{ left: `${leftPct}%`, width: hitWidthPx }}
+                      style={{ left: `${leftPct}%`, width: `${hitWidthPx}px` }}
                       onMouseEnter={(e) => {
                         const plot = plotAreaRef.current;
                         if (!plot) return;
@@ -536,13 +544,16 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                         <div
                           className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-full -translate-x-1/2"
                           style={{
-                            width: Math.max(hitWidthPx, MULTICHART_BAR_WIDTH_WIDE_PX),
+                            width: `${Math.max(hitWidthPx, MULTICHART_BAR_WIDTH_WIDE_PX)}px`,
                             backgroundColor: FUNDAMENTALS_CHART_HOVER_BAND_BG,
                           }}
                           aria-hidden
                         />
                       ) : null}
-                      <div className="relative z-10 h-full min-h-0 overflow-visible" style={{ width: groupWidthPx }}>
+                      <div
+                        className="relative z-10 h-full min-h-0 overflow-visible"
+                        style={{ width: `${groupWidthPx}px` }}
+                      >
                         {barsEnterComplete && beatMiss && p.actual != null ? (
                           <EarningsBeatMissIndicator
                             outcome={beatMiss}
@@ -591,7 +602,7 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
 
               <div
                 className="relative h-full shrink-0 pl-1.5 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted"
-                style={{ width: Y_AXIS_W_PX }}
+                style={{ width: `${Y_AXIS_W_PX}px` }}
                 aria-hidden
               >
                 <div className="pointer-events-none absolute inset-0">
@@ -613,8 +624,8 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
               </div>
             </div>
 
-            <div className="flex w-full min-w-0 overflow-visible" style={{ height: MULTICHART_AXIS_ROW_PX }}>
-              <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
+            <div className="flex w-full min-w-0 overflow-visible" style={{ height: `${MULTICHART_AXIS_ROW_PX}px` }}>
+              <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: `${MULTICHART_AXIS_ROW_PX}px` }}>
                 {periods.map((p, i) => {
                   return (
                     <div
@@ -643,15 +654,15 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                   );
                 })}
               </div>
-              <div className="shrink-0 pl-1.5" style={{ width: Y_AXIS_W_PX }} aria-hidden />
+              <div className="shrink-0 pl-1.5" style={{ width: `${Y_AXIS_W_PX}px` }} aria-hidden />
             </div>
-            <div className="shrink-0" style={{ height: MULTICHART_AXIS_BOTTOM_PAD_PX }} aria-hidden />
+            <div className="shrink-0" style={{ height: `${MULTICHART_AXIS_BOTTOM_PAD_PX}px` }} aria-hidden />
           </div>
         </div>
       ) : (
         <div
           className="flex items-center justify-center rounded-xl border border-dashed border-stroke bg-canvas text-[13px] text-fg-muted"
-          style={{ height: CHART_HEIGHT_PX }}
+          style={{ height: `${CHART_HEIGHT_PX}px` }}
         >
           No estimate data for this view.
         </div>

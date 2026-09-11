@@ -1,8 +1,11 @@
-import { IndexPageContent } from "@/components/index/index-page-content";
-import { isSingleAssetMode } from "@/lib/features/single-asset";
-import { loadIndexPageInitialData } from "@/lib/market/index-page-initial-data";
-import { isIndexPageSymbol } from "@/lib/market/index-page-shared";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
+
+import { StockPageSkeleton } from "@/components/stock/stock-page-skeleton";
+import { isSingleAssetMode } from "@/lib/features/single-asset";
+import { isIndexPageSymbol } from "@/lib/market/index-page-shared";
+
+import { IndexPageData } from "./index-page-data";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +13,9 @@ type PageProps = {
   params: Promise<{ symbol: string }>;
 };
 
+/**
+ * Stream shell first (`loading.tsx` + Suspense share StockPageSkeleton / pending soft-nav).
+ */
 export default async function IndexSymbolPage({ params }: PageProps) {
   const { symbol: raw } = await params;
   const routeSymbol = decodeURIComponent(raw).trim().toUpperCase();
@@ -24,6 +30,9 @@ export default async function IndexSymbolPage({ params }: PageProps) {
     notFound();
   }
 
-  const initialData = await loadIndexPageInitialData(routeSymbol);
-  return <IndexPageContent routeSymbol={routeSymbol} initialData={initialData} />;
+  return (
+    <Suspense fallback={<StockPageSkeleton />}>
+      <IndexPageData routeSymbol={routeSymbol} />
+    </Suspense>
+  );
 }

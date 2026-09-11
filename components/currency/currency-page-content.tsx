@@ -15,6 +15,7 @@ import {
   type CurrencyChartRange,
   type CurrencyPageInitialData,
 } from "@/lib/market/currency-page-shared";
+import { clearPendingAssetShellIfMatch } from "@/lib/navigation/pending-asset-shell";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
 
 const EMPTY_CHART_DISPLAY: ChartDisplayState = {
@@ -42,6 +43,10 @@ function CurrencyPageContentInner({
   const symKey = routeSymbol.trim().toUpperCase();
   const serverMatch =
     initialData != null && initialData.routeSymbol.trim().toUpperCase() === symKey ? initialData : null;
+
+  useEffect(() => {
+    if (serverMatch) clearPendingAssetShellIfMatch("currency", symKey);
+  }, [serverMatch, symKey]);
 
   const [range, setRange] = useState<CurrencyChartRange>(() => "1D");
   const [chartSeries, setChartSeries] = useState<StockChartSeries>("price");

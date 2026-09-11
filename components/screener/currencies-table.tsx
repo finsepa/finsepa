@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
 import { ChangeCaretIcon, ChangePct, formatSignedChangePct } from "@/components/screener/change-pct";
+import { IntentPrefetchLink } from "@/components/layout/intent-prefetch-link";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
 import { TABLE_END_ALIGNED_PAD_CLASS } from "@/components/screener/screener-table-pad";
 import {
@@ -118,6 +118,7 @@ export function CurrenciesTable({
         <div>
           {safeRows.map((r, i) => {
             const wlKey = forexWatchlistKey(r.symbol);
+            const href = currencyAssetHref(r.symbol);
             return (
               <div key={r.symbol} className={SCREENER_TABLE_DATA_ROW_CLASS}>
                 <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
@@ -128,7 +129,7 @@ export function CurrenciesTable({
                     )}
                   >
                     <WatchlistStarToggle
-                      className="hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
+                      className="relative z-[2] hidden w-6 shrink-0 items-center justify-center px-1 sm:flex sm:w-10 sm:px-3"
                       storageKey={wlKey}
                       label={r.name}
                       watched={watchedUnion}
@@ -138,35 +139,55 @@ export function CurrenciesTable({
                       watchlists={watchlists}
                       activeWatchlistId={activeWatchlistId}
                     />
-                    <div className={cn(rowGrid, "min-h-[56px] w-full items-center sm:min-h-[60px]")}>
-                      <div className={mobileRankCellClass}>{rankOffset + i + 1}</div>
-                      <div className="min-w-0 w-full text-left">
-                        <Link
-                          href={currencyAssetHref(r.symbol)}
-                          className="block min-w-0 truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted hover:underline group-hover/row:underline"
-                        >
+                    <div
+                      className={cn(
+                        rowGrid,
+                        "relative min-h-[56px] w-full items-center sm:min-h-[60px]",
+                      )}
+                    >
+                      <IntentPrefetchLink
+                        href={href}
+                        prefetch={false}
+                        pendingAsset={{
+                          kind: "currency",
+                          symbol: r.symbol,
+                          name: r.name,
+                          price: Number.isFinite(r.value) ? r.value : null,
+                          changePct:
+                            r.change1D != null && Number.isFinite(r.change1D) ? r.change1D : null,
+                        }}
+                        className="absolute inset-0 z-[1] cursor-pointer rounded-[inherit] no-underline"
+                        aria-label={`Open ${r.name} (${r.code})`}
+                      >
+                        <span className="sr-only">{`Open ${r.name}`}</span>
+                      </IntentPrefetchLink>
+                      <div className={cn(mobileRankCellClass, "relative z-0")}>{rankOffset + i + 1}</div>
+                      <div className="relative z-0 min-w-0 w-full text-left">
+                        <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
                           {r.code}
-                        </Link>
-                        <div className="mt-0.5 truncate text-[12px] font-medium leading-4 text-fg-muted">{r.name}</div>
+                        </div>
+                        <div className="mt-0.5 truncate text-[12px] font-medium leading-4 text-fg-muted">
+                          {r.name}
+                        </div>
                       </div>
-                      <div className="block sm:hidden">
+                      <div className="relative z-0 block sm:hidden">
                         <ValueAndChangeCell value={r.value} change1D={r.change1D} />
                       </div>
                       <div
                         className={cn(
                           desktopNumericCellClass,
-                          "font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
+                          "relative z-0 font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
                         )}
                       >
                         {formatFxRate(r.value)}
                       </div>
-                      <div className={desktopNumericCellClass}>
+                      <div className={cn(desktopNumericCellClass, "relative z-0")}>
                         <ChangeCell value={r.change1D} />
                       </div>
-                      <div className={desktopNumericCellClass}>
+                      <div className={cn(desktopNumericCellClass, "relative z-0")}>
                         <ChangeCell value={r.change1M} />
                       </div>
-                      <div className={desktopNumericCellClass}>
+                      <div className={cn(desktopNumericCellClass, "relative z-0")}>
                         <ChangeCell value={r.changeYTD} />
                       </div>
                     </div>

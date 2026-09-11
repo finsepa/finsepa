@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 import { MOBILE_PANEL_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { CryptoTop10Row } from "@/lib/market/crypto-top10";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { ChangePct } from "@/components/screener/change-pct";
+import { IntentPrefetchLink } from "@/components/layout/intent-prefetch-link";
 
 export function CryptoLargestMoversCard({
   title,
@@ -32,10 +32,17 @@ export function CryptoLargestMoversCard({
 
       <div className="flex w-full flex-col gap-[12px]">
         {slice.map((r, i) => (
-          <Link
+          <IntentPrefetchLink
             key={`${title}-${r.symbol}`}
             href={`/crypto/${encodeURIComponent(r.symbol)}`}
             prefetch={false}
+            pendingAsset={{
+              kind: "crypto",
+              symbol: r.symbol,
+              name: r.name,
+              changePct: r.changePercent1D,
+              logoUrl: r.logoUrl,
+            }}
             aria-label={`Open ${r.name} (${r.symbol})`}
             className="group flex w-full items-center gap-[8px] rounded-md outline-none focus-visible:ring-2 focus-visible:ring-fg/20"
           >
@@ -56,7 +63,7 @@ export function CryptoLargestMoversCard({
               className="w-auto shrink-0"
               textClassName="text-[14px] font-normal leading-5"
             />
-          </Link>
+          </IntentPrefetchLink>
         ))}
       </div>
     </div>

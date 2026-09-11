@@ -29,6 +29,7 @@ import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 import type { CryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
 import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
 import { usesCryptoStockPipelineExperiment } from "@/lib/market/crypto-stock-pipeline-experiment";
+import { clearPendingAssetShellIfMatch } from "@/lib/navigation/pending-asset-shell";
 import { formatAssetChartTimestamp } from "@/lib/market/chart-timestamp-format";
 import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types";
 import type { StockChartPoint, StockChartRange, StockChartSeries } from "@/lib/market/stock-chart-types";
@@ -84,6 +85,10 @@ export function CryptoPageContent({
   const symKey = routeSymbol.trim().toUpperCase();
   const serverMatch =
     initialData != null && initialData.routeSymbol.trim().toUpperCase() === symKey ? initialData : null;
+
+  useEffect(() => {
+    if (serverMatch) clearPendingAssetShellIfMatch("crypto", symKey);
+  }, [serverMatch, symKey]);
 
   const [loading, setLoading] = useState(!serverMatch);
   const [row, setRow] = useState<CryptoAssetRow | null>(serverMatch?.asset ?? null);

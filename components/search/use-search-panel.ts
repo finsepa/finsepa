@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { fetchSearchItems } from "@/lib/search/fetch-search-items";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { useSearchRecentStorage } from "@/lib/search/use-search-recent-storage";
+import { seedPendingAssetShellFromSearchItem } from "@/lib/navigation/seed-pending-asset-shell-from-search";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
@@ -129,6 +130,7 @@ export function useSearchPanel({
         onClose();
         return;
       }
+      seedPendingAssetShellFromSearchItem(item);
       router.push(item.route);
       onClose();
     },

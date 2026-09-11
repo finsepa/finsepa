@@ -6,6 +6,13 @@ import type {
   EarningsNotifyCalendarRow,
   EarningsReleaseSnapshotRow,
 } from "@/lib/notifications/earnings-notify-types";
+import { EARNINGS_NOTIFY_LOOKBACK_DAYS } from "@/lib/notifications/earnings-release-detect";
+
+function lookbackYmdUtc(days: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
 
 export async function loadEarningsReleaseSnapshots(
   admin: SupabaseClient,
@@ -29,6 +36,34 @@ export async function loadEarningsReleaseSnapshots(
     out.set(`${ticker}|${fiscal}`, row as EarningsReleaseSnapshotRow);
   }
   return out;
+}
+
+/**
+ * Recent calendar actuals for one ticker — used to patch sticky earnings-tab cache
+ * after a release (same rows the push cron already wrote; no EODHD).
+ */
+export async function loadRecentEarningsReleaseSnapshotsForTicker(
+  admin: SupabaseClient,
+  ticker: string,
+  lookbackDays = EARNINGS_NOTIFY_LOOKBACK_DAYS,
+): Promise<EarningsReleaseSnapshotRow[]> {
+  const sym = ticker.trim().toUpperCase();
+  if (!sym) return [];
+  const since = lookbackYmdUtc(lookbackDays);
+  const { data, error } = await admin
+    .from("earnings_release_snapshot")
+    .select("ticker,fiscal_period_end,report_date,eps_actual,eps_estimate,surprise_pct")
+    .eq("ticker", sym)
+    .not("eps_actual", "is", null)
+    .gte("report_date", since)
+    .order("report_date", { ascending: false })
+    .limit(8);
+
+  if (error) {
+    console.warn(`earnings_snapshot_ticker_load_failed: ${error.message}`);
+    return [];
+  }
+  return (data ?? []) as EarningsReleaseSnapshotRow[];
 }
 
 export async function upsertEarningsReleaseSnapshots(

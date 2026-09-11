@@ -123,43 +123,88 @@ async function persistCryptoPageSnapshotAwaited(
   return res.ok ? { ok: true } : { ok: false, reason: res.reason };
 }
 
-/** BTC: refresh minute/live 1D for header. Others: keep session empty (client live-price). */
-async function loadCryptoPageHotFields(
-  routeSymbol: string,
-  closeSpotUsd: number | null,
-): Promise<Pick<CryptoPageInitialData, "sessionChart" | "headerLiveSpotUsd">> {
-  const live1d = isCryptoLive1DSymbol(routeSymbol);
-  if (!live1d) {
-    return {
-      sessionChart: { range: SESSION_RANGE, points: [] },
-      headerLiveSpotUsd:
-        typeof closeSpotUsd === "number" && Number.isFinite(closeSpotUsd) && closeSpotUsd > 0
-          ? closeSpotUsd
-          : null,
-    };
-  }
-
-  const now = new Date();
-  const sessionPoints = await loadCryptoLive1DMinuteChartPoints(routeSymbol, now);
-  const last =
-    sessionPoints.length > 0 ? sessionPoints[sessionPoints.length - 1]?.value : null;
-  const spot =
-    typeof last === "number" && Number.isFinite(last) && last > 0
-      ? last
-      : typeof closeSpotUsd === "number" && Number.isFinite(closeSpotUsd) && closeSpotUsd > 0
-        ? closeSpotUsd
-        : null;
-
-  return {
-    sessionChart: { range: SESSION_RANGE, points: sessionPoints },
-    headerLiveSpotUsd: spot,
-  };
-}
-
 /**
  * Server pass for crypto detail: one daily-bars fetch for asset + 1Y chart + performance.
- * Session 1D preload is BTC-only (live header chart); other symbols skip the extra intraday EODHD call.
+ * Slim SSR (parity with stock B): cold miss returns above-fold first; news + live 1D session
+ * finish in the background and are written into the snapshot for warm hits.
  */
+
+type CryptoPageRebuildHandle = {
+  aboveFold: Promise<CryptoPageInitialData>;
+  full: Promise<CryptoPageInitialData>;
+};
+
+const coldMissFullByPage = new WeakMap<CryptoPageInitialData, Promise<CryptoPageInitialData>>();
+
+async function beginCryptoPageRebuild(sym: string): Promise<CryptoPageRebuildHandle | null> {
+  const meta = await resolveCryptoMetaForProvider(sym);
+  if (!meta) return null;
+
+  const now = new Date();
+  const to = ymdUtc(now);
+  const fromDate = new Date(now);
+  fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 6);
+  const from = ymdUtc(fromDate);
+  const live1d = isCryptoLive1DSymbol(sym);
+
+  const dailyBarsPromise = fetchEodhdCryptoDailyBarsForMeta(meta, from, to);
+  const sessionPointsPromise = live1d
+    ? loadCryptoLive1DMinuteChartPoints(sym, now)
+    : Promise.resolve([] as StockChartPoint[]);
+  const newsPromise = getCryptoNewsForPage(sym);
+  const experimentChartPromise = usesCryptoStockPipelineExperiment(sym)
+    ? getCryptoChartPointsViaStockPipeline(sym, DEFAULT_RANGE)
+    : Promise.resolve(null);
+
+  const aboveFold = (async (): Promise<CryptoPageInitialData> => {
+    const [dailyBars, experimentChart] = await Promise.all([
+      dailyBarsPromise,
+      experimentChartPromise,
+    ]);
+    const sorted = dailyBars?.length ? [...dailyBars].sort((a, b) => a.date.localeCompare(b.date)) : [];
+    const [asset, performance] = await Promise.all([
+      buildCryptoAssetRowFromDailyBars(meta, sorted),
+      Promise.resolve(computeStockPerformanceFromSortedDailyBars(sorted, meta.symbol, now)),
+    ]);
+    const chartPoints =
+      experimentChart ?? stockChartPointsFromDailyBars(sorted, DEFAULT_RANGE, now);
+    const closeSpot = lastPositiveCloseFromCryptoBars(sorted);
+    const headerSpot =
+      typeof closeSpot === "number" && Number.isFinite(closeSpot) && closeSpot > 0 ? closeSpot : null;
+
+    return {
+      routeSymbol: sym,
+      asset,
+      chart: { range: DEFAULT_RANGE, points: chartPoints },
+      sessionChart: { range: SESSION_RANGE, points: [] },
+      performance,
+      news: [],
+      headerLiveSpotUsd: headerSpot,
+    };
+  })();
+
+  const full = (async (): Promise<CryptoPageInitialData> => {
+    const base = await aboveFold;
+    const [sessionPoints, news] = await Promise.all([sessionPointsPromise, newsPromise]);
+    const lastSession =
+      sessionPoints.length > 0 ? sessionPoints[sessionPoints.length - 1]?.value : null;
+    const headerSpot =
+      typeof lastSession === "number" && Number.isFinite(lastSession) && lastSession > 0
+        ? lastSession
+        : base.headerLiveSpotUsd;
+
+    return {
+      ...base,
+      sessionChart: { range: SESSION_RANGE, points: sessionPoints },
+      news: Array.isArray(news) ? news : [],
+      headerLiveSpotUsd: headerSpot,
+    };
+  })();
+
+  return { aboveFold, full };
+}
+
+/** Full rebuild (traffic probes / NVDA-mode empty). */
 export async function loadCryptoPageInitialDataUncached(routeSymbol: string): Promise<CryptoPageInitialData> {
   const raw = routeSymbol.trim();
   if (!raw) return emptyPayload("");
@@ -170,62 +215,43 @@ export async function loadCryptoPageInitialDataUncached(routeSymbol: string): Pr
     return emptyPayload(sym);
   }
 
-  const meta = await resolveCryptoMetaForProvider(sym);
-  if (!meta) {
-    return emptyPayload(sym);
+  const handle = await beginCryptoPageRebuild(sym);
+  if (!handle) return emptyPayload(sym);
+  return handle.full;
+}
+
+async function loadCryptoPageColdMissAboveFold(routeSymbol: string): Promise<CryptoPageInitialData> {
+  const sym = cryptoRouteBase(routeSymbol.trim()).toUpperCase();
+  if (!sym || isSingleAssetMode()) return emptyPayload(sym);
+
+  const handle = await beginCryptoPageRebuild(sym);
+  if (!handle) return emptyPayload(sym);
+  const page = await handle.aboveFold;
+  coldMissFullByPage.set(page, handle.full);
+  return page;
+}
+
+async function resolveCryptoPageForPersist(page: CryptoPageInitialData): Promise<CryptoPageInitialData> {
+  const full = coldMissFullByPage.get(page);
+  if (!full) return page;
+  try {
+    return await full;
+  } catch (err) {
+    console.warn("[loadCryptoPageInitialData] fat persist enrich failed; writing slim shell", {
+      symbol: page.routeSymbol,
+      err,
+    });
+    return page;
+  } finally {
+    coldMissFullByPage.delete(page);
   }
-
-  const now = new Date();
-  const to = ymdUtc(now);
-  const fromDate = new Date(now);
-  fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 6);
-  const from = ymdUtc(fromDate);
-  const live1d = isCryptoLive1DSymbol(sym);
-
-  const [dailyBars, sessionPoints, news, experimentChart] = await Promise.all([
-    fetchEodhdCryptoDailyBarsForMeta(meta, from, to),
-    // Live allowlist: preload minute/live 1D for the header chart path.
-    live1d ? loadCryptoLive1DMinuteChartPoints(sym, now) : Promise.resolve([] as StockChartPoint[]),
-    getCryptoNewsForPage(sym),
-    usesCryptoStockPipelineExperiment(sym)
-      ? getCryptoChartPointsViaStockPipeline(sym, DEFAULT_RANGE)
-      : Promise.resolve(null),
-  ]);
-
-  const sorted = dailyBars?.length ? [...dailyBars].sort((a, b) => a.date.localeCompare(b.date)) : [];
-
-  const [asset, performance] = await Promise.all([
-    buildCryptoAssetRowFromDailyBars(meta, sorted),
-    Promise.resolve(computeStockPerformanceFromSortedDailyBars(sorted, meta.symbol, now)),
-  ]);
-
-  const chartPoints =
-    experimentChart ?? stockChartPointsFromDailyBars(sorted, DEFAULT_RANGE, now);
-  const closeSpot = lastPositiveCloseFromCryptoBars(sorted);
-  const lastSession =
-    sessionPoints.length > 0 ? sessionPoints[sessionPoints.length - 1]?.value : null;
-  const headerSpot =
-    typeof lastSession === "number" && Number.isFinite(lastSession) && lastSession > 0
-      ? lastSession
-      : typeof closeSpot === "number" && Number.isFinite(closeSpot) && closeSpot > 0
-        ? closeSpot
-        : null;
-
-  return {
-    routeSymbol: sym,
-    asset,
-    chart: { range: DEFAULT_RANGE, points: chartPoints },
-    sessionChart: { range: SESSION_RANGE, points: sessionPoints },
-    performance,
-    news: Array.isArray(news) ? news : [],
-    headerLiveSpotUsd: headerSpot,
-  };
 }
 
 /**
  * Prefer Supabase `asset_crypto_{SYM}` (stale OK up to 6h) so mid-traffic coins skip a cold
  * EODHD fan-out every 15m — same pattern as equity `asset_{TICKER}`.
- * Cold miss: distributed single-flight (persist before lease release).
+ * Warm hit: return snapshot immediately (no SSR hot minute-chart / spot wait).
+ * Client refreshes live-price + chart; cold miss uses single-flight rebuild.
  */
 export async function loadCryptoPageInitialData(routeSymbol: string): Promise<CryptoPageInitialData | null> {
   const raw = routeSymbol.trim();
@@ -246,36 +272,14 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
     cachedHit.payload.routeSymbol.trim().toUpperCase() === sym
   ) {
     const base = cryptoPageSnapshotToPageData(cachedHit.payload);
-    const closeFromPerf =
-      typeof base.performance?.price === "number" &&
-      Number.isFinite(base.performance.price) &&
-      base.performance.price > 0
-        ? base.performance.price
-        : null;
-
-    const needsHot =
-      isCryptoLive1DSymbol(sym) ||
-      !cachedHit.exactSegment ||
-      base.headerLiveSpotUsd == null;
-
-    if (!needsHot && base.chart.points.length > 0) {
-      if (!cachedHit.exactSegment) {
-        scheduleCryptoPageSnapshotWrite(sym, segment, base);
-      }
-      return base;
+    // Same as equity warm path: paint from snapshot immediately.
+    // Live spot is stripped in the stored payload; client `/live-price` poll refreshes it.
+    // BTC/ETH session 1D (if present in snap) is used as seed; PriceChart refetches when needed.
+    // Do not await SSR hot minute-chart / spot — that stalled soft-nav on live allowlist coins.
+    if (!cachedHit.exactSegment) {
+      scheduleCryptoPageSnapshotWrite(sym, segment, base);
     }
-
-    const hot = await loadCryptoPageHotFields(sym, closeFromPerf ?? base.headerLiveSpotUsd);
-    const merged: CryptoPageInitialData = {
-      ...base,
-      ...hot,
-      sessionChart:
-        hot.sessionChart.points.length > 0 ? hot.sessionChart : base.sessionChart,
-    };
-    if (!cachedHit.exactSegment || hot.sessionChart.points.length > 0) {
-      scheduleCryptoPageSnapshotWrite(sym, segment, merged);
-    }
-    return merged;
+    return base;
   }
 
   const snapKey = cryptoPageSnapshotKey(sym);
@@ -289,8 +293,11 @@ export async function loadCryptoPageInitialData(routeSymbol: string): Promise<Cr
     release: (ownerId) => releaseAssetRebuildLease(snapKey, segment, ownerId),
     markFailed: (ownerId) => failAssetRebuildLease(snapKey, segment, ownerId),
     newOwnerId: newAssetRebuildLeaseOwner,
-    loadUncached: () => loadCryptoPageInitialDataUncached(sym),
-    persistSnapshot: (page) => persistCryptoPageSnapshotAwaited(sym, segment, page),
+    loadUncached: () => loadCryptoPageColdMissAboveFold(sym),
+    persistSnapshot: async (page) => {
+      const full = await resolveCryptoPageForPersist(page);
+      return persistCryptoPageSnapshotAwaited(sym, segment, full);
+    },
     readSnapshot: () => readCryptoPageSnapshot(sym, segment, { allowStale: true }),
     isUsableHit: (hit) =>
       isUsableCryptoPageSnapshot(hit?.payload) &&

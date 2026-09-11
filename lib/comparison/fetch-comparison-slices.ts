@@ -1,11 +1,18 @@
 import type { ComparisonTickerSlice } from "@/lib/comparison/fetch-comparison-ticker-slice";
 import { parseChartingTickerList } from "@/lib/market/stock-charting-metrics";
+import { stockKeyStatsBundleHasContent } from "@/lib/market/stock-key-stats-bundle-types";
 
 export type { ComparisonTickerSlice } from "@/lib/comparison/fetch-comparison-ticker-slice";
 
-/** True when performance annual series is ready for the return chart. */
+/**
+ * True when performance + key stats are ready for the compare table.
+ * Empty key-stats shells (slim SSR) must not count as ready — client should refetch.
+ */
 export function comparisonSliceIsReady(slice: ComparisonTickerSlice | undefined): boolean {
-  return Boolean(slice?.performance?.annualReturns?.length);
+  return Boolean(
+    slice?.performance?.annualReturns?.length &&
+      stockKeyStatsBundleHasContent(slice.keyStatsBundle),
+  );
 }
 
 /**

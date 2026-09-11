@@ -484,7 +484,10 @@ export function isUltraSparseLiveSessionSource(
   return false;
 }
 
-/** EODHD 5m/1m intraday — plot as-is (smooth curved line), no 60s forward-fill grid. */
+/**
+ * Native ~1m intraday — plot as-is (no forward-fill grid).
+ * 5m/1h sources must resample onto the 60s grid so every ticker’s 1D looks 1m-aligned.
+ */
 export function liveSessionSourceIsDenseIntraday(
   sorted: readonly StockChartPoint[],
   open: number,
@@ -494,7 +497,8 @@ export function liveSessionSourceIsDenseIntraday(
     (p) => p.time >= open && p.time <= endSec && Number.isFinite(p.value),
   );
   if (inSession.length < 6) return false;
-  return typicalSourceGapSec(inSession) <= STOCK_1D_LIVE_SESSION_SPARSE_BAR_INTERVAL_SEC;
+  // Allow small jitter above 60s; treat ≥2m median gaps as coarse (5m/1h).
+  return typicalSourceGapSec(inSession) <= STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC * 1.5;
 }
 
 function filterLiveSessionWindow(
@@ -507,23 +511,6 @@ function filterLiveSessionWindow(
   return sorted
     .filter((p) => p.time >= open && p.time <= endSec)
     .map((p) => ({ ...p, sessionDate: sessionYmd, timeZone }));
-}
-
-function pickLiveSessionResampleIntervalSec(
-  sorted: readonly StockChartPoint[],
-  open: number,
-  endSec: number,
-  stats: {
-    coverage: number;
-    maxGapSec: number;
-    pointCount: number;
-  },
-): number {
-  if (typicalSourceGapSec(sorted) >= 240) {
-    return STOCK_1D_LIVE_SESSION_SPARSE_BAR_INTERVAL_SEC;
-  }
-  // WS minute store + live spot polls: always 60s tick-by-tick buckets during the session.
-  return STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
 }
 
 export function resampleStock1DLiveSession(
@@ -552,8 +539,8 @@ export function resampleStock1DLiveSession(
   const useLiveMinuteGrid =
     options?.liveSessionMinute !== false && stock1DUsesLiveSessionClock(now, options);
 
-  // Live 1m charts must resample to the 60s grid so trailing DB holes step-forward
-  // instead of drawing a diagonal between the last bar and the live tail.
+  // Closed / historical: plot native ~1m as-is; upsample coarser EODHD (5m/1h) onto 60s.
+  // Live: always rebuild the 60s grid so trailing DB holes step-forward (no diagonal).
   if (
     !useLiveMinuteGrid &&
     (isUltraSparseLiveSessionSource(sorted, open, endSec) ||
@@ -562,11 +549,8 @@ export function resampleStock1DLiveSession(
     return filterLiveSessionWindow(sorted, sessionYmd, timeZone, open, endSec);
   }
 
-  const stats = sessionSourceStats(sorted, open, endSec);
-  const interval =
-    options?.liveSessionMinute !== false && stock1DUsesLiveSessionClock(now, options)
-      ? STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC
-      : pickLiveSessionResampleIntervalSec(sorted, open, endSec, stats);
+  // All stock 1D charts share a 1-minute bucket grid (live WS and closed EODHD).
+  const interval = STOCK_1D_LIVE_SESSION_BAR_INTERVAL_SEC;
 
   const out: StockChartPoint[] = [];
   for (let bucketTime = open; bucketTime <= endSec; bucketTime += interval) {

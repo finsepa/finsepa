@@ -30,14 +30,16 @@ const EMPTY_BUNDLE: StockKeyStatsBundle = {
 
 export async function buildStockKeyStatsBundle(
   ticker: string,
-  opts?: { refreshFundamentals?: boolean },
+  opts?: { refreshFundamentals?: boolean; secBackfill?: boolean },
 ): Promise<StockKeyStatsBundle> {
   const root = opts?.refreshFundamentals
     ? await fetchEodhdFundamentalsJsonFresh(ticker)
     : await fetchFundamentalsRootForMetrics(ticker);
   if (!root) return { ...EMPTY_BUNDLE };
 
-  const earningsActuals = await resolveReportedEarningsActuals(root, ticker);
+  const earningsActuals = await resolveReportedEarningsActuals(root, ticker, {
+    secBackfill: opts?.secBackfill,
+  });
 
   const [
     basic,

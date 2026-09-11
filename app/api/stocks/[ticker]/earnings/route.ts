@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { CACHE_CONTROL_PUBLIC_WARM, REVALIDATE_WARM } from "@/lib/data/cache-policy";
+import { CACHE_CONTROL_PUBLIC_WARM, REVALIDATE_STATIC, REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
 import { getNvdaStockEarningsTabPayload } from "@/lib/fixtures/nvda";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { fetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-data";
@@ -15,9 +15,10 @@ export const maxDuration = 60;
 export async function GET(request: Request, { params }: Ctx) {
   const { ticker: raw } = await params;
   const preview = new URL(request.url).searchParams.get("preview") === "1";
+  /** Preview = sticky history shell (~12h); full = warmer docs/upcoming (~15m). */
   const cacheControl = preview
-    ? `public, s-maxage=${REVALIDATE_WARM}, stale-while-revalidate=${REVALIDATE_WARM * 2}`
-    : CACHE_CONTROL_PUBLIC_WARM;
+    ? `public, s-maxage=${REVALIDATE_STATIC}, stale-while-revalidate=${REVALIDATE_STATIC}`
+    : `public, s-maxage=${REVALIDATE_WARM_LONG}, stale-while-revalidate=${REVALIDATE_WARM_LONG * 2}`;
 
   let routeTicker: string;
   try {

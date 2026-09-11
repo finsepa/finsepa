@@ -1,8 +1,11 @@
-import { CurrencyPageContent } from "@/components/currency/currency-page-content";
-import { isSingleAssetMode } from "@/lib/features/single-asset";
-import { loadCurrencyPageInitialData } from "@/lib/market/currency-page-initial-data";
-import { isCurrencyPageSymbol } from "@/lib/market/currency-page-shared";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
+
+import { StockPageSkeleton } from "@/components/stock/stock-page-skeleton";
+import { isSingleAssetMode } from "@/lib/features/single-asset";
+import { isCurrencyPageSymbol } from "@/lib/market/currency-page-shared";
+
+import { CurrencyPageData } from "./currency-page-data";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +13,9 @@ type PageProps = {
   params: Promise<{ symbol: string }>;
 };
 
+/**
+ * Stream shell first (`loading.tsx` + Suspense share StockPageSkeleton / pending soft-nav).
+ */
 export default async function CurrencySymbolPage({ params }: PageProps) {
   const { symbol: raw } = await params;
   const routeSymbol = decodeURIComponent(raw).trim().toUpperCase();
@@ -24,6 +30,9 @@ export default async function CurrencySymbolPage({ params }: PageProps) {
     notFound();
   }
 
-  const initialData = await loadCurrencyPageInitialData(routeSymbol);
-  return <CurrencyPageContent routeSymbol={routeSymbol} initialData={initialData} />;
+  return (
+    <Suspense fallback={<StockPageSkeleton />}>
+      <CurrencyPageData routeSymbol={routeSymbol} />
+    </Suspense>
+  );
 }

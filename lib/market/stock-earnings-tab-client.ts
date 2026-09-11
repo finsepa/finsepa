@@ -7,14 +7,25 @@ export function stockEarningsTabApiUrl(ticker: string, preview = false): string 
 
 const inflight = new Map<string, Promise<StockEarningsTabPayload | null>>();
 
-/** Keep successful payloads so close → reopen does not wait on another round-trip. */
-const memory = new Map<string, { at: number; payload: StockEarningsTabPayload }>();
-const MEMORY_TTL_MS = 15 * 60 * 1000;
+/**
+ * Sticky paint cache — reported history barely changes between releases; keep it
+ * for instant revisit / tab remount. Network freshness is gated separately.
+ */
+const PAINT_TTL_MS = 12 * 60 * 60 * 1000;
+/** Skip network when a payload this fresh already exists (upcoming / estimates). */
+const NETWORK_SKIP_TTL_MS = 5 * 60 * 1000;
 
-function readMemory(url: string): StockEarningsTabPayload | null {
+const memory = new Map<string, { at: number; payload: StockEarningsTabPayload }>();
+
+function readMemory(url: string, maxAgeMs: number): StockEarningsTabPayload | null {
   const hit = memory.get(url);
   if (!hit) return null;
-  if (Date.now() - hit.at > MEMORY_TTL_MS) {
+  const age = Date.now() - hit.at;
+  if (age > maxAgeMs) {
+    if (maxAgeMs < PAINT_TTL_MS && age <= PAINT_TTL_MS) {
+      // Stale for network-skip, but still usable for paint via peek (PAINT_TTL).
+      return null;
+    }
     memory.delete(url);
     return null;
   }
@@ -26,12 +37,17 @@ function writeMemory(url: string, payload: StockEarningsTabPayload | null): void
   memory.set(url, { at: Date.now(), payload });
 }
 
-/** Sync read of the in-memory cache (no network) — used to paint prefetched data immediately. */
+/** Sync read for immediate paint (long TTL). */
 export function peekStockEarningsTabPayloadClient(
   ticker: string,
   preview = false,
 ): StockEarningsTabPayload | null {
-  return readMemory(stockEarningsTabApiUrl(ticker, preview));
+  return readMemory(stockEarningsTabApiUrl(ticker, preview), PAINT_TTL_MS);
+}
+
+/** True when memory is fresh enough to skip a network round-trip. */
+export function isStockEarningsTabPayloadFreshClient(ticker: string, preview = false): boolean {
+  return readMemory(stockEarningsTabApiUrl(ticker, preview), NETWORK_SKIP_TTL_MS) != null;
 }
 
 function fetchEarningsJson(url: string, signal?: AbortSignal): Promise<StockEarningsTabPayload | null> {
@@ -44,7 +60,7 @@ function fetchEarningsJson(url: string, signal?: AbortSignal): Promise<StockEarn
 /** Warm the CDN / server cache before the calendar modal opens. */
 export function prefetchStockEarningsTabPayload(ticker: string, preview = true): void {
   const url = stockEarningsTabApiUrl(ticker, preview);
-  if (readMemory(url)) return;
+  if (readMemory(url, NETWORK_SKIP_TTL_MS)) return;
   if (inflight.has(url)) return;
   const p = fetchEarningsJson(url)
     .then((payload) => {
@@ -60,14 +76,16 @@ export function prefetchStockEarningsTabPayload(ticker: string, preview = true):
 
 export async function fetchStockEarningsTabPayloadClient(
   ticker: string,
-  options?: { preview?: boolean; signal?: AbortSignal },
+  options?: { preview?: boolean; signal?: AbortSignal; force?: boolean },
 ): Promise<StockEarningsTabPayload | null> {
   const url = stockEarningsTabApiUrl(ticker, options?.preview ?? false);
-  const cached = readMemory(url);
-  if (cached) return cached;
+  if (!options?.force) {
+    const fresh = readMemory(url, NETWORK_SKIP_TTL_MS);
+    if (fresh) return fresh;
+  }
 
   const pending = inflight.get(url);
-  if (pending) {
+  if (pending && !options?.force) {
     try {
       return await pending;
     } catch {

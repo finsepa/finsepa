@@ -1926,12 +1926,15 @@ async function fetchChartingSeriesUncached(
   ticker: string,
   mode: FundamentalsSeriesMode,
   sortedDailyBars?: readonly EodhdDailyBar[] | null,
+  opts?: { secBackfill?: boolean },
 ): Promise<ChartingSeriesBundle | null> {
   const root = await fetchFundamentalsRootForMetrics(ticker);
   if (!root) return null;
 
   const rootRec = root as Record<string, unknown>;
-  const earningsActuals = await resolveReportedEarningsActuals(rootRec, ticker);
+  const earningsActuals = await resolveReportedEarningsActuals(rootRec, ticker, {
+    secBackfill: opts?.secBackfill,
+  });
   let points = buildMergedPoints(rootRec, mode);
   if (!points?.length) return null;
   points = finalizeChartingPointsWithEarningsOverlay(points, rootRec, mode, earningsActuals);
@@ -1960,6 +1963,7 @@ export async function fetchChartingSeriesWithDailyBars(
   ticker: string,
   mode: FundamentalsSeriesMode,
   sortedDailyBars: readonly EodhdDailyBar[],
+  opts?: { secBackfill?: boolean },
 ): Promise<ChartingSeriesBundle | null> {
-  return fetchChartingSeriesUncached(ticker, mode, sortedDailyBars);
+  return fetchChartingSeriesUncached(ticker, mode, sortedDailyBars, opts);
 }

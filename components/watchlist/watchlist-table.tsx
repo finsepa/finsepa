@@ -30,6 +30,7 @@ import { readWatchlistDragData, writeWatchlistDragData } from "@/lib/watchlist/w
 import { logWatchlistDragEnd, logWatchlistDragStart } from "@/lib/watchlist/state-audit";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { useWatchlistEnrichedItems } from "@/lib/watchlist/use-watchlist-enriched-items";
+import { watchlistKindToPendingAssetKind } from "@/lib/navigation/pending-asset-shell";
 import { cn } from "@/lib/utils";
 
 /** Mobile: asset + price/1D + remove (row drag reorders). Desktop adds metric columns. */
@@ -256,6 +257,14 @@ function WatchlistTableRow({
             href={row.href}
             prefetch={false}
             draggable={false}
+            pendingAsset={{
+              kind: watchlistKindToPendingAssetKind(row.kind),
+              symbol: row.symbol,
+              name: row.name,
+              price: row.price,
+              changePct: row.pct1d,
+              logoUrl: row.logoUrl,
+            }}
             className={cn(
               "col-span-2 col-start-1 grid min-h-[56px] min-w-0 w-full items-center justify-items-stretch no-underline text-fg visited:text-fg sm:col-span-7 sm:col-start-1 sm:min-h-[60px]",
               watchlistRowLinkGridClass,

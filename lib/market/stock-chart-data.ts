@@ -410,8 +410,8 @@ export const STOCK_1D_INTRADAY_CHART_BAR_GAP_SEC = 60;
 /** Target bar spacing for Overview 5D intraday charts (EODHD 1m → ~4m). */
 export const SESSION_INTRADAY_CHART_BAR_GAP_SEC = 4 * 60;
 
-/** Closed 1D historical session: thin EODHD 1m to ~2m between points. */
-export const STOCK_1D_CLOSED_SESSION_BAR_GAP_SEC = 2 * 60;
+/** Closed 1D historical session: keep ~1m spacing (align all tickers to 1m). */
+export const STOCK_1D_CLOSED_SESSION_BAR_GAP_SEC = 60;
 
 function filterToUsRegularSessionPoints(points: StockChartPoint[]): StockChartPoint[] {
   return points.filter((p) => {
@@ -751,24 +751,53 @@ async function append1DRealtimeTail(
   return mergeStockChartPointsByTime([points, [tail]]);
 }
 
+/**
+ * Prefer native EODHD 1m. If only 5m/1h exists (common right after the close), step-forward
+ * onto the 9:30–16:00 1m grid so Overview 1D density matches allowlist / true-1m tickers.
+ */
+function alignClosed1DPointsToMinuteGrid(
+  points: StockChartPoint[],
+  sessionYmd: string,
+): StockChartPoint[] {
+  if (points.length < 2) return points;
+  const openValue = points[0]!.value;
+  if (!Number.isFinite(openValue)) return points;
+  const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, STOCK_DISPLAY_TZ);
+  // After the regular close so stock1DSessionEndSec pins to 16:00 (not "now").
+  const afterClose = new Date((closeSec + 60) * 1000);
+  return resampleStock1DLiveSession(
+    points,
+    sessionYmd,
+    STOCK_DISPLAY_TZ,
+    openValue,
+    afterClose,
+    { liveSessionMinute: false },
+  );
+}
+
 async function load1DIntradayForSessionYmdWithMeta(
   ticker: string,
   sessionYmd: string,
 ): Promise<{ points: StockChartPoint[]; interval: "1m" | "5m" | "1h" | null }> {
   for (const interval of ["1m", "5m", "1h"] as const) {
     const bars = await getHistoricalSessionIntradayBars(ticker, sessionYmd, interval);
-    const points = historicalSessionIntradayToChartPoints(bars, sessionYmd);
-    if (points.length >= 2) return { points, interval };
+    let points = historicalSessionIntradayToChartPoints(bars, sessionYmd);
 
     // NVDA: EODHD 1m is empty for some completed sessions while 5m exists — use frozen WS bars.
-    if (interval === "1m" && ticker.trim().toUpperCase() === "NVDA") {
+    if (points.length < 2 && interval === "1m" && ticker.trim().toUpperCase() === "NVDA") {
       const wsPoints = filterToUsRegularSessionPoints(
         await fetchStockSessionMinuteBarsFromDb("NVDA", sessionYmd),
       );
       if (wsPoints.length >= 2) {
-        return { points: dedupeAndSort(wsPoints), interval: "1m" };
+        points = dedupeAndSort(wsPoints);
       }
     }
+
+    if (points.length < 2) continue;
+
+    // Native 1m: return as-is. Coarser EODHD: upsample to 1m so ORCL/etc. match AAPL density.
+    if (interval === "1m") return { points, interval };
+    return { points: alignClosed1DPointsToMinuteGrid(points, sessionYmd), interval };
   }
   return { points: [], interval: null };
 }
@@ -808,7 +837,7 @@ function filterIntradayBarsToSessionYmd(
 const getHistoricalSessionIntradayBars = unstable_cache(
   async (ticker: string, sessionYmd: string, interval: "1m" | "5m" | "1h") =>
     fetchHistoricalSessionIntradayUncached(ticker, sessionYmd, interval),
-  ["eodhd-historical-session-intraday-v4"],
+  ["eodhd-historical-session-intraday-v5-prefer-1m"],
   { revalidate: REVALIDATE_STATIC_DAY },
 );
 
@@ -865,7 +894,7 @@ function logClosed1DChartDebug(args: {
   });
 }
 
-/** Last completed US session — EODHD intraday at native interval (1m/5m/1h). */
+/** Last completed US session — prefer EODHD 1m; upsample 5m/1h onto the 1m grid. */
 async function loadLatestTradingDay1DChartPoints(
   ticker: string,
   now: Date,
@@ -1403,7 +1432,7 @@ export const getStockChartPoints = unstable_cache(
 const getStockChartPoints1DPriorSession = unstable_cache(
   async (ticker: string, series: StockChartSeries, _completedSessionYmd: string) =>
     loadStockChartPointsUncached(ticker, "1D", series),
-  ["stock-chart-1d-prior-session-v10-session-ymd"],
+  ["stock-chart-1d-prior-session-v11-1m-aligned"],
   { revalidate: REVALIDATE_STATIC_DAY },
 );
 

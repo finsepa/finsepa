@@ -61,6 +61,11 @@ function perfVisibilityClass(showOnMobile: boolean) {
   return showOnMobile ? "min-w-0" : "hidden md:block";
 }
 
+/** ChangePct is `flex` — use `md:flex` so visibility classes don't wipe display:flex (caret/% wrap). */
+function perfValueVisibilityClass(showOnMobile: boolean) {
+  return showOnMobile ? "min-w-0" : "hidden md:flex";
+}
+
 function PerfValue({
   value,
   showOnMobile,
@@ -78,7 +83,7 @@ function PerfValue({
       textClassName="text-[14px] leading-5"
       className={cn(
         hideCompanyColumn ? "justify-center" : "justify-end",
-        perfVisibilityClass(showOnMobile),
+        perfValueVisibilityClass(showOnMobile),
         isLast && TABLE_END_ALIGNED_PAD_CLASS,
       )}
     />

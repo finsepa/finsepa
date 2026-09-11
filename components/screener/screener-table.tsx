@@ -206,6 +206,18 @@ const ScreenerDataRow = memo(function ScreenerDataRow({
         <IntentPrefetchLink
           href={`/stock/${encodeURIComponent(item.ticker)}`}
           prefetch={false}
+          pendingAsset={{
+            kind: "stock",
+            symbol: item.ticker,
+            name: item.name,
+            price: item.price,
+            changePct: item.change1D,
+            logoUrl: item.logoUrl,
+            screenerRank: rank,
+            exchange: item.exchange ?? null,
+            // Companies screener is US listings; flag is safe even before exchange is known.
+            countryIso: "US",
+          }}
           className={cn(
             gridClassName,
             "min-h-[56px] cursor-pointer items-center justify-items-stretch no-underline text-fg visited:text-fg sm:min-h-[60px]",
