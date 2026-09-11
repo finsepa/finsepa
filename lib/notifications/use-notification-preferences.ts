@@ -6,6 +6,8 @@ import { toast } from "sonner";
 type PreferencesResponse = {
   earningsResultsEnabled?: boolean;
   superinvestorActivityEnabled?: boolean;
+  slidesEnabled?: boolean;
+  reportsEnabled?: boolean;
   error?: string;
 };
 
@@ -13,6 +15,8 @@ export function useNotificationPreferences(options?: { enabled?: boolean }) {
   const enabled = options?.enabled ?? true;
   const [earningsResultsEnabled, setEarningsResultsEnabled] = useState(true);
   const [superinvestorActivityEnabled, setSuperinvestorActivityEnabled] = useState(true);
+  const [slidesEnabled, setSlidesEnabled] = useState(true);
+  const [reportsEnabled, setReportsEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -28,6 +32,12 @@ export function useNotificationPreferences(options?: { enabled?: boolean }) {
         }
         if (typeof json.superinvestorActivityEnabled === "boolean") {
           setSuperinvestorActivityEnabled(json.superinvestorActivityEnabled);
+        }
+        if (typeof json.slidesEnabled === "boolean") {
+          setSlidesEnabled(json.slidesEnabled);
+        }
+        if (typeof json.reportsEnabled === "boolean") {
+          setReportsEnabled(json.reportsEnabled);
         }
       }
     } catch {
@@ -101,6 +111,36 @@ export function useNotificationPreferences(options?: { enabled?: boolean }) {
     [superinvestorActivityEnabled, patchPreference],
   );
 
+  const setSlides = useCallback(
+    async (next: boolean) => {
+      const prev = slidesEnabled;
+      await patchPreference(
+        { slidesEnabled: next },
+        () => setSlidesEnabled(next),
+        () => setSlidesEnabled(prev),
+        "Slides alerts turned on.",
+        "Slides alerts turned off.",
+        next,
+      );
+    },
+    [slidesEnabled, patchPreference],
+  );
+
+  const setReports = useCallback(
+    async (next: boolean) => {
+      const prev = reportsEnabled;
+      await patchPreference(
+        { reportsEnabled: next },
+        () => setReportsEnabled(next),
+        () => setReportsEnabled(prev),
+        "Reports alerts turned on.",
+        "Reports alerts turned off.",
+        next,
+      );
+    },
+    [reportsEnabled, patchPreference],
+  );
+
   useEffect(() => {
     if (!enabled) return;
     void refresh();
@@ -109,10 +149,14 @@ export function useNotificationPreferences(options?: { enabled?: boolean }) {
   return {
     earningsResultsEnabled,
     superinvestorActivityEnabled,
+    slidesEnabled,
+    reportsEnabled,
     loading,
     saving,
     refresh,
     setEarningsResults,
     setSuperinvestorActivity,
+    setSlides,
+    setReports,
   };
 }

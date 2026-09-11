@@ -11,6 +11,10 @@ import {
   type EarningsMetricLine,
 } from "@/lib/notifications/earnings-notification-model";
 import type { NotificationItem } from "@/lib/notifications/use-notifications-client";
+import {
+  EARNINGS_REPORTS_KIND,
+  EARNINGS_SLIDES_KIND,
+} from "@/lib/notifications/earnings-docs-notify-model";
 import { readScreenerCompanyIdentity } from "@/lib/screener/screener-company-identity-storage";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +52,15 @@ function MetricRow({ line }: { line: EarningsMetricLine }) {
   );
 }
 
+function headlineSuffix(item: NotificationItem): string {
+  if (item.kind === EARNINGS_SLIDES_KIND) return "slides available";
+  if (item.kind === EARNINGS_REPORTS_KIND) return "SEC reports available";
+  const docsKind = item.payload?.docsKind;
+  if (docsKind === "slides") return "slides available";
+  if (docsKind === "reports") return "SEC reports available";
+  return "reported earnings";
+}
+
 export function EarningsNotificationCard({
   item,
   className,
@@ -66,6 +79,11 @@ export function EarningsNotificationCard({
     payload?.fiscalPeriodEndYmd,
   );
   const metricLines = payload ? earningsMetricLinesFromPayload(payload) : [];
+  const isDocsAlert =
+    item.kind === EARNINGS_SLIDES_KIND ||
+    item.kind === EARNINGS_REPORTS_KIND ||
+    item.payload?.docsKind === "slides" ||
+    item.payload?.docsKind === "reports";
 
   const hasSummary = Boolean(periodLabel || metricLines.length > 0);
 
@@ -83,7 +101,7 @@ export function EarningsNotificationCard({
             >
               {displayTicker}
             </span>
-            <span className={notificationMetaTextClass}>reported earnings</span>
+            <span className={notificationMetaTextClass}>{headlineSuffix(item)}</span>
           </div>
           <p className={notificationMetaTextClass}>{formatNotificationTimestamp(item.createdAt)}</p>
         </div>
@@ -92,9 +110,9 @@ export function EarningsNotificationCard({
       {hasSummary ? (
         <div className="mt-3 ml-12 flex w-[calc(100%-3rem)] flex-col gap-0.5 rounded-[12px] bg-surface-muted px-4 py-2">
           {periodLabel ? <p className={notificationPeriodTextClass}>{periodLabel}</p> : null}
-          {metricLines.map((line) => (
-            <MetricRow key={line.label} line={line} />
-          ))}
+          {!isDocsAlert
+            ? metricLines.map((line) => <MetricRow key={line.label} line={line} />)
+            : null}
         </div>
       ) : null}
     </div>

@@ -4,10 +4,26 @@ import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
 import {
   getNotificationPreferences,
   setEarningsResultsEnabled,
+  setReportsEnabled,
+  setSlidesEnabled,
   setSuperinvestorActivityEnabled,
 } from "@/lib/notifications/notification-preferences-store";
 import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
+
+function jsonPreferences(
+  preferences: Awaited<ReturnType<typeof getNotificationPreferences>>,
+  canUseActivityAlerts: boolean,
+) {
+  return {
+    earningsResultsEnabled: canUseActivityAlerts && preferences.earningsResultsEnabled,
+    superinvestorActivityEnabled:
+      canUseActivityAlerts && preferences.superinvestorActivityEnabled,
+    slidesEnabled: canUseActivityAlerts && preferences.slidesEnabled,
+    reportsEnabled: canUseActivityAlerts && preferences.reportsEnabled,
+    canUseActivityAlerts,
+  };
+}
 
 export async function GET(request: Request) {
   try {
@@ -17,14 +33,7 @@ export async function GET(request: Request) {
       getNotificationPreferences(supabase, user.id),
       getSubscriptionGateContext(supabase, user.id),
     ]);
-    const canUseActivityAlerts = gate.canUseActivityAlerts;
-    // Effective: Free always sees/receives off even if DB preference is still on after cancel.
-    return NextResponse.json({
-      earningsResultsEnabled: canUseActivityAlerts && preferences.earningsResultsEnabled,
-      superinvestorActivityEnabled:
-        canUseActivityAlerts && preferences.superinvestorActivityEnabled,
-      canUseActivityAlerts,
-    });
+    return NextResponse.json(jsonPreferences(preferences, gate.canUseActivityAlerts));
   } catch (e) {
     if (e instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -52,13 +61,20 @@ export async function PATCH(request: Request) {
     const body = (await request.json()) as {
       earningsResultsEnabled?: unknown;
       superinvestorActivityEnabled?: unknown;
+      slidesEnabled?: unknown;
+      reportsEnabled?: unknown;
     };
 
     const hasEarnings = typeof body.earningsResultsEnabled === "boolean";
     const hasSuperinvestor = typeof body.superinvestorActivityEnabled === "boolean";
-    if (!hasEarnings && !hasSuperinvestor) {
+    const hasSlides = typeof body.slidesEnabled === "boolean";
+    const hasReports = typeof body.reportsEnabled === "boolean";
+    if (!hasEarnings && !hasSuperinvestor && !hasSlides && !hasReports) {
       return NextResponse.json(
-        { error: "Provide earningsResultsEnabled and/or superinvestorActivityEnabled" },
+        {
+          error:
+            "Provide earningsResultsEnabled, superinvestorActivityEnabled, slidesEnabled, and/or reportsEnabled",
+        },
         { status: 400 },
       );
     }
@@ -78,12 +94,14 @@ export async function PATCH(request: Request) {
         body.superinvestorActivityEnabled as boolean,
       );
     }
+    if (hasSlides) {
+      preferences = await setSlidesEnabled(supabase, user.id, body.slidesEnabled as boolean);
+    }
+    if (hasReports) {
+      preferences = await setReportsEnabled(supabase, user.id, body.reportsEnabled as boolean);
+    }
 
-    return NextResponse.json({
-      earningsResultsEnabled: preferences.earningsResultsEnabled,
-      superinvestorActivityEnabled: preferences.superinvestorActivityEnabled,
-      canUseActivityAlerts: true,
-    });
+    return NextResponse.json(jsonPreferences(preferences, true));
   } catch (e) {
     if (e instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

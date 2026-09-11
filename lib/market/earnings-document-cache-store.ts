@@ -11,6 +11,8 @@ import {
   isSecEdgarExhibitHtmlUrl,
 } from "@/lib/market/earnings-document-url";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
+import { detectNewlyAvailableEarningsDocs, type EarningsDocsAvailabilityEvent } from "@/lib/notifications/earnings-docs-notify-model";
+import { scheduleNotifyEarningsDocsAvailable } from "@/lib/notifications/earnings-docs-notify";
 
 export type EarningsDocumentResolutionSource =
   | "cache"
@@ -207,6 +209,7 @@ export async function persistResolvedEarningsDocuments(
     verified_at: string;
     updated_at: string;
   }[] = [];
+  const docsNotifyEvents: EarningsDocsAvailabilityEvent[] = [];
 
   for (let i = 0; i < finalHistory.length; i++) {
     const row = finalHistory[i]!;
@@ -229,6 +232,20 @@ export async function persistResolvedEarningsDocuments(
     const nextEightK = replaceSecReports ? eightK : (eightK ?? prior?.eight_k_url ?? null);
     const nextForm10 = replaceSecReports ? form10 : (form10 ?? prior?.form10_url ?? null);
     const nextForm10Kind = replaceSecReports ? form10Kind : (form10Kind ?? prior?.form10_kind ?? null);
+
+    docsNotifyEvents.push(
+      ...detectNewlyAvailableEarningsDocs({
+        ticker: sym,
+        fiscalPeriodEndYmd: fiscal,
+        reportDateYmd: row.reportDateYmd ?? prior?.report_date ?? null,
+        priorSlides: prior?.presentation_pdf_url ?? null,
+        nextSlides,
+        priorEightK: prior?.eight_k_url ?? null,
+        nextEightK,
+        priorForm10: prior?.form10_url ?? null,
+        nextForm10,
+      }),
+    );
 
     if (!nextSlides && !nextFilingsPdf && !nextFilingsHtml && !nextEightK && !nextForm10) continue;
 
@@ -259,7 +276,10 @@ export async function persistResolvedEarningsDocuments(
     });
   }
 
-  if (payload.length === 0) return;
+  if (payload.length === 0) {
+    scheduleNotifyEarningsDocsAvailable(docsNotifyEvents);
+    return;
+  }
 
   const { error } = await admin
     .from("earnings_document_cache")
@@ -274,6 +294,8 @@ export async function persistResolvedEarningsDocuments(
     sym,
     finalHistory.map((r) => r.secSlidesUrl),
   );
+
+  scheduleNotifyEarningsDocsAvailable(docsNotifyEvents);
 }
 
 export async function upsertEarningsDocumentCache(

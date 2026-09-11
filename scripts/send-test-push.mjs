@@ -10,6 +10,8 @@
  * Usage:
  *   node --env-file=.env.local scripts/send-test-push.mjs rakshamann@gmail.com
  *   node --env-file=.env.local scripts/send-test-push.mjs --email rakshamann@gmail.com --ticker AAPL
+ *   node --env-file=.env.local scripts/send-test-push.mjs --email rakshamann@gmail.com --kind slides --ticker AAPL
+ *   node --env-file=.env.local scripts/send-test-push.mjs --email rakshamann@gmail.com --kind reports --ticker AAPL
  *   node --env-file=.env.local scripts/send-test-push.mjs --email rakshamann@gmail.com --kind superinvestor --slug berkshire-hathaway
  *   node --env-file=.env.local scripts/send-test-push.mjs --email rakshamann@gmail.com --apns-key ~/Downloads/AuthKey_XXXX.p8
  */
@@ -239,16 +241,25 @@ async function main() {
     }
 
     const isSuperinvestor = kindArg === "superinvestor" || kindArg === "superinvestor_activity";
+    const isSlides =
+      kindArg === "slides" || kindArg === "earnings_slides_available";
+    const isReports =
+      kindArg === "reports" || kindArg === "earnings_reports_available";
     const slug = slugArg;
     const managerName = slug === "berkshire-hathaway" ? "Warren Buffett" : "Superinvestor test";
     const quarterLabel = "Q2 · 2026";
     const activityCount = 3;
+    const periodLabel = "Q2 · 2026";
     const href = isSuperinvestor
       ? `/superinvestors/${encodeURIComponent(slug)}?tab=activity`
       : `/stock/${encodeURIComponent(tickerArg)}?tab=earnings`;
     const dedupeKey = isSuperinvestor
       ? `TEST_SUPERINVESTOR:${slug}:${Date.now()}`
-      : `TEST_PUSH:${Date.now()}`;
+      : isSlides
+        ? `TEST_SLIDES:${tickerArg}:${Date.now()}`
+        : isReports
+          ? `TEST_REPORTS:${tickerArg}:${Date.now()}`
+          : `TEST_PUSH:${Date.now()}`;
 
     let title;
     let body;
@@ -272,6 +283,34 @@ async function main() {
         accession: `TEST-${Date.now()}`,
         filingDate: null,
         href,
+        test: true,
+      };
+    } else if (isSlides) {
+      title = `${tickerArg} slides available`;
+      body = `${periodLabel} earnings presentation is ready`;
+      kind = "earnings_slides_available";
+      ticker = tickerArg;
+      payload = {
+        ticker: tickerArg,
+        fiscalPeriodLabel: periodLabel,
+        fiscalPeriodEndYmd: "2026-06-30",
+        reportDateYmd: "2026-08-01",
+        href,
+        docsKind: "slides",
+        test: true,
+      };
+    } else if (isReports) {
+      title = `${tickerArg} SEC reports available`;
+      body = `${periodLabel} 8-K or 10-Q/10-K filing is ready`;
+      kind = "earnings_reports_available";
+      ticker = tickerArg;
+      payload = {
+        ticker: tickerArg,
+        fiscalPeriodLabel: periodLabel,
+        fiscalPeriodEndYmd: "2026-06-30",
+        reportDateYmd: "2026-08-01",
+        href,
+        docsKind: "reports",
         test: true,
       };
     } else {

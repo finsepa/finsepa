@@ -28,6 +28,10 @@ import {
   parseEarningsNotificationPayload,
   resolveNotificationTicker,
 } from "@/lib/notifications/earnings-notification-model";
+import {
+  EARNINGS_REPORTS_KIND,
+  EARNINGS_SLIDES_KIND,
+} from "@/lib/notifications/earnings-docs-notify-model";
 import { SUPERINVESTOR_ACTIVITY_KIND } from "@/lib/notifications/superinvestor-activity-model";
 import type { NotificationItem, NotificationsClient } from "@/lib/notifications/use-notifications-client";
 import { useNotificationPreferences } from "@/lib/notifications/use-notification-preferences";
@@ -113,10 +117,14 @@ export function NotificationsPanelModal({
   const {
     earningsResultsEnabled,
     superinvestorActivityEnabled,
+    slidesEnabled,
+    reportsEnabled,
     loading: preferencesLoading,
     saving: preferencesSaving,
     setEarningsResults,
     setSuperinvestorActivity,
+    setSlides,
+    setReports,
     refresh: refreshPreferences,
   } = useNotificationPreferences({ enabled: open });
 
@@ -183,6 +191,21 @@ export function NotificationsPanelModal({
           typeof item.href === "string" && item.href.trim()
             ? item.href.trim()
             : `/superinvestors/${encodeURIComponent(item.ticker)}?tab=activity`;
+        router.push(href);
+        return;
+      }
+      if (
+        item.kind === EARNINGS_SLIDES_KIND ||
+        item.kind === EARNINGS_REPORTS_KIND ||
+        item.payload?.docsKind === "slides" ||
+        item.payload?.docsKind === "reports"
+      ) {
+        void markRead(item.id);
+        onClose();
+        const href =
+          typeof item.href === "string" && item.href.trim()
+            ? item.href.trim()
+            : `/stock/${encodeURIComponent(item.ticker)}?tab=earnings`;
         router.push(href);
         return;
       }
@@ -389,6 +412,114 @@ export function NotificationsPanelModal({
                       }
                     />
                   </div>
+
+                  <div
+                    className={cn(
+                      "flex items-center justify-between gap-4 rounded-[12px] py-1",
+                      !canUseActivityAlerts && "cursor-pointer",
+                    )}
+                    onClick={
+                      !canUseActivityAlerts
+                        ? () => {
+                            openUpgradePlans();
+                          }
+                        : undefined
+                    }
+                    onKeyDown={
+                      !canUseActivityAlerts
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              openUpgradePlans();
+                            }
+                          }
+                        : undefined
+                    }
+                    role={!canUseActivityAlerts ? "button" : undefined}
+                    tabIndex={!canUseActivityAlerts ? 0 : undefined}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <p className="text-[14px] font-medium leading-5 text-fg">Slides</p>
+                        {!canUseActivityAlerts ? <ProFeatureBadge /> : null}
+                      </div>
+                      <p className="mt-0.5 text-[13px] leading-5 text-fg-muted">
+                        {canUseActivityAlerts
+                          ? "When earnings presentation decks are available"
+                          : "Presentation decks for companies you follow — available on Pro"}
+                      </p>
+                    </div>
+                    <NotificationPillSwitch
+                      pressed={canUseActivityAlerts ? slidesEnabled : false}
+                      onPressedChange={(next) => {
+                        if (!canUseActivityAlerts) {
+                          openUpgradePlans();
+                          return;
+                        }
+                        void setSlides(next);
+                      }}
+                      disabled={canUseActivityAlerts ? preferencesSaving : true}
+                      className={!canUseActivityAlerts ? "pointer-events-none" : undefined}
+                      aria-label={
+                        canUseActivityAlerts ? "Slides notifications" : "Slides notifications (Pro)"
+                      }
+                    />
+                  </div>
+
+                  <div
+                    className={cn(
+                      "flex items-center justify-between gap-4 rounded-[12px] py-1",
+                      !canUseActivityAlerts && "cursor-pointer",
+                    )}
+                    onClick={
+                      !canUseActivityAlerts
+                        ? () => {
+                            openUpgradePlans();
+                          }
+                        : undefined
+                    }
+                    onKeyDown={
+                      !canUseActivityAlerts
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              openUpgradePlans();
+                            }
+                          }
+                        : undefined
+                    }
+                    role={!canUseActivityAlerts ? "button" : undefined}
+                    tabIndex={!canUseActivityAlerts ? 0 : undefined}
+                  >
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <p className="text-[14px] font-medium leading-5 text-fg">Reports</p>
+                        {!canUseActivityAlerts ? <ProFeatureBadge /> : null}
+                      </div>
+                      <p className="mt-0.5 text-[13px] leading-5 text-fg-muted">
+                        {canUseActivityAlerts
+                          ? "When SEC 8-K or 10-Q/10-K filings are available"
+                          : "SEC filings for companies you follow — available on Pro"}
+                      </p>
+                    </div>
+                    <NotificationPillSwitch
+                      pressed={canUseActivityAlerts ? reportsEnabled : false}
+                      onPressedChange={(next) => {
+                        if (!canUseActivityAlerts) {
+                          openUpgradePlans();
+                          return;
+                        }
+                        void setReports(next);
+                      }}
+                      disabled={canUseActivityAlerts ? preferencesSaving : true}
+                      className={!canUseActivityAlerts ? "pointer-events-none" : undefined}
+                      aria-label={
+                        canUseActivityAlerts
+                          ? "Reports notifications"
+                          : "Reports notifications (Pro)"
+                      }
+                    />
+                  </div>
                 </div>
               )
             ) : loading && items.length === 0 ? (
@@ -409,7 +540,8 @@ export function NotificationsPanelModal({
                   </EmptyMedia>
                   <EmptyTitle>No notifications yet</EmptyTitle>
                   <EmptyDescription className="max-w-[260px]">
-                    Alerts for watchlist earnings and followed superinvestors will appear here.
+                    Alerts for watchlist earnings, slides, SEC reports, and followed
+                    superinvestors will appear here.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>

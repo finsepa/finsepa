@@ -50,7 +50,7 @@ export type PlanEntitlements = {
   /** Connect / reconnect / sync brokerage (SnapTrade). Free = false. */
   canConnectBrokerage: boolean;
   /**
-   * Activity alerts (earnings results + superinvestor 13F activity).
+   * Activity alerts (earnings results, slides, SEC reports, superinvestor 13F).
    * Pro only — Free can follow but does not receive new push/inbox items.
    */
   canUseActivityAlerts: boolean;
