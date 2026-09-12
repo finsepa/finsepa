@@ -651,8 +651,6 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                     "font-medium",
                                     r.operation?.includes("Cash") && r.operation?.includes("In") && "text-emerald-700",
                                     r.operation?.includes("Cash") && r.operation?.includes("Out") && "text-red-700",
-                                    r.operation === "Deposit" && "text-emerald-700",
-                                    (r.operation === "Withdraw" || r.operation === "Withdrawal") && "text-red-700",
                                     r.operation === "Other income" && "text-emerald-700",
                                     r.operation === "Other expense" && "text-red-700",
                                     r.operation === "Buy" && "text-emerald-700",
