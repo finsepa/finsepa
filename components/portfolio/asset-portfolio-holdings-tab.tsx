@@ -32,6 +32,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { formatPortfolioOperationLabel } from "@/components/layout/cash-direction-select";
 import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
 import { portfolioSharesUnitTicker } from "@/lib/portfolio/custom-asset-symbol";
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
@@ -202,7 +203,7 @@ export function AssetPortfolioHoldingsTab({
       if (op !== "buy" && op !== "sell") continue;
       const lines = out.get(t.date) ?? [];
       lines.push(
-        `${t.operation} · ${formatSharesDisplay(t.shares)} @ ${formatPortfolioUsdPerUnit(t.price)}`,
+        `${formatPortfolioOperationLabel(t.operation)} · ${formatSharesDisplay(t.shares)} @ ${formatPortfolioUsdPerUnit(t.price)}`,
       );
       out.set(t.date, lines);
     }
@@ -468,7 +469,7 @@ export function AssetPortfolioHoldingsTab({
                             opColorClass(t.operation),
                           )}
                         >
-                          {t.operation}
+                          {formatPortfolioOperationLabel(t.operation)}
                         </div>
                         <div className={assetTxNumericCellClass}>
                           {new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(t.shares)}

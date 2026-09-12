@@ -31,6 +31,7 @@ import {
   type ImportOperationLabel,
   type ImportedTransactionDraft,
 } from "@/lib/portfolio/transaction-import";
+import { formatPortfolioOperationLabel } from "@/components/layout/cash-direction-select";
 import { fetchLiveMarketPriceClient, fetchPriceOnDateClient } from "@/lib/portfolio/client-symbol-quotes";
 import { lotUnrealizedPnL } from "@/lib/portfolio/holding-position";
 import {
@@ -639,7 +640,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                 <option value="">—</option>
                                 {OPS.map((op) => (
                                   <option key={op} value={op}>
-                                    {op}
+                                    {formatPortfolioOperationLabel(op)}
                                   </option>
                                 ))}
                               </select>
@@ -650,13 +651,15 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                     "font-medium",
                                     r.operation?.includes("Cash") && r.operation?.includes("In") && "text-emerald-700",
                                     r.operation?.includes("Cash") && r.operation?.includes("Out") && "text-red-700",
+                                    r.operation === "Deposit" && "text-emerald-700",
+                                    (r.operation === "Withdraw" || r.operation === "Withdrawal") && "text-red-700",
                                     r.operation === "Other income" && "text-emerald-700",
                                     r.operation === "Other expense" && "text-red-700",
                                     r.operation === "Buy" && "text-emerald-700",
                                     r.operation === "Sell" && "text-red-700",
                                   )}
                                 >
-                                  {r.operation ?? "—"}
+                                  {r.operation ? formatPortfolioOperationLabel(r.operation) : "—"}
                                 </span>
                               </button>
                             )}

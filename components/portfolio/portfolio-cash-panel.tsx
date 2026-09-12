@@ -7,6 +7,7 @@ import { format, parseISO } from "date-fns";
 import { CashInOutBarChartSection } from "@/components/portfolio/cash-in-out-bar-chart";
 import { DeleteTransactionConfirmModal } from "@/components/portfolio/delete-transaction-confirm-modal";
 import { TransactionRowActionsMenu } from "@/components/portfolio/transaction-row-actions-menu";
+import { formatPortfolioOperationLabel } from "@/components/layout/cash-direction-select";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
   DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
@@ -62,7 +63,7 @@ function cashSummClassName(operation: string, sum: number): string {
   if (sum < 0) return "text-down";
   if (sum > 0) {
     const u = operation.toLowerCase();
-    if (u.includes("cash in") || u.includes("other income")) return "text-up";
+    if (u.includes("cash in") || u.includes("deposit") || u.includes("other income")) return "text-up";
   }
   return "text-fg";
 }
@@ -74,8 +75,8 @@ function formatSignedUsd(n: number): string {
 
 function operationClassName(operation: string): string {
   const u = operation.toLowerCase();
-  if (u.includes("cash in") || u.includes("other income")) return "text-up";
-  if (u.includes("cash out") || u.includes("other expense")) return "text-down";
+  if (u.includes("cash in") || u.includes("deposit") || u.includes("other income")) return "text-up";
+  if (u.includes("cash out") || u.includes("withdraw") || u.includes("other expense")) return "text-down";
   return "text-fg";
 }
 
@@ -91,8 +92,8 @@ const cashTxGrid =
 function rowMatchesCashFilter(t: PortfolioTransaction, f: CashDirectionFilter): boolean {
   if (f === "all") return true;
   const u = t.operation.toLowerCase();
-  if (f === "in") return u.includes("cash in") || u.includes("other income");
-  return u.includes("cash out") || u.includes("other expense");
+  if (f === "in") return u.includes("cash in") || u.includes("deposit") || u.includes("other income");
+  return u.includes("cash out") || u.includes("withdraw") || u.includes("other expense");
 }
 
 function CashTableHeader({
@@ -206,9 +207,9 @@ function PortfolioCashPanelInner() {
 
   const filterSummary =
     cashDirectionFilter === "in"
-      ? "Cash In"
+      ? "Deposit"
       : cashDirectionFilter === "out"
-        ? "Cash Out"
+        ? "Withdraw"
         : null;
 
   return (
@@ -304,8 +305,8 @@ function PortfolioCashPanelInner() {
                   {(
                     [
                       ["all", "All"] as const,
-                      ["in", "Cash In"] as const,
-                      ["out", "Cash Out"] as const,
+                      ["in", "Deposit"] as const,
+                      ["out", "Withdraw"] as const,
                     ] satisfies readonly [CashDirectionFilter, string][]
                   ).map(([value, label]) => (
                     <button
@@ -392,7 +393,7 @@ function PortfolioCashPanelInner() {
                                   operationClassName(t.operation),
                                 )}
                               >
-                                {t.operation}
+                                {formatPortfolioOperationLabel(t.operation)}
                               </div>
                               <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
                                 {portfolioAssetSymbolCaption(t.symbol)}
@@ -471,7 +472,7 @@ function PortfolioCashPanelInner() {
                               operationClassName(t.operation),
                             )}
                           >
-                            {t.operation}
+                            {formatPortfolioOperationLabel(t.operation)}
                           </div>
                           <div className="min-w-0 w-full text-left">
                             <div className="flex min-w-0 items-center justify-start gap-3 pr-2">

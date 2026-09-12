@@ -41,6 +41,8 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
   if (h === "mastercard.com" || h.endsWith(".mastercard.com")) return true;
   // AbbVie IR (Q4 / investors.abbvie.com PDFs).
   if (h === "investors.abbvie.com" || h === "abbvie.com" || h.endsWith(".abbvie.com")) return true;
+  // Adobe IR (`www.adobe.com/cc-shared/...` earnings script/slides + press PDFs).
+  if (h === "adobe.com" || h.endsWith(".adobe.com")) return true;
   // JPMorgan Chase IR DAM PDFs.
   if (h === "jpmorganchase.com" || h.endsWith(".jpmorganchase.com")) return true;
   // Tencent IR PDFs (results PPT + earnings releases).

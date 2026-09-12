@@ -20,6 +20,7 @@ import {
   TABLE_START_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import { formatPortfolioOperationLabel } from "@/components/layout/cash-direction-select";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
@@ -171,7 +172,7 @@ function PortfolioHoldingTransactionsPanelInner({
                           opColorClass(t.operation),
                         )}
                       >
-                        {t.operation}
+                        {formatPortfolioOperationLabel(t.operation)}
                       </div>
                       <div className={numericCellClass}>
                         {format(parseISO(t.date), "MMM d, yyyy")}

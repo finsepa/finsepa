@@ -45,6 +45,7 @@ import { toastTransactionDeleted } from "@/lib/portfolio/transaction-deleted-toa
 import { portfolioAssetSymbolCaption } from "@/lib/portfolio/custom-asset-symbol";
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { formatPortfolioOperationLabel } from "@/components/layout/cash-direction-select";
 import { TABLE_PAGE_SIZE, TablePaginationBar, tablePageCount } from "@/components/ui/table-pagination";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -160,9 +161,11 @@ function sumColorClass(sum: number): string {
 
 function opColorClass(operation: string): string {
   const u = operation.toLowerCase();
-  if (u.includes("sell") || u.includes("cash out")) return "text-down";
+  if (u.includes("sell") || u.includes("cash out") || u.includes("withdraw")) return "text-down";
   if (u.includes("expense") || u.includes("fees") || u.includes("brokerage fee")) return "text-down";
-  if (u.includes("buy") || u.includes("cash in") || u.includes("other income")) return "text-up";
+  if (u.includes("buy") || u.includes("cash in") || u.includes("deposit") || u.includes("other income")) {
+    return "text-up";
+  }
   return "text-fg";
 }
 
@@ -658,7 +661,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                                     opColorClass(t.operation),
                                   )}
                                 >
-                                  {t.operation}
+                                  {formatPortfolioOperationLabel(t.operation)}
                                 </div>
                                 <div className="hidden truncate text-[14px] font-semibold leading-5 text-fg sm:block">
                                   {portfolioAssetSymbolCaption(t.symbol)}
@@ -703,7 +706,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                               opColorClass(t.operation),
                             )}
                           >
-                            {t.operation}
+                            {formatPortfolioOperationLabel(t.operation)}
                           </div>
                           <div
                             className={cn(

@@ -24,8 +24,8 @@ export function parseOperationCell(raw: string, assetUpper: string): ImportOpera
   }
 
   // Broker export style (Event column)
-  if (compact === "cashin") return "Cash In";
-  if (compact === "cashout") return "Cash Out";
+  if (compact === "cashin" || compact === "deposit") return "Cash In";
+  if (compact === "cashout" || compact === "withdraw" || compact === "withdrawal") return "Cash Out";
   if (compact === "buy") return "Buy";
   if (compact === "sell") return "Sell";
   if (compact === "dividend") return "Dividend";

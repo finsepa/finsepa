@@ -94,7 +94,7 @@ function splitCashAmounts(t: PortfolioTransaction): { inAmt: number; outAmt: num
   if (t.sum > 0) {
     return { inAmt: t.sum, outAmt: 0 };
   }
-  if (t.sum < 0 && op.includes("cash out")) {
+  if (t.sum < 0 && (op.includes("cash out") || op.includes("withdraw"))) {
     return { inAmt: 0, outAmt: Math.abs(t.sum) };
   }
   return { inAmt: 0, outAmt: 0 };
@@ -660,7 +660,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
             </EmptyMedia>
             <EmptyTitle>No cash activity yet</EmptyTitle>
             <EmptyDescription className="max-w-sm">
-              Add cash in or cash out to see deposits and withdrawals over time.
+              Add a deposit or withdrawal to see deposits and withdrawals over time.
             </EmptyDescription>
           </EmptyHeader>
         </Empty>

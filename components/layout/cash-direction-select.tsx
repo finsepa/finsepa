@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 export type CashDirection = "in" | "out" | "other_income" | "other_expense";
 
 export const CASH_DIRECTION_OPTIONS: ListboxOption<CashDirection>[] = [
-  { value: "in", label: "Cash In" },
-  { value: "out", label: "Cash Out" },
+  { value: "in", label: "Deposit" },
+  { value: "out", label: "Withdraw" },
   { value: "other_income", label: "Other income" },
   { value: "other_expense", label: "Other expense" },
 ];
@@ -19,9 +19,30 @@ const OPTIONS = CASH_DIRECTION_OPTIONS;
 const CASH_TAB_MOTION_MS = 280;
 const CASH_TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
 
-/** Stored on `PortfolioTransaction.operation` for cash rows. */
+/**
+ * Canonical ledger `operation` for cash rows.
+ * Keep “Cash In” / “Cash Out” for existing rows, SnapTrade, and iOS payloads.
+ */
 export function cashOperationLabel(d: CashDirection): string {
-  return OPTIONS.find((o) => o.value === d)?.label ?? "Cash In";
+  switch (d) {
+    case "in":
+      return "Cash In";
+    case "out":
+      return "Cash Out";
+    case "other_income":
+      return "Other income";
+    case "other_expense":
+      return "Other expense";
+  }
+}
+
+/** UI label for any stored operation (legacy Cash In/Out → Deposit/Withdraw). */
+export function formatPortfolioOperationLabel(operation: string): string {
+  const t = operation.trim();
+  const u = t.toLowerCase();
+  if (t === "Cash In" || u === "deposit") return "Deposit";
+  if (t === "Cash Out" || u === "withdraw" || u === "withdrawal") return "Withdraw";
+  return t;
 }
 
 /** Signed ledger `sum` for a cash amount entered as a positive number. */
@@ -31,14 +52,15 @@ export function cashSignedAmount(d: CashDirection, amountPositive: number): numb
 
 export function cashDirectionFromOperation(operation: string): CashDirection {
   const op = operation.trim();
-  if (op === "Cash In") return "in";
-  if (op === "Cash Out") return "out";
+  if (op === "Cash In" || op === "Deposit") return "in";
+  if (op === "Cash Out" || op === "Withdraw" || op === "Withdrawal") return "out";
   if (op === "Other income") return "other_income";
   if (op === "Other expense") return "other_expense";
   const u = op.toLowerCase();
-  if (u.includes("cash out")) return "out";
+  if (u.includes("cash out") || u.includes("withdraw")) return "out";
   if (u.includes("other expense")) return "other_expense";
   if (u.includes("other income")) return "other_income";
+  if (u.includes("cash in") || u.includes("deposit")) return "in";
   return "in";
 }
 

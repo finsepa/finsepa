@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import { format, parseISO } from "date-fns";
 
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import { formatPortfolioOperationLabel } from "@/components/layout/cash-direction-select";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import {
   AppModalFooter,
@@ -78,7 +79,7 @@ export function DeleteTransactionConfirmModal({ transaction, onClose, onConfirmD
         <p className="text-sm leading-5 text-fg">
           Remove this{" "}
           <span className="font-semibold">
-            {transaction.operation}
+            {formatPortfolioOperationLabel(transaction.operation)}
           </span>{" "}
           for{" "}
           <span className="font-semibold">
