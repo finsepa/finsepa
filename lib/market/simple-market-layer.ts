@@ -46,7 +46,7 @@ import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { runWithConcurrencyLimit } from "@/lib/utils/run-with-concurrency-limit";
 import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
 import { readMarketSnapshot, readMarketSnapshotSlow } from "@/lib/market/market-snapshot-store";
-import { rebuildMarketSnapshotBlobSingleFlight } from "@/lib/market/market-snapshot-rebuild";
+import { rebuildMarketSnapshotBlobSingleFlight, readMarketBlobForRebuild } from "@/lib/market/market-snapshot-rebuild";
 import { readCryptoDerivedSnapshot, upsertCryptoDerivedSnapshot, isUsableCryptoDerivedSnapshot } from "@/lib/market/crypto-derived-snapshot";
 import { mergeCryptoQuoteMaps } from "@/lib/market/merge-crypto-quotes";
 import { resolveCryptoMarketCapUsd } from "@/lib/market/crypto-mcap-fallback";
@@ -244,6 +244,24 @@ function buildEmptyMarketData(): SimpleMarketData {
     crypto,
     indices,
   };
+}
+
+function isUsableStocksAllPagesMarketData(d: SimpleMarketData | null | undefined): d is SimpleMarketData {
+  return !!d && Object.keys(d.stocks ?? {}).length > 0;
+}
+
+/**
+ * Visitor path for `stocks_all_pages`: warm/stale snapshot only.
+ * Cron owns full rebuilds — a page view must never fan out EODHD for ~500 quotes.
+ */
+async function readStocksAllPagesSnapshotPreferStale(): Promise<SimpleMarketData> {
+  const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
+  if (isUsableStocksAllPagesMarketData(fromSnapshot)) return fromSnapshot;
+
+  const stale = await readMarketBlobForRebuild<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages, "hot");
+  if (stale && isUsableStocksAllPagesMarketData(stale.payload)) return stale.payload;
+
+  return buildEmptyMarketData();
 }
 
 type SimpleMarketBatchOpts = {
@@ -512,16 +530,7 @@ async function loadSimpleMarketDataEtfsTabUncached(): Promise<SimpleMarketData> 
  * Used by `/api/screener/companies` pagination to avoid the full 30+ symbol quote fan-out.
  */
 export async function getSimpleMarketDataForScreenerPage2Slice(page2Tickers: string[]): Promise<SimpleMarketData> {
-  const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
-  if (fromSnapshot) return sliceSimpleMarketDataForStockTickers(fromSnapshot, page2Tickers);
-
-  const full = await rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
-    key: MARKET_SNAPSHOT_KEY.stocksAllPages,
-    tier: "hot",
-    loadUncached: () => loadSimpleMarketDataScreenerStocksAllPagesUncached(),
-    emptyFallback: () => buildEmptyMarketData(),
-    isUsable: (d) => !!d && Object.keys(d.stocks ?? {}).length > 0,
-  });
+  const full = await readStocksAllPagesSnapshotPreferStale();
   return sliceSimpleMarketDataForStockTickers(full, page2Tickers);
 }
 
@@ -609,17 +618,8 @@ export async function getSimpleMarketDataSlim(): Promise<SimpleMarketData> {
 }
 
 export async function getSimpleMarketDataScreenerStocks(): Promise<SimpleMarketData> {
-  const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
-  if (fromSnapshot) return sliceSimpleMarketDataScreenerStocksPage1(fromSnapshot);
-  // Rebuild full durable blob (not page1-only) so heatmap/watchlist share one single-flight.
-  const full = await rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
-    key: MARKET_SNAPSHOT_KEY.stocksAllPages,
-    tier: "hot",
-    loadUncached: () => loadSimpleMarketDataScreenerStocksAllPagesUncached(),
-    emptyFallback: () => buildEmptyMarketData(),
-    isUsable: (d) => !!d && Object.keys(d.stocks ?? {}).length > 0,
-  });
-  return sliceSimpleMarketDataScreenerStocksPage1(full);
+  const fromSnapshot = await readStocksAllPagesSnapshotPreferStale();
+  return sliceSimpleMarketDataScreenerStocksPage1(fromSnapshot);
 }
 
 async function getSimpleMarketDataCryptoTabCached(): Promise<SimpleMarketData> {
@@ -659,8 +659,6 @@ export async function getSimpleMarketDataIndicesTab(): Promise<SimpleMarketData>
 }
 
 export async function getSimpleMarketDataEtfsTab(): Promise<SimpleMarketData> {
-  // No durable ETF blob yet — session cache only; still coalesce via lease on a synthetic key
-  // so concurrent cold opens do not unbounded-fan-out. Persist under etfs_tab when keyed.
   const snap = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.etfsTab);
   if (snap) return snap;
   return rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
@@ -669,23 +667,12 @@ export async function getSimpleMarketDataEtfsTab(): Promise<SimpleMarketData> {
     loadUncached: () =>
       withScreenerUsMarketCache("simple-market-data-v2-etfs-tab-session", () => loadSimpleMarketDataEtfsTabUncached()),
     emptyFallback: () => buildEmptyMarketData(),
+    isUsable: (d) => !!d && Object.keys(d.extraScreenerStocks ?? {}).length > 0,
   });
 }
 
 export async function getSimpleMarketDataScreenerStocksAllPages(): Promise<SimpleMarketData> {
-  const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
-  if (fromSnapshot) return fromSnapshot;
-  return rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
-    key: MARKET_SNAPSHOT_KEY.stocksAllPages,
-    tier: "hot",
-    loadUncached: () =>
-      withScreenerUsMarketCache(
-        "simple-market-data-v3-screener-stocks-all-pages-session",
-        () => loadSimpleMarketDataScreenerStocksAllPagesUncached(),
-      ),
-    emptyFallback: () => buildEmptyMarketData(),
-    isUsable: (d) => !!d && Object.keys(d.stocks ?? {}).length > 0,
-  });
+  return readStocksAllPagesSnapshotPreferStale();
 }
 
 /** Use live quote as "current" price when valid so 1M/YTD match the same snapshot as the Price column. */
@@ -1111,6 +1098,10 @@ export async function buildMarketSnapshotCryptoDerivedForIngest(): Promise<Simpl
 
 export async function buildMarketSnapshotIndicesTabForIngest(): Promise<SimpleMarketData> {
   return loadSimpleMarketDataIndicesTabUncached();
+}
+
+export async function buildMarketSnapshotEtfsTabForIngest(): Promise<SimpleMarketData> {
+  return loadSimpleMarketDataEtfsTabUncached();
 }
 
 export async function buildMarketSnapshotIndicesDerivedForIngest(): Promise<SimpleIndicesDerived> {

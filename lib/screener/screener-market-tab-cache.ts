@@ -15,9 +15,12 @@ import type { ScreenerMarketTabParam } from "@/lib/screener/screener-market-url"
 import { buildScreenerCompaniesListKey } from "@/lib/screener/screener-companies-page-cache";
 import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-sectors";
 import type { ScreenerIndustryDrill } from "@/lib/screener/screener-industry-url";
+import { screenerMarketTabSegmentHint } from "@/lib/screener/screener-market-tab-segment-hint";
 
-/** v6: Companies 50/page (invalidate v5 tabs that cached 20 stockRows). */
-const STORAGE_KEY = "finsepa:screener:market-tabs:v6-lru";
+export { screenerMarketTabSegmentHint } from "@/lib/screener/screener-market-tab-segment-hint";
+
+/** v7: crypto market-tab embeds mover rows (drop client pageSize=100 fetch). */
+const STORAGE_KEY = "finsepa:screener:market-tabs:v7-lru";
 
 const inflight = new Map<string, Promise<ScreenerPagePayload>>();
 
@@ -64,8 +67,12 @@ export async function fetchScreenerMarketTabPayload(
   market: ScreenerMarketTabParam,
   url: string,
   cacheKey: string,
+  opts?: { knownSegment?: string | null },
 ): Promise<ScreenerPagePayload> {
-  const marketSegment = await fetchUsMarketCacheSegment();
+  const known = typeof opts?.knownSegment === "string" ? opts.knownSegment.trim() : "";
+  // Prefer SSR/prior payload segment so tab switches can hit LRU without an epoch round-trip.
+  // Only call us-cache-epoch when we have no segment hint.
+  const marketSegment = known || (await fetchUsMarketCacheSegment());
   const segmentKey = marketSegment || "unknown";
   const inflightKey = `${segmentKey}|${cacheKey}`;
 

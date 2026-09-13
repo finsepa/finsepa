@@ -62,6 +62,16 @@ export const EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS = new Set([
   "SAN",
   "CRWD",
   "AMGN",
+  "MRVL",
+  "VZ",
+  "TTE",
+  "STX",
+  "CRM",
+  "DIS",
+  "AMD",
+  "PEP",
+  "INTU",
+  "QCOM",
 ]);
 
 export type EarningsIrVaultDocStatus = "locked" | "found" | "missing";
@@ -183,6 +193,14 @@ export function isIrVaultAllowedUrl(url: string | null | undefined): url is stri
     ) {
       return true;
     }
+    // Verizon IR Drupal downloads — PDF bytes, no `.pdf` suffix.
+    if (
+      (host === "www.verizon.com" || host === "verizon.com") &&
+      /\/about\/file\/\d+\/download\/?$/i.test(u.pathname) &&
+      u.searchParams.has("token")
+    ) {
+      return true;
+    }
     if (/\.pptx?(?:$|[?#])/i.test(u.pathname) || /\.docx?(?:$|[?#])/i.test(u.pathname)) return true;
     return false;
   } catch {
@@ -194,7 +212,8 @@ export function isIrVaultAllowedUrl(url: string | null | undefined): url is stri
       ) ||
       /cdn-dynmedia-1\.microsoft\.com\/is\/content\/microsoftcorp\/(?:Slides|PressRelease)FY\d{2}_?[qQ][1-4]/i.test(
         t,
-      )
+      ) ||
+      /verizon\.com\/about\/file\/\d+\/download\?[^#]*token=/i.test(t)
     );
   }
 }

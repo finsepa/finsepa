@@ -50,6 +50,7 @@ import type { ScreenerCanonicalSector } from "@/lib/screener/screener-gics-secto
 import type { ScreenerIndustryDrill } from "@/lib/screener/screener-industry-url";
 import {
   SCREENER_COMPANIES_PAGE_SIZE,
+  SCREENER_CRYPTO_MOVER_PAGE_SIZE,
   SCREENER_CRYPTO_PAGE_SIZE,
 } from "@/lib/screener/screener-markets-page-size";
 import { getCryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
@@ -400,14 +401,16 @@ export async function buildScreenerPagePayload(
   const marketCacheSegment = getScreenerUsMarketCacheEpoch().segment;
 
   if (market === "crypto") {
-    const [cryptoFirst, fearGreed] = await Promise.all([
-      buildCryptoScreenerApiResponse(1, SCREENER_CRYPTO_PAGE_SIZE),
+    // One ranked build: page-1 table (50) + movers window (≤100) — no client pageSize=100 refetch.
+    const [cryptoMovers, fearGreed] = await Promise.all([
+      buildCryptoScreenerApiResponse(1, SCREENER_CRYPTO_MOVER_PAGE_SIZE),
       getCryptoFearGreedIndex(),
     ]);
     return {
       market: "crypto",
-      cryptoRows: cryptoFirst.rows,
-      cryptoTotalCount: cryptoFirst.total,
+      cryptoRows: cryptoMovers.rows.slice(0, SCREENER_CRYPTO_PAGE_SIZE),
+      cryptoTotalCount: cryptoMovers.total,
+      cryptoMoverRows: cryptoMovers.rows,
       fearGreed,
       marketCacheSegment,
     };
@@ -501,6 +504,7 @@ export function emptyScreenerMarketTabPayload(
         market: "crypto",
         cryptoRows: [],
         cryptoTotalCount: 0,
+        cryptoMoverRows: [],
         fearGreed: null,
         marketCacheSegment,
       };
@@ -542,7 +546,7 @@ export async function buildScreenerMarketTabApiResponse(
   }
   const listKey = market === "stocks" ? stocksMarketTabCacheKey(opts) : market;
   return withScreenerUsMarketCache(
-    "screener-market-tab-payload-v4-companies-50",
+    "screener-market-tab-payload-v5-crypto-movers",
     () => buildScreenerPagePayload(market, opts),
     [market, listKey],
   );

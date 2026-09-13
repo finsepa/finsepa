@@ -76,7 +76,17 @@ import { applyIrSeedAxpDocumentUrls } from "@/lib/market/ir-seed-apply-axp";
 import { applyIrSeedLinDocumentUrls } from "@/lib/market/ir-seed-apply-lin";
 import { applyIrSeedSanDocumentUrls } from "@/lib/market/ir-seed-apply-san";
 import { applyIrSeedCrwdDocumentUrls } from "@/lib/market/ir-seed-apply-crwd";
+import { applyIrSeedAmdDocumentUrls } from "@/lib/market/ir-seed-apply-amd";
 import { applyIrSeedAmgnDocumentUrls } from "@/lib/market/ir-seed-apply-amgn";
+import { applyIrSeedCrmDocumentUrls } from "@/lib/market/ir-seed-apply-crm";
+import { applyIrSeedDisDocumentUrls } from "@/lib/market/ir-seed-apply-dis";
+import { applyIrSeedIntuDocumentUrls } from "@/lib/market/ir-seed-apply-intu";
+import { applyIrSeedMrvlDocumentUrls } from "@/lib/market/ir-seed-apply-mrvl";
+import { applyIrSeedPepDocumentUrls } from "@/lib/market/ir-seed-apply-pep";
+import { applyIrSeedQcomDocumentUrls } from "@/lib/market/ir-seed-apply-qcom";
+import { applyIrSeedStxDocumentUrls } from "@/lib/market/ir-seed-apply-stx";
+import { applyIrSeedTteDocumentUrls } from "@/lib/market/ir-seed-apply-tte";
+import { applyIrSeedVzDocumentUrls } from "@/lib/market/ir-seed-apply-vz";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 /** Tickers with bespoke IR seed modules (run before universal layers). */
@@ -156,6 +166,16 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
   "SAN",
   "CRWD",
   "AMGN",
+  "MRVL",
+  "VZ",
+  "TTE",
+  "STX",
+  "CRM",
+  "DIS",
+  "AMD",
+  "PEP",
+  "INTU",
+  "QCOM",
 ]);
 
 export function earningsIrSeedResolutionSource(
@@ -245,6 +265,16 @@ async function applyDedicatedIrSeedDocumentUrls(
   if (t === "SAN") return applyIrSeedSanDocumentUrls(rows, hub);
   if (t === "CRWD") return applyIrSeedCrwdDocumentUrls(rows, hub);
   if (t === "AMGN") return applyIrSeedAmgnDocumentUrls(rows, hub);
+  if (t === "MRVL") return applyIrSeedMrvlDocumentUrls(rows, hub);
+  if (t === "VZ") return applyIrSeedVzDocumentUrls(rows, hub);
+  if (t === "TTE") return applyIrSeedTteDocumentUrls(rows, hub);
+  if (t === "STX") return applyIrSeedStxDocumentUrls(rows, hub);
+  if (t === "CRM") return applyIrSeedCrmDocumentUrls(rows, hub);
+  if (t === "DIS") return applyIrSeedDisDocumentUrls(rows, hub);
+  if (t === "AMD") return applyIrSeedAmdDocumentUrls(rows, hub);
+  if (t === "PEP") return applyIrSeedPepDocumentUrls(rows, hub);
+  if (t === "INTU") return applyIrSeedIntuDocumentUrls(rows, hub);
+  if (t === "QCOM") return applyIrSeedQcomDocumentUrls(rows, hub);
   if (t === "RACE") {
     return applyIrSeedFerrariPresentationUrls(rows, {
       preview: options?.preview,

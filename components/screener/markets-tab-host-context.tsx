@@ -47,8 +47,15 @@ export function useMarketsTabHost(): MarketsTabHostContextValue {
   return ctx;
 }
 
-export function useRegisterMarketsTabHost(activeTab: MarketTab, setActiveTab: (tab: MarketTab) => void): void {
+export function useRegisterMarketsTabHost(
+  activeTab: MarketTab,
+  setActiveTab: (tab: MarketTab) => void,
+  enabled = true,
+): void {
   const { register } = useMarketsTabHost();
 
-  useEffect(() => register({ activeTab, setActiveTab }), [register, activeTab, setActiveTab]);
+  useEffect(() => {
+    if (!enabled) return;
+    return register({ activeTab, setActiveTab });
+  }, [register, activeTab, setActiveTab, enabled]);
 }

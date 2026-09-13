@@ -4,6 +4,12 @@ export const SCREENER_COMPANIES_PAGE_SIZE = 50;
 /** Rows per page — Screener → Crypto (100 curated ≈ 2 pages). */
 export const SCREENER_CRYPTO_PAGE_SIZE = 50;
 
+/**
+ * Universe window for Crypto Largest Gainers/Losers cards.
+ * Matches `/api/screener/crypto-rows` max pageSize; full liquid set is ≈100.
+ */
+export const SCREENER_CRYPTO_MOVER_PAGE_SIZE = 100;
+
 /** Rows per page — Screener → Indices (client-sliced from full cached payload). */
 export const SCREENER_INDICES_PAGE_SIZE = 15;
 

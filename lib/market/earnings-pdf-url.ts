@@ -27,6 +27,14 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
       return true;
     }
     if (isGcsNodePdfPath(u.hostname, u.pathname)) return true;
+    // Verizon IR Drupal file downloads (`/about/file/N/download?token=…`) — PDF bytes, no `.pdf` suffix.
+    if (
+      (u.hostname === "www.verizon.com" || u.hostname === "verizon.com") &&
+      /\/about\/file\/\d+\/download\/?$/i.test(u.pathname) &&
+      u.searchParams.has("token")
+    ) {
+      return true;
+    }
     return /\.pdf(?:$|[?#])/i.test(u.pathname) || /\.pdf(?:$|[?#])/i.test(t);
   } catch {
     if (/investors\.micron\.com\/static-files\//i.test(t)) return false;
@@ -35,7 +43,8 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
       /\/static-files\/[a-f0-9-]{36}/i.test(t) ||
       /(?:investors\.broadcom\.com|broadcom\.gcs-web\.com|investor\.sandisk\.com|sandisk\.gcs-web\.com)\/node\/\d+\/pdf/i.test(
         t,
-      )
+      ) ||
+      /verizon\.com\/about\/file\/\d+\/download\?[^#]*token=/i.test(t)
     );
   }
 }

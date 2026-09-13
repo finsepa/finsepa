@@ -86,4 +86,10 @@ test("IR vault allows previewable SEC exhibit HTML; rejects unrelated SEC HTML",
     ),
     true,
   );
+  assert.equal(
+    isIrVaultAllowedUrl(
+      "https://www.verizon.com/about/file/78237/download?token=KV8JW0Dr",
+    ),
+    true,
+  );
 });

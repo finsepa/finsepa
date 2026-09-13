@@ -17,6 +17,10 @@ import { parseScreenerSectorParam, SCREENER_SECTOR_QUERY } from "@/lib/screener/
 
 type PageProps = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
+/**
+ * Slim shell first: market tabs paint from the URL (no payload await).
+ * Nested Suspense streams the selected market body — same progressive pattern as `/stock`.
+ */
 export default async function ScreenerPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const raw = sp[SCREENER_MARKET_QUERY];
@@ -34,6 +38,10 @@ export default async function ScreenerPage({ searchParams }: PageProps) {
   return (
     <div className="min-w-0 w-full max-w-full max-md:px-4 max-md:pb-2 max-md:pt-0 md:px-9 md:py-6">
       <ScreenerBrowserTrace />
+      {/*
+        Outer Suspense covers soft-nav into /screener (loading.tsx shares the same skeleton).
+        ScreenerPageContent returns chrome immediately; nested Suspense streams the tab payload.
+      */}
       <Suspense fallback={<ScreenerContentSkeleton market={screenerMarketTabLabelFromParam(market)} />}>
         <ScreenerPageContent
           market={market}

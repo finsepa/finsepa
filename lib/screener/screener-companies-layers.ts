@@ -12,7 +12,7 @@ import { getTop500Universe } from "@/lib/screener/top500-companies";
 /**
  * Screener v2 — Layer A: Top-500 universe order + PE/mcap fields from the same snapshot,
  * plus logo URLs resolved once per layer refresh (no per-page logo fan-out).
- * Revalidates with the universe (slow-moving).
+ * Universe prefers cron `top500_market` (see {@link getTop500Universe}); revalidates ~7d.
  */
 export type ScreenerCompanyIdentity = {
   ticker: string;
@@ -47,7 +47,7 @@ async function buildScreenerStaticLayerUncached(): Promise<ScreenerCompaniesStat
 
 export const getScreenerCompaniesStaticLayer = unstable_cache(
   buildScreenerStaticLayerUncached,
-  ["screener-v2-companies-static-layer-v4-identity-7d"],
+  ["screener-v2-companies-static-layer-v5-top500-snap"],
   { revalidate: REVALIDATE_SCREENER_IDENTITY },
 );
 

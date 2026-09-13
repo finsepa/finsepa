@@ -55,6 +55,7 @@ test("sparse crypto payload is treated as empty for client bootstrap", () => {
     market: "crypto",
     cryptoRows: [row({ symbol: "BTC" }), row({ symbol: "ETH" })],
     cryptoTotalCount: 50,
+    cryptoMoverRows: [],
     fearGreed: null,
     marketCacheSegment: "frozen-2026-08-21",
   };

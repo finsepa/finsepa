@@ -24,8 +24,12 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
     h === "d1io3yog0oux5.cloudfront.net" &&
     (parsed.pathname.includes("/presentation/") ||
       parsed.pathname.includes("/earnings_release/") ||
+      parsed.pathname.includes("/additional_earnings_information/") ||
+      parsed.pathname.includes("/financial_tables_pdf/") ||
       parsed.pathname.includes("/klatencor/") ||
-      parsed.pathname.includes("/earnings_slide_presentation/"))
+      parsed.pathname.includes("/earnings_slide_presentation/") ||
+      // Marvell Q4 FY26 deck lives under /file/ on the same CDN hash.
+      /\/marvell\/db\/\d+\/\d+\/file\//i.test(parsed.pathname))
   ) {
     return true;
   }
@@ -43,6 +47,17 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
   if (h === "investors.abbvie.com" || h === "abbvie.com" || h.endsWith(".abbvie.com")) return true;
   // Adobe IR (`www.adobe.com/cc-shared/...` earnings script/slides + press PDFs).
   if (h === "adobe.com" || h.endsWith(".adobe.com")) return true;
+  // Verizon IR Drupal file downloads + sites/default/files PDFs.
+  if (h === "verizon.com" || h.endsWith(".verizon.com")) {
+    if (/\/about\/file\/\d+\/download\/?$/i.test(parsed.pathname) && parsed.searchParams.has("token")) {
+      return true;
+    }
+    if (parsed.pathname.includes("/about/sites/default/files/") && /\.pdf(?:$|[?#])/i.test(parsed.pathname)) {
+      return true;
+    }
+  }
+  // TotalEnergies IR results PDFs.
+  if (h === "totalenergies.com" || h.endsWith(".totalenergies.com")) return true;
   // JPMorgan Chase IR DAM PDFs.
   if (h === "jpmorganchase.com" || h.endsWith(".jpmorganchase.com")) return true;
   // Tencent IR PDFs (results PPT + earnings releases).
@@ -124,6 +139,12 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
   if (h === "santander.com" || h.endsWith(".santander.com")) return true;
   if (h === "ir.crowdstrike.com" || h === "crowdstrike.com" || h.endsWith(".crowdstrike.com")) return true;
   if (h === "investors.amgen.com" || h === "amgen.com" || h.endsWith(".amgen.com")) return true;
+  // PepsiCo IR prepared remarks + earnings release PDFs.
+  if (h === "investors.pepsico.com" || h === "pepsico.com" || h.endsWith(".pepsico.com")) return true;
+  // Intuit IR fact sheets + press PDFs under /_assets/.
+  if (h === "investors.intuit.com" || h === "intuit.com" || h.endsWith(".intuit.com")) return true;
+  // Qualcomm IR overview hosts files on s204.q4cdn (already allowed via q4cdn).
+  if (h === "investor.qualcomm.com" || h === "qualcomm.com" || h.endsWith(".qualcomm.com")) return true;
   if (h === "netflix.net" || h.endsWith(".netflix.net") || h === "netflix.com" || h.endsWith(".netflix.com")) {
     return true;
   }

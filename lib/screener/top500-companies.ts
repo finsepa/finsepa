@@ -10,20 +10,17 @@ import { readMarketSnapshot } from "@/lib/market/market-snapshot-store";
 import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
 import { filterUniverseRowsRemovingOtcDuplicates } from "@/lib/market/otc-duplicate-tickers";
 import { filterIssuerLineDuplicatesInUniverse } from "@/lib/screener/universe-issuer-dedupe";
+import {
+  filterScreenerTop500ExcludedTickers,
+  normalizeTop500SnapshotRows,
+  type TopCompanyUniverseRow,
+} from "@/lib/screener/top500-snapshot-normalize";
 
-export type TopCompanyUniverseRow = EodhdTopUniverseRow;
-
-/**
- * Hide from screener top-500 only (search / stock routes still work via EODHD search).
- * GOOG — Alphabet Class C (list GOOGL). SKHY / SKHYY — OTC ADRs for SK hynix.
- */
-const SCREENER_TOP500_EXCLUDED_TICKERS = new Set(["GOOG", "SKHY", "SKHYY"]);
-
-export function filterScreenerTop500ExcludedTickers<T extends { ticker: string }>(
-  rows: readonly T[],
-): T[] {
-  return rows.filter((r) => !SCREENER_TOP500_EXCLUDED_TICKERS.has(r.ticker.trim().toUpperCase()));
-}
+export type { TopCompanyUniverseRow } from "@/lib/screener/top500-snapshot-normalize";
+export {
+  filterScreenerTop500ExcludedTickers,
+  normalizeTop500SnapshotRows,
+} from "@/lib/screener/top500-snapshot-normalize";
 
 function mergeUniversePages(pages: readonly EodhdTopUniverseRow[][]): TopCompanyUniverseRow[] {
   const combined = pages.flat();
@@ -63,9 +60,20 @@ export async function buildTop500MarketSnapshotForIngest(): Promise<TopCompanyUn
   return buildTop500UniverseUncached();
 }
 
+/**
+ * Prefer cron `top500_market` so a 7d identity-cache miss does not fan out EODHD on a visitor.
+ * Falls back to live EODHD screener pages only when the snapshot is missing/unusable.
+ */
+async function loadTop500UniversePreferSnapshot(): Promise<TopCompanyUniverseRow[]> {
+  const fromSnapshot = await readMarketSnapshot<TopCompanyUniverseRow[]>(MARKET_SNAPSHOT_KEY.top500Market);
+  const normalized = normalizeTop500SnapshotRows(fromSnapshot);
+  if (normalized) return normalized;
+  return buildTop500UniverseUncached();
+}
+
 const getTop500UniverseData = unstable_cache(
-  buildTop500UniverseUncached,
-  ["screener-top500-universe-v14-exclude-skhy"],
+  loadTop500UniversePreferSnapshot,
+  ["screener-top500-universe-v15-snapshot-first"],
   { revalidate: REVALIDATE_SCREENER_IDENTITY },
 );
 
@@ -74,13 +82,13 @@ export const getTop500Universe = cache(async () => getTop500UniverseData());
 
 /**
  * Screener tables that need fresh 1D/1M/YTD (Gainers/Losers, Sectors, Industries):
- * re-fetch screener snapshot every 15m in regular session, frozen between sessions.
- * Identity (names/logos) still comes from {@link getScreenerCompaniesStaticLayer} (7d).
+ * re-read `top500_market` every call (15m cron). Fallback EODHD only on snapshot miss.
+ * Identity (names/logos) for Companies still goes through {@link getScreenerCompaniesStaticLayer} (7d),
+ * which also prefers the same snapshot via {@link getTop500Universe}.
  */
 export async function getTop500UniverseMarketSnapshot(): Promise<TopCompanyUniverseRow[]> {
   const fromSnapshot = await readMarketSnapshot<TopCompanyUniverseRow[]>(MARKET_SNAPSHOT_KEY.top500Market);
-  if (fromSnapshot?.length) {
-    return filterScreenerTop500ExcludedTickers(fromSnapshot);
-  }
-  return withScreenerUsMarketCache("screener-top500-market-snapshot-v2-exclude-skhy", buildTop500UniverseUncached);
+  const normalized = normalizeTop500SnapshotRows(fromSnapshot);
+  if (normalized) return normalized;
+  return withScreenerUsMarketCache("screener-top500-market-snapshot-v3-exclude-skhy", buildTop500UniverseUncached);
 }

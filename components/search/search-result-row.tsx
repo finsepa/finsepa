@@ -58,7 +58,6 @@ function SearchSuperinvestorLogo({ item }: { item: SearchAssetItem }) {
         height={32}
         className={cn(
           "h-8 w-8 shrink-0 rounded-full border border-stroke-muted bg-surface object-cover",
-          (src.includes("blackrock") || src.includes("baillie-gifford")) && "bg-[#141414] p-1",
         )}
         onError={() => {
           setFailedSrc(src);

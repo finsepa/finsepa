@@ -18,6 +18,7 @@ import {
   buildScreenerMarketTabCacheKey,
   fetchScreenerMarketTabPayload,
   resetScreenerMarketTabCacheIfStale,
+  screenerMarketTabSegmentHint,
 } from "@/lib/screener/screener-market-tab-cache";
 import {
   parseScreenerMarketTab,
@@ -336,6 +337,7 @@ function CryptoTabBody({
   cryptoPage,
   setCryptoPage,
   cryptoRowsResolved,
+  cryptoMoverRows,
   cryptoRemoteLoading,
   fearGreed,
 }: {
@@ -343,6 +345,8 @@ function CryptoTabBody({
   cryptoPage: number;
   setCryptoPage: (u: number | ((p: number) => number)) => void;
   cryptoRowsResolved: CryptoTop10Row[];
+  /** Full liquid window from market-tab payload (no extra `/crypto-rows` fetch). */
+  cryptoMoverRows: CryptoTop10Row[];
   cryptoRemoteLoading: boolean;
   fearGreed: CryptoFearGreedIndex | null;
 }) {
@@ -351,25 +355,6 @@ function CryptoTabBody({
   const safeCryptoPage = Math.min(totalPages, Math.max(1, cryptoPage));
 
   const [fearGreedModalOpen, setFearGreedModalOpen] = useState(false);
-  const [cryptoMoverRows, setCryptoMoverRows] = useState<CryptoTop10Row[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    // Full screener crypto universe (~50) so gainers/losers aren't limited to page-1 tops.
-    void fetch("/api/screener/crypto-rows?page=1&pageSize=100", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json: { rows?: CryptoTop10Row[] } | null) => {
-        if (cancelled) return;
-        const rows = Array.isArray(json?.rows) ? json.rows : [];
-        setCryptoMoverRows(rows.length > 0 ? rows : cryptoMoverFallbackRows());
-      })
-      .catch(() => {
-        if (!cancelled) setCryptoMoverRows(cryptoMoverFallbackRows());
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const movers = useMemo(() => {
     const source =
@@ -450,7 +435,14 @@ function IndicesTabBody({ indicesRows }: { indicesRows: IndexTableRow[] }) {
   );
 }
 
-export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
+export function MarketsSection({
+  payload,
+  showTabs = true,
+}: {
+  payload: ScreenerPagePayload;
+  /** When false, tabs chrome is rendered by {@link ScreenerMarketChrome} (slim SSR). */
+  showTabs?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -487,7 +479,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     async (
       market: ScreenerMarketTabParam,
       params: URLSearchParams,
-      opts?: { force?: boolean; quiet?: boolean },
+      opts?: { force?: boolean; quiet?: boolean; knownSegment?: string | null },
     ) => {
       const { stocksSector, stocksIndustry } = stocksFiltersFromUrl(params);
       const cacheKey = buildScreenerMarketTabCacheKey(market, stocksSector, stocksIndustry);
@@ -509,7 +501,10 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
       if (!opts?.quiet) setTabLoading(true);
       try {
-        const next = await fetchScreenerMarketTabPayload(market, url, cacheKey);
+        const next = await fetchScreenerMarketTabPayload(market, url, cacheKey, {
+          knownSegment:
+            opts?.knownSegment ?? screenerMarketTabSegmentHint(market, activePayload),
+        });
         setActivePayload(next);
         const segment =
           next.market === "stocks" ? next.companiesMarketCacheSegment : next.marketCacheSegment;
@@ -527,7 +522,10 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     if (isEmptyScreenerMarketTabPayload(payload)) {
-      void ensureMarketTabPayload(payload.market, params, { force: true });
+      void ensureMarketTabPayload(payload.market, params, {
+        force: true,
+        knownSegment: screenerMarketTabSegmentHint(payload.market, payload),
+      });
       return;
     }
     const stocksNeedsFullPage =
@@ -535,7 +533,11 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
       payload.stocksTotalCount > 0 &&
       payload.stockRows.length < Math.min(SCREENER_COMPANIES_PAGE_SIZE, payload.stocksTotalCount);
     if (stocksNeedsFullPage) {
-      void ensureMarketTabPayload(payload.market, params, { force: true, quiet: true });
+      void ensureMarketTabPayload(payload.market, params, {
+        force: true,
+        quiet: true,
+        knownSegment: screenerMarketTabSegmentHint(payload.market, payload),
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount/bootstrap
   }, [payload]);
@@ -567,7 +569,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
     [displayTab, pathname, searchParams, ensureMarketTabPayload],
   );
 
-  useRegisterMarketsTabHost(displayTab, setMarketTab);
+  useRegisterMarketsTabHost(displayTab, setMarketTab, showTabs);
 
   useEffect(() => {
     const onPopState = () => {
@@ -1015,16 +1017,18 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
 
   return (
     <div className="min-w-0 w-full max-w-full">
-      <MarketTabs
-        active={displayTab}
-        onChange={setMarketTab}
-        trailing={
-          <UsMarketsSessionLabel
-            className="hidden md:inline-flex"
-            market={displayTab === "Crypto" ? "crypto" : "us-equity"}
-          />
-        }
-      />
+      {showTabs ? (
+        <MarketTabs
+          active={displayTab}
+          onChange={setMarketTab}
+          trailing={
+            <UsMarketsSessionLabel
+              className="hidden md:inline-flex"
+              market={displayTab === "Crypto" ? "crypto" : "us-equity"}
+            />
+          }
+        />
+      ) : null}
 
       {!contentReady ? (
         <ScreenerMarketTabSkeleton tab={displayTab} />
@@ -1088,6 +1092,7 @@ export function MarketsSection({ payload }: { payload: ScreenerPagePayload }) {
           cryptoPage={cryptoPage}
           setCryptoPage={setCryptoPage}
           cryptoRowsResolved={cryptoRowsForTable}
+          cryptoMoverRows={activePayload.cryptoMoverRows ?? []}
           cryptoRemoteLoading={cryptoLoadingActive}
           fearGreed={activePayload.fearGreed}
         />

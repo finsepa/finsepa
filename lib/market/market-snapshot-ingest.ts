@@ -22,7 +22,7 @@ import {
   buildMarketSnapshotHotPayloadsForIngest,
   buildMarketSnapshotSlowPayloadsForIngest,
 } from "@/lib/market/market-snapshot-ingest-sources";
-import { buildMarketSnapshotCryptoDerivedForIngest } from "@/lib/market/simple-market-layer";
+import { buildMarketSnapshotCryptoDerivedForIngest, buildMarketSnapshotEtfsTabForIngest } from "@/lib/market/simple-market-layer";
 import { getScreenerUsMarketCacheEpoch } from "@/lib/screener/screener-us-market-cache";
 import { buildMarketSnapshotIndexCardsForIngest } from "@/lib/screener/simple-index-cards";
 import { buildScreenerStocksSubtabSnapshotsForIngest } from "@/lib/screener/screener-stocks-subtab-snapshot-ingest";
@@ -253,6 +253,18 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
       const cards = await buildMarketSnapshotIndexCardsForIngest();
       const res = await upsertMarketSnapshot(indexCardsKey, hotSeg, cards);
       keys[indexCardsKey] = res.ok ? "ok" : res.reason;
+    }
+
+    // ETFs: same independent hot cadence as index_cards (not gated on stocks_all_pages freshness).
+    const etfsTabKey = MARKET_SNAPSHOT_KEY.etfsTab;
+    if (await marketSnapshotKeyIsFresh(etfsTabKey, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)) {
+      keys[etfsTabKey] = "ok";
+    } else if (await retagRecentMarketSnapshotSegment(etfsTabKey, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)) {
+      keys[etfsTabKey] = "segment_retagged";
+    } else {
+      const etfs = await buildMarketSnapshotEtfsTabForIngest();
+      const res = await upsertMarketSnapshot(etfsTabKey, hotSeg, etfs);
+      keys[etfsTabKey] = res.ok ? "ok" : res.reason;
     }
 
     const subtabSnapshotKeys = [

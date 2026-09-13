@@ -70,6 +70,8 @@ export type ScreenerPagePayload =
       market: "crypto";
       cryptoRows: CryptoTop10Row[];
       cryptoTotalCount: number;
+      /** Full liquid universe slice for gainers/losers (no second client fetch). */
+      cryptoMoverRows: CryptoTop10Row[];
       fearGreed: CryptoFearGreedIndex | null;
       marketCacheSegment: string;
     }

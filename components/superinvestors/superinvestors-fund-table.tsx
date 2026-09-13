@@ -23,10 +23,6 @@ import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-eq
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { cn } from "@/lib/utils";
 
-function avatarNeedsDarkTile(src: string): boolean {
-  return src.includes("blackrock") || src.includes("baillie-gifford");
-}
-
 /** Local `/public` fund avatars — native `img` + onError; see `SuperinvestorProfileAvatar`. */
 function FundRowAvatar({ src, displayName }: { src: string | null | undefined; displayName: string }) {
   const [failed, setFailed] = useState(false);
@@ -42,23 +38,15 @@ function FundRowAvatar({ src, displayName }: { src: string | null | undefined; d
     );
   }
 
-  const darkTile = avatarNeedsDarkTile(trimmed);
-
   return (
-    <span
-      className={cn(
-        "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-stroke-muted",
-        // Fixed dark tile — `bg-fg` flips to white in dark mode and frames these logos.
-        darkTile ? "bg-[#141414]" : "bg-surface-muted",
-      )}
-    >
+    <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-stroke-muted bg-surface-muted">
       {/* eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars */}
       <img
         src={trimmed}
         alt={displayName}
         width={40}
         height={40}
-        className={cn("h-full w-full", darkTile ? "object-contain p-1.5" : "object-cover")}
+        className="h-full w-full object-cover"
         onError={() => setFailed(true)}
       />
     </span>

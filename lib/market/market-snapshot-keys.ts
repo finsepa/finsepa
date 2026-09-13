@@ -7,7 +7,7 @@ export const MARKET_SNAPSHOT_KEY = {
   cryptoDerived: "crypto_derived",
   indicesTab: "indices_tab",
   indicesDerived: "indices_derived",
-  /** Screener ETFs tab quotes — hot tier; request-path single-flight backstop (cron optional). */
+  /** Screener ETFs tab quotes — hot tier; cron-warmed + request-path single-flight backstop. */
   etfsTab: "etfs_tab",
   /** Screener Currencies tab — EOD majors (slow tier; not US live quotes). */
   currenciesTab: "currencies_tab",
@@ -30,6 +30,7 @@ export const MARKET_SNAPSHOT_INGEST_KEYS: readonly MarketSnapshotKey[] = [
   MARKET_SNAPSHOT_KEY.cryptoDerived,
   MARKET_SNAPSHOT_KEY.indicesTab,
   MARKET_SNAPSHOT_KEY.indicesDerived,
+  MARKET_SNAPSHOT_KEY.etfsTab,
   MARKET_SNAPSHOT_KEY.currenciesTab,
 ];
 
@@ -39,6 +40,7 @@ export const MARKET_SNAPSHOT_HOT_INGEST_KEYS: readonly MarketSnapshotKey[] = [
   MARKET_SNAPSHOT_KEY.cryptoTab,
   MARKET_SNAPSHOT_KEY.cryptoPage2,
   MARKET_SNAPSHOT_KEY.indicesTab,
+  MARKET_SNAPSHOT_KEY.etfsTab,
   MARKET_SNAPSHOT_KEY.indexCards,
   MARKET_SNAPSHOT_KEY.top500Market,
   MARKET_SNAPSHOT_KEY.screenerSectors,

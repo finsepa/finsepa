@@ -98,7 +98,20 @@ export async function readSuperinvestorListSnapshot(): Promise<SuperinvestorList
     .maybeSingle();
 
   if (error || !data) return null;
-  return parseListSnapshot((data as { data: unknown }).data);
+  const parsed = parseListSnapshot((data as { data: unknown }).data);
+  if (!parsed) return null;
+
+  // Overlay live registry avatars so portrait updates show without waiting for list rebuild.
+  const avatarByHref = new Map(
+    SUPERINVESTOR_REGISTRY.map((item) => [`/superinvestors/${item.slug}`, item.avatarSrc] as const),
+  );
+  return {
+    ...parsed,
+    rows: parsed.rows.map((row) => {
+      const live = avatarByHref.get(row.href);
+      return live != null ? { ...row, avatarSrc: live } : row;
+    }),
+  };
 }
 
 export async function upsertSuperinvestorListSnapshot(
