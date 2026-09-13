@@ -102,8 +102,8 @@ export async function readSuperinvestorListSnapshot(): Promise<SuperinvestorList
   if (!parsed) return null;
 
   // Overlay live registry avatars so portrait updates show without waiting for list rebuild.
-  const avatarByHref = new Map(
-    SUPERINVESTOR_REGISTRY.map((item) => [`/superinvestors/${item.slug}`, item.avatarSrc] as const),
+  const avatarByHref = new Map<string, string | null>(
+    SUPERINVESTOR_REGISTRY.map((item) => [`/superinvestors/${item.slug}`, item.avatarSrc]),
   );
   return {
     ...parsed,
