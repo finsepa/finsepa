@@ -17,6 +17,43 @@ const CURATED_IR_HOSTS_BY_TICKER: Record<string, readonly string[]> = {
     "https://investors.intuit.com/financial-information/financial-results",
   ],
   QCOM: ["https://investor.qualcomm.com/"],
+  APH: [
+    "https://investors.amphenol.com/",
+    "https://investors.amphenol.com/financials/quarterly-and-annual-reports/default.aspx",
+  ],
+  TD: [
+    "https://www.td.com/ca/en/about-td/for-investors/investor-relations/financial-information/financial-reports/quarterly-results",
+  ],
+  TMUS: ["https://investor.t-mobile.com/events-and-presentations/events/default.aspx"],
+  SCHW: [
+    "https://www.aboutschwab.com/financial-reports",
+    "https://www.aboutschwab.com/investor-relations",
+  ],
+  NVO: ["https://www.novonordisk.com/investors/financial-results.html"],
+  ADI: [
+    "https://investor.analog.com/financial-info/quarterly-results",
+    "https://investor.analog.com/events",
+  ],
+  DE: ["https://investor.deere.com/"],
+  MCD: [
+    "https://corporate.mcdonalds.com/corpmcd/investors/financial-information.html",
+    "https://corporate.mcdonalds.com/corpmcd/investors.html",
+  ],
+  T: ["https://investors.att.com/financial-reports/quarterly-earnings"],
+  GILD: ["https://investors.gilead.com/financials/quarterly-results/default.aspx"],
+  ABT: [
+    "https://www.abbottinvestor.com/news-and-events/events",
+    "https://www.abbott.com/en-us/investors",
+  ],
+  BLK: [
+    "https://ir.blackrock.com/financials/quarterly-results/default.aspx",
+    "https://ir.blackrock.com/",
+    "https://www.blackrock.com/corporate/investor-relations",
+  ],
+  NEE: [
+    "https://www.investor.nexteraenergy.com/reports-and-filings/quarterly-financial-results/2026",
+    "https://www.investor.nexteraenergy.com/reports-and-filings/quarterly-financial-results",
+  ],
   COIN: ["https://investor.coinbase.com/"],
   MAR: ["https://marriott.gcs-web.com/"],
   KO: ["https://investors.coca-colacompany.com/"],

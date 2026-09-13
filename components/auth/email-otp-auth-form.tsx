@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
 import {
   AuthDivider,
@@ -60,6 +60,9 @@ export function EmailOtpAuthForm({
   const [verifying, setVerifying] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [cooldownSec, setCooldownSec] = useState(0);
+  const verifyingRef = useRef(false);
+  /** Last token we auto/manual-submitted — avoid re-firing on the same complete code. */
+  const submittedTokenRef = useRef<string | null>(null);
 
   const busy = appleLoading || googleLoading || sending || verifying || loginSuccess;
   const emailNorm = email.trim().toLowerCase();
@@ -75,6 +78,7 @@ export function EmailOtpAuthForm({
   function goBackToEmail() {
     setStep("email");
     setCode("");
+    submittedTokenRef.current = null;
     setErrorMessage(null);
     setInfoMessage(null);
   }
@@ -91,11 +95,7 @@ export function EmailOtpAuthForm({
           <Mail className="size-6" strokeWidth={2} />
         </div>
       ),
-      subtitle: (
-        <>
-          We sent a 6-digit code to {emailNorm}
-        </>
-      ),
+      subtitle: <>We sent a 6-digit code to {emailNorm}</>,
       leading: (
         <button
           type="button"
@@ -251,6 +251,7 @@ export function EmailOtpAuthForm({
       setCooldownSec(cool);
       setStep("code");
       setCode("");
+      submittedTokenRef.current = null;
       if (opts?.resend) {
         setInfoMessage(`New code sent to ${emailNorm}.`);
       }
@@ -271,13 +272,16 @@ export function EmailOtpAuthForm({
     await sendCode();
   }
 
-  async function handleCodeSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  async function verifyCode(rawToken: string) {
+    const token = rawToken.trim();
+    if (!emailReady || !OTP_RE.test(token)) return;
+    if (verifyingRef.current || appleLoading || googleLoading || sending || loginSuccess) return;
+    if (submittedTokenRef.current === token) return;
+
+    submittedTokenRef.current = token;
+    verifyingRef.current = true;
     setErrorMessage(null);
     setInfoMessage(null);
-    if (!emailReady || !codeReady || busy) return;
-
-    const token = code.trim();
     setVerifying(true);
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -302,6 +306,7 @@ export function EmailOtpAuthForm({
         }
         setErrorMessage(data.message?.trim() || "That code is invalid or expired. Try again.");
         setVerifying(false);
+        verifyingRef.current = false;
         return;
       }
 
@@ -320,23 +325,34 @@ export function EmailOtpAuthForm({
         setErrorMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       }
       setVerifying(false);
+      verifyingRef.current = false;
     } finally {
       window.clearTimeout(timeoutId);
+    }
+  }
+
+  async function handleCodeSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    await verifyCode(code);
+  }
+
+  function handleCodeChange(next: string) {
+    setCode(next);
+    setErrorMessage(null);
+    setInfoMessage(null);
+    // Allow re-submit after the user edits away from a failed token.
+    if (submittedTokenRef.current && next.trim() !== submittedTokenRef.current) {
+      submittedTokenRef.current = null;
+    }
+    if (OTP_RE.test(next.trim())) {
+      void verifyCode(next);
     }
   }
 
   if (step === "code") {
     return (
       <form className="space-y-4" onSubmit={(e) => void handleCodeSubmit(e)} noValidate>
-        <AuthOtpCodeInput
-          value={code}
-          disabled={busy}
-          onChange={(next) => {
-            setCode(next);
-            setErrorMessage(null);
-            setInfoMessage(null);
-          }}
-        />
+        <AuthOtpCodeInput value={code} disabled={busy} onChange={handleCodeChange} />
         <div className="!mt-6 space-y-3">
           <AuthPrimaryButton
             type="submit"

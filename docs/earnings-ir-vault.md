@@ -78,7 +78,7 @@ Merge is **lock-once**: a correct lock is never overwritten. Wrong SEC locks mus
 
 These must never get SEC HTML as a “helpful” fallback:
 
-`AMAT` · `MRK` · `COST` · `KO` · `CAT` · `PLTR` · `UNH` · `LRCX` · `CVX` · `HSBC` · `GOOGL`/`GOOG` · `AVGO` · `ORCL` · `ABBV` · `ADBE` · `DELL` · `MS` · `GE` · `PG` · `NFLX` · `HD` · `GS` · `PM` · `RY` · `ARM` · `BABA` · `PANW` · `SHEL` · `WFC` · `RTX` · `NVS` · `MUFG` · `SNDK` · `NSRGY` · `GEV` · `AZN` · `ANET` · `SIEGY` · `SAP` · `LVMUY` · `LRLCY` · `KLAC` · `TXN` · `SFTBY` · `BHP` · `C` · `TM` · `IBM` · `TMO` · `AXP` · `LIN` · `SAN` · `CRWD` · `AMGN` · `MRVL` · `VZ` · `TTE` · `STX` · `CRM` · `DIS` · `AMD` · `PEP` · `INTU` · `QCOM`
+`AMAT` · `MRK` · `COST` · `KO` · `CAT` · `PLTR` · `UNH` · `LRCX` · `CVX` · `HSBC` · `GOOGL`/`GOOG` · `AVGO` · `ORCL` · `ABBV` · `ADBE` · `DELL` · `MS` · `GE` · `PG` · `NFLX` · `HD` · `GS` · `PM` · `RY` · `ARM` · `BABA` · `PANW` · `SHEL` · `WFC` · `RTX` · `NVS` · `MUFG` · `SNDK` · `NSRGY` · `GEV` · `AZN` · `ANET` · `SIEGY` · `SAP` · `LVMUY` · `LRLCY` · `KLAC` · `TXN` · `SFTBY` · `BHP` · `C` · `TM` · `IBM` · `TMO` · `AXP` · `LIN` · `SAN` · `CRWD` · `AMGN` · `MRVL` · `VZ` · `TTE` · `STX` · `CRM` · `DIS` · `AMD` · `PEP` · `INTU` · `QCOM` · `APH` · `TD` · `TMUS` · `NVO` · `SCHW` · `ADI` · `DE` · `MCD` · `T` · `GILD` · `ABT` · `BLK` · `NEE`
 
 Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-types.ts`).
 
@@ -94,19 +94,15 @@ Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-
 | Wire-up | `lib/market/ir-seed-apply.ts` (`DEDICATED_IR_SEED_TICKERS`) |
 | Preview proxy | `GET /api/ir-pdf` + `lib/market/ir-pdf-proxy-allowlist.ts` |
 
-## Status snapshot (2026-09-12)
+## Status snapshot (2026-09-13)
 
-Hand pass while screener work paused: **MRVL, VZ, TTE, STX, CRM, DIS, AMD, PEP, INTU, QCOM** (+ prior ADBE). HTTP/browser catalogs; never SEC HTML; empty Slides left empty.
+Next batch by mcap — wired: **GILD, ABT, BLK, NEE** (completes next-10 after NVO…T). HTTP/browser catalogs; never SEC HTML; empty slots left empty.
 
-- **MRVL** YELLOW — G14/Y5/R0. Issuer FY ~31 Jan. Financial and Business Results + Additional Earnings Information.
-- **VZ** GREEN — G18/Y0/R0. Calendar FY. Presentation + Financial Statements (`verizon.com/about/file/…/download`).
-- **TTE** YELLOW — G4/Y14/R0. Calendar FY. Year-end Results presentation + Results press (intra-year decks not published).
-- **STX** YELLOW — G16/Y2/R0. Issuer FY ~June. Supplemental + Press Release (q4cdn).
-- **CRM** GREEN — G19/Y0/R0. Issuer FY ends 31 Jan. Quarterly Investor Deck + Press Release.
-- **DIS** GREEN — G18/Y0/R0. Issuer FY ~Sept. Presentation (when published) / Shareholder Letter + Earnings Report or Reconciliations.
-- **AMD** GREEN — G18/Y0/R0. Calendar FY. Earnings Slides + Financial Tables (cloudfront).
-- **PEP** GREEN — G18/Y0/R0. Calendar-style Qn YYYY. Prepared Management Remarks + Earnings Release (`investors.pepsico.com`).
-- **INTU** GREEN — G19/Y0/R0. Issuer FY ends 31 Jul. Fact Sheet + earnings press PDF (`investors.intuit.com/_assets`).
-- **QCOM** YELLOW — G17/Y1/R0. Issuer FY ~Sept. Earnings Presentation + Earnings Release (q4cdn); FY22 Q3 deck not published.
+- **GILD** GREEN — Calendar FY. Earnings Presentation + Press Release (`s29.q4cdn.com/585078350`).
+- **ABT** YELLOW — filings-only. Calendar FY. Earnings press PDFs on `abbottinvestor.com/static-files`; infographics are not Slides.
+- **BLK** GREEN — Calendar FY. Earnings Release Supplement + Earnings Release (`s24.q4cdn.com/856567660`); some releases use `Earning-Release` filenames.
+- **NEE** GREEN — Calendar FY. Earnings Slides + News Release (`investor.nexteraenergy.com` Sitecore media; path typos `fillings` / `event_presentaion`). Q1’25 filings = Exhibit 99 PDF.
 
-Next: continue by mcap after screener resume.
+Also wired earlier in this next-10: **NVO** yellow (slides-only), **SCHW** green, **ADI** green, **DE** yellow, **MCD** yellow (filings-only), **T** yellow.
+
+Prior: **NVO** yellow, **SCHW** green, **ADI** green, **DE** yellow, **MCD** yellow, **T** yellow, **APH** yellow, **TD** green, **TMUS** green.

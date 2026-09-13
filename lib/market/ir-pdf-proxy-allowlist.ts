@@ -95,6 +95,91 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
     return true;
   }
   if (h === "rbc.com" || h.endsWith(".rbc.com")) return true;
+  // TD Bank Group quarterly results PDFs under /content/dam/tdcom/.../quarterly-results/.
+  if (
+    (h === "td.com" || h === "www.td.com" || h.endsWith(".td.com")) &&
+    parsed.pathname.includes("/content/dam/tdcom/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Charles Schwab IR PDFs on content.schwab.com.
+  if (
+    (h === "content.schwab.com" || h === "schwab.com" || h.endsWith(".schwab.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Novo Nordisk IR DAM investor presentations.
+  if (
+    (h === "novonordisk.com" || h === "www.novonordisk.com" || h.endsWith(".novonordisk.com")) &&
+    parsed.pathname.includes("/investors/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Analog Devices GCS static-files (Web Schedule + earnings release).
+  if (
+    h === "investor.analog.com" ||
+    h === "analogdevices.gcs-web.com" ||
+    (h.endsWith(".analog.com") && /\/static-files\//i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Deere IR q4cdn + deere.com news PDFs.
+  if (
+    (h === "deere.com" || h === "www.deere.com" || h.endsWith(".deere.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // AT&T IR media earnings packages.
+  if (
+    (h === "investors.att.com" || h === "att.com" || h.endsWith(".att.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // McDonald's corporate DAM earnings release PDFs.
+  if (
+    (h === "corporate.mcdonalds.com" || h === "mcdonalds.com" || h.endsWith(".mcdonalds.com")) &&
+    parsed.pathname.includes("/content/dam/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Gilead IR q4cdn + investors.gilead.com mirrored PDFs.
+  if (
+    (h === "investors.gilead.com" || h === "gilead.com" || h.endsWith(".gilead.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Abbott IR GCS static-files (earnings press releases).
+  if (
+    h === "www.abbottinvestor.com" ||
+    h === "abbottinvestor.com" ||
+    (h.endsWith(".abbottinvestor.com") && /\/static-files\//i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // BlackRock IR PDFs (q4cdn already covered; alias host for completeness).
+  if (
+    (h === "ir.blackrock.com" || h === "blackrock.com" || h.endsWith(".blackrock.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // NextEra Energy IR DAM PDFs.
+  if (
+    (h === "www.investor.nexteraenergy.com" ||
+      h === "investor.nexteraenergy.com" ||
+      h === "nexteraenergy.com" ||
+      h.endsWith(".nexteraenergy.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
   if (h === "wellsfargo.com" || h.endsWith(".wellsfargo.com")) return true;
   if (h === "shell.com" || h.endsWith(".shell.com")) return true;
   if (h === "alibabagroup.com" || h.endsWith(".alibabagroup.com") || h === "data.alibabagroup.com") {

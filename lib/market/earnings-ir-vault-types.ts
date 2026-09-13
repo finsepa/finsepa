@@ -72,6 +72,19 @@ export const EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS = new Set([
   "PEP",
   "INTU",
   "QCOM",
+  "APH",
+  "TD",
+  "TMUS",
+  "NVO",
+  "SCHW",
+  "ADI",
+  "DE",
+  "MCD",
+  "T",
+  "GILD",
+  "ABT",
+  "BLK",
+  "NEE",
 ]);
 
 export type EarningsIrVaultDocStatus = "locked" | "found" | "missing";

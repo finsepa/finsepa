@@ -83,8 +83,21 @@ import { applyIrSeedDisDocumentUrls } from "@/lib/market/ir-seed-apply-dis";
 import { applyIrSeedIntuDocumentUrls } from "@/lib/market/ir-seed-apply-intu";
 import { applyIrSeedMrvlDocumentUrls } from "@/lib/market/ir-seed-apply-mrvl";
 import { applyIrSeedPepDocumentUrls } from "@/lib/market/ir-seed-apply-pep";
+import { applyIrSeedAbtDocumentUrls } from "@/lib/market/ir-seed-apply-abt";
+import { applyIrSeedAdiDocumentUrls } from "@/lib/market/ir-seed-apply-adi";
+import { applyIrSeedAphDocumentUrls } from "@/lib/market/ir-seed-apply-aph";
+import { applyIrSeedBlkDocumentUrls } from "@/lib/market/ir-seed-apply-blk";
+import { applyIrSeedDeDocumentUrls } from "@/lib/market/ir-seed-apply-de";
+import { applyIrSeedGildDocumentUrls } from "@/lib/market/ir-seed-apply-gild";
+import { applyIrSeedMcdDocumentUrls } from "@/lib/market/ir-seed-apply-mcd";
+import { applyIrSeedNeeDocumentUrls } from "@/lib/market/ir-seed-apply-nee";
+import { applyIrSeedNvoDocumentUrls } from "@/lib/market/ir-seed-apply-nvo";
 import { applyIrSeedQcomDocumentUrls } from "@/lib/market/ir-seed-apply-qcom";
+import { applyIrSeedSchwDocumentUrls } from "@/lib/market/ir-seed-apply-schw";
 import { applyIrSeedStxDocumentUrls } from "@/lib/market/ir-seed-apply-stx";
+import { applyIrSeedTDocumentUrls } from "@/lib/market/ir-seed-apply-t";
+import { applyIrSeedTdDocumentUrls } from "@/lib/market/ir-seed-apply-td";
+import { applyIrSeedTmusDocumentUrls } from "@/lib/market/ir-seed-apply-tmus";
 import { applyIrSeedTteDocumentUrls } from "@/lib/market/ir-seed-apply-tte";
 import { applyIrSeedVzDocumentUrls } from "@/lib/market/ir-seed-apply-vz";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
@@ -176,6 +189,19 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
   "PEP",
   "INTU",
   "QCOM",
+  "APH",
+  "TD",
+  "TMUS",
+  "NVO",
+  "SCHW",
+  "ADI",
+  "DE",
+  "MCD",
+  "T",
+  "GILD",
+  "ABT",
+  "BLK",
+  "NEE",
 ]);
 
 export function earningsIrSeedResolutionSource(
@@ -275,6 +301,19 @@ async function applyDedicatedIrSeedDocumentUrls(
   if (t === "PEP") return applyIrSeedPepDocumentUrls(rows, hub);
   if (t === "INTU") return applyIrSeedIntuDocumentUrls(rows, hub);
   if (t === "QCOM") return applyIrSeedQcomDocumentUrls(rows, hub);
+  if (t === "APH") return applyIrSeedAphDocumentUrls(rows, hub);
+  if (t === "TD") return applyIrSeedTdDocumentUrls(rows, hub);
+  if (t === "TMUS") return applyIrSeedTmusDocumentUrls(rows, hub);
+  if (t === "NVO") return applyIrSeedNvoDocumentUrls(rows, hub);
+  if (t === "SCHW") return applyIrSeedSchwDocumentUrls(rows, hub);
+  if (t === "ADI") return applyIrSeedAdiDocumentUrls(rows, hub);
+  if (t === "DE") return applyIrSeedDeDocumentUrls(rows, hub);
+  if (t === "MCD") return applyIrSeedMcdDocumentUrls(rows, hub);
+  if (t === "T") return applyIrSeedTDocumentUrls(rows, hub);
+  if (t === "GILD") return applyIrSeedGildDocumentUrls(rows, hub);
+  if (t === "ABT") return applyIrSeedAbtDocumentUrls(rows, hub);
+  if (t === "BLK") return applyIrSeedBlkDocumentUrls(rows, hub);
+  if (t === "NEE") return applyIrSeedNeeDocumentUrls(rows, hub);
   if (t === "RACE") {
     return applyIrSeedFerrariPresentationUrls(rows, {
       preview: options?.preview,
