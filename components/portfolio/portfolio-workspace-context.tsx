@@ -76,6 +76,11 @@ export type PortfolioWorkspaceContextValue = {
   /** Replace the full ledger for one portfolio (used after editing a row + rebuild). */
   setPortfolioTransactions: (portfolioId: string, transactions: PortfolioTransaction[]) => void;
   setPortfolioHoldings: (portfolioId: string, holdings: PortfolioHolding[]) => void;
+  /**
+   * Apply symbol → USD marks across all standard portfolios (Overview EOD / live quotes).
+   * Used so Value / top-bar match the chart’s last-close mark family.
+   */
+  applySymbolMarketPrices: (prices: Record<string, number>) => void;
   /** Remove one ledger row and rebuild holdings from remaining trades (closes edit modal if it matched). */
   removePortfolioTransaction: (transaction: PortfolioTransaction) => Promise<void>;
   /** Remove many ledger rows by id (same rebuild as single delete; closes edit modal if its row is included). */
@@ -83,9 +88,9 @@ export type PortfolioWorkspaceContextValue = {
   /** Re-insert a removed row and rebuild holdings (e.g. Sonner undo). */
   restorePortfolioTransaction: (transaction: PortfolioTransaction) => Promise<void>;
   /**
-   * True once workspace data is loaded (local snapshot and/or server merge) **and** a live
-   * mark-to-market quote pass has finished for holdings rebuilt from the ledger (avoids briefly
-   * showing totals from last trade prices before refreshed `currentValue`, especially crypto).
+   * True once workspace data is loaded (local snapshot and/or server merge).
+   * Does **not** wait on live mark-to-market — paint chrome with session/fill marks, then
+   * refresh quotes in the background (Yahoo/Google-style progressive portfolio).
    */
   portfolioDisplayReady: boolean;
   /** True after local bootstrap and/or server merge — portfolio list is trustworthy. */

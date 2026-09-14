@@ -111,6 +111,7 @@ import type {
 import {
   fetchPortfolioValueHistoryCached,
   peekPortfolioValueHistoryCached,
+  portfolioValueHistoryLedgerKey,
 } from "@/lib/portfolio/portfolio-value-history-client-cache";
 import { effectiveSamplingRange } from "@/lib/portfolio/portfolio-chart-sampling";
 
@@ -2905,9 +2906,12 @@ export function PortfolioValueHistoryChartPane({
           return { time: portfolioChartTime(p) as Time, value: y };
         });
 
+    // Include ledger fingerprint — Demo vs R1 on the same 1Y window often share point
+    // count + first/last timestamps; omitting it skipped setData and left the prior portfolio's line.
+    const ledgerKey = portfolioValueHistoryLedgerKey(transactions);
     const lineAnimKey =
       data.length >= 2 ?
-        `${metric}:${data.length}:${String(data[0]?.time ?? "")}:${String(data.at(-1)?.time ?? "")}`
+        `${ledgerKey}|${metric}:${data.length}:${String(data[0]?.time ?? "")}:${String(data.at(-1)?.time ?? "")}:${data.at(-1)?.value ?? ""}`
       : "";
 
     if (data.length === 0) {

@@ -71,6 +71,7 @@ export function PublicPortfolioViewProvider({
       closeEditTransaction: noop,
       setPortfolioTransactions: noop,
       setPortfolioHoldings: noop,
+      applySymbolMarketPrices: noop,
       removePortfolioTransaction: noopAsync,
       removePortfolioTransactions: noopAsync,
       restorePortfolioTransaction: noopAsync,

@@ -61,10 +61,14 @@ export async function refreshHoldingMarketPrices(
 
 export { applyLivePricesToHoldings };
 
-/** Batch live quotes once across all portfolios. */
+/** Batch live quotes once across all portfolios. Returns only successful live marks in `livePrices`. */
 export async function refreshHoldingsByPortfolioIdMarketPrices(
   holdingsByPortfolioId: Record<string, PortfolioHolding[]>,
-): Promise<Record<string, PortfolioHolding[]>> {
+): Promise<{
+  holdingsByPortfolioId: Record<string, PortfolioHolding[]>;
+  /** Symbols that actually returned a live USD mark (excludes fill / provisional prices). */
+  livePrices: Record<string, number>;
+}> {
   const uniqueSymbols = new Set<string>();
   for (const holds of Object.values(holdingsByPortfolioId)) {
     for (const h of holds) {
@@ -75,9 +79,16 @@ export async function refreshHoldingsByPortfolioIdMarketPrices(
   const symbols = Array.from(uniqueSymbols);
   const prices = symbols.length ? await fetchPortfolioLivePricesClient(symbols) : {};
 
+  const livePrices: Record<string, number> = {};
+  for (const [sym, p] of Object.entries(prices)) {
+    if (typeof p === "number" && Number.isFinite(p) && p > 0) {
+      livePrices[sym.trim().toUpperCase()] = p;
+    }
+  }
+
   const out: Record<string, PortfolioHolding[]> = {};
   for (const [pid, holds] of Object.entries(holdingsByPortfolioId)) {
     out[pid] = applyLivePricesToHoldings(holds, prices);
   }
-  return out;
+  return { holdingsByPortfolioId: out, livePrices };
 }

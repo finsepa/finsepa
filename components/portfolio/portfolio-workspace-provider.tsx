@@ -491,8 +491,9 @@ export function PortfolioWorkspaceProvider({
   /** True after we synchronously applied a local snapshot (fast path for repeat visits / post-login). */
   const [portfolioBootstrapFromLocal, setPortfolioBootstrapFromLocal] = useState(false);
   /**
-   * False while {@link applyWorkspaceState} is waiting on {@link refreshHoldingMarketPrices}.
-   * Starts true so empty / seed workspaces (no apply) still render immediately after hydrate.
+   * False while a blocking live-quote pass is in flight.
+   * Gates community listing sync (prefer fresh marks); does **not** gate page chrome —
+   * {@link portfolioDisplayReady} unlocks as soon as the ledger hydrates.
    */
   const [holdingsMarkToMarketReady, setHoldingsMarkToMarketReady] = useState(true);
   const holdingsQuoteRefreshGenRef = useRef(0);
@@ -502,7 +503,8 @@ export function PortfolioWorkspaceProvider({
   const prevQuotedSelectionRef = useRef<string | null | undefined>(undefined);
   /** In-flight quote key — collapses Strict Mode / local+cloud double hydrate into one POST. */
   const quotesInFlightKeyRef = useRef<string | null>(null);
-  const quoteSessionKey = useMemo(() => `finsepa.portfolio.quotedLedger.${userId}`, [userId]);
+  /** v2: only true live marks are stored (v1 could cache fill prices when quotes missed). */
+  const quoteSessionKey = useMemo(() => `finsepa.portfolio.quotedLedger.v2.${userId}`, [userId]);
   /** True after {@link applyWorkspaceState} skipped live quotes on a read-mostly route; cleared when catch-up runs. */
   const [deferredQuotesPending, setDeferredQuotesPending] = useState(false);
   const pathname = usePathname() ?? "";
@@ -590,31 +592,20 @@ export function PortfolioWorkspaceProvider({
 
       void (async () => {
         try {
-          const quoted = await refreshHoldingsByPortfolioIdMarketPrices(slice);
+          const { holdingsByPortfolioId: quoted, livePrices } =
+            await refreshHoldingsByPortfolioIdMarketPrices(slice);
           if (holdingsQuoteRefreshGenRef.current === refreshGen) {
             setHoldingsByPortfolioId((prev) => ({ ...prev, ...quoted }));
           }
           if (opts?.recordQuotedLedger && holdingsQuoteRefreshGenRef.current === refreshGen) {
             quotedLedgerFingerprintRef.current = opts.recordQuotedLedger;
-            const prices: Record<string, number> = {};
-            for (const holds of Object.values(quoted)) {
-              for (const h of holds) {
-                const sym = h.symbol.trim().toUpperCase();
-                if (
-                  sym &&
-                  typeof h.marketPrice === "number" &&
-                  Number.isFinite(h.marketPrice) &&
-                  h.marketPrice > 0
-                ) {
-                  prices[sym] = h.marketPrice;
-                }
-              }
-            }
+            // Only persist true live marks — never fill/provisional prices as session "quotes"
+            // (that understates NW vs the chart, which marks every symbol from EOD).
             const prevSession = readPortfolioQuoteSession(quoteSessionKey);
             writePortfolioQuoteSession(quoteSessionKey, {
               ledger: opts.recordQuotedLedger,
               at: Date.now(),
-              prices: { ...(prevSession?.prices ?? {}), ...prices },
+              prices: { ...(prevSession?.prices ?? {}), ...livePrices },
             });
           }
         } finally {
@@ -691,15 +682,15 @@ export function PortfolioWorkspaceProvider({
 
       setDeferredQuotesPending(false);
 
-      if (portfolioQuoteSessionIsFresh(session, ledgerFingerprint)) {
-        paintSessionMarks();
-        quotedLedgerFingerprintRef.current = ledgerFingerprint;
-        setHoldingsMarkToMarketReady(true);
-        return;
-      }
-
+      // Instant paint from last session marks (even if TTL stale), then always refresh live
+      // marks on Portfolio — do not skip when session is "fresh" (stale/partial session was
+      // leaving Value/top-bar ~$12k below the chart, which marks from EOD independently).
+      paintSessionMarks();
       quotedLedgerFingerprintRef.current = ledgerFingerprint;
-      runHoldingsQuoteRefresh(rebuilt, { recordQuotedLedger: ledgerFingerprint });
+      runHoldingsQuoteRefresh(rebuilt, {
+        recordQuotedLedger: ledgerFingerprint,
+        keepReady: true,
+      });
     },
     [quoteSessionKey, runHoldingsQuoteRefresh, applySessionMarksToHoldings],
   );
@@ -765,7 +756,11 @@ export function PortfolioWorkspaceProvider({
 
     setDeferredQuotesPending(false);
     const ledger = appliedLedgerFingerprintRef.current;
-    runHoldingsQuoteRefresh(rebuilt, ledger ? { recordQuotedLedger: ledger } : undefined);
+    // Landing on Portfolio after a deferred route — don't blank the shell for quotes.
+    runHoldingsQuoteRefresh(
+      rebuilt,
+      ledger ? { recordQuotedLedger: ledger, keepReady: true } : { keepReady: true },
+    );
   }, [
     deferredQuotesPending,
     pathname,
@@ -857,7 +852,7 @@ export function PortfolioWorkspaceProvider({
     const ledger = appliedLedgerFingerprintRef.current;
     runHoldingsQuoteRefresh(
       { [selectedPortfolioId]: holds },
-      ledger ? { recordQuotedLedger: ledger } : undefined,
+      ledger ? { recordQuotedLedger: ledger, keepReady: true } : { keepReady: true },
     );
   }, [
     selectedPortfolioId,
@@ -1159,7 +1154,8 @@ export function PortfolioWorkspaceProvider({
         for (const p of publicListed) {
           slice[p.id] = displayHoldingsByPortfolioId[p.id] ?? [];
         }
-        const quotedByPortfolioId = await refreshHoldingsByPortfolioIdMarketPrices(slice);
+        const { holdingsByPortfolioId: quotedByPortfolioId } =
+          await refreshHoldingsByPortfolioIdMarketPrices(slice);
 
         for (const p of publicListed) {
           const holdings = quotedByPortfolioId[p.id] ?? [];
@@ -1293,6 +1289,38 @@ export function PortfolioWorkspaceProvider({
       setHoldingsByPortfolioId((prev) => ({ ...prev, [portfolioId]: holdings }));
     },
     [portfolios],
+  );
+
+  /** Paint / refresh holdings from a symbol→USD map (EOD performance or live). */
+  const applySymbolMarketPrices = useCallback(
+    (prices: Record<string, number>) => {
+      const cleaned: Record<string, number> = {};
+      for (const [raw, p] of Object.entries(prices)) {
+        const sym = raw.trim().toUpperCase();
+        if (sym && typeof p === "number" && Number.isFinite(p) && p > 0) cleaned[sym] = p;
+      }
+      if (!Object.keys(cleaned).length) return;
+
+      setHoldingsByPortfolioId((prev) => {
+        const next: Record<string, PortfolioHolding[]> = { ...prev };
+        for (const [pid, holds] of Object.entries(prev)) {
+          if (!holds.length) continue;
+          next[pid] = applyLivePricesToHoldings(holds, cleaned);
+        }
+        return next;
+      });
+
+      const ledger = appliedLedgerFingerprintRef.current;
+      if (ledger) {
+        const prevSession = readPortfolioQuoteSession(quoteSessionKey);
+        writePortfolioQuoteSession(quoteSessionKey, {
+          ledger,
+          at: Date.now(),
+          prices: { ...(prevSession?.prices ?? {}), ...cleaned },
+        });
+      }
+    },
+    [quoteSessionKey],
   );
 
   /** Continuous-price ledger repair (strip auto CA splits / reverse as-traded heals). Silent. */
@@ -2538,8 +2566,8 @@ export function PortfolioWorkspaceProvider({
     }
   }, [newTransactionOpen]);
 
-  const portfolioDisplayReady =
-    (workspaceHydrated || portfolioBootstrapFromLocal) && holdingsMarkToMarketReady;
+  /** Shell / Overview unlock — ledger only; live quotes refresh in the background. */
+  const portfolioDisplayReady = workspaceHydrated || portfolioBootstrapFromLocal;
   const portfolioListReady = workspaceHydrated || portfolioBootstrapFromLocal;
 
   const setOverLimitCounts = plan?.setOverLimitCounts;
@@ -2663,6 +2691,7 @@ export function PortfolioWorkspaceProvider({
       closeEditTransaction,
       setPortfolioTransactions,
       setPortfolioHoldings,
+      applySymbolMarketPrices,
       removePortfolioTransaction,
       removePortfolioTransactions,
       restorePortfolioTransaction,
@@ -2680,6 +2709,7 @@ export function PortfolioWorkspaceProvider({
       addTransaction,
       setPortfolioTransactions,
       setPortfolioHoldings,
+      applySymbolMarketPrices,
       removePortfolioTransaction,
       removePortfolioTransactions,
       restorePortfolioTransaction,

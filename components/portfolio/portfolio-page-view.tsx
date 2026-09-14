@@ -536,6 +536,7 @@ export function PortfolioPageView({
                   aria-hidden={viewTab !== "Overview"}
                 >
                   <PortfolioOverviewChart
+                    key={selectedPortfolioId ?? "none"}
                     transactions={transactions}
                     benchmarkInvestedUsd={benchmarkInvestedUsd}
                   />

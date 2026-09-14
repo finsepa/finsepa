@@ -209,7 +209,7 @@ function PortfolioPageHeaderSkeleton({
 
 /**
  * Shared shell for `app/(protected)/portfolio/loading.tsx`, Suspense fallback,
- * and workspace hydration while holdings quotes refresh.
+ * and brief workspace hydrate before local/cloud ledger is ready.
  */
 export function PortfolioPageLoadingShell({
   publicView = false,

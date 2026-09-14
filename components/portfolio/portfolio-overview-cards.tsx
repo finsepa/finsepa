@@ -13,6 +13,7 @@ import {
 import { createPortal } from "react-dom";
 
 import { usePortfolioOverviewAthPublisher } from "@/components/portfolio/portfolio-overview-ath-context";
+import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
@@ -222,6 +223,8 @@ function PortfolioOverviewCardsInner({
     [transactions],
   );
 
+  const { applySymbolMarketPrices } = usePortfolioWorkspace();
+
   /** False until overview-market finishes when any symbols need a quote. */
   const [overviewReady, setOverviewReady] = useState(false);
   const lastOverviewLoadKeyRef = useRef("");
@@ -251,6 +254,20 @@ function PortfolioOverviewCardsInner({
   }, [holdings, transactions]);
 
   const symbols = useMemo(() => (symbolsKey ? symbolsKey.split(",") : []), [symbolsKey]);
+
+  const applyOverviewPerformanceMarks = useCallback(
+    (performanceBySymbol: Record<string, StockPerformance | null>) => {
+      const prices: Record<string, number> = {};
+      for (const [sym, perf] of Object.entries(performanceBySymbol)) {
+        const px = perf?.price;
+        if (typeof px === "number" && Number.isFinite(px) && px > 0) {
+          prices[sym.trim().toUpperCase()] = px;
+        }
+      }
+      applySymbolMarketPrices(prices);
+    },
+    [applySymbolMarketPrices],
+  );
 
   const loadMarket = useCallback(async () => {
     if (symbols.length === 0) {
@@ -287,6 +304,7 @@ function PortfolioOverviewCardsInner({
           setSpyPerf(data.spy ?? null);
           setPerfBySymbol(data.performanceBySymbol ?? {});
           setYieldBySymbol(data.yieldBySymbol ?? {});
+          applyOverviewPerformanceMarks(data.performanceBySymbol ?? {});
           lastOverviewLoadStateRef.current = "done";
           setOverviewReady(true);
           return;
@@ -327,6 +345,7 @@ function PortfolioOverviewCardsInner({
       setSpyPerf(data.spy ?? null);
       setPerfBySymbol(data.performanceBySymbol ?? {});
       setYieldBySymbol(data.yieldBySymbol ?? {});
+      applyOverviewPerformanceMarks(data.performanceBySymbol ?? {});
 
       lastOverviewLoadStateRef.current = "done";
       try {
@@ -342,7 +361,7 @@ function PortfolioOverviewCardsInner({
         setOverviewReady(true);
       }
     }
-  }, [symbols]);
+  }, [symbols, applyOverviewPerformanceMarks]);
 
   useEffect(() => {
     void loadMarket();
