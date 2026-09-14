@@ -87,19 +87,29 @@ import { applyIrSeedAbtDocumentUrls } from "@/lib/market/ir-seed-apply-abt";
 import { applyIrSeedAdiDocumentUrls } from "@/lib/market/ir-seed-apply-adi";
 import { applyIrSeedAphDocumentUrls } from "@/lib/market/ir-seed-apply-aph";
 import { applyIrSeedBlkDocumentUrls } from "@/lib/market/ir-seed-apply-blk";
+import { applyIrSeedBaDocumentUrls } from "@/lib/market/ir-seed-apply-ba";
+import { applyIrSeedCopDocumentUrls } from "@/lib/market/ir-seed-apply-cop";
 import { applyIrSeedDeDocumentUrls } from "@/lib/market/ir-seed-apply-de";
 import { applyIrSeedGildDocumentUrls } from "@/lib/market/ir-seed-apply-gild";
 import { applyIrSeedMcdDocumentUrls } from "@/lib/market/ir-seed-apply-mcd";
 import { applyIrSeedNeeDocumentUrls } from "@/lib/market/ir-seed-apply-nee";
 import { applyIrSeedNvoDocumentUrls } from "@/lib/market/ir-seed-apply-nvo";
 import { applyIrSeedQcomDocumentUrls } from "@/lib/market/ir-seed-apply-qcom";
+import { applyIrSeedRioDocumentUrls } from "@/lib/market/ir-seed-apply-rio";
 import { applyIrSeedSchwDocumentUrls } from "@/lib/market/ir-seed-apply-schw";
+import { applyIrSeedSccoDocumentUrls } from "@/lib/market/ir-seed-apply-scco";
+import { applyIrSeedShopDocumentUrls } from "@/lib/market/ir-seed-apply-shop";
+import { applyIrSeedSmfgDocumentUrls } from "@/lib/market/ir-seed-apply-smfg";
 import { applyIrSeedStxDocumentUrls } from "@/lib/market/ir-seed-apply-stx";
 import { applyIrSeedTDocumentUrls } from "@/lib/market/ir-seed-apply-t";
 import { applyIrSeedTdDocumentUrls } from "@/lib/market/ir-seed-apply-td";
 import { applyIrSeedTmusDocumentUrls } from "@/lib/market/ir-seed-apply-tmus";
 import { applyIrSeedTteDocumentUrls } from "@/lib/market/ir-seed-apply-tte";
+import { applyIrSeedUbsDocumentUrls } from "@/lib/market/ir-seed-apply-ubs";
+import { applyIrSeedUnpDocumentUrls } from "@/lib/market/ir-seed-apply-unp";
 import { applyIrSeedVzDocumentUrls } from "@/lib/market/ir-seed-apply-vz";
+import { applyIrSeedWdcDocumentUrls } from "@/lib/market/ir-seed-apply-wdc";
+import { applyIrSeedWellDocumentUrls } from "@/lib/market/ir-seed-apply-well";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 /** Tickers with bespoke IR seed modules (run before universal layers). */
@@ -202,6 +212,16 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
   "ABT",
   "BLK",
   "NEE",
+  "RIO",
+  "WELL",
+  "UNP",
+  "SMFG",
+  "WDC",
+  "UBS",
+  "COP",
+  "BA",
+  "SHOP",
+  "SCCO",
 ]);
 
 export function earningsIrSeedResolutionSource(
@@ -314,6 +334,16 @@ async function applyDedicatedIrSeedDocumentUrls(
   if (t === "ABT") return applyIrSeedAbtDocumentUrls(rows, hub);
   if (t === "BLK") return applyIrSeedBlkDocumentUrls(rows, hub);
   if (t === "NEE") return applyIrSeedNeeDocumentUrls(rows, hub);
+  if (t === "RIO") return applyIrSeedRioDocumentUrls(rows, hub);
+  if (t === "WELL") return applyIrSeedWellDocumentUrls(rows, hub);
+  if (t === "UNP") return applyIrSeedUnpDocumentUrls(rows, hub);
+  if (t === "SMFG") return applyIrSeedSmfgDocumentUrls(rows, hub);
+  if (t === "WDC") return applyIrSeedWdcDocumentUrls(rows, hub);
+  if (t === "UBS") return applyIrSeedUbsDocumentUrls(rows, hub);
+  if (t === "COP") return applyIrSeedCopDocumentUrls(rows, hub);
+  if (t === "BA") return applyIrSeedBaDocumentUrls(rows, hub);
+  if (t === "SHOP") return applyIrSeedShopDocumentUrls(rows, hub);
+  if (t === "SCCO") return applyIrSeedSccoDocumentUrls(rows, hub);
   if (t === "RACE") {
     return applyIrSeedFerrariPresentationUrls(rows, {
       preview: options?.preview,

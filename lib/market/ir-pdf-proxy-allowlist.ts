@@ -180,6 +180,85 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
   ) {
     return true;
   }
+  // Rio Tinto IR results PDFs (Sitecore media + CDN mirror).
+  if (
+    (h === "www.riotinto.com" ||
+      h === "riotinto.com" ||
+      h.endsWith(".riotinto.com") ||
+      h === "cdn-rio.dataweavers.io") &&
+    parsed.pathname.includes("/-/media/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Welltower IR Business Update + Earnings Release PDFs.
+  if (
+    (h === "welltower.com" || h === "www.welltower.com" || h.endsWith(".welltower.com")) &&
+    parsed.pathname.includes("/wp-content/uploads/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Union Pacific IR GCS static-files (Presentation + News Release).
+  if (
+    h === "investor.unionpacific.com" ||
+    h === "unionpacific.gcs-web.com" ||
+    (h.endsWith(".unionpacific.com") && /\/static-files\//i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // SMFG English IR results + investor meeting PDFs.
+  if (h === "smfg.co.jp" || h === "www.smfg.co.jp" || h.endsWith(".smfg.co.jp")) return true;
+  // Western Digital IR GCS static-files (Presentation + Press Release).
+  if (
+    h === "investor.wdc.com" ||
+    h === "wdc.gcs-web.com" ||
+    (h.endsWith(".wdc.com") && /\/static-files\//i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // UBS IR quarterly results + media-release PDFs (quarterlies DAM and /content/dam/assets/news/).
+  if (
+    (h === "ubs.com" || h === "www.ubs.com" || h.endsWith(".ubs.com")) &&
+    parsed.pathname.includes("/content/dam/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname) &&
+    (parsed.pathname.includes("/investor-relations/quarterlies/") ||
+      parsed.pathname.includes("/assets/news/") ||
+      parsed.pathname.includes("/assets/cc/investor-relations/") ||
+      /results-presentation|media-release|mr-results-/i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // ConocoPhillips earnings release + deck PDFs.
+  if (
+    (h === "static.conocophillips.com" ||
+      h === "www.conocophillips.com" ||
+      h.endsWith(".conocophillips.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Boeing IR q4cdn presentations + press releases.
+  if (h === "s2.q4cdn.com" && parsed.pathname.includes("/661678649/") && /\.pdf(?:$|[?#])/i.test(parsed.pathname)) {
+    return true;
+  }
+  // Shopify IR GCS static-files.
+  if (
+    h === "shopifyinvestors.gcs-web.com" ||
+    (h === "investors.shopify.com" && /\/static-files\//i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Southern Copper IR presentation + press PDFs.
+  if (
+    (h === "southerncoppercorp.com" ||
+      h === "www.southerncoppercorp.com" ||
+      h.endsWith(".southerncoppercorp.com")) &&
+    parsed.pathname.includes("/wp-content/uploads/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
   if (h === "wellsfargo.com" || h.endsWith(".wellsfargo.com")) return true;
   if (h === "shell.com" || h.endsWith(".shell.com")) return true;
   if (h === "alibabagroup.com" || h.endsWith(".alibabagroup.com") || h === "data.alibabagroup.com") {

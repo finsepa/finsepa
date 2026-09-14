@@ -54,6 +54,38 @@ const CURATED_IR_HOSTS_BY_TICKER: Record<string, readonly string[]> = {
     "https://www.investor.nexteraenergy.com/reports-and-filings/quarterly-financial-results/2026",
     "https://www.investor.nexteraenergy.com/reports-and-filings/quarterly-financial-results",
   ],
+  RIO: [
+    "https://www.riotinto.com/en/invest/invest-archive",
+    "https://www.riotinto.com/en/invest/presentations",
+    "https://www.riotinto.com/en/invest",
+  ],
+  WELL: [
+    "https://welltower.com/investors/",
+    "https://welltower.com/investors/financial-summary/",
+  ],
+  UNP: [
+    "https://investor.unionpacific.com/financials/quarterly-results/",
+    "https://investor.unionpacific.com/events-presentations/",
+  ],
+  SMFG: [
+    "https://www.smfg.co.jp/english/investor/financial/latest_statement.html",
+    "https://www.smfg.co.jp/english/investor/",
+  ],
+  WDC: [
+    "https://investor.wdc.com/financial-information/earnings-documents",
+    "https://investor.wdc.com/",
+  ],
+  UBS: [
+    "https://www.ubs.com/global/en/investor-relations/financial-information/quarterly-reporting.html",
+    "https://www.ubs.com/global/en/investor-relations.html",
+  ],
+  COP: [
+    "https://www.conocophillips.com/investor-relations/investor-presentations/earnings-archive/",
+    "https://www.conocophillips.com/investor-relations/investor-presentations/",
+  ],
+  BA: ["https://investors.boeing.com/investors/financial-reports/default.aspx", "https://investors.boeing.com/"],
+  SHOP: ["https://www.shopify.com/investors/financial-reports", "https://investors.shopify.com/"],
+  SCCO: ["https://southerncoppercorp.com/eng/", "https://southerncoppercorp.com/"],
   COIN: ["https://investor.coinbase.com/"],
   MAR: ["https://marriott.gcs-web.com/"],
   KO: ["https://investors.coca-colacompany.com/"],

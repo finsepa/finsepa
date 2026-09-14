@@ -78,7 +78,7 @@ Merge is **lock-once**: a correct lock is never overwritten. Wrong SEC locks mus
 
 These must never get SEC HTML as a “helpful” fallback:
 
-`AMAT` · `MRK` · `COST` · `KO` · `CAT` · `PLTR` · `UNH` · `LRCX` · `CVX` · `HSBC` · `GOOGL`/`GOOG` · `AVGO` · `ORCL` · `ABBV` · `ADBE` · `DELL` · `MS` · `GE` · `PG` · `NFLX` · `HD` · `GS` · `PM` · `RY` · `ARM` · `BABA` · `PANW` · `SHEL` · `WFC` · `RTX` · `NVS` · `MUFG` · `SNDK` · `NSRGY` · `GEV` · `AZN` · `ANET` · `SIEGY` · `SAP` · `LVMUY` · `LRLCY` · `KLAC` · `TXN` · `SFTBY` · `BHP` · `C` · `TM` · `IBM` · `TMO` · `AXP` · `LIN` · `SAN` · `CRWD` · `AMGN` · `MRVL` · `VZ` · `TTE` · `STX` · `CRM` · `DIS` · `AMD` · `PEP` · `INTU` · `QCOM` · `APH` · `TD` · `TMUS` · `NVO` · `SCHW` · `ADI` · `DE` · `MCD` · `T` · `GILD` · `ABT` · `BLK` · `NEE`
+`AMAT` · `MRK` · `COST` · `KO` · `CAT` · `PLTR` · `UNH` · `LRCX` · `CVX` · `HSBC` · `GOOGL`/`GOOG` · `AVGO` · `ORCL` · `ABBV` · `ADBE` · `DELL` · `MS` · `GE` · `PG` · `NFLX` · `HD` · `GS` · `PM` · `RY` · `ARM` · `BABA` · `PANW` · `SHEL` · `WFC` · `RTX` · `NVS` · `MUFG` · `SNDK` · `NSRGY` · `GEV` · `AZN` · `ANET` · `SIEGY` · `SAP` · `LVMUY` · `LRLCY` · `KLAC` · `TXN` · `SFTBY` · `BHP` · `C` · `TM` · `IBM` · `TMO` · `AXP` · `LIN` · `SAN` · `CRWD` · `AMGN` · `MRVL` · `VZ` · `TTE` · `STX` · `CRM` · `DIS` · `AMD` · `PEP` · `INTU` · `QCOM` · `APH` · `TD` · `TMUS` · `NVO` · `SCHW` · `ADI` · `DE` · `MCD` · `T` · `GILD` · `ABT` · `BLK` · `NEE` · `RIO` · `WELL` · `UNP` · `SMFG` · `WDC` · `UBS` · `COP` · `BA` · `SHOP` · `SCCO`
 
 Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-types.ts`).
 
@@ -96,13 +96,17 @@ Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-
 
 ## Status snapshot (2026-09-13)
 
-Next batch by mcap — wired: **GILD, ABT, BLK, NEE** (completes next-10 after NVO…T). HTTP/browser catalogs; never SEC HTML; empty slots left empty.
+Next-10 #2 by mcap — wired: **RIO, WELL, UNP, SMFG, WDC, UBS, COP, SCCO, SHOP, BA**. Never SEC HTML; empty slots left empty.
 
-- **GILD** GREEN — Calendar FY. Earnings Presentation + Press Release (`s29.q4cdn.com/585078350`).
-- **ABT** YELLOW — filings-only. Calendar FY. Earnings press PDFs on `abbottinvestor.com/static-files`; infographics are not Slides.
-- **BLK** GREEN — Calendar FY. Earnings Release Supplement + Earnings Release (`s24.q4cdn.com/856567660`); some releases use `Earning-Release` filenames.
-- **NEE** GREEN — Calendar FY. Earnings Slides + News Release (`investor.nexteraenergy.com` Sitecore media; path typos `fillings` / `event_presentaion`). Q1’25 filings = Exhibit 99 PDF.
+- **RIO** YELLOW — Calendar FY. HY (Q2) + Annual (Q4) on `riotinto.com` results media (incl. Q2’26); Q1/Q3 empty.
+- **WELL** YELLOW — Business Update + Earnings Release; Q4’22 slides empty.
+- **UNP** GREEN — Presentation + News Release/Financials.
+- **SMFG** YELLOW — March FY; `e_pre` slides (H1/FY) + `e01` filings; Q1/Q3 slides empty. FY3/2022 under `fy2021/`.
+- **WDC** YELLOW — June FY; Presentation + Press Release; Q1/Q2’22 slides empty.
+- **UBS** GREEN — Results presentation + media release (`ubs.com/content/dam/.../quarterlies/`; Q3/Q4’22 + Q2’24 under `/content/dam/assets/news/`).
+- **COP** GREEN — Calendar FY. Call/release deck + earnings release (`static.conocophillips.com/files/resources/`).
+- **BA** GREEN — Calendar FY. Presentation + Earnings/Press Release (`s2.q4cdn.com/661678649`). Ex 99.1 CDN filenames may contain `8K` (still IR PDF).
+- **SHOP** YELLOW — Calendar FY. Investor Presentation + Press Release (`shopifyinvestors.gcs-web.com/static-files`). Slides for Q3’25–Q2’26; Q1’22–Q2’25 filings-only. Reject 10-Q / supplemental.
+- **SCCO** YELLOW — Calendar FY. `pp*` → Slides; `pr*` → Filings (`southerncoppercorp.com/.../wp-content/uploads/`). Q1’22 empty; several filings-only. Never SEC HTML.
 
-Also wired earlier in this next-10: **NVO** yellow (slides-only), **SCHW** green, **ADI** green, **DE** yellow, **MCD** yellow (filings-only), **T** yellow.
-
-Prior: **NVO** yellow, **SCHW** green, **ADI** green, **DE** yellow, **MCD** yellow, **T** yellow, **APH** yellow, **TD** green, **TMUS** green.
+Prior next-10: **GILD** green, **ABT** yellow (filings-only), **BLK** green, **NEE** green, **NVO** yellow, **SCHW** green, **ADI** green, **DE** yellow, **MCD** yellow, **T** yellow, **APH** yellow, **TD** green, **TMUS** green.
