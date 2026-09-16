@@ -166,9 +166,15 @@ async function loginSnapTradePortalUri(
   options?: {
     reconnectAuthorizationId?: string | null;
     darkMode?: boolean;
+    /** SnapTrade brokerage slug — skips broker picker and opens that login flow. */
+    broker?: string | null;
   },
 ): Promise<string> {
   const snaptrade = getSnaptradeSdk();
+  const broker =
+    typeof options?.broker === "string" && options.broker.trim()
+      ? options.broker.trim()
+      : undefined;
   const loginResponse = await snaptrade.authentication.loginSnapTradeUser({
     userId: credentials.snaptradeUserId,
     userSecret: credentials.userSecret,
@@ -176,10 +182,25 @@ async function loginSnapTradePortalUri(
     connectionPortalVersion: "v4",
     darkMode: options?.darkMode === true,
     reconnect: options?.reconnectAuthorizationId ?? undefined,
+    // Only pass when set — some SDK builds treat explicit `undefined` as omit-broker.
+    ...(broker ? { broker } : {}),
     // Finsepa modal/sheet provides close — hide duplicate X inside SnapTrade (web + iOS).
     showCloseButton: false,
   });
-  return extractRedirectUri(loginResponse.data);
+  const redirectUri = extractRedirectUri(loginResponse.data);
+  if (broker) {
+    const hasBroker =
+      /[?&]broker=/i.test(redirectUri) ||
+      redirectUri.toUpperCase().includes(`BROKER=${broker.toUpperCase()}`);
+    if (!hasBroker) {
+      console.error("[snaptrade] portal link missing broker param", { broker, redirectUri });
+      throw new Error(
+        `SnapTrade portal did not open ${broker} directly. Check broker slug / portal params.`,
+      );
+    }
+    console.info("[snaptrade] portal link ok with broker", { broker });
+  }
+  return redirectUri;
 }
 
 export async function createSnapTradePortalLink(
@@ -187,6 +208,7 @@ export async function createSnapTradePortalLink(
   options?: {
     reconnectAuthorizationId?: string | null;
     darkMode?: boolean;
+    broker?: string | null;
   },
 ): Promise<string> {
   const t0 = Date.now();
