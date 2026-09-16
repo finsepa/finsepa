@@ -11,6 +11,11 @@ export const DEFAULT_LIVE_MINUTE_CHART_TICKERS = [
   "SPY",
   "MSFT",
   "AMZN",
+  "TSM",
+  "META",
+  "AVGO",
+  "TSLA",
+  "BRK-B",
 ];
 
 export function loadStock1DLiveMinuteChartTickers() {
