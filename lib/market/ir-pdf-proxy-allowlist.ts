@@ -209,6 +209,29 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
   }
   // SMFG English IR results + investor meeting PDFs.
   if (h === "smfg.co.jp" || h === "www.smfg.co.jp" || h.endsWith(".smfg.co.jp")) return true;
+  // Sony Group IR earnings presentation + financial statements.
+  if (
+    (h === "www.sony.com" || h === "sony.com" || h.endsWith(".sony.com")) &&
+    parsed.pathname.includes("/SonyInfo/IR/library/presen/er/pdf/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Danaher IR Earnings Presentation + press `?asPDF` (+ InvestorRoom filecache redirect).
+  if (
+    (h === "investors.danaher.com" || h.endsWith(".danaher.com")) &&
+    ((parsed.pathname.includes("/image/") && /\.pdf(?:$|[?#])/i.test(parsed.pathname)) ||
+      (parsed.searchParams.has("asPDF") && /danaher-reports/i.test(parsed.pathname)))
+  ) {
+    return true;
+  }
+  if (
+    h === "filecache.investorroom.com" &&
+    parsed.pathname.includes("/mr5ir_danaher/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
   // Western Digital IR GCS static-files (Presentation + Press Release).
   if (
     h === "investor.wdc.com" ||
@@ -255,6 +278,45 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
       h === "www.southerncoppercorp.com" ||
       h.endsWith(".southerncoppercorp.com")) &&
     parsed.pathname.includes("/wp-content/uploads/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // BBVA shareholders IR wp-content Results Presentation + Informe PDFs.
+  if (
+    (h === "shareholdersandinvestors.bbva.com" || h === "bbva.com" || h.endsWith(".bbva.com")) &&
+    parsed.pathname.includes("/wp-content/uploads/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // AB InBev IR assets + Builder CDN Results Center PDFs (no `.pdf` suffix).
+  if (
+    (h === "www.ab-inbev.com" || h === "ab-inbev.com" || h.endsWith(".ab-inbev.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  if (
+    h === "cdn.builder.io" &&
+    (parsed.pathname.includes("assets%2F2e5c7fb020194c1a8ee80f743d0b923e%2F") ||
+      decodeURIComponent(parsed.pathname).includes("/assets/2e5c7fb020194c1a8ee80f743d0b923e/")) &&
+    parsed.searchParams.get("alt") === "media"
+  ) {
+    return true;
+  }
+  // Interactive Brokers IR getFileNew.php PDFs (`file=YYYYQn_*.pdf`).
+  if (
+    (h === "ndcdyn.interactivebrokers.com" || h.endsWith(".interactivebrokers.com")) &&
+    /\/mkt\/getFileNew\.php$/i.test(parsed.pathname) &&
+    /\.pdf$/i.test(parsed.searchParams.get("file") ?? "")
+  ) {
+    return true;
+  }
+  // Eaton IR analyst presentation + earnings-complete PDFs.
+  if (
+    (h === "www.eaton.com" || h === "eaton.com" || h.endsWith(".eaton.com")) &&
+    parsed.pathname.includes("/investor-relations/quarterly-earnings/") &&
     /\.pdf(?:$|[?#])/i.test(parsed.pathname)
   ) {
     return true;

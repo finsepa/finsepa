@@ -95,6 +95,16 @@ export const EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS = new Set([
   "BA",
   "SHOP",
   "SCCO",
+  "PFE",
+  "BBVA",
+  "BUD",
+  "IBKR",
+  "ETN",
+  "BX",
+  "UBER",
+  "NOW",
+  "SONY",
+  "DHR",
 ]);
 
 export type EarningsIrVaultDocStatus = "locked" | "found" | "missing";
@@ -224,6 +234,23 @@ export function isIrVaultAllowedUrl(url: string | null | undefined): url is stri
     ) {
       return true;
     }
+    // AB InBev Results Center PDFs on Builder CDN (no `.pdf` suffix; `alt=media`).
+    if (
+      host === "cdn.builder.io" &&
+      (u.pathname.includes("assets%2F2e5c7fb020194c1a8ee80f743d0b923e%2F") ||
+        decodeURIComponent(u.pathname).includes("/assets/2e5c7fb020194c1a8ee80f743d0b923e/")) &&
+      u.searchParams.get("alt") === "media"
+    ) {
+      return true;
+    }
+    // Danaher InvestorRoom press export (`?asPDF`) — PDF bytes, no `.pdf` suffix.
+    if (
+      (host === "investors.danaher.com" || host.endsWith(".danaher.com")) &&
+      u.searchParams.has("asPDF") &&
+      /danaher-reports/i.test(u.pathname)
+    ) {
+      return true;
+    }
     if (/\.pptx?(?:$|[?#])/i.test(u.pathname) || /\.docx?(?:$|[?#])/i.test(u.pathname)) return true;
     return false;
   } catch {
@@ -236,7 +263,9 @@ export function isIrVaultAllowedUrl(url: string | null | undefined): url is stri
       /cdn-dynmedia-1\.microsoft\.com\/is\/content\/microsoftcorp\/(?:Slides|PressRelease)FY\d{2}_?[qQ][1-4]/i.test(
         t,
       ) ||
-      /verizon\.com\/about\/file\/\d+\/download\?[^#]*token=/i.test(t)
+      /verizon\.com\/about\/file\/\d+\/download\?[^#]*token=/i.test(t) ||
+      /cdn\.builder\.io\/o\/assets%2F2e5c7fb020194c1a8ee80f743d0b923e%2F[^?\s]+[^#]*alt=media/i.test(t) ||
+      /investors\.danaher\.com\/[^?\s]+Danaher-Reports[^?\s]*\?[^#]*asPDF/i.test(t)
     );
   }
 }

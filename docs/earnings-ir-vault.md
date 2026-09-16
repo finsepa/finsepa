@@ -78,7 +78,7 @@ Merge is **lock-once**: a correct lock is never overwritten. Wrong SEC locks mus
 
 These must never get SEC HTML as a “helpful” fallback:
 
-`AMAT` · `MRK` · `COST` · `KO` · `CAT` · `PLTR` · `UNH` · `LRCX` · `CVX` · `HSBC` · `GOOGL`/`GOOG` · `AVGO` · `ORCL` · `ABBV` · `ADBE` · `DELL` · `MS` · `GE` · `PG` · `NFLX` · `HD` · `GS` · `PM` · `RY` · `ARM` · `BABA` · `PANW` · `SHEL` · `WFC` · `RTX` · `NVS` · `MUFG` · `SNDK` · `NSRGY` · `GEV` · `AZN` · `ANET` · `SIEGY` · `SAP` · `LVMUY` · `LRLCY` · `KLAC` · `TXN` · `SFTBY` · `BHP` · `C` · `TM` · `IBM` · `TMO` · `AXP` · `LIN` · `SAN` · `CRWD` · `AMGN` · `MRVL` · `VZ` · `TTE` · `STX` · `CRM` · `DIS` · `AMD` · `PEP` · `INTU` · `QCOM` · `APH` · `TD` · `TMUS` · `NVO` · `SCHW` · `ADI` · `DE` · `MCD` · `T` · `GILD` · `ABT` · `BLK` · `NEE` · `RIO` · `WELL` · `UNP` · `SMFG` · `WDC` · `UBS` · `COP` · `BA` · `SHOP` · `SCCO`
+`AMAT` · `MRK` · `COST` · `KO` · `CAT` · `PLTR` · `UNH` · `LRCX` · `CVX` · `HSBC` · `GOOGL`/`GOOG` · `AVGO` · `ORCL` · `ABBV` · `ADBE` · `DELL` · `MS` · `GE` · `PG` · `NFLX` · `HD` · `GS` · `PM` · `RY` · `ARM` · `BABA` · `PANW` · `SHEL` · `WFC` · `RTX` · `NVS` · `MUFG` · `SNDK` · `NSRGY` · `GEV` · `AZN` · `ANET` · `SIEGY` · `SAP` · `LVMUY` · `LRLCY` · `KLAC` · `TXN` · `SFTBY` · `BHP` · `C` · `TM` · `IBM` · `TMO` · `AXP` · `LIN` · `SAN` · `CRWD` · `AMGN` · `MRVL` · `VZ` · `TTE` · `STX` · `CRM` · `DIS` · `AMD` · `PEP` · `INTU` · `QCOM` · `APH` · `TD` · `TMUS` · `NVO` · `SCHW` · `ADI` · `DE` · `MCD` · `T` · `GILD` · `ABT` · `BLK` · `NEE` · `RIO` · `WELL` · `UNP` · `SMFG` · `WDC` · `UBS` · `COP` · `BA` · `SHOP` · `SCCO` · `PFE` · `BBVA` · `BUD` · `IBKR` · `ETN` · `BX` · `UBER` · `NOW` · `SONY` · `DHR`
 
 Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-types.ts`).
 
@@ -94,9 +94,9 @@ Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-
 | Wire-up | `lib/market/ir-seed-apply.ts` (`DEDICATED_IR_SEED_TICKERS`) |
 | Preview proxy | `GET /api/ir-pdf` + `lib/market/ir-pdf-proxy-allowlist.ts` |
 
-## Status snapshot (2026-09-13)
+## Status snapshot (2026-09-16)
 
-Next-10 #2 by mcap — wired: **RIO, WELL, UNP, SMFG, WDC, UBS, COP, SCCO, SHOP, BA**. Never SEC HTML; empty slots left empty.
+Next-10 #3 by mcap — wired: **PFE, BBVA, BUD, IBKR, ETN, BX, UBER, NOW, SONY, DHR**. BUD Q1’23+ on `cdn.builder.io`. BX yellow (combined Press+Presentation; filings empty). UBER yellow (Q1–Q2’22 HTML press only). **NOW** green (`s205.q4cdn.com/916135447`). **SONY** March FY green (`sony.com/.../presen/er/pdf/`; IR FY tag = Finsepa fy−1). **DHR** green (Presentation `/image/` + press `?asPDF`). Never SEC HTML; empty slots left empty.
 
 - **RIO** YELLOW — Calendar FY. HY (Q2) + Annual (Q4) on `riotinto.com` results media (incl. Q2’26); Q1/Q3 empty.
 - **WELL** YELLOW — Business Update + Earnings Release; Q4’22 slides empty.

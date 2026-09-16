@@ -110,6 +110,16 @@ import { applyIrSeedUnpDocumentUrls } from "@/lib/market/ir-seed-apply-unp";
 import { applyIrSeedVzDocumentUrls } from "@/lib/market/ir-seed-apply-vz";
 import { applyIrSeedWdcDocumentUrls } from "@/lib/market/ir-seed-apply-wdc";
 import { applyIrSeedWellDocumentUrls } from "@/lib/market/ir-seed-apply-well";
+import { applyIrSeedPfeDocumentUrls } from "@/lib/market/ir-seed-apply-pfe";
+import { applyIrSeedBbvaDocumentUrls } from "@/lib/market/ir-seed-apply-bbva";
+import { applyIrSeedBudDocumentUrls } from "@/lib/market/ir-seed-apply-bud";
+import { applyIrSeedIbkrDocumentUrls } from "@/lib/market/ir-seed-apply-ibkr";
+import { applyIrSeedEtnDocumentUrls } from "@/lib/market/ir-seed-apply-etn";
+import { applyIrSeedBxDocumentUrls } from "@/lib/market/ir-seed-apply-bx";
+import { applyIrSeedUberDocumentUrls } from "@/lib/market/ir-seed-apply-uber";
+import { applyIrSeedNowDocumentUrls } from "@/lib/market/ir-seed-apply-now";
+import { applyIrSeedSonyDocumentUrls } from "@/lib/market/ir-seed-apply-sony";
+import { applyIrSeedDhrDocumentUrls } from "@/lib/market/ir-seed-apply-dhr";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 /** Tickers with bespoke IR seed modules (run before universal layers). */
@@ -222,6 +232,16 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
   "BA",
   "SHOP",
   "SCCO",
+  "PFE",
+  "BBVA",
+  "BUD",
+  "IBKR",
+  "ETN",
+  "BX",
+  "UBER",
+  "NOW",
+  "SONY",
+  "DHR",
 ]);
 
 export function earningsIrSeedResolutionSource(
@@ -344,6 +364,16 @@ async function applyDedicatedIrSeedDocumentUrls(
   if (t === "BA") return applyIrSeedBaDocumentUrls(rows, hub);
   if (t === "SHOP") return applyIrSeedShopDocumentUrls(rows, hub);
   if (t === "SCCO") return applyIrSeedSccoDocumentUrls(rows, hub);
+  if (t === "PFE") return applyIrSeedPfeDocumentUrls(rows, hub);
+  if (t === "BBVA") return applyIrSeedBbvaDocumentUrls(rows, hub);
+  if (t === "BUD") return applyIrSeedBudDocumentUrls(rows, hub);
+  if (t === "IBKR") return applyIrSeedIbkrDocumentUrls(rows, hub);
+  if (t === "ETN") return applyIrSeedEtnDocumentUrls(rows, hub);
+  if (t === "BX") return applyIrSeedBxDocumentUrls(rows, hub);
+  if (t === "UBER") return applyIrSeedUberDocumentUrls(rows, hub);
+  if (t === "NOW") return applyIrSeedNowDocumentUrls(rows, hub);
+  if (t === "SONY") return applyIrSeedSonyDocumentUrls(rows, hub);
+  if (t === "DHR") return applyIrSeedDhrDocumentUrls(rows, hub);
   if (t === "RACE") {
     return applyIrSeedFerrariPresentationUrls(rows, {
       preview: options?.preview,

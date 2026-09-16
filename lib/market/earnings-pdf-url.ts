@@ -35,6 +35,23 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
     ) {
       return true;
     }
+    // AB InBev Results Center PDFs on Builder CDN (no `.pdf` suffix; `alt=media`).
+    if (
+      u.hostname.toLowerCase() === "cdn.builder.io" &&
+      (u.pathname.includes("assets%2F2e5c7fb020194c1a8ee80f743d0b923e%2F") ||
+        decodeURIComponent(u.pathname).includes("/assets/2e5c7fb020194c1a8ee80f743d0b923e/")) &&
+      u.searchParams.get("alt") === "media"
+    ) {
+      return true;
+    }
+    // Danaher InvestorRoom press export (`?asPDF`) — PDF bytes, no `.pdf` suffix.
+    if (
+      (u.hostname === "investors.danaher.com" || u.hostname.endsWith(".danaher.com")) &&
+      u.searchParams.has("asPDF") &&
+      /danaher-reports/i.test(u.pathname)
+    ) {
+      return true;
+    }
     return /\.pdf(?:$|[?#])/i.test(u.pathname) || /\.pdf(?:$|[?#])/i.test(t);
   } catch {
     if (/investors\.micron\.com\/static-files\//i.test(t)) return false;
@@ -44,7 +61,9 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
       /(?:investors\.broadcom\.com|broadcom\.gcs-web\.com|investor\.sandisk\.com|sandisk\.gcs-web\.com)\/node\/\d+\/pdf/i.test(
         t,
       ) ||
-      /verizon\.com\/about\/file\/\d+\/download\?[^#]*token=/i.test(t)
+      /verizon\.com\/about\/file\/\d+\/download\?[^#]*token=/i.test(t) ||
+      /cdn\.builder\.io\/o\/assets%2F2e5c7fb020194c1a8ee80f743d0b923e%2F[^?\s]+[^#]*alt=media/i.test(t) ||
+      /investors\.danaher\.com\/[^?\s]+Danaher-Reports[^?\s]*\?[^#]*asPDF/i.test(t)
     );
   }
 }
