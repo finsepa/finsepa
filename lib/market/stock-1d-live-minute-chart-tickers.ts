@@ -17,6 +17,16 @@ export const STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS = [
   "AVGO",
   "TSLA",
   "BRK-B",
+  "MU",
+  "LLY",
+  "JPM",
+  "WMT",
+  "AMD",
+  "V",
+  "XOM",
+  "JNJ",
+  "ASML",
+  "INTC",
 ] as const;
 
 /** Alias — same tickers for WS ingest + live 1D reference implementation. */

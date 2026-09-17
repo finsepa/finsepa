@@ -20,10 +20,20 @@ test("live 1D allowlist includes next mega-caps by mcap + core ETFs", () => {
     "AVGO",
     "TSLA",
     "BRK-B",
+    "MU",
+    "LLY",
+    "JPM",
+    "WMT",
+    "AMD",
+    "V",
+    "XOM",
+    "JNJ",
+    "ASML",
+    "INTC",
   ]);
   for (const t of STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS) {
     assert.equal(isStock1DLiveMinuteChartTicker(t), true);
   }
-  assert.equal(isStock1DLiveMinuteChartTicker("LLY"), false);
+  assert.equal(isStock1DLiveMinuteChartTicker("MA"), false);
   assert.equal(isStock1DLiveMinuteChartTicker("GOOG"), false);
 });

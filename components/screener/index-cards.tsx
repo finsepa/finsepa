@@ -68,7 +68,8 @@ export const INDEX_CARDS_SCROLL_CLASS =
   "-mr-4 pl-1 pr-4 mobile-scroll-x md:mx-0 md:overflow-visible md:pl-0 md:pr-0 md:pb-0 md:mb-0";
 
 export const INDEX_CARD_SURFACE_CLASS = cn(
-  "flex w-[7.25625rem] shrink-0 flex-col items-start gap-0.5 max-md:py-3.5 overflow-hidden px-3 py-3 transition max-md:overflow-visible md:gap-1 sm:px-4 sm:py-4 md:w-auto md:min-w-0 md:shrink",
+  // Slightly less bottom pad: last row line-box leaves optical space under the % digits.
+  "flex w-[7.25625rem] shrink-0 flex-col items-start gap-0.5 overflow-hidden px-3 pt-3.5 pb-2.5 transition max-md:overflow-visible max-md:pt-3.5 max-md:pb-2.5 md:gap-1 sm:px-4 sm:pt-4 sm:pb-3 md:w-auto md:min-w-0 md:shrink",
   MOBILE_ELEVATED_CARD_CLASS,
 );
 
@@ -149,7 +150,7 @@ export function IndexCards({
               </FadeIn>
               <FadeIn show={fadeIn}>
                 <div
-                  className={`inline-flex w-full items-center gap-1 text-left text-[13px] font-medium leading-4 tabular-nums sm:text-[14px] sm:leading-5 ${
+                  className={`inline-flex w-full items-center gap-1 text-left text-[13px] font-medium leading-none tabular-nums sm:text-[14px] ${
                     neutral ? "text-fg-muted" : positive ? "text-up" : "text-down"
                   }`}
                   suppressHydrationWarning

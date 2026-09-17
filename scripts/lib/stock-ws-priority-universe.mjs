@@ -16,6 +16,16 @@ export const DEFAULT_LIVE_MINUTE_CHART_TICKERS = [
   "AVGO",
   "TSLA",
   "BRK-B",
+  "MU",
+  "LLY",
+  "JPM",
+  "WMT",
+  "AMD",
+  "V",
+  "XOM",
+  "JNJ",
+  "ASML",
+  "INTC",
 ];
 
 export function loadStock1DLiveMinuteChartTickers() {

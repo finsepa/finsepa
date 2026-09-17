@@ -2,7 +2,7 @@
 /**
  * Always-on EODHD crypto WebSocket → Supabase 1m bars for the live crypto 1D chart.
  *
- * Scope: BTC, ETH, XRP, BNB, SOL (24/7, no US market session logic). Separate pipeline
+ * Scope: top coins by market cap (stables excluded) for 24/7 live 1D. Separate pipeline
  * from the stock WS ingestor — do not merge crypto into the stock worker.
  *
  * - Subscribes to the EODHD crypto WS (`/ws/crypto`) for the configured pair(s).
@@ -31,7 +31,8 @@ const SUPABASE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? process.env.SUPABASE_SERVICE_KEY?.trim();
 
 /** EODHD crypto pairs to subscribe to (WS symbol form, e.g. BTC-USD, ETH-USD). */
-const WS_PAIRS = (process.env.CRYPTO_WS_PAIRS ?? "BTC-USD,ETH-USD,XRP-USD,BNB-USD,SOL-USD")
+const WS_PAIRS = (process.env.CRYPTO_WS_PAIRS ??
+  "BTC-USD,ETH-USD,BNB-USD,XRP-USD,SOL-USD,TRX-USD,HYPE-USD,ZEC-USD,DOGE-USD,XMR-USD,LEO-USD,ADA-USD,BCH-USD,LINK-USD,TON-USD")
   .split(",")
   .map((s) => s.trim().toUpperCase())
   .filter(Boolean);
