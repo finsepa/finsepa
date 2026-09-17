@@ -1,7 +1,7 @@
 /**
  * Allowlist gate for the live crypto 1D pipeline.
  *
- * Scope: top coins by market cap (stables excluded) for rolling-24h ~60s 1D charts.
+ * Scope: screener crypto page‑1 by market cap (stables excluded) for rolling-24h ~60s 1D charts.
  * Intentionally NOT a generic crypto-live abstraction — client- and server-safe
  * (no server-only imports).
  */
@@ -21,7 +21,39 @@ export const CRYPTO_LIVE_1D_DEFAULT_TICKERS = [
   "ADA",
   "BCH",
   "LINK",
+  "XLM",
+  "SUI",
   "TON",
+  "GRT",
+  "UNI",
+  "LTC",
+  "AVAX",
+  "HBAR",
+  "ONDO",
+  "NEAR",
+  "SHIB",
+  "APT",
+  "CRO",
+  "WLD",
+  "MNT",
+  "POL",
+  "DOT",
+  "FTM",
+  "JUP",
+  "ARB",
+  "STRK",
+  "PEPE",
+  "OP",
+  "ICP",
+  "IMX",
+  "PYTH",
+  "MKR",
+  "ETC",
+  "AAVE",
+  "ATOM",
+  "RNDR",
+  "STX",
+  "ALGO",
 ] as const;
 
 function parseTickerList(raw: string | undefined): string[] {
@@ -64,7 +96,7 @@ export function isCryptoLive1DSymbol(symbol: string): boolean {
  * which collapses years of early history into a flat line on a linear axis. Use a logarithmic
  * price axis for those ranges so the full history reads clearly — like most crypto platforms.
  *
- * Scope: live-1D allowlist (top coins by mcap), price/marketCap series only.
+ * Scope: live-1D allowlist (screener page‑1 coins), price/marketCap series only.
  */
 export function usesCryptoLogPriceScale(symbol: string, range: string): boolean {
   if (range !== "5Y" && range !== "ALL") return false;
