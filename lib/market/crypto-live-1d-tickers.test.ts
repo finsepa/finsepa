@@ -7,8 +7,8 @@ import {
   normalizeCryptoBaseSymbol,
 } from "@/lib/market/crypto-live-1d-tickers";
 
-test("crypto live 1D allowlist covers screener page-1 non-stables", () => {
-  assert.equal(CRYPTO_LIVE_1D_DEFAULT_TICKERS.length, 47);
+test("crypto live 1D allowlist is top mcap coins within shared WS budget", () => {
+  assert.equal(CRYPTO_LIVE_1D_DEFAULT_TICKERS.length, 28);
   assert.deepEqual([...CRYPTO_LIVE_1D_DEFAULT_TICKERS], [
     "BTC",
     "ETH",
@@ -38,31 +38,11 @@ test("crypto live 1D allowlist covers screener page-1 non-stables", () => {
     "APT",
     "CRO",
     "WLD",
-    "MNT",
-    "POL",
-    "DOT",
-    "FTM",
-    "JUP",
-    "ARB",
-    "STRK",
-    "PEPE",
-    "OP",
-    "ICP",
-    "IMX",
-    "PYTH",
-    "MKR",
-    "ETC",
-    "AAVE",
-    "ATOM",
-    "RNDR",
-    "STX",
-    "ALGO",
   ]);
   assert.equal(isCryptoLive1DSymbol("BTC"), true);
-  assert.equal(isCryptoLive1DSymbol("ETH-USD.CC"), true);
-  assert.equal(isCryptoLive1DSymbol("SHIB"), true);
-  assert.equal(isCryptoLive1DSymbol("ALGO"), true);
+  assert.equal(isCryptoLive1DSymbol("WLD"), true);
+  assert.equal(isCryptoLive1DSymbol("PEPE"), false);
+  assert.equal(isCryptoLive1DSymbol("ALGO"), false);
   assert.equal(isCryptoLive1DSymbol("USDT"), false);
-  assert.equal(isCryptoLive1DSymbol("DAI"), false);
   assert.equal(normalizeCryptoBaseSymbol("eth-usd"), "ETH");
 });
