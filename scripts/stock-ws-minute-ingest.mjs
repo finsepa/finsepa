@@ -278,6 +278,16 @@ function minuteBucketUnix(sessionYmd, tradeSec) {
 
 /** @type {Map<string, number>} */
 const lastPriceBySymbol = new Map();
+/** @type {Map<string, number>} last WS trade/quote wall time per symbol (ms). */
+const lastWsTradeMsBySymbol = new Map();
+/** If a symbol has no WS ticks for this long, REST-refresh instead of heartbeat-stamping a stale lastPrice. */
+const SYMBOL_TRADE_STALE_MS = Number(process.env.STOCK_WS_SYMBOL_STALE_MS ?? WS_STALE_MS);
+
+function isSymbolWsStale(sym) {
+  const t = lastWsTradeMsBySymbol.get(sym);
+  if (t == null) return true;
+  return Date.now() - t > SYMBOL_TRADE_STALE_MS;
+}
 
 function queueMinuteClose(ticker, tradeSec, price) {
   if (getUsEquityMarketSession() === "closed") return;
@@ -313,7 +323,9 @@ function ingestTradeMessage(sym, tradeSec, price, source = "ws") {
   if (source === "ws-quote") quoteMsgCount += 1;
   if (source === "rest") restPollCount += 1;
   if (source === "ws-trade" || source === "ws-quote") {
-    lastWsActivityMs = Date.now();
+    const nowMs = Date.now();
+    lastWsActivityMs = nowMs;
+    lastWsTradeMsBySymbol.set(sym, nowMs);
     health.lastWsActivityAt = new Date().toISOString();
   }
   if (!tradeDrainScheduled) {
@@ -716,16 +728,20 @@ async function restPollTick() {
   const symbols = [...subscribedSymbols];
   if (!symbols.length) return;
 
+  // Prefer symbols that are quiet on WS. Global WS activity (e.g. NVDA ticks) must not
+  // starve REST refresh for flatlined names (TSLA/BRK-B/… heartbeat stamps).
+  const staleSymbols = symbols.filter((sym) => isSymbolWsStale(sym));
   const wsStale = lastWsActivityMs === 0 || Date.now() - lastWsActivityMs > WS_STALE_MS;
-  if (!wsStale) return;
+  const pool = staleSymbols.length > 0 ? staleSymbols : wsStale ? symbols : [];
+  if (!pool.length) return;
 
   const batchSize = Math.max(1, REST_POLL_BATCH);
   const batch = [];
-  for (let i = 0; i < batchSize && i < symbols.length; i += 1) {
-    const idx = (restPollOffset + i) % symbols.length;
-    batch.push(symbols[idx]);
+  for (let i = 0; i < batchSize && i < pool.length; i += 1) {
+    const idx = (restPollOffset + i) % pool.length;
+    batch.push(pool[idx]);
   }
-  restPollOffset = (restPollOffset + batchSize) % symbols.length;
+  restPollOffset = (restPollOffset + batchSize) % pool.length;
 
   for (const sym of batch) {
     try {
@@ -746,6 +762,15 @@ async function minuteHeartbeatTick() {
 
   const nowSec = Math.floor(Date.now() / 1000);
   for (const sym of symbols) {
+    // Quiet on WS → always REST (never heartbeat a frozen lastPrice into the 1D chart).
+    if (isSymbolWsStale(sym)) {
+      try {
+        await pollRealtimeMinuteBar(sym);
+      } catch (err) {
+        log("minute heartbeat rest poll error", sym, err instanceof Error ? err.message : String(err));
+      }
+      continue;
+    }
     const price = lastPriceBySymbol.get(sym);
     if (price != null) {
       ingestTradeMessage(sym, nowSec, price, "heartbeat");
