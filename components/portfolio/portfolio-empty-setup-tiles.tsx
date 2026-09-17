@@ -63,7 +63,8 @@ function SetupTileContent({ tile }: { tile: SetupTile }) {
 }
 
 /**
- * Empty portfolio setup — four onboarding paths when the ledger has no transactions.
+ * Empty portfolio setup — onboarding paths when the ledger has no transactions.
+ * Includes a Demo tile only when the workspace has no demo portfolio (max one).
  */
 export function PortfolioEmptySetupTiles({ className }: { className?: string }) {
   const {
@@ -106,17 +107,6 @@ export function PortfolioEmptySetupTiles({ className }: { className?: string }) 
       disabled: selectedPortfolioReadOnly,
       onClick: () => openAddCash(),
     },
-    ...(hasExistingDemoPortfolio
-      ? []
-      : [
-          {
-            id: "demo",
-            title: "Try demo portfolio",
-            description: "Explore with sample holdings.",
-            icon: <Layers2 className="size-5" strokeWidth={1.75} aria-hidden />,
-            onClick: () => openTryDemoPortfolio(),
-          } satisfies SetupTile,
-        ]),
     {
       id: "import",
       title: "Import CSV File",
@@ -125,6 +115,18 @@ export function PortfolioEmptySetupTiles({ className }: { className?: string }) 
       disabled: selectedPortfolioReadOnly,
       onClick: () => openImportTransactions(),
     },
+    // Only when the user has no demo — at most one demo portfolio is allowed.
+    ...(hasExistingDemoPortfolio
+      ? []
+      : [
+          {
+            id: "demo",
+            title: "Demo portfolio",
+            description: "Add sample holdings to explore Finsepa.",
+            icon: <Layers2 className="size-5" strokeWidth={1.75} aria-hidden />,
+            onClick: () => openTryDemoPortfolio(),
+          } satisfies SetupTile,
+        ]),
   ];
 
   return (
@@ -141,7 +143,7 @@ export function PortfolioEmptySetupTiles({ className }: { className?: string }) 
         </EmptyMedia>
         <EmptyTitle>Add your investments</EmptyTitle>
         <EmptyDescription>
-          See performance, allocation, and returns in one place.
+          You can securely connect a brokerage or exchange, or add transactions manually.
         </EmptyDescription>
       </EmptyHeader>
 

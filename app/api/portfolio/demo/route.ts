@@ -149,7 +149,7 @@ export async function POST(request: Request) {
     const message =
       converted
         ? "Sample holdings loaded — explore anytime."
-      : "Finsepa Demo added — explore sample holdings anytime.";
+      : "Finsepa Demo added";
 
     return NextResponse.json({
       ok: true,

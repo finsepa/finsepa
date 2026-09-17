@@ -39,7 +39,6 @@ import {
   themeSystemMenuIconAnimation,
   whatsappMenuIconAnimation,
 } from "@/lib/lottie/menu-icon-animations";
-import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
 import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import { loginSignedOutUrl, PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { signOutLocalSession } from "@/lib/auth/sign-out-local";
@@ -395,7 +394,7 @@ export function TopbarUserMenu({
     setHelpModalOpen(true);
   }
 
-  function gateLiveChatOrAllow(e: ReactMouseEvent, channel: "WhatsApp" | "Telegram") {
+  function gateLiveChatOrAllow(e: ReactMouseEvent) {
     if (canUseLiveChat) {
       setHelpOpen(false);
       setOpen(false);
@@ -404,11 +403,7 @@ export function TopbarUserMenu({
     e.preventDefault();
     setHelpOpen(false);
     setOpen(false);
-    toastProUpgrade({
-      title: "Pro feature",
-      description: `${channel} chat support is available on Pro only.`,
-      onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
-    });
+    router.push(PATH_ACCOUNT_PLANS);
   }
 
   const proMenuBadge = <ProFeatureBadge label="Available on Pro only" />;
@@ -470,12 +465,12 @@ export function TopbarUserMenu({
             ? "Chat on WhatsApp"
             : "Chat on WhatsApp (Pro)"
         }
-        className={cn(itemClass, "no-underline", showLiveChatProBadge && "opacity-40")}
+        className={cn(itemClass, "no-underline")}
         onMouseEnter={() => setHoveredHelpOption("whatsapp")}
         onMouseLeave={() => setHoveredHelpOption(null)}
         onFocus={() => setHoveredHelpOption("whatsapp")}
         onBlur={() => setHoveredHelpOption(null)}
-        onClick={(e) => gateLiveChatOrAllow(e, "WhatsApp")}
+        onClick={(e) => gateLiveChatOrAllow(e)}
       >
         <DropdownMenuLottieIcon
           animationData={whatsappMenuIconAnimation}
@@ -494,12 +489,12 @@ export function TopbarUserMenu({
             ? "Chat on Telegram"
             : "Chat on Telegram (Pro)"
         }
-        className={cn(itemClass, "no-underline", showLiveChatProBadge && "opacity-40")}
+        className={cn(itemClass, "no-underline")}
         onMouseEnter={() => setHoveredHelpOption("telegram")}
         onMouseLeave={() => setHoveredHelpOption(null)}
         onFocus={() => setHoveredHelpOption("telegram")}
         onBlur={() => setHoveredHelpOption(null)}
-        onClick={(e) => gateLiveChatOrAllow(e, "Telegram")}
+        onClick={(e) => gateLiveChatOrAllow(e)}
       >
         <DropdownMenuLottieIcon
           animationData={telegramMenuIconAnimation}

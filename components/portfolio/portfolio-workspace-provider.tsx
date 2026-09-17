@@ -77,6 +77,7 @@ import {
   newTransactionRowId,
   portfolioIsCombined,
   portfolioIsDemo,
+  portfolioIsBrokerageOrigin,
   portfolioIsLiveBrokerage,
   portfolioIsOfflineBrokerage,
   clearedPortfolioGoal,
@@ -102,6 +103,7 @@ import {
   coalesceSelectedPortfolioId,
   loadLastSelectedPortfolioId,
   loadPersistedPortfolioStateForUser,
+  loadPortfolioWorkspaceSyncMeta,
   mergeGoalMaps,
   mergePersistedPortfolioGoals,
   parsePersistedPortfolioUnknown,
@@ -109,6 +111,7 @@ import {
   portfolioStateHasLedgerData,
   saveLastSelectedPortfolioId,
   savePersistedPortfolioStateForUser,
+  savePortfolioWorkspaceSyncMeta,
   type PersistedPortfolioState,
 } from "@/lib/portfolio/portfolio-storage";
 import { computePublicPortfolioListingMetrics, withListingOwner } from "@/lib/portfolio/public-listing-metrics";
@@ -120,7 +123,7 @@ import {
   portfolioPathnameAllowsStockSplitsHeal,
   portfolioPathnameUsesEagerLiveQuotes,
 } from "@/lib/portfolio/portfolio-live-quotes-paths";
-import { portfolioLedgerFingerprint } from "@/lib/portfolio/portfolio-ledger-fingerprint";
+import { portfolioLedgerFingerprint, portfolioWorkspacePersistFingerprint } from "@/lib/portfolio/portfolio-ledger-fingerprint";
 import {
   portfolioQuoteSessionIsFresh,
   portfolioSliceHasSessionMarks,
@@ -137,19 +140,64 @@ import {
 /** Default portfolio; created when the user deletes the last one. */
 const DEFAULT_PORTFOLIO_NAME = "My Portfolio";
 
-async function persistWorkspaceStateToCloud(state: PersistedPortfolioState): Promise<boolean> {
+type WorkspacePutResult =
+  | { ok: true; updatedAt: string | null }
+  | {
+      ok: false;
+      conflict?: false;
+      warning?: string;
+    }
+  | {
+      ok: false;
+      conflict: true;
+      state: PersistedPortfolioState;
+      updatedAt: string | null;
+    };
+
+async function persistWorkspaceStateToCloud(
+  state: PersistedPortfolioState,
+  baseUpdatedAt: string | null,
+): Promise<WorkspacePutResult> {
   const { state: prepared } = prepareWorkspaceLedgerForPersist(state);
   const putRes = await fetch("/api/portfolio/workspace", {
     method: "PUT",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ state: prepared }),
+    body: JSON.stringify({
+      state: prepared,
+      ...(baseUpdatedAt != null ? { baseUpdatedAt } : {}),
+    }),
   });
   const putBody = (await putRes.json().catch(() => null)) as {
     ok?: boolean;
     warning?: string;
+    updatedAt?: string | null;
+    state?: unknown;
+    code?: string;
   } | null;
-  return putRes.ok && putBody?.ok !== false && putBody?.warning !== "db_unavailable";
+
+  if (putRes.status === 409 && putBody?.code === "WORKSPACE_CONFLICT") {
+    const conflictState =
+      putBody.state != null ? parsePersistedPortfolioUnknown(putBody.state) : null;
+    if (conflictState) {
+      return {
+        ok: false,
+        conflict: true,
+        state: conflictState,
+        updatedAt:
+          typeof putBody.updatedAt === "string" ? putBody.updatedAt : null,
+      };
+    }
+  }
+
+  if (putRes.ok && putBody?.ok !== false && putBody?.warning !== "db_unavailable") {
+    return {
+      ok: true,
+      updatedAt: typeof putBody?.updatedAt === "string" ? putBody.updatedAt : null,
+    };
+  }
+
+  return { ok: false, warning: putBody?.warning };
 }
 
 function ensureAtLeastOnePortfolio(portfolios: PortfolioEntry[]): PortfolioEntry[] {
@@ -389,7 +437,13 @@ export function PortfolioWorkspaceProvider({
     router.push(PATH_ACCOUNT_PLANS);
   }, [router]);
   const [freePortfolioPickOpen, setFreePortfolioPickOpen] = useState(false);
-  const demoSeededRef = useRef(false);
+  /** True after Free has auto-seeded (or hydrated with) a demo — blocks silent re-seed. */
+  const freeDemoAutoSeedAttemptedRef = useRef(false);
+  /**
+   * User deleted their only demo this session — Free must not force it back;
+   * empty-setup “Demo portfolio” tile can restore it.
+   */
+  const userRemovedDemoRef = useRef(false);
   /** Portfolio ids whose demo ledger was replaced for {@link DEMO_LEDGER_REVISION}. */
   const demoReseedDoneRef = useRef(new Set<string>());
 
@@ -498,6 +552,52 @@ export function PortfolioWorkspaceProvider({
   const [holdingsMarkToMarketReady, setHoldingsMarkToMarketReady] = useState(true);
   const holdingsQuoteRefreshGenRef = useRef(0);
   const appliedLedgerFingerprintRef = useRef<string | null>(null);
+  /** Server `portfolio_workspace.updated_at` from last successful GET/PUT (optimistic concurrency). */
+  const cloudUpdatedAtRef = useRef<string | null>(null);
+  /** Persist fingerprint last confirmed on the server — quote-only local bumps must not re-upload. */
+  const lastSyncedPersistFingerprintRef = useRef<string | null>(null);
+  /** Last persist fingerprint that bumped {@link workspaceEpochRef} (ignores live marks). */
+  const lastEpochPersistFingerprintRef = useRef<string | null>(null);
+  /** Prevent overlapping full-blob PUTs (Strict Mode / quote+edit races → repeated 409 toasts). */
+  const workspacePutInFlightRef = useRef(false);
+  const workspacePutQueuedRef = useRef(false);
+  /** Bumps when user-owned workspace data changes so stale in-flight PUT responses are ignored. */
+  const workspaceEpochRef = useRef(0);
+  const portfoliosRef = useRef(portfolios);
+  const selectedPortfolioIdRef = useRef(selectedPortfolioId);
+  const holdingsByPortfolioIdRef = useRef(holdingsByPortfolioId);
+  const transactionsByPortfolioIdRef = useRef(transactionsByPortfolioId);
+  const goalByPortfolioIdRef = useRef(goalByPortfolioId);
+  portfoliosRef.current = portfolios;
+  selectedPortfolioIdRef.current = selectedPortfolioId;
+  holdingsByPortfolioIdRef.current = holdingsByPortfolioId;
+  transactionsByPortfolioIdRef.current = transactionsByPortfolioId;
+  goalByPortfolioIdRef.current = goalByPortfolioId;
+
+  const markWorkspaceSynced = useCallback(
+    (fingerprint: string, cloudUpdatedAt: string | null) => {
+      lastSyncedPersistFingerprintRef.current = fingerprint;
+      cloudUpdatedAtRef.current = cloudUpdatedAt;
+      savePortfolioWorkspaceSyncMeta(userId, {
+        persistFingerprint: fingerprint,
+        cloudUpdatedAt,
+      });
+    },
+    [userId],
+  );
+
+  const buildLatestWorkspaceSnapshot = useCallback((): PersistedPortfolioState => {
+    return {
+      v: 1,
+      savedAt: Date.now(),
+      portfolios: portfoliosRef.current,
+      selectedPortfolioId: selectedPortfolioIdRef.current,
+      holdingsByPortfolioId: holdingsByPortfolioIdRef.current,
+      transactionsByPortfolioId: transactionsByPortfolioIdRef.current,
+      goalByPortfolioId: goalByPortfolioIdRef.current,
+    };
+  }, []);
+
   const quotedLedgerFingerprintRef = useRef<string | null>(null);
   /** Selection last covered by a deferred-route quote refresh (avoids duplicate fetches on hydrate). */
   const prevQuotedSelectionRef = useRef<string | null | undefined>(undefined);
@@ -706,28 +806,30 @@ export function PortfolioWorkspaceProvider({
         setGoalByPortfolioIdState((prev) => mergeGoalMaps(prev, saved.goalByPortfolioId) ?? {});
       }
 
+      // Always apply portfolio metadata (name/privacy/snaptrade). Ledger fingerprint ignores
+      // names, so a rename must not be skipped when txs are unchanged.
+      setPortfolios(saved.portfolios);
+      const lastTouched = loadLastSelectedPortfolioId(userId);
+      const resolved = coalesceSelectedPortfolioId(
+        saved.portfolios,
+        saved.selectedPortfolioId,
+        lastTouched,
+      );
+      setSelectedPortfolioState(resolved);
+      saveLastSelectedPortfolioId(userId, resolved);
+
       if (appliedLedgerFingerprintRef.current !== ledgerFingerprint) {
         appliedLedgerFingerprintRef.current = ledgerFingerprint;
-
-        setPortfolios(saved.portfolios);
-        const lastTouched = loadLastSelectedPortfolioId(userId);
-        const resolved = coalesceSelectedPortfolioId(
-          saved.portfolios,
-          saved.selectedPortfolioId,
-          lastTouched,
-        );
-        setSelectedPortfolioState(resolved);
-        saveLastSelectedPortfolioId(userId, resolved);
         setTransactionsByPortfolioId(saved.transactionsByPortfolioId);
         setHoldingsByPortfolioId(rebuilt);
       }
 
       if (opts?.refreshQuotes !== false) {
-        const lastTouched = loadLastSelectedPortfolioId(userId);
+        const lastTouchedSel = loadLastSelectedPortfolioId(userId);
         const resolvedSelected = coalesceSelectedPortfolioId(
           saved.portfolios,
           saved.selectedPortfolioId,
-          lastTouched,
+          lastTouchedSel,
         );
         scheduleHoldingsQuoteRefresh(rebuilt, ledgerFingerprint, {
           selectedPortfolioId: resolvedSelected,
@@ -737,6 +839,145 @@ export function PortfolioWorkspaceProvider({
     },
     [userId, rebuildHoldingsFromSaved, scheduleHoldingsQuoteRefresh],
   );
+
+  const flushWorkspaceCloudPut = useCallback(() => {
+    if (!workspaceHydrated) return;
+    if (workspacePutInFlightRef.current) {
+      workspacePutQueuedRef.current = true;
+      return;
+    }
+
+    const snapshot = buildLatestWorkspaceSnapshot();
+    if (appliedLedgerFingerprintRef.current === null) {
+      appliedLedgerFingerprintRef.current = portfolioLedgerFingerprint(snapshot);
+    }
+    const persistFp = portfolioWorkspacePersistFingerprint(snapshot);
+    if (persistFp === lastSyncedPersistFingerprintRef.current) {
+      return;
+    }
+
+    const { state: prepared, report } = prepareWorkspaceLedgerForPersist(snapshot);
+    if (report.changed) {
+      setTransactionsByPortfolioId(prepared.transactionsByPortfolioId);
+    }
+    const preparedFp = portfolioWorkspacePersistFingerprint(prepared);
+    if (preparedFp === lastSyncedPersistFingerprintRef.current) {
+      return;
+    }
+
+    const baseUpdatedAt = cloudUpdatedAtRef.current;
+    const putEpoch = workspaceEpochRef.current;
+    workspacePutInFlightRef.current = true;
+
+    void fetch("/api/portfolio/workspace", {
+      method: "PUT",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        state: prepared,
+        ...(baseUpdatedAt != null ? { baseUpdatedAt } : {}),
+      }),
+    })
+      .then(async (res) => {
+        const epochMoved = putEpoch !== workspaceEpochRef.current;
+
+        if (res.status === 409) {
+          const body = (await res.json().catch(() => null)) as {
+            code?: string;
+            state?: unknown;
+            updatedAt?: string | null;
+          } | null;
+          const conflictState =
+            body?.state != null ? parsePersistedPortfolioUnknown(body.state) : null;
+          const conflictUpdatedAt =
+            typeof body?.updatedAt === "string" ? body.updatedAt : null;
+          if (conflictUpdatedAt) {
+            cloudUpdatedAtRef.current = conflictUpdatedAt;
+          }
+          if (!conflictState) {
+            workspacePutQueuedRef.current = true;
+            return;
+          }
+          const conflictFp = portfolioWorkspacePersistFingerprint(conflictState);
+          const latestFp = portfolioWorkspacePersistFingerprint(buildLatestWorkspaceSnapshot());
+          // Local rename/delete still pending — retry with latest instead of snapping back.
+          if (epochMoved || latestFp !== conflictFp) {
+            workspacePutQueuedRef.current = true;
+            return;
+          }
+          markWorkspaceSynced(conflictFp, conflictUpdatedAt);
+          applyWorkspaceState(conflictState);
+          savePersistedPortfolioStateForUser(userId, {
+            ...conflictState,
+            savedAt: Date.now(),
+          });
+          return;
+        }
+
+        if (res.status === 422) {
+          const body = (await res.json().catch(() => null)) as {
+            message?: string;
+            code?: string;
+          } | null;
+          toast.error("Portfolio not synced", {
+            description: body?.message ?? "Ledger validation failed on the server.",
+          });
+          return;
+        }
+        if (res.status === 403) {
+          const body = (await res.json().catch(() => null)) as {
+            code?: string;
+            message?: string;
+            max?: number;
+          } | null;
+          if (body?.code === FREE_HOLDINGS_LIMIT_CODE) {
+            toastProUpgrade({
+              title: "Free plan limit",
+              description: body.message ?? freeHoldingsLimitMessage(body.max),
+              onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
+            });
+            return;
+          }
+        }
+
+        const body = (await res.json().catch(() => null)) as {
+          ok?: boolean;
+          warning?: string;
+          updatedAt?: string | null;
+        } | null;
+        if (!res.ok || body?.ok === false || body?.warning === "db_unavailable") {
+          toast.error("Portfolio not synced", {
+            description: "Saved on this device — we could not update your account yet.",
+          });
+          return;
+        }
+
+        const updatedAt =
+          typeof body?.updatedAt === "string" ? body.updatedAt : cloudUpdatedAtRef.current;
+        cloudUpdatedAtRef.current = updatedAt;
+        if (epochMoved) {
+          workspacePutQueuedRef.current = true;
+          return;
+        }
+        markWorkspaceSynced(preparedFp, updatedAt);
+      })
+      .finally(() => {
+        workspacePutInFlightRef.current = false;
+        if (workspacePutQueuedRef.current) {
+          workspacePutQueuedRef.current = false;
+          queueMicrotask(() => {
+            flushWorkspaceCloudPut();
+          });
+        }
+      });
+  }, [
+    workspaceHydrated,
+    buildLatestWorkspaceSnapshot,
+    applyWorkspaceState,
+    markWorkspaceSynced,
+    userId,
+    router,
+  ]);
 
   /** Run deferred mark-to-market once when user lands on a portfolio-heavy route after a skipped hydrate. */
   useEffect(() => {
@@ -881,6 +1122,11 @@ export function PortfolioWorkspaceProvider({
     startTransition(() => {
       void (async () => {
         const local = loadPersistedPortfolioStateForUser(userId);
+        const syncMeta = loadPortfolioWorkspaceSyncMeta(userId);
+        if (syncMeta) {
+          lastSyncedPersistFingerprintRef.current = syncMeta.persistFingerprint;
+          cloudUpdatedAtRef.current = syncMeta.cloudUpdatedAt;
+        }
         const controller = new AbortController();
         let fetchTimeoutId: number | undefined;
         try {
@@ -902,47 +1148,90 @@ export function PortfolioWorkspaceProvider({
             };
             const remote =
               data.state != null ? parsePersistedPortfolioUnknown(data.state) : null;
+            const remoteUpdatedAt =
+              typeof data.updatedAt === "string" ? data.updatedAt : null;
             const remoteTime =
-              data.updatedAt && !Number.isNaN(Date.parse(data.updatedAt)) ?
-                Date.parse(data.updatedAt)
+              remoteUpdatedAt && !Number.isNaN(Date.parse(remoteUpdatedAt)) ?
+                Date.parse(remoteUpdatedAt)
               : 0;
             const localTime = local?.savedAt ?? 0;
+            const localPersist =
+              local && local.portfolios.length > 0 ?
+                portfolioWorkspacePersistFingerprint(local)
+              : null;
+            const remotePersist =
+              remote && remote.portfolios.length > 0 ?
+                portfolioWorkspacePersistFingerprint(remote)
+              : null;
+            // Only treat local as having pending edits when we previously synced a
+            // *different* fingerprint. Missing sync meta (upgrade) → prefer cloud.
+            const unsyncedLocalEdits =
+              syncMeta != null &&
+              localPersist != null &&
+              localPersist !== syncMeta.persistFingerprint &&
+              (remotePersist == null || localPersist !== remotePersist);
 
             if (remote && remote.portfolios.length > 0) {
-              const localIsNewer =
-                local && local.portfolios.length > 0 && localTime > remoteTime;
               const remoteHasLedger = portfolioStateHasLedgerData(remote);
               const localHasLedger = local ? portfolioStateHasLedgerData(local) : false;
 
-              if (localIsNewer && remoteHasLedger && !localHasLedger) {
-                const merged = mergePersistedPortfolioGoals(local, remote);
+              // Prefer cloud whenever local only looks "newer" because quotes bumped savedAt.
+              // Promote local only when its persist fingerprint differs from last sync (real edits).
+              if (unsyncedLocalEdits && localTime > remoteTime && remoteHasLedger && !localHasLedger) {
+                const merged = mergePersistedPortfolioGoals(local!, remote);
                 applyWorkspaceState(merged);
                 savePersistedPortfolioStateForUser(userId, {
                   ...merged,
                   savedAt: remoteTime > 0 ? remoteTime : Date.now(),
                 });
                 if (persistedGoalsNeedCloudSync(remote, merged)) {
-                  const synced = await persistWorkspaceStateToCloud(merged);
-                  if (!synced) {
+                  const synced = await persistWorkspaceStateToCloud(
+                    merged,
+                    remoteUpdatedAt,
+                  );
+                  if (synced.ok) {
+                    markWorkspaceSynced(
+                      portfolioWorkspacePersistFingerprint(merged),
+                      synced.updatedAt ?? remoteUpdatedAt,
+                    );
+                  } else if (synced.conflict) {
+                    markWorkspaceSynced(
+                      portfolioWorkspacePersistFingerprint(synced.state),
+                      synced.updatedAt,
+                    );
+                    applyWorkspaceState(synced.state);
+                    savePersistedPortfolioStateForUser(userId, {
+                      ...synced.state,
+                      savedAt: Date.now(),
+                    });
+                  } else {
                     toast.error("Portfolio not synced", {
                       description: "Saved on this device — we could not update your account yet.",
                     });
                   }
+                } else if (remotePersist) {
+                  markWorkspaceSynced(remotePersist, remoteUpdatedAt);
                 }
-            } else if (localIsNewer) {
-                applyWorkspaceState(local);
-                savePersistedPortfolioStateForUser(userId, local);
-                const putRes = await fetch("/api/portfolio/workspace", {
-                  method: "PUT",
-                  credentials: "include",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ state: local }),
-                });
-                const putBody = (await putRes.json().catch(() => null)) as {
-                  ok?: boolean;
-                  warning?: string;
-                } | null;
-                if (!putRes.ok || putBody?.ok === false || putBody?.warning === "db_unavailable") {
+              } else if (unsyncedLocalEdits && localTime > remoteTime) {
+                applyWorkspaceState(local!);
+                const putResult = await persistWorkspaceStateToCloud(
+                  local!,
+                  remoteUpdatedAt,
+                );
+                if (putResult.ok) {
+                  markWorkspaceSynced(localPersist!, putResult.updatedAt ?? remoteUpdatedAt);
+                  savePersistedPortfolioStateForUser(userId, local!);
+                } else if (putResult.conflict) {
+                  markWorkspaceSynced(
+                    portfolioWorkspacePersistFingerprint(putResult.state),
+                    putResult.updatedAt,
+                  );
+                  applyWorkspaceState(putResult.state);
+                  savePersistedPortfolioStateForUser(userId, {
+                    ...putResult.state,
+                    savedAt: Date.now(),
+                  });
+                } else {
                   toast.error("Portfolio not synced", {
                     description: "Saved on this device — we could not update your account yet.",
                   });
@@ -950,13 +1239,35 @@ export function PortfolioWorkspaceProvider({
               } else {
                 const merged = mergePersistedPortfolioGoals(local, remote);
                 applyWorkspaceState(merged);
+                markWorkspaceSynced(
+                  portfolioWorkspacePersistFingerprint(merged),
+                  remoteUpdatedAt,
+                );
                 savePersistedPortfolioStateForUser(userId, {
                   ...merged,
                   savedAt: remoteTime > 0 ? remoteTime : Date.now(),
                 });
                 if (persistedGoalsNeedCloudSync(remote, merged)) {
-                  const synced = await persistWorkspaceStateToCloud(merged);
-                  if (!synced) {
+                  const synced = await persistWorkspaceStateToCloud(
+                    merged,
+                    remoteUpdatedAt,
+                  );
+                  if (synced.ok) {
+                    markWorkspaceSynced(
+                      portfolioWorkspacePersistFingerprint(merged),
+                      synced.updatedAt ?? remoteUpdatedAt,
+                    );
+                  } else if (synced.conflict) {
+                    markWorkspaceSynced(
+                      portfolioWorkspacePersistFingerprint(synced.state),
+                      synced.updatedAt,
+                    );
+                    applyWorkspaceState(synced.state);
+                    savePersistedPortfolioStateForUser(userId, {
+                      ...synced.state,
+                      savedAt: Date.now(),
+                    });
+                  } else {
                     toast.error("Portfolio not synced", {
                       description: "Saved on this device — we could not update your account yet.",
                     });
@@ -968,17 +1279,23 @@ export function PortfolioWorkspaceProvider({
               // portfolios (no trades yet). Previously we only PUT when ledger data existed,
               // so multi-portfolio setups without trades never left the device.
               applyWorkspaceState(local);
-              const putRes = await fetch("/api/portfolio/workspace", {
-                method: "PUT",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ state: local }),
-              });
-              const putBody = (await putRes.json().catch(() => null)) as {
-                ok?: boolean;
-                warning?: string;
-              } | null;
-              if (!putRes.ok || putBody?.ok === false || putBody?.warning === "db_unavailable") {
+              const putResult = await persistWorkspaceStateToCloud(local, null);
+              if (putResult.ok) {
+                markWorkspaceSynced(
+                  portfolioWorkspacePersistFingerprint(local),
+                  putResult.updatedAt,
+                );
+              } else if (putResult.conflict) {
+                markWorkspaceSynced(
+                  portfolioWorkspacePersistFingerprint(putResult.state),
+                  putResult.updatedAt,
+                );
+                applyWorkspaceState(putResult.state);
+                savePersistedPortfolioStateForUser(userId, {
+                  ...putResult.state,
+                  savedAt: Date.now(),
+                });
+              } else {
                 toast.error("Portfolio not synced", {
                   description: "Saved on this device — we could not update your account yet.",
                 });
@@ -999,7 +1316,7 @@ export function PortfolioWorkspaceProvider({
     return () => {
       cancelled = true;
     };
-  }, [userId, applyWorkspaceState]);
+  }, [userId, applyWorkspaceState, markWorkspaceSynced]);
 
   const setPortfolioGoal = useCallback((portfolioId: string, goal: PortfolioGoal | null) => {
     setGoalByPortfolioIdState((prev) => ({
@@ -1027,6 +1344,11 @@ export function PortfolioWorkspaceProvider({
       transactionsByPortfolioId,
       goalByPortfolioId,
     };
+    const persistFp = portfolioWorkspacePersistFingerprint(snapshot);
+    if (persistFp !== lastEpochPersistFingerprintRef.current) {
+      lastEpochPersistFingerprintRef.current = persistFp;
+      workspaceEpochRef.current += 1;
+    }
     // First session (no remote/local hydrate) never called applyWorkspaceState, so the
     // fingerprint stayed null and saves were skipped — portfolios vanished on refresh.
     if (appliedLedgerFingerprintRef.current === null) {
@@ -1047,74 +1369,17 @@ export function PortfolioWorkspaceProvider({
   useEffect(() => {
     if (!workspaceHydrated) return;
     const id = window.setTimeout(() => {
-      const snapshot: PersistedPortfolioState = {
-        v: 1,
-        savedAt: Date.now(),
-        portfolios,
-        selectedPortfolioId,
-        holdingsByPortfolioId,
-        transactionsByPortfolioId,
-        goalByPortfolioId,
-      };
-      if (appliedLedgerFingerprintRef.current === null) {
-        appliedLedgerFingerprintRef.current = portfolioLedgerFingerprint(snapshot);
-      }
-      const { state: prepared, report } = prepareWorkspaceLedgerForPersist(snapshot);
-      if (report.changed) {
-        setTransactionsByPortfolioId(prepared.transactionsByPortfolioId);
-      }
-      void fetch("/api/portfolio/workspace", {
-        method: "PUT",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ state: prepared }),
-      }).then(async (res) => {
-        if (res.status === 422) {
-          const body = (await res.json().catch(() => null)) as {
-            message?: string;
-            code?: string;
-          } | null;
-          toast.error("Portfolio not synced", {
-            description: body?.message ?? "Ledger validation failed on the server.",
-          });
-          return;
-        }
-        if (res.status === 403) {
-          const body = (await res.json().catch(() => null)) as {
-            code?: string;
-            message?: string;
-            max?: number;
-          } | null;
-          if (body?.code === FREE_HOLDINGS_LIMIT_CODE) {
-            toastProUpgrade({
-              title: "Free plan limit",
-              description: body.message ?? freeHoldingsLimitMessage(body.max),
-              onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
-            });
-            return;
-          }
-        }
-        const body = (await res.json().catch(() => null)) as {
-          ok?: boolean;
-          warning?: string;
-        } | null;
-        if (!res.ok || body?.ok === false || body?.warning === "db_unavailable") {
-          toast.error("Portfolio not synced", {
-            description: "Saved on this device — we could not update your account yet.",
-          });
-        }
-      });
+      flushWorkspaceCloudPut();
     }, 500);
     return () => window.clearTimeout(id);
   }, [
     workspaceHydrated,
-    userId,
     portfolios,
     selectedPortfolioId,
     holdingsByPortfolioId,
     transactionsByPortfolioId,
     goalByPortfolioId,
-    router,
+    flushWorkspaceCloudPut,
   ]);
 
   const prevPublishedPortfolioIdsRef = useRef<Set<string>>(new Set());
@@ -1482,73 +1747,28 @@ export function PortfolioWorkspaceProvider({
   ]);
 
   const openTryDemoPortfolio = useCallback(() => {
-    const selected = portfolios.find((p) => p.id === selectedPortfolioId);
-    const selectedTxs = selected ? (transactionsByPortfolioId[selected.id] ?? []) : [];
-    const canConvertSelected =
-      selected &&
-      !portfolioIsDemo(selected) &&
-      !portfolioIsCombined(selected) &&
-      !selected.snaptrade &&
-      selectedTxs.length === 0;
+    userRemovedDemoRef.current = false;
+    freeDemoAutoSeedAttemptedRef.current = true;
 
-    // Empty setup: turn this portfolio into the demo book, keep its name.
-    if (canConvertSelected) {
-      const otherDemoIds = portfolios
-        .filter((p) => portfolioIsDemo(p) && p.id !== selected.id)
-        .map((p) => p.id);
-      const seed = buildDemoPortfolioSeed(selected.id, { name: selected.name });
-      demoSeededRef.current = true;
-      setPortfolios((prev) =>
-        prev
-          .filter((p) => !otherDemoIds.includes(p.id))
-          .map((p) => (p.id === selected.id ? seed.portfolio : p)),
-      );
-
-      setHoldingsByPortfolioId((prev) => {
-        const next = { ...prev };
-        for (const id of otherDemoIds) delete next[id];
-        next[seed.portfolio.id] = seed.holdings;
-        return next;
-      });
-      setTransactionsByPortfolioId((prev) => {
-        const next = { ...prev };
-        for (const id of otherDemoIds) delete next[id];
-        next[seed.portfolio.id] = seed.transactions;
-        return next;
-      });
-      ensureDemoPortfolioGoal(seed.portfolio.id);
-      demoDividendsAppliedRef.current.add(seed.portfolio.id);
-      stockSplitsFpRef.current.delete(seed.portfolio.id);
-      setSelectedPortfolioId(seed.portfolio.id);
-      runHoldingsQuoteRefresh({ [seed.portfolio.id]: seed.holdings });
-      void syncStockSplitsForPortfolio(seed.portfolio.id, seed.transactions);
-      toast.success(`“${selected.name}” is now a demo portfolio.`, {
-        description: "Sample holdings loaded — edit anytime or clear and start over.",
-      });
-      return;
-    }
-
-    if (portfolios.some((p) => portfolioIsDemo(p))) {
-      const existing = portfolios.find((p) => portfolioIsDemo(p));
-      if (existing) {
-        setSelectedPortfolioId(existing.id);
-        ensureDemoPortfolioGoal(existing.id);
-        if (!reseedDemoLedgerIfNeeded(existing.id)) {
-          // Seed marks are historic fill prices — always re-mark to market when focusing demo.
-          runHoldingsQuoteRefresh({
-            [existing.id]: holdingsByPortfolioId[existing.id] ?? [],
-          });
-          void ensureDemoDividendsForPortfolio(existing.id);
-          void syncStockSplitsForPortfolio(existing.id);
-        }
+    const existing = portfolios.find((p) => portfolioIsDemo(p));
+    if (existing) {
+      setSelectedPortfolioId(existing.id);
+      ensureDemoPortfolioGoal(existing.id);
+      if (!reseedDemoLedgerIfNeeded(existing.id)) {
+        // Seed marks are historic fill prices — always re-mark to market when focusing demo.
+        runHoldingsQuoteRefresh({
+          [existing.id]: holdingsByPortfolioId[existing.id] ?? [],
+        });
+        void ensureDemoDividendsForPortfolio(existing.id);
+        void syncStockSplitsForPortfolio(existing.id);
       }
       toast.message("Demo portfolio is already in your list.");
       return;
     }
-    if (demoSeededRef.current) return;
-    demoSeededRef.current = true;
+
+    // Add back the single allowed demo book (keep the current empty portfolio as-is).
     const seed = buildDemoPortfolioSeed();
-    setPortfolios((prev) => [...prev, seed.portfolio]);
+    setPortfolios((prev) => [...prev.filter((p) => !portfolioIsDemo(p)), seed.portfolio]);
     setPortfolioHoldings(seed.portfolio.id, seed.holdings);
     setPortfolioTransactions(seed.portfolio.id, seed.transactions);
     ensureDemoPortfolioGoal(seed.portfolio.id);
@@ -1557,11 +1777,9 @@ export function PortfolioWorkspaceProvider({
     // Holdings are provisionally last-fill (early 2023) until live quotes / split sync land.
     runHoldingsQuoteRefresh({ [seed.portfolio.id]: seed.holdings });
     void syncStockSplitsForPortfolio(seed.portfolio.id, seed.transactions);
-    toast.success("Finsepa Demo added — explore sample holdings anytime.");
+    toast.success("Finsepa Demo added");
   }, [
     portfolios,
-    selectedPortfolioId,
-    transactionsByPortfolioId,
     holdingsByPortfolioId,
     setSelectedPortfolioId,
     setPortfolioHoldings,
@@ -1574,8 +1792,8 @@ export function PortfolioWorkspaceProvider({
   ]);
 
   /**
-   * Free: always keep a Demo sample book (does not count toward the 1 manual slot).
-   * New signups land on Demo; empty "My Portfolio" placeholders are removed so Free starts as Demo-only.
+   * Free: seed a Demo sample book on first hydrate (does not count toward the 1 manual slot).
+   * If the user deletes Demo, do not force it back — empty-setup offers a Demo tile instead.
    */
   useEffect(() => {
     if (!workspaceHydrated) return;
@@ -1584,6 +1802,8 @@ export function PortfolioWorkspaceProvider({
 
     const existingDemo = portfolios.find((p) => portfolioIsDemo(p));
     if (existingDemo) {
+      freeDemoAutoSeedAttemptedRef.current = true;
+      userRemovedDemoRef.current = false;
       reseedDemoLedgerIfNeeded(existingDemo.id);
       ensureDemoPortfolioGoal(existingDemo.id);
       const hasManual = portfolios.some((p) => isManualPortfolioForFreeQuota(p));
@@ -1597,8 +1817,9 @@ export function PortfolioWorkspaceProvider({
       return;
     }
 
-    if (demoSeededRef.current) return;
-    demoSeededRef.current = true;
+    if (userRemovedDemoRef.current) return;
+    if (freeDemoAutoSeedAttemptedRef.current) return;
+    freeDemoAutoSeedAttemptedRef.current = true;
 
     const seed = buildDemoPortfolioSeed();
     const emptyPlaceholderIds = new Set(
@@ -1756,11 +1977,7 @@ export function PortfolioWorkspaceProvider({
 
   const openCreatePortfolio = useCallback(() => {
     if (plan?.isFree && !plan.canCreatePortfolio) {
-      toastProUpgrade({
-        title: "Free plan limit",
-        description: "Free includes 1 manual portfolio. Upgrade to Pro to add more.",
-        onUpgrade: openUpgradePlans,
-      });
+      openUpgradePlans();
       return;
     }
     setEditPortfolioOpen(false);
@@ -1771,11 +1988,7 @@ export function PortfolioWorkspaceProvider({
 
   const openCreateCombinedPortfolio = useCallback(() => {
     if (plan && !plan.canCreateCombinedPortfolio) {
-      toastProUpgrade({
-        title: "Pro feature",
-        description: "Combined portfolios are available on Pro only.",
-        onUpgrade: openUpgradePlans,
-      });
+      openUpgradePlans();
       return;
     }
     setEditPortfolioOpen(false);
@@ -1787,11 +2000,7 @@ export function PortfolioWorkspaceProvider({
 
   const openConnectBrokerage = useCallback(() => {
     if (plan && !plan.canConnectBrokerage) {
-      toastProUpgrade({
-        title: "Pro feature",
-        description: "Brokerage connection is available on Pro only.",
-        onUpgrade: openUpgradePlans,
-      });
+      openUpgradePlans();
       return;
     }
     setEditPortfolioOpen(false);
@@ -2110,6 +2319,25 @@ export function PortfolioWorkspaceProvider({
       const reconnectTarget = reconnectPortfolioId
         ? portfolios.find((p) => p.id === reconnectPortfolioId)
         : undefined;
+
+      // One live SnapTrade connection per portfolio — never swap in a second brokerage.
+      if (reconnectTarget && portfolioIsLiveBrokerage(reconnectTarget)) {
+        const existingAuth = reconnectTarget.snaptrade?.authorizationId?.trim() || "";
+        const nextAuth = authorizationId.trim();
+        if (existingAuth && nextAuth && existingAuth !== nextAuth && existingAuth !== "offline") {
+          const broker = reconnectTarget.snaptrade?.brokerageName?.trim() || "a brokerage";
+          toast.error("Already connected", {
+            description: `This portfolio is already linked to ${broker}. Create a new portfolio to connect another brokerage.`,
+          });
+          return;
+        }
+        await resyncLinkedPortfolio(reconnectTarget.id, {
+          updateFromYmd: null,
+          authorizationIdOverride: authorizationId,
+        });
+        return;
+      }
+
       if (reconnectTarget?.snaptrade) {
         await resyncLinkedPortfolio(reconnectTarget.id, {
           updateFromYmd: null,
@@ -2262,6 +2490,13 @@ export function PortfolioWorkspaceProvider({
       }
       const p = portfolios.find((x) => x.id === portfolioId);
       if (!p?.snaptrade) return;
+      if (portfolioIsLiveBrokerage(p)) {
+        const broker = p.snaptrade.brokerageName?.trim() || "a brokerage";
+        toast.error("Already connected", {
+          description: `This portfolio is already linked to ${broker}. Create a new portfolio to connect another brokerage.`,
+        });
+        return;
+      }
       void startReconnectPortal({
         name: p.name,
         privacy: p.privacy,
@@ -2275,6 +2510,13 @@ export function PortfolioWorkspaceProvider({
     async (portfolioId: string, authorizationId: string) => {
       const p = portfolios.find((x) => x.id === portfolioId);
       if (!p) return;
+      if (portfolioIsBrokerageOrigin(p)) {
+        const broker = p.snaptrade?.brokerageName?.trim() || "a brokerage";
+        toast.error("Already connected", {
+          description: `This portfolio is already linked to ${broker}. Create a new portfolio to connect another brokerage.`,
+        });
+        return;
+      }
       await finalizeConnectBrokerage({
         name: p.name,
         privacy: p.privacy,
@@ -2288,16 +2530,27 @@ export function PortfolioWorkspaceProvider({
   /** Empty setup: SnapTrade picker for the selected portfolio (skip name/privacy). */
   const openConnectBrokerageToSelected = useCallback(async () => {
     if (plan && !plan.canConnectBrokerage) {
-      toastProUpgrade({
-        title: "Pro feature",
-        description: "Brokerage connection is available on Pro only.",
-        onUpgrade: openUpgradePlans,
-      });
+      openUpgradePlans();
       return;
     }
     const p = portfolios.find((x) => x.id === selectedPortfolioId);
     if (!p || portfolioIsCombined(p) || portfolioIsDemo(p)) {
       openConnectBrokerage();
+      return;
+    }
+    if (portfolioIsLiveBrokerage(p)) {
+      const broker = p.snaptrade?.brokerageName?.trim() || "a brokerage";
+      toast.error("Already connected", {
+        description: `This portfolio is already linked to ${broker}. Create a new portfolio to connect another brokerage.`,
+      });
+      return;
+    }
+    if (portfolioIsBrokerageOrigin(p) && !portfolioIsOfflineBrokerage(p)) {
+      // Defensive: treat any non-offline snaptrade link as occupied.
+      const broker = p.snaptrade?.brokerageName?.trim() || "a brokerage";
+      toast.error("Already connected", {
+        description: `This portfolio is already linked to ${broker}. Create a new portfolio to connect another brokerage.`,
+      });
       return;
     }
     if (selectedPortfolioReadOnly && !p.snaptrade?.offline) {
@@ -2489,11 +2742,7 @@ export function PortfolioWorkspaceProvider({
       }
 
       if (nextPrivacy === "public" && plan && !plan.canPublishPublicPortfolio) {
-        toastProUpgrade({
-          title: "Pro feature",
-          description: "Public portfolios are available on Pro only.",
-          onUpgrade: openUpgradePlans,
-        });
+        openUpgradePlans();
         return;
       }
 
@@ -2863,6 +3112,12 @@ export function PortfolioWorkspaceProvider({
             setPortfolios((prev) => {
               if (!id) return prev;
               if (t.length === 0) {
+                const removing = prev.find((p) => p.id === id);
+                if (removing && portfolioIsDemo(removing)) {
+                  userRemovedDemoRef.current = true;
+                  demoDividendsAppliedRef.current.delete(id);
+                  demoReseedDoneRef.current.delete(id);
+                }
                 const next = ensureAtLeastOnePortfolio(prev.filter((p) => p.id !== id));
                 setSelectedPortfolioId((sel) => (sel !== id ? sel : next[0]!.id));
                 setHoldingsByPortfolioId((h) => {
@@ -2933,6 +3188,11 @@ export function PortfolioWorkspaceProvider({
             void putPublicPortfolioListingRequest({ portfolioId: id, publish: false }).then((r) => {
               if (r.ok) dispatchPublicListingsChanged();
             });
+          }
+          if (deleted && portfolioIsDemo(deleted)) {
+            userRemovedDemoRef.current = true;
+            demoDividendsAppliedRef.current.delete(id);
+            demoReseedDoneRef.current.delete(id);
           }
           setPortfolios((prev) => {
             const without = prev.filter((p) => p.id !== id);

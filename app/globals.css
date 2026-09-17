@@ -996,6 +996,36 @@ body {
   background: var(--fs-surface-muted);
 }
 
+/**
+ * Import review table — thin vertical scrollbar inset 2px from the rounded card
+ * (top / right / bottom) so the thumb isn’t flush with the edge.
+ */
+.import-review-table-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--fs-fg-subtle) 65%, transparent) transparent;
+}
+
+.import-review-table-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.import-review-table-scroll::-webkit-scrollbar-track {
+  margin-block: 2px;
+  margin-right: 2px;
+  background: transparent;
+}
+
+.import-review-table-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background-color: color-mix(in srgb, var(--fs-fg-subtle) 65%, transparent);
+}
+
+.import-review-table-scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 @media (min-width: 768px) {
   .mobile-topbar-shell {
     position: static;

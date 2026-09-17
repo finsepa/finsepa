@@ -17,6 +17,7 @@ import {
   protectedNavItemIsActive,
   type ProtectedNavItem,
 } from "@/components/layout/protected-nav-config";
+import { SidebarMobileAppNav } from "@/components/layout/sidebar-mobile-app-nav";
 import {
   SIDEBAR_CONTENT_MOTION_CLASS,
   SIDEBAR_OUTER_COLLAPSED_PX,
@@ -400,6 +401,7 @@ export function Sidebar() {
         <SidebarSection title="Calendar" items={protectedCalendarItems} pathname={pathname} collapsed={collapsed} />
         <SidebarSection title="Data" items={protectedDataItems} pathname={pathname} collapsed={collapsed} />
         <SidebarSection title="Community" items={protectedCommunityItems} pathname={pathname} collapsed={collapsed} />
+        <SidebarMobileAppNav />
       </div>
     </aside>
   );

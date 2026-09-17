@@ -94,7 +94,7 @@ function InitialsMark({
             ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border text-[12px] font-bold"
             : size === "lg"
               ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border text-[12px] font-bold"
-              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-bold";
+              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border text-[11px] font-bold";
   return (
     <div className={cn(box, colors.bg, colors.text, colors.border, className)}>
       {name.slice(0, 2).toUpperCase()}
@@ -123,7 +123,7 @@ function UsdCashMark({
             ? "h-10 w-10 rounded-[12px]"
             : size === "lg"
               ? "h-12 w-12 rounded-lg"
-              : "h-8 w-8 rounded-lg";
+              : "h-8 w-8 rounded-[10px]";
   return (
     // eslint-disable-next-line @next/next/no-img-element -- static public SVG
     <img
@@ -169,7 +169,7 @@ function BundledIndexMark({
             ? "h-10 w-10 rounded-[12px]"
             : size === "lg"
               ? "h-12 w-12 rounded-lg"
-              : "h-8 w-8 rounded-lg";
+              : "h-8 w-8 rounded-[10px]";
   return (
     // eslint-disable-next-line @next/next/no-img-element -- static public PNG
     <img
@@ -264,7 +264,7 @@ export function CompanyLogo({
             ? "h-10 w-10 rounded-[12px]"
             : size === "lg"
               ? "h-12 w-12 rounded-lg"
-              : "h-8 w-8 rounded-lg";
+              : "h-8 w-8 rounded-[10px]";
   const sym = symbol?.trim().toUpperCase();
   const scaleBoost = logoScaleBoost(sym);
   const useFillFrame =

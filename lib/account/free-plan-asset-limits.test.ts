@@ -6,6 +6,7 @@ import {
   findFreeHoldingsPersistViolation,
   FREE_HOLDINGS_LIMIT_CODE,
   FREE_WATCHLIST_ASSET_LIMIT_CODE,
+  freeHoldingsImportLimitMessage,
   freeHoldingsLimitMessage,
   freeWatchlistAssetLimitMessage,
   uniqueOpenHoldingSymbols,
@@ -220,6 +221,17 @@ describe("limit messages and codes", () => {
     assert.equal(FREE_WATCHLIST_ASSET_LIMIT_CODE, "FREE_WATCHLIST_ASSET_LIMIT");
     assert.match(freeHoldingsLimitMessage(15), /15 assets per portfolio/);
     assert.match(freeWatchlistAssetLimitMessage(15), /15 assets per watchlist/);
+  });
+
+  it("describes CSV import holdings over-cap clearly", () => {
+    assert.match(
+      freeHoldingsImportLimitMessage({ max: 15, prevCount: 15, nextCount: 16 }),
+      /already at the Free limit of 15/,
+    );
+    assert.match(
+      freeHoldingsImportLimitMessage({ max: 15, prevCount: 0, nextCount: 20 }),
+      /result in 20 holdings/,
+    );
   });
 
   it("uniqueOpenHoldingSymbols matches count", () => {

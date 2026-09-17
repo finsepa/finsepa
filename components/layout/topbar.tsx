@@ -13,7 +13,6 @@ import { TopbarDelayedTooltip } from "./topbar-delayed-tooltip";
 import { TopbarSearch } from "./topbar-search";
 import { NotificationsPanelModal } from "./notifications-panel-modal";
 import { useNotificationsClient } from "@/lib/notifications/use-notifications-client";
-import { TopbarQuickAddMenu } from "./topbar-quick-add-menu";
 import { TopbarUpgradeButton } from "./topbar-upgrade-button";
 import { TopbarUserMenu } from "./topbar-user-menu";
 import { MobileAssetTopbarChrome } from "./mobile-asset-topbar-chrome";
@@ -241,10 +240,6 @@ export function Topbar({
               </button>
             </TopbarDelayedTooltip>
           ) : null}
-
-          <div className="hidden shrink-0 md:flex">
-            <TopbarQuickAddMenu dwellTooltipLabel="Add" />
-          </div>
 
           <div className="hidden sm:flex sm:shrink-0">
             <TopbarPortfolioBlock />

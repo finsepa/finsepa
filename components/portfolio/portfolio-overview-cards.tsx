@@ -139,10 +139,13 @@ function TradingProfitBreakdownTooltip({
         )}
         style={{ left: pos.left, top: pos.top, maxWidth: pos.maxWidth }}
       >
-        <p className="mb-2 border-b border-surface-muted pb-2 text-[11px] font-medium leading-4 text-fg-muted">
-          Trading P&amp;L on cost: realized (sold) + unrealized (still held). Percent is profit ÷
-          historical cost — not time-weighted return.
-        </p>
+        <div className="mb-2 border-b border-surface-muted pb-2">
+          <p className="text-[12px] font-semibold leading-4 text-fg">Trading P&amp;L</p>
+          <p className="mt-1 text-[11px] font-medium leading-4 text-fg-muted">
+            What you’ve made on buys and sells so far—closed trades plus what’s still open. The %
+            is profit vs what you paid, not a timed return.
+          </p>
+        </div>
         <div className="flex items-baseline justify-between gap-4">
           <span className="shrink-0 text-fg-muted">Realized (sold)</span>
           <span

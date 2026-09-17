@@ -98,7 +98,8 @@ export function TransactionPortfolioField({
   const hasEnoughSourcesForCombined =
     portfolios.filter((p) => p.kind !== "combined").length >= 2;
   const combinedLockedOnFree = Boolean(plan && !plan.canCreateCombinedPortfolio);
-  const canCreateCombinedPortfolio = hasEnoughSourcesForCombined && !combinedLockedOnFree;
+  /** Hard-disable only when fewer than two source books (upgrade cannot help). */
+  const combinedCreateHardDisabled = !hasEnoughSourcesForCombined;
   const freePortfolioQuotaMax =
     plan?.isFree === true ? (plan.maxRealPortfolios ?? FREE_MAX_REAL_PORTFOLIOS) : null;
 
@@ -294,13 +295,13 @@ export function TransactionPortfolioField({
           </button>
           <button
             type="button"
-            aria-disabled={!canCreateCombinedPortfolio}
+            aria-disabled={combinedCreateHardDisabled}
             title={
-              combinedLockedOnFree
-                ? "Combined portfolios are available on Pro only"
-                : hasEnoughSourcesForCombined
-                  ? undefined
-                  : "Create at least two portfolios to combine them"
+              combinedCreateHardDisabled
+                ? "Create at least two portfolios to combine them"
+                : combinedLockedOnFree
+                  ? "Combined portfolios are available on Pro only"
+                  : undefined
             }
             onMouseEnter={() => setCombinedPortfolioIconPlaying(true)}
             onMouseLeave={() => setCombinedPortfolioIconPlaying(false)}
@@ -308,13 +309,13 @@ export function TransactionPortfolioField({
             onBlur={() => setCombinedPortfolioIconPlaying(false)}
             onClick={(e) => {
               e.stopPropagation();
-              if (!canCreateCombinedPortfolio) return;
+              if (combinedCreateHardDisabled) return;
               setOpen(false);
               openCreateCombinedPortfolio();
             }}
             className={cn(
               dropdownMenuPlainItemClassName(),
-              !canCreateCombinedPortfolio && "cursor-not-allowed opacity-40 hover:bg-surface",
+              combinedCreateHardDisabled && "cursor-not-allowed opacity-40 hover:bg-surface",
             )}
           >
             <DropdownMenuLottieIcon

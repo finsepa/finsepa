@@ -344,8 +344,7 @@ export function NotificationsPanelModal({
                         }
                         void setEarningsResults(next);
                       }}
-                      disabled={canUseActivityAlerts ? preferencesSaving : true}
-                      className={!canUseActivityAlerts ? "pointer-events-none" : undefined}
+                      disabled={canUseActivityAlerts ? preferencesSaving : false}
                       aria-label={
                         canUseActivityAlerts
                           ? "Earning results notifications"
@@ -403,8 +402,7 @@ export function NotificationsPanelModal({
                         }
                         void setSuperinvestorActivity(next);
                       }}
-                      disabled={canUseActivityAlerts ? preferencesSaving : true}
-                      className={!canUseActivityAlerts ? "pointer-events-none" : undefined}
+                      disabled={canUseActivityAlerts ? preferencesSaving : false}
                       aria-label={
                         canUseActivityAlerts
                           ? "Superinvestor activity notifications"
@@ -458,8 +456,7 @@ export function NotificationsPanelModal({
                         }
                         void setSlides(next);
                       }}
-                      disabled={canUseActivityAlerts ? preferencesSaving : true}
-                      className={!canUseActivityAlerts ? "pointer-events-none" : undefined}
+                      disabled={canUseActivityAlerts ? preferencesSaving : false}
                       aria-label={
                         canUseActivityAlerts ? "Slides notifications" : "Slides notifications (Pro)"
                       }
@@ -511,8 +508,7 @@ export function NotificationsPanelModal({
                         }
                         void setReports(next);
                       }}
-                      disabled={canUseActivityAlerts ? preferencesSaving : true}
-                      className={!canUseActivityAlerts ? "pointer-events-none" : undefined}
+                      disabled={canUseActivityAlerts ? preferencesSaving : false}
                       aria-label={
                         canUseActivityAlerts
                           ? "Reports notifications"

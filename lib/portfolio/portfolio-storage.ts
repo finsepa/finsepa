@@ -406,3 +406,48 @@ export function portfolioStateHasLedgerData(state: PersistedPortfolioState): boo
   }
   return false;
 }
+
+const PORTFOLIO_SYNC_META_KEY_PREFIX = "finsepa.portfolio.syncMeta.v1" as const;
+
+export type PortfolioWorkspaceSyncMeta = {
+  /** {@link portfolioWorkspacePersistFingerprint} last confirmed with the server. */
+  persistFingerprint: string;
+  /** Server `updated_at` from that confirmation. */
+  cloudUpdatedAt: string | null;
+};
+
+export function portfolioSyncMetaStorageKey(userId: string): string {
+  return `${PORTFOLIO_SYNC_META_KEY_PREFIX}.u.${userId}`;
+}
+
+export function loadPortfolioWorkspaceSyncMeta(userId: string): PortfolioWorkspaceSyncMeta | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(portfolioSyncMetaStorageKey(userId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!isRecord(parsed)) return null;
+    if (typeof parsed.persistFingerprint !== "string" || parsed.persistFingerprint.length === 0) {
+      return null;
+    }
+    return {
+      persistFingerprint: parsed.persistFingerprint,
+      cloudUpdatedAt:
+        typeof parsed.cloudUpdatedAt === "string" ? parsed.cloudUpdatedAt : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function savePortfolioWorkspaceSyncMeta(
+  userId: string,
+  meta: PortfolioWorkspaceSyncMeta,
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(portfolioSyncMetaStorageKey(userId), JSON.stringify(meta));
+  } catch {
+    /* quota / private mode */
+  }
+}

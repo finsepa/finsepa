@@ -17,23 +17,25 @@ import {
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import {
+  portfolioIsCombined,
+  portfolioIsDemo,
+  portfolioIsLiveBrokerage,
+} from "@/components/portfolio/portfolio-types";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import {
-  createCombinedPortfolioMenuIconAnimation,
-  createPortfolioMenuIconAnimation,
-} from "@/lib/lottie/portfolio-menu-animations";
-import {
   addCashMenuIconAnimation,
+  connectBrokerageMenuIconAnimation,
   importTransactionsMenuIconAnimation,
   newTradeMenuIconAnimation,
 } from "@/lib/lottie/quick-add-menu-animations";
 import { cn } from "@/lib/utils";
 
-type QuickAddItemId = "trade" | "cash" | "import" | "createPortfolio" | "createCombined";
+type QuickAddItemId = "trade" | "cash" | "connectBrokerage" | "import";
 
 /**
- * (+) quick menu — used on the global top bar and the Portfolio page header.
+ * (+) quick menu — used on the Portfolio page header (activity actions only).
  */
 export function PortfolioQuickAddMenu({
   triggerClassName,
@@ -56,9 +58,8 @@ export function PortfolioQuickAddMenu({
     portfolios,
     openNewTransaction,
     openAddCash,
+    openConnectBrokerageToSelected,
     openImportTransactions,
-    openCreatePortfolio,
-    openCreateCombinedPortfolio,
     selectedPortfolioReadOnly,
     selectedPortfolioId,
   } = usePortfolioWorkspace();
@@ -66,15 +67,22 @@ export function PortfolioQuickAddMenu({
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
 
-  const canCreateCombinedPortfolio = portfolios.filter((p) => p.kind !== "combined").length >= 2;
-  const selectedPortfolioName =
-    portfolios.find((p) => p.id === selectedPortfolioId)?.name.trim() || null;
+  const selectedPortfolio = portfolios.find((p) => p.id === selectedPortfolioId) ?? null;
+  const selectedPortfolioName = selectedPortfolio?.name.trim() || null;
+  const canConnectBrokerage = plan?.canConnectBrokerage !== false;
+  const connectBrokerageDisabled =
+    selectedPortfolioId == null ||
+    selectedPortfolioReadOnly ||
+    portfolioIsCombined(selectedPortfolio) ||
+    portfolioIsDemo(selectedPortfolio) ||
+    portfolioIsLiveBrokerage(selectedPortfolio);
 
   const activityItems: Array<{
     id: QuickAddItemId;
     label: string;
     disabled: boolean;
     title?: string;
+    showProBadge?: boolean;
   }> = [
     {
       id: "trade",
@@ -87,39 +95,25 @@ export function PortfolioQuickAddMenu({
       disabled: selectedPortfolioReadOnly,
     },
     {
+      id: "connectBrokerage",
+      label: "Connect Brokerage",
+      disabled: connectBrokerageDisabled,
+      showProBadge: !canConnectBrokerage,
+      title:
+        portfolioIsLiveBrokerage(selectedPortfolio) ?
+          "This portfolio is already connected to a brokerage"
+        : portfolioIsCombined(selectedPortfolio) || portfolioIsDemo(selectedPortfolio) ?
+          "Connect brokerage on a standard portfolio"
+        : selectedPortfolioReadOnly ?
+          "This portfolio is read-only"
+        : !canConnectBrokerage ?
+          "Brokerage connection is available on Pro only"
+        : undefined,
+    },
+    {
       id: "import",
       label: "Import CSV File",
       disabled: selectedPortfolioReadOnly || selectedPortfolioId == null,
-    },
-  ];
-
-  const createItems: Array<{
-    id: QuickAddItemId;
-    label: string;
-    disabled: boolean;
-    title?: string;
-    showProBadge?: boolean;
-  }> = [
-    {
-      id: "createPortfolio",
-      label: "Create New Portfolio",
-      disabled: Boolean(plan?.isFree && !plan.canCreatePortfolio),
-      title:
-        plan?.isFree && !plan.canCreatePortfolio
-          ? "Free includes 1 manual portfolio — upgrade to Pro to add more"
-          : undefined,
-    },
-    {
-      id: "createCombined",
-      label: "Create Combined Portfolio",
-      disabled: !canCreateCombinedPortfolio || Boolean(plan && !plan.canCreateCombinedPortfolio),
-      showProBadge: Boolean(plan && !plan.canCreateCombinedPortfolio),
-      title:
-        plan && !plan.canCreateCombinedPortfolio
-          ? "Combined portfolios are available on Pro only"
-          : canCreateCombinedPortfolio
-            ? undefined
-            : "Create at least two portfolios to combine them",
     },
   ];
 
@@ -150,9 +144,8 @@ export function PortfolioQuickAddMenu({
   function runItem(id: QuickAddItemId) {
     if (id === "trade") openNewTransaction();
     else if (id === "cash") openAddCash();
-    else if (id === "import") openImportTransactions();
-    else if (id === "createPortfolio") openCreatePortfolio();
-    else openCreateCombinedPortfolio();
+    else if (id === "connectBrokerage") void openConnectBrokerageToSelected();
+    else openImportTransactions();
   }
 
   function itemIcon(id: QuickAddItemId) {
@@ -163,59 +156,51 @@ export function PortfolioQuickAddMenu({
     if (id === "cash") {
       return <DropdownMenuLottieIcon animationData={addCashMenuIconAnimation} playing={playing} />;
     }
-    if (id === "import") {
+    if (id === "connectBrokerage") {
       return (
-        <DropdownMenuLottieIcon animationData={importTransactionsMenuIconAnimation} playing={playing} />
-      );
-    }
-    if (id === "createPortfolio") {
-      return (
-        <DropdownMenuLottieIcon animationData={createPortfolioMenuIconAnimation} playing={playing} />
+        <DropdownMenuLottieIcon animationData={connectBrokerageMenuIconAnimation} playing={playing} />
       );
     }
     return (
-      <DropdownMenuLottieIcon
-        animationData={createCombinedPortfolioMenuIconAnimation}
-        playing={playing}
-      />
+      <DropdownMenuLottieIcon animationData={importTransactionsMenuIconAnimation} playing={playing} />
     );
   }
 
-  function renderItem(item: (typeof activityItems)[number] | (typeof createItems)[number]) {
-    const { id, label, disabled, title } = item;
-    const showProBadge = "showProBadge" in item && item.showProBadge;
+  function renderItem(item: (typeof activityItems)[number]) {
+    const { id, label, disabled, title, showProBadge } = item;
+    /** Pro-gated rows stay interactive so Free users can open View Plans. */
+    const hardDisabled = disabled && !showProBadge;
     return (
       <button
         key={id}
         type="button"
         role="menuitem"
-        aria-disabled={disabled}
+        aria-disabled={hardDisabled}
         title={title}
         onMouseEnter={() => setPlayingId(id)}
         onMouseLeave={() => setPlayingId(null)}
         onFocus={() => setPlayingId(id)}
         onBlur={() => setPlayingId(null)}
         onClick={() => {
-          if (disabled) return;
+          if (hardDisabled) return;
           setOpen(false);
           runItem(id);
         }}
         className={cn(
           dropdownMenuPlainItemClassName(),
           "font-medium whitespace-nowrap",
-          disabled ? "cursor-not-allowed opacity-40 hover:bg-surface" : null,
+          hardDisabled ? "cursor-not-allowed opacity-40 hover:bg-surface" : null,
         )}
       >
         {itemIcon(id)}
         <span className="min-w-0 flex-1 truncate text-left">{label}</span>
         {showProBadge ? (
-          <ProFeatureBadge label="Combined portfolios are available on Pro only" />
+          <ProFeatureBadge label="Brokerage sync is available on Pro only" />
         ) : null}
       </button>
     );
   }
 
-  // Stable class string (no `cn`/`twMerge`) — matches topbar notification button hydration pattern.
   const resolvedTriggerChrome =
     triggerClassName ??
     (showDesktopLabel
@@ -278,12 +263,6 @@ export function PortfolioQuickAddMenu({
             </div>
           ) : null}
           {activityItems.map(renderItem)}
-          <div
-            role="separator"
-            aria-hidden
-            className="-mx-1 my-0.5 h-px shrink-0 bg-dropdown-divider"
-          />
-          {createItems.map(renderItem)}
         </div>
       </TopbarDropdownPortal>
     </div>

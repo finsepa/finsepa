@@ -125,6 +125,22 @@ export function freeHoldingsLimitMessage(max = FREE_MAX_HOLDINGS_PER_PORTFOLIO):
   return `Free includes up to ${max} assets per portfolio. Upgrade to Pro for unlimited holdings.`;
 }
 
+/**
+ * Copy for CSV import when the merged ledger would grow past Free’s open-holdings cap.
+ * Transaction count is unlimited — only unique open symbols are capped.
+ */
+export function freeHoldingsImportLimitMessage(args: {
+  max: number;
+  prevCount: number;
+  nextCount: number;
+}): string {
+  const { max, prevCount, nextCount } = args;
+  if (prevCount >= max) {
+    return `You’re already at the Free limit of ${max} holdings. This import would add more assets — remove a holding or upgrade to Pro first.`;
+  }
+  return `This import would result in ${nextCount} holdings. Free includes up to ${max} holdings per portfolio — trim the file or upgrade to Pro.`;
+}
+
 export function freeWatchlistAssetLimitMessage(max = FREE_MAX_WATCHLIST_ASSETS): string {
   return `Free includes up to ${max} assets per watchlist. Upgrade to Pro for unlimited assets.`;
 }

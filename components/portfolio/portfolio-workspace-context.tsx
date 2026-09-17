@@ -44,7 +44,7 @@ export type PortfolioWorkspaceContextValue = {
     portfolioId: string,
     authorizationId: string,
   ) => Promise<void>;
-  /** Seed (or convert the empty selected portfolio into) the Free demo sample — keeps the portfolio name when converting. */
+  /** Add (or focus) the single allowed demo sample portfolio. */
   openTryDemoPortfolio: () => void;
   /** Re-pull holdings and cash from SnapTrade for a linked portfolio (no paid refresh endpoint). */
   resyncLinkedPortfolio: (

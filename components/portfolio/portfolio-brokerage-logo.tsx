@@ -9,6 +9,11 @@ import {
   type PortfolioEntry,
   type PortfolioSnaptradeLink,
 } from "@/components/portfolio/portfolio-types";
+import {
+  resolveBrokerageLogoStyleFromImage,
+  resolveBrokerageLogoStyleFromMeta,
+  type BrokerageLogoRenderStyle,
+} from "@/lib/snaptrade/brokerage-logo-style";
 import { cn } from "@/lib/utils";
 
 function BrokerageInitials({ name, className }: { name: string; className?: string }) {
@@ -71,8 +76,94 @@ export function PortfolioListLogo({
   }
 
   return (
-    <div className={shellClass} aria-hidden>
-      <FinsepaLogo size={brandMarkSize} className="text-fg" title="" />
+    <div
+      className={cn(
+        shellClass,
+        // Dark: white plate + black mark (matches inverted primary CTA).
+        "dark:border-transparent dark:bg-white dark:shadow-[0px_1px_2px_0px_rgba(0,0,0,0.24)]",
+      )}
+      aria-hidden
+    >
+      <FinsepaLogo
+        size={brandMarkSize}
+        className="text-fg dark:text-[#141414]"
+        title=""
+      />
+    </div>
+  );
+}
+
+function BrokerageLogoMark({
+  logoUrl,
+  style,
+  size,
+  className,
+  onError,
+}: {
+  logoUrl: string;
+  style: BrokerageLogoRenderStyle;
+  size: PortfolioLogoSize;
+  className?: string;
+  onError: () => void;
+}) {
+  if (style.kind === "markOnBrandBackdrop") {
+    return (
+      <div
+        className={portfolioLogoShellClass(size, className)}
+        style={{ backgroundColor: style.backdrop }}
+        aria-hidden
+      >
+        {/* Colored SnapTrade glyphs (eToro green, etc.) → force white on the brand plate. */}
+        <img
+          src={logoUrl}
+          alt=""
+          className="h-[60%] w-[60%] object-contain"
+          style={{ filter: "brightness(0) invert(1)" }}
+          onError={onError}
+        />
+      </div>
+    );
+  }
+
+  if (style.kind === "markOnBrandPlate") {
+    return (
+      <div
+        className={portfolioLogoShellClass(size, className)}
+        style={{ backgroundColor: style.backdrop }}
+        aria-hidden
+      >
+        <img
+          src={logoUrl}
+          alt=""
+          className="h-[88%] w-[88%] object-contain"
+          onError={onError}
+        />
+      </div>
+    );
+  }
+
+  if (style.kind === "markOnSurface") {
+    return (
+      <div className={portfolioLogoShellClass(size, className)} aria-hidden>
+        <img
+          src={logoUrl}
+          alt=""
+          className="h-[76%] w-[76%] object-contain"
+          onError={onError}
+        />
+      </div>
+    );
+  }
+
+  // fullBleed — mild scale like iOS (1.12), not the old 1.42 crop.
+  return (
+    <div className={portfolioLogoShellClass(size, className)} aria-hidden>
+      <img
+        src={logoUrl}
+        alt=""
+        className="h-full w-full scale-[1.12] object-cover"
+        onError={onError}
+      />
     </div>
   );
 }
@@ -88,11 +179,18 @@ export function PortfolioBrokerageLogo({
 }) {
   const [logoUrl, setLogoUrl] = useState(() => snaptrade?.brokerageLogoUrl?.trim() ?? "");
   const [failed, setFailed] = useState(false);
+  const name = snaptrade?.brokerageName?.trim() || "Brokerage";
+  const slug = snaptrade?.brokerageSlug ?? null;
+  const metaStyle = resolveBrokerageLogoStyleFromMeta(slug, name);
+  const [style, setStyle] = useState<BrokerageLogoRenderStyle>(
+    () => metaStyle ?? { kind: "fullBleed" },
+  );
 
   useEffect(() => {
     setLogoUrl(snaptrade?.brokerageLogoUrl?.trim() ?? "");
     setFailed(false);
-  }, [snaptrade?.authorizationId, snaptrade?.brokerageLogoUrl]);
+    setStyle(resolveBrokerageLogoStyleFromMeta(slug, name) ?? { kind: "fullBleed" });
+  }, [snaptrade?.authorizationId, snaptrade?.brokerageLogoUrl, slug, name]);
 
   useEffect(() => {
     if (!snaptrade?.authorizationId || logoUrl) return;
@@ -112,9 +210,27 @@ export function PortfolioBrokerageLogo({
     return () => ac.abort();
   }, [snaptrade?.authorizationId, logoUrl]);
 
+  // When meta doesn't force a style, sample opacity after the image loads (iOS parity).
+  useEffect(() => {
+    if (!logoUrl || metaStyle) return;
+    let cancelled = false;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      if (cancelled) return;
+      setStyle(resolveBrokerageLogoStyleFromImage(img, slug, name));
+    };
+    img.onerror = () => {
+      /* keep fullBleed fallback */
+    };
+    img.src = logoUrl;
+    return () => {
+      cancelled = true;
+    };
+  }, [logoUrl, metaStyle, slug, name]);
+
   if (!snaptrade) return null;
 
-  const name = snaptrade.brokerageName?.trim() || "Brokerage";
   const hasLogo = logoUrl.length > 0 && !failed;
 
   if (!hasLogo) {
@@ -127,13 +243,12 @@ export function PortfolioBrokerageLogo({
   }
 
   return (
-    <div className={cn(portfolioLogoShellClass(size, className), "p-1")} aria-hidden>
-      <img
-        src={logoUrl}
-        alt=""
-        className="h-full w-full object-contain"
-        onError={() => setFailed(true)}
-      />
-    </div>
+    <BrokerageLogoMark
+      logoUrl={logoUrl}
+      style={style}
+      size={size}
+      className={className}
+      onError={() => setFailed(true)}
+    />
   );
 }

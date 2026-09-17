@@ -79,10 +79,12 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
     }
 
+    const bodyObj =
+      body && typeof body === "object" && body !== null ? (body as Record<string, unknown>) : null;
     const rawState =
-      body && typeof body === "object" && body !== null && "state" in body
-        ? (body as { state: unknown }).state
-        : body;
+      bodyObj && "state" in bodyObj ? bodyObj.state : body;
+    const baseUpdatedAt =
+      bodyObj && typeof bodyObj.baseUpdatedAt === "string" ? bodyObj.baseUpdatedAt : null;
 
     const parsed = parsePersistedPortfolioUnknown(rawState);
     if (!parsed) {
@@ -91,12 +93,35 @@ export async function PUT(request: Request) {
 
     const { data: existingRow } = await supabase
       .from("portfolio_workspace")
-      .select("state")
+      .select("state,updated_at")
       .eq("user_id", user.id)
       .maybeSingle();
     const previous = existingRow?.state
       ? parsePersistedPortfolioUnknown(existingRow.state)
       : null;
+    const currentUpdatedAt =
+      typeof existingRow?.updated_at === "string" ? existingRow.updated_at : null;
+
+    // Optimistic concurrency: reject stale full-blob overwrites (e.g. another device
+    // renamed/deleted, then this client PUTs an older in-memory workspace after quotes).
+    if (
+      currentUpdatedAt != null &&
+      baseUpdatedAt != null &&
+      baseUpdatedAt !== currentUpdatedAt
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "workspace_conflict",
+          code: "WORKSPACE_CONFLICT",
+          message: "Portfolio was updated elsewhere. Reloaded the latest version.",
+          state: previous,
+          updatedAt: currentUpdatedAt,
+          summary: previous ? summarizeState(previous) : undefined,
+        },
+        { status: 409 },
+      );
+    }
 
     const { state, report: migrateReport } = prepareWorkspaceLedgerForPersist(
       withMergedPortfolioGoals(parsed, previous),
@@ -178,6 +203,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({
       ok: true,
       updatedAt: now,
+      baseUpdatedAt: currentUpdatedAt,
       summary: summarizeState(state),
       ledgerMigrated: migrateReport.changed,
       warnings: validation.warnings.length > 0 ? validation.warnings : undefined,

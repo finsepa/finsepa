@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Globe, Info, Lock } from "@/lib/icons";
 
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
@@ -13,6 +14,7 @@ import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import type { PortfolioPrivacy } from "@/components/portfolio/portfolio-types";
 import { dropdownTriggerFieldClassName } from "@/components/design-system/text-input-styles";
+import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { cn } from "@/lib/utils";
 
 const OPTIONS: { value: PortfolioPrivacy; label: string; Icon: typeof Lock }[] = [
@@ -75,6 +77,7 @@ export function PortfolioPrivacyStatus({ privacy }: { privacy: PortfolioPrivacy 
 
 /**
  * Privacy control for Edit / Create portfolio modals — custom dropdown (same chrome as portfolio picker menus).
+ * Pro-gated Public stays clickable and opens View Plans.
  */
 export function PortfolioPrivacySelect({
   id,
@@ -87,17 +90,22 @@ export function PortfolioPrivacySelect({
   id?: string;
   value: PortfolioPrivacy;
   onChange: (next: PortfolioPrivacy) => void;
-  /** When true, trigger is non-interactive (e.g. empty portfolio cannot be public; Free plan). */
+  /** When true, trigger is non-interactive (e.g. empty portfolio cannot be public). */
   disabled?: boolean;
-  /** Options that cannot be selected (e.g. Public on Free plan). */
+  /** Options that open View Plans when selected (e.g. Public on Free plan). */
   disabledValues?: readonly PortfolioPrivacy[];
   "aria-label"?: string;
 }) {
+  const router = useRouter();
+  const plan = usePlanAccessOptional();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
   const active = optionByValue(value);
   const ActiveIcon = active.Icon;
+  const publicProLocked =
+    (plan != null && !plan.canPublishPublicPortfolio) ||
+    (disabledValues?.includes("public") ?? false);
 
   useEffect(() => {
     if (disabled) setOpen(false);
@@ -167,32 +175,36 @@ export function PortfolioPrivacySelect({
             {OPTIONS.map((opt) => {
               const OptIcon = opt.Icon;
               const selected = value === opt.value;
-              const optDisabled = disabledValues?.includes(opt.value) ?? false;
+              const opensPlans = opt.value === "public" && publicProLocked;
               return (
                 <button
                   key={opt.value}
                   type="button"
                   role="option"
                   aria-selected={selected}
-                  disabled={optDisabled}
                   title={
-                    optDisabled
-                      ? "Public portfolios are available on Pro only"
-                      : undefined
+                    opensPlans ? "Public portfolios are available on Pro only" : undefined
                   }
                   onClick={() => {
-                    if (optDisabled) return;
+                    if (opensPlans) {
+                      setOpen(false);
+                      router.push(PATH_ACCOUNT_PLANS);
+                      return;
+                    }
                     onChange(opt.value);
                     setOpen(false);
                   }}
-                  className={cn(
-                    dropdownMenuPlainItemRowClassName({ selected }),
-                    optDisabled && "cursor-not-allowed opacity-50",
-                  )}
+                  className={dropdownMenuPlainItemRowClassName({ selected })}
                 >
                   <span className="flex min-w-0 flex-1 items-center gap-2">
                     <OptIcon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                     {opt.label}
+                    {opensPlans ? (
+                      <ProFeatureBadge
+                        label="Public portfolios are available on Pro only"
+                        zIndex={360}
+                      />
+                    ) : null}
                   </span>
                   <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
                     <Check

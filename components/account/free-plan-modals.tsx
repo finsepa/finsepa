@@ -253,16 +253,19 @@ export function FreePlanLimitsIntroModal() {
                     {combinedPortfolios.length > 0 ? (
                       <ul className="flex flex-col gap-1.5" aria-label="Combined portfolios">
                         {combinedPortfolios.map((p) => (
-                          <li
-                            key={p.id}
-                            className="flex w-full items-center gap-2 rounded-[10px] border border-stroke-subtle bg-surface-muted/60 px-3 py-2.5 text-sm text-fg-muted"
-                            title="Combined portfolios require Pro"
-                          >
-                            <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                            <ProFeatureBadge
-                              label="Combined portfolios are available on Pro only"
-                              zIndex={350}
-                            />
+                          <li key={p.id}>
+                            <button
+                              type="button"
+                              title="Combined portfolios require Pro"
+                              onClick={openUpgradePlans}
+                              className="flex w-full items-center gap-2 rounded-[10px] border border-stroke-subtle bg-surface px-3 py-2.5 text-left text-sm text-fg transition-colors hover:bg-surface-muted"
+                            >
+                              <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                              <ProFeatureBadge
+                                label="Combined portfolios are available on Pro only"
+                                zIndex={350}
+                              />
+                            </button>
                           </li>
                         ))}
                       </ul>

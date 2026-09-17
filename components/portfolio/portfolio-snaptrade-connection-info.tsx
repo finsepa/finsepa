@@ -45,7 +45,6 @@ export function PortfolioSnaptradeConnectionInfo({
   }, [offline, snaptrade.authorizationId, snaptrade.isRealTimeConnection]);
 
   const brokerageName = snaptrade.brokerageName?.trim() || "Connected brokerage";
-  const accountCount = snaptrade.accountIds.length;
   const explanation = useMemo(
     () =>
       offline
@@ -58,12 +57,6 @@ export function PortfolioSnaptradeConnectionInfo({
     [isRealTimeConnection, offline],
   );
 
-  const accountLine =
-    offline ? "Disconnected · offline snapshot"
-    : accountCount === 0 ? "Account linked"
-    : accountCount === 1 ? "1 account linked"
-    : `${accountCount} accounts linked`;
-
   return (
     <div className="flex w-full flex-col gap-2">
       <span className="text-sm font-medium leading-5 text-fg">
@@ -74,10 +67,7 @@ export function PortfolioSnaptradeConnectionInfo({
           <PortfolioBrokerageLogo snaptrade={snaptrade} className="mt-0.5" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-fg">{brokerageName}</p>
-            <p className="mt-0.5 text-xs text-fg-muted">
-              Finsepa · {accountLine}
-            </p>
-            <p className="mt-1 text-xs text-fg-muted">{formatPortfolioLastSyncLine(snaptrade.syncedAt)}</p>
+            <p className="mt-0.5 text-xs text-fg-muted">{formatPortfolioLastSyncLine(snaptrade.syncedAt)}</p>
           </div>
         </div>
         <div className="mt-3 border-t border-stroke pt-3">
