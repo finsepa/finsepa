@@ -31,7 +31,7 @@ const WATCH_MAX_AGE_MS = Number(process.env.STOCK_WS_WATCH_MAX_AGE_MS ?? 5 * 60 
 /** Default 60s — watchlist polls were contributing load during Supabase 522 incidents. */
 const WATCH_POLL_MS = Number(process.env.STOCK_WS_WATCH_POLL_MS ?? 60 * 1000);
 const HEARTBEAT_MS = Number(process.env.STOCK_WS_HEARTBEAT_MS ?? 5 * 60 * 1000);
-const MAX_SYMBOLS = Number(process.env.STOCK_WS_MAX_SYMBOLS ?? 50);
+const MAX_SYMBOLS = Number(process.env.STOCK_WS_MAX_SYMBOLS ?? 22);
 const INCLUDE_WATCHLIST = !stockWsCuratedMode() && process.env.STOCK_WS_WATCHLIST !== "0";
 const INCLUDE_SCREENER = !stockWsCuratedMode() && process.env.STOCK_WS_SCREENER !== "0";
 const INCLUDE_CHART_WATCH = process.env.STOCK_WS_CHART_WATCH !== "0";

@@ -23,7 +23,7 @@ const REQUIRED = [
 
 const RECOMMENDED = {
   STOCK_WS_CURATED: "1",
-  /** Tick-perfect hot list on WebSocket. Use 48 for full curated universe. */
+  /** Top stocks by mcap (ETFs separate). 20 + SPY/QQQ = 22 stock WS; + crypto ≈ 50 total. */
   STOCK_WS_TOP_STOCKS: "0",
   STOCK_WS_ALWAYS_ON:
     "NVDA,AAPL,GOOGL,QQQ,SPY,MSFT,AMZN,TSM,META,AVGO,TSLA,BRK-B,MU,LLY,JPM,WMT,AMD,V,XOM,JNJ,ASML,INTC",

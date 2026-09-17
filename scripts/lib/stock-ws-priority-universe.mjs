@@ -137,7 +137,7 @@ export function stockWsTopStocksCount() {
     const n = Number(raw);
     if (Number.isFinite(n) && n >= 0) return Math.floor(n);
   }
-  return 48;
+  return 20;
 }
 
 export function stockWsCuratedMode() {
