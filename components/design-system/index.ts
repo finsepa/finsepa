@@ -13,6 +13,7 @@ export {
 export {
   accentFillButtonClassName,
   invertedFillButtonClassName,
+  primaryButtonGradientStrokeClass,
   secondaryFillButtonClassName,
   secondaryOutlineButtonClassName,
   whiteSurfaceButtonBorderClass,

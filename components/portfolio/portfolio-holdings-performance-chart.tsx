@@ -51,8 +51,11 @@ type PerfRow = {
   h: PortfolioHolding;
   closed: boolean;
   unrealizedUsd: number;
+  /** Open-lot return % (cost basis → mark); tooltip only. */
+  unrealizedPct: number | null;
   realizedUsd: number;
   totalProfitUsd: number;
+  /** Lifetime return % for the bar: total P/L ÷ (open cost + realized cost). */
   totalProfitPct: number | null;
   symbol: string;
   companyName: string;
@@ -208,8 +211,8 @@ function HoldingsPerformanceBarChart({
               )}
             >
               {formatSignedUsd(hovered.unrealizedUsd)}
-              {!hovered.closed && hovered.totalProfitPct != null ? (
-                <span className="font-normal text-fg-muted"> · {formatSignedPct(hovered.totalProfitPct)}</span>
+              {!hovered.closed && hovered.unrealizedPct != null ? (
+                <span className="font-normal text-fg-muted"> · {formatSignedPct(hovered.unrealizedPct)}</span>
               ) : null}
             </div>
             <div className="text-fg-muted">Realized</div>
@@ -236,6 +239,9 @@ function HoldingsPerformanceBarChart({
               )}
             >
               {formatSignedUsd(hovered.totalProfitUsd)}
+              {!hovered.closed && hovered.totalProfitPct != null ? (
+                <span className="font-normal text-fg-muted"> · {formatSignedPct(hovered.totalProfitPct)}</span>
+              ) : null}
             </div>
           </div>
         </div>,
@@ -486,20 +492,24 @@ function PortfolioHoldingsPerformanceChartInner({
   const sortedRows = useMemo(() => {
     const rows: PerfRow[] = holdings.map((h) => {
       const unrealizedUsd = h.currentValue - h.costBasis;
+      const unrealizedPct = h.costBasis > 0 ? (unrealizedUsd / h.costBasis) * 100 : null;
       const routeKey = cryptoRouteBase(h.symbol);
       const assetKind: "stock" | "crypto" = isSupportedCryptoAssetSymbol(routeKey) ? "crypto" : "stock";
-      const { realizedGainUsd: realizedUsd } = cumulativeRealizedStatsForAsset(
+      const { realizedGainUsd: realizedUsd, realizedCostBasisUsd } = cumulativeRealizedStatsForAsset(
         transactions,
         routeKey,
         assetKind,
       );
       const totalProfitUsd = unrealizedUsd + realizedUsd;
-      // % is open-position only — don't divide lifetime (incl. realized) by remaining cost basis.
-      const totalProfitPct = h.costBasis > 0 ? (unrealizedUsd / h.costBasis) * 100 : null;
+      // Lifetime %: total P/L over capital that produced it (still-open cost + sold cost).
+      const lifetimeCost = h.costBasis + realizedCostBasisUsd;
+      const totalProfitPct =
+        lifetimeCost > 0.005 ? (totalProfitUsd / lifetimeCost) * 100 : null;
       return {
         h,
         closed: false,
         unrealizedUsd,
+        unrealizedPct,
         realizedUsd,
         totalProfitUsd,
         totalProfitPct,
@@ -525,6 +535,7 @@ function PortfolioHoldingsPerformanceChartInner({
         h: stub,
         closed: true,
         unrealizedUsd: 0,
+        unrealizedPct: null,
         realizedUsd,
         totalProfitUsd: realizedUsd,
         totalProfitPct,

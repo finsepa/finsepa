@@ -315,8 +315,8 @@ export function PortfolioGoalPanel({
               type="button"
               onClick={openCreate}
               className={cn(
-                "mt-4 inline-flex min-h-9 items-center justify-center rounded-[10px] px-4 text-sm font-medium text-surface transition-colors",
-                "bg-fg hover:bg-fg",
+                "mt-4 inline-flex min-h-9 items-center justify-center rounded-[10px] border border-transparent px-4 text-sm font-medium text-surface transition-opacity",
+                "bg-fg fs-primary-button-gradient-stroke hover:opacity-90",
               )}
             >
               Create Goal

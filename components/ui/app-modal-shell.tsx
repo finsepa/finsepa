@@ -4,7 +4,10 @@ import type { ReactNode } from "react";
 import { X } from "@/lib/icons";
 
 import { APP_MODAL_DIALOG_ENTER_CLASS } from "@/components/ui/app-modal-overlay";
-import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
+import {
+  primaryButtonGradientStrokeClass,
+  whiteSurfaceButtonChromeClass,
+} from "@/components/design-system/secondary-button-styles";
 import { cn } from "@/lib/utils";
 
 export const APP_MODAL_SHELL_SHADOW_CLASS =
@@ -43,7 +46,12 @@ export const appModalCancelButtonClass = cn(
 export function appModalPrimaryButtonClass(enabled: boolean) {
   return cn(
     "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-3 py-2 text-sm font-medium text-surface transition-colors",
-    enabled ? "bg-fg hover:bg-fg" : "cursor-not-allowed bg-fg-subtle opacity-50",
+    enabled
+      ? cn(
+          "border border-transparent bg-fg hover:bg-fg",
+          primaryButtonGradientStrokeClass,
+        )
+      : "cursor-not-allowed border border-transparent bg-fg-subtle opacity-50",
   );
 }
 

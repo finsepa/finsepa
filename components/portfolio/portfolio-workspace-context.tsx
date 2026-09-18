@@ -74,7 +74,11 @@ export type PortfolioWorkspaceContextValue = {
   openEditTransaction: (t: PortfolioTransaction) => void;
   closeEditTransaction: () => void;
   /** Replace the full ledger for one portfolio (used after editing a row + rebuild). */
-  setPortfolioTransactions: (portfolioId: string, transactions: PortfolioTransaction[]) => void;
+  setPortfolioTransactions: (
+    portfolioId: string,
+    transactions: PortfolioTransaction[],
+    opts?: { forgivePositionAnomalies?: boolean },
+  ) => boolean;
   setPortfolioHoldings: (portfolioId: string, holdings: PortfolioHolding[]) => void;
   /**
    * Apply symbol → USD marks across all standard portfolios (Overview EOD / live quotes).

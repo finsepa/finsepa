@@ -64,7 +64,7 @@ export function WelcomeOnboardingModal({
           <button
             type="button"
             onClick={onContinue}
-            className="mt-4 inline-flex h-9 items-center justify-center rounded-[10px] bg-fg px-4 text-sm font-medium leading-5 text-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] transition-colors hover:bg-fg"
+            className="mt-4 inline-flex h-9 items-center justify-center rounded-[10px] border border-transparent bg-fg px-4 text-sm font-medium leading-5 text-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] fs-primary-button-gradient-stroke transition-opacity hover:opacity-90"
           >
             Continue
           </button>

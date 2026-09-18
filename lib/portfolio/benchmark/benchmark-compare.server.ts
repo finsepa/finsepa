@@ -16,6 +16,7 @@ import {
   comparePortfolioToBenchmark,
   type BenchmarkCompareResult,
 } from "@/lib/portfolio/benchmark/benchmark-engine";
+import { replayTradeTransactionsToHoldingsUpTo } from "@/lib/portfolio/rebuild-holdings-from-trades";
 import {
   lastBarDateOnOrBefore,
   lastCloseOnOrBefore,
@@ -41,12 +42,13 @@ function earliestTxYmd(transactions: PortfolioTransaction[]): string | null {
   return min;
 }
 
-function tradeSymbols(transactions: PortfolioTransaction[]): string[] {
+/** Symbols with open lots on asOf — enough to mark V_end without every historical ticker. */
+function openLotSymbolsOnDate(transactions: PortfolioTransaction[], asOfYmd: string): string[] {
+  const holds = replayTradeTransactionsToHoldingsUpTo(transactions, asOfYmd);
   const s = new Set<string>();
-  for (const t of transactions) {
-    if (t.kind !== "trade") continue;
-    const u = t.symbol.trim().toUpperCase();
-    if (u) s.add(u);
+  for (const h of holds) {
+    const u = h.symbol.trim().toUpperCase();
+    if (u && u !== "USD" && h.shares > 0) s.add(u);
   }
   return [...s];
 }
@@ -147,9 +149,11 @@ export async function computeInceptionBenchmarkCompare(
   const win = inceptionBenchmarkWindow(transactions);
   if (!win) return null;
 
-  const symbols = tradeSymbols(transactions);
+  const symbols = openLotSymbolsOnDate(transactions, win.endYmd);
   const [portfolioBars, benchmarkBars] = await Promise.all([
-    loadPortfolioBars(symbols, win.startYmd, win.endYmd),
+    symbols.length > 0
+      ? loadPortfolioBars(symbols, win.startYmd, win.endYmd)
+      : Promise.resolve(new Map<string, EodhdDailyBar[]>()),
     fetchBenchmarkBars(benchmarkTicker, win.startYmd, win.endYmd),
   ]);
   if (benchmarkBars.length === 0) return null;

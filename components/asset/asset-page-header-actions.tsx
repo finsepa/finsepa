@@ -27,7 +27,7 @@ export function AssetPageHeaderActions({
 
   // Stable class string (no `cn`/`twMerge`) — avoids chrome hydration mismatch.
   const addTradeButtonClass =
-    "inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] bg-fg text-page shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] transition-opacity duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:ring-offset-2 focus-visible:ring-offset-panel md:w-auto md:px-3 md:text-[13px] md:font-semibold";
+    "inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-transparent bg-fg text-page shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] fs-primary-button-gradient-stroke transition-opacity duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:ring-offset-2 focus-visible:ring-offset-panel md:w-auto md:px-3 md:text-[13px] md:font-semibold";
 
   return (
     <div className={cn("flex shrink-0 items-center gap-2", className)}>

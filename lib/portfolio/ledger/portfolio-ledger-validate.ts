@@ -106,14 +106,16 @@ function fieldIssues(
 
 /**
  * Validate one portfolio's transaction list after sequence migration.
- * `allowLegacyAnomalies`: orphan/oversell on legacyAnomaly rows become warnings.
+ * `allowLegacyAnomalies`: orphan/oversell on legacyAnomaly / legacy-tagged issues become warnings.
+ * `forgivePositionAnomalies`: CSV import — sell-without-position / oversell / orphan splits are warnings.
  */
 export function validatePortfolioLedger(
   portfolioId: string,
   transactions: readonly PortfolioTransaction[],
-  opts?: { allowLegacyAnomalies?: boolean },
+  opts?: { allowLegacyAnomalies?: boolean; forgivePositionAnomalies?: boolean },
 ): PortfolioLedgerValidationResult {
   const allowLegacy = opts?.allowLegacyAnomalies !== false;
+  const forgivePosition = opts?.forgivePositionAnomalies === true;
   const errors: PortfolioLedgerIssue[] = [];
   const warnings: PortfolioLedgerIssue[] = [];
 
@@ -140,25 +142,21 @@ export function validatePortfolioLedger(
   });
 
   for (const issue of replay.issues) {
-    if (
-      allowLegacy &&
-      issue.legacy &&
-      (issue.code === "SELL_WITHOUT_POSITION" ||
-        issue.code === "SELL_EXCEEDS_AVAILABLE_SHARES" ||
-        issue.code === "INVALID_SPLIT")
-    ) {
-      warnings.push(issue);
-      continue;
-    }
-    // If the tx is tagged legacyAnomaly, treat sell anomalies as warnings
     const tx = migrated.transactions.find((x) => x.id === issue.transactionId);
+    const positionAnomaly =
+      issue.code === "SELL_WITHOUT_POSITION" ||
+      issue.code === "SELL_EXCEEDS_AVAILABLE_SHARES" ||
+      issue.code === "INVALID_SPLIT";
     if (
-      allowLegacy &&
-      tx?.legacyAnomaly &&
-      (issue.code === "SELL_WITHOUT_POSITION" ||
-        issue.code === "SELL_EXCEEDS_AVAILABLE_SHARES")
+      positionAnomaly &&
+      (forgivePosition ||
+        (allowLegacy && issue.legacy) ||
+        (allowLegacy &&
+          tx?.legacyAnomaly &&
+          (issue.code === "SELL_WITHOUT_POSITION" ||
+            issue.code === "SELL_EXCEEDS_AVAILABLE_SHARES")))
     ) {
-      warnings.push({ ...issue, legacy: true });
+      warnings.push({ ...issue, legacy: issue.legacy || forgivePosition });
       continue;
     }
     errors.push(issue);
@@ -169,13 +167,16 @@ export function validatePortfolioLedger(
 
 /**
  * Validate a proposed portfolio ledger after add/edit/delete (strict — no new anomalies).
+ * Pass `forgivePositionAnomalies` for bulk CSV import (broker files often sell/transfer before buys resolve).
  */
 export function validatePortfolioLedgerMutation(
   portfolioId: string,
   nextTransactions: readonly PortfolioTransaction[],
+  opts?: { forgivePositionAnomalies?: boolean },
 ): PortfolioLedgerValidationResult {
   return validatePortfolioLedger(portfolioId, nextTransactions, {
     allowLegacyAnomalies: true,
+    forgivePositionAnomalies: opts?.forgivePositionAnomalies,
   });
 }
 

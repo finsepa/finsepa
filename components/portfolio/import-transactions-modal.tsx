@@ -714,7 +714,13 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
         total: prev.total,
         stage: "holdings",
       }));
-      setPortfolioTransactions(pid, merged);
+      const applied = setPortfolioTransactions(pid, merged, { forgivePositionAnomalies: true });
+      if (!applied) {
+        setCommitError(
+          "Import could not be applied — some rows conflict with the portfolio ledger (for example a sell before any buy). Fix those rows or import a corrected CSV.",
+        );
+        return;
+      }
       const quoted = await refreshHoldingMarketPrices(rebuilt);
       setPortfolioHoldings(pid, quoted);
       setImportedCount(imported.length);

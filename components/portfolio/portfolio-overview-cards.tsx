@@ -27,6 +27,7 @@ import {
   totalNetWorth,
   unrealizedProfitUsd,
 } from "@/lib/portfolio/overview-metrics";
+import { inceptionTimeWeightedReturnPct } from "@/lib/portfolio/public-listing-metrics";
 import { portfolioDividendIncome } from "@/lib/portfolio/portfolio-dividend-income";
 import {
   cumulativeRealizedGainUsd,
@@ -436,7 +437,13 @@ function PortfolioOverviewCardsInner({
     };
   }, [transactions]);
 
-  const timeWeightedReturnPct = benchmarkCompare?.portfolioPct ?? null;
+  const timeWeightedReturnPct = useMemo(() => {
+    const fromApi = benchmarkCompare?.portfolioPct;
+    if (fromApi != null && Number.isFinite(fromApi)) return fromApi;
+    // Client Dietz (cash-flow ledger + current NAV) — same formula as public listings /
+    // chart inception path. Used when benchmark-compare is slow/fails on large imports.
+    return inceptionTimeWeightedReturnPct(transactions, netWorth);
+  }, [benchmarkCompare?.portfolioPct, transactions, netWorth]);
   const aheadOfSpyPct = benchmarkCompare?.aheadPct ?? null;
 
   const { annualUsd: dividendAnnualUsd, yieldPct: dividendWeightedYield } = useMemo(
@@ -447,6 +454,7 @@ function PortfolioOverviewCardsInner({
   const isEmptyOverview = holdings.length === 0;
   const showEmptyPortfolioMetrics = isEmptyOverview && !hasTradeHistory;
   const showDividendsSkeleton = symbols.length > 0 && !overviewReady;
+  /** Only skeleton when we have neither API nor local Dietz yet (e.g. still hydrating txs). */
   const showTimeWeightedSkeleton =
     !showEmptyPortfolioMetrics &&
     transactions.length > 0 &&

@@ -4,7 +4,12 @@ import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_FOREX_PREFIX, WATCHLIST_INDEX_PREFIX
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import type { WatchlistRow } from "@/lib/watchlist/types";
 import { getCryptoAsset } from "@/lib/market/crypto-asset";
-import { ALL_CRYPTO_METAS, CRYPTO_SCREENER_ALL, toSupportedCryptoTicker } from "@/lib/market/eodhd-crypto";
+import {
+  ALL_CRYPTO_METAS,
+  CRYPTO_SCREENER_ALL,
+  CRYPTO_TOP10,
+  toSupportedCryptoTicker,
+} from "@/lib/market/eodhd-crypto";
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import {
   getSimpleCryptoDerivedForMetas,
@@ -316,8 +321,10 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
       CRYPTO_SCREENER_ALL.find((m) => m.symbol.toUpperCase() === sup.toUpperCase()) ??
       ALL_CRYPTO_METAS.find((m) => m.symbol.toUpperCase() === sup.toUpperCase()) ??
       null;
+    // CRYPTO_TOP10 can exceed 10 rows — never use slice(0,10) of SCREENER_ALL
+    // (that sent LINK/AVAX/… to page2 and left watchlist prices null).
     const [d, cryptoDer, row] = await Promise.all([
-      CRYPTO_SCREENER_ALL.slice(0, 10).some((m) => m.symbol.toUpperCase() === sup.toUpperCase())
+      CRYPTO_TOP10.some((m) => m.symbol.toUpperCase() === sup.toUpperCase())
         ? getSimpleMarketDataCryptoTab()
         : getSimpleMarketDataCryptoScreenerPage2(),
       derivedMeta ? getSimpleCryptoDerivedForMetas([derivedMeta]) : Promise.resolve({} as SimpleCryptoDerived),
@@ -339,8 +346,9 @@ async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem>
       kind: "crypto",
       href: `/crypto/${encodeURIComponent(sup)}`,
       logoUrl,
-      price: datum?.price ?? null,
-      pct1d: datum?.changePercent1D ?? null,
+      // Prefer tab/page2 batch; fall back to asset quote when the slice misses.
+      price: datum?.price ?? row?.price ?? null,
+      pct1d: datum?.changePercent1D ?? row?.changePercent1D ?? null,
       pct1m: c?.changePercent1M ?? row?.changePercent1M ?? null,
       ytd: c?.changePercentYTD ?? row?.changePercentYTD ?? null,
       mcapDisplay,
@@ -568,7 +576,7 @@ export async function buildWatchlistEnrichedGroups(items: WatchlistRow[]): Promi
     .map((i) => i.ticker.trim().toUpperCase())
     .sort()
     .join(",");
-  return withScreenerUsMarketCache("watchlist-enriched-groups-v5", () => buildWatchlistEnrichedGroupsUncached(items), [
+  return withScreenerUsMarketCache("watchlist-enriched-groups-v6", () => buildWatchlistEnrichedGroupsUncached(items), [
     tickersKey,
   ]);
 }

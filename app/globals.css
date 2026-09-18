@@ -529,6 +529,38 @@
   --fs-button-face: var(--fs-dropdown-item-hover);
 }
 
+/**
+ * Primary CTA stroke (Figma) — 1px diagonal gradient on inverted fill.
+ * Light: black face + #7F7F7F → #181818 → #3B3B3B.
+ * Dark: white face (`--fs-fg`) + #F6F6F6 → #EFEFEF → #F8F8F8.
+ * Face via `--fs-primary-button-face` (falls back to `--fs-fg`).
+ */
+html:not(.dark) .fs-primary-button-gradient-stroke {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(
+      var(--fs-primary-button-face, var(--fs-fg)),
+      var(--fs-primary-button-face, var(--fs-fg))
+    ),
+    linear-gradient(135deg, #7f7f7f 0%, #181818 50%, #3b3b3b 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.dark .fs-primary-button-gradient-stroke {
+  border-color: transparent !important;
+  background-color: transparent !important;
+  background-image:
+    linear-gradient(
+      var(--fs-primary-button-face, var(--fs-fg)),
+      var(--fs-primary-button-face, var(--fs-fg))
+    ),
+    linear-gradient(135deg, #f6f6f6 0%, #efefef 50%, #f8f8f8 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
 @media (min-width: 768px) {
   .shell-desktop-chrome-column {
     left: var(--shell-left);

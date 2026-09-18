@@ -1,19 +1,16 @@
 import { NextResponse } from "next/server";
 
 import { CACHE_CONTROL_PRIVATE_HOT } from "@/lib/data/cache-policy";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { emptyAnnualReturns } from "@/lib/market/stock-annual-returns";
 import { getCryptoPerformance } from "@/lib/market/crypto-performance";
 import { isSingleAssetMode } from "@/lib/features/single-asset";
 
 type Ctx = { params: Promise<{ symbol: string }> };
 
-export async function GET(_request: Request, { params }: Ctx) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+/** Auth: Bearer or cookie via `resolveAuthUserFromRequest` (native iOS clients). */
+export async function GET(request: Request, { params }: Ctx) {
+  const user = await resolveAuthUserFromRequest(request);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

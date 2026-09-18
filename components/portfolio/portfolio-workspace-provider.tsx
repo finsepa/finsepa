@@ -1530,19 +1530,24 @@ export function PortfolioWorkspaceProvider({
   );
 
   const setPortfolioTransactions = useCallback(
-    (portfolioId: string, transactions: PortfolioTransaction[]) => {
+    (
+      portfolioId: string,
+      transactions: PortfolioTransaction[],
+      opts?: { forgivePositionAnomalies?: boolean },
+    ): boolean => {
       const port = portfolios.find((x) => x.id === portfolioId);
-      if (port?.kind === "combined") return;
-      const validation = validatePortfolioLedgerMutation(portfolioId, transactions);
+      if (port?.kind === "combined") return false;
+      const validation = validatePortfolioLedgerMutation(portfolioId, transactions, opts);
       if (!validation.ok) {
         const first = validation.errors[0];
         toast.error("Change rejected", {
           description: first?.message ?? "This change would make the portfolio invalid.",
         });
-        return;
+        return false;
       }
       const { transactions: migrated } = migratePortfolioTransactionSequences(transactions);
       setTransactionsByPortfolioId((prev) => ({ ...prev, [portfolioId]: migrated }));
+      return true;
     },
     [portfolios],
   );

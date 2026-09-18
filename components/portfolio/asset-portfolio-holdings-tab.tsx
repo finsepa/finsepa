@@ -291,8 +291,8 @@ export function AssetPortfolioHoldingsTab({
               title={selectedPortfolioReadOnly ? "Trades are not available for combined portfolios." : undefined}
               onClick={() => openNewTransactionWithPreset({ symbol: route, name: assetDisplayName })}
               className={cn(
-                "inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] bg-fg px-4 text-sm font-semibold text-surface",
-                "shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-12))] transition-colors hover:bg-[#18181B]",
+                "inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] border border-transparent bg-fg px-4 text-sm font-semibold text-surface",
+                "fs-primary-button-gradient-stroke shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-12))] transition-opacity hover:opacity-90",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:ring-offset-2",
                 "disabled:pointer-events-none disabled:opacity-40",
               )}

@@ -17,10 +17,17 @@ export const whiteSurfaceButtonChromeClass = `${whiteSurfaceButtonBorderClass} $
 export const secondaryOutlineButtonClassName = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] ${whiteSurfaceButtonChromeClass} px-3 text-[13px] font-semibold leading-none text-fg transition-colors duration-100 hover:bg-surface-muted dark:hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15`;
 
 /**
+ * Primary CTA stroke class — Figma diagonal gradient (light + dark).
+ * Pair with a 1px border so `background-clip` can paint the edge.
+ */
+export const primaryButtonGradientStrokeClass = "fs-primary-button-gradient-stroke";
+
+/**
  * Inverted fill CTA — black on light / white on dark.
  * Same size, radius, border, and shadow geometry as outline chrome.
+ * Metallic / soft gradient stroke per theme (Figma primary).
  */
-export const invertedFillButtonClassName = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-stroke-muted bg-fg px-3 text-[13px] font-semibold leading-none text-surface ${whiteSurfaceButtonShadowClass} transition-colors duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:cursor-not-allowed disabled:opacity-60`;
+export const invertedFillButtonClassName = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-stroke-muted bg-fg px-3 text-[13px] font-semibold leading-none text-surface ${whiteSurfaceButtonShadowClass} ${primaryButtonGradientStrokeClass} transition-colors duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:cursor-not-allowed disabled:opacity-60`;
 
 /**
  * Accent primary CTA — blue fill, darker accent stroke, soft blue shadow.

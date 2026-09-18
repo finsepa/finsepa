@@ -580,7 +580,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     <button
                       type="button"
                       onClick={() => router.push(PATH_ACCOUNT_PLANS)}
-                      className="mt-6 h-10 w-full rounded-[10px] bg-fg px-6 text-sm font-semibold text-surface transition-colors hover:bg-[#18181B]"
+                      className="mt-6 h-10 w-full rounded-[10px] border border-transparent bg-fg px-6 text-sm font-semibold text-surface fs-primary-button-gradient-stroke transition-opacity hover:opacity-90"
                     >
                       Buy Pro
                     </button>

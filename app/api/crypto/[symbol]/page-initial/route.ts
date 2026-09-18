@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { CACHE_CONTROL_PRIVATE_MAX_0_MUST_REVALIDATE } from "@/lib/data/cache-policy";
 import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
-import { loadCryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
+import { loadCryptoPageInitialData, loadCryptoPageInitialDataUncached } from "@/lib/market/crypto-page-initial-data";
 
 type Ctx = { params: Promise<{ symbol: string }> };
 
@@ -29,31 +29,41 @@ export async function GET(request: Request, { params }: Ctx) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const asset = data.asset
+  // Native clients hit this while a cold-miss waiter can still return `asset: null`
+  // (emptyPayload). One forced rebuild usually lands the fat row the web soft-nav gets next.
+  let page = data;
+  if (!page.asset) {
+    const rebuilt = await loadCryptoPageInitialDataUncached(routeSymbol);
+    if (rebuilt?.asset) {
+      page = rebuilt;
+    }
+  }
+
+  const asset = page.asset
     ? {
-        symbol: data.asset.symbol,
-        name: data.asset.name,
-        marketCap: data.asset.marketCap,
-        fullyDilutedMarketCap: data.asset.fullyDilutedMarketCap,
-        athMarketCap: data.asset.athMarketCap,
-        totalSupply: data.asset.totalSupply,
-        circulatingSupply: data.asset.circulatingSupply,
-        maxSupply: data.asset.maxSupply,
-        volume24h: data.asset.volume24h,
-        volumeToMarketCap24h: data.asset.volumeToMarketCap24h,
+        symbol: page.asset.symbol,
+        name: page.asset.name,
+        marketCap: page.asset.marketCap,
+        fullyDilutedMarketCap: page.asset.fullyDilutedMarketCap,
+        athMarketCap: page.asset.athMarketCap,
+        totalSupply: page.asset.totalSupply,
+        circulatingSupply: page.asset.circulatingSupply,
+        maxSupply: page.asset.maxSupply,
+        volume24h: page.asset.volume24h,
+        volumeToMarketCap24h: page.asset.volumeToMarketCap24h,
       }
     : null;
 
   // Slim DTO — omit chart points / news / links (client fetches chart separately).
   return NextResponse.json(
     {
-      routeSymbol: data.routeSymbol,
+      routeSymbol: page.routeSymbol,
       asset,
       performance: {
-        price: data.performance.price,
-        d1: data.performance.d1,
+        price: page.performance.price,
+        d1: page.performance.d1,
       },
-      headerLiveSpotUsd: data.headerLiveSpotUsd,
+      headerLiveSpotUsd: page.headerLiveSpotUsd,
     },
     {
       headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_MAX_0_MUST_REVALIDATE },
