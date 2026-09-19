@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { parsePublicListingSnapshotFromMetrics } from "@/lib/portfolio/public-listing-snapshot";
 import { quoteHoldingsToMarketServer } from "@/lib/portfolio/portfolio-live-quotes-server";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
 type RouteCtx = { params: Promise<{ listingId: string }> };
 
-/** Single community listing with read-only snapshot for `/portfolios/[listingId]`. */
-export async function GET(_request: Request, ctx: RouteCtx) {
+/** Single community listing with read-only snapshot for `/portfolios/[listingId]`.
+ * Auth: Bearer or cookie via `requireAuthUserFromRequest` (native iOS clients).
+ */
+export async function GET(request: Request, ctx: RouteCtx) {
   try {
     const { listingId } = await ctx.params;
     const id = listingId?.trim();
@@ -16,8 +18,8 @@ export async function GET(_request: Request, ctx: RouteCtx) {
       return NextResponse.json({ error: "listingId is required." }, { status: 400 });
     }
 
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
 
     const { data, error } = await supabase
       .from("public_portfolio_listings")

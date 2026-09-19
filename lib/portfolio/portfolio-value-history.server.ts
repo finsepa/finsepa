@@ -33,7 +33,7 @@ import {
 } from "@/lib/market/stock-chart-data";
 import type { StockChartPoint } from "@/lib/market/stock-chart-types";
 import { loadPortfolioEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
-import { sessionMarkUsd } from "@/lib/portfolio/session-mark-price";
+import { sessionMarkUsd, type SessionMarkMode } from "@/lib/portfolio/session-mark-price";
 import { netCashUsdUpTo } from "@/lib/portfolio/overview-metrics";
 import { effectiveSamplingRange } from "@/lib/portfolio/portfolio-chart-sampling";
 import type { PortfolioChartRange, PortfolioValueHistoryPoint } from "@/lib/portfolio/portfolio-chart-types";
@@ -496,6 +496,7 @@ function portfolioPointsFromTwoPerDaySamples(
   barsBySymbol: Map<string, EodhdDailyBar[]>,
   intradayBySymbol: Map<string, EodhdIntradayBar[]>,
   firstTxYmd: string | null,
+  markMode: SessionMarkMode = "prefer-compatible-intraday",
 ): PortfolioValueHistoryPoint[] {
   const points: PortfolioValueHistoryPoint[] = [];
   for (const sample of samples) {
@@ -506,6 +507,7 @@ function portfolioPointsFromTwoPerDaySamples(
       intradayBySymbol,
       sample.time,
       firstTxYmd,
+      markMode,
     );
     points.push({ ...base, time: sample.time });
   }
@@ -776,6 +778,7 @@ function portfolioPointAtSession(
   intradayBySymbol: Map<string, EodhdIntradayBar[]>,
   markTs: number | null,
   firstTxYmd: string | null,
+  markMode: SessionMarkMode = "prefer-compatible-intraday",
 ): PortfolioValueHistoryPoint {
   const holdings = replayTradeTransactionsToHoldingsUpTo(transactions, sessionYmd);
   let equity = 0;
@@ -787,8 +790,10 @@ function portfolioPointAtSession(
     const intraday = intradayBySymbol.get(sym);
     const eodPx = lastCloseOnOrBefore(bars, sessionYmd);
     const intraPx =
-      markTs != null && intraday?.length ? lastIntradayCloseOnOrBefore(intraday, markTs) : null;
-    const px = sessionMarkUsd(intraPx, eodPx);
+      markMode !== "adjusted-eod-only" && markTs != null && intraday?.length
+        ? lastIntradayCloseOnOrBefore(intraday, markTs)
+        : null;
+    const px = sessionMarkUsd(intraPx, eodPx, markMode);
     if (px != null && Number.isFinite(px) && h.shares > 0) {
       equity += h.shares * px;
     }
@@ -812,27 +817,47 @@ function portfolioPointAtSession(
   return { t: sessionYmd, value, profit, returnPct };
 }
 
+/** Daily adjusted-EOD NAV — 6M / YTD / 1Y (avoids as-traded hourly × continuous shares). */
+function computePortfolioValueHistoryDailyEod(
+  transactions: PortfolioTransaction[],
+  barsBySymbol: Map<string, EodhdDailyBar[]>,
+  fromYmd: string,
+  toYmd: string,
+  firstTxYmd: string | null,
+): PortfolioValueHistoryPoint[] {
+  const dateSet = new Set<string>();
+  for (const bars of barsBySymbol.values()) {
+    for (const b of bars) {
+      if (b.date >= fromYmd && b.date <= toYmd) dateSet.add(b.date);
+    }
+  }
+  const trading = [...dateSet].sort((a, b) => a.localeCompare(b));
+  const points: PortfolioValueHistoryPoint[] = [];
+  for (const d of trading) {
+    points.push(
+      portfolioPointAtSession(
+        transactions,
+        d,
+        barsBySymbol,
+        new Map(),
+        null,
+        firstTxYmd,
+        "adjusted-eod-only",
+      ),
+    );
+  }
+  return points;
+}
+
 async function computePortfolioValueHistoryYtd(
   transactions: PortfolioTransaction[],
-  symbols: string[],
+  _symbols: string[],
   barsBySymbol: Map<string, EodhdDailyBar[]>,
   fromYmd: string,
   toYmd: string,
   firstTxYmd: string | null,
 ): Promise<PortfolioValueHistoryPoint[]> {
-  const now = new Date();
-  const ytdStartSec = Math.floor(Date.UTC(now.getUTCFullYear(), 0, 1) / 1000);
-  return computePortfolioValueHistoryTwoPerDay(
-    transactions,
-    symbols,
-    barsBySymbol,
-    fromYmd,
-    toYmd,
-    ytdStartSec,
-    firstTxYmd,
-    now,
-    4,
-  );
+  return computePortfolioValueHistoryDailyEod(transactions, barsBySymbol, fromYmd, toYmd, firstTxYmd);
 }
 
 function finalizePortfolioHistoryPoints(
@@ -875,7 +900,6 @@ export async function computePortfolioValueHistory(
   const symbols = tradeSymbols(transactions);
 
   const barsBySymbol = await loadPortfolioEodBars(symbols, barFromYmd, toYmd);
-  const nowSec = Math.floor(now.getTime() / 1000);
 
   if (samplingRange === "1d") {
     return finalizePortfolioHistoryPoints(
@@ -934,20 +958,8 @@ export async function computePortfolioValueHistory(
   }
 
   if (samplingRange === "6m") {
-    const fromDt = parseYmd(fromYmd);
-    const fromSec = fromDt ? Math.floor(fromDt.getTime() / 1000) : nowSec - 183 * 86400;
     return finalizePortfolioHistoryPoints(
-      await computePortfolioValueHistoryTwoPerDay(
-        transactions,
-        symbols,
-        barsBySymbol,
-        fromYmd,
-        toYmd,
-        fromSec,
-        firstTx,
-        now,
-        40,
-      ),
+      computePortfolioValueHistoryDailyEod(transactions, barsBySymbol, fromYmd, toYmd, firstTx),
       transactions,
       barsBySymbol,
       range,
@@ -958,20 +970,8 @@ export async function computePortfolioValueHistory(
   }
 
   if (samplingRange === "1y") {
-    const fromDt = parseYmd(fromYmd);
-    const fromSec = fromDt ? Math.floor(fromDt.getTime() / 1000) : nowSec - 365 * 86400;
     return finalizePortfolioHistoryPoints(
-      await computePortfolioValueHistoryTwoPerDay(
-        transactions,
-        symbols,
-        barsBySymbol,
-        fromYmd,
-        toYmd,
-        fromSec,
-        firstTx,
-        now,
-        40,
-      ),
+      computePortfolioValueHistoryDailyEod(transactions, barsBySymbol, fromYmd, toYmd, firstTx),
       transactions,
       barsBySymbol,
       range,
@@ -995,7 +995,17 @@ export async function computePortfolioValueHistory(
 
   const points: PortfolioValueHistoryPoint[] = [];
   for (const d of sampleDates) {
-    points.push(portfolioPointAtSession(transactions, d, barsBySymbol, new Map(), null, firstTx));
+    points.push(
+      portfolioPointAtSession(
+        transactions,
+        d,
+        barsBySymbol,
+        new Map(),
+        null,
+        firstTx,
+        "adjusted-eod-only",
+      ),
+    );
   }
 
   return finalizePortfolioHistoryPoints(points, transactions, barsBySymbol, range, now, toYmd, firstTx);

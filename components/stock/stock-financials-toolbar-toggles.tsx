@@ -19,8 +19,8 @@ import {
 } from "@/lib/market/stock-financials-time-range";
 
 export const FINANCIALS_PERIOD_OPTIONS: readonly ListboxOption<FundamentalsSeriesMode>[] = [
-  { value: "annual", label: "Annual" },
   { value: "quarterly", label: "Quarterly" },
+  { value: "annual", label: "Annual" },
 ];
 
 export const FINANCIALS_TIME_RANGE_OPTIONS: readonly ListboxOption<FinancialsTableTimeRange>[] =

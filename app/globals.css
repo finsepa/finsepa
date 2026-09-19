@@ -1029,7 +1029,7 @@ body {
 }
 
 /**
- * Import review table — thin vertical scrollbar inset 2px from the rounded card
+ * Thin vertical scrollbar inset 2px from the rounded card
  * (top / right / bottom) so the thumb isn’t flush with the edge.
  */
 .import-review-table-scroll {
@@ -1055,6 +1055,36 @@ body {
 }
 
 .import-review-table-scroll::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/**
+ * Earnings transcript modal — same thin scrollbar, inset further (6px)
+ * from the card edge on top / right / bottom.
+ */
+.earnings-transcript-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--fs-fg-subtle) 65%, transparent) transparent;
+}
+
+.earnings-transcript-scroll::-webkit-scrollbar {
+  width: 14px;
+}
+
+.earnings-transcript-scroll::-webkit-scrollbar-track {
+  margin-block: 6px;
+  margin-right: 6px;
+  background: transparent;
+}
+
+.earnings-transcript-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  border: 4px solid transparent;
+  background-clip: padding-box;
+  background-color: color-mix(in srgb, var(--fs-fg-subtle) 65%, transparent);
+}
+
+.earnings-transcript-scroll::-webkit-scrollbar-corner {
   background: transparent;
 }
 

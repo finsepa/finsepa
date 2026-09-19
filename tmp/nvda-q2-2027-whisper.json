@@ -1,0 +1,3901 @@
+{
+  "duration": 3570.449951171875,
+  "text": "Good afternoon, my name is Tiffany and I will be your conference operator today. At this time, I would like to welcome everyone to NVIDIA's second quarter earnings call. All lines have been placed on mute to prevent any background noise. After the speaker's remarks, there will be a question and answer session. If you would like to ask a question during this time, simply press star followed by the number one on your telephone keypad. If you would like to withdraw your question, press star one again. Thank you. Toshie Ahari, you may begin your conference. Thank you. Good afternoon and welcome to NVIDIA's conference call for the second quarter of fiscal 2027. With me today from NVIDIA are Jensen Wong, President and Chief Executive Officer, and Collette Kress, Executive Vice President and Chief Financial Officer. Our call is being webcast live on NVIDIA's Investor Relations website. The webcast will be available for replay until the conference call to discuss our financial results for the third quarter of fiscal 2027. The content of today's call is NVIDIA's property. It can't be reproduced or transcribed without our prior written consent. During this call, we may make forward-looking statements based on current expectations. These are subject to a number of significant risks and uncertainties, and our actual results may differ materially. For a discussion of factors that could affect our future financial results and business, please refer to the disclosure in today's earnings release, our most recent Forms 10-K and 10-Q, and the reports that we may file on Form 8-K with the Securities and Exchange Commission. All our statements are made as of today, August 26, 2026, based on information currently available to us. Except as required by law, we assume no obligation to update any such statements. During this call, we will discuss non-GAAP financial measures. You can find a reconciliation of these non-GAAP financial measures to GAAP financial measures in our CFO commentary, which is posted on our website. With that, let me turn the call over to Colette. Thanks, Toshiya. We delivered another outstanding quarter with record revenue, operating income, and EPS. With a total revenue of $96 billion, more than doubled year-over-year as growth accelerated for the fourth consecutive quarter, the surge in AI demand is driving a global infrastructure build-out, supported by an expanding and diverse set of growth opportunities, spanning hyperscalers, AI labs, AI natives, enterprises, and sovereign customers. We expect to grow revenue by approximately 70% in fiscal 2028. This is a supply-constrained outlook. Q2 data center revenue increased 18% quarter-over-quarter to $89 billion, with strong contributions from both sub-segments, hyperscale and ACINE, which includes our neocloud, industrial, and enterprise customers. Hyperscale revenue of $49 billion grew 13% sequentially, driven by sustained strength in Blackwell. Reinforcing that more compute drives more revenue as new GPU capacity comes online, our hyperscale customers delivered strong financial results in the quarter with accelerating revenue growth and expanding margins. With cloud industry backlog now greater than $2 trillion, HAPX by the top five hyperscalers is expected to reach nearly $800 billion in 2026 and $1.3 trillion in 2027. Today we are delighted to announce an expansion of our partnership with AWS. Building on its already vast installed base of NVIDIA Compute, AWS is deploying an additional 2 million GPUs starting this quarter through the second quarter of fiscal 29, along with Vera, CPUs, some integrated with Rubin, others standalone. AWS will serve NVIDIA Nematron family of open models on Amazon Bedrock and SageMaker. Amazon will also adopt our full physical AI stack, Omniverse, Cosmos, Isaac, and Jetson, to power its fleet of warehouse robots. ACI&E revenue of $40 billion increased 25% sequentially and 138% year over year. Growth was driven by NeoCloud capacity additions to meet the rising demand from enterprises, AI startups, and sovereigns, as well as hyperscalers purchasing capacity to supplement their own build outs. Using NVIDIA DSX reference designs, our NeoCloud partners are bringing capacity online faster and at lower token cost. They are expected to exit the year with 8 gigawatts in total installed capacity, up from approximately 3 gigawatts at the end of 2025. Incredibly, we are seeing demand acceleration even at our scale. Customers' forecasts point to our growth doubling next year. However, as I mentioned earlier, we expect to grow approximately 70% as we are supply constrained. NVIDIA Compute is fully utilized across every cloud we serve. The economic value it generates for our hyperscale, NeoCloud, and AI lab partners keeps rising. Besides building the best AI computing technologies and the most capable supply chain, NVIDIA has three unique capabilities that are our engines powering our growth. First, NVIDIA's architecture runs every model, and we're growing share as closed and open model adoption grow. Closed and open models alike, adoption is skyrocketing. NVIDIA runs the leading closed models, OpenAI, Anthropic, Grok, Meta, Gemini, and the leading open models, TML, Mistral, Quinn, Kimi, GLM, DeepSeq, Minimax, and Nemetron. We're great at small models and giant ones, large or video, auto, regressive, or diffusion, in the cloud or in the edge. NVIDIA is great at training, great at inference, great at agentic workloads. One platform, fungible for every model and workload, durable for the entire lifecycle of AI. That combination of performance, fungibility, and durability is what makes NVIDIA the productive and financeable compute infrastructure. Our second unique capability is our full stack AI factory platform that is expanding our share of the data center town. Since Hopper, our revenue opportunity has grown from roughly $18 billion per gigawatt to $25 billion with Blackwell, to $40 billion with Vera-Rubin, which now spans Vera-CPU, Rubin-GPU, NVLink, InfiniBanner Ethernet, and Grok LPU, announced earlier this week. Our ability to extreme code design across GPU, CPU, NVLink scale up networking, scale out networking, systems, algorithms, and software enables us to deliver X-factor performance gain every generation. Vera-Rubin exemplifies this, delivering 30X higher throughput per megawatt and 35X lower token cost relative to Grace Blackwell Ultra. We commenced production shipments of Vera-Rubin earlier this month. Having already received purchase orders from every major hyperscaler, AI cloud, and system OEM, we expect Vera-Rubin to mark the fastest product ramp in NVIDIA's history. Our networking business had another record quarter with revenue growing 18% on a sequential basis. Spectrum X Ethernet, which grew 2.6X on a year-over-year basis, is already helping us become the largest and fastest-growing network company in the world. Rising adoption of agentic AI is driving an acceleration in demand for data center CPUs. Our Grace CPU, introduced in 2021, has been a great success, with revenue on a trailing 12-month basis exceeding $5 billion. Today we are in full production of our next-generation Vera CPU. As a standalone product, Vera expands our TAM even further. Vera completes agentic tasks 1.8X faster on the SPEC benchmark and provides five times the bandwidth per watt than any other data center CPU. We expect Vera to be deployed by every major hyperscaler, NeoCloud, AI lab, and system OEM, with shipments already underway to our lead partners including OCI, SpaceX AI, and starting this quarter, AWS. We continue to see demand for approximately $20 billion in total server CPUs. And based on our customer demand and improving supply outlook, our preliminary expectation is for CPU revenue to more than double in fiscal 28, positioning us as one of the world's leading server CPU suppliers. Since the announcement of our Grok partnership last year, we've been working to unite NVIDIA's high throughput and Grok's high interactivity architectures. At HotChips earlier this week, we announced that Grok3 LPX, our first rack-scale LPU system, is in full production and already setting records, demonstrating nearly 4X the number of tokens per second against the next best alternative on our artificial analysis benchmark. We expect to ship Grok3 LPX in volume later this quarter to early adopters. Niveus will be the first. Today we're not just selling the best chips, we're selling a full stack AI factory platform offering superior economics for customers and capturing a bigger share of the data center TAM. Our third unique capability is the combination of our full stack AI factory and rich CUDA ecosystem, allowing us to extend AI into markets a single chip alone can never reach. Beyond the hyperscalers lies a massive market anxious to adopt AI, customers with no interest in designing their own custom silicon. NVIDIA's fully proven full stack platform is uniquely suited to help sovereigns, neoclouds, and enterprises build their AI infrastructure, bring it to full operation, continuously optimize it through CUDA software, and connect it to off-take demand from our vast developer ecosystem. Hyperscalers will remain a major growth driver, but non-hyperscaler growth, our AIC&E segment spanning sovereign regional neoclouds, enterprise edge, and air gap data centers will represent roughly half of our data center business. Our AI native startup ecosystem developed and running primarily on the NVIDIA compute platform is scaling at a rapid pace. Global VC funding in AI, roughly 70% of which is spent on compute, exceeded $400 billion in the first half of 2026, surpassing the $265 billion raised in all of 2025. Nearly 20 companies, including Cursor, owned by SpaceX, Figma, and Together AI, now exceed $1 billion in annualized run rate revenue, up from 13 companies in Q4 of last year, with vertical enterprise software logging the fastest growth. In enterprise, on a trailing 12-month basis, on-prem revenue in the automotive vertical reached $8 billion, while financial services, manufacturing, and healthcare combined contributed $7 billion in revenue. Hudson River Trading and Jane Street are leveraging NVIDIA's powered AI factories to accelerate quantitative trading. Samsung Electronics is using NVIDIA's Qlitho2 to achieve up to 20x greater performance in computational lithography, while Bristol-Myers Squid is investing in Vera Rubin AI Factory, a fast follow to the Roche and Lilly buildouts, as drug R&D timelines compress from years to months. In sovereign AI, our business, primarily through the regional neoclouds, grew 35% sequentially and more than tripled year-over-year in Q2. A country or region can allocate land and power directly to a regional cloud partner in ways it never would to a foreign hyperscaler. We don't own a cloud ourselves, we are a neutral partner to every sovereign and neocloud. Because NVIDIA Compute is productive, fungible, rentable, and durable, regional cloud interest is surging around the world. We helped Carwe, Nebius, and Enscale build entire infrastructure businesses, and neoclouds are emerging everywhere, Firebird in Armenia, Casaba Technologies across Africa, GMI Cloud in Taiwan, Yoda and Nasa in India, Hermes in Australia, YTLAI Cloud in Malaysia, pairing local land, power, and operating expertise with our platform. Last month, we announced a partnership with Noetra, Japan's national AI company, to build an NVIDIA DSX AI factory that will create open models to power AI agents, digital twins, robotics, and physical AI applications. South Korea's LG and Hyundai Motor Group are partnering with NVIDIA to build and scale AI. And in Europe, a record 35 new NVIDIA-powered AI supercomputers were unveiled to advance industry and scientific breakthroughs. Neoclouds are seeing strong demand pipelines for many diverse offtakers. Rather than allocating their entire capacity to a single, long-term offtake guarantee that lenders typically require to finance a data center independently, we have introduced a revenue-sharing structure. NVIDIA provides a take-or-pay commitment on a portion of the facility's capacity, a minimum revenue guarantee that gives lenders the confidence to underwrite the project, and in exchange, we share in a portion of the Neocloud's revenue earned above that floor. Independent capital still underwrites every deal on its own merits. We're not making loans. In this model, we get paid twice, once on the hardware sale and again through the share of rental revenue, a highly reoccurring stream layered on top of a one-time equipment purchase. Over time, this model can expand our addressable market and create reoccurring usage-linked revenue stream alongside our core platform revenue, with the potential to drive billions in revenue over the medium to long term. Together, NVIDIA's three unique capabilities, a platform that runs every model, a full-stack AI factory platform capturing more of the data center TAM, and a CUDA ecosystem that extends AI into markets no single chip could reach alone, reinforce one another, and are the engines of our growth. Let me update you on our progress with our Frontier AI Labs. The Frontier AI Labs have extraordinary demand for training and inference compute, but they are growing faster than what their balance sheets and credit profiles can support. They have rapidly growing customer demand, yet still lack the decades-long infrastructure contracts and investment-grade financing capacity needed to secure the AI factory infrastructure independently. In other words, their growth isn't limited by their technology or customer demand, it's limited by compute. For these companies, more compute means more intelligence, more users, and more revenue. NVIDIA is needed to help power this flywheel. First, we've invested nearly $50 billion in the Frontier AI Labs. This was a meaningful commitment, but it represented a small fraction of our expected free cash flow over the same period. Further, to support the Frontier Labs' infrastructure build-outs, we recently announced partnerships with six of the world's leading infrastructure capital providers – Apollo, BlackRock, Blackstone, Brookfield, Goldman Sachs, and KKR – to establish financing platforms that will raise over $500 billion of third-party capital. With these partnerships building on our unique, fungible, and durable computing platform, the AI Labs will be able to build and assess AI infrastructure funded by long-term institutional capital at relatively attractive rates. Last week, we announced that we secured land-power-shell capacity through our partnership with SoftBank Energy to exclusively host NVIDIA Compute at their Portsmouth campus. The initial deployment, expected to support 4.25 gigawatts of AI factory capacity, will be utilized by OpenAI. Each generation of NVIDIA AI factory systems deployed at Portspike could represent approximately 1.5 million NVIDIA GPUs, and over 20 years, the site could support multiple upgrade cycles. Here's the essential economic point. The LPS commitment secures a long-lived AI factory site, while the NVIDIA Compute within the data center can be upgraded repeatedly. This project deepens our long-standing partnership with OpenAI. OpenAI has committed to substantially deployments of NVIDIA AI infrastructure through 2030. OpenAI's existing and planned commitments represent approximately 12 gigawatts of NVIDIA Compute. For another frontier AI lab, we will provide selective credit enhancement for nearly 2 gigawatts of Compute. This complements the substantial NVIDIA Compute capacity they've secured independently without NVIDIA's credit support. We recognize the scale of this support, and we know some will call this circular financing. We see it differently. We're going through a major computing platform shift, the creation of one of the most important technologies in human history, and these are once-in-a-generation companies. Their technology leadership is proven, and their customer traction and usage are skyrocketing. We expect them to become the largest technology companies in history. We believe these investments, measured against the strength of their demand, the business they create for us, the ecosystem they build on NVIDIA's platform, and the equity returns on our invested capital will be excellent. And our risk is limited. The NVIDIA Compute platform is fungible and durable and can be redeployed to support other customers. For context, we expect demand from the AI labs for which we expect to leverage our balance sheet to contribute toward roughly a quarter of our business next year. This remains Compute we ship will be consumed by investment-grade customers or those that are backed by one. In Q2, we ship less than 1% of our total data center revenue in Hopper 200 products to customers based in China in accordance with the U.S. government licenses. Current Hopper shipments are dilutive to corporate gross margins. And given ongoing geopolitical uncertainty, there is no China data center Compute revenue in our forward outlook. Moving to the rest of the P&L, GAAP and non-GAAP gross margins were both 75%, largely unchanged from last quarter due to a similar product mix. GAAP and non-GAAP operating expenses were up 10% and 11% sequentially, primarily due to high Compute infrastructure costs and compensation and benefits costs. Our non-GAAP effective tax rate of 16% increased from a year ago, primarily due to higher revenue. On our balance sheet, inventory increased to $32 billion as we prepared for the Vera Rubin launch. Days of sales outstanding increased to 60 days, reflecting extended payment terms for large purchases by certain investment-grade customers to be shipped over multiple quarters. In Q2, we returned a record $26 billion to shareholders, $20 billion through share repurchases and $6 billion through our quarterly dividend of $0.25 per share. Relative to our plan to return 50% or more of free cash flow, we have returned 60% on a year-to-date basis, and going forward, we intend to increase and return excess free cash flow net of strategic uses. Let me turn to the outlook for the third quarter. Total revenue is expected to be $108 billion, plus and minus 2%. We expect sequential growth to be driven primarily by ACINE with DataCenter, while growth in Hyperscale is expected to re-accelerate in Q4 and into FY28, as supply of Vera Rubin grows over time. We see Vera Rubin accounting for about 20% of DataCenter revenue in Q3. Looking ahead, our preliminary expectation is for FY28 revenue to grow approximately 70% year-over-year. Although we will work to close the supply-demand gap, we expect supply to remain a bottleneck, at least through the end of FY28. Many of you have expressed concerns regarding our gross margins as component costs have risen significantly. As you are already aware, we are experiencing extreme pricing conditions in memory. The magnitude of the price increase has exceeded our prior expectations and are headed even higher into next year. As a result, we are resetting expectations today. For Q3, we expect gap and non-gap gross margins to be 74%, plus or minus 50 basis points. We expect margins to bottom in Q4 in the 71-72% range, before settling at 72-73% in FY28 as executed price increases take effect in Q1. We want to be direct about this rather than let it linger as an open question. Memory scarcity today is being driven in large part by the AI build-out itself, and unlike a component that simply raises our costs with no offset benefit. Tighter memory supply is a symptom of the same demand surge that's driving our own growth. We have long-standing, deep relationships with all three major memory suppliers, and we're working closely with them to further increase the capacity our roadmap requires. Gap and non-gap operating expenses are expected to be approximately $9.2 billion and $9.0 billion, respectively. For the full year, we now expect OPEX to grow in the low 50s, driven by a broadening of our product portfolio and further increase in the usage of AI tools, which is already and will continue to enhance engineering productivity. For full year, fiscal year 27, we continue to expect gap and non-gap taxes to be between 16% and 18%, excluding any discrete items and material changes to our tax environment. With that, we will now transition to Q&A. Operator, please poll for questions. Operator, please poll for questions. At this time, I would like to remind everyone, in order to ask a question, press star, then the number one on your telephone keypad. We'll pause for just a moment to compile the Q&A roster. Your first question comes from the line of Joseph Moore with Morgan Stanley. Your line is open. Great, thank you. I wonder if you could give us color on the 70% and what gives you the confidence to guide a full year out if you haven't been doing that? And then what's the gap between that amount of growth and the 100% demand growth? What is the kind of key constraint that separates those numbers? And could you close those gaps over time? Yeah, thanks, Joe. As you probably are aware, AI has become useful. And the AI agents that are being adopted everywhere use an enormous amount of compute. First of all, the large language models are larger than ever because they're smarter than ever. And these agents go through reasoning and planning, multiple turns of tool use. The amount of compute necessary for an agent versus a human using it is probably 15 to 100 times depending on the type of problem you're trying to solve. And so the amount of compute necessary is just extraordinary. That's a factor that almost everybody sees. The part that people don't see about our growth, because we're practically singular, because of the nature of how we deliver products. I mean, we're the only company in the world that creates and builds, offers an entire AI factory platform, a full stack system. And customers can still mix and match. However, most companies just don't have the skills to do that or desire to do that. And so there's an entire part of the market that we experience growth. They're sovereign AI, they're regional AIs, they're Neo clouds, they're AI startups, they're enterprises, where we're seeing, which represents about half of our business, that's growing 100% a year. That part of the world's computing is likely to be larger over time than even what we're currently experiencing in the cloud. And so I think the demand that we see is driven by all of those factors. It is also the case that you can no longer procure technology per se and stand up these infrastructure. You've got to go secure the land power and shell, which oftentimes is a couple of two, three years out. All of the rest of the supply chain necessary to align the construction, the power, the cooling, all of the labor that's necessary. And what AI infrastructure is creating so many jobs all over the United States and all around the world. It just takes a lot more planning. And so we're involved in securing infrastructure now further down the pipeline. Just as a long time ago, people asked me, why is it that we're working with memory suppliers when we're a chip company? And today people understand it's really quite genius that we were working on our supply chain so far upstream. We work with power generator companies, downstream, we work with land power and shell companies all around the world, and that helps prepare all of this computing that's going to be built that will ultimately deploy for our ecosystem and our customers. And so we just have a lot greater visibility now upstream and downstream. It is the case that we've never forecasted or never guided to a year in advance. And even though our demand is much greater than 70%, our supply allows us to confidently deliver 70%. And we're going to continue to work with our supply chain to increase on that. But what we wanted to do is to be consistent with everybody from our customers, our shareholders, our supply chain, everybody sees the same view. And the reason why that's important is because everybody's putting a lot of resources at play. And so we wanted to make sure that everybody has the same set of information. And we've got a huge year coming up next year, and it's going to be pretty extraordinary. Your next question comes from the line of C.J. Muse with Cancer Fitzgerald. Your line is open. Yeah, good afternoon. Thank you for taking the question. There's tremendous investor focus on your inference market share. Can you speak to the evolving workload you're seeing with the Gentic AI and how you see your share evolving here over time, particularly when you reflect on the growing value of the TAM you're seeing with each new full stack generation, your expectation for greater growth from ACIE, and then also including Grok 3 LPX? We'd love to hear your thoughts. Yeah, thanks, C.J. The AI lifecycle is getting way more complex than it used to be. And it's playing into NVIDIA's architecture much more greatly than it used to be. And so you could kind of see it as four phases. There's the first phase, which is preparing all of the data that you need. Some of it is synthetic. Some of it is real. Some of it is human labeled and generated. Pre-trained the models. And then there's post-training, the third phase. And then there's the agentic inference. And agentic inference is extremely complicated. And so every one of those phases are complicated. The thing that's really great about the NVIDIA architecture, and we created this with NVLink 72, it was a big surprise on the world when we first created the world's first rack scale architecture. It was hardly easy. And it was very challenging building the first generation. We're now in our third generation of NVLink 72 rack scale systems. We had to reinvent the entire supply chain, reinvent systems, reinvent the technology, redistribute our software, refactor our software. Everything, every aspect of it was hard. But what it allowed us to do was to create one fungible system that allows us to transition from data creation, data preparation, the pre-training, the post-training to agentic inference. The benefits to customers is incredible. And the reason for that is because you've just spent, and we just mentioned, each gigawatt of technology and NVIDIA's revenue exposure in the Hopper timeframe with Hopper plus InfiniBand, and now Vera Rubin and CPU, and three types of different networking, because it takes that many types of networking to address the entire world's data center, not to mention the scale in security networking and the scale across multi-campus networking. So you could argue five different types of networking systems. And then, of course, Grok. And all of that increased our revenue contribution or revenue opportunity per gigawatt to $40 billion. So each gigawatt of data center increased from, say, $30 billion about five years ago to now $60 billion today. Of course, the productivity is tremendous. The performance is incredible in comparison. But you're talking about a $60 billion investment. And to the extent that you could use it across multiple phases of the AI lifecycle, run every single type of model you can imagine running on it, whether it's diffusion or autoregressive or state space or some hybrid version of that, every version of attention mechanism you can think of, small or large models, the investment that you make will be preserved and useful and productive for a lot longer time. And so I think our advantage in this new world is really quite extraordinary. And it could explain why it is that our growth is actually accelerating. It was already large, but now it's accelerating. Leslie, you asked about Grok. I was super excited about Grok 3. We achieved a record token interactivity rate, extremely low latency performance generation. The team is doing fantastically. We spent the last several months fusing the NVLink architecture, which will be the core. And it'll be the core engine. And then for services that would like to have super high interactivity, super high speed token generation done, the throughput is going to be a lot lower. The cost per token will be higher. But you could associate it with high ASP services. And so for those companies, you could bolt on one of our Grok accelerators. I'm super excited about that. But the vast majority of the world's data centers will just be VeraRubin and NVLink72. Your next question comes from the line of Stacey Raskon with Bernstein Research. Your line is open. Hi, guys. Thanks for taking my question. So the 70% growth in fiscal 28, which I guess is sort of calendar 27. So that's something like, I don't know, a $200 billion uptick. Versus the prior outlook, if I back it out. The prior outlook was $1 trillion over the three years. So this is probably $200 billion more. I was just wondering if you could talk us through the contributors to that increase across the different products of Vera and CPUs and Grok and everything else. And also, you talked about your price increase that takes effect in Q1. So I assume some of this is pricing. And I guess I'm also curious, maybe I'm squeezing too many questions in here. But I'm also curious, it's a constrained number. What would it be if it wasn't constrained? The unconstrained would be a lot higher. It's, we grew 100% year over year. This year, the unconstrained, you know, is significant. And so we're just going to have to go work hard to get more capacity. And, you know, we have a large supply chain. We have a really gigantic supply chain. And, you know, we have a large supply chain. We have a really gigantic supply chain. And so we have incredible partners. And we've secured a lot of supply, but we just need a lot more. To break it down, the way to think about that is most people see just hyperscalers. And that's half of the picture. The other half of the picture is what we call AC. And that's all the enterprise, the Neo clouds, the sovereign AIs. You know, that part of the world is invisible to everybody. And the reason for that is because they don't buy custom chips. They don't buy chips one at a time. They really need an entire factory platform built for them. And so that's a space that we add just a tremendous amount of value. Now, of course, back in this hyperscale space, that's growing incredibly too. Right. You know that they now have backlogs of $2 trillion. You know that when they stand up NVIDIA Compute, when that happens, their revenues go up, their earnings contribution go up. Compute is profitable, very profitable today. And compute directly translates into increased revenues. And so there's just a race to want to bring more NVIDIA Compute online, both at the hyperscalers. But what you don't see is just really tremendous opportunities outside of the hyperscalers. But the other part of it is, and it's the reason why we mapped it out for you. In the case of Hopper, we were at about $18 billion per gigawatt. For Grace Blackwell, we're about $25 billion per gigawatt. And for Vera Rubin, it's about $40 billion per gigawatt. And the productivity is, you know, X factors increase in each generation. And so customers want to race to the next generation as fast as they can. Meanwhile, because NVIDIA Compute is so productive, the tokens they're generating, the GPU hours they're renting out is insanely profitable, as you know. Their margins are fantastic. And so all of that is just simultaneously happening. I think the big picture is that we're going through this platform shift. And it affects every computer company. And every industry in the world uses computers. So therefore, every industry is affected. Every company is affected. And this new way of doing computing is intelligent. It's not based on retrieval of files, but it's now generative. Generating intelligence. And that requires compute. But the results you get is phenomenal. The results you get is tremendously better. And so, you know, we're just seeing that across the world. Everybody wants to be part of the AI revolution. Everybody will have to be part of this computing shift. And everybody has to build infrastructure. Your next question comes from the line of Vivek Arya with Bank of America Securities. Your line is open. Thanks for taking my question. And thanks for providing all the transparency and all the commitments and guarantees that you have for a number of years. When I just, you know, add up everything that's in the CFO commentary, I get to a number of about $500 billion or so, obviously, over the next several years. But I had a few questions related to that. First is, is that the takeaway? That the sum of all your ecosystem investments over the next several years is in that ballpark? Or are there other equity or other investments that could still be ahead? That's one. Secondly, if there is a specific cash, you know, part of that, that we should think about in fiscal 28. And then, Jensen, a lot of these investments are, you know, designed to help the Frontier Labs, especially OpenAI and Anthropic. But both of them are designing their own custom chips. In fact, OpenAI just, you know, in the last few days spoke about Jalapeno and their claims about being better than Blackwell and so forth. So how are you balancing this dynamic where you want to invest a lot of the ecosystem, but part of that ecosystem wants to develop competitive solutions? Thank you. Well, we're building something very different. You know, whereas many of these XPUs are inference-specific chips for one cloud or one service. NVIDIA is a platform, an entire AI factory platform that spans the entire AI lifecycle that you can use in any cloud. It's in every cloud. You can run anywhere. We'll help you set it up anywhere. And so we built something very different. All of the AI services, at some point, are going to want to go around the world. And those data centers won't necessarily be just built by them. And also, you know, I fully expect, and so they're going to run, and I think they're going to run on NVIDIA all around the world. And of course, I think our technology, I have 100% confidence that our technology will continue to be extraordinary for them. And that the economics of using our technology, you know, whether it's from data processing to training, to post-training, to agentic processing, our technology is going to be extraordinary for them. They're going to use it. And so I'm very confident that they're going to be customers and partners of ours for a very long time. Now, having said that, taking a step backwards, investing in these two companies, or there are several AI labs that we've invested in, investing in these companies are a once-in-a-generation opportunity. I think the only regret that I have is that I didn't invest more and sooner. And two of the companies will likely go public soon, and others will follow. And these will be some of the most consequential technology companies in history. And so I'm delighted to be their friend. I'm delighted to partner with them. I'm delighted that they're building an ecosystem on top of the NVIDIA architecture. I'm delighted that they're counting on us to scale up. And I have 100% confidence that, you know, through quite a long period of time, they're going to be utilizing NVIDIA Compute for a lot of their computing. And so I feel great about it. So Vivek, let me add a little bit more regarding the commitments and the portion within those commitments, which is our supply commitments. This is essential. This is essential for the raising of VeraRubin today, as well as all next year. You can see that those commitments, the biggest parts of them are in the first three years. And we will use that to build the products that we need. This would also gives us the confidence in terms of our growth and revenue, given how much we have already aligned in commitment in terms of our supply, as well as capacity that we would need. Your next question comes from the line of Timothy Arcuri with UBS. Your line is open. Hi, thanks a lot. Jensen, I want to ask about open source. There's a lot of talk about that these models could gain share for workload in the U.S. You're obviously well positioned with Nemotron. But on the other hand, a lot of the end demand is being driven by these big frontier model companies. So there's a lot of investors that equate open models as being negative for the growth of those companies. So how do you sort of put and take that? Do you see the rise of open models as being good for NVIDIA or ultimately negative? Thanks. The world will need both closed models and open models. And both closed models and open models are skyrocketing in use. I would say nearly all open models run on NVIDIA. And the reason for that is because NVIDIA's footprint around the world is the highest. And our architecture is the most fungible. It's everywhere. It's in PCs and edge devices like DGX Spark, which is doing great, all the way to robots and workstations and your on-prem data centers. Open models are doing incredibly well. Closed models we know are doing incredibly well. The Frontier Labs, their sales are skyrocketing. Their margins are fantastic. They're generating profitable tokens. They're only limited by the amount of compute. That is equally true for open models. And our position in open models is very good because the CUDA ecosystem is literally everywhere. The open models are also foundational to just about every AI startup and every enterprise company around the world. It's vital to them. And the reason for that is because you should rent intelligence, strong intelligence, smart intelligence wherever you can, which is the reason why we rent it. And I encourage my employees to use the cloud services as much as they can. But every major company and surely every country and every startup needs to build their domain specific, their proprietary AI, their proprietary alpha. And the open models reaching frontier levels has made it possible, has enabled them to all do that. One of the areas where frontier models is vital is cybersecurity. You see the number of cybersecurity companies that are enabled by frontier models so that they could have distributed, massively distributed, continuously running autonomous cybersecurity systems to defend. Those companies are emerging. There's some amazing companies. They couldn't do it without open models. And so open models is both incredibly successful and has finally reached the frontier, but it's also vital to the American economy. It's vital to the world economy. It's vital to companies to build their own proprietary AI. You can't do without one or the other. Both are going to be extraordinarily successful. And lastly, as you know, our market footprint of all AI models, we're the only, I think we're the only platform. We're fairly certain we're the only platform that runs every frontier model. And whether it's closed or open, most of them were built on NVIDIA. And so they run great on NVIDIA. And so we're delighted by any model succeeding. So long as models succeed, I'm very happy. And both closed and open models are going to succeed. And they're both simultaneously driving our sales. Your next question comes from the line of Ben Britsis with Melius Research. Your line is open. Yeah, hey, thanks. I wanted to ask you a question, Jensen, about demand in a different way. You talked about demand growing 100% next year. And I wanted to kind of get a sense for a couple of things driving that and even beyond that. And there's two concepts here. There's recursive self-improvement, which apparently at Anthropic and OpenAI is going very well with AI that improves itself. And even OpenAI said they could hit AGI by the end of this year. And with the developments in RSI as well as AGI, what happens to industry demand? Does it inflect further? And what does it mean for NVIDIA when those things take place? And how are you looking at that as a demand catalyst? Thanks. I appreciate that. It's going to inflect further. Today, the vast majority of AI is prompted by people. I believe that this last month, it has crossed. Most AI are now agentic. But in the future, in the future, every company will have a whole bunch of agents. You know, we have 40,000 employees, roughly. In the future, we'll have 400,000 agents, 4 million agents. And those agents are running continuously. They're running in the background. If you have anybody who builds, if you know anybody who builds edge, you know, personal AI agents, and they run it on their, like a DGX Spark. And, you know, I know a lot of people who run it on DGX stations, this incredible workstation that we've built. And you can buy it from Dell and they're incredible. And these AI agents running on a DGX station runs 24-7 because you got stuff for it to do all the time. And so when the world goes to agentic, fully agentic, agentic systems, you're going to have agents running all the time, working with other agents running all the time. And those would be working in the background, improving your company, you know, improving your lives. In a lot of ways, we're kind of recursive at this point, at this point. And you could argue it's coarse-grained, but every time you run through an agent, it reflects on how it could do a better job next time. And it updates the skill file. And so the skills document, the markdown, is updated at the end of every single one of them. And so next time you run it, it's going to get better. It's a kind of a loosely coarse-grained self-improvement. And so you see that all over, always. And so in a lot of ways, and for many tasks, we could say that we've already achieved AGI. I think all of those milestones and all those, you know, they're kind of senseless at this point. I think the most important thing that matters for the industry is that one, AI is now doing productive and useful work. Two, AI is generating profitable tokens. And three, if we had more compute, we could generate more profitable tokens, which results in more profit for all of the services. This is the exact phase where we're at, which is the reason why everybody's leaning in. Your next question comes from the line of Jim Schneider with Goldman Sachs. Your line is open. Good afternoon. Thank you for taking my question. If you think about the 100% growth you talked about in terms of the plus unconstrained demand growth, you're expecting the 70% you expect to fulfill in terms of supply. Can we talk about some of the rank order, some of the most acute constraints, whether that be things like data center power and shell availability, DRAM, wafer foundry availability, et cetera. If you can maybe help us understand, you know, which are the biggest among those, that would be very helpful. Thank you. There's something funny I could say, but I'm going to just not. You know, last year, one of the funnest things to do is just to go figure out where I go for dinner and who I have dinner with. And their stock price doubles the next day. I think the answer is, our entire supply chain is challenged. And everybody is really running flat out. And more capacity is coming online all the time, which is one of the advantages, what's going to happen this year. It's not going to come online in just, you know, an instance in time, but it's going to come online every day. Yields are going to get improved. We're going to be doing yield improvement. We're going to work hard on working with every one of our suppliers, you know, and so we just, we have a, it's not even next year yet. It's not even next year yet. And so we've got lots and lots of time to work hard every day. And so at this moment, we have supply for 70%. We have more supply than 70%, but about 70%. Our demand is much higher than that. And we've got to go work hard or, you know, we're going to be disappointing customers. And we like not to disappoint our customers and we like to work hard for them. And so I've got, I'm going to need the help of the entire supply chain to help me out here. But they all know that. What I'm telling you about our needs for next year is exactly consistent with what I've told them. Everybody's on the exact same song sheet and I'm trying to be as transparent as we can because we're talking about big numbers. Yeah. Your final question comes from the line of Aaron Rakers with Wells Fargo. Your line is open. Yeah. Thanks for taking the question. I want to go back to the gigawatts, the 25 to 40 and maybe try and understand like, you know, I think Jensen, you've said at some recent conferences that, you know, that's going to further scale. So, you know, as we think about the path, even beyond Vera Rubin, we think about Vera Rubin Ultra and so on and so forth. Like, should we really conceptualize like 40 billion goes to 60 billion, 80 billion. And then, you know, I guess, you know, underneath of that question is how do we kind of think about your ability to scale the capacity deployments? You know, is it, is it a linear function or is there something that, you know, kind of unlocks your ability to supply more demand as we look through fiscal 27? Great question. Sorry. Yeah. Great question. Great question. And very simple is our goal to put as much compute on the plot of land is our goal to put more compute into one gigawatt or less. And so obviously we would like that, you know, the speed of light answer, the perfect answer is actually infinity per gigawatt. And, and so if we could literally get a trillion dollars of compute into one gigawatt and one piece of land power shelf, it would be a fantastic outcome. And so the answer is directionally in that direction. We started, we started in the world of general purpose computing during Moore's law. We were probably, you know, pick your favorite number, but I'm going to go with something like 5 billion, $3 billion per gigawatt of compute with, with a general purpose computing. And, and then eventually with Hopper, it was 18. Now Grace Blackwell is 25. Next Vera Rubin is 40. And after that, it's going to be higher. And that's excellent. That's fantastic for the industry. It's fantastic for customers. So long as the productivity of it continues to grow, the durability and the fungibility continues to grow, then people are happy to invest in, in assets that generates revenues, generates profits and helps them recoup their return so incredibly fast. I mean, I heard the other day that return on investment capital is now less than a year. And we're talking about $50 billion data centers. And so that tells you something about, about the, the the productivity of NBS technology and the rentability of it. I want to thank all of you for joining us today. There are no further questions at this time. Tashia Hari, I'll turn the call back over to you. Thank you. Before we close, please note that Jensen will be participating in a keynote fireside chat at the Goldman Sachs Communicopia and Technology Conference in San Francisco on September 10th. He'll also be giving a keynote at GTC Berlin on October 21st. Our earnings call to discuss the results of our third quarter of fiscal 2027 is scheduled for November 17th. Thank you for joining us today. Operator, please close the call. This concludes today's conference call. You may now disconnect.",
+  "segments": [
+    {
+      "start": 0,
+      "end": 5.519999980926514,
+      "text": " Good afternoon, my name is Tiffany and I will be your conference operator today."
+    },
+    {
+      "start": 5.519999980926514,
+      "end": 12.039999961853027,
+      "text": " At this time, I would like to welcome everyone to NVIDIA's second quarter earnings call."
+    },
+    {
+      "start": 12.039999961853027,
+      "end": 16.5,
+      "text": " All lines have been placed on mute to prevent any background noise."
+    },
+    {
+      "start": 16.5,
+      "end": 21.31999969482422,
+      "text": " After the speaker's remarks, there will be a question and answer session."
+    },
+    {
+      "start": 21.31999969482422,
+      "end": 26.559999465942383,
+      "text": " If you would like to ask a question during this time, simply press star followed by the"
+    },
+    {
+      "start": 26.559999465942383,
+      "end": 29.6200008392334,
+      "text": " number one on your telephone keypad."
+    },
+    {
+      "start": 29.6200008392334,
+      "end": 33.65999984741211,
+      "text": " If you would like to withdraw your question, press star one again."
+    },
+    {
+      "start": 33.65999984741211,
+      "end": 34.65999984741211,
+      "text": " Thank you."
+    },
+    {
+      "start": 34.65999984741211,
+      "end": 39.13999938964844,
+      "text": " Toshie Ahari, you may begin your conference."
+    },
+    {
+      "start": 39.13999938964844,
+      "end": 40.13999938964844,
+      "text": " Thank you."
+    },
+    {
+      "start": 40.13999938964844,
+      "end": 45.599998474121094,
+      "text": " Good afternoon and welcome to NVIDIA's conference call for the second quarter of fiscal 2027."
+    },
+    {
+      "start": 45.599998474121094,
+      "end": 50.380001068115234,
+      "text": " With me today from NVIDIA are Jensen Wong, President and Chief Executive Officer, and"
+    },
+    {
+      "start": 50.380001068115234,
+      "end": 54.779998779296875,
+      "text": " Collette Kress, Executive Vice President and Chief Financial Officer."
+    },
+    {
+      "start": 54.779998779296875,
+      "end": 59.08000183105469,
+      "text": " Our call is being webcast live on NVIDIA's Investor Relations website."
+    },
+    {
+      "start": 59.08000183105469,
+      "end": 62.52000045776367,
+      "text": " The webcast will be available for replay until the conference call to discuss our"
+    },
+    {
+      "start": 62.52000045776367,
+      "end": 66.80000305175781,
+      "text": " financial results for the third quarter of fiscal 2027."
+    },
+    {
+      "start": 66.80000305175781,
+      "end": 69.83999633789062,
+      "text": " The content of today's call is NVIDIA's property."
+    },
+    {
+      "start": 69.83999633789062,
+      "end": 74.77999877929688,
+      "text": " It can't be reproduced or transcribed without our prior written consent."
+    },
+    {
+      "start": 74.77999877929688,
+      "end": 79.95999908447266,
+      "text": " During this call, we may make forward-looking statements based on current expectations."
+    },
+    {
+      "start": 79.95999908447266,
+      "end": 84.27999877929688,
+      "text": " These are subject to a number of significant risks and uncertainties, and our actual results"
+    },
+    {
+      "start": 84.27999877929688,
+      "end": 86.95999908447266,
+      "text": " may differ materially."
+    },
+    {
+      "start": 86.95999908447266,
+      "end": 91.31999969482422,
+      "text": " For a discussion of factors that could affect our future financial results and business,"
+    },
+    {
+      "start": 91.31999969482422,
+      "end": 95.83999633789062,
+      "text": " please refer to the disclosure in today's earnings release, our most recent Forms 10-K"
+    },
+    {
+      "start": 95.83999633789062,
+      "end": 100.80000305175781,
+      "text": " and 10-Q, and the reports that we may file on Form 8-K with the Securities and Exchange"
+    },
+    {
+      "start": 100.80000305175781,
+      "end": 102.44000244140625,
+      "text": " Commission."
+    },
+    {
+      "start": 102.44000244140625,
+      "end": 108.87999725341797,
+      "text": " All our statements are made as of today, August 26, 2026, based on information currently available"
+    },
+    {
+      "start": 108.87999725341797,
+      "end": 110.72000122070312,
+      "text": " to us."
+    },
+    {
+      "start": 110.72000122070312,
+      "end": 115.5999984741211,
+      "text": " Except as required by law, we assume no obligation to update any such statements."
+    },
+    {
+      "start": 115.63999938964844,
+      "end": 119.23999786376953,
+      "text": " During this call, we will discuss non-GAAP financial measures."
+    },
+    {
+      "start": 119.23999786376953,
+      "end": 123.80000305175781,
+      "text": " You can find a reconciliation of these non-GAAP financial measures to GAAP financial measures"
+    },
+    {
+      "start": 123.80000305175781,
+      "end": 127.44000244140625,
+      "text": " in our CFO commentary, which is posted on our website."
+    },
+    {
+      "start": 127.44000244140625,
+      "end": 130.0399932861328,
+      "text": " With that, let me turn the call over to Colette."
+    },
+    {
+      "start": 130.0399932861328,
+      "end": 132.0399932861328,
+      "text": " Thanks, Toshiya."
+    },
+    {
+      "start": 132.0399932861328,
+      "end": 138.83999633789062,
+      "text": " We delivered another outstanding quarter with record revenue, operating income, and EPS."
+    },
+    {
+      "start": 138.8800048828125,
+      "end": 145.8000030517578,
+      "text": " With a total revenue of $96 billion, more than doubled year-over-year as growth accelerated"
+    },
+    {
+      "start": 145.8000030517578,
+      "end": 151.63999938964844,
+      "text": " for the fourth consecutive quarter, the surge in AI demand is driving a global infrastructure"
+    },
+    {
+      "start": 151.63999938964844,
+      "end": 158.52000427246094,
+      "text": " build-out, supported by an expanding and diverse set of growth opportunities, spanning hyperscalers,"
+    },
+    {
+      "start": 158.52000427246094,
+      "end": 164.16000366210938,
+      "text": " AI labs, AI natives, enterprises, and sovereign customers."
+    },
+    {
+      "start": 164.16000366210938,
+      "end": 172.39999389648438,
+      "text": " We expect to grow revenue by approximately 70% in fiscal 2028."
+    },
+    {
+      "start": 172.39999389648438,
+      "end": 175.1999969482422,
+      "text": " This is a supply-constrained outlook."
+    },
+    {
+      "start": 175.1999969482422,
+      "end": 183,
+      "text": " Q2 data center revenue increased 18% quarter-over-quarter to $89 billion, with strong contributions"
+    },
+    {
+      "start": 183,
+      "end": 191.47999572753906,
+      "text": " from both sub-segments, hyperscale and ACINE, which includes our neocloud, industrial, and"
+    },
+    {
+      "start": 191.47999572753906,
+      "end": 193.9199981689453,
+      "text": " enterprise customers."
+    },
+    {
+      "start": 193.9600067138672,
+      "end": 200.47999572753906,
+      "text": " Hyperscale revenue of $49 billion grew 13% sequentially, driven by sustained strength"
+    },
+    {
+      "start": 200.47999572753906,
+      "end": 202.27999877929688,
+      "text": " in Blackwell."
+    },
+    {
+      "start": 202.27999877929688,
+      "end": 208.39999389648438,
+      "text": " Reinforcing that more compute drives more revenue as new GPU capacity comes online,"
+    },
+    {
+      "start": 208.39999389648438,
+      "end": 213.24000549316406,
+      "text": " our hyperscale customers delivered strong financial results in the quarter with accelerating"
+    },
+    {
+      "start": 213.24000549316406,
+      "end": 216.72000122070312,
+      "text": " revenue growth and expanding margins."
+    },
+    {
+      "start": 216.72000122070312,
+      "end": 223.9600067138672,
+      "text": " With cloud industry backlog now greater than $2 trillion, HAPX by the top five hyperscalers"
+    },
+    {
+      "start": 223.9600067138672,
+      "end": 232.36000061035156,
+      "text": " is expected to reach nearly $800 billion in 2026 and $1.3 trillion in 2027."
+    },
+    {
+      "start": 232.36000061035156,
+      "end": 237.60000610351562,
+      "text": " Today we are delighted to announce an expansion of our partnership with AWS."
+    },
+    {
+      "start": 237.60000610351562,
+      "end": 243.72000122070312,
+      "text": " Building on its already vast installed base of NVIDIA Compute, AWS is deploying an additional"
+    },
+    {
+      "start": 243.8800048828125,
+      "end": 250.52000427246094,
+      "text": " 2 million GPUs starting this quarter through the second quarter of fiscal 29, along with"
+    },
+    {
+      "start": 250.52000427246094,
+      "end": 255.47999572753906,
+      "text": " Vera, CPUs, some integrated with Rubin, others standalone."
+    },
+    {
+      "start": 255.47999572753906,
+      "end": 263.4800109863281,
+      "text": " AWS will serve NVIDIA Nematron family of open models on Amazon Bedrock and SageMaker."
+    },
+    {
+      "start": 263.4800109863281,
+      "end": 270.8800048828125,
+      "text": " Amazon will also adopt our full physical AI stack, Omniverse, Cosmos, Isaac, and Jetson,"
+    },
+    {
+      "start": 270.8800048828125,
+      "end": 274.4800109863281,
+      "text": " to power its fleet of warehouse robots."
+    },
+    {
+      "start": 274.4800109863281,
+      "end": 285.239990234375,
+      "text": " ACI&E revenue of $40 billion increased 25% sequentially and 138% year over year."
+    },
+    {
+      "start": 285.239990234375,
+      "end": 290.79998779296875,
+      "text": " Growth was driven by NeoCloud capacity additions to meet the rising demand from enterprises,"
+    },
+    {
+      "start": 290.79998779296875,
+      "end": 298.20001220703125,
+      "text": " AI startups, and sovereigns, as well as hyperscalers purchasing capacity to supplement their own"
+    },
+    {
+      "start": 298.20001220703125,
+      "end": 300.1600036621094,
+      "text": " build outs."
+    },
+    {
+      "start": 300.1600036621094,
+      "end": 307.6400146484375,
+      "text": " Using NVIDIA DSX reference designs, our NeoCloud partners are bringing capacity online faster"
+    },
+    {
+      "start": 307.6400146484375,
+      "end": 310.1199951171875,
+      "text": " and at lower token cost."
+    },
+    {
+      "start": 310.1199951171875,
+      "end": 316.44000244140625,
+      "text": " They are expected to exit the year with 8 gigawatts in total installed capacity, up"
+    },
+    {
+      "start": 316.44000244140625,
+      "end": 320.8800048828125,
+      "text": " from approximately 3 gigawatts at the end of 2025."
+    },
+    {
+      "start": 320.8800048828125,
+      "end": 327,
+      "text": " Incredibly, we are seeing demand acceleration even at our scale."
+    },
+    {
+      "start": 327,
+      "end": 331.6400146484375,
+      "text": " Customers' forecasts point to our growth doubling next year."
+    },
+    {
+      "start": 331.6400146484375,
+      "end": 338.1199951171875,
+      "text": " However, as I mentioned earlier, we expect to grow approximately 70% as we are supply"
+    },
+    {
+      "start": 338.1199951171875,
+      "end": 339.1199951171875,
+      "text": " constrained."
+    },
+    {
+      "start": 339.1199951171875,
+      "end": 344.760009765625,
+      "text": " NVIDIA Compute is fully utilized across every cloud we serve."
+    },
+    {
+      "start": 344.760009765625,
+      "end": 352.8800048828125,
+      "text": " The economic value it generates for our hyperscale, NeoCloud, and AI lab partners keeps rising."
+    },
+    {
+      "start": 352.8800048828125,
+      "end": 358.760009765625,
+      "text": " Besides building the best AI computing technologies and the most capable supply chain, NVIDIA"
+    },
+    {
+      "start": 358.760009765625,
+      "end": 364.5199890136719,
+      "text": " has three unique capabilities that are our engines powering our growth."
+    },
+    {
+      "start": 364.5199890136719,
+      "end": 372.1600036621094,
+      "text": " First, NVIDIA's architecture runs every model, and we're growing share as closed and open"
+    },
+    {
+      "start": 372.1600036621094,
+      "end": 374.6000061035156,
+      "text": " model adoption grow."
+    },
+    {
+      "start": 374.6000061035156,
+      "end": 379.0400085449219,
+      "text": " Closed and open models alike, adoption is skyrocketing."
+    },
+    {
+      "start": 379.0400085449219,
+      "end": 386.3999938964844,
+      "text": " NVIDIA runs the leading closed models, OpenAI, Anthropic, Grok, Meta, Gemini, and the leading"
+    },
+    {
+      "start": 386.3999938964844,
+      "end": 397.9200134277344,
+      "text": " open models, TML, Mistral, Quinn, Kimi, GLM, DeepSeq, Minimax, and Nemetron."
+    },
+    {
+      "start": 397.9200134277344,
+      "end": 405.8399963378906,
+      "text": " We're great at small models and giant ones, large or video, auto, regressive, or diffusion,"
+    },
+    {
+      "start": 405.8399963378906,
+      "end": 408.5199890136719,
+      "text": " in the cloud or in the edge."
+    },
+    {
+      "start": 408.5199890136719,
+      "end": 414.44000244140625,
+      "text": " NVIDIA is great at training, great at inference, great at agentic workloads."
+    },
+    {
+      "start": 414.44000244140625,
+      "end": 421.3399963378906,
+      "text": " One platform, fungible for every model and workload, durable for the entire lifecycle"
+    },
+    {
+      "start": 421.3399963378906,
+      "end": 423.1199951171875,
+      "text": " of AI."
+    },
+    {
+      "start": 423.1199951171875,
+      "end": 430.4800109863281,
+      "text": " That combination of performance, fungibility, and durability is what makes NVIDIA the productive"
+    },
+    {
+      "start": 430.4800109863281,
+      "end": 434.32000732421875,
+      "text": " and financeable compute infrastructure."
+    },
+    {
+      "start": 434.32000732421875,
+      "end": 441.32000732421875,
+      "text": " Our second unique capability is our full stack AI factory platform that is expanding"
+    },
+    {
+      "start": 441.32000732421875,
+      "end": 444.6000061035156,
+      "text": " our share of the data center town."
+    },
+    {
+      "start": 444.6000061035156,
+      "end": 451.3599853515625,
+      "text": " Since Hopper, our revenue opportunity has grown from roughly $18 billion per gigawatt"
+    },
+    {
+      "start": 451.3599853515625,
+      "end": 460.1199951171875,
+      "text": " to $25 billion with Blackwell, to $40 billion with Vera-Rubin, which now spans Vera-CPU,"
+    },
+    {
+      "start": 460.1199951171875,
+      "end": 469.9200134277344,
+      "text": " Rubin-GPU, NVLink, InfiniBanner Ethernet, and Grok LPU, announced earlier this week."
+    },
+    {
+      "start": 469.9200134277344,
+      "end": 476.79998779296875,
+      "text": " Our ability to extreme code design across GPU, CPU, NVLink scale up networking, scale"
+    },
+    {
+      "start": 476.79998779296875,
+      "end": 483.1600036621094,
+      "text": " out networking, systems, algorithms, and software enables us to deliver X-factor performance"
+    },
+    {
+      "start": 483.1600036621094,
+      "end": 486.5199890136719,
+      "text": " gain every generation."
+    },
+    {
+      "start": 486.5199890136719,
+      "end": 497.239990234375,
+      "text": " Vera-Rubin exemplifies this, delivering 30X higher throughput per megawatt and 35X lower"
+    },
+    {
+      "start": 497.239990234375,
+      "end": 502,
+      "text": " token cost relative to Grace Blackwell Ultra."
+    },
+    {
+      "start": 502,
+      "end": 506.1600036621094,
+      "text": " We commenced production shipments of Vera-Rubin earlier this month."
+    },
+    {
+      "start": 506.1600036621094,
+      "end": 512,
+      "text": " Having already received purchase orders from every major hyperscaler, AI cloud, and system"
+    },
+    {
+      "start": 512,
+      "end": 520,
+      "text": " OEM, we expect Vera-Rubin to mark the fastest product ramp in NVIDIA's history."
+    },
+    {
+      "start": 520,
+      "end": 527.760009765625,
+      "text": " Our networking business had another record quarter with revenue growing 18% on a sequential"
+    },
+    {
+      "start": 527.760009765625,
+      "end": 528.9199829101562,
+      "text": " basis."
+    },
+    {
+      "start": 528.9199829101562,
+      "end": 536,
+      "text": " Spectrum X Ethernet, which grew 2.6X on a year-over-year basis, is already helping us"
+    },
+    {
+      "start": 536,
+      "end": 542.0800170898438,
+      "text": " become the largest and fastest-growing network company in the world."
+    },
+    {
+      "start": 542.0800170898438,
+      "end": 549.52001953125,
+      "text": " Rising adoption of agentic AI is driving an acceleration in demand for data center CPUs."
+    },
+    {
+      "start": 549.52001953125,
+      "end": 555.8400268554688,
+      "text": " Our Grace CPU, introduced in 2021, has been a great success, with revenue on a trailing"
+    },
+    {
+      "start": 555.8400268554688,
+      "end": 559.9199829101562,
+      "text": " 12-month basis exceeding $5 billion."
+    },
+    {
+      "start": 559.9199829101562,
+      "end": 564.8400268554688,
+      "text": " Today we are in full production of our next-generation Vera CPU."
+    },
+    {
+      "start": 564.8400268554688,
+      "end": 569.5599975585938,
+      "text": " As a standalone product, Vera expands our TAM even further."
+    },
+    {
+      "start": 569.5599975585938,
+      "end": 578.7999877929688,
+      "text": " Vera completes agentic tasks 1.8X faster on the SPEC benchmark and provides five times"
+    },
+    {
+      "start": 578.7999877929688,
+      "end": 583.719970703125,
+      "text": " the bandwidth per watt than any other data center CPU."
+    },
+    {
+      "start": 583.719970703125,
+      "end": 591.1599731445312,
+      "text": " We expect Vera to be deployed by every major hyperscaler, NeoCloud, AI lab, and system"
+    },
+    {
+      "start": 591.1599731445312,
+      "end": 599.47998046875,
+      "text": " OEM, with shipments already underway to our lead partners including OCI, SpaceX AI, and"
+    },
+    {
+      "start": 599.47998046875,
+      "end": 603.4000244140625,
+      "text": " starting this quarter, AWS."
+    },
+    {
+      "start": 603.4000244140625,
+      "end": 609.239990234375,
+      "text": " We continue to see demand for approximately $20 billion in total server CPUs."
+    },
+    {
+      "start": 609.239990234375,
+      "end": 614.52001953125,
+      "text": " And based on our customer demand and improving supply outlook, our preliminary expectation"
+    },
+    {
+      "start": 614.6799926757812,
+      "end": 621.8400268554688,
+      "text": " is for CPU revenue to more than double in fiscal 28, positioning us as one of the world's"
+    },
+    {
+      "start": 621.8400268554688,
+      "end": 626.280029296875,
+      "text": " leading server CPU suppliers."
+    },
+    {
+      "start": 626.280029296875,
+      "end": 632.0399780273438,
+      "text": " Since the announcement of our Grok partnership last year, we've been working to unite NVIDIA's"
+    },
+    {
+      "start": 632.0399780273438,
+      "end": 637.5599975585938,
+      "text": " high throughput and Grok's high interactivity architectures."
+    },
+    {
+      "start": 637.5999755859375,
+      "end": 647.1199951171875,
+      "text": " At HotChips earlier this week, we announced that Grok3 LPX, our first rack-scale LPU system,"
+    },
+    {
+      "start": 647.1199951171875,
+      "end": 653.7999877929688,
+      "text": " is in full production and already setting records, demonstrating nearly 4X the number"
+    },
+    {
+      "start": 653.7999877929688,
+      "end": 661.8800048828125,
+      "text": " of tokens per second against the next best alternative on our artificial analysis benchmark."
+    },
+    {
+      "start": 661.8800048828125,
+      "end": 668.9199829101562,
+      "text": " We expect to ship Grok3 LPX in volume later this quarter to early adopters."
+    },
+    {
+      "start": 668.9199829101562,
+      "end": 671.7999877929688,
+      "text": " Niveus will be the first."
+    },
+    {
+      "start": 671.7999877929688,
+      "end": 677.719970703125,
+      "text": " Today we're not just selling the best chips, we're selling a full stack AI factory platform"
+    },
+    {
+      "start": 677.719970703125,
+      "end": 685.6400146484375,
+      "text": " offering superior economics for customers and capturing a bigger share of the data center TAM."
+    },
+    {
+      "start": 685.6400146484375,
+      "end": 693.3200073242188,
+      "text": " Our third unique capability is the combination of our full stack AI factory and rich CUDA"
+    },
+    {
+      "start": 693.3200073242188,
+      "end": 701.239990234375,
+      "text": " ecosystem, allowing us to extend AI into markets a single chip alone can never reach."
+    },
+    {
+      "start": 701.239990234375,
+      "end": 707.5599975585938,
+      "text": " Beyond the hyperscalers lies a massive market anxious to adopt AI, customers with no interest"
+    },
+    {
+      "start": 707.5599975585938,
+      "end": 710.4400024414062,
+      "text": " in designing their own custom silicon."
+    },
+    {
+      "start": 710.4400024414062,
+      "end": 717.1599731445312,
+      "text": " NVIDIA's fully proven full stack platform is uniquely suited to help sovereigns, neoclouds,"
+    },
+    {
+      "start": 717.1599731445312,
+      "end": 723.5599975585938,
+      "text": " and enterprises build their AI infrastructure, bring it to full operation, continuously optimize"
+    },
+    {
+      "start": 723.5599975585938,
+      "end": 731.0800170898438,
+      "text": " it through CUDA software, and connect it to off-take demand from our vast developer ecosystem."
+    },
+    {
+      "start": 731.0800170898438,
+      "end": 740.0399780273438,
+      "text": " Hyperscalers will remain a major growth driver, but non-hyperscaler growth, our AIC&E segment"
+    },
+    {
+      "start": 740.0399780273438,
+      "end": 747,
+      "text": " spanning sovereign regional neoclouds, enterprise edge, and air gap data centers will represent"
+    },
+    {
+      "start": 747,
+      "end": 751.239990234375,
+      "text": " roughly half of our data center business."
+    },
+    {
+      "start": 751.239990234375,
+      "end": 757.9600219726562,
+      "text": " Our AI native startup ecosystem developed and running primarily on the NVIDIA compute platform"
+    },
+    {
+      "start": 757.9600219726562,
+      "end": 760.3599853515625,
+      "text": " is scaling at a rapid pace."
+    },
+    {
+      "start": 760.3599853515625,
+      "end": 768.5999755859375,
+      "text": " Global VC funding in AI, roughly 70% of which is spent on compute, exceeded $400 billion"
+    },
+    {
+      "start": 768.5999755859375,
+      "end": 777.6400146484375,
+      "text": " in the first half of 2026, surpassing the $265 billion raised in all of 2025."
+    },
+    {
+      "start": 777.6400146484375,
+      "end": 784.760009765625,
+      "text": " Nearly 20 companies, including Cursor, owned by SpaceX, Figma, and Together AI, now exceed"
+    },
+    {
+      "start": 784.760009765625,
+      "end": 793,
+      "text": " $1 billion in annualized run rate revenue, up from 13 companies in Q4 of last year, with"
+    },
+    {
+      "start": 793,
+      "end": 799.0800170898438,
+      "text": " vertical enterprise software logging the fastest growth."
+    },
+    {
+      "start": 799.0800170898438,
+      "end": 804.52001953125,
+      "text": " In enterprise, on a trailing 12-month basis, on-prem revenue in the automotive vertical"
+    },
+    {
+      "start": 804.52001953125,
+      "end": 810.1199951171875,
+      "text": " reached $8 billion, while financial services, manufacturing, and healthcare combined contributed"
+    },
+    {
+      "start": 810.1199951171875,
+      "end": 812.2000122070312,
+      "text": " $7 billion in revenue."
+    },
+    {
+      "start": 812.2000122070312,
+      "end": 819.3200073242188,
+      "text": " Hudson River Trading and Jane Street are leveraging NVIDIA's powered AI factories to accelerate"
+    },
+    {
+      "start": 819.3200073242188,
+      "end": 822.1199951171875,
+      "text": " quantitative trading."
+    },
+    {
+      "start": 822.2000122070312,
+      "end": 828.760009765625,
+      "text": " Samsung Electronics is using NVIDIA's Qlitho2 to achieve up to 20x greater performance in"
+    },
+    {
+      "start": 828.760009765625,
+      "end": 834.9199829101562,
+      "text": " computational lithography, while Bristol-Myers Squid is investing in Vera Rubin AI Factory,"
+    },
+    {
+      "start": 834.9199829101562,
+      "end": 842.6799926757812,
+      "text": " a fast follow to the Roche and Lilly buildouts, as drug R&D timelines compress from years"
+    },
+    {
+      "start": 842.6799926757812,
+      "end": 845,
+      "text": " to months."
+    },
+    {
+      "start": 845.1599731445312,
+      "end": 852.1199951171875,
+      "text": " In sovereign AI, our business, primarily through the regional neoclouds, grew 35% sequentially"
+    },
+    {
+      "start": 852.1199951171875,
+      "end": 855.7999877929688,
+      "text": " and more than tripled year-over-year in Q2."
+    },
+    {
+      "start": 855.7999877929688,
+      "end": 861.6400146484375,
+      "text": " A country or region can allocate land and power directly to a regional cloud partner"
+    },
+    {
+      "start": 861.6400146484375,
+      "end": 865.8800048828125,
+      "text": " in ways it never would to a foreign hyperscaler."
+    },
+    {
+      "start": 865.8800048828125,
+      "end": 872.52001953125,
+      "text": " We don't own a cloud ourselves, we are a neutral partner to every sovereign and neocloud."
+    },
+    {
+      "start": 872.6799926757812,
+      "end": 878.4400024414062,
+      "text": " Because NVIDIA Compute is productive, fungible, rentable, and durable, regional cloud interest"
+    },
+    {
+      "start": 878.4400024414062,
+      "end": 881.4000244140625,
+      "text": " is surging around the world."
+    },
+    {
+      "start": 881.4000244140625,
+      "end": 889.0800170898438,
+      "text": " We helped Carwe, Nebius, and Enscale build entire infrastructure businesses, and neoclouds"
+    },
+    {
+      "start": 889.0800170898438,
+      "end": 899,
+      "text": " are emerging everywhere, Firebird in Armenia, Casaba Technologies across Africa, GMI Cloud"
+    },
+    {
+      "start": 899,
+      "end": 908.9199829101562,
+      "text": " in Taiwan, Yoda and Nasa in India, Hermes in Australia, YTLAI Cloud in Malaysia, pairing"
+    },
+    {
+      "start": 908.9199829101562,
+      "end": 915.9600219726562,
+      "text": " local land, power, and operating expertise with our platform."
+    },
+    {
+      "start": 915.9600219726562,
+      "end": 923.239990234375,
+      "text": " Last month, we announced a partnership with Noetra, Japan's national AI company, to build"
+    },
+    {
+      "start": 923.3200073242188,
+      "end": 930.6799926757812,
+      "text": " an NVIDIA DSX AI factory that will create open models to power AI agents, digital twins,"
+    },
+    {
+      "start": 930.6799926757812,
+      "end": 934.52001953125,
+      "text": " robotics, and physical AI applications."
+    },
+    {
+      "start": 934.52001953125,
+      "end": 942.760009765625,
+      "text": " South Korea's LG and Hyundai Motor Group are partnering with NVIDIA to build and scale AI."
+    },
+    {
+      "start": 942.760009765625,
+      "end": 950.4400024414062,
+      "text": " And in Europe, a record 35 new NVIDIA-powered AI supercomputers were unveiled to advance"
+    },
+    {
+      "start": 950.4400024414062,
+      "end": 953.719970703125,
+      "text": " industry and scientific breakthroughs."
+    },
+    {
+      "start": 953.719970703125,
+      "end": 957.719970703125,
+      "text": " Neoclouds are seeing strong demand pipelines for many diverse offtakers."
+    },
+    {
+      "start": 957.719970703125,
+      "end": 962.8400268554688,
+      "text": " Rather than allocating their entire capacity to a single, long-term offtake guarantee that"
+    },
+    {
+      "start": 962.8400268554688,
+      "end": 968.52001953125,
+      "text": " lenders typically require to finance a data center independently, we have introduced a"
+    },
+    {
+      "start": 968.52001953125,
+      "end": 971.239990234375,
+      "text": " revenue-sharing structure."
+    },
+    {
+      "start": 971.239990234375,
+      "end": 977.4000244140625,
+      "text": " NVIDIA provides a take-or-pay commitment on a portion of the facility's capacity, a minimum"
+    },
+    {
+      "start": 977.4000244140625,
+      "end": 982.8400268554688,
+      "text": " revenue guarantee that gives lenders the confidence to underwrite the project, and"
+    },
+    {
+      "start": 982.8400268554688,
+      "end": 990.52001953125,
+      "text": " in exchange, we share in a portion of the Neocloud's revenue earned above that floor."
+    },
+    {
+      "start": 990.52001953125,
+      "end": 995,
+      "text": " Independent capital still underwrites every deal on its own merits."
+    },
+    {
+      "start": 995,
+      "end": 996.760009765625,
+      "text": " We're not making loans."
+    },
+    {
+      "start": 996.760009765625,
+      "end": 1002.280029296875,
+      "text": " In this model, we get paid twice, once on the hardware sale and again through the share"
+    },
+    {
+      "start": 1002.280029296875,
+      "end": 1009.6400146484375,
+      "text": " of rental revenue, a highly reoccurring stream layered on top of a one-time equipment purchase."
+    },
+    {
+      "start": 1009.6400146484375,
+      "end": 1016.1199951171875,
+      "text": " Over time, this model can expand our addressable market and create reoccurring usage-linked"
+    },
+    {
+      "start": 1016.1199951171875,
+      "end": 1022.1199951171875,
+      "text": " revenue stream alongside our core platform revenue, with the potential to drive billions"
+    },
+    {
+      "start": 1022.1199951171875,
+      "end": 1026.3599853515625,
+      "text": " in revenue over the medium to long term."
+    },
+    {
+      "start": 1026.43994140625,
+      "end": 1032.43994140625,
+      "text": " Together, NVIDIA's three unique capabilities, a platform that runs every model, a full-stack"
+    },
+    {
+      "start": 1032.43994140625,
+      "end": 1037.800048828125,
+      "text": " AI factory platform capturing more of the data center TAM, and a CUDA ecosystem that"
+    },
+    {
+      "start": 1037.800048828125,
+      "end": 1046.5999755859375,
+      "text": " extends AI into markets no single chip could reach alone, reinforce one another, and are"
+    },
+    {
+      "start": 1046.5999755859375,
+      "end": 1050.5999755859375,
+      "text": " the engines of our growth."
+    },
+    {
+      "start": 1050.5999755859375,
+      "end": 1055.47998046875,
+      "text": " Let me update you on our progress with our Frontier AI Labs."
+    },
+    {
+      "start": 1055.47998046875,
+      "end": 1060.760009765625,
+      "text": " The Frontier AI Labs have extraordinary demand for training and inference compute, but they"
+    },
+    {
+      "start": 1060.760009765625,
+      "end": 1065.6400146484375,
+      "text": " are growing faster than what their balance sheets and credit profiles can support."
+    },
+    {
+      "start": 1065.6400146484375,
+      "end": 1070.52001953125,
+      "text": " They have rapidly growing customer demand, yet still lack the decades-long infrastructure"
+    },
+    {
+      "start": 1070.52001953125,
+      "end": 1077.719970703125,
+      "text": " contracts and investment-grade financing capacity needed to secure the AI factory infrastructure"
+    },
+    {
+      "start": 1077.719970703125,
+      "end": 1079.800048828125,
+      "text": " independently."
+    },
+    {
+      "start": 1079.800048828125,
+      "end": 1085.719970703125,
+      "text": " In other words, their growth isn't limited by their technology or customer demand, it's"
+    },
+    {
+      "start": 1085.719970703125,
+      "end": 1088.1199951171875,
+      "text": " limited by compute."
+    },
+    {
+      "start": 1088.1199951171875,
+      "end": 1095.719970703125,
+      "text": " For these companies, more compute means more intelligence, more users, and more revenue."
+    },
+    {
+      "start": 1095.719970703125,
+      "end": 1099.0799560546875,
+      "text": " NVIDIA is needed to help power this flywheel."
+    },
+    {
+      "start": 1099.0799560546875,
+      "end": 1105.0799560546875,
+      "text": " First, we've invested nearly $50 billion in the Frontier AI Labs."
+    },
+    {
+      "start": 1105.0799560546875,
+      "end": 1109.56005859375,
+      "text": " This was a meaningful commitment, but it represented a small fraction of our expected"
+    },
+    {
+      "start": 1109.56005859375,
+      "end": 1112.199951171875,
+      "text": " free cash flow over the same period."
+    },
+    {
+      "start": 1112.199951171875,
+      "end": 1118.1199951171875,
+      "text": " Further, to support the Frontier Labs' infrastructure build-outs, we recently announced partnerships"
+    },
+    {
+      "start": 1118.1199951171875,
+      "end": 1125.4000244140625,
+      "text": " with six of the world's leading infrastructure capital providers – Apollo, BlackRock, Blackstone,"
+    },
+    {
+      "start": 1125.4000244140625,
+      "end": 1131.3199462890625,
+      "text": " Brookfield, Goldman Sachs, and KKR – to establish financing platforms that will raise"
+    },
+    {
+      "start": 1131.4000244140625,
+      "end": 1134.199951171875,
+      "text": " over $500 billion of third-party capital."
+    },
+    {
+      "start": 1134.8399658203125,
+      "end": 1140.1199951171875,
+      "text": " With these partnerships building on our unique, fungible, and durable computing platform,"
+    },
+    {
+      "start": 1140.1199951171875,
+      "end": 1147.8800048828125,
+      "text": " the AI Labs will be able to build and assess AI infrastructure funded by long-term institutional"
+    },
+    {
+      "start": 1147.8800048828125,
+      "end": 1150.9200439453125,
+      "text": " capital at relatively attractive rates."
+    },
+    {
+      "start": 1152.52001953125,
+      "end": 1159,
+      "text": " Last week, we announced that we secured land-power-shell capacity through our partnership"
+    },
+    {
+      "start": 1159,
+      "end": 1165.239990234375,
+      "text": " with SoftBank Energy to exclusively host NVIDIA Compute at their Portsmouth campus."
+    },
+    {
+      "start": 1166.0400390625,
+      "end": 1172.5999755859375,
+      "text": " The initial deployment, expected to support 4.25 gigawatts of AI factory capacity, will"
+    },
+    {
+      "start": 1172.5999755859375,
+      "end": 1174.280029296875,
+      "text": " be utilized by OpenAI."
+    },
+    {
+      "start": 1175.239990234375,
+      "end": 1182.0400390625,
+      "text": " Each generation of NVIDIA AI factory systems deployed at Portspike could represent approximately"
+    },
+    {
+      "start": 1182.0400390625,
+      "end": 1189,
+      "text": " 1.5 million NVIDIA GPUs, and over 20 years, the site could support multiple upgrade cycles."
+    },
+    {
+      "start": 1189.719970703125,
+      "end": 1191.9599609375,
+      "text": " Here's the essential economic point."
+    },
+    {
+      "start": 1192.5999755859375,
+      "end": 1198.43994140625,
+      "text": " The LPS commitment secures a long-lived AI factory site, while the NVIDIA Compute within"
+    },
+    {
+      "start": 1198.43994140625,
+      "end": 1200.9200439453125,
+      "text": " the data center can be upgraded repeatedly."
+    },
+    {
+      "start": 1202.0400390625,
+      "end": 1206.3599853515625,
+      "text": " This project deepens our long-standing partnership with OpenAI."
+    },
+    {
+      "start": 1206.3599853515625,
+      "end": 1215.239990234375,
+      "text": " OpenAI has committed to substantially deployments of NVIDIA AI infrastructure through 2030."
+    },
+    {
+      "start": 1215.800048828125,
+      "end": 1221.6400146484375,
+      "text": " OpenAI's existing and planned commitments represent approximately 12 gigawatts of NVIDIA"
+    },
+    {
+      "start": 1221.6400146484375,
+      "end": 1222.1199951171875,
+      "text": " Compute."
+    },
+    {
+      "start": 1223.239990234375,
+      "end": 1229.800048828125,
+      "text": " For another frontier AI lab, we will provide selective credit enhancement for nearly 2"
+    },
+    {
+      "start": 1229.800048828125,
+      "end": 1230.9200439453125,
+      "text": " gigawatts of Compute."
+    },
+    {
+      "start": 1231.47998046875,
+      "end": 1238.8399658203125,
+      "text": " This complements the substantial NVIDIA Compute capacity they've secured independently without"
+    },
+    {
+      "start": 1238.8399658203125,
+      "end": 1240.43994140625,
+      "text": " NVIDIA's credit support."
+    },
+    {
+      "start": 1242.3599853515625,
+      "end": 1249,
+      "text": " We recognize the scale of this support, and we know some will call this circular financing."
+    },
+    {
+      "start": 1249,
+      "end": 1250.199951171875,
+      "text": " We see it differently."
+    },
+    {
+      "start": 1250.9200439453125,
+      "end": 1256.199951171875,
+      "text": " We're going through a major computing platform shift, the creation of one of the most important"
+    },
+    {
+      "start": 1256.199951171875,
+      "end": 1261.800048828125,
+      "text": " technologies in human history, and these are once-in-a-generation companies."
+    },
+    {
+      "start": 1261.800048828125,
+      "end": 1268.1199951171875,
+      "text": " Their technology leadership is proven, and their customer traction and usage are skyrocketing."
+    },
+    {
+      "start": 1268.6800537109375,
+      "end": 1274.43994140625,
+      "text": " We expect them to become the largest technology companies in history."
+    },
+    {
+      "start": 1274.43994140625,
+      "end": 1280.1199951171875,
+      "text": " We believe these investments, measured against the strength of their demand, the business"
+    },
+    {
+      "start": 1280.1199951171875,
+      "end": 1286.43994140625,
+      "text": " they create for us, the ecosystem they build on NVIDIA's platform, and the equity returns"
+    },
+    {
+      "start": 1286.43994140625,
+      "end": 1289.6400146484375,
+      "text": " on our invested capital will be excellent."
+    },
+    {
+      "start": 1290.3599853515625,
+      "end": 1292.0400390625,
+      "text": " And our risk is limited."
+    },
+    {
+      "start": 1292.0400390625,
+      "end": 1299,
+      "text": " The NVIDIA Compute platform is fungible and durable and can be redeployed to support other"
+    },
+    {
+      "start": 1299,
+      "end": 1299.6400146484375,
+      "text": " customers."
+    },
+    {
+      "start": 1300.8399658203125,
+      "end": 1307.1600341796875,
+      "text": " For context, we expect demand from the AI labs for which we expect to leverage our balance"
+    },
+    {
+      "start": 1307.1600341796875,
+      "end": 1311.56005859375,
+      "text": " sheet to contribute toward roughly a quarter of our business next year."
+    },
+    {
+      "start": 1312.3599853515625,
+      "end": 1318.9200439453125,
+      "text": " This remains Compute we ship will be consumed by investment-grade customers or those that"
+    },
+    {
+      "start": 1318.9200439453125,
+      "end": 1320.0400390625,
+      "text": " are backed by one."
+    },
+    {
+      "start": 1322.199951171875,
+      "end": 1330.9200439453125,
+      "text": " In Q2, we ship less than 1% of our total data center revenue in Hopper 200 products to customers"
+    },
+    {
+      "start": 1330.9200439453125,
+      "end": 1334.280029296875,
+      "text": " based in China in accordance with the U.S. government licenses."
+    },
+    {
+      "start": 1335,
+      "end": 1339.4000244140625,
+      "text": " Current Hopper shipments are dilutive to corporate gross margins."
+    },
+    {
+      "start": 1339.4000244140625,
+      "end": 1346.0400390625,
+      "text": " And given ongoing geopolitical uncertainty, there is no China data center Compute revenue"
+    },
+    {
+      "start": 1346.0400390625,
+      "end": 1347.239990234375,
+      "text": " in our forward outlook."
+    },
+    {
+      "start": 1349.8800048828125,
+      "end": 1357.239990234375,
+      "text": " Moving to the rest of the P&L, GAAP and non-GAAP gross margins were both 75%, largely unchanged"
+    },
+    {
+      "start": 1357.239990234375,
+      "end": 1360.280029296875,
+      "text": " from last quarter due to a similar product mix."
+    },
+    {
+      "start": 1361,
+      "end": 1367.1600341796875,
+      "text": " GAAP and non-GAAP operating expenses were up 10% and 11% sequentially, primarily due"
+    },
+    {
+      "start": 1367.1600341796875,
+      "end": 1371.800048828125,
+      "text": " to high Compute infrastructure costs and compensation and benefits costs."
+    },
+    {
+      "start": 1373.0799560546875,
+      "end": 1379.719970703125,
+      "text": " Our non-GAAP effective tax rate of 16% increased from a year ago, primarily due to higher revenue."
+    },
+    {
+      "start": 1380.760009765625,
+      "end": 1387.1600341796875,
+      "text": " On our balance sheet, inventory increased to $32 billion as we prepared for the Vera Rubin"
+    },
+    {
+      "start": 1387.1600341796875,
+      "end": 1387.47998046875,
+      "text": " launch."
+    },
+    {
+      "start": 1388.199951171875,
+      "end": 1393.56005859375,
+      "text": " Days of sales outstanding increased to 60 days, reflecting extended payment terms for"
+    },
+    {
+      "start": 1393.56005859375,
+      "end": 1399.800048828125,
+      "text": " large purchases by certain investment-grade customers to be shipped over multiple quarters."
+    },
+    {
+      "start": 1401.4000244140625,
+      "end": 1408.760009765625,
+      "text": " In Q2, we returned a record $26 billion to shareholders, $20 billion through share repurchases"
+    },
+    {
+      "start": 1408.760009765625,
+      "end": 1413.3199462890625,
+      "text": " and $6 billion through our quarterly dividend of $0.25 per share."
+    },
+    {
+      "start": 1414.280029296875,
+      "end": 1420.9200439453125,
+      "text": " Relative to our plan to return 50% or more of free cash flow, we have returned 60% on"
+    },
+    {
+      "start": 1420.9200439453125,
+      "end": 1428.5999755859375,
+      "text": " a year-to-date basis, and going forward, we intend to increase and return excess free"
+    },
+    {
+      "start": 1428.5999755859375,
+      "end": 1431,
+      "text": " cash flow net of strategic uses."
+    },
+    {
+      "start": 1432.760009765625,
+      "end": 1436.0400390625,
+      "text": " Let me turn to the outlook for the third quarter."
+    },
+    {
+      "start": 1436.760009765625,
+      "end": 1441.9599609375,
+      "text": " Total revenue is expected to be $108 billion, plus and minus 2%."
+    },
+    {
+      "start": 1443.3199462890625,
+      "end": 1449.4000244140625,
+      "text": " We expect sequential growth to be driven primarily by ACINE with DataCenter, while"
+    },
+    {
+      "start": 1449.4000244140625,
+      "end": 1457.47998046875,
+      "text": " growth in Hyperscale is expected to re-accelerate in Q4 and into FY28, as supply of Vera Rubin"
+    },
+    {
+      "start": 1457.47998046875,
+      "end": 1458.43994140625,
+      "text": " grows over time."
+    },
+    {
+      "start": 1459.8800048828125,
+      "end": 1465.3199462890625,
+      "text": " We see Vera Rubin accounting for about 20% of DataCenter revenue in Q3."
+    },
+    {
+      "start": 1466.1199951171875,
+      "end": 1473.0799560546875,
+      "text": " Looking ahead, our preliminary expectation is for FY28 revenue to grow approximately"
+    },
+    {
+      "start": 1473.4000244140625,
+      "end": 1475.0799560546875,
+      "text": " 70% year-over-year."
+    },
+    {
+      "start": 1475.0799560546875,
+      "end": 1482.1199951171875,
+      "text": " Although we will work to close the supply-demand gap, we expect supply to remain a bottleneck,"
+    },
+    {
+      "start": 1482.1199951171875,
+      "end": 1484.6800537109375,
+      "text": " at least through the end of FY28."
+    },
+    {
+      "start": 1486.9200439453125,
+      "end": 1492.760009765625,
+      "text": " Many of you have expressed concerns regarding our gross margins as component costs have"
+    },
+    {
+      "start": 1492.760009765625,
+      "end": 1494.199951171875,
+      "text": " risen significantly."
+    },
+    {
+      "start": 1494.760009765625,
+      "end": 1499.8800048828125,
+      "text": " As you are already aware, we are experiencing extreme pricing conditions in memory."
+    },
+    {
+      "start": 1500.43994140625,
+      "end": 1506.199951171875,
+      "text": " The magnitude of the price increase has exceeded our prior expectations and are headed even"
+    },
+    {
+      "start": 1506.199951171875,
+      "end": 1507.4000244140625,
+      "text": " higher into next year."
+    },
+    {
+      "start": 1508.1199951171875,
+      "end": 1511.8800048828125,
+      "text": " As a result, we are resetting expectations today."
+    },
+    {
+      "start": 1512.52001953125,
+      "end": 1521.6400146484375,
+      "text": " For Q3, we expect gap and non-gap gross margins to be 74%, plus or minus 50 basis points."
+    },
+    {
+      "start": 1522.199951171875,
+      "end": 1535.800048828125,
+      "text": " We expect margins to bottom in Q4 in the 71-72% range, before settling at 72-73% in FY28 as"
+    },
+    {
+      "start": 1535.800048828125,
+      "end": 1539.719970703125,
+      "text": " executed price increases take effect in Q1."
+    },
+    {
+      "start": 1541.0799560546875,
+      "end": 1545.4000244140625,
+      "text": " We want to be direct about this rather than let it linger as an open question."
+    },
+    {
+      "start": 1546.0400390625,
+      "end": 1550.8399658203125,
+      "text": " Memory scarcity today is being driven in large part by the AI build-out itself,"
+    },
+    {
+      "start": 1551.4000244140625,
+      "end": 1556.8399658203125,
+      "text": " and unlike a component that simply raises our costs with no offset benefit."
+    },
+    {
+      "start": 1557.4000244140625,
+      "end": 1563.4000244140625,
+      "text": " Tighter memory supply is a symptom of the same demand surge that's driving our own growth."
+    },
+    {
+      "start": 1563.4000244140625,
+      "end": 1568.9200439453125,
+      "text": " We have long-standing, deep relationships with all three major memory suppliers,"
+    },
+    {
+      "start": 1568.9200439453125,
+      "end": 1575.1600341796875,
+      "text": " and we're working closely with them to further increase the capacity our roadmap requires."
+    },
+    {
+      "start": 1575.719970703125,
+      "end": 1583.800048828125,
+      "text": " Gap and non-gap operating expenses are expected to be approximately $9.2 billion and $9.0 billion,"
+    },
+    {
+      "start": 1583.800048828125,
+      "end": 1584.5999755859375,
+      "text": " respectively."
+    },
+    {
+      "start": 1585.1600341796875,
+      "end": 1590.6800537109375,
+      "text": " For the full year, we now expect OPEX to grow in the low 50s, driven by a broadening of"
+    },
+    {
+      "start": 1590.6800537109375,
+      "end": 1595.56005859375,
+      "text": " our product portfolio and further increase in the usage of AI tools, which is already"
+    },
+    {
+      "start": 1595.56005859375,
+      "end": 1598.9200439453125,
+      "text": " and will continue to enhance engineering productivity."
+    },
+    {
+      "start": 1599.0799560546875,
+      "end": 1605.8800048828125,
+      "text": " For full year, fiscal year 27, we continue to expect gap and non-gap taxes to be between"
+    },
+    {
+      "start": 1605.8800048828125,
+      "end": 1612.280029296875,
+      "text": " 16% and 18%, excluding any discrete items and material changes to our tax environment."
+    },
+    {
+      "start": 1613.800048828125,
+      "end": 1617.239990234375,
+      "text": " With that, we will now transition to Q&A."
+    },
+    {
+      "start": 1618.0400390625,
+      "end": 1619.8800048828125,
+      "text": " Operator, please poll for questions."
+    },
+    {
+      "start": 1620.6800537109375,
+      "end": 1622.6800537109375,
+      "text": " Operator, please poll for questions."
+    },
+    {
+      "start": 1626.199951171875,
+      "end": 1631.47998046875,
+      "text": " At this time, I would like to remind everyone, in order to ask a question, press star, then"
+    },
+    {
+      "start": 1631.47998046875,
+      "end": 1633.719970703125,
+      "text": " the number one on your telephone keypad."
+    },
+    {
+      "start": 1634.5999755859375,
+      "end": 1637.719970703125,
+      "text": " We'll pause for just a moment to compile the Q&A roster."
+    },
+    {
+      "start": 1640.0400390625,
+      "end": 1644.760009765625,
+      "text": " Your first question comes from the line of Joseph Moore with Morgan Stanley."
+    },
+    {
+      "start": 1644.760009765625,
+      "end": 1645.800048828125,
+      "text": " Your line is open."
+    },
+    {
+      "start": 1648.3599853515625,
+      "end": 1649.0799560546875,
+      "text": " Great, thank you."
+    },
+    {
+      "start": 1649.8800048828125,
+      "end": 1655.56005859375,
+      "text": " I wonder if you could give us color on the 70% and what gives you the confidence to guide"
+    },
+    {
+      "start": 1655.56005859375,
+      "end": 1657.6400146484375,
+      "text": " a full year out if you haven't been doing that?"
+    },
+    {
+      "start": 1657.6400146484375,
+      "end": 1663.0799560546875,
+      "text": " And then what's the gap between that amount of growth and the 100% demand growth?"
+    },
+    {
+      "start": 1663.0799560546875,
+      "end": 1666.199951171875,
+      "text": " What is the kind of key constraint that separates those numbers?"
+    },
+    {
+      "start": 1666.199951171875,
+      "end": 1668.1199951171875,
+      "text": " And could you close those gaps over time?"
+    },
+    {
+      "start": 1670.280029296875,
+      "end": 1671,
+      "text": " Yeah, thanks, Joe."
+    },
+    {
+      "start": 1671.9599609375,
+      "end": 1675.1600341796875,
+      "text": " As you probably are aware, AI has become useful."
+    },
+    {
+      "start": 1676.1199951171875,
+      "end": 1684.0400390625,
+      "text": " And the AI agents that are being adopted everywhere use an enormous amount of compute."
+    },
+    {
+      "start": 1684.760009765625,
+      "end": 1688.3599853515625,
+      "text": " First of all, the large language models are larger than ever because they're smarter than"
+    },
+    {
+      "start": 1688.3599853515625,
+      "end": 1688.5999755859375,
+      "text": " ever."
+    },
+    {
+      "start": 1689.4000244140625,
+      "end": 1696.199951171875,
+      "text": " And these agents go through reasoning and planning, multiple turns of tool use."
+    },
+    {
+      "start": 1697.0799560546875,
+      "end": 1703.47998046875,
+      "text": " The amount of compute necessary for an agent versus a human using it is probably 15 to"
+    },
+    {
+      "start": 1703.6400146484375,
+      "end": 1706.3599853515625,
+      "text": " 100 times depending on the type of problem you're trying to solve."
+    },
+    {
+      "start": 1707.239990234375,
+      "end": 1710.3599853515625,
+      "text": " And so the amount of compute necessary is just extraordinary."
+    },
+    {
+      "start": 1710.3599853515625,
+      "end": 1713.8800048828125,
+      "text": " That's a factor that almost everybody sees."
+    },
+    {
+      "start": 1713.8800048828125,
+      "end": 1719.8800048828125,
+      "text": " The part that people don't see about our growth, because we're practically singular,"
+    },
+    {
+      "start": 1719.8800048828125,
+      "end": 1722.8399658203125,
+      "text": " because of the nature of how we deliver products."
+    },
+    {
+      "start": 1722.8399658203125,
+      "end": 1727.56005859375,
+      "text": " I mean, we're the only company in the world that creates and builds, offers an entire"
+    },
+    {
+      "start": 1728.1199951171875,
+      "end": 1731.47998046875,
+      "text": " AI factory platform, a full stack system."
+    },
+    {
+      "start": 1732.199951171875,
+      "end": 1734.3599853515625,
+      "text": " And customers can still mix and match."
+    },
+    {
+      "start": 1734.3599853515625,
+      "end": 1739.800048828125,
+      "text": " However, most companies just don't have the skills to do that or desire to do that."
+    },
+    {
+      "start": 1740.43994140625,
+      "end": 1743.4000244140625,
+      "text": " And so there's an entire part of the market that we experience growth."
+    },
+    {
+      "start": 1744.43994140625,
+      "end": 1748.43994140625,
+      "text": " They're sovereign AI, they're regional AIs, they're Neo clouds, they're AI startups,"
+    },
+    {
+      "start": 1748.43994140625,
+      "end": 1753.9599609375,
+      "text": " they're enterprises, where we're seeing, which represents about half of our business,"
+    },
+    {
+      "start": 1754.9200439453125,
+      "end": 1756.43994140625,
+      "text": " that's growing 100% a year."
+    },
+    {
+      "start": 1757.0799560546875,
+      "end": 1764.199951171875,
+      "text": " That part of the world's computing is likely to be larger over time than even what we're"
+    },
+    {
+      "start": 1764.199951171875,
+      "end": 1765.6400146484375,
+      "text": " currently experiencing in the cloud."
+    },
+    {
+      "start": 1766.199951171875,
+      "end": 1771.4000244140625,
+      "text": " And so I think the demand that we see is driven by all of those factors."
+    },
+    {
+      "start": 1772.760009765625,
+      "end": 1780.199951171875,
+      "text": " It is also the case that you can no longer procure technology per se and stand up these"
+    },
+    {
+      "start": 1780.199951171875,
+      "end": 1780.760009765625,
+      "text": " infrastructure."
+    },
+    {
+      "start": 1780.760009765625,
+      "end": 1785.4000244140625,
+      "text": " You've got to go secure the land power and shell, which oftentimes is a couple of two,"
+    },
+    {
+      "start": 1785.4000244140625,
+      "end": 1786.0400390625,
+      "text": " three years out."
+    },
+    {
+      "start": 1787.3199462890625,
+      "end": 1793.239990234375,
+      "text": " All of the rest of the supply chain necessary to align the construction, the power, the"
+    },
+    {
+      "start": 1793.239990234375,
+      "end": 1796.8399658203125,
+      "text": " cooling, all of the labor that's necessary."
+    },
+    {
+      "start": 1796.8399658203125,
+      "end": 1802.0400390625,
+      "text": " And what AI infrastructure is creating so many jobs all over the United States and all"
+    },
+    {
+      "start": 1802.0400390625,
+      "end": 1802.6800537109375,
+      "text": " around the world."
+    },
+    {
+      "start": 1803.47998046875,
+      "end": 1805.47998046875,
+      "text": " It just takes a lot more planning."
+    },
+    {
+      "start": 1805.47998046875,
+      "end": 1811.6400146484375,
+      "text": " And so we're involved in securing infrastructure now further down the pipeline."
+    },
+    {
+      "start": 1811.6400146484375,
+      "end": 1816.760009765625,
+      "text": " Just as a long time ago, people asked me, why is it that we're working with memory"
+    },
+    {
+      "start": 1816.760009765625,
+      "end": 1819.3199462890625,
+      "text": " suppliers when we're a chip company?"
+    },
+    {
+      "start": 1819.3199462890625,
+      "end": 1823.8800048828125,
+      "text": " And today people understand it's really quite genius that we were working on our supply"
+    },
+    {
+      "start": 1823.8800048828125,
+      "end": 1825.239990234375,
+      "text": " chain so far upstream."
+    },
+    {
+      "start": 1825.800048828125,
+      "end": 1832.5999755859375,
+      "text": " We work with power generator companies, downstream, we work with land power and shell"
+    },
+    {
+      "start": 1832.5999755859375,
+      "end": 1839.1600341796875,
+      "text": " companies all around the world, and that helps prepare all of this computing that's going"
+    },
+    {
+      "start": 1839.1600341796875,
+      "end": 1843,
+      "text": " to be built that will ultimately deploy for our ecosystem and our customers."
+    },
+    {
+      "start": 1843,
+      "end": 1848.1199951171875,
+      "text": " And so we just have a lot greater visibility now upstream and downstream."
+    },
+    {
+      "start": 1849.0799560546875,
+      "end": 1857.239990234375,
+      "text": " It is the case that we've never forecasted or never guided to a year in advance."
+    },
+    {
+      "start": 1857.239990234375,
+      "end": 1864.52001953125,
+      "text": " And even though our demand is much greater than 70%, our supply allows us to confidently"
+    },
+    {
+      "start": 1864.52001953125,
+      "end": 1865.3199462890625,
+      "text": " deliver 70%."
+    },
+    {
+      "start": 1866.199951171875,
+      "end": 1869.3199462890625,
+      "text": " And we're going to continue to work with our supply chain to increase on that."
+    },
+    {
+      "start": 1870.0400390625,
+      "end": 1875.4000244140625,
+      "text": " But what we wanted to do is to be consistent with everybody from our customers, our"
+    },
+    {
+      "start": 1875.4000244140625,
+      "end": 1879.8800048828125,
+      "text": " shareholders, our supply chain, everybody sees the same view."
+    },
+    {
+      "start": 1880.8399658203125,
+      "end": 1885.4000244140625,
+      "text": " And the reason why that's important is because everybody's putting a lot of resources at"
+    },
+    {
+      "start": 1885.4000244140625,
+      "end": 1885.8800048828125,
+      "text": " play."
+    },
+    {
+      "start": 1885.8800048828125,
+      "end": 1889.800048828125,
+      "text": " And so we wanted to make sure that everybody has the same set of information."
+    },
+    {
+      "start": 1890.52001953125,
+      "end": 1897.239990234375,
+      "text": " And we've got a huge year coming up next year, and it's going to be pretty extraordinary."
+    },
+    {
+      "start": 1901.9599609375,
+      "end": 1904.6800537109375,
+      "text": " Your next question comes from the line of C.J."
+    },
+    {
+      "start": 1904.6800537109375,
+      "end": 1906.8399658203125,
+      "text": " Muse with Cancer Fitzgerald."
+    },
+    {
+      "start": 1906.8399658203125,
+      "end": 1907.800048828125,
+      "text": " Your line is open."
+    },
+    {
+      "start": 1909.239990234375,
+      "end": 1910.1199951171875,
+      "text": " Yeah, good afternoon."
+    },
+    {
+      "start": 1910.1199951171875,
+      "end": 1911.3199462890625,
+      "text": " Thank you for taking the question."
+    },
+    {
+      "start": 1911.8800048828125,
+      "end": 1915.4000244140625,
+      "text": " There's tremendous investor focus on your inference market share."
+    },
+    {
+      "start": 1915.4000244140625,
+      "end": 1919.8800048828125,
+      "text": " Can you speak to the evolving workload you're seeing with the Gentic AI and how you see"
+    },
+    {
+      "start": 1919.8800048828125,
+      "end": 1924.6800537109375,
+      "text": " your share evolving here over time, particularly when you reflect on the growing value of the"
+    },
+    {
+      "start": 1924.6800537109375,
+      "end": 1928.760009765625,
+      "text": " TAM you're seeing with each new full stack generation, your expectation for greater"
+    },
+    {
+      "start": 1928.760009765625,
+      "end": 1932.9200439453125,
+      "text": " growth from ACIE, and then also including Grok 3 LPX?"
+    },
+    {
+      "start": 1932.9200439453125,
+      "end": 1933.9599609375,
+      "text": " We'd love to hear your thoughts."
+    },
+    {
+      "start": 1935.3199462890625,
+      "end": 1936.1199951171875,
+      "text": " Yeah, thanks, C.J."
+    },
+    {
+      "start": 1937.3199462890625,
+      "end": 1941.719970703125,
+      "text": " The AI lifecycle is getting way more complex than it used to be."
+    },
+    {
+      "start": 1942.6800537109375,
+      "end": 1951.239990234375,
+      "text": " And it's playing into NVIDIA's architecture much more greatly than it used to be."
+    },
+    {
+      "start": 1951.239990234375,
+      "end": 1953.4000244140625,
+      "text": " And so you could kind of see it as four phases."
+    },
+    {
+      "start": 1954.199951171875,
+      "end": 1958.52001953125,
+      "text": " There's the first phase, which is preparing all of the data that you need."
+    },
+    {
+      "start": 1958.52001953125,
+      "end": 1959.56005859375,
+      "text": " Some of it is synthetic."
+    },
+    {
+      "start": 1959.56005859375,
+      "end": 1960.5999755859375,
+      "text": " Some of it is real."
+    },
+    {
+      "start": 1960.5999755859375,
+      "end": 1963.47998046875,
+      "text": " Some of it is human labeled and generated."
+    },
+    {
+      "start": 1964.280029296875,
+      "end": 1965.800048828125,
+      "text": " Pre-trained the models."
+    },
+    {
+      "start": 1965.800048828125,
+      "end": 1968.760009765625,
+      "text": " And then there's post-training, the third phase."
+    },
+    {
+      "start": 1968.760009765625,
+      "end": 1971,
+      "text": " And then there's the agentic inference."
+    },
+    {
+      "start": 1971.719970703125,
+      "end": 1975.6400146484375,
+      "text": " And agentic inference is extremely complicated."
+    },
+    {
+      "start": 1975.6400146484375,
+      "end": 1978.52001953125,
+      "text": " And so every one of those phases are complicated."
+    },
+    {
+      "start": 1978.52001953125,
+      "end": 1984.280029296875,
+      "text": " The thing that's really great about the NVIDIA architecture, and we created this with NVLink"
+    },
+    {
+      "start": 1984.280029296875,
+      "end": 1990.8399658203125,
+      "text": " 72, it was a big surprise on the world when we first created the world's first rack scale"
+    },
+    {
+      "start": 1990.8399658203125,
+      "end": 1991.800048828125,
+      "text": " architecture."
+    },
+    {
+      "start": 1991.800048828125,
+      "end": 1994.52001953125,
+      "text": " It was hardly easy."
+    },
+    {
+      "start": 1995.6400146484375,
+      "end": 1997.9599609375,
+      "text": " And it was very challenging building the first generation."
+    },
+    {
+      "start": 1997.9599609375,
+      "end": 2001.9599609375,
+      "text": " We're now in our third generation of NVLink 72 rack scale systems."
+    },
+    {
+      "start": 2001.9599609375,
+      "end": 2006.3599853515625,
+      "text": " We had to reinvent the entire supply chain, reinvent systems, reinvent the technology,"
+    },
+    {
+      "start": 2006.3599853515625,
+      "end": 2009,
+      "text": " redistribute our software, refactor our software."
+    },
+    {
+      "start": 2009,
+      "end": 2010.6800537109375,
+      "text": " Everything, every aspect of it was hard."
+    },
+    {
+      "start": 2011.3199462890625,
+      "end": 2018.3599853515625,
+      "text": " But what it allowed us to do was to create one fungible system that allows us to transition"
+    },
+    {
+      "start": 2018.3599853515625,
+      "end": 2025.3199462890625,
+      "text": " from data creation, data preparation, the pre-training, the post-training to agentic"
+    },
+    {
+      "start": 2025.3199462890625,
+      "end": 2025.8199462890625,
+      "text": " inference."
+    },
+    {
+      "start": 2026.780029296875,
+      "end": 2029.3399658203125,
+      "text": " The benefits to customers is incredible."
+    },
+    {
+      "start": 2029.3399658203125,
+      "end": 2035.02001953125,
+      "text": " And the reason for that is because you've just spent, and we just mentioned, each gigawatt"
+    },
+    {
+      "start": 2035.02001953125,
+      "end": 2041.9000244140625,
+      "text": " of technology and NVIDIA's revenue exposure in the Hopper timeframe with Hopper plus"
+    },
+    {
+      "start": 2041.9000244140625,
+      "end": 2048.5400390625,
+      "text": " InfiniBand, and now Vera Rubin and CPU, and three types of different networking, because"
+    },
+    {
+      "start": 2048.5400390625,
+      "end": 2053.419921875,
+      "text": " it takes that many types of networking to address the entire world's data center, not"
+    },
+    {
+      "start": 2053.419921875,
+      "end": 2059.02001953125,
+      "text": " to mention the scale in security networking and the scale across multi-campus networking."
+    },
+    {
+      "start": 2059.02001953125,
+      "end": 2061.820068359375,
+      "text": " So you could argue five different types of networking systems."
+    },
+    {
+      "start": 2062.5400390625,
+      "end": 2063.580078125,
+      "text": " And then, of course, Grok."
+    },
+    {
+      "start": 2064.699951171875,
+      "end": 2073.260009765625,
+      "text": " And all of that increased our revenue contribution or revenue opportunity per gigawatt to $40"
+    },
+    {
+      "start": 2073.260009765625,
+      "end": 2073.580078125,
+      "text": " billion."
+    },
+    {
+      "start": 2074.300048828125,
+      "end": 2083.340087890625,
+      "text": " So each gigawatt of data center increased from, say, $30 billion about five years ago"
+    },
+    {
+      "start": 2084.06005859375,
+      "end": 2087.179931640625,
+      "text": " to now $60 billion today."
+    },
+    {
+      "start": 2087.179931640625,
+      "end": 2089.260009765625,
+      "text": " Of course, the productivity is tremendous."
+    },
+    {
+      "start": 2090.3798828125,
+      "end": 2094.219970703125,
+      "text": " The performance is incredible in comparison."
+    },
+    {
+      "start": 2094.219970703125,
+      "end": 2097.02001953125,
+      "text": " But you're talking about a $60 billion investment."
+    },
+    {
+      "start": 2097.820068359375,
+      "end": 2105.820068359375,
+      "text": " And to the extent that you could use it across multiple phases of the AI lifecycle, run every"
+    },
+    {
+      "start": 2105.820068359375,
+      "end": 2110.860107421875,
+      "text": " single type of model you can imagine running on it, whether it's diffusion or autoregressive"
+    },
+    {
+      "start": 2110.860107421875,
+      "end": 2117.5,
+      "text": " or state space or some hybrid version of that, every version of attention mechanism you can"
+    },
+    {
+      "start": 2117.5,
+      "end": 2128.139892578125,
+      "text": " think of, small or large models, the investment that you make will be preserved and useful"
+    },
+    {
+      "start": 2128.139892578125,
+      "end": 2129.820068359375,
+      "text": " and productive for a lot longer time."
+    },
+    {
+      "start": 2130.6201171875,
+      "end": 2135.5,
+      "text": " And so I think our advantage in this new world is really quite extraordinary."
+    },
+    {
+      "start": 2135.5,
+      "end": 2140.4599609375,
+      "text": " And it could explain why it is that our growth is actually accelerating."
+    },
+    {
+      "start": 2141.260009765625,
+      "end": 2144.219970703125,
+      "text": " It was already large, but now it's accelerating."
+    },
+    {
+      "start": 2144.93994140625,
+      "end": 2147.340087890625,
+      "text": " Leslie, you asked about Grok."
+    },
+    {
+      "start": 2147.340087890625,
+      "end": 2150.3798828125,
+      "text": " I was super excited about Grok 3."
+    },
+    {
+      "start": 2151.419921875,
+      "end": 2159.89990234375,
+      "text": " We achieved a record token interactivity rate, extremely low latency performance generation."
+    },
+    {
+      "start": 2159.89990234375,
+      "end": 2162.219970703125,
+      "text": " The team is doing fantastically."
+    },
+    {
+      "start": 2162.219970703125,
+      "end": 2170.139892578125,
+      "text": " We spent the last several months fusing the NVLink architecture, which will be the core."
+    },
+    {
+      "start": 2170.780029296875,
+      "end": 2172.5400390625,
+      "text": " And it'll be the core engine."
+    },
+    {
+      "start": 2172.5400390625,
+      "end": 2179.97998046875,
+      "text": " And then for services that would like to have super high interactivity, super high speed"
+    },
+    {
+      "start": 2179.97998046875,
+      "end": 2184.699951171875,
+      "text": " token generation done, the throughput is going to be a lot lower."
+    },
+    {
+      "start": 2185.659912109375,
+      "end": 2187.5,
+      "text": " The cost per token will be higher."
+    },
+    {
+      "start": 2188.699951171875,
+      "end": 2193.260009765625,
+      "text": " But you could associate it with high ASP services."
+    },
+    {
+      "start": 2193.260009765625,
+      "end": 2197.659912109375,
+      "text": " And so for those companies, you could bolt on one of our Grok accelerators."
+    },
+    {
+      "start": 2197.659912109375,
+      "end": 2199.10009765625,
+      "text": " I'm super excited about that."
+    },
+    {
+      "start": 2199.10009765625,
+      "end": 2203.739990234375,
+      "text": " But the vast majority of the world's data centers will just be VeraRubin and NVLink72."
+    },
+    {
+      "start": 2207.10009765625,
+      "end": 2212.219970703125,
+      "text": " Your next question comes from the line of Stacey Raskon with Bernstein Research."
+    },
+    {
+      "start": 2212.219970703125,
+      "end": 2213.260009765625,
+      "text": " Your line is open."
+    },
+    {
+      "start": 2214.300048828125,
+      "end": 2214.860107421875,
+      "text": " Hi, guys."
+    },
+    {
+      "start": 2214.860107421875,
+      "end": 2216.3798828125,
+      "text": " Thanks for taking my question."
+    },
+    {
+      "start": 2216.93994140625,
+      "end": 2221.5,
+      "text": " So the 70% growth in fiscal 28, which I guess is sort of calendar 27."
+    },
+    {
+      "start": 2223.820068359375,
+      "end": 2227.820068359375,
+      "text": " So that's something like, I don't know, a $200 billion uptick."
+    },
+    {
+      "start": 2227.89990234375,
+      "end": 2229.820068359375,
+      "text": " Versus the prior outlook, if I back it out."
+    },
+    {
+      "start": 2229.820068359375,
+      "end": 2232.06005859375,
+      "text": " The prior outlook was $1 trillion over the three years."
+    },
+    {
+      "start": 2232.06005859375,
+      "end": 2233.419921875,
+      "text": " So this is probably $200 billion more."
+    },
+    {
+      "start": 2233.419921875,
+      "end": 2238.699951171875,
+      "text": " I was just wondering if you could talk us through the contributors to that increase"
+    },
+    {
+      "start": 2238.699951171875,
+      "end": 2242.4599609375,
+      "text": " across the different products of Vera and CPUs and Grok and everything else."
+    },
+    {
+      "start": 2242.4599609375,
+      "end": 2246.06005859375,
+      "text": " And also, you talked about your price increase that takes effect in Q1."
+    },
+    {
+      "start": 2246.06005859375,
+      "end": 2249.179931640625,
+      "text": " So I assume some of this is pricing."
+    },
+    {
+      "start": 2249.179931640625,
+      "end": 2252.5400390625,
+      "text": " And I guess I'm also curious, maybe I'm squeezing too many questions in here."
+    },
+    {
+      "start": 2252.5400390625,
+      "end": 2255.179931640625,
+      "text": " But I'm also curious, it's a constrained number."
+    },
+    {
+      "start": 2255.179931640625,
+      "end": 2256.6201171875,
+      "text": " What would it be if it wasn't constrained?"
+    },
+    {
+      "start": 2257.419921875,
+      "end": 2261.260009765625,
+      "text": " The unconstrained would be a lot higher."
+    },
+    {
+      "start": 2263.02001953125,
+      "end": 2266.3798828125,
+      "text": " It's, we grew 100% year over year."
+    },
+    {
+      "start": 2267.340087890625,
+      "end": 2273.179931640625,
+      "text": " This year, the unconstrained, you know, is significant."
+    },
+    {
+      "start": 2273.179931640625,
+      "end": 2276.139892578125,
+      "text": " And so we're just going to have to go work hard to get more capacity."
+    },
+    {
+      "start": 2277.179931640625,
+      "end": 2280.699951171875,
+      "text": " And, you know, we have a large supply chain."
+    },
+    {
+      "start": 2280.699951171875,
+      "end": 2282.699951171875,
+      "text": " We have a really gigantic supply chain."
+    },
+    {
+      "start": 2282.860107421875,
+      "end": 2285.580078125,
+      "text": " And, you know, we have a large supply chain."
+    },
+    {
+      "start": 2285.580078125,
+      "end": 2287.5,
+      "text": " We have a really gigantic supply chain."
+    },
+    {
+      "start": 2287.5,
+      "end": 2289.739990234375,
+      "text": " And so we have incredible partners."
+    },
+    {
+      "start": 2291.02001953125,
+      "end": 2293.659912109375,
+      "text": " And we've secured a lot of supply, but we just need a lot more."
+    },
+    {
+      "start": 2295.02001953125,
+      "end": 2301.179931640625,
+      "text": " To break it down, the way to think about that is most people see just hyperscalers."
+    },
+    {
+      "start": 2302.4599609375,
+      "end": 2305.5,
+      "text": " And that's half of the picture."
+    },
+    {
+      "start": 2306.5400390625,
+      "end": 2308.93994140625,
+      "text": " The other half of the picture is what we call AC."
+    },
+    {
+      "start": 2309.580078125,
+      "end": 2314.06005859375,
+      "text": " And that's all the enterprise, the Neo clouds, the sovereign AIs."
+    },
+    {
+      "start": 2314.6201171875,
+      "end": 2318.139892578125,
+      "text": " You know, that part of the world is invisible to everybody."
+    },
+    {
+      "start": 2318.139892578125,
+      "end": 2321.89990234375,
+      "text": " And the reason for that is because they don't buy custom chips."
+    },
+    {
+      "start": 2321.89990234375,
+      "end": 2323.739990234375,
+      "text": " They don't buy chips one at a time."
+    },
+    {
+      "start": 2324.4599609375,
+      "end": 2327.739990234375,
+      "text": " They really need an entire factory platform built for them."
+    },
+    {
+      "start": 2329.02001953125,
+      "end": 2333.89990234375,
+      "text": " And so that's a space that we add just a tremendous amount of value."
+    },
+    {
+      "start": 2333.89990234375,
+      "end": 2338.139892578125,
+      "text": " Now, of course, back in this hyperscale space, that's growing incredibly too."
+    },
+    {
+      "start": 2338.699951171875,
+      "end": 2341.5,
+      "text": " Right. You know that they now have backlogs of $2 trillion."
+    },
+    {
+      "start": 2342.4599609375,
+      "end": 2347.820068359375,
+      "text": " You know that when they stand up NVIDIA Compute, when that happens,"
+    },
+    {
+      "start": 2347.820068359375,
+      "end": 2350.5400390625,
+      "text": " their revenues go up, their earnings contribution go up."
+    },
+    {
+      "start": 2351.89990234375,
+      "end": 2354.780029296875,
+      "text": " Compute is profitable, very profitable today."
+    },
+    {
+      "start": 2355.340087890625,
+      "end": 2358.93994140625,
+      "text": " And compute directly translates into increased revenues."
+    },
+    {
+      "start": 2358.93994140625,
+      "end": 2363.739990234375,
+      "text": " And so there's just a race to want to bring more NVIDIA Compute online,"
+    },
+    {
+      "start": 2364.5400390625,
+      "end": 2366.139892578125,
+      "text": " both at the hyperscalers."
+    },
+    {
+      "start": 2366.139892578125,
+      "end": 2370.6201171875,
+      "text": " But what you don't see is just really tremendous opportunities outside of the hyperscalers."
+    },
+    {
+      "start": 2371.340087890625,
+      "end": 2377.260009765625,
+      "text": " But the other part of it is, and it's the reason why we mapped it out for you."
+    },
+    {
+      "start": 2378.3798828125,
+      "end": 2382.4599609375,
+      "text": " In the case of Hopper, we were at about $18 billion per gigawatt."
+    },
+    {
+      "start": 2383.340087890625,
+      "end": 2386.5400390625,
+      "text": " For Grace Blackwell, we're about $25 billion per gigawatt."
+    },
+    {
+      "start": 2387.10009765625,
+      "end": 2390.780029296875,
+      "text": " And for Vera Rubin, it's about $40 billion per gigawatt."
+    },
+    {
+      "start": 2391.580078125,
+      "end": 2399.179931640625,
+      "text": " And the productivity is, you know, X factors increase in each generation."
+    },
+    {
+      "start": 2399.179931640625,
+      "end": 2403.419921875,
+      "text": " And so customers want to race to the next generation as fast as they can."
+    },
+    {
+      "start": 2404.300048828125,
+      "end": 2408.860107421875,
+      "text": " Meanwhile, because NVIDIA Compute is so productive,"
+    },
+    {
+      "start": 2410.219970703125,
+      "end": 2413.89990234375,
+      "text": " the tokens they're generating, the GPU hours they're renting out"
+    },
+    {
+      "start": 2413.89990234375,
+      "end": 2416.300048828125,
+      "text": " is insanely profitable, as you know."
+    },
+    {
+      "start": 2416.300048828125,
+      "end": 2418.139892578125,
+      "text": " Their margins are fantastic."
+    },
+    {
+      "start": 2418.93994140625,
+      "end": 2423.820068359375,
+      "text": " And so all of that is just simultaneously happening."
+    },
+    {
+      "start": 2423.820068359375,
+      "end": 2427.5,
+      "text": " I think the big picture is that we're going through this platform shift."
+    },
+    {
+      "start": 2428.4599609375,
+      "end": 2430.3798828125,
+      "text": " And it affects every computer company."
+    },
+    {
+      "start": 2431.10009765625,
+      "end": 2435.10009765625,
+      "text": " And every industry in the world uses computers."
+    },
+    {
+      "start": 2435.10009765625,
+      "end": 2437.340087890625,
+      "text": " So therefore, every industry is affected."
+    },
+    {
+      "start": 2437.340087890625,
+      "end": 2438.6201171875,
+      "text": " Every company is affected."
+    },
+    {
+      "start": 2439.260009765625,
+      "end": 2443.419921875,
+      "text": " And this new way of doing computing is intelligent."
+    },
+    {
+      "start": 2443.419921875,
+      "end": 2448.06005859375,
+      "text": " It's not based on retrieval of files, but it's now generative."
+    },
+    {
+      "start": 2448.06005859375,
+      "end": 2449.179931640625,
+      "text": " Generating intelligence."
+    },
+    {
+      "start": 2449.179931640625,
+      "end": 2450.780029296875,
+      "text": " And that requires compute."
+    },
+    {
+      "start": 2450.780029296875,
+      "end": 2453.419921875,
+      "text": " But the results you get is phenomenal."
+    },
+    {
+      "start": 2453.419921875,
+      "end": 2455.659912109375,
+      "text": " The results you get is tremendously better."
+    },
+    {
+      "start": 2455.659912109375,
+      "end": 2459.260009765625,
+      "text": " And so, you know, we're just seeing that across the world."
+    },
+    {
+      "start": 2459.260009765625,
+      "end": 2462.06005859375,
+      "text": " Everybody wants to be part of the AI revolution."
+    },
+    {
+      "start": 2462.06005859375,
+      "end": 2466.06005859375,
+      "text": " Everybody will have to be part of this computing shift."
+    },
+    {
+      "start": 2466.06005859375,
+      "end": 2467.820068359375,
+      "text": " And everybody has to build infrastructure."
+    },
+    {
+      "start": 2472.6201171875,
+      "end": 2477.739990234375,
+      "text": " Your next question comes from the line of Vivek Arya with Bank of America Securities."
+    },
+    {
+      "start": 2477.820068359375,
+      "end": 2478.780029296875,
+      "text": " Your line is open."
+    },
+    {
+      "start": 2481.02001953125,
+      "end": 2482.3798828125,
+      "text": " Thanks for taking my question."
+    },
+    {
+      "start": 2482.3798828125,
+      "end": 2485.179931640625,
+      "text": " And thanks for providing all the transparency"
+    },
+    {
+      "start": 2485.179931640625,
+      "end": 2488.860107421875,
+      "text": " and all the commitments and guarantees that you have for a number of years."
+    },
+    {
+      "start": 2488.860107421875,
+      "end": 2492.300048828125,
+      "text": " When I just, you know, add up everything that's in the CFO commentary,"
+    },
+    {
+      "start": 2492.300048828125,
+      "end": 2495.5,
+      "text": " I get to a number of about $500 billion or so,"
+    },
+    {
+      "start": 2495.5,
+      "end": 2497.5,
+      "text": " obviously, over the next several years."
+    },
+    {
+      "start": 2497.5,
+      "end": 2499.820068359375,
+      "text": " But I had a few questions related to that."
+    },
+    {
+      "start": 2499.820068359375,
+      "end": 2501.580078125,
+      "text": " First is, is that the takeaway?"
+    },
+    {
+      "start": 2501.580078125,
+      "end": 2504.93994140625,
+      "text": " That the sum of all your ecosystem investments"
+    },
+    {
+      "start": 2504.93994140625,
+      "end": 2507.179931640625,
+      "text": " over the next several years is in that ballpark?"
+    },
+    {
+      "start": 2507.179931640625,
+      "end": 2511.260009765625,
+      "text": " Or are there other equity or other investments that could still be ahead?"
+    },
+    {
+      "start": 2511.260009765625,
+      "end": 2512.300048828125,
+      "text": " That's one."
+    },
+    {
+      "start": 2512.300048828125,
+      "end": 2515.419921875,
+      "text": " Secondly, if there is a specific cash, you know,"
+    },
+    {
+      "start": 2515.419921875,
+      "end": 2518.860107421875,
+      "text": " part of that, that we should think about in fiscal 28."
+    },
+    {
+      "start": 2518.860107421875,
+      "end": 2523.260009765625,
+      "text": " And then, Jensen, a lot of these investments are, you know,"
+    },
+    {
+      "start": 2523.260009765625,
+      "end": 2527.5,
+      "text": " designed to help the Frontier Labs, especially OpenAI and Anthropic."
+    },
+    {
+      "start": 2528.219970703125,
+      "end": 2530.699951171875,
+      "text": " But both of them are designing their own custom chips."
+    },
+    {
+      "start": 2530.699951171875,
+      "end": 2534.06005859375,
+      "text": " In fact, OpenAI just, you know, in the last few days spoke about"
+    },
+    {
+      "start": 2534.139892578125,
+      "end": 2537.659912109375,
+      "text": " Jalapeno and their claims about being better than Blackwell and so forth."
+    },
+    {
+      "start": 2537.659912109375,
+      "end": 2539.739990234375,
+      "text": " So how are you balancing this dynamic"
+    },
+    {
+      "start": 2539.739990234375,
+      "end": 2542.06005859375,
+      "text": " where you want to invest a lot of the ecosystem,"
+    },
+    {
+      "start": 2542.06005859375,
+      "end": 2546.699951171875,
+      "text": " but part of that ecosystem wants to develop competitive solutions?"
+    },
+    {
+      "start": 2546.699951171875,
+      "end": 2547.199951171875,
+      "text": " Thank you."
+    },
+    {
+      "start": 2547.89990234375,
+      "end": 2550.3798828125,
+      "text": " Well, we're building something very different."
+    },
+    {
+      "start": 2551.739990234375,
+      "end": 2558.699951171875,
+      "text": " You know, whereas many of these XPUs are inference-specific chips"
+    },
+    {
+      "start": 2560.139892578125,
+      "end": 2563.179931640625,
+      "text": " for one cloud or one service."
+    },
+    {
+      "start": 2563.820068359375,
+      "end": 2569.02001953125,
+      "text": " NVIDIA is a platform, an entire AI factory platform"
+    },
+    {
+      "start": 2569.739990234375,
+      "end": 2576.93994140625,
+      "text": " that spans the entire AI lifecycle that you can use in any cloud."
+    },
+    {
+      "start": 2576.93994140625,
+      "end": 2578.139892578125,
+      "text": " It's in every cloud."
+    },
+    {
+      "start": 2579.10009765625,
+      "end": 2581.659912109375,
+      "text": " You can run anywhere."
+    },
+    {
+      "start": 2581.659912109375,
+      "end": 2583.179931640625,
+      "text": " We'll help you set it up anywhere."
+    },
+    {
+      "start": 2584.3798828125,
+      "end": 2588.6201171875,
+      "text": " And so we built something very different."
+    },
+    {
+      "start": 2589.580078125,
+      "end": 2599.260009765625,
+      "text": " All of the AI services, at some point, are going to want to go around the world."
+    },
+    {
+      "start": 2599.260009765625,
+      "end": 2603.340087890625,
+      "text": " And those data centers won't necessarily be just built by them."
+    },
+    {
+      "start": 2604.139892578125,
+      "end": 2610.5400390625,
+      "text": " And also, you know, I fully expect, and so they're going to run,"
+    },
+    {
+      "start": 2610.5400390625,
+      "end": 2614.6201171875,
+      "text": " and I think they're going to run on NVIDIA all around the world."
+    },
+    {
+      "start": 2614.6201171875,
+      "end": 2616.780029296875,
+      "text": " And of course, I think our technology,"
+    },
+    {
+      "start": 2616.780029296875,
+      "end": 2620.93994140625,
+      "text": " I have 100% confidence that our technology will continue to be extraordinary for them."
+    },
+    {
+      "start": 2621.820068359375,
+      "end": 2624.860107421875,
+      "text": " And that the economics of using our technology,"
+    },
+    {
+      "start": 2625.739990234375,
+      "end": 2629.419921875,
+      "text": " you know, whether it's from data processing to training,"
+    },
+    {
+      "start": 2629.419921875,
+      "end": 2633.340087890625,
+      "text": " to post-training, to agentic processing,"
+    },
+    {
+      "start": 2634.219970703125,
+      "end": 2636.139892578125,
+      "text": " our technology is going to be extraordinary for them."
+    },
+    {
+      "start": 2636.139892578125,
+      "end": 2637.10009765625,
+      "text": " They're going to use it."
+    },
+    {
+      "start": 2637.10009765625,
+      "end": 2639.419921875,
+      "text": " And so I'm very confident that they're going to be customers"
+    },
+    {
+      "start": 2639.419921875,
+      "end": 2641.820068359375,
+      "text": " and partners of ours for a very long time."
+    },
+    {
+      "start": 2641.820068359375,
+      "end": 2643.739990234375,
+      "text": " Now, having said that, taking a step backwards,"
+    },
+    {
+      "start": 2644.300048828125,
+      "end": 2649.10009765625,
+      "text": " investing in these two companies, or there are several AI labs that we've invested in,"
+    },
+    {
+      "start": 2649.10009765625,
+      "end": 2652.699951171875,
+      "text": " investing in these companies are a once-in-a-generation opportunity."
+    },
+    {
+      "start": 2653.419921875,
+      "end": 2657.659912109375,
+      "text": " I think the only regret that I have is that I didn't invest more and sooner."
+    },
+    {
+      "start": 2658.780029296875,
+      "end": 2664.06005859375,
+      "text": " And two of the companies will likely go public soon, and others will follow."
+    },
+    {
+      "start": 2665.820068359375,
+      "end": 2669.179931640625,
+      "text": " And these will be some of the most consequential technology companies in history."
+    },
+    {
+      "start": 2669.179931640625,
+      "end": 2671.89990234375,
+      "text": " And so I'm delighted to be their friend."
+    },
+    {
+      "start": 2672.6201171875,
+      "end": 2674.3798828125,
+      "text": " I'm delighted to partner with them."
+    },
+    {
+      "start": 2674.3798828125,
+      "end": 2678.3798828125,
+      "text": " I'm delighted that they're building an ecosystem on top of the NVIDIA architecture."
+    },
+    {
+      "start": 2679.260009765625,
+      "end": 2683.02001953125,
+      "text": " I'm delighted that they're counting on us to scale up."
+    },
+    {
+      "start": 2683.02001953125,
+      "end": 2690.93994140625,
+      "text": " And I have 100% confidence that, you know, through quite a long period of time,"
+    },
+    {
+      "start": 2691.659912109375,
+      "end": 2696.699951171875,
+      "text": " they're going to be utilizing NVIDIA Compute for a lot of their computing."
+    },
+    {
+      "start": 2696.699951171875,
+      "end": 2698.699951171875,
+      "text": " And so I feel great about it."
+    },
+    {
+      "start": 2699.340087890625,
+      "end": 2704.3798828125,
+      "text": " So Vivek, let me add a little bit more regarding the commitments and the portion"
+    },
+    {
+      "start": 2704.3798828125,
+      "end": 2707.820068359375,
+      "text": " within those commitments, which is our supply commitments."
+    },
+    {
+      "start": 2707.820068359375,
+      "end": 2708.93994140625,
+      "text": " This is essential."
+    },
+    {
+      "start": 2708.93994140625,
+      "end": 2715.659912109375,
+      "text": " This is essential for the raising of VeraRubin today, as well as all next year."
+    },
+    {
+      "start": 2715.659912109375,
+      "end": 2720.860107421875,
+      "text": " You can see that those commitments, the biggest parts of them are in the first three years."
+    },
+    {
+      "start": 2720.860107421875,
+      "end": 2723.260009765625,
+      "text": " And we will use that to build the products that we need."
+    },
+    {
+      "start": 2723.260009765625,
+      "end": 2727.260009765625,
+      "text": " This would also gives us the confidence in terms of our growth and revenue,"
+    },
+    {
+      "start": 2727.260009765625,
+      "end": 2732.139892578125,
+      "text": " given how much we have already aligned in commitment in terms of our supply,"
+    },
+    {
+      "start": 2732.139892578125,
+      "end": 2733.97998046875,
+      "text": " as well as capacity that we would need."
+    },
+    {
+      "start": 2739.5,
+      "end": 2744.139892578125,
+      "text": " Your next question comes from the line of Timothy Arcuri with UBS."
+    },
+    {
+      "start": 2744.139892578125,
+      "end": 2745.179931640625,
+      "text": " Your line is open."
+    },
+    {
+      "start": 2746.6201171875,
+      "end": 2747.580078125,
+      "text": " Hi, thanks a lot."
+    },
+    {
+      "start": 2747.580078125,
+      "end": 2749.260009765625,
+      "text": " Jensen, I want to ask about open source."
+    },
+    {
+      "start": 2750.219970703125,
+      "end": 2753.97998046875,
+      "text": " There's a lot of talk about that these models could gain share for workload in the U.S."
+    },
+    {
+      "start": 2753.97998046875,
+      "end": 2756.780029296875,
+      "text": " You're obviously well positioned with Nemotron."
+    },
+    {
+      "start": 2756.860107421875,
+      "end": 2761.179931640625,
+      "text": " But on the other hand, a lot of the end demand is being driven by these big frontier model"
+    },
+    {
+      "start": 2762.780029296875,
+      "end": 2763.260009765625,
+      "text": " companies."
+    },
+    {
+      "start": 2763.260009765625,
+      "end": 2768.3798828125,
+      "text": " So there's a lot of investors that equate open models as being negative for the growth of those"
+    },
+    {
+      "start": 2768.3798828125,
+      "end": 2768.860107421875,
+      "text": " companies."
+    },
+    {
+      "start": 2768.860107421875,
+      "end": 2770.780029296875,
+      "text": " So how do you sort of put and take that?"
+    },
+    {
+      "start": 2770.780029296875,
+      "end": 2774.860107421875,
+      "text": " Do you see the rise of open models as being good for NVIDIA or ultimately negative?"
+    },
+    {
+      "start": 2774.860107421875,
+      "end": 2775.10009765625,
+      "text": " Thanks."
+    },
+    {
+      "start": 2777.580078125,
+      "end": 2783.5,
+      "text": " The world will need both closed models and open models."
+    },
+    {
+      "start": 2784.4599609375,
+      "end": 2789.02001953125,
+      "text": " And both closed models and open models are skyrocketing in use."
+    },
+    {
+      "start": 2795.419921875,
+      "end": 2798.4599609375,
+      "text": " I would say nearly all open models run on NVIDIA."
+    },
+    {
+      "start": 2799.580078125,
+      "end": 2805.179931640625,
+      "text": " And the reason for that is because NVIDIA's footprint around the world is the highest."
+    },
+    {
+      "start": 2806.219970703125,
+      "end": 2810.6201171875,
+      "text": " And our architecture is the most fungible."
+    },
+    {
+      "start": 2811.260009765625,
+      "end": 2812.6201171875,
+      "text": " It's everywhere."
+    },
+    {
+      "start": 2812.699951171875,
+      "end": 2819.10009765625,
+      "text": " It's in PCs and edge devices like DGX Spark, which is doing great, all the way to robots"
+    },
+    {
+      "start": 2819.10009765625,
+      "end": 2822.4599609375,
+      "text": " and workstations and your on-prem data centers."
+    },
+    {
+      "start": 2824.06005859375,
+      "end": 2826.06005859375,
+      "text": " Open models are doing incredibly well."
+    },
+    {
+      "start": 2827.02001953125,
+      "end": 2829.5,
+      "text": " Closed models we know are doing incredibly well."
+    },
+    {
+      "start": 2830.5400390625,
+      "end": 2834.219970703125,
+      "text": " The Frontier Labs, their sales are skyrocketing."
+    },
+    {
+      "start": 2834.219970703125,
+      "end": 2836.06005859375,
+      "text": " Their margins are fantastic."
+    },
+    {
+      "start": 2836.06005859375,
+      "end": 2838.6201171875,
+      "text": " They're generating profitable tokens."
+    },
+    {
+      "start": 2838.6201171875,
+      "end": 2840.5400390625,
+      "text": " They're only limited by the amount of compute."
+    },
+    {
+      "start": 2841.179931640625,
+      "end": 2843.5,
+      "text": " That is equally true for open models."
+    },
+    {
+      "start": 2844.4599609375,
+      "end": 2851.260009765625,
+      "text": " And our position in open models is very good because the CUDA ecosystem is literally everywhere."
+    },
+    {
+      "start": 2852.06005859375,
+      "end": 2860.139892578125,
+      "text": " The open models are also foundational to just about every AI startup and every enterprise"
+    },
+    {
+      "start": 2860.139892578125,
+      "end": 2861.179931640625,
+      "text": " company around the world."
+    },
+    {
+      "start": 2861.820068359375,
+      "end": 2862.93994140625,
+      "text": " It's vital to them."
+    },
+    {
+      "start": 2863.659912109375,
+      "end": 2869.5,
+      "text": " And the reason for that is because you should rent intelligence, strong intelligence, smart"
+    },
+    {
+      "start": 2869.5,
+      "end": 2872.6201171875,
+      "text": " intelligence wherever you can, which is the reason why we rent it."
+    },
+    {
+      "start": 2872.6201171875,
+      "end": 2877.340087890625,
+      "text": " And I encourage my employees to use the cloud services as much as they can."
+    },
+    {
+      "start": 2878.06005859375,
+      "end": 2886.860107421875,
+      "text": " But every major company and surely every country and every startup needs to build their domain"
+    },
+    {
+      "start": 2886.860107421875,
+      "end": 2892.699951171875,
+      "text": " specific, their proprietary AI, their proprietary alpha."
+    },
+    {
+      "start": 2893.659912109375,
+      "end": 2900.6201171875,
+      "text": " And the open models reaching frontier levels has made it possible, has enabled them to"
+    },
+    {
+      "start": 2900.6201171875,
+      "end": 2901.179931640625,
+      "text": " all do that."
+    },
+    {
+      "start": 2901.739990234375,
+      "end": 2905.89990234375,
+      "text": " One of the areas where frontier models is vital is cybersecurity."
+    },
+    {
+      "start": 2907.10009765625,
+      "end": 2912.06005859375,
+      "text": " You see the number of cybersecurity companies that are enabled by frontier models so that"
+    },
+    {
+      "start": 2912.06005859375,
+      "end": 2920.139892578125,
+      "text": " they could have distributed, massively distributed, continuously running autonomous cybersecurity"
+    },
+    {
+      "start": 2920.139892578125,
+      "end": 2921.580078125,
+      "text": " systems to defend."
+    },
+    {
+      "start": 2923.580078125,
+      "end": 2925.02001953125,
+      "text": " Those companies are emerging."
+    },
+    {
+      "start": 2925.02001953125,
+      "end": 2927.02001953125,
+      "text": " There's some amazing companies."
+    },
+    {
+      "start": 2927.02001953125,
+      "end": 2929.02001953125,
+      "text": " They couldn't do it without open models."
+    },
+    {
+      "start": 2930.06005859375,
+      "end": 2937.659912109375,
+      "text": " And so open models is both incredibly successful and has finally reached the frontier, but"
+    },
+    {
+      "start": 2937.659912109375,
+      "end": 2941.02001953125,
+      "text": " it's also vital to the American economy."
+    },
+    {
+      "start": 2941.02001953125,
+      "end": 2942.93994140625,
+      "text": " It's vital to the world economy."
+    },
+    {
+      "start": 2942.93994140625,
+      "end": 2945.97998046875,
+      "text": " It's vital to companies to build their own proprietary AI."
+    },
+    {
+      "start": 2945.97998046875,
+      "end": 2948.06005859375,
+      "text": " You can't do without one or the other."
+    },
+    {
+      "start": 2948.06005859375,
+      "end": 2950.3798828125,
+      "text": " Both are going to be extraordinarily successful."
+    },
+    {
+      "start": 2952.780029296875,
+      "end": 2962.780029296875,
+      "text": " And lastly, as you know, our market footprint of all AI models, we're the only, I think"
+    },
+    {
+      "start": 2962.780029296875,
+      "end": 2964.6201171875,
+      "text": " we're the only platform."
+    },
+    {
+      "start": 2965.5,
+      "end": 2968.699951171875,
+      "text": " We're fairly certain we're the only platform that runs every frontier model."
+    },
+    {
+      "start": 2969.89990234375,
+      "end": 2975.10009765625,
+      "text": " And whether it's closed or open, most of them were built on NVIDIA."
+    },
+    {
+      "start": 2975.10009765625,
+      "end": 2977.179931640625,
+      "text": " And so they run great on NVIDIA."
+    },
+    {
+      "start": 2977.89990234375,
+      "end": 2984.93994140625,
+      "text": " And so we're delighted by any model succeeding."
+    },
+    {
+      "start": 2984.93994140625,
+      "end": 2987.260009765625,
+      "text": " So long as models succeed, I'm very happy."
+    },
+    {
+      "start": 2988.300048828125,
+      "end": 2990.4599609375,
+      "text": " And both closed and open models are going to succeed."
+    },
+    {
+      "start": 2990.4599609375,
+      "end": 2993.260009765625,
+      "text": " And they're both simultaneously driving our sales."
+    },
+    {
+      "start": 2998.06005859375,
+      "end": 3002.6201171875,
+      "text": " Your next question comes from the line of Ben Britsis with Melius Research."
+    },
+    {
+      "start": 3002.6201171875,
+      "end": 3003.659912109375,
+      "text": " Your line is open."
+    },
+    {
+      "start": 3005.580078125,
+      "end": 3006.4599609375,
+      "text": " Yeah, hey, thanks."
+    },
+    {
+      "start": 3007.179931640625,
+      "end": 3011.179931640625,
+      "text": " I wanted to ask you a question, Jensen, about demand in a different way."
+    },
+    {
+      "start": 3012.5400390625,
+      "end": 3015.179931640625,
+      "text": " You talked about demand growing 100% next year."
+    },
+    {
+      "start": 3015.179931640625,
+      "end": 3020.3798828125,
+      "text": " And I wanted to kind of get a sense for a couple of things driving that and even beyond"
+    },
+    {
+      "start": 3020.3798828125,
+      "end": 3020.699951171875,
+      "text": " that."
+    },
+    {
+      "start": 3020.699951171875,
+      "end": 3021.97998046875,
+      "text": " And there's two concepts here."
+    },
+    {
+      "start": 3021.97998046875,
+      "end": 3027.739990234375,
+      "text": " There's recursive self-improvement, which apparently at Anthropic and OpenAI is going"
+    },
+    {
+      "start": 3027.739990234375,
+      "end": 3030.699951171875,
+      "text": " very well with AI that improves itself."
+    },
+    {
+      "start": 3030.699951171875,
+      "end": 3036.06005859375,
+      "text": " And even OpenAI said they could hit AGI by the end of this year."
+    },
+    {
+      "start": 3036.699951171875,
+      "end": 3043.340087890625,
+      "text": " And with the developments in RSI as well as AGI, what happens to industry demand?"
+    },
+    {
+      "start": 3045.02001953125,
+      "end": 3046.699951171875,
+      "text": " Does it inflect further?"
+    },
+    {
+      "start": 3046.699951171875,
+      "end": 3050.3798828125,
+      "text": " And what does it mean for NVIDIA when those things take place?"
+    },
+    {
+      "start": 3050.3798828125,
+      "end": 3053.419921875,
+      "text": " And how are you looking at that as a demand catalyst?"
+    },
+    {
+      "start": 3053.419921875,
+      "end": 3053.739990234375,
+      "text": " Thanks."
+    },
+    {
+      "start": 3054.93994140625,
+      "end": 3055.739990234375,
+      "text": " I appreciate that."
+    },
+    {
+      "start": 3055.739990234375,
+      "end": 3056.860107421875,
+      "text": " It's going to inflect further."
+    },
+    {
+      "start": 3058.780029296875,
+      "end": 3063.89990234375,
+      "text": " Today, the vast majority of AI is prompted by people."
+    },
+    {
+      "start": 3064.860107421875,
+      "end": 3067.580078125,
+      "text": " I believe that this last month, it has crossed."
+    },
+    {
+      "start": 3069.419921875,
+      "end": 3071.179931640625,
+      "text": " Most AI are now agentic."
+    },
+    {
+      "start": 3071.89990234375,
+      "end": 3075.97998046875,
+      "text": " But in the future, in the future, every company will have a whole bunch of agents."
+    },
+    {
+      "start": 3076.699951171875,
+      "end": 3079.340087890625,
+      "text": " You know, we have 40,000 employees, roughly."
+    },
+    {
+      "start": 3079.340087890625,
+      "end": 3082.3798828125,
+      "text": " In the future, we'll have 400,000 agents, 4 million agents."
+    },
+    {
+      "start": 3082.93994140625,
+      "end": 3084.860107421875,
+      "text": " And those agents are running continuously."
+    },
+    {
+      "start": 3084.860107421875,
+      "end": 3085.89990234375,
+      "text": " They're running in the background."
+    },
+    {
+      "start": 3086.699951171875,
+      "end": 3091.260009765625,
+      "text": " If you have anybody who builds, if you know anybody who builds edge, you know, personal"
+    },
+    {
+      "start": 3091.340087890625,
+      "end": 3095.340087890625,
+      "text": " AI agents, and they run it on their, like a DGX Spark."
+    },
+    {
+      "start": 3096.06005859375,
+      "end": 3102.219970703125,
+      "text": " And, you know, I know a lot of people who run it on DGX stations, this incredible workstation"
+    },
+    {
+      "start": 3102.219970703125,
+      "end": 3102.860107421875,
+      "text": " that we've built."
+    },
+    {
+      "start": 3103.419921875,
+      "end": 3108.219970703125,
+      "text": " And you can buy it from Dell and they're incredible."
+    },
+    {
+      "start": 3108.219970703125,
+      "end": 3115.419921875,
+      "text": " And these AI agents running on a DGX station runs 24-7 because you got stuff for it to"
+    },
+    {
+      "start": 3115.419921875,
+      "end": 3116.06005859375,
+      "text": " do all the time."
+    },
+    {
+      "start": 3116.860107421875,
+      "end": 3122.860107421875,
+      "text": " And so when the world goes to agentic, fully agentic, agentic systems, you're going to"
+    },
+    {
+      "start": 3122.860107421875,
+      "end": 3126.699951171875,
+      "text": " have agents running all the time, working with other agents running all the time."
+    },
+    {
+      "start": 3126.699951171875,
+      "end": 3130.139892578125,
+      "text": " And those would be working in the background, improving your company, you know, improving"
+    },
+    {
+      "start": 3130.139892578125,
+      "end": 3130.639892578125,
+      "text": " your lives."
+    },
+    {
+      "start": 3132.06005859375,
+      "end": 3136.860107421875,
+      "text": " In a lot of ways, we're kind of recursive at this point, at this point."
+    },
+    {
+      "start": 3137.5,
+      "end": 3143.260009765625,
+      "text": " And you could argue it's coarse-grained, but every time you run through an agent, it reflects"
+    },
+    {
+      "start": 3143.260009765625,
+      "end": 3145.179931640625,
+      "text": " on how it could do a better job next time."
+    },
+    {
+      "start": 3145.179931640625,
+      "end": 3146.6201171875,
+      "text": " And it updates the skill file."
+    },
+    {
+      "start": 3147.419921875,
+      "end": 3152.4599609375,
+      "text": " And so the skills document, the markdown, is updated at the end of every single one"
+    },
+    {
+      "start": 3152.4599609375,
+      "end": 3153.02001953125,
+      "text": " of them."
+    },
+    {
+      "start": 3153.02001953125,
+      "end": 3155.10009765625,
+      "text": " And so next time you run it, it's going to get better."
+    },
+    {
+      "start": 3155.10009765625,
+      "end": 3161.5,
+      "text": " It's a kind of a loosely coarse-grained self-improvement."
+    },
+    {
+      "start": 3161.5,
+      "end": 3164.699951171875,
+      "text": " And so you see that all over, always."
+    },
+    {
+      "start": 3164.699951171875,
+      "end": 3172.219970703125,
+      "text": " And so in a lot of ways, and for many tasks, we could say that we've already achieved AGI."
+    },
+    {
+      "start": 3172.219970703125,
+      "end": 3176.699951171875,
+      "text": " I think all of those milestones and all those, you know, they're kind of senseless at this"
+    },
+    {
+      "start": 3176.699951171875,
+      "end": 3177.179931640625,
+      "text": " point."
+    },
+    {
+      "start": 3177.179931640625,
+      "end": 3183.89990234375,
+      "text": " I think the most important thing that matters for the industry is that one, AI is now doing"
+    },
+    {
+      "start": 3183.89990234375,
+      "end": 3185.260009765625,
+      "text": " productive and useful work."
+    },
+    {
+      "start": 3186.3798828125,
+      "end": 3189.179931640625,
+      "text": " Two, AI is generating profitable tokens."
+    },
+    {
+      "start": 3190.139892578125,
+      "end": 3195.10009765625,
+      "text": " And three, if we had more compute, we could generate more profitable tokens, which results"
+    },
+    {
+      "start": 3195.10009765625,
+      "end": 3197.419921875,
+      "text": " in more profit for all of the services."
+    },
+    {
+      "start": 3197.419921875,
+      "end": 3200.860107421875,
+      "text": " This is the exact phase where we're at, which is the reason why everybody's leaning in."
+    },
+    {
+      "start": 3202.219970703125,
+      "end": 3209.659912109375,
+      "text": " Your next question comes from the line of Jim Schneider with Goldman Sachs."
+    },
+    {
+      "start": 3210.5400390625,
+      "end": 3211.580078125,
+      "text": " Your line is open."
+    },
+    {
+      "start": 3213.5,
+      "end": 3214.06005859375,
+      "text": " Good afternoon."
+    },
+    {
+      "start": 3214.06005859375,
+      "end": 3215.179931640625,
+      "text": " Thank you for taking my question."
+    },
+    {
+      "start": 3215.820068359375,
+      "end": 3222.219970703125,
+      "text": " If you think about the 100% growth you talked about in terms of the plus unconstrained demand"
+    },
+    {
+      "start": 3222.219970703125,
+      "end": 3226.699951171875,
+      "text": " growth, you're expecting the 70% you expect to fulfill in terms of supply."
+    },
+    {
+      "start": 3226.699951171875,
+      "end": 3232.699951171875,
+      "text": " Can we talk about some of the rank order, some of the most acute constraints, whether"
+    },
+    {
+      "start": 3232.699951171875,
+      "end": 3241.5,
+      "text": " that be things like data center power and shell availability, DRAM, wafer foundry availability,"
+    },
+    {
+      "start": 3241.5,
+      "end": 3242.219970703125,
+      "text": " et cetera."
+    },
+    {
+      "start": 3242.219970703125,
+      "end": 3246.5400390625,
+      "text": " If you can maybe help us understand, you know, which are the biggest among those, that would"
+    },
+    {
+      "start": 3246.5400390625,
+      "end": 3247.260009765625,
+      "text": " be very helpful."
+    },
+    {
+      "start": 3247.260009765625,
+      "end": 3247.659912109375,
+      "text": " Thank you."
+    },
+    {
+      "start": 3250.3798828125,
+      "end": 3253.260009765625,
+      "text": " There's something funny I could say, but I'm going to just not."
+    },
+    {
+      "start": 3254.219970703125,
+      "end": 3263.340087890625,
+      "text": " You know, last year, one of the funnest things to do is just to go figure out where I go"
+    },
+    {
+      "start": 3263.340087890625,
+      "end": 3266.4599609375,
+      "text": " for dinner and who I have dinner with."
+    },
+    {
+      "start": 3266.4599609375,
+      "end": 3268.6201171875,
+      "text": " And their stock price doubles the next day."
+    },
+    {
+      "start": 3269.820068359375,
+      "end": 3274.6201171875,
+      "text": " I think the answer is, our entire supply chain is challenged."
+    },
+    {
+      "start": 3275.89990234375,
+      "end": 3279.02001953125,
+      "text": " And everybody is really running flat out."
+    },
+    {
+      "start": 3279.580078125,
+      "end": 3284.300048828125,
+      "text": " And more capacity is coming online all the time, which is one of the advantages, what's"
+    },
+    {
+      "start": 3284.300048828125,
+      "end": 3285.340087890625,
+      "text": " going to happen this year."
+    },
+    {
+      "start": 3285.89990234375,
+      "end": 3290.699951171875,
+      "text": " It's not going to come online in just, you know, an instance in time, but it's going"
+    },
+    {
+      "start": 3290.699951171875,
+      "end": 3292.6201171875,
+      "text": " to come online every day."
+    },
+    {
+      "start": 3293.340087890625,
+      "end": 3294.6201171875,
+      "text": " Yields are going to get improved."
+    },
+    {
+      "start": 3295.179931640625,
+      "end": 3296.780029296875,
+      "text": " We're going to be doing yield improvement."
+    },
+    {
+      "start": 3297.340087890625,
+      "end": 3303.5,
+      "text": " We're going to work hard on working with every one of our suppliers, you know, and so we"
+    },
+    {
+      "start": 3303.5,
+      "end": 3306.780029296875,
+      "text": " just, we have a, it's not even next year yet."
+    },
+    {
+      "start": 3307.02001953125,
+      "end": 3308.4599609375,
+      "text": " It's not even next year yet."
+    },
+    {
+      "start": 3309.02001953125,
+      "end": 3311.580078125,
+      "text": " And so we've got lots and lots of time to work hard every day."
+    },
+    {
+      "start": 3312.139892578125,
+      "end": 3316.219970703125,
+      "text": " And so at this moment, we have supply for 70%."
+    },
+    {
+      "start": 3317.97998046875,
+      "end": 3321.10009765625,
+      "text": " We have more supply than 70%, but about 70%."
+    },
+    {
+      "start": 3321.820068359375,
+      "end": 3323.260009765625,
+      "text": " Our demand is much higher than that."
+    },
+    {
+      "start": 3323.820068359375,
+      "end": 3331.580078125,
+      "text": " And we've got to go work hard or, you know, we're going to be disappointing customers."
+    },
+    {
+      "start": 3332.3798828125,
+      "end": 3337.739990234375,
+      "text": " And we like not to disappoint our customers and we like to work hard for them."
+    },
+    {
+      "start": 3337.739990234375,
+      "end": 3341.659912109375,
+      "text": " And so I've got, I'm going to need the help of the entire supply chain to help me out"
+    },
+    {
+      "start": 3341.659912109375,
+      "end": 3342.159912109375,
+      "text": " here."
+    },
+    {
+      "start": 3342.699951171875,
+      "end": 3343.739990234375,
+      "text": " But they all know that."
+    },
+    {
+      "start": 3345.580078125,
+      "end": 3351.260009765625,
+      "text": " What I'm telling you about our needs for next year is exactly consistent with what I've"
+    },
+    {
+      "start": 3351.260009765625,
+      "end": 3351.760009765625,
+      "text": " told them."
+    },
+    {
+      "start": 3353.340087890625,
+      "end": 3358.6201171875,
+      "text": " Everybody's on the exact same song sheet and I'm trying to be as transparent as we can"
+    },
+    {
+      "start": 3358.6201171875,
+      "end": 3359.97998046875,
+      "text": " because we're talking about big numbers."
+    },
+    {
+      "start": 3361.580078125,
+      "end": 3362.080078125,
+      "text": " Yeah."
+    },
+    {
+      "start": 3364.93994140625,
+      "end": 3369.419921875,
+      "text": " Your final question comes from the line of Aaron Rakers with Wells Fargo."
+    },
+    {
+      "start": 3369.419921875,
+      "end": 3370.4599609375,
+      "text": " Your line is open."
+    },
+    {
+      "start": 3372.3798828125,
+      "end": 3372.6201171875,
+      "text": " Yeah."
+    },
+    {
+      "start": 3372.6201171875,
+      "end": 3374.5400390625,
+      "text": " Thanks for taking the question."
+    },
+    {
+      "start": 3374.5400390625,
+      "end": 3381.659912109375,
+      "text": " I want to go back to the gigawatts, the 25 to 40 and maybe try and understand like, you"
+    },
+    {
+      "start": 3381.659912109375,
+      "end": 3385.580078125,
+      "text": " know, I think Jensen, you've said at some recent conferences that, you know, that's"
+    },
+    {
+      "start": 3385.580078125,
+      "end": 3386.6201171875,
+      "text": " going to further scale."
+    },
+    {
+      "start": 3386.6201171875,
+      "end": 3391.419921875,
+      "text": " So, you know, as we think about the path, even beyond Vera Rubin, we think about Vera"
+    },
+    {
+      "start": 3391.419921875,
+      "end": 3393.179931640625,
+      "text": " Rubin Ultra and so on and so forth."
+    },
+    {
+      "start": 3393.739990234375,
+      "end": 3398.139892578125,
+      "text": " Like, should we really conceptualize like 40 billion goes to 60 billion, 80 billion."
+    },
+    {
+      "start": 3398.139892578125,
+      "end": 3402.3798828125,
+      "text": " And then, you know, I guess, you know, underneath of that question is how do we kind of"
+    },
+    {
+      "start": 3402.3798828125,
+      "end": 3406.3798828125,
+      "text": " think about your ability to scale the capacity deployments?"
+    },
+    {
+      "start": 3407.10009765625,
+      "end": 3410.6201171875,
+      "text": " You know, is it, is it a linear function or is there something that, you know, kind of"
+    },
+    {
+      "start": 3410.6201171875,
+      "end": 3413.97998046875,
+      "text": " unlocks your ability to supply more demand as we look through fiscal 27?"
+    },
+    {
+      "start": 3415.10009765625,
+      "end": 3415.739990234375,
+      "text": " Great question."
+    },
+    {
+      "start": 3416.219970703125,
+      "end": 3416.860107421875,
+      "text": " Sorry."
+    },
+    {
+      "start": 3416.860107421875,
+      "end": 3417.179931640625,
+      "text": " Yeah."
+    },
+    {
+      "start": 3417.179931640625,
+      "end": 3418.219970703125,
+      "text": " Great question."
+    },
+    {
+      "start": 3418.219970703125,
+      "end": 3418.93994140625,
+      "text": " Great question."
+    },
+    {
+      "start": 3419.89990234375,
+      "end": 3427.419921875,
+      "text": " And very simple is our goal to put as much compute on the plot of land is our goal to"
+    },
+    {
+      "start": 3427.419921875,
+      "end": 3430.780029296875,
+      "text": " put more compute into one gigawatt or less."
+    },
+    {
+      "start": 3431.5,
+      "end": 3437.89990234375,
+      "text": " And so obviously we would like that, you know, the speed of light answer, the perfect"
+    },
+    {
+      "start": 3437.89990234375,
+      "end": 3441.5,
+      "text": " answer is actually infinity per gigawatt."
+    },
+    {
+      "start": 3442.4599609375,
+      "end": 3448.4599609375,
+      "text": " And, and so if we could literally get a trillion dollars of compute into one gigawatt and"
+    },
+    {
+      "start": 3448.4599609375,
+      "end": 3451.820068359375,
+      "text": " one piece of land power shelf, it would be a fantastic outcome."
+    },
+    {
+      "start": 3451.820068359375,
+      "end": 3456.06005859375,
+      "text": " And so the answer is directionally in that direction."
+    },
+    {
+      "start": 3457.260009765625,
+      "end": 3461.580078125,
+      "text": " We started, we started in the world of general purpose computing during Moore's law."
+    },
+    {
+      "start": 3462.5400390625,
+      "end": 3466.3798828125,
+      "text": " We were probably, you know, pick your favorite number, but I'm going to go with something"
+    },
+    {
+      "start": 3466.3798828125,
+      "end": 3472.6201171875,
+      "text": " like 5 billion, $3 billion per gigawatt of compute with, with a general purpose computing."
+    },
+    {
+      "start": 3472.6201171875,
+      "end": 3475.580078125,
+      "text": " And, and then eventually with Hopper, it was 18."
+    },
+    {
+      "start": 3476.3798828125,
+      "end": 3478.06005859375,
+      "text": " Now Grace Blackwell is 25."
+    },
+    {
+      "start": 3478.6201171875,
+      "end": 3480.6201171875,
+      "text": " Next Vera Rubin is 40."
+    },
+    {
+      "start": 3480.6201171875,
+      "end": 3482.6201171875,
+      "text": " And after that, it's going to be higher."
+    },
+    {
+      "start": 3482.6201171875,
+      "end": 3484.139892578125,
+      "text": " And that's excellent."
+    },
+    {
+      "start": 3484.139892578125,
+      "end": 3485.820068359375,
+      "text": " That's fantastic for the industry."
+    },
+    {
+      "start": 3485.820068359375,
+      "end": 3487.739990234375,
+      "text": " It's fantastic for customers."
+    },
+    {
+      "start": 3487.739990234375,
+      "end": 3493.820068359375,
+      "text": " So long as the productivity of it continues to grow, the durability and the fungibility"
+    },
+    {
+      "start": 3493.820068359375,
+      "end": 3501.739990234375,
+      "text": " continues to grow, then people are happy to invest in, in assets that generates revenues,"
+    },
+    {
+      "start": 3501.739990234375,
+      "end": 3506.219970703125,
+      "text": " generates profits and helps them recoup their return so incredibly fast."
+    },
+    {
+      "start": 3506.219970703125,
+      "end": 3510.860107421875,
+      "text": " I mean, I heard the other day that return on investment capital is now less than a year."
+    },
+    {
+      "start": 3512.5400390625,
+      "end": 3515.340087890625,
+      "text": " And we're talking about $50 billion data centers."
+    },
+    {
+      "start": 3515.97998046875,
+      "end": 3522.3798828125,
+      "text": " And so that tells you something about, about the, the the productivity of NBS technology"
+    },
+    {
+      "start": 3522.4599609375,
+      "end": 3523.580078125,
+      "text": " and the rentability of it."
+    },
+    {
+      "start": 3524.699951171875,
+      "end": 3527.179931640625,
+      "text": " I want to thank all of you for joining us today."
+    },
+    {
+      "start": 3531.97998046875,
+      "end": 3534.219970703125,
+      "text": " There are no further questions at this time."
+    },
+    {
+      "start": 3534.219970703125,
+      "end": 3536.699951171875,
+      "text": " Tashia Hari, I'll turn the call back over to you."
+    },
+    {
+      "start": 3538.139892578125,
+      "end": 3538.93994140625,
+      "text": " Thank you."
+    },
+    {
+      "start": 3538.93994140625,
+      "end": 3543.5,
+      "text": " Before we close, please note that Jensen will be participating in a keynote fireside chat"
+    },
+    {
+      "start": 3543.5,
+      "end": 3548.6201171875,
+      "text": " at the Goldman Sachs Communicopia and Technology Conference in San Francisco on September 10th."
+    },
+    {
+      "start": 3549.179931640625,
+      "end": 3553.340087890625,
+      "text": " He'll also be giving a keynote at GTC Berlin on October 21st."
+    },
+    {
+      "start": 3554.06005859375,
+      "end": 3558.3798828125,
+      "text": " Our earnings call to discuss the results of our third quarter of fiscal 2027"
+    },
+    {
+      "start": 3558.3798828125,
+      "end": 3560.139892578125,
+      "text": " is scheduled for November 17th."
+    },
+    {
+      "start": 3560.699951171875,
+      "end": 3562.139892578125,
+      "text": " Thank you for joining us today."
+    },
+    {
+      "start": 3562.139892578125,
+      "end": 3563.659912109375,
+      "text": " Operator, please close the call."
+    },
+    {
+      "start": 3566.6201171875,
+      "end": 3568.5400390625,
+      "text": " This concludes today's conference call."
+    },
+    {
+      "start": 3568.5400390625,
+      "end": 3570.219970703125,
+      "text": " You may now disconnect."
+    }
+  ]
+}

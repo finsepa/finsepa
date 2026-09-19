@@ -381,8 +381,8 @@ export function EarningsEstimatesHeader({
       <SegmentedControl
         aria-label="Statement period"
         options={[
-          { value: "annual", label: "Annual" },
           { value: "quarterly", label: "Quarterly" },
+          { value: "annual", label: "Annual" },
         ]}
         value={period}
         onChange={onPeriodChange}

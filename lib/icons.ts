@@ -198,6 +198,7 @@ export {
   Phone01 as Smartphone,
   PieChart01 as PieChart,
   PlayCircle,
+  PauseCircle,
   Plus,
   PresentationChart01 as Presentation,
   RefreshCcw01 as RefreshCcw,
@@ -258,4 +259,44 @@ export const Contrast: AppIcon = ({
     }),
   );
 
-export { CheckVerified02 as VerifiedBadge, Stop as StopSolid, XCircle } from "@untitledui-pro/icons/solid";
+export {
+  CheckVerified02 as VerifiedBadge,
+  Play as PlaySolid,
+  Stop as StopSolid,
+  XCircle,
+} from "@untitledui-pro/icons/solid";
+
+/** Solid pause bars — pairs with `PlaySolid` on filled circular controls. */
+export const PauseSolid: AppIcon = ({
+  size = 24,
+  color = "currentColor",
+  ...props
+}) =>
+  createElement(
+    "svg",
+    {
+      viewBox: "0 0 24 24",
+      fill: "none",
+      width: size,
+      height: size,
+      color,
+      "aria-hidden": true,
+      ...props,
+    },
+    createElement("rect", {
+      x: 6,
+      y: 5,
+      width: 4,
+      height: 14,
+      rx: 1,
+      fill: "currentColor",
+    }),
+    createElement("rect", {
+      x: 14,
+      y: 5,
+      width: 4,
+      height: 14,
+      rx: 1,
+      fill: "currentColor",
+    }),
+  );

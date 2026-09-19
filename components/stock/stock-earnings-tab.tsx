@@ -260,10 +260,10 @@ function nearestVerticalScrollParent(start: HTMLElement | null): HTMLElement | n
 
 /** Reports table chrome — same inset stroke / hover pad as Stocks companies + Financials. */
 const REPORTS_GRID_CLASS = "grid w-full min-w-0 items-center gap-x-1.5 sm:gap-x-2";
-/** Icon-only Slides/Filings — last track fits two `size-8` buttons + end pad. */
+/** Icon-only Transcript/Slides/Reports — last track fits up to three `size-8` buttons + end pad. */
 const REPORTS_GRID_STYLE = {
   gridTemplateColumns:
-    "minmax(5.75rem, 0.75fr) minmax(5.25rem, 0.7fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(5.5rem, 0.9fr) 5.25rem",
+    "minmax(5.25rem, 0.7fr) minmax(5.75rem, 0.75fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(4.75rem, 0.95fr) minmax(4.5rem, 0.8fr) minmax(5.5rem, 0.9fr) 7.75rem",
 } as const;
 
 const reportsHeaderLabelClass = cn(
@@ -277,6 +277,11 @@ const reportsHeaderNumClass = cn(
 );
 
 const reportsLabelCellClass = cn("min-w-0 text-left", TABLE_START_ALIGNED_PAD_CLASS);
+
+const reportsQuarterCellClass = cn(
+  "min-w-0 w-full text-right font-semibold leading-5 text-fg",
+  TABLE_END_ALIGNED_PAD_CLASS,
+);
 
 const reportsNumCellClass = cn(
   "min-w-0 w-full text-right font-['Inter'] text-[14px] font-normal leading-5 tabular-nums text-fg",
@@ -611,8 +616,8 @@ function ReportsHeaderRow() {
           className={cn(REPORTS_GRID_CLASS, "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted")}
           style={REPORTS_GRID_STYLE}
         >
-          <div className={reportsHeaderLabelClass}>Quarter</div>
           <div className={reportsHeaderLabelClass}>Date</div>
+          <div className={reportsHeaderNumClass}>Quarter</div>
           <div className={reportsHeaderNumClass}>EPS</div>
           <div className={cn(reportsHeaderNumClass, "whitespace-nowrap")}>Surprise</div>
           <div className={reportsHeaderNumClass}>Revenue</div>
@@ -727,10 +732,10 @@ function TableSkeleton() {
                 style={REPORTS_GRID_STYLE}
               >
                 <div className={reportsLabelCellClass}>
-                  <SkeletonBox className="h-4 w-[70%] rounded" />
-                </div>
-                <div className={reportsLabelCellClass}>
                   <SkeletonBox className="h-4 w-[55%] rounded" />
+                </div>
+                <div className={reportsQuarterCellClass}>
+                  <SkeletonBox className="ml-auto block h-4 w-[70%] rounded" />
                 </div>
                 {Array.from({ length: 5 }).map((__, c) => (
                   <div key={c} className={reportsNumCellClass}>
@@ -1124,13 +1129,13 @@ export function StockEarningsTabContent({
                         style={REPORTS_GRID_STYLE}
                       >
                         <div className={reportsLabelCellClass}>
-                          <div className="truncate font-semibold leading-5 text-fg">
-                            {formatReportsFiscalPeriodLabel(entry.row.fiscalPeriodLabel)}
-                          </div>
-                        </div>
-                        <div className={reportsLabelCellClass}>
                           <div className="truncate font-['Inter'] text-[14px] font-medium leading-5 text-fg">
                             {reportDayLineFromDisplay(entry.row.reportDateDisplay)}
+                          </div>
+                        </div>
+                        <div className={reportsQuarterCellClass}>
+                          <div className="truncate">
+                            {formatReportsFiscalPeriodLabel(entry.row.fiscalPeriodLabel)}
                           </div>
                         </div>
                         <ReportsActualCell

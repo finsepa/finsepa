@@ -3,12 +3,13 @@ import { NextResponse } from "next/server";
 import { CACHE_CONTROL_PRIVATE_DIVIDENDS_SCHEDULE } from "@/lib/data/cache-policy";
 import { buildPortfolioDividendsSchedule } from "@/lib/portfolio/portfolio-dividends-schedule-server";
 import { parsePublicListingSnapshotFromMetrics } from "@/lib/portfolio/public-listing-snapshot";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
 type RouteCtx = { params: Promise<{ listingId: string }> };
 
-export async function GET(_request: Request, ctx: RouteCtx) {
+/** Auth: Bearer or cookie via `requireAuthUserFromRequest` (native iOS clients). */
+export async function GET(request: Request, ctx: RouteCtx) {
   try {
     const { listingId } = await ctx.params;
     const id = listingId?.trim();
@@ -16,8 +17,8 @@ export async function GET(_request: Request, ctx: RouteCtx) {
       return NextResponse.json({ error: "listingId is required." }, { status: 400 });
     }
 
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
 
     const { data, error } = await supabase
       .from("public_portfolio_listings")

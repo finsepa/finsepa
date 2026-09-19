@@ -5,8 +5,8 @@ import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
 import { avatarUrlFromUser, displayNameFromUser } from "@/lib/auth/user-display";
 import { enrichPublicListingCardMetricsLive } from "@/lib/portfolio/public-listing-metrics-server";
 import { sanitizePublicListingSnapshot } from "@/lib/portfolio/public-listing-snapshot";
-import { requireAuthUser, AuthRequiredError } from "@/lib/watchlist/api-auth";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
+import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
 const NUMERIC_METRIC_KEYS = [
   "valueUsd",
@@ -62,11 +62,13 @@ function ownerFieldsForListingMetrics(user: User): { ownerDisplayName: string; o
   return ownerAvatarUrl ? { ownerDisplayName, ownerAvatarUrl } : { ownerDisplayName };
 }
 
-/** Community directory: all published snapshots (authenticated users). */
-export async function GET() {
+/** Community directory: all published snapshots (authenticated users).
+ * Auth: Bearer or cookie via `requireAuthUserFromRequest` (native iOS clients).
+ */
+export async function GET(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    await requireAuthUser(supabase);
+    await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
 
     const { data, error } = await supabase
       .from("public_portfolio_listings")
@@ -112,8 +114,8 @@ type PutBody = {
 /** Publish or unpublish the current user's portfolio snapshot. */
 export async function PUT(request: Request) {
   try {
-    const supabase = await getSupabaseServerClient();
-    const user = await requireAuthUser(supabase);
+    const user = await requireAuthUserFromRequest(request);
+    const supabase = await getSupabaseClientForRequest(request);
 
     let body: PutBody;
     try {

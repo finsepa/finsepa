@@ -1,0 +1,44 @@
+[
+  {
+    "fiscalPeriodLabel": "Q2 2027",
+    "eventDateYmd": "2026-08-26",
+    "fixtureFile": "nvda-q2-2027-transcript.json",
+    "sourceUrl": "https://s201.q4cdn.com/141608511/files/content_files/TRANSCRIPT_-NVIDIA-Corp-NVDA-US-Q2-2027-Earnings-Call-26-August-2026-5_00-PM-ET.pdf",
+    "paragraphCount": 74
+  },
+  {
+    "fiscalPeriodLabel": "Q1 2027",
+    "eventDateYmd": "2026-05-20",
+    "fixtureFile": "nvda-q1-2027-transcript.json",
+    "sourceUrl": "https://s201.q4cdn.com/141608511/files/doc_financials/2027/q1/NVDA-Q1-2027-Earnings-Call-20-May-2026-5_00-PM-ET.pdf",
+    "paragraphCount": 74
+  },
+  {
+    "fiscalPeriodLabel": "Q4 2026",
+    "eventDateYmd": "2026-02-25",
+    "fixtureFile": "nvda-q4-2026-transcript.json",
+    "sourceUrl": "https://s201.q4cdn.com/141608511/files/doc_financials/2026/q4/NVDA-Q4-2026-Earnings-Call-25-February-2026-5_00-PM-ET.pdf",
+    "paragraphCount": 85
+  },
+  {
+    "fiscalPeriodLabel": "Q3 2026",
+    "eventDateYmd": "2025-11-19",
+    "fixtureFile": "nvda-q3-2026-transcript.json",
+    "sourceUrl": "https://s201.q4cdn.com/141608511/files/doc_financials/2026/q3/NVDA-Q3-2026-Earnings-Call-19-November-2025-5_00-PM-ET.pdf",
+    "paragraphCount": 80
+  },
+  {
+    "fiscalPeriodLabel": "Q2 2026",
+    "eventDateYmd": "2025-08-27",
+    "fixtureFile": "nvda-q2-2026-transcript.json",
+    "sourceUrl": "https://s201.q4cdn.com/141608511/files/doc_financials/2026/q2/NVDA-Q2-2026-Earnings-Call-27-August-2025-5_00-PM-ET.pdf",
+    "paragraphCount": 69
+  },
+  {
+    "fiscalPeriodLabel": "Q1 2026",
+    "eventDateYmd": "2025-05-28",
+    "fixtureFile": "nvda-q1-2026-transcript.json",
+    "sourceUrl": "https://s201.q4cdn.com/141608511/files/doc_financials/2026/q1/NVDA-Q1-2026-Earnings-Call-28-May-2025-5_00-PM-ET.pdf",
+    "paragraphCount": 70
+  }
+]

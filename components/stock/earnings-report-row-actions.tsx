@@ -1,18 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { FileSearch, Presentation } from "@/lib/icons";
+import { FileSearch, FileText, Presentation } from "@/lib/icons";
 
 import {
   EarningsPdfPreviewModal,
   type EarningsDocumentPreviewTab,
 } from "@/components/stock/earnings-pdf-preview-modal";
+import { EarningsTranscriptModal } from "@/components/stock/earnings-transcript-modal";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { getCuratedIrEarningsRowUrls } from "@/lib/market/earnings-ir-curated-lookup";
 import {
   earningsDocumentPreviewKind,
   isEarningsSlidesPreviewUrl,
 } from "@/lib/market/earnings-document-url";
+import { getNvdaEarningsTranscript } from "@/lib/market/nvda-earnings-transcript";
+import type { NvdaEarningsTranscript } from "@/lib/market/nvda-earnings-transcript-fixture";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 import { secondaryOutlineButtonClassName } from "@/components/design-system";
 import { cn } from "@/lib/utils";
@@ -71,7 +74,7 @@ type Props = {
 };
 
 /**
- * Slides (Company IR) + Reports (HIGH SEC 8-K / 10-Q/10-K).
+ * Slides (Company IR) + Reports (HIGH SEC 8-K / 10-Q/10-K) + NVDA-only transcript fixture.
  * Does not show empty actions. Vault IR filings are preserved in the payload but are not a v1 action.
  */
 export function EarningsReportRowActions({ row, listingTicker }: Props) {
@@ -80,13 +83,16 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
   const eightKUrl = previewable(row.eightKUrl) ? row.eightKUrl : null;
   const form10Url = previewable(row.form10Url) ? row.form10Url : null;
   const form10Label = row.form10Kind === "10-K" ? "10-K" : "10-Q";
+  const transcript = getNvdaEarningsTranscript(listingTicker, row);
   const [preview, setPreview] = useState<PreviewState>(null);
+  const [transcriptOpen, setTranscriptOpen] = useState<NvdaEarningsTranscript | null>(null);
 
   const showSlides = released && previewable(slidesUrl);
   const showReportsPair = released && eightKUrl && form10Url;
   const showReportSingle = released && !showReportsPair && (eightKUrl != null || form10Url != null);
+  const showTranscript = transcript != null;
 
-  if (!showSlides && !showReportsPair && !showReportSingle) return null;
+  if (!showSlides && !showReportsPair && !showReportSingle && !showTranscript) return null;
 
   const reportsTabs: EarningsDocumentPreviewTab[] | undefined = showReportsPair
     ? [
@@ -107,7 +113,17 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
         tabs={preview?.tabs}
         onClose={() => setPreview(null)}
       />
+      <EarningsTranscriptModal
+        open={transcriptOpen != null}
+        transcript={transcriptOpen}
+        onClose={() => setTranscriptOpen(null)}
+      />
       <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2">
+        {showTranscript ? (
+          <ActionButton label="Transcript" onClick={() => setTranscriptOpen(transcript)}>
+            <FileText className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
+          </ActionButton>
+        ) : null}
         {showSlides ? (
           <ActionButton
             label="Slides"

@@ -16,8 +16,14 @@ describe("sessionMarkUsd", () => {
     assert.equal(sessionMarkUsd(null, 90.1), 90.1);
   });
 
-  it("uses hourly when EOD is missing", () => {
+  it("uses hourly when EOD is missing (live session)", () => {
     assert.equal(sessionMarkUsd(90.4, null), 90.4);
+  });
+
+  it("adjusted-eod-only never trusts as-traded prints", () => {
+    assert.equal(sessionMarkUsd(700.12, 70.01, "adjusted-eod-only"), 70.01);
+    assert.equal(sessionMarkUsd(90.4, null, "adjusted-eod-only"), null);
+    assert.equal(sessionMarkUsd(null, 90.1, "adjusted-eod-only"), 90.1);
   });
 
   it("treats a reverse-split gap the same way", () => {

@@ -9,9 +9,17 @@
 /** Treat a 2×+ gap as a split-scale mismatch, not a same-session move. */
 export const INTRADAY_VS_ADJUSTED_EOD_SPLIT_RATIO = 2;
 
+/**
+ * - `prefer-compatible-intraday` — short ranges (1D/5D/1M): use hourly when it agrees with EOD;
+ *   allow naked hourly only when EOD is missing (live session).
+ * - `adjusted-eod-only` — multi-month NAV (6M/YTD/1Y/…): never trust as-traded prints.
+ */
+export type SessionMarkMode = "prefer-compatible-intraday" | "adjusted-eod-only";
+
 export function sessionMarkUsd(
   intradayPx: number | null | undefined,
   adjustedEodPx: number | null | undefined,
+  mode: SessionMarkMode = "prefer-compatible-intraday",
 ): number | null {
   const intra =
     intradayPx != null && Number.isFinite(intradayPx) && intradayPx > 0 ? intradayPx : null;
@@ -20,10 +28,16 @@ export function sessionMarkUsd(
       adjustedEodPx
     : null;
 
+  if (mode === "adjusted-eod-only") {
+    return eod;
+  }
+
   if (intra != null && eod != null) {
     const ratio = intra >= eod ? intra / eod : eod / intra;
     if (ratio >= INTRADAY_VS_ADJUSTED_EOD_SPLIT_RATIO) return eod;
     return intra;
   }
-  return intra ?? eod;
+  if (eod != null) return eod;
+  // Live / same-session only: EOD not published yet.
+  return intra;
 }
