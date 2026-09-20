@@ -14,8 +14,8 @@ import {
   earningsDocumentPreviewKind,
   isEarningsSlidesPreviewUrl,
 } from "@/lib/market/earnings-document-url";
-import { getNvdaEarningsTranscript } from "@/lib/market/nvda-earnings-transcript";
-import type { NvdaEarningsTranscript } from "@/lib/market/nvda-earnings-transcript-fixture";
+import { getEarningsTranscript } from "@/lib/market/earnings-transcript";
+import type { EarningsTranscript } from "@/lib/market/earnings-transcript-types";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 import { secondaryOutlineButtonClassName } from "@/components/design-system";
 import { cn } from "@/lib/utils";
@@ -74,7 +74,7 @@ type Props = {
 };
 
 /**
- * Slides (Company IR) + Reports (HIGH SEC 8-K / 10-Q/10-K) + NVDA-only transcript fixture.
+ * Slides (Company IR) + Reports (HIGH SEC 8-K / 10-Q/10-K) + curated transcript fixtures.
  * Does not show empty actions. Vault IR filings are preserved in the payload but are not a v1 action.
  */
 export function EarningsReportRowActions({ row, listingTicker }: Props) {
@@ -83,9 +83,9 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
   const eightKUrl = previewable(row.eightKUrl) ? row.eightKUrl : null;
   const form10Url = previewable(row.form10Url) ? row.form10Url : null;
   const form10Label = row.form10Kind === "10-K" ? "10-K" : "10-Q";
-  const transcript = getNvdaEarningsTranscript(listingTicker, row);
+  const transcript = getEarningsTranscript(listingTicker, row);
   const [preview, setPreview] = useState<PreviewState>(null);
-  const [transcriptOpen, setTranscriptOpen] = useState<NvdaEarningsTranscript | null>(null);
+  const [transcriptOpen, setTranscriptOpen] = useState<EarningsTranscript | null>(null);
 
   const showSlides = released && previewable(slidesUrl);
   const showReportsPair = released && eightKUrl && form10Url;

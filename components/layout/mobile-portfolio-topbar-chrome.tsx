@@ -1,6 +1,7 @@
 "use client";
 
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
+import { PortfolioPublicBadge } from "@/components/portfolio/portfolio-privacy-select";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 
 export function isPortfolioWorkspaceRoute(pathname: string): boolean {
@@ -26,6 +27,9 @@ export function MobilePortfolioTopbarChrome() {
           <span className="inline-block h-7 w-[min(100%,10rem)] max-w-full animate-pulse rounded-md bg-stroke" />
         )}
       </h1>
+      {portfolioDisplayReady && selected ? (
+        <PortfolioPublicBadge privacy={selected.privacy} />
+      ) : null}
       {portfolioDisplayReady ? (
         <TransactionPortfolioField variant="titleGhost" compactMenuAlign="leading" />
       ) : null}

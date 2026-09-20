@@ -10,6 +10,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
+import { CompanyLogo } from "@/components/screener/company-logo";
 import { AppModalOverlay, APP_MODAL_DIALOG_ENTER_CLASS } from "@/components/ui/app-modal-overlay";
 import {
   APP_MODAL_SHELL_OUTER_CLASS,
@@ -18,17 +19,17 @@ import {
 } from "@/components/ui/app-modal-shell";
 import { PauseSolid, PlaySolid, Smartphone } from "@/lib/icons";
 import type {
-  NvdaEarningsTranscript,
-  NvdaTranscriptParagraph,
-  NvdaTranscriptSpeaker,
-  NvdaTranscriptWord,
-} from "@/lib/market/nvda-earnings-transcript-fixture";
-import { companyLogoUrlForTicker } from "@/lib/screener/company-logo-url";
+  EarningsTranscript,
+  EarningsTranscriptParagraph,
+  EarningsTranscriptSpeaker,
+  EarningsTranscriptWord,
+} from "@/lib/market/earnings-transcript-types";
+import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
-  transcript: NvdaEarningsTranscript | null;
+  transcript: EarningsTranscript | null;
   onClose: () => void;
 };
 
@@ -39,7 +40,7 @@ function speakerInitials(name: string): string {
   return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase();
 }
 
-function SpeakerAvatar({ speaker }: { speaker: NvdaTranscriptSpeaker }) {
+function SpeakerAvatar({ speaker }: { speaker: EarningsTranscriptSpeaker }) {
   if (speaker.isOperator) {
     return (
       <div
@@ -70,7 +71,7 @@ function splitWords(text: string): string[] {
 function wordStartSec(
   order: number,
   n: number,
-  timed: readonly NvdaTranscriptWord[] | null,
+  timed: readonly EarningsTranscriptWord[] | null,
   startSec: number,
   endSec: number,
 ): number {
@@ -97,7 +98,7 @@ function KaraokeText({
   text: string;
   startSec: number | null | undefined;
   endSec: number | null | undefined;
-  words?: readonly NvdaTranscriptWord[] | null;
+  words?: readonly EarningsTranscriptWord[] | null;
   currentSec: number;
   hoverSec: number | null;
   state: CardState;
@@ -226,11 +227,11 @@ function SpeakerCard({
   onSeekWord,
   onHoverWord,
 }: {
-  speaker: NvdaTranscriptSpeaker;
+  speaker: EarningsTranscriptSpeaker;
   text: string;
   startSec?: number | null;
   endSec?: number | null;
-  words?: readonly NvdaTranscriptWord[] | null;
+  words?: readonly EarningsTranscriptWord[] | null;
   currentSec: number;
   hoverSec: number | null;
   state: CardState;
@@ -299,7 +300,7 @@ function SpeakerCard({
 }
 
 function activeParagraphIndex(
-  paragraphs: readonly NvdaTranscriptParagraph[],
+  paragraphs: readonly EarningsTranscriptParagraph[],
   currentSec: number,
 ): number {
   const t = Math.max(0, currentSec - PLAYBACK_SYNC_LAG_SEC);
@@ -330,7 +331,7 @@ export function EarningsTranscriptModal({ open, transcript, onClose }: Props) {
   const [audioError, setAudioError] = useState(false);
 
   const speakersById = useMemo(() => {
-    const map = new Map<number, NvdaTranscriptSpeaker>();
+    const map = new Map<number, EarningsTranscriptSpeaker>();
     for (const s of transcript?.speakers ?? []) map.set(s.id, s);
     return map;
   }, [transcript]);
@@ -488,7 +489,7 @@ export function EarningsTranscriptModal({ open, transcript, onClose }: Props) {
   if (!open || !transcript) return null;
 
   const title = `${transcript.companyName} · ${transcript.fiscalPeriodLabel}`;
-  const logoUrl = companyLogoUrlForTicker(transcript.ticker, "nvidia.com");
+  const logoUrl = resolveEquityLogoUrlFromTicker(transcript.ticker);
   const totalDur = durationSec || transcript.durationSec || 0;
   const progress = totalDur > 0 ? Math.min(1, Math.max(0, currentSec / totalDur)) : 0;
 
@@ -560,9 +561,9 @@ export function EarningsTranscriptModal({ open, transcript, onClose }: Props) {
             >
               {audioUrl && audioError ? (
                 <p className="rounded-xl border border-stroke bg-surface px-3 py-2 text-[13px] text-fg-muted dark:border-stroke-shell">
-                  Audio file not found yet. Place the archived webcast at{" "}
-                  <code className="text-fg">public/earnings-audio/NVDA/q2-2027.mp3</code> (or run
-                  the align script), then refresh.
+                  Audio file not found yet. Place the archived webcast under{" "}
+                  <code className="text-fg">public/earnings-audio/NVDA/</code> (or run the capture
+                  script), then refresh.
                 </p>
               ) : null}
               {transcript.paragraphs.map((p, i) => {
@@ -611,11 +612,12 @@ export function EarningsTranscriptModal({ open, transcript, onClose }: Props) {
             )}
           >
             <div className="flex items-center gap-3 px-4 pt-3.5 pb-1.5 sm:px-5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={logoUrl}
-                alt=""
-                className="size-9 shrink-0 rounded-lg bg-surface-muted object-contain"
+              <CompanyLogo
+                name={transcript.companyName}
+                logoUrl={logoUrl}
+                symbol={transcript.ticker}
+                size="40"
+                className="rounded-lg"
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[14px] font-semibold leading-5 text-fg">

@@ -1,0 +1,32 @@
+{
+  "q2-2026": {
+    "pdf": "https://s206.q4cdn.com/479360582/files/doc_events/2026/Jul/22/2026_Q2_Earnings_Transcript.pdf",
+    "youtube": "http://youtube.com/watch?v=LzExSq9DU9w&source_ve_path=OTY3MTQ&embeds_referring_euri=https%3A%2F%2Fabc.xyz%2F",
+    "eventUrl": "https://abc.xyz/investor/events/event-details/2026/2026-Q2-Earnings-Call-2026-GgTAq7Is0z/default.aspx"
+  },
+  "q1-2026": {
+    "pdf": "https://s206.q4cdn.com/479360582/files/doc_events/2026/Apr/29/Alphabet-2026_Q1_Earnings_Transcript.pdf",
+    "youtube": "https://www.youtube.com/watch?v=LPJoiDiVkTI",
+    "eventUrl": "https://abc.xyz/investor/events/event-details/2026/2026-Q1-Earnings-Call-2026-nW8kCrBAKS/default.aspx"
+  },
+  "q4-2025": {
+    "pdf": "https://s206.q4cdn.com/479360582/files/doc_events/2026/Feb/04/2025_Q4_Earnings_Transcript.pdf",
+    "youtube": "https://www.youtube.com/watch?v=mIK5-yi7a-c",
+    "eventUrl": "https://abc.xyz/investor/events/event-details/2026/2025-Q4-Earnings-Call-2026-Dr_C033hS6/default.aspx"
+  },
+  "q3-2025": {
+    "pdf": "https://s206.q4cdn.com/479360582/files/doc_events/2025/Oct/29/2025_Q3_Earnings_Transcript.pdf",
+    "youtube": "https://www.youtube.com/watch?v=hA1OEi6TRYU",
+    "eventUrl": "https://abc.xyz/investor/events/event-details/2025/2025-Q3-Earnings-Call-2025-4OI4Bac_Q9/default.aspx"
+  },
+  "q2-2025": {
+    "pdf": "https://s206.q4cdn.com/479360582/files/doc_financials/2025/q2/2025-q2-earnings-transcript.pdf",
+    "youtube": null,
+    "eventUrl": "https://abc.xyz/investor/events/event-details/2025/2025-Q2-Earnings-Call"
+  },
+  "q1-2025": {
+    "pdf": "https://s206.q4cdn.com/479360582/files/doc_financials/2025/q1/2025-q1-earnings-transcript.pdf",
+    "youtube": null,
+    "eventUrl": "https://abc.xyz/investor/events/event-details/2025/2025-Q1-Earnings-Call/default.aspx"
+  }
+}

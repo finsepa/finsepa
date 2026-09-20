@@ -1,0 +1,28 @@
+{
+  "results": [
+    {
+      "quarter": "Q3-2026",
+      "status": "failed (exit 1)"
+    },
+    {
+      "quarter": "Q2-2026",
+      "status": "failed (exit 1)"
+    },
+    {
+      "quarter": "Q1-2026",
+      "status": "failed (exit 1)"
+    },
+    {
+      "quarter": "Q4-2025",
+      "status": "failed (exit 1)"
+    },
+    {
+      "quarter": "Q3-2025",
+      "status": "failed (exit 1)"
+    },
+    {
+      "quarter": "Q2-2025",
+      "status": "failed (exit 1)"
+    }
+  ]
+}

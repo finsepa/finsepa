@@ -29,6 +29,9 @@ function optionByValue(v: PortfolioPrivacy) {
 export const PORTFOLIO_PRIVACY_TOOLTIP =
   "Private — Only you can view this portfolio.\nPublic — Others can discover and view your holdings on Finsepa.";
 
+export const PORTFOLIO_PUBLIC_BADGE_TOOLTIP =
+  "This portfolio is public and available for read-only to other users";
+
 /** Privacy field label with info tooltip (Create / Edit / Connect brokerage modals). */
 export function PortfolioPrivacyFieldLabel() {
   const plan = usePlanAccessOptional();
@@ -72,6 +75,30 @@ export function PortfolioPrivacyStatus({ privacy }: { privacy: PortfolioPrivacy 
       <Icon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
       <span className="sr-only">{o.label}</span>
     </div>
+  );
+}
+
+/** Compact “Public” badge after the portfolio name — public portfolios only. */
+export function PortfolioPublicBadge({ privacy }: { privacy: PortfolioPrivacy }) {
+  if (privacy !== "public") return null;
+
+  return (
+    <TopbarDelayedTooltip
+      label={PORTFOLIO_PUBLIC_BADGE_TOOLTIP}
+      delayMs={400}
+      placement="bottom"
+      className="inline-flex shrink-0"
+    >
+      <span
+        className="inline-flex shrink-0 items-center gap-1 rounded-md bg-surface-muted px-1.5 py-0.5 text-[11px] font-medium leading-4 text-fg-muted ring-1 ring-stroke"
+        tabIndex={0}
+        role="status"
+        aria-label={PORTFOLIO_PUBLIC_BADGE_TOOLTIP}
+      >
+        <Globe className="size-3 shrink-0" strokeWidth={2.25} aria-hidden />
+        Public
+      </span>
+    </TopbarDelayedTooltip>
   );
 }
 

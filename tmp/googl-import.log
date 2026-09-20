@@ -1,0 +1,50 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.13
+
+=== Q2 2026 (q2-2026) ===
+paras 45 speakers 14 audio true date null
+downloading audio…
+mp3 public/earnings-audio/GOOGL/q2-2026.mp3
+wrote lib/market/fixtures/googl-q2-2026-transcript.json
+
+=== Q1 2026 (q1-2026) ===
+paras 47 speakers 14 audio true date null
+downloading audio…
+mp3 public/earnings-audio/GOOGL/q1-2026.mp3
+wrote lib/market/fixtures/googl-q1-2026-transcript.json
+
+=== Q4 2025 (q4-2025) ===
+paras 46 speakers 14 audio true date null
+downloading audio…
+mp3 public/earnings-audio/GOOGL/q4-2025.mp3
+wrote lib/market/fixtures/googl-q4-2025-transcript.json
+
+=== Q3 2025 (q3-2025) ===
+paras 44 speakers 13 audio true date null
+downloading audio…
+mp3 public/earnings-audio/GOOGL/q3-2025.mp3
+wrote lib/market/fixtures/googl-q3-2025-transcript.json
+
+=== Q2 2025 (q2-2025) ===
+paras 44 speakers 14 audio true date null
+downloading audio…
+mp3 public/earnings-audio/GOOGL/q2-2025.mp3
+wrote lib/market/fixtures/googl-q2-2025-transcript.json
+
+=== Q1 2025 (q1-2025) ===
+paras 40 speakers 13 audio true date null
+downloading audio…
+mp3 public/earnings-audio/GOOGL/q1-2025.mp3
+wrote lib/market/fixtures/googl-q1-2025-transcript.json
+
+Summary
+┌─────────┬───────────┬────────┐
+│ (index) │ slug      │ status │
+├─────────┼───────────┼────────┤
+│ 0       │ 'q2-2026' │ 'ok'   │
+│ 1       │ 'q1-2026' │ 'ok'   │
+│ 2       │ 'q4-2025' │ 'ok'   │
+│ 3       │ 'q3-2025' │ 'ok'   │
+│ 4       │ 'q2-2025' │ 'ok'   │
+│ 5       │ 'q1-2025' │ 'ok'   │
+└─────────┴───────────┴────────┘

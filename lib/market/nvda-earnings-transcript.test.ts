@@ -9,10 +9,9 @@ import {
 } from "./nvda-earnings-transcript.ts";
 
 describe("nvda-earnings-transcript", () => {
-  test("only NVDA is enabled", () => {
+  test("NVDA transcripts are registered", () => {
     assert.equal(isNvdaTranscriptTicker("NVDA"), true);
     assert.equal(isNvdaTranscriptTicker("nvda"), true);
-    assert.equal(isNvdaTranscriptTicker("AAPL"), false);
   });
 
   test("ships all IR-published quarters (FY2026+)", () => {
@@ -65,7 +64,7 @@ describe("nvda-earnings-transcript", () => {
       false,
     );
     assert.equal(
-      hasNvdaEarningsTranscript("AAPL", {
+      hasNvdaEarningsTranscript("MSFT", {
         fiscalPeriodLabel: "Q2 2027",
         reportDateYmd: "2026-08-26",
         reported: true,

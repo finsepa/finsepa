@@ -1,0 +1,122 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.13
+Compressing public/earnings-audio/AAPL/q3-2026.mp3 (41.2MB) → /tmp/aapl-q3-2026-whisper.mp3
+
+=== Aligning AAPL Q3-2026 ===
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.13
+Transcribing with Whisper (words + segments)… /tmp/aapl-q3-2026-whisper.mp3
+Error: Whisper 429: {
+    "error": {
+        "message": "You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "credit_balance_exhausted"
+    }
+}
+
+    at whisperVerbose (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:342:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async main (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:400:14)
+Compressing public/earnings-audio/AAPL/q2-2026.mp3 (40.1MB) → /tmp/aapl-q2-2026-whisper.mp3
+
+=== Aligning AAPL Q2-2026 ===
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.13
+Transcribing with Whisper (words + segments)… /tmp/aapl-q2-2026-whisper.mp3
+Error: Whisper 429: {
+    "error": {
+        "message": "You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "credit_balance_exhausted"
+    }
+}
+
+    at whisperVerbose (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:342:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async main (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:400:14)
+Compressing public/earnings-audio/AAPL/q1-2026.mp3 (39.2MB) → /tmp/aapl-q1-2026-whisper.mp3
+
+=== Aligning AAPL Q1-2026 ===
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.13
+Transcribing with Whisper (words + segments)… /tmp/aapl-q1-2026-whisper.mp3
+Error: Whisper 429: {
+    "error": {
+        "message": "You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "credit_balance_exhausted"
+    }
+}
+
+    at whisperVerbose (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:342:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async main (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:400:14)
+Compressing public/earnings-audio/AAPL/q4-2025.mp3 (37.6MB) → /tmp/aapl-q4-2025-whisper.mp3
+
+=== Aligning AAPL Q4-2025 ===
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.13
+Transcribing with Whisper (words + segments)… /tmp/aapl-q4-2025-whisper.mp3
+Error: Whisper 429: {
+    "error": {
+        "message": "You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "credit_balance_exhausted"
+    }
+}
+
+    at whisperVerbose (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:342:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async main (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:400:14)
+Compressing public/earnings-audio/AAPL/q3-2025.mp3 (29.9MB) → /tmp/aapl-q3-2025-whisper.mp3
+
+=== Aligning AAPL Q3-2025 ===
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.13
+Transcribing with Whisper (words + segments)… /tmp/aapl-q3-2025-whisper.mp3
+Error: Whisper 429: {
+    "error": {
+        "message": "You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "credit_balance_exhausted"
+    }
+}
+
+    at whisperVerbose (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:342:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async main (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:400:14)
+Compressing public/earnings-audio/AAPL/q2-2025.mp3 (37.7MB) → /tmp/aapl-q2-2025-whisper.mp3
+
+=== Aligning AAPL Q2-2025 ===
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.13
+Transcribing with Whisper (words + segments)… /tmp/aapl-q2-2025-whisper.mp3
+Error: Whisper 429: {
+    "error": {
+        "message": "You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "credit_balance_exhausted"
+    }
+}
+
+    at whisperVerbose (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:342:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async main (/Users/rakshamann/Desktop/Finsepa/scripts/nvda-align-earnings-audio.ts:400:14)
+
+Summary
+┌─────────┬───────────┬───────────────────┐
+│ (index) │ quarter   │ status            │
+├─────────┼───────────┼───────────────────┤
+│ 0       │ 'Q3-2026' │ 'failed (exit 1)' │
+│ 1       │ 'Q2-2026' │ 'failed (exit 1)' │
+│ 2       │ 'Q1-2026' │ 'failed (exit 1)' │
+│ 3       │ 'Q4-2025' │ 'failed (exit 1)' │
+│ 4       │ 'Q3-2025' │ 'failed (exit 1)' │
+│ 5       │ 'Q2-2025' │ 'failed (exit 1)' │
+└─────────┴───────────┴───────────────────┘

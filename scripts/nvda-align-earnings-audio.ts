@@ -370,8 +370,11 @@ async function whisperVerbose(
 async function main() {
   const audioPath = arg("audio");
   const quarter = (arg("quarter") ?? "Q2-2027").toUpperCase();
+  const ticker = (arg("ticker") ?? "NVDA").toUpperCase();
   if (!audioPath) {
-    console.error("Usage: --audio=path/to/call.mp3 [--quarter=Q2-2027] [--no-copy] [--refresh]");
+    console.error(
+      "Usage: --audio=path/to/call.mp3 [--ticker=NVDA] [--quarter=Q2-2027] [--no-copy] [--refresh]",
+    );
     process.exit(1);
   }
   if (!existsSync(audioPath)) {
@@ -385,14 +388,15 @@ async function main() {
   }
 
   const slug = quarter.toLowerCase().replace(/\s+/g, "-");
-  const fixturePath = path.join("lib/market/fixtures", `nvda-${slug}-transcript.json`);
+  const tickerSlug = ticker.toLowerCase();
+  const fixturePath = path.join("lib/market/fixtures", `${tickerSlug}-${slug}-transcript.json`);
   if (!existsSync(fixturePath)) {
     console.error("Fixture not found:", fixturePath);
     process.exit(1);
   }
 
   const fixture = JSON.parse(readFileSync(fixturePath, "utf8")) as Fixture;
-  const cachePath = path.join("tmp", `nvda-${slug}-whisper-words.json`);
+  const cachePath = path.join("tmp", `${tickerSlug}-${slug}-whisper-words.json`);
   const tr = await whisperVerbose(audioPath, apiKey, cachePath);
   if (tr.segments.length === 0 && tr.words.length === 0) {
     console.error("No Whisper segments/words returned");
@@ -411,13 +415,13 @@ async function main() {
   }));
   fixture.durationSec = Math.round(duration * 100) / 100;
   fixture.audioSync = tr.words.length > 0 ? "whisper-words" : "whisper-contiguous";
-  fixture.audioUrl = `/earnings-audio/NVDA/${slug}.mp3`;
+  fixture.audioUrl = `/earnings-audio/${ticker}/${slug}.mp3`;
 
   writeFileSync(fixturePath, JSON.stringify(fixture, null, 2) + "\n");
   console.log("Wrote", fixturePath);
 
   if (!hasFlag("no-copy")) {
-    const publicDir = path.join("public/earnings-audio/NVDA");
+    const publicDir = path.join(`public/earnings-audio/${ticker}`);
     mkdirSync(publicDir, { recursive: true });
     const publicMp3 = path.join(publicDir, `${slug}.mp3`);
     copyFileSync(audioPath, publicMp3);

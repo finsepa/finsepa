@@ -1,0 +1,44 @@
+[
+  {
+    "fiscalPeriodLabel": "Q3 2026",
+    "eventDateYmd": "2026-07-31",
+    "fixtureFile": "aapl-q3-2026-transcript.json",
+    "audioFile": "q3-2026.mp3",
+    "sourceUrl": "https://stockanalysis.com/stocks/aapl/transcripts/658553-q3-2026/"
+  },
+  {
+    "fiscalPeriodLabel": "Q2 2026",
+    "eventDateYmd": "2026-05-01",
+    "fixtureFile": "aapl-q2-2026-transcript.json",
+    "audioFile": "q2-2026.mp3",
+    "sourceUrl": "https://stockanalysis.com/stocks/aapl/transcripts/548666-q2-2026/"
+  },
+  {
+    "fiscalPeriodLabel": "Q1 2026",
+    "eventDateYmd": "2026-01-29",
+    "fixtureFile": "aapl-q1-2026-transcript.json",
+    "audioFile": "q1-2026.mp3",
+    "sourceUrl": "https://stockanalysis.com/stocks/aapl/transcripts/406161-q1-2026/"
+  },
+  {
+    "fiscalPeriodLabel": "Q4 2025",
+    "eventDateYmd": "2025-10-30",
+    "fixtureFile": "aapl-q4-2025-transcript.json",
+    "audioFile": "q4-2025.mp3",
+    "sourceUrl": "https://stockanalysis.com/stocks/aapl/transcripts/369370-q4-2025/"
+  },
+  {
+    "fiscalPeriodLabel": "Q3 2025",
+    "eventDateYmd": "2025-07-31",
+    "fixtureFile": "aapl-q3-2025-transcript.json",
+    "audioFile": "q3-2025.mp3",
+    "sourceUrl": "https://stockanalysis.com/stocks/aapl/transcripts/341149-q3-2025/"
+  },
+  {
+    "fiscalPeriodLabel": "Q2 2025",
+    "eventDateYmd": "2025-05-01",
+    "fixtureFile": "aapl-q2-2025-transcript.json",
+    "audioFile": "q2-2025.mp3",
+    "sourceUrl": "https://stockanalysis.com/stocks/aapl/transcripts/311069-q2-2025/"
+  }
+]

@@ -30,12 +30,18 @@ import {
   importTransactionsMenuIconAnimation,
   newTradeMenuIconAnimation,
 } from "@/lib/lottie/quick-add-menu-animations";
+import {
+  createCombinedPortfolioMenuIconAnimation,
+  createPortfolioMenuIconAnimation,
+} from "@/lib/lottie/portfolio-menu-animations";
 import { cn } from "@/lib/utils";
 
-type QuickAddItemId = "trade" | "cash" | "connectBrokerage" | "import";
+type ActivityItemId = "trade" | "cash" | "connectBrokerage" | "import";
+type PortfolioItemId = "createPortfolio" | "createCombined";
+type QuickAddItemId = ActivityItemId | PortfolioItemId;
 
 /**
- * (+) quick menu — used on the Portfolio page header (activity actions only).
+ * (+) quick menu — Portfolio page header: activity actions + create portfolio options.
  */
 export function PortfolioQuickAddMenu({
   triggerClassName,
@@ -60,6 +66,8 @@ export function PortfolioQuickAddMenu({
     openAddCash,
     openConnectBrokerageToSelected,
     openImportTransactions,
+    openCreatePortfolio,
+    openCreateCombinedPortfolio,
     selectedPortfolioReadOnly,
     selectedPortfolioId,
   } = usePortfolioWorkspace();
@@ -77,8 +85,13 @@ export function PortfolioQuickAddMenu({
     portfolioIsDemo(selectedPortfolio) ||
     portfolioIsLiveBrokerage(selectedPortfolio);
 
+  const hasEnoughSourcesForCombined = portfolios.filter((p) => p.kind !== "combined").length >= 2;
+  const createPortfolioProLocked = Boolean(plan?.isFree && !plan.canCreatePortfolio);
+  const createCombinedProLocked = Boolean(plan && !plan.canCreateCombinedPortfolio);
+  const createCombinedDisabled = !hasEnoughSourcesForCombined;
+
   const activityItems: Array<{
-    id: QuickAddItemId;
+    id: ActivityItemId;
     label: string;
     disabled: boolean;
     title?: string;
@@ -117,6 +130,35 @@ export function PortfolioQuickAddMenu({
     },
   ];
 
+  const portfolioItems: Array<{
+    id: PortfolioItemId;
+    label: string;
+    disabled: boolean;
+    title?: string;
+    showProBadge?: boolean;
+  }> = [
+    {
+      id: "createPortfolio",
+      label: "Create New Portfolio",
+      disabled: false,
+      showProBadge: createPortfolioProLocked,
+      title: createPortfolioProLocked
+        ? "Free includes 1 manual portfolio — upgrade to Pro to add more"
+        : undefined,
+    },
+    {
+      id: "createCombined",
+      label: "Create Combined Portfolio",
+      disabled: createCombinedDisabled,
+      showProBadge: createCombinedProLocked,
+      title: createCombinedDisabled
+        ? "Create at least two portfolios to combine them"
+        : createCombinedProLocked
+          ? "Combined portfolios are available on Pro only"
+          : undefined,
+    },
+  ];
+
   useEffect(() => {
     if (!open) setPlayingId(null);
   }, [open]);
@@ -145,7 +187,9 @@ export function PortfolioQuickAddMenu({
     if (id === "trade") openNewTransaction();
     else if (id === "cash") openAddCash();
     else if (id === "connectBrokerage") void openConnectBrokerageToSelected();
-    else openImportTransactions();
+    else if (id === "import") openImportTransactions();
+    else if (id === "createPortfolio") openCreatePortfolio();
+    else openCreateCombinedPortfolio();
   }
 
   function itemIcon(id: QuickAddItemId) {
@@ -161,12 +205,31 @@ export function PortfolioQuickAddMenu({
         <DropdownMenuLottieIcon animationData={connectBrokerageMenuIconAnimation} playing={playing} />
       );
     }
+    if (id === "import") {
+      return (
+        <DropdownMenuLottieIcon animationData={importTransactionsMenuIconAnimation} playing={playing} />
+      );
+    }
+    if (id === "createPortfolio") {
+      return (
+        <DropdownMenuLottieIcon animationData={createPortfolioMenuIconAnimation} playing={playing} />
+      );
+    }
     return (
-      <DropdownMenuLottieIcon animationData={importTransactionsMenuIconAnimation} playing={playing} />
+      <DropdownMenuLottieIcon
+        animationData={createCombinedPortfolioMenuIconAnimation}
+        playing={playing}
+      />
     );
   }
 
-  function renderItem(item: (typeof activityItems)[number]) {
+  function renderItem(item: {
+    id: QuickAddItemId;
+    label: string;
+    disabled: boolean;
+    title?: string;
+    showProBadge?: boolean;
+  }) {
     const { id, label, disabled, title, showProBadge } = item;
     /** Pro-gated rows stay interactive so Free users can open View Plans. */
     const hardDisabled = disabled && !showProBadge;
@@ -195,7 +258,15 @@ export function PortfolioQuickAddMenu({
         {itemIcon(id)}
         <span className="min-w-0 flex-1 truncate text-left">{label}</span>
         {showProBadge ? (
-          <ProFeatureBadge label="Brokerage sync is available on Pro only" />
+          <ProFeatureBadge
+            label={
+              id === "createCombined"
+                ? "Combined portfolios are available on Pro only"
+                : id === "createPortfolio"
+                  ? "Free includes 1 manual portfolio — upgrade to Pro to add more"
+                  : "Brokerage sync is available on Pro only"
+            }
+          />
         ) : null}
       </button>
     );
@@ -263,6 +334,9 @@ export function PortfolioQuickAddMenu({
             </div>
           ) : null}
           {activityItems.map(renderItem)}
+          <div className="my-1 border-t border-dropdown-divider" role="separator" />
+          <div className="px-3 py-1.5 text-xs font-medium leading-4 text-fg-muted">Portfolios</div>
+          {portfolioItems.map(renderItem)}
         </div>
       </TopbarDropdownPortal>
     </div>

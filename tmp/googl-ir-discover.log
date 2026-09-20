@@ -1,0 +1,19 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.13
+found 0
+MISS q2-2026
+MISS q1-2026
+MISS q4-2025
+MISS q3-2025
+MISS q2-2025
+MISS q1-2025
+┌─────────┬───────────┬─────────────────┬───────┬───────┐
+│ (index) │ slug      │ status          │ pdf   │ yt    │
+├─────────┼───────────┼─────────────────┼───────┼───────┤
+│ 0       │ 'q2-2026' │ 'no event link' │ false │ false │
+│ 1       │ 'q1-2026' │ 'no event link' │ false │ false │
+│ 2       │ 'q4-2025' │ 'no event link' │ false │ false │
+│ 3       │ 'q3-2025' │ 'no event link' │ false │ false │
+│ 4       │ 'q2-2025' │ 'no event link' │ false │ false │
+│ 5       │ 'q1-2025' │ 'no event link' │ false │ false │
+└─────────┴───────────┴─────────────────┴───────┴───────┘

@@ -1,0 +1,40 @@
+{
+  "results": [
+    {
+      "slug": "q2-2026",
+      "status": "ok",
+      "pdf": "https://s206.q4cdn.com/479360582/files/doc_events/2026/Jul/22/2026_Q2_Earnings_Transcript.pdf",
+      "youtube": "https://www.youtube.com/watch?v=LzExSq9DU9w"
+    },
+    {
+      "slug": "q1-2026",
+      "status": "ok",
+      "pdf": "https://s206.q4cdn.com/479360582/files/doc_events/2026/Apr/29/Alphabet-2026_Q1_Earnings_Transcript.pdf",
+      "youtube": "https://www.youtube.com/watch?v=LPJoiDiVkTI"
+    },
+    {
+      "slug": "q4-2025",
+      "status": "ok",
+      "pdf": "https://s206.q4cdn.com/479360582/files/doc_events/2026/Feb/04/2025_Q4_Earnings_Transcript.pdf",
+      "youtube": "https://www.youtube.com/watch?v=mIK5-yi7a-c"
+    },
+    {
+      "slug": "q3-2025",
+      "status": "ok",
+      "pdf": "https://s206.q4cdn.com/479360582/files/doc_events/2025/Oct/29/2025_Q3_Earnings_Transcript.pdf",
+      "youtube": "https://www.youtube.com/watch?v=hA1OEi6TRYU"
+    },
+    {
+      "slug": "q2-2025",
+      "status": "ok",
+      "pdf": "https://s206.q4cdn.com/479360582/files/doc_financials/2025/q2/2025-q2-earnings-transcript.pdf",
+      "youtube": "https://www.youtube.com/watch?v=BtXRNTgsgpU"
+    },
+    {
+      "slug": "q1-2025",
+      "status": "ok",
+      "pdf": "https://s206.q4cdn.com/479360582/files/doc_financials/2025/q1/2025-q1-earnings-transcript.pdf",
+      "youtube": "https://www.youtube.com/watch?v=SySgINoaI9A"
+    }
+  ]
+}

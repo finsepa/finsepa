@@ -1,0 +1,29 @@
+{
+  "generatedAt": "2026-09-19T09:44:53.347Z",
+  "results": [
+    {
+      "quarter": "Q2-2027",
+      "status": "ok"
+    },
+    {
+      "quarter": "Q1-2027",
+      "status": "ok"
+    },
+    {
+      "quarter": "Q4-2026",
+      "status": "ok"
+    },
+    {
+      "quarter": "Q3-2026",
+      "status": "ok"
+    },
+    {
+      "quarter": "Q2-2026",
+      "status": "ok"
+    },
+    {
+      "quarter": "Q1-2026",
+      "status": "ok"
+    }
+  ]
+}

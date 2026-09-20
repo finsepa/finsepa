@@ -1,0 +1,62 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.13
+
+=== Q2 2026 (q2-2026) ===
+pdf https://s206.q4cdn.com/479360582/files/doc_events/2026/Jul/22/2026_Q2_Earnings_Transcript.pdf
+youtube https://www.youtube.com/watch?v=LzExSq9DU9w
+downloading PDF…
+speakers 5 paras 168
+downloading YouTube audio…
+wrote lib/market/fixtures/googl-q2-2026-transcript.json
+
+=== Q1 2026 (q1-2026) ===
+pdf https://s206.q4cdn.com/479360582/files/doc_events/2026/Apr/29/Alphabet-2026_Q1_Earnings_Transcript.pdf
+youtube https://www.youtube.com/watch?v=LPJoiDiVkTI
+downloading PDF…
+speakers 5 paras 162
+downloading YouTube audio…
+wrote lib/market/fixtures/googl-q1-2026-transcript.json
+
+=== Q4 2025 (q4-2025) ===
+pdf https://s206.q4cdn.com/479360582/files/doc_events/2026/Feb/04/2025_Q4_Earnings_Transcript.pdf
+youtube https://www.youtube.com/watch?v=mIK5-yi7a-c
+downloading PDF…
+speakers 5 paras 169
+downloading YouTube audio…
+wrote lib/market/fixtures/googl-q4-2025-transcript.json
+
+=== Q3 2025 (q3-2025) ===
+pdf https://s206.q4cdn.com/479360582/files/doc_events/2025/Oct/29/2025_Q3_Earnings_Transcript.pdf
+youtube https://www.youtube.com/watch?v=hA1OEi6TRYU
+downloading PDF…
+speakers 5 paras 148
+downloading YouTube audio…
+wrote lib/market/fixtures/googl-q3-2025-transcript.json
+
+=== Q2 2025 (q2-2025) ===
+pdf https://s206.q4cdn.com/479360582/files/doc_financials/2025/q2/2025-q2-earnings-transcript.pdf
+youtube https://www.youtube.com/watch?v=BtXRNTgsgpU
+downloading PDF…
+speakers 5 paras 160
+downloading YouTube audio…
+wrote lib/market/fixtures/googl-q2-2025-transcript.json
+
+=== Q1 2025 (q1-2025) ===
+pdf https://s206.q4cdn.com/479360582/files/doc_financials/2025/q1/2025-q1-earnings-transcript.pdf
+youtube https://www.youtube.com/watch?v=SySgINoaI9A
+downloading PDF…
+speakers 5 paras 151
+downloading YouTube audio…
+wrote lib/market/fixtures/googl-q1-2025-transcript.json
+
+Summary
+┌─────────┬───────────┬────────┐
+│ (index) │ slug      │ status │
+├─────────┼───────────┼────────┤
+│ 0       │ 'q2-2026' │ 'ok'   │
+│ 1       │ 'q1-2026' │ 'ok'   │
+│ 2       │ 'q4-2025' │ 'ok'   │
+│ 3       │ 'q3-2025' │ 'ok'   │
+│ 4       │ 'q2-2025' │ 'ok'   │
+│ 5       │ 'q1-2025' │ 'ok'   │
+└─────────┴───────────┴────────┘

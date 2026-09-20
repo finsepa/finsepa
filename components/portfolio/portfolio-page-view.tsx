@@ -8,7 +8,6 @@ import { topbarSquircleIconClass } from "@/components/design-system/topbar-contr
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
-import { PortfolioCreateMenu } from "@/components/layout/portfolio-create-menu";
 import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
 import { PortfolioAllocationView } from "@/components/portfolio/portfolio-allocation-view";
 import { PortfolioEarningsTable } from "@/components/portfolio/portfolio-earnings-table";
@@ -37,6 +36,7 @@ import {
 import { PortfolioHoldingsSubTabMobileCard } from "@/components/portfolio/portfolio-holdings-sub-tab-mobile-card";
 import { useAllocationCenterAvatar } from "@/components/portfolio/use-allocation-center-avatar";
 import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
+import { PortfolioPublicBadge } from "@/components/portfolio/portfolio-privacy-select";
 import { PortfolioBrokerageOfflineBanner } from "@/components/portfolio/portfolio-brokerage-offline-banner";
 import { PortfolioDemoBanner } from "@/components/portfolio/portfolio-demo-banner";
 import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-status-icon";
@@ -434,8 +434,7 @@ export function PortfolioPageView({
         >
           <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
         </button>
-        <PortfolioCreateMenu aria-label="Create portfolio" />
-        {!ledgerActionsLocked && !showEmptySetupTiles && !showDemoBanner ? (
+        {!ledgerActionsLocked && !showDemoBanner ? (
           <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
         ) : null}
       </>
@@ -468,6 +467,9 @@ export function PortfolioPageView({
                 <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-fg">
                   {portfolioName}
                 </h1>
+                {selectedPortfolio ? (
+                  <PortfolioPublicBadge privacy={selectedPortfolio.privacy} />
+                ) : null}
                 <TransactionPortfolioField variant="titleGhost" compactMenuAlign="leading" />
               </div>
             )}

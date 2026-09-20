@@ -33,7 +33,6 @@ import {
   peekStockEarningsTabPayloadClient,
 } from "@/lib/market/stock-earnings-tab-client";
 import { StockEarningsTabLoading } from "@/components/stock/stock-earnings-tab-loading";
-import { EarningsCountdownBars } from "@/components/stock/earnings-countdown-bars";
 import {
   DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
   TABLE_START_ALIGNED_PAD_CLASS,
@@ -218,10 +217,7 @@ function EarningsCountdownStats({
       </div>
       <div className="flex flex-col gap-1 border-r border-stroke pr-6">
         <dt className={earningsHeaderStatLabelClass}>Days left</dt>
-        <dd className="flex items-center gap-3">
-          <span className={earningsHeaderStatValueClass}>{info ? info.daysLeft : "TBA"}</span>
-          {info ? <EarningsCountdownBars daysLeft={info.daysLeft} /> : null}
-        </dd>
+        <dd className={earningsHeaderStatValueClass}>{info ? info.daysLeft : "TBA"}</dd>
       </div>
       <div className="flex flex-col gap-1 border-r border-stroke pr-6">
         <dt className={earningsHeaderStatLabelClass}>EPS estimate</dt>

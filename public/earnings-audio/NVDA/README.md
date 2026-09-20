@@ -1,19 +1,25 @@
 # Earnings call audio (NVDA)
 
-Archived IR webcast files for the transcript modal (play + click-to-seek).
+Archived IR webcast files for the transcript modal (play + click-to-seek + word sync).
 
-## Q2 FY2027
+## Status
 
-- **File:** `q2-2027.mp3` (~59.5 min, from Q4 IR replay)
-- **Fixture:** `lib/market/fixtures/nvda-q2-2027-transcript.json` (`audioSync: whisper`)
+| Quarter | MP3 | Sync | Duration | IR webcast |
+|---------|-----|------|----------|------------|
+| Q2 2027 | `q2-2027.mp3` | whisper-words | ~59.5 min | https://events.q4inc.com/attendee/842602961 |
+| Q1 2027 | `q1-2027.mp3` | whisper-words | ~59.8 min | https://events.q4inc.com/attendee/345403167 |
+| Q4 2026 | `q4-2026.mp3` | whisper-words | ~66.6 min | https://events.q4inc.com/attendee/412427890 |
+| Q3 2026 | `q3-2026.mp3` | whisper-words | ~64.4 min | https://events.q4inc.com/attendee/615721276 |
+| Q2 2026 | `q2-2026.mp3` | whisper-words | ~59.8 min | https://events.q4inc.com/attendee/991689799 |
+| Q1 2026 | `q1-2026.mp3` | whisper-words | ~62.6 min | https://events.q4inc.com/attendee/988346217 |
 
-Re-align after replacing the MP3:
+## Capture / re-align
 
 ```bash
-# Whisper API limit is 25MB — use a compressed copy for align if needed
-ffmpeg -y -i public/earnings-audio/NVDA/q2-2027.mp3 -ac 1 -b:a 48k /tmp/nvda-q2-whisper.mp3
-npx tsx --env-file=.env.local scripts/nvda-align-earnings-audio.ts \
-  --audio=/tmp/nvda-q2-whisper.mp3 \
-  --quarter=Q2-2027
-# restore stereo playback if the script overwrote it
+# Guest-register + download all missing MP3s from Q4 IR
+npx tsx scripts/nvda-capture-earnings-audio.ts
+npx tsx scripts/nvda-capture-earnings-audio.ts --only=q1-2027 --force
+
+# Whisper word-align every quarter that has an MP3
+npx tsx --env-file=.env.local scripts/nvda-align-all-earnings-audio.ts
 ```

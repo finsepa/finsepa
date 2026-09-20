@@ -203,7 +203,7 @@ function EarningsPeriodBars({
     >
       {showEstimate ? (
         <div
-          className="mt-auto shrink-0 overflow-hidden rounded-t-[4px] rounded-b-none"
+          className="mt-auto shrink-0 overflow-hidden rounded-t-[2px] rounded-b-none"
           style={{
             width: `${widthPx}px`,
             height: `${valueHeightPct(estimate, maxV) * enterProgress}%`,
@@ -215,7 +215,7 @@ function EarningsPeriodBars({
       ) : null}
       {showActual ? (
         <div
-          className="mt-auto shrink-0 rounded-t-[4px] rounded-b-none"
+          className="mt-auto shrink-0 rounded-t-[2px] rounded-b-none"
           style={{
             width: `${widthPx}px`,
             height: `${valueHeightPct(actual, maxV) * enterProgress}%`,

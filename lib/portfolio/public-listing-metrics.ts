@@ -33,6 +33,8 @@ export type PublicPortfolioListingMetrics = {
    * using current net worth as V_end and V_start = 0 before first activity.
    */
   timeWeightedReturnPct?: number | null;
+  /** Trailing 1Y Modified Dietz % — directory list line (not inception TWR). */
+  return1YPct?: number | null;
   ownerDisplayName?: string | null;
   ownerAvatarUrl?: string | null;
   /** Read-only community detail view (`/portfolios/[id]`). */

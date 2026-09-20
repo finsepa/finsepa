@@ -17,6 +17,8 @@ const NUMERIC_METRIC_KEYS = [
   "holdingCount",
   "returnsAthPct",
   "timeWeightedReturnPct",
+  /** Trailing 1Y Modified Dietz % (Retail directory / Managers parity). */
+  "return1YPct",
 ] as const;
 
 /** Persists allowed keys only for `metrics` jsonb (numbers + owner + top symbols). */
