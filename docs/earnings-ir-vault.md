@@ -98,7 +98,33 @@ Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-
 
 ## Status snapshot (2026-09-22)
 
-**Goal:** ~500 companies IR coverage (`EARNINGS_IR_VAULT_COVERAGE_GOAL`). Next-10 #12 wired (~209 dedicated).
+**Goal:** ~500 companies IR coverage (`EARNINGS_IR_VAULT_COVERAGE_GOAL`). Next-10 #14 wired (~229 dedicated).
+
+Next-10 #14 by mcap (after WBKCY on frozen-2026-09-22) — wired: **LITE, MMM, LYG, BCMXY, EMR, NABZY, GLNCY, MHVIY, BCS, BN** (NPPXF skipped → same IR as NTTYY).
+
+- **LITE** (yellow): June FY; earnings call + press on `s21.q4cdn.com/377324469`; Q2’22 slides-only.
+- **MMM** (yellow): slides + earnings_release on CloudFront `/3m/`; Q1’22–Q2’23 slides-only.
+- **LYG** (green): Results presentation + announcement/IMS on lloydsbankinggroup.com Q1’22→Q2’26.
+- **BCMXY** (yellow): filings-only English results on bankcomm.com fileDownload (no decks).
+- **EMR** (green): Sept FY; presentation + earnings release on ir.emerson.com/_assets Q1’22→Q3’26.
+- **NABZY** (yellow): Sept FY half-year 1H→Q2 / FY→Q4 on nab.com.au; Q1/Q3 empty by design.
+- **GLNCY** (yellow): half-year HY→Q2 / Preliminary→Q4 on glencore.com; Q1/Q3 empty by design.
+- **MHVIY** (green): March FY; presentation + press on mhi.com Q1’22→Q1’26.
+- **BCS** (green): Results Presentation + BPLC RA on home.barclays Q1’22→Q2’26.
+- **BN** (yellow): Supplemental + Press on bn.brookfield.com; Q1–Q3’22 empty.
+
+Next-10 #13 by mcap (after XIACY on frozen-2026-09-22) — wired: **ELV, DDOG, JCI, WMB, PROSY, ICE, IFNNY, MNST, CSX, WBKCY** (ATLCY skipped → same IR as ATLKY).
+
+- **ELV** (yellow): Supplemental/Earnings Presentation + Release on `s202.q4cdn.com/665319960`; slides from Q4’23 (Q1’22–Q3’23 filings-only).
+- **DDOG** (yellow): Supplemental + press on investors.datadoghq.com; slides sparse (Q3’23 + Q3’25–Q2’26).
+- **JCI** (green): Sept FY; slides + press on `s21.q4cdn.com/502874060` Q1’22→Q3’26.
+- **WMB** (yellow): Presentation + Release on investor.williams.com/static-files; Q2’23 filings HTML-only, Q4’25 slides null.
+- **PROSY** (yellow): March FY semi-annual HY→Q2 / FY→Q4 on prosus.com; Q1/Q3 empty by design.
+- **ICE** (yellow): Presentation + Press on `s2.q4cdn.com/154085107`; Q2’26 slides missing.
+- **IFNNY** (yellow): Sept FY; investor presentation + press on infineon.com / assets.infineon.com; press gaps.
+- **MNST** (yellow): filings-only `/node/N/pdf` on investors.monsterbevcorp.com (no decks).
+- **CSX** (green): Presentation + QFR on `s2.q4cdn.com/859568992` Q1’22→Q2’26.
+- **WBKCY** (yellow): Sept FY half-year; 1H→Q2 / FY→Q4 on westpac.com.au; Q1/Q3 empty by design.
 
 Next-10 #12 by mcap (after GD on frozen-2026-09-22) — wired: **CEG, MRAAY, MELI, HCA, SNHIY, DUK, NTTYY, HWM, MAR, XIACY**.
 

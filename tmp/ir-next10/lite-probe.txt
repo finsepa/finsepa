@@ -1,0 +1,13 @@
+S https://s21.q4cdn.com/377324469/files/doc_financials/2023/q1/Q1-FY23-Earnings-Presentation.pdf
+S https://s21.q4cdn.com/377324469/files/doc_financials/2025/q1/Q1-FY25-Earnings-Presentation_final.pdf
+S https://s21.q4cdn.com/377324469/files/doc_financials/2025/q2/Q2-FY25-Earnings-Presentation_final.pdf
+S https://s21.q4cdn.com/377324469/files/doc_financials/2025/q3/Q3-FY25-Earnings-Presentation-final_2.pdf
+S https://s21.q4cdn.com/377324469/files/doc_financials/2026/q1/Q1-FY26-Earnings-Presentation_final.pdf
+S https://s21.q4cdn.com/377324469/files/doc_financials/2026/q2/Q2-FY26-Earnings-Presentation-final_2.pdf
+S https://s21.q4cdn.com/377324469/files/doc_financials/2026/q3/Q3-FY26-Earnings-Presentation_final.pdf
+S https://s21.q4cdn.com/377324469/files/doc_financials/2026/q4/Q4-FY26-Earnings-Presentation_final.pdf
+F Q4-2025 https://s21.q4cdn.com/377324469/files/doc_news/Lumentum-Announces-Fourth-Quarter-and-Full-Fiscal-Year-2025-Results-2025.pdf
+F Q2-2026 https://s21.q4cdn.com/377324469/files/doc_news/Lumentum-Announces-Second-Quarter-of-Fiscal-Year-2026-Financial-Results-2026.pdf
+F Q3-2026 https://s21.q4cdn.com/377324469/files/doc_news/Lumentum-Announces-Third-Quarter-of-Fiscal-Year-2026-Financial-Results-2026.pdf
+F Q4-2026 https://s21.q4cdn.com/377324469/files/doc_news/Lumentum-Announces-Fourth-Quarter-and-Full-Fiscal-Year-2026-Results-2026.pdf
+DONE

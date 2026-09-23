@@ -1,0 +1,18 @@
+# IR vault discovery — BCMXY, EMR, NABZY
+Date: 2026-09-23
+Scope: Q1 2022 → latest reported quarter. Catalogs only (no match/apply/allowlist/tests/docs).
+Verify: Range GET bytes 0-7 == %PDF. Never SEC HTML.
+
+BCMXY: trafficLight=yellow  green=0 yellow=18 red=0  irHost=www.bankcomm.com  pdfHost=www.bankcomm.com/BankCommSite  latest=Q2 2026
+  notes: Bank of Communications Co ADR calendar FY. Filings=English Results Announcement PDFs on bankcomm.com (fileDownload.html / legacy fileDownload.do?fileId=). Slides none — no lockable earnings decks on IR/cninfo (briefing convening notices only). Quarterly A+H reporting Q1/interim/Q3/annual. Never SEC HTML. Scope: Ng=0 / Ny=18 / Nr=0. Range-GET %PDF verified.
+
+EMR: trafficLight=green  green=19 yellow=0 red=0  irHost=ir.emerson.com  pdfHost=ir.emerson.com  latest=Q3 2026
+  notes: Emerson Electric Sept FY (user note said calendar — IR is Sept FY). Slides=Earnings Presentation under _assets/.../db/938/*/presentation/; Filings=Earnings Release PDF under _assets/.../emerson/news/. Reject 10-Q/10-K/SEC HTML/webcast. Never SEC HTML. Scope: Ng=19 / Ny=0 / Nr=0. Range-GET %PDF verified.
+
+NABZY: trafficLight=yellow  green=9 yellow=0 red=10  irHost=www.nab.com.au  pdfHost=www.nab.com.au/content/dam/nab/documents/reports/corporate  latest=Q3 2026
+  notes: National Australia Bank ADR Sept FY half-year like Westpac. Slides=*-investor-presentation; Filings=*-results-announcement (fallback asx-announcement / results-summary). Map 1H→Q2, FY→Q4. Q1/Q3 empty by design (trading updates not locked). Never SEC HTML. Scope: Ng=9 / Ny=0 / Nr=10. Range-GET %PDF verified.
+
+Summary:
+  BCMXY  yellow   0/18/0  latest=Q2 2026  host=www.bankcomm.com
+  EMR    green    19/0/0  latest=Q3 2026  host=ir.emerson.com
+  NABZY  yellow   9/0/10  latest=Q3 2026  host=www.nab.com.au

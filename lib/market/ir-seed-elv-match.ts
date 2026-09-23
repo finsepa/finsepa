@@ -1,0 +1,111 @@
+/**
+ * ELV IR seed — 12-31.
+ * Elevance Health (ex-Anthem) calendar FY. Slides=Supplemental/Earnings Presentation on s202.q4cdn.com/665319960 (from Q4 2023 onward); Filings=Earnings Release PDF (Q1'22 as ANTM Press Release PDF). Earlier quarters filings-only — no presentation docs in feed; guessed paths 404. Reject 10-Q/transcript/HTML newsroom. Never SEC HTML. Scope: Ng=11 / Ny=7 / Nr=0. Range-GET %PDF verified.
+ * Never SEC HTML / transcript / 10-Q / 10-K.
+ */
+
+export type ElvQuarterDocs = {
+  slides: string | null;
+  filings: string | null;
+};
+
+export const ELV_IR_PAGES = [
+  "https://ir.elevancehealth.com/events-and-presentations/default.aspx",
+] as const;
+
+export const ELV_KNOWN_QUARTER_DOCS: Readonly<Record<string, ElvQuarterDocs>> = {
+  "Q1 2022": {
+    slides: null,
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2022/q1/1Q2022ANTMEarningsRelease-Final.pdf",
+  },
+  "Q2 2022": {
+    slides: null,
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2022/q2/2Q2022ELVEarningsRelease-(7.20.22).pdf",
+  },
+  "Q3 2022": {
+    slides: null,
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2022/q3/3Q2022ELVEarningsRelease-(10.18.22).pdf",
+  },
+  "Q4 2022": {
+    slides: null,
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2022/q4/4Q2022ELVEarningsRelease-(FINAL).pdf",
+  },
+  "Q1 2023": {
+    slides: null,
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2023/q1/1Q2023ELVEarningsRelease-Final.pdf",
+  },
+  "Q2 2023": {
+    slides: null,
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2023/q2/2Q2023ELVEarningsRelease-Final.pdf",
+  },
+  "Q3 2023": {
+    slides: null,
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2023/q3/3Q2023ELVEarningsRelease_Final.pdf",
+  },
+  "Q4 2023": {
+    slides: "https://s202.q4cdn.com/665319960/files/doc_financials/2023/q4/4Q2023_ELV_Supplemental_Earnings_Presentation-1.pdf",
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2023/q4/4Q2023_ELV_Earnings_Release.pdf",
+  },
+  "Q1 2024": {
+    slides: "https://s202.q4cdn.com/665319960/files/doc_financials/2024/q1/1Q2024_Supplemental_Earnings_Presentation_Final.pdf",
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2024/q1/1Q2024ELVEarningsRelease_Final.pdf",
+  },
+  "Q2 2024": {
+    slides: "https://s202.q4cdn.com/665319960/files/doc_financials/2024/q2/2Q2024_Supplemental_Earnings_Presentation_Final.pdf",
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2024/q2/2Q2024ELVEarningsRelease_Final.pdf",
+  },
+  "Q3 2024": {
+    slides: "https://s202.q4cdn.com/665319960/files/doc_financials/2024/q3/3Q2024ELVEarningsPresentation.pdf",
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2024/q3/3Q2024ELVEarningsRelease.pdf",
+  },
+  "Q4 2024": {
+    slides: "https://s202.q4cdn.com/665319960/files/doc_financials/2024/q4/Earnings-Presentation-4Q-2024-Final.pdf",
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2024/q4/4Q2024ELVEarningsRelease-Final.pdf",
+  },
+  "Q1 2025": {
+    slides: "https://s202.q4cdn.com/665319960/files/doc_financials/2025/q1/1Q2025ELVEarningsPresentation.pdf",
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2025/q1/1Q2025ELVEarningsRelease.pdf",
+  },
+  "Q2 2025": {
+    slides: "https://s202.q4cdn.com/665319960/files/doc_financials/2025/q2/2Q2025ELVEarningsPresentation.pdf",
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2025/q2/2Q2025ELVEarningsRelease.pdf",
+  },
+  "Q3 2025": {
+    slides: "https://s202.q4cdn.com/665319960/files/doc_financials/2025/q3/3Q2025ELVEarningsPresentation.pdf",
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2025/q3/3Q2025ELVEarningsRelease.pdf",
+  },
+  "Q4 2025": {
+    slides: "https://s202.q4cdn.com/665319960/files/doc_financials/2025/q4/4Q25ELVEarningsPresentation.pdf",
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2025/q4/4Q2025ELVEarningsRelease.pdf",
+  },
+  "Q1 2026": {
+    slides: "https://s202.q4cdn.com/665319960/files/doc_financials/2026/q1/1Q2026ELVSupplementalEarningsPresentation.pdf",
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2026/q1/1Q2026ELVEarningsRelease.pdf",
+  },
+  "Q2 2026": {
+    slides: "https://s202.q4cdn.com/665319960/files/doc_financials/2026/q2/2Q2026ELVSupplementalEarningsPresentation.pdf",
+    filings: "https://s202.q4cdn.com/665319960/files/doc_financials/2026/q2/2Q2026ELVEarningsRelease.pdf",
+  },
+};
+
+export function isElvRejected(href: string, title = ""): boolean {
+  const n = `${decodeURIComponent(href)} ${title}`.toLowerCase();
+  return /sec\.gov|\b10-?q\b|\b10-?k\b|\b8-?k\b|proxy|transcript|webcast|investor.?day|reconcili|nongaap|\.xls|\.xlsx|\.csv(?:$|[?#])|sustainab|xbrl/i.test(n);
+}
+
+export function isElvIrPdf(href: string | null | undefined): boolean {
+  if (!href || isElvRejected(href)) return false;
+  try {
+    const u = new URL(href);
+    const host = u.hostname.toLowerCase();
+    if (!(host === "s202.q4cdn.com" || host.endsWith(".q4cdn.com"))) return false;
+    if (!u.pathname.includes("/665319960/")) return false;
+    return /\.pdf(?:$|[?#])/i.test(u.pathname) || /\.pdf(?:$|[?#])/i.test(href);
+  } catch {
+    return false;
+  }
+}
+
+export function mergeElvKnownQuarterDocs(): Map<string, ElvQuarterDocs> {
+  return new Map(Object.entries(ELV_KNOWN_QUARTER_DOCS));
+}

@@ -1,0 +1,82 @@
+{
+  "ticker": "MMM",
+  "irHost": "investors.3m.com / d1io3yog0oux5.cloudfront.net",
+  "fyEnd": "12-31",
+  "latestLabel": "Q2 2026",
+  "trafficLight": "yellow",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/29838/presentation/Slides.pdf",
+      "filings": null
+    },
+    "Q2 2022": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/29839/presentation/2Q-2022-Earnings-Slides.pdf",
+      "filings": null
+    },
+    "Q3 2022": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/29840/presentation/3Q-2022-Earnings-Slides.pdf",
+      "filings": null
+    },
+    "Q4 2022": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30067/presentation/4Q-2022-Earnings-Presentation-vFINAL.pdf",
+      "filings": null
+    },
+    "Q1 2023": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30189/presentation/1Q+2023+Earnings+Presentation_UPDATED.pdf",
+      "filings": null
+    },
+    "Q2 2023": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30683/presentation/Q2+2023+Earnings+Presentation.pdf",
+      "filings": null
+    },
+    "Q3 2023": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30752/presentation/Q3+2023+Earnings+Presentation.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30752/earnings_release/Q3+2023+Press+Release.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30800/presentation/Q4+2023+Earnings+Slides.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30800/earnings_release/Q4+2023+Press+Release.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30862/presentation/Q1+2024+Earnings+Presentation.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30862/earnings_release/Q1+2024+Press+Release.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30879/presentation/Q2+2024+Earnings+Presentation.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30879/earnings_release/Q2+2024+Earnings+Press+Release.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30893/presentation/Q3+2024+-+Earnings+Presentation.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30893/earnings_release/Q3+2024+-+Earnings+Press+Release.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30903/presentation/Q4+2024+Presentation.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30903/earnings_release/Q4+2024+Press+Release+vF.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30942/presentation/Q1+2025+Earnings+Presentation.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30942/earnings_release/Q1+2025+Press+Release+VF.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30962/presentation/2Q+2025+Earnings+Presentation+-+vF.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30962/earnings_release/Q2+2025+-+8K+ER+EX-99.1+-+Final.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30969/presentation/3Q+2025+Earnings+Presentation+-+vFINAL.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30969/earnings_release/Q3+2025+-+Final+PR.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30980/presentation/4Q+2025+Earnings+Presentation+-+vF.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30980/earnings_release/Q4+2025+-+Final+PR.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30995/presentation/1Q+2026+Earnings+Presentation+-+vFinal.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/30995/earnings_release/Q1+2026+-+Earnings+Release+-+Final.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/31004/presentation/2Q+2026+Earnings+Presentation+-+vFinal.pdf",
+      "filings": "https://d1io3yog0oux5.cloudfront.net/_0fc3428cc515f470c7cdf5f7b048e08f/3m/db/3222/31004/earnings_release/Q2+2026+-+Earnings+Release+-+Final.pdf"
+    }
+  },
+  "notes": "3M Company calendar FY. Slides=Earnings Presentation/Slides; Filings=Press/Earnings Release PDF on CloudFront under investors.3m.com quarterly-earnings. Q1 2022\u2013Q2 2023 filings empty \u2014 IR only hosted Financial Statement Information (not press PDF). Reject transcripts / 10-Q/10-K / supplemental financial schedules as filings. Never SEC HTML. Scope: Ng=12 / Ny=6 / Nr=0. Range-GET %PDF verified."
+}

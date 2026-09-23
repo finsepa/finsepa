@@ -1,0 +1,22 @@
+{
+  "batch": 14,
+  "tickers": [
+    "LITE",
+    "MMM",
+    "LYG",
+    "BCMXY",
+    "EMR",
+    "NABZY",
+    "GLNCY",
+    "MHVIY",
+    "BCS",
+    "BN"
+  ],
+  "skipped": [
+    {
+      "ticker": "NPPXF",
+      "reason": "NTT common — same IR as already-seeded NTTYY ADR"
+    }
+  ],
+  "note": "After WBKCY on frozen-2026-09-22 top500; NPPXF skipped → BN"
+}

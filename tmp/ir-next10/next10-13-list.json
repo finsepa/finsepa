@@ -1,0 +1,22 @@
+{
+  "batch": 13,
+  "tickers": [
+    "ELV",
+    "DDOG",
+    "JCI",
+    "WMB",
+    "PROSY",
+    "ICE",
+    "IFNNY",
+    "MNST",
+    "CSX",
+    "WBKCY"
+  ],
+  "skipped": [
+    {
+      "ticker": "ATLCY",
+      "reason": "Atlas Copco ADR duplicate of already-seeded ATLKY"
+    }
+  ],
+  "note": "After XIACY on frozen-2026-09-22 top500; ATLCY skipped → WBKCY"
+}

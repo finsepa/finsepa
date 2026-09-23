@@ -1,0 +1,82 @@
+{
+  "ticker": "WBKCY",
+  "irHost": "www.westpac.com.au",
+  "fyEnd": "09-30",
+  "latestLabel": "Q2 2026",
+  "trafficLight": "yellow",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2022": {
+      "slides": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/WBC_1H22_IDP_and_Presentation.pdf",
+      "filings": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/1H22_MediaRelease.pdf"
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2022": {
+      "slides": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/WBC_FY22_IDP_and_Presentation.pdf",
+      "filings": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/FY22_Media_Release.pdf"
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2023": {
+      "slides": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/WBC_1H23_Presentation_and_IDP.pdf",
+      "filings": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/1H23_Media_Release.pdf"
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2023": {
+      "slides": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/Full-year-2023-presentation-and-IDP.pdf",
+      "filings": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/Full-Year-2023-Media-Release.pdf"
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2024": {
+      "slides": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/WBC-1H24-IDP-and-Presentation.pdf",
+      "filings": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/WBC-ASX-Announcement-Half-Year-2024-Result.pdf"
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2024": {
+      "slides": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/wbc-full-year-presentation-and-IDP-2024.pdf",
+      "filings": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/wbc-full-year-media-release-2024.pdf"
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2025": {
+      "slides": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/wbc-1H25-presentation-IDP-2025.pdf",
+      "filings": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/wbc-1H25-media-release-2025.pdf"
+    },
+    "Q3 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2025": {
+      "slides": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/wbc-full-year-presentation-and-IDP-2025.pdf",
+      "filings": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/wbc-media-release-2025.pdf"
+    },
+    "Q1 2026": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2026": {
+      "slides": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/wbc-1H26-presentation-IDP-2026.pdf",
+      "filings": "https://www.westpac.com.au/content/dam/public/wbc/documents/pdf/aw/ic/wbc-1H26-media-release-2026.pdf"
+    }
+  },
+  "notes": "Westpac (WBC) Sept 30 FY; half-year reporting. Map 1H FY{N}\u2192Q2 {N}, Full Year FY{N}\u2192Q4 {N}. Slides=Presentation+Investor Discussion Pack; Filings=Media Release (or HY ASX announcement PDF when labeled that way). Q1/Q3 trading updates (1Q/3Q Update/IDP) not locked as earnings. FY26 full-year not yet (Nov 2026). Scope: 9g / 0y / 9r. Never SEC HTML."
+}

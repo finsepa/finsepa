@@ -1,0 +1,18 @@
+# IR vault discovery — ELV, DDOG, JCI
+Date: 2026-09-23
+Scope: Q1 2022 → latest reported quarter. Catalogs only (no match/apply/allowlist/tests/docs).
+Verify: Range GET bytes 0-7 == %PDF. Never SEC HTML.
+
+ELV: trafficLight=yellow  green=11 yellow=7 red=0  irHost=ir.elevancehealth.com  pdfHost=s202.q4cdn.com/665319960  latest=Q2 2026
+  notes: Elevance Health (ex-Anthem) calendar FY. Slides=Supplemental/Earnings Presentation on s202.q4cdn.com/665319960 (from Q4 2023 onward); Filings=Earnings Release PDF (Q1'22 as ANTM Press Release PDF). Earlier quarters filings-only — no presentation docs in feed; guessed paths 404. Reject 10-Q/transcript/HTML newsroom. Never SEC HTML. Scope: Ng=11 / Ny=7 / Nr=0. Range-GET %PDF verified.
+
+DDOG: trafficLight=yellow  green=5 yellow=13 red=0  irHost=investors.datadoghq.com  pdfHost=investors.datadoghq.com  latest=Q2 2026
+  notes: Datadog calendar FY. Slides=Supplemental Financial Information (IR 'Sup' on investors.datadoghq.com/static-files); Filings=earnings press PDF (static-files or /node/N/pdf). Sup linked on QR for Q3'25→Q2'26; Q3'23 package still live. Other in-scope quarters filings-only (no lockable deck/sup on current IR). Reject 10-Q/10-K SEC links, transcripts, Investor Day decks, HTML news-release-details. Never SEC HTML. Scope: Ng=5 / Ny=13 / Nr=0. Range-GET %PDF verified (browser fetch; Akamai blocks bare curl).
+
+JCI: trafficLight=green  green=19 yellow=0 red=0  irHost=investors.johnsoncontrols.com  pdfHost=s21.q4cdn.com/502874060  latest=Q3 2026
+  notes: Johnson Controls International Sept FY. Slides=Earnings Presentation/slides; Filings=Press/Earnings Release on s21.q4cdn.com/502874060 (doc_financials + doc_earnings). FinancialReport.svc. Reject 10-Q/10-K/transcript/XBRL. Never SEC HTML. Scope: Ng=19 / Ny=0 / Nr=0. Range-GET %PDF verified.
+
+Summary:
+  ELV   yellow   11/7/0  latest=Q2 2026  host=s202.q4cdn.com/665319960
+  DDOG  yellow   5/13/0  latest=Q2 2026  host=investors.datadoghq.com
+  JCI   green    19/0/0  latest=Q3 2026  host=s21.q4cdn.com/502874060

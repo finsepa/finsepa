@@ -1,0 +1,42 @@
+# IR vault discovery — IFNNY, MNST, CSX, WBKCY
+Date: 2026-09-23
+Scope: Q1 2022 → latest reported quarter. Catalogs only (no match/apply/allowlist/tests/docs).
+Verify: Range GET bytes 0-7 == %PDF (unique temp files). Never SEC HTML.
+
+## IFNNY (Infineon Technologies ADR)
+- trafficLight: yellow
+- counts: 10 green / 9 yellow / 0 red
+- irHost: www.infineon.com
+- fyEnd: 09-30 (Sept FY; Finsepa labels = issuer FY quarter tags)
+- latest: Q3 2026
+- Slides=Investor Presentation / Quarterly Update
+- Filings=full news/press PDF (infxx/infpr or quarterly-report)
+- Holes: Q3 2022 filings-only (no first-party slides URL found); press missing Q4'22, Q1–Q3'23, Q1–Q2'25, Q1–Q2'26 (slides-only). Rejected edit.infineon.com/dgdl.
+- catalog: tmp/ir-next10/ifnny-catalog.json
+
+## MNST (Monster Beverage)
+- trafficLight: yellow
+- counts: 0 green / 18 yellow / 0 red
+- irHost: investors.monsterbevcorp.com
+- fyEnd: 12-31
+- latest: Q2 2026
+- Filings-only: /node/N/pdf press (PDF Version). No quarterly earnings decks on IR. Range GET %PDF verified in-browser (Akamai blocks CLI curl).
+- catalog: tmp/ir-next10/mnst-catalog.json
+
+## CSX (CSX Corporation)
+- trafficLight: green
+- counts: 18 green / 0 yellow / 0 red
+- irHost: investors.csx.com / s2.q4cdn.com/859568992
+- fyEnd: 12-31
+- latest: Q2 2026
+- Slides=Earnings Presentation; Filings=QFR (operating results). Press HTML-only. Reject 10-Q/10-K.
+- catalog: tmp/ir-next10/csx-catalog.json
+
+## WBKCY (Westpac Banking ADR)
+- trafficLight: yellow
+- counts: 9 green / 0 yellow / 9 red
+- irHost: www.westpac.com.au
+- fyEnd: 09-30
+- latest: Q2 2026 (1H26)
+- Half-year: 1H→Q2, FY→Q4. Slides=Presentation+IDP; Filings=Media Release. Q1/Q3 empty by design.
+- catalog: tmp/ir-next10/wbkcy-catalog.json

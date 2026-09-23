@@ -9,7 +9,11 @@ function isGcsNodePdfPath(host: string, pathname: string): boolean {
     h !== "isrg.intuitive.com" &&
     h !== "isrg.gcs-web.com" &&
     h !== "investors.constellationenergy.com" &&
-    !h.endsWith(".constellationenergy.com")
+    !h.endsWith(".constellationenergy.com") &&
+    h !== "investors.datadoghq.com" &&
+    !h.endsWith(".datadoghq.com") &&
+    h !== "investors.monsterbevcorp.com" &&
+    !h.endsWith(".monsterbevcorp.com")
   ) {
     return false;
   }
@@ -84,6 +88,14 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
     ) {
       return true;
     }
+    // Bank of Communications (BCMXY) English results via fileDownload (no .pdf suffix).
+    if (
+      (u.hostname === "www.bankcomm.com" || u.hostname.endsWith(".bankcomm.com")) &&
+      (/\/fileDownload\.do$/i.test(u.pathname) || /\/file\/fileDownload\.html$/i.test(u.pathname)) &&
+      u.searchParams.has("fileId")
+    ) {
+      return true;
+    }
     return /\.pdf(?:$|[?#])/i.test(u.pathname) || /\.pdf(?:$|[?#])/i.test(t);
   } catch {
     if (/investors\.micron\.com\/static-files\//i.test(t)) return false;
@@ -100,7 +112,8 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
       /globenewswire\.com\/Resource\/Download\/[a-f0-9-]{36}/i.test(t) ||
       /mziq\.com\/mzfilemanager\/v2\/d\/[a-f0-9-]{36}\/[a-f0-9-]{36}/i.test(t) ||
       /murata\.com\/[^?\s]+-(?:e-speach|e-fls)\.ashx/i.test(t) ||
-      /constellationenergy\.com\/node\/\d+\/pdf/i.test(t)
+      /constellationenergy\.com\/node\/\d+\/pdf/i.test(t) ||
+      /bankcomm\.com\/BankCommSite\/(?:fileDownload\.do|file\/fileDownload\.html)\?[^#]*fileId=/i.test(t)
     );
   }
 }

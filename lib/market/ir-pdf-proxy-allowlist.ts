@@ -33,6 +33,8 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
       /\/parker\/(?:db\/\d+\/\d+\/(?:pdf|presentation|file)\/|news\/)/i.test(parsed.pathname) ||
       // PNC earnings slides + release (+ Q4'22 /news/ press PDF).
       /\/pnc\/(?:db\/\d+\/\d+\/(?:presentation|earnings_release)\/|news\/)/i.test(parsed.pathname) ||
+      // 3M (MMM) earnings slides + earnings_release.
+      /\/3m\/db\/\d+\/\d+\/(?:presentation|earnings_release)\//i.test(parsed.pathname) ||
       // Marvell Q4 FY26 deck lives under /file/ on the same CDN hash.
       /\/marvell\/db\/\d+\/\d+\/file\//i.test(parsed.pathname))
   ) {
@@ -757,6 +759,155 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
     (h === "investors.constellationenergy.com" || h.endsWith(".constellationenergy.com")) &&
     (/\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname) ||
       /\/node\/\d+\/pdf\/?$/i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Elevance Health (ELV) q4cdn earnings presentation + release.
+  if (
+    (h === "s202.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/665319960/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Datadog (DDOG) GCS static-files + /node/N/pdf press / supplemental.
+  if (
+    (h === "investors.datadoghq.com" || h.endsWith(".datadoghq.com")) &&
+    (/\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname) ||
+      /\/node\/\d+\/pdf\/?$/i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Johnson Controls (JCI) q4cdn earnings slides + press release.
+  if (
+    (h === "s21.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/502874060/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Infineon (IFNNY) investor presentation + press PDFs.
+  if (
+    (h === "www.infineon.com" || h === "assets.infineon.com" || h.endsWith(".infineon.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Monster Beverage (MNST) GCS /node/N/pdf earnings releases (filings-only).
+  if (
+    (h === "investors.monsterbevcorp.com" || h.endsWith(".monsterbevcorp.com")) &&
+    /\/node\/\d+\/pdf\/?$/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // CSX q4cdn earnings presentation + quarterly financial report.
+  if (
+    (h === "s2.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/859568992/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Westpac (WBKCY) investor centre presentation + media release PDFs.
+  if (
+    (h === "www.westpac.com.au" || h.endsWith(".westpac.com.au")) &&
+    parsed.pathname.includes("/content/dam/public/wbc/documents/pdf/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Williams (WMB) GCS static-files earnings presentation + release.
+  if (
+    (h === "investor.williams.com" || h.endsWith(".williams.com")) &&
+    /\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Prosus (PROSY) results presentation + media release PDFs.
+  if (
+    (h === "www.prosus.com" || h.endsWith(".prosus.com")) &&
+    /prosus-corp-v2/i.test(parsed.pathname) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Intercontinental Exchange (ICE) q4cdn earnings presentation + press.
+  if (
+    (h === "s2.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/154085107/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Bank of Communications (BCMXY) English results fileDownload (no .pdf suffix).
+  if (
+    (h === "www.bankcomm.com" || h.endsWith(".bankcomm.com")) &&
+    (/\/fileDownload\.do$/i.test(parsed.pathname) || /\/file\/fileDownload\.html$/i.test(parsed.pathname)) &&
+    parsed.searchParams.has("fileId")
+  ) {
+    return true;
+  }
+  // Emerson (EMR) IR _assets presentation + earnings release PDFs.
+  if (
+    (h === "ir.emerson.com" || h.endsWith(".emerson.com")) &&
+    parsed.pathname.includes("/_assets/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // National Australia Bank (NABZY) shareholder centre presentation + results.
+  if (
+    (h === "www.nab.com.au" || h.endsWith(".nab.com.au")) &&
+    parsed.pathname.includes("/content/dam/nab/documents/reports/corporate/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Glencore (GLNCY) results presentation + report via REST documents API.
+  if (
+    (h === "www.glencore.com" || h.endsWith(".glencore.com")) &&
+    parsed.pathname.includes("/.rest/api/v1/documents/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Mitsubishi Heavy Industries (MHVIY) presentation + press / financial results.
+  if (
+    (h === "www.mhi.com" || h.endsWith(".mhi.com")) &&
+    (/\/finance\/library\/result\/pdf\//i.test(parsed.pathname) || /\/news\/pdf\//i.test(parsed.pathname)) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Barclays (BCS) results presentation + BPLC results announcement.
+  if (
+    (h === "home.barclays" || h.endsWith(".barclays")) &&
+    parsed.pathname.includes("/content/dam/home-barclays/documents/investor-relations/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Brookfield Corp (BN) supplemental + press release PDFs.
+  if (
+    (h === "bn.brookfield.com" || h.endsWith(".brookfield.com")) &&
+    (/\/sites\/brookfield-bn/i.test(parsed.pathname) || /\/Brookfield-BN/i.test(parsed.pathname)) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Lumentum (LITE) q4cdn earnings call + press release.
+  if (
+    (h === "s21.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/377324469/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Lloyds Banking Group (LYG) results presentation + announcement/IMS.
+  if (
+    (h === "www.lloydsbankinggroup.com" || h.endsWith(".lloydsbankinggroup.com")) &&
+    parsed.pathname.includes("/assets/pdfs/investors/financial-performance/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
   ) {
     return true;
   }

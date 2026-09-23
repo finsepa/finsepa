@@ -1,0 +1,19 @@
+
+discover-wmb-prosy-ice.log
+Date: 2026-09-23
+Batch: WMB, PROSY, ICE
+Method: Browser scrape investor.williams.com events year filters (static-files UUID); Prosus results HTML media paths; ICE q4cdn filename + archive.org CDX. Range-GET bytes 0-7 %PDF verified (WMB via browser fetch; ICE/PROSY via curl). Catalogs only — no match/apply/allowlist.
+
+WMB: trafficLight=yellow  g/y/r=16/2/0  irHost=investor.williams.com/static-files  latest=Q2 2026
+  notes: Williams Companies calendar FY. Slides=WMB Earnings Presentation (Webcast Presentation in 2022); Filings=WMB Earnings Release on investor.williams.com/static-files. Q2 2023 filings HTML-only (left null). Q4 2025 webcast replaced by Analyst Day — slides null. Reject Analyst Day/conference/transcripts. Scope: 16g / 2y / 0r. Never SEC HTML.
+
+PROSY: trafficLight=yellow  g/y/r=9/1/10  irHost=www.prosus.com  latest=Q4 2026
+  notes: Prosus NV ADR. March FY semi-annual: HY→Q2, FY→Q4 of issuer FY; Q1/Q3 empty by design. Slides=Results/Results Call Presentation; Filings=Media release on prosus.com/~/media/Files/P/prosus-corp-v2/. Q4 2023 filings null (no media-release PDF). Reject transcripts/annual report/KPI/deep-dive. Scope: 9g / 1y / 10r. Never SEC HTML.
+
+ICE: trafficLight=yellow  g/y/r=17/1/0  irHost=s2.q4cdn.com/154085107  latest=Q2 2026
+  notes: Intercontinental Exchange calendar FY. Slides=Earnings Presentation; Filings=Earnings Press Release on s2.q4cdn.com/154085107/files/doc_financials/{y}/q{n}/. Q2 2026 slides missing on CDN (press only). Reject transcripts/10-Q/10-K. Scope: 17g / 1y / 0r. Never SEC HTML.
+
+Summary:
+  WMB    yellow   16/2/0  latest=Q2 2026  host=investor.williams.com/static-files
+  PROSY  yellow   9/1/10  latest=Q4 2026  host=www.prosus.com
+  ICE    yellow   17/1/0  latest=Q2 2026  host=s2.q4cdn.com/154085107

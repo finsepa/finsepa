@@ -1,0 +1,37 @@
+# IR vault discovery — GLNCY, MHVIY, BCS, BN
+Date: 2026-09-23
+Scope: Q1 2022 → latest reported quarter. Catalogs only (no match/apply/allowlist/tests/docs).
+Verify: Range GET bytes 0-7 == %PDF. Never SEC HTML.
+
+## GLNCY
+- trafficLight: yellow
+- counts: 9 green / 0 yellow / 9 red
+- irHost: www.glencore.com
+- latest: Q2 2026
+- Glencore PLC ADR. Calendar FY but half-year reporting only. HY→Q2, Preliminary/FY→Q4. Q1/Q3 empty by design. Slides=Half-Year/Preliminary Results Presentation; Filings=Half-Year Report or Preliminary Results PDF on glencore.com/.rest/api/v1/documents. Never SEC HTML. Reject production reports / AGM / conference decks.
+- catalog: tmp/ir-next10/glncy-catalog.json
+
+## MHVIY
+- trafficLight: green
+- counts: 17 green / 0 yellow / 0 red
+- irHost: www.mhi.com
+- latest: Q1 2026
+- Mitsubishi Heavy Industries ADR. March FY; Finsepa labels = issuer FY (fyYYYYNq → QN YYYY), same as NTTYY/TOELY. Slides=presentation.pdf; Filings=press_release.pdf Q1'22→Q3'25, financial_results.pdf for Q4'25/Q1'26. Never SEC HTML. Reject presentation_summary / Q&A.
+- catalog: tmp/ir-next10/mhviy-catalog.json
+
+## BCS
+- trafficLight: green
+- counts: 18 green / 0 yellow / 0 red
+- irHost: home.barclays
+- latest: Q2 2026
+- Barclays PLC ADR. Calendar FY; quarterly results (not half-year-only). Slides=Results Presentation (FY uses Results-and-*-Presentation); Filings=BPLC Results Announcement / Results-RA on home.barclays ResultAnnouncements. Never SEC HTML. Reject Pillar 3 / FI decks / transcripts / subsidiary RAs / 6-K wrappers when a clean RA exists.
+- catalog: tmp/ir-next10/bcs-catalog.json
+
+## BN
+- trafficLight: yellow
+- counts: 15 green / 0 yellow / 3 red
+- irHost: bn.brookfield.com
+- latest: Q2 2026
+- Brookfield Corporation (not BAM). Calendar FY. Slides=Supplemental Information; Filings=Press Release PDF on bn.brookfield.com. Q1–Q3 2022 empty (pre-/early rebrand; no lockable PDFs on current IR). Q2 2025 press PDF at quarterly-reports path (page linked HTML). Never SEC HTML. Reject letter-to-shareholders / interim report / transcript as primary slots.
+- catalog: tmp/ir-next10/bn-catalog.json
+

@@ -1,0 +1,84 @@
+{
+  "ticker": "DDOG",
+  "irHost": "investors.datadoghq.com",
+  "fyEnd": "12-31",
+  "latestLabel": "Q2 2026",
+  "trafficLight": "yellow",
+  "pdfHost": "investors.datadoghq.com",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/static-files/23d358e0-eba2-4fb9-993a-98179120f56b"
+    },
+    "Q2 2022": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/static-files/9e82d3c5-00bc-44af-abfe-ebbc486e71fa"
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/static-files/5dfafb8f-c6bb-415d-80b2-da508e48122b"
+    },
+    "Q4 2022": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/static-files/d0afe925-a0eb-4124-9971-749762415612"
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/static-files/6ca01f63-80f5-4ce0-b5a2-683ff3378f05"
+    },
+    "Q2 2023": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/static-files/2ec01832-668b-4e43-9075-bf96baf7d38b"
+    },
+    "Q3 2023": {
+      "slides": "https://investors.datadoghq.com/static-files/0b16f121-198b-46c7-8920-5707c84f0769",
+      "filings": "https://investors.datadoghq.com/static-files/27c898b8-fb12-48b8-af68-5958f226a2fc"
+    },
+    "Q4 2023": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/static-files/a8ba8d41-5a66-41fd-a8b5-b2408a393b02"
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/node/13146/pdf"
+    },
+    "Q2 2024": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/static-files/2f0cb16c-51ef-4123-a30e-b2fe781cf867"
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/node/13946/pdf"
+    },
+    "Q4 2024": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/node/14431/pdf"
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/node/14826/pdf"
+    },
+    "Q2 2025": {
+      "slides": null,
+      "filings": "https://investors.datadoghq.com/node/15321/pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://investors.datadoghq.com/static-files/c6e4c715-357a-4ddb-b90a-76cdb71d9eed",
+      "filings": "https://investors.datadoghq.com/static-files/5afad6a1-7ae1-4076-85be-5d8bcca77123"
+    },
+    "Q4 2025": {
+      "slides": "https://investors.datadoghq.com/static-files/94241e00-9de8-4081-b62f-214d051d083b",
+      "filings": "https://investors.datadoghq.com/node/16286/pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://investors.datadoghq.com/static-files/76c64d9a-122d-46d1-bdec-094445d053e5",
+      "filings": "https://investors.datadoghq.com/static-files/90c5138c-5944-469b-a5e9-f649798c6a54"
+    },
+    "Q2 2026": {
+      "slides": "https://investors.datadoghq.com/static-files/477a4084-42e7-4468-af1d-1bf9ae99d9ab",
+      "filings": "https://investors.datadoghq.com/static-files/f3de3670-79da-47b9-88ff-c6cffbeab312"
+    }
+  },
+  "notes": "Datadog calendar FY. Slides=Supplemental Financial Information (IR 'Sup' on investors.datadoghq.com/static-files); Filings=earnings press PDF (static-files or /node/N/pdf). Sup linked on QR for Q3'25\u2192Q2'26; Q3'23 package still live. Other in-scope quarters filings-only (no lockable deck/sup on current IR). Reject 10-Q/10-K SEC links, transcripts, Investor Day decks, HTML news-release-details. Never SEC HTML. Scope: Ng=5 / Ny=13 / Nr=0. Range-GET %PDF verified (browser fetch; Akamai blocks bare curl).",
+  "verified": true
+}

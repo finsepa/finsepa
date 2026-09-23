@@ -1,0 +1,111 @@
+/**
+ * BCS IR seed — 12-31.
+ * Barclays PLC ADR. Calendar FY; quarterly results (not half-year-only). Slides=Results Presentation (FY uses Results-and-*-Presentation); Filings=BPLC Results Announcement / Results-RA on home.barclays ResultAnnouncements. Never SEC HTML. Reject Pillar 3 / FI decks / transcripts / subsidiary RAs / 6-K wrappers when a clean RA exists.
+ * Never SEC HTML / transcript / 10-Q / 10-K.
+ */
+
+export type BcsQuarterDocs = {
+  slides: string | null;
+  filings: string | null;
+};
+
+export const BCS_IR_PAGES = [
+  "https://home.barclays/investors/results-and-reports/",
+] as const;
+
+export const BCS_KNOWN_QUARTER_DOCS: Readonly<Record<string, BcsQuarterDocs>> = {
+  "Q1 2022": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q12022Results/20220428-Barclays-Q122-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q12022Results/20220428-BPLC-Q122-Results-Announcement.pdf",
+  },
+  "Q2 2022": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/HY2022/20220728-Barclays-H122-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/HY2022/20220728-Barclays-PLC-Interim-2022-Results-Announcement.pdf",
+  },
+  "Q3 2022": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q3022Results/20221026-Barclays-Q322-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q3022Results/20221026-BPLC-Q322-RA.pdf",
+  },
+  "Q4 2022": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/2022FullYearResults/20230215-Barclays-FY22-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/2022FullYearResults/20230215-BPLC-FY22-RA.pdf",
+  },
+  "Q1 2023": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/2023Q1Results/Barclays-Q12023-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/2023Q1Results/Barclays-Q12023-Results-Announcement.pdf",
+  },
+  "Q2 2023": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/H12023Results/Barclays-H12023-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/H12023Results/Barclays-H12023-Results-Announcement.pdf",
+  },
+  "Q3 2023": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q32023Results/Barclays-Q32023-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q32023Results/Barclays-Q32023-Results-Announcement.pdf",
+  },
+  "Q4 2023": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/FullYear2023Results/20240220-Barclays-FY2023-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/FullYear2023Results/20240220-BPLC-FY2023-RA.pdf",
+  },
+  "Q1 2024": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q12024Results/Q124-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q12024Results/Q124-BPLC-Results-RA.pdf",
+  },
+  "Q2 2024": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/H12024Results/HY24-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/H12024Results/HY24-BPLC-Results-RA.pdf",
+  },
+  "Q3 2024": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q32024Results/Q324-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q32024Results/Q324-BPLC-Results-RA.pdf",
+  },
+  "Q4 2024": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/FullYear2024Results/FY24-Results-and-Progress-Update-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/FullYear2024Results/FY24-BPLC-Results-RA%20.pdf",
+  },
+  "Q1 2025": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q12025Results/Q125-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q12025Results/Q125-BPLC-Results-RA.pdf",
+  },
+  "Q2 2025": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/H12025Results/H125-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/H12025Results/H125-BPLC-Results-RA.pdf",
+  },
+  "Q3 2025": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q32025Results/Q325-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q32025Results/Q325-BPLC-Results-RA.pdf",
+  },
+  "Q4 2025": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/FullYear2025Results/FY25-Results-and-Targets-Update-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/FullYear2025Results/FY25-BPLC-Results-RA.pdf",
+  },
+  "Q1 2026": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q12026Results/Q126-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/Q12026Results/Q126-BPLC-Results-RA.pdf",
+  },
+  "Q2 2026": {
+    slides: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/H12026Results/Q226-Results-Presentation.pdf",
+    filings: "https://home.barclays/content/dam/home-barclays/documents/investor-relations/ResultAnnouncements/H12026Results/Q226-BPLC-Results-RA.pdf",
+  },
+};
+
+export function isBcsRejected(href: string, title = ""): boolean {
+  const n = `${decodeURIComponent(href)} ${title}`.toLowerCase();
+  return /sec\.gov|\b10-?q\b|\b10-?k\b|\b8-?k\b|proxy|transcript|webcast|investor.?day|reconcili|nongaap|\.xls|\.xlsx|\.csv(?:$|[?#])|sustainab|xbrl/i.test(n);
+}
+
+export function isBcsIrPdf(href: string | null | undefined): boolean {
+  if (!href || isBcsRejected(href)) return false;
+  try {
+    const u = new URL(href);
+    const host = u.hostname.toLowerCase();
+    if (!(host === "home.barclays" || host.endsWith(".barclays"))) return false;
+    if (!u.pathname.includes("/content/dam/home-barclays/documents/investor-relations/")) return false;
+    return /\.pdf(?:$|[?#])/i.test(u.pathname) || /\.pdf(?:$|[?#])/i.test(href);
+  } catch {
+    return false;
+  }
+}
+
+export function mergeBcsKnownQuarterDocs(): Map<string, BcsQuarterDocs> {
+  return new Map(Object.entries(BCS_KNOWN_QUARTER_DOCS));
+}

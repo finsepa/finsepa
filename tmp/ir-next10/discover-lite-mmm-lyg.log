@@ -1,0 +1,22 @@
+# IR vault discovery — LITE, MMM, LYG
+Date: 2026-09-23
+Scope: Q1 2022 → latest reported quarter. Catalogs only (no match/apply/allowlist/tests/docs).
+Verify: Range GET bytes 0-7 == %PDF. Never SEC HTML.
+
+LITE: trafficLight=yellow  green=19 yellow=1 red=0  irHost=investor.lumentum.com / s21.q4cdn.com/377324469  latest=Q4 2026
+  notes: Lumentum Holdings June FY (labels=issuer fiscal Q1–Q4; Q1 ends ~Sep, Q4 ends ~Jun). Slides=Earnings Presentation/Deck/Call on s21.q4cdn.com/377324469 doc_financials (also mirrored under doc_events). Filings=earnings press PDF under doc_news (Business Wire). Q2 2022 press PDF not found on IR CDN — slides-only yellow. Reject conference decks / GAAP reconciliations / SEC HTML. Never SEC HTML. Scope: Ng=19 / Ny=1 / Nr=0. Range-GET %PDF verified.
+
+MMM: trafficLight=yellow  green=12 yellow=6 red=0  irHost=investors.3m.com / d1io3yog0oux5.cloudfront.net  latest=Q2 2026
+  notes: 3M Company calendar FY. Slides=Earnings Presentation/Slides; Filings=Press/Earnings Release PDF on CloudFront under investors.3m.com quarterly-earnings. Q1 2022–Q2 2023 filings empty — IR only hosted Financial Statement Information (not press PDF). Reject transcripts / 10-Q/10-K / supplemental financial schedules as filings. Never SEC HTML. Scope: Ng=12 / Ny=6 / Nr=0. Range-GET %PDF verified.
+
+LYG: trafficLight=green  green=18 yellow=0 red=0  irHost=lloydsbankinggroup.com  latest=Q2 2026
+  notes: Lloyds Banking Group ADR — UK IR on lloydsbankinggroup.com. Slides=Results presentation (HY/FY) or Q1/Q3 IMS presentation; Filings=Results announcement / IMS PDF under assets/pdfs/.../lloyds-banking-group-plc. Path shift: 2022 used half-year/ and full-year/; 2023+ uses q2/q4. Reject FI booklet / annual report / Pillar 3 / Form 20-F / transcripts / subsidiary results. Never SEC HTML. Scope: Ng=18 / Ny=0 / Nr=0. Range-GET %PDF verified (browser if Cloudflare).
+
+Summary:
+  LITE  yellow   19/1/0  latest=Q4 2026  host=investor.lumentum.com / s21.q4cdn.com/377324469
+  MMM   yellow   12/6/0  latest=Q2 2026  host=investors.3m.com / d1io3yog0oux5.cloudfront.net
+  LYG   green    18/0/0  latest=Q2 2026  host=lloydsbankinggroup.com
+
+LYG: curl blocked by Cloudflare (Error 1007 HTML); all 36 PDFs Range-GET %PDF verified via browser fetch.
+All non-null PDFs Range-GET %PDF verified (LITE/MMM curl; LYG browser).
+

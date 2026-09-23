@@ -211,6 +211,26 @@ import { applyIrSeedDukDocumentUrls } from "@/lib/market/ir-seed-apply-duk";
 import { applyIrSeedCegDocumentUrls } from "@/lib/market/ir-seed-apply-ceg";
 import { applyIrSeedMraayDocumentUrls } from "@/lib/market/ir-seed-apply-mraay";
 import { applyIrSeedMeliDocumentUrls } from "@/lib/market/ir-seed-apply-meli";
+import { applyIrSeedElvDocumentUrls } from "@/lib/market/ir-seed-apply-elv";
+import { applyIrSeedDdogDocumentUrls } from "@/lib/market/ir-seed-apply-ddog";
+import { applyIrSeedJciDocumentUrls } from "@/lib/market/ir-seed-apply-jci";
+import { applyIrSeedIfnnyDocumentUrls } from "@/lib/market/ir-seed-apply-ifnny";
+import { applyIrSeedMnstDocumentUrls } from "@/lib/market/ir-seed-apply-mnst";
+import { applyIrSeedCsxDocumentUrls } from "@/lib/market/ir-seed-apply-csx";
+import { applyIrSeedWbkcyDocumentUrls } from "@/lib/market/ir-seed-apply-wbkcy";
+import { applyIrSeedWmbDocumentUrls } from "@/lib/market/ir-seed-apply-wmb";
+import { applyIrSeedProsyDocumentUrls } from "@/lib/market/ir-seed-apply-prosy";
+import { applyIrSeedIceDocumentUrls } from "@/lib/market/ir-seed-apply-ice";
+import { applyIrSeedBcmxyDocumentUrls } from "@/lib/market/ir-seed-apply-bcmxy";
+import { applyIrSeedEmrDocumentUrls } from "@/lib/market/ir-seed-apply-emr";
+import { applyIrSeedNabzyDocumentUrls } from "@/lib/market/ir-seed-apply-nabzy";
+import { applyIrSeedGlncyDocumentUrls } from "@/lib/market/ir-seed-apply-glncy";
+import { applyIrSeedMhviyDocumentUrls } from "@/lib/market/ir-seed-apply-mhviy";
+import { applyIrSeedBcsDocumentUrls } from "@/lib/market/ir-seed-apply-bcs";
+import { applyIrSeedBnDocumentUrls } from "@/lib/market/ir-seed-apply-bn";
+import { applyIrSeedLiteDocumentUrls } from "@/lib/market/ir-seed-apply-lite";
+import { applyIrSeedMmmDocumentUrls } from "@/lib/market/ir-seed-apply-mmm";
+import { applyIrSeedLygDocumentUrls } from "@/lib/market/ir-seed-apply-lyg";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 /** Tickers with bespoke IR seed modules (run before universal layers). */
@@ -424,6 +444,26 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
   "CEG",
   "MRAAY",
   "MELI",
+  "ELV",
+  "DDOG",
+  "JCI",
+  "IFNNY",
+  "MNST",
+  "CSX",
+  "WBKCY",
+  "WMB",
+  "PROSY",
+  "ICE",
+  "BCMXY",
+  "EMR",
+  "NABZY",
+  "GLNCY",
+  "MHVIY",
+  "BCS",
+  "BN",
+  "LITE",
+  "MMM",
+  "LYG",
 ]);
 
 export function earningsIrSeedResolutionSource(
@@ -647,6 +687,26 @@ async function applyDedicatedIrSeedDocumentUrls(
   if (t === "CEG") return applyIrSeedCegDocumentUrls(rows, hub);
   if (t === "MRAAY") return applyIrSeedMraayDocumentUrls(rows, hub);
   if (t === "MELI") return applyIrSeedMeliDocumentUrls(rows, hub);
+  if (t === "ELV") return applyIrSeedElvDocumentUrls(rows, hub);
+  if (t === "DDOG") return applyIrSeedDdogDocumentUrls(rows, hub);
+  if (t === "JCI") return applyIrSeedJciDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "IFNNY") return applyIrSeedIfnnyDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "MNST") return applyIrSeedMnstDocumentUrls(rows, hub);
+  if (t === "CSX") return applyIrSeedCsxDocumentUrls(rows, hub);
+  if (t === "WBKCY") return applyIrSeedWbkcyDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "WMB") return applyIrSeedWmbDocumentUrls(rows, hub);
+  if (t === "PROSY") return applyIrSeedProsyDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "ICE") return applyIrSeedIceDocumentUrls(rows, hub);
+  if (t === "BCMXY") return applyIrSeedBcmxyDocumentUrls(rows, hub);
+  if (t === "EMR") return applyIrSeedEmrDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "NABZY") return applyIrSeedNabzyDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "GLNCY") return applyIrSeedGlncyDocumentUrls(rows, hub);
+  if (t === "MHVIY") return applyIrSeedMhviyDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "BCS") return applyIrSeedBcsDocumentUrls(rows, hub);
+  if (t === "BN") return applyIrSeedBnDocumentUrls(rows, hub);
+  if (t === "LITE") return applyIrSeedLiteDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "MMM") return applyIrSeedMmmDocumentUrls(rows, hub);
+  if (t === "LYG") return applyIrSeedLygDocumentUrls(rows, hub);
   if (t === "RACE") {
     return applyIrSeedFerrariPresentationUrls(rows, {
       preview: options?.preview,

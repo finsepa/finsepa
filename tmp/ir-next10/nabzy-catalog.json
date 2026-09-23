@@ -1,0 +1,100 @@
+{
+  "ticker": "NABZY",
+  "fyEnd": "09-30",
+  "irHost": "www.nab.com.au",
+  "irPages": [
+    "https://www.nab.com.au/about-us/shareholder-centre",
+    "https://www.nab.com.au/about-us/shareholder-centre/financial-results"
+  ],
+  "pdfHost": "www.nab.com.au/content/dam/nab/documents/reports/corporate",
+  "hosts": [
+    "www.nab.com.au"
+  ],
+  "trafficLight": "yellow",
+  "verified": true,
+  "latestLabel": "Q3 2026",
+  "notes": "National Australia Bank ADR (NABZY); Sept FY half-year like Westpac. Slides=*-investor-presentation.pdf; Filings=*-results-announcement.pdf (fallback *-asx-announcement / *-results-summary). Map 1H\u2192Q2, FY\u2192Q4. Q1/Q3 empty by design (trading updates / pillar-3 not locked). Never SEC HTML. Scope Q1 2022\u2192Q3 2026 (9 green / 0 yellow / 10 red). Range-GET %PDF verified.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2022": {
+      "slides": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2022-half-year-investor-presentation.pdf",
+      "filings": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2022-half-year-results-announcement.pdf"
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2022": {
+      "slides": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2022-full-year-investor-presentation.pdf",
+      "filings": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2022-full-year-asx-announcement.pdf"
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2023": {
+      "slides": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2023-half-year-investor-presentation.pdf",
+      "filings": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2023-half-year-results-announcement.pdf"
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2023": {
+      "slides": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2023-full-year-results-investor-presentation.pdf",
+      "filings": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2023-full-year-asx-announcement.pdf"
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2024": {
+      "slides": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2024-half-year-investor-presentation.pdf",
+      "filings": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2024-half-year-results-announcement.pdf"
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2024": {
+      "slides": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2024-full-year-results-investor-presentation.pdf",
+      "filings": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2024-full-year-asx-announcement.pdf"
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2025": {
+      "slides": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2025-half-year-results-investor-presentation.pdf",
+      "filings": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2025-half-year-results-announcement.pdf"
+    },
+    "Q3 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2025": {
+      "slides": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2025-full-year-results-investor-presentation.pdf",
+      "filings": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2025-full-year-results-summary.pdf"
+    },
+    "Q1 2026": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2026": {
+      "slides": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2026-half-year-results-investor-presentation.pdf",
+      "filings": "https://www.nab.com.au/content/dam/nab/documents/reports/corporate/2026-half-year-results-announcement.pdf"
+    },
+    "Q3 2026": {
+      "slides": null,
+      "filings": null
+    }
+  },
+  "counts": {
+    "green": 9,
+    "yellow": 0,
+    "red": 10
+  }
+}
