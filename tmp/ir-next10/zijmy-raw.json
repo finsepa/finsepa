@@ -1,0 +1,131 @@
+{
+  "pages": {
+    "https://www.zijinmining.com/": {
+      "status": 200,
+      "final": "https://www.zijinmining.com/",
+      "n": 4,
+      "pdfs": [
+        "https://www.zijinmining.com/upload/file/2024/09/27/1c4b267439784d61b65a27c4d64e37dd.pdf",
+        "https://www.zijinmining.com/upload/file/2024/10/18/92b3c4a686e2451b97ac4554b6198299.pdf",
+        "https://www.zijinmining.com/upload/file/2025/04/25/3091791b98ac4361a5de4a3a393cec49.pdf",
+        "https://www.zijinmining.com/upload/file/2025/09/25/edb395dd70aa43bb9faf6e220853046a.pdf"
+      ],
+      "title": "Home-Zijin Mining Group Co., Ltd."
+    },
+    "https://www.zijinmining.com/investor/": {
+      "error": "HTTP Error 403: Forbidden"
+    },
+    "https://www.zijinmining.com/investor/index.htm": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/investor/2026yeji.htm": {
+      "status": 200,
+      "final": "https://www.zijinmining.com/investor/2026yeji.htm",
+      "n": 0,
+      "pdfs": [],
+      "title": "H1 2026 Results-Zijin Mining Group Co., Ltd."
+    },
+    "https://www.zijinmining.com/investor/2025yeji.htm": {
+      "status": 200,
+      "final": "https://www.zijinmining.com/investor/2025yeji.htm",
+      "n": 5,
+      "pdfs": [
+        "https://www.zijinmining.com/upload/file/2022/08/15/34453c254296430d815e72b66ce69b92.xlsx&amp;title=%E4%B8%BB%E8%A6%81%E7%9F%BF%E5%B1%B1%E6%88%96%E4%BC%81%E4%B8%9A%E4%BA%A7%E5%93%81%E4%BA%A7%E9%87%8F(%E9%93%9C)",
+        "https://www.zijinmining.com/upload/file/2022/08/15/70dbb84ac58f421db6467c49cfb48a5c.xlsx&amp;title=%E4%B8%BB%E8%A6%81%E7%9F%BF%E5%B1%B1%E6%88%96%E4%BC%81%E4%B8%9A%E4%BA%A7%E5%93%81%E4%BA%A7%E9%87%8F(%E9%87%91)",
+        "https://www.zijinmining.com/upload/file/2022/08/15/eb788d64bdfb4662bf57bcd77539f045.xlsx&amp;title=%E4%B8%BB%E8%A6%81%E7%9F%BF%E5%B1%B1%E6%88%96%E4%BC%81%E4%B8%9A%E4%BA%A7%E5%93%81%E4%BA%A7%E9%87%8F(%E9%93%B6)",
+        "https://www.zijinmining.com/upload/file/2022/08/15/fb49e6e385ec4a4f9b50fb96289673e7.xlsx&amp;title=%E4%B8%BB%E8%A6%81%E7%9F%BF%E5%B1%B1%E6%88%96%E4%BC%81%E4%B8%9A%E4%BA%A7%E5%93%81%E4%BA%A7%E9%87%8F(%E9%93%85%E9%94%8C)",
+        "https://www.zijinmining.com/upload/file/2022/09/23/0d103a7e0bbf4f06b1aa9b265dafd813.pdf"
+      ],
+      "title": "H1 2025 Results-Zijin Mining Group Co., Ltd."
+    },
+    "https://www.zijinmining.com/investor/2024yeji.htm": {
+      "status": 200,
+      "final": "https://www.zijinmining.com/investor/2024yeji.htm",
+      "n": 2,
+      "pdfs": [
+        "https://www.zijinmining.com/upload/file/2024/08/23/9d66fd0590b84eb5b21e34a1560c6a24.pdf",
+        "https://www.zjky.cn/upload/file/2024/08/23/9d66fd0590b84eb5b21e34a1560c6a24.pdf"
+      ],
+      "title": "2024H1-Zijin Mining Group Co., Ltd."
+    },
+    "https://www.zijinmining.com/investor/2023yeji.htm": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/investor/2022yeji.htm": {
+      "status": 200,
+      "final": "https://www.zijinmining.com/investor/2022yeji.htm",
+      "n": 7,
+      "pdfs": [
+        "https://www.zijinmining.com/upload/file/2022/09/20/007ceb1664614181a0c9ef02e5e10aa4.xlsx&amp;title=Fe",
+        "https://www.zijinmining.com/upload/file/2022/09/20/03c4e596aaa543c586be27aea97995b3.xlsx&amp;title=Ag",
+        "https://www.zijinmining.com/upload/file/2022/09/20/0a02d8d9266e48dea81b4364f5bbb05f.xlsx&amp;title=Au",
+        "https://www.zijinmining.com/upload/file/2022/09/20/0db3056e2bc5445d8cd8a90ad90af7ae.xlsx&amp;title=Cu",
+        "https://www.zijinmining.com/upload/file/2022/09/20/a2a284a4de1846789862938e29244be4.xlsx&amp;title=Li",
+        "https://www.zijinmining.com/upload/file/2022/09/20/e0214f1130d94c9099b2be1cc2222d03.xlsx&amp;title=Zn_Pb",
+        "https://www.zijinmining.com/upload/file/2022/09/23/0d103a7e0bbf4f06b1aa9b265dafd813.pdf"
+      ],
+      "title": "2022H1-Zijin Mining Group Co., Ltd."
+    },
+    "https://www.zijinmining.com/investors/": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/en/investor/": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/publish/static/en/investor/": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/upload/file/": {
+      "error": "HTTP Error 403: Forbidden"
+    },
+    "https://www.zijinmining.com/investor/2022.htm": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/investor/announcement/2022.htm": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/investor/2023.htm": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/investor/announcement/2023.htm": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/investor/2024.htm": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/investor/announcement/2024.htm": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/investor/2025.htm": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/investor/announcement/2025.htm": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/investor/2026.htm": {
+      "error": "HTTP Error 404: Not Found"
+    },
+    "https://www.zijinmining.com/investor/announcement/2026.htm": {
+      "error": "HTTP Error 404: Not Found"
+    }
+  },
+  "pdfs": [
+    "https://www.zijinmining.com/upload/file/2022/08/15/34453c254296430d815e72b66ce69b92.xlsx&amp;title=%E4%B8%BB%E8%A6%81%E7%9F%BF%E5%B1%B1%E6%88%96%E4%BC%81%E4%B8%9A%E4%BA%A7%E5%93%81%E4%BA%A7%E9%87%8F(%E9%93%9C)",
+    "https://www.zijinmining.com/upload/file/2022/08/15/70dbb84ac58f421db6467c49cfb48a5c.xlsx&amp;title=%E4%B8%BB%E8%A6%81%E7%9F%BF%E5%B1%B1%E6%88%96%E4%BC%81%E4%B8%9A%E4%BA%A7%E5%93%81%E4%BA%A7%E9%87%8F(%E9%87%91)",
+    "https://www.zijinmining.com/upload/file/2022/08/15/eb788d64bdfb4662bf57bcd77539f045.xlsx&amp;title=%E4%B8%BB%E8%A6%81%E7%9F%BF%E5%B1%B1%E6%88%96%E4%BC%81%E4%B8%9A%E4%BA%A7%E5%93%81%E4%BA%A7%E9%87%8F(%E9%93%B6)",
+    "https://www.zijinmining.com/upload/file/2022/08/15/fb49e6e385ec4a4f9b50fb96289673e7.xlsx&amp;title=%E4%B8%BB%E8%A6%81%E7%9F%BF%E5%B1%B1%E6%88%96%E4%BC%81%E4%B8%9A%E4%BA%A7%E5%93%81%E4%BA%A7%E9%87%8F(%E9%93%85%E9%94%8C)",
+    "https://www.zijinmining.com/upload/file/2022/09/20/007ceb1664614181a0c9ef02e5e10aa4.xlsx&amp;title=Fe",
+    "https://www.zijinmining.com/upload/file/2022/09/20/03c4e596aaa543c586be27aea97995b3.xlsx&amp;title=Ag",
+    "https://www.zijinmining.com/upload/file/2022/09/20/0a02d8d9266e48dea81b4364f5bbb05f.xlsx&amp;title=Au",
+    "https://www.zijinmining.com/upload/file/2022/09/20/0db3056e2bc5445d8cd8a90ad90af7ae.xlsx&amp;title=Cu",
+    "https://www.zijinmining.com/upload/file/2022/09/20/a2a284a4de1846789862938e29244be4.xlsx&amp;title=Li",
+    "https://www.zijinmining.com/upload/file/2022/09/20/e0214f1130d94c9099b2be1cc2222d03.xlsx&amp;title=Zn_Pb",
+    "https://www.zijinmining.com/upload/file/2022/09/23/0d103a7e0bbf4f06b1aa9b265dafd813.pdf",
+    "https://www.zijinmining.com/upload/file/2024/08/23/9d66fd0590b84eb5b21e34a1560c6a24.pdf",
+    "https://www.zijinmining.com/upload/file/2024/09/27/1c4b267439784d61b65a27c4d64e37dd.pdf",
+    "https://www.zijinmining.com/upload/file/2024/10/18/92b3c4a686e2451b97ac4554b6198299.pdf",
+    "https://www.zijinmining.com/upload/file/2025/04/25/3091791b98ac4361a5de4a3a393cec49.pdf",
+    "https://www.zijinmining.com/upload/file/2025/09/25/edb395dd70aa43bb9faf6e220853046a.pdf",
+    "https://www.zjky.cn/upload/file/2024/08/23/9d66fd0590b84eb5b21e34a1560c6a24.pdf"
+  ]
+}

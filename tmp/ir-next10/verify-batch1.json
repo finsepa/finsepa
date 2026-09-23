@@ -1,0 +1,196 @@
+{
+  "total": 81,
+  "ok": 62,
+  "bad": [
+    {
+      "ticker": "HOOD",
+      "q": "Q3 2022",
+      "slot": "slides",
+      "url": "https://investors.robinhood.com/static-files/f61f7dd7-f8d8-4b2c-80d7-e3647b3e056b",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q2 2022",
+      "slot": "slides",
+      "url": "https://investors.robinhood.com/static-files/74df57d4-4f5c-4bda-aeb2-73bdd4a33a1f",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q4 2022",
+      "slot": "slides",
+      "url": "https://investors.robinhood.com/static-files/201ed084-531c-492c-8a40-5d01b47914ed",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q4 2022",
+      "slot": "filings",
+      "url": "https://investors.robinhood.com/static-files/f214fca7-e17e-46d8-8df5-612c3c1b461b",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q2 2023",
+      "slot": "filings",
+      "url": "https://investors.robinhood.com/static-files/57cd5af3-2882-4cef-8909-6dd727b1ff87",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q1 2023",
+      "slot": "filings",
+      "url": "https://investors.robinhood.com/static-files/8c67c29e-b131-48bd-9e36-99f74428182d",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q1 2024",
+      "slot": "slides",
+      "url": "https://investors.robinhood.com/static-files/1f04f372-6680-4d42-b4cf-0263fab9394f",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q1 2024",
+      "slot": "filings",
+      "url": "https://investors.robinhood.com/static-files/ca26d3ea-fa54-4ba3-88c3-2ee19e4bb01e",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q2 2024",
+      "slot": "filings",
+      "url": "https://investors.robinhood.com/static-files/3277d80a-10ed-437e-a8b5-d91ea2d54125",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q3 2024",
+      "slot": "filings",
+      "url": "https://investors.robinhood.com/static-files/641e041f-a43a-454b-8ee5-d1848a97a61b",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q4 2024",
+      "slot": "slides",
+      "url": "https://investors.robinhood.com/static-files/87ffccaa-12f6-4625-a1c8-188e79f87782",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q4 2024",
+      "slot": "filings",
+      "url": "https://investors.robinhood.com/static-files/7aaec8f2-484e-4160-b0e9-c3016aa4b482",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q1 2025",
+      "slot": "slides",
+      "url": "https://investors.robinhood.com/static-files/eeb93474-ee4f-47f1-93c3-8d0b33b584e1",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q2 2025",
+      "slot": "slides",
+      "url": "https://investors.robinhood.com/static-files/cfd3e27d-e3a1-482d-a64f-81fd2fa30def",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q3 2025",
+      "slot": "filings",
+      "url": "https://investors.robinhood.com/static-files/0b1a9484-a168-4c17-962f-2f370840f486",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q4 2025",
+      "slot": "slides",
+      "url": "https://investors.robinhood.com/static-files/f614a824-52c7-42e3-838e-b1b8f5b05a55",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q4 2025",
+      "slot": "filings",
+      "url": "https://investors.robinhood.com/static-files/b2f8b742-6b7f-430d-9a42-3b06d5040bda",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q1 2026",
+      "slot": "slides",
+      "url": "https://investors.robinhood.com/static-files/6840cc36-4a2d-46d8-a9c3-0b334da724f8",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    },
+    {
+      "ticker": "HOOD",
+      "q": "Q2 2026",
+      "slot": "slides",
+      "url": "https://investors.robinhood.com/static-files/f5aa8c24-cd37-4a94-9169-cd04759e02a1",
+      "flag": "FAIL",
+      "status": "Command '['curl', '-sS', '-A', 'Mozilla/5.0', '-L', '--max-time', '30', '--http1.1', '-r', '0-7', '-",
+      "ctype": "",
+      "magic": ""
+    }
+  ]
+}

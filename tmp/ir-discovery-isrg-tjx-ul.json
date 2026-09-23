@@ -1,0 +1,1481 @@
+{
+  "isrg": {
+    "events": [
+      {
+        "event": "Q2 2026 INTUITIVE Earnings Conference Call",
+        "href": "https://isrg.gcs-web.com/events/event-details/q2-2026-intuitive-earnings-conference-call",
+        "links": [
+          {
+            "t": "Press",
+            "h": "https://isrg.intuitive.com/press-releases"
+          },
+          {
+            "t": "Events",
+            "h": "https://isrg.intuitive.com/events-and-presentations"
+          },
+          {
+            "t": "Q2 2026 Investor Presentation",
+            "h": "https://isrg.gcs-web.com/static-files/76f7007b-e586-4661-82fb-0409f15b83d5"
+          }
+        ],
+        "staticFiles": [
+          "https://isrg.intuitive.com/static-files/76f7007b-e586-4661-82fb-0409f15b83d5"
+        ],
+        "nodes": [],
+        "title": "Q2 2026 INTUITIVE Earnings Conference Call | Intuitive Surgical"
+      },
+      {
+        "event": "Q1 2026 INTUITIVE Earnings Conference Call",
+        "href": "https://isrg.gcs-web.com/events/event-details/q1-2026-intuitive-earnings-conference-call",
+        "links": [
+          {
+            "t": "Press",
+            "h": "https://isrg.intuitive.com/press-releases"
+          },
+          {
+            "t": "Events",
+            "h": "https://isrg.intuitive.com/events-and-presentations"
+          }
+        ],
+        "staticFiles": [],
+        "nodes": [],
+        "title": "Q1 2026 INTUITIVE Earnings Conference Call | Intuitive Surgical"
+      },
+      {
+        "event": "Q4 2025 INTUITIVE Earnings Conference Call",
+        "href": "https://isrg.gcs-web.com/events/event-details/q4-2026-intuitive-earnings-conference-call",
+        "links": [
+          {
+            "t": "Press",
+            "h": "https://isrg.intuitive.com/press-releases"
+          },
+          {
+            "t": "Events",
+            "h": "https://isrg.intuitive.com/events-and-presentations"
+          }
+        ],
+        "staticFiles": [],
+        "nodes": [],
+        "title": "Q4 2025 INTUITIVE Earnings Conference Call | Intuitive Surgical"
+      },
+      {
+        "event": "Q3 2025 INTUITIVE Earnings Conference Call",
+        "href": "https://isrg.gcs-web.com/events/event-details/q3-2025-intuitive-earnings-conference-call",
+        "links": [
+          {
+            "t": "Press",
+            "h": "https://isrg.intuitive.com/press-releases"
+          },
+          {
+            "t": "Events",
+            "h": "https://isrg.intuitive.com/events-and-presentations"
+          },
+          {
+            "t": "Q3 2025 Investor Presentation",
+            "h": "https://isrg.gcs-web.com/static-files/7bb532d6-7423-43c8-9681-a4787514cd9c"
+          }
+        ],
+        "staticFiles": [
+          "https://isrg.intuitive.com/static-files/7bb532d6-7423-43c8-9681-a4787514cd9c"
+        ],
+        "nodes": [],
+        "title": "Q3 2025 INTUITIVE Earnings Conference Call | Intuitive Surgical"
+      }
+    ],
+    "press": [],
+    "eventList": [
+      {
+        "t": "Q2 2026 INTUITIVE Earnings Conference Call",
+        "h": "https://isrg.gcs-web.com/events/event-details/q2-2026-intuitive-earnings-conference-call"
+      },
+      {
+        "t": "Q1 2026 INTUITIVE Earnings Conference Call",
+        "h": "https://isrg.gcs-web.com/events/event-details/q1-2026-intuitive-earnings-conference-call"
+      },
+      {
+        "t": "Q4 2025 INTUITIVE Earnings Conference Call",
+        "h": "https://isrg.gcs-web.com/events/event-details/q4-2026-intuitive-earnings-conference-call"
+      },
+      {
+        "t": "Q3 2025 INTUITIVE Earnings Conference Call",
+        "h": "https://isrg.gcs-web.com/events/event-details/q3-2025-intuitive-earnings-conference-call"
+      }
+    ],
+    "pressList": [],
+    "apiHits": [
+      {
+        "url": "https://isrg.gcs-web.com/events-and-presentations",
+        "status": 200,
+        "ct": "text/html; charset=UTF-8",
+        "bodySlice": "<!DOCTYPE html>\n<html lang=\"en\" dir=\"ltr\" prefix=\"og: https://ogp.me/ns#\">\n  <head>\n    <meta charset=\"utf-8\" />\n<meta name=\"description\" content=\"NASDAQ : ISRG | Intuitve Surgical, Inc. - events and presentations.\" />\n<meta name=\"keywords\" content=\"intuitive investors information, intuitive surgical investor information, intuitve surgical investors research, intuitive surgical, intuitive, isrg, isrg stock, intuitive surgical stock, da vinci robot, isrg stock price, da vinci surgery, da vinvi robotic\" />\n<link rel=\"canonical\" href=\"https://isrg.gcs-web.com/events-and-presentations/\" />\n<meta name=\"referrer\" content=\"no-referrer\" />\n<meta property=\"og:site_name\" content=\"Intuitive Surgical\" />\n<meta property=\"og:type\" content=\"website\" />\n<meta property=\"og:url\" content=\"https://isrg.gcs-web.com/events-and-presentations\" />\n<meta property=\"og:title\" content=\"Events &amp; Presentations | Intuitive Surgical\" />\n<meta property=\"og:description\" content=\"The Investor Relations website contains information about Intuitive Surgical&#039;s business for stockholders, potential investors, and financial analysts.\" />\n<meta name=\"Generator\" content=\"Drupal 10 (https://www.drupal.org)\" />\n<meta name=\"MobileOptimized\" content=\"width\" />\n<meta name=\"HandheldFriendly\" content=\"true\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n<script type=\"application/ld+json\">{\n    \"@context\": \"https://schema.org\",\n    \"@graph\": [\n        {\n            \"@type\": \"Organization\",\n            \"name\": \"Intuitive Surgical\",\n            \"url\": \"https://isrg.intuitive.com\"\n        },\n        {\n            \"@type\": \"WebPage\",\n            \"@id\": \"https://isrg.intuitive.com/events-and-presentations\",\n            \"name\": \"Events \\u0026 Presentations |  Intuitive Surgical\"\n        },\n        {\n            \"@type\": \"WebSite\",\n            \"name\": \"Intuitive Surgical\",\n            \"url\": \"https://isrg.intuitive.com\"\n        }\n    ]\n}</script>\n<link rel=\"icon\" href=\"/sites/g/files/knoqqb87176/files/intuitive-fav-icon.png\" type=\"image/png\" />\n<link rel=\"alternate\" hreflang=\"en\" href=\"https://isrg.gcs-web.com/events-and-presentations\" />\n\n    <title>Intuitive | ISRG Investor events &amp; presentations</title>\n    <link rel=\"stylesheet\" media=\"all\" href=\"/sites/g/files/knoqqb87176/files/css/css_i9NSfO1dzPVQ_bKZ9YP37CW3wmRzfakvWvkfQb6yxj4.css?delta=0&amp;language=en&amp;theme=nir_pid2927&amp;include=eJyNj0EKwzAMBD9UYsil9DVibYvUxJaCrBby-zrNpT0UeluGlTRKahyyPTbUKRdUXS5SjCI6hyOUpNK_kavWCHvDBlvZKcNBsWpaAwR1704GL7KMKaN0h_lf9U6OWPlHtzGEjJO2xjJ4UfnYvWE5_Y4wDW1nceq7pCEhwqfwVvJ8m69Bn2xWMl_6uM4tHN-9AIelaUs\" />\n<link rel=\"stylesheet\" media=\"all\" href=\"/sites/g/files/knoqqb87176/files/css/css_7lehfegt525lbFhd8WC7W2L4A9r6UFmZleDBXjmMOxE.css?delta=1&amp;language=en&amp;theme=nir_pid2927&amp;include=eJyNj0EKwzAMBD9UYsil9DVibYvUxJaCrBby-zrNpT0UeluGlTRKahyyPTbUKRdUXS5SjCI6hyOUpNK_kavWCHvDBlvZKcNBsWpaAwR1704GL7KMKaN0h_lf9U6OWPlHtzGEjJO2xjJ4UfnYvWE5_Y4wDW1nceq7pCEhwqfwVvJ8m69Bn2xWMl_6uM4"
+      },
+      {
+        "url": "https://isi-media.imgix.net/assets/isrg.js",
+        "status": 200,
+        "ct": "application/javascript",
+        "bodySlice": ""
+      },
+      {
+        "url": "https://isrg.gcs-web.com/sites/g/files/knoqqb87176/themes/site/nir_pid2927/dist/media/svg--media/sprite-sheet-folder/icons-symbol.svg",
+        "status": 200,
+        "ct": "image/svg+xml",
+        "bodySlice": "<?xml version=\"1.0\" encoding=\"utf-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><symbol viewBox=\"0 0 154.1 194.7\" id=\"icon_custom-DotsLower_FeatureGr\" xmlns=\"http://www.w3.org/2000/svg\"><style>.aast0{fill:#8a8a8a}</style><path class=\"aast0\" d=\"M86.1 0h3.4v3.4h-3.4zM96.9 0h3.4v3.4h-3.4zM107.7 0h3.4v3.4h-3.4zM118.4 0h3.4v3.4h-3.4zM129.2 0h3.4v3.4h-3.4zM140 0h3.4v3.4H140zM150.7 0h3.4v3.4h-3.4zM86.1 10.6h3.4V14h-3.4zM96.9 10.6h3.4V14h-3.4zM107.7 10.6h3.4V14h-3.4zM129.2 10.6h3.4V14h-3.4zM140 10.6h3.4V14H140zM150.7 10.6h3.4V14h-3.4zM86.1 21.3h3.4v3.4h-3.4zM96.9 21.3h3.4v3.4h-3.4zM107.7 21.3h3.4v3.4h-3.4zM118.4 21.3h3.4v3.4h-3.4zM129.2 21.3h3.4v3.4h-3.4zM140 21.3h3.4v3.4H140zM150.7 21.3h3.4v3.4h-3.4zM86.1 31.9h3.4v3.4h-3.4zM96.9 31.9h3.4v3.4h-3.4zM107.7 31.9h3.4v3.4h-3.4zM118.4 31.9h3.4v3.4h-3.4zM129.2 31.9h3.4v3.4h-3.4zM140 31.9h3.4v3.4H140zM150.7 31.9h3.4v3.4h-3.4zM86.1 42.5h3.4v3.4h-3.4zM96.9 42.5h3.4v3.4h-3.4zM107.7 42.5h3.4v3.4h-3.4zM118.4 42.5h3.4v3.4h-3.4zM129.2 42.5h3.4v3.4h-3.4zM140 42.5h3.4v3.4H140zM150.7 42.5h3.4v3.4h-3.4zM86.1 53.1h3.4v3.4h-3.4zM96.9 53.1h3.4v3.4h-3.4zM107.7 53.1h3.4v3.4h-3.4zM118.4 53.1h3.4v3.4h-3.4zM129.2 53.1h3.4v3.4h-3.4zM140 53.1h3.4v3.4H140zM150.7 53.1h3.4v3.4h-3.4zM86.1 63.8h3.4v3.4h-3.4zM96.9 63.8h3.4v3.4h-3.4zM107.7 63.8h3.4v3.4h-3.4zM118.4 63.8h3.4v3.4h-3.4zM129.2 63.8h3.4v3.4h-3.4zM140 63.8h3.4v3.4H140zM150.7 63.8h3.4v3.4h-3.4zM86.1 74.4h3.4v3.4h-3.4zM96.9 74.4h3.4v3.4h-3.4zM107.7 74.4h3.4v3.4h-3.4zM118.4 74.4h3.4v3.4h-3.4zM129.2 74.4h3.4v3.4h-3.4zM140 74.4h3.4v3.4H140zM150.7 74.4h3.4v3.4h-3.4zM86.1 85h3.4v3.4h-3.4zM107.7 85h3.4v3.4h-3.4zM118.4 85h3.4v3.4h-3.4zM129.2 85h3.4v3.4h-3.4zM140 85h3.4v3.4H140zM150.7 85h3.4v3.4h-3.4zM86.1 95.6h3.4V99h-3.4zM96.9 95.6h3.4V99h-3.4zM107.7 95.6h3.4V99h-3.4zM118.4 95.6h3.4V99h-3.4zM129.2 95.6h3.4V99h-3.4zM140 95.6h3.4V99H140zM150.7 95.6h3.4V99h-3.4zM86.1 106.3h3.4v3.4h-3.4zM96.9 106.3h3.4v3.4h-3.4zM107.7 106.3h3.4v3.4h-3.4zM118.4 106.3h3.4v3.4h-3.4zM129.2 106.3h3.4v3.4h-3.4zM140 106.3h3.4v3.4H140zM150.7 106.3h3.4v3.4h-3.4zM0 116.9h3.4v3.4H0zM10.7 116.9h3.4v3.4h-3.4zM21.5 116.9h3.4v3.4h-3.4zM32.3 116.9h3.4v3.4h-3.4zM43 116.9h3.4v3.4H43zM53.8 116.9h3.4v3.4h-3.4zM64.6 116.9H68v3.4h-3.4zM75.4 116.9h3.4v3.4h-3.4zM86.1 116.9h3.4v3.4h-3.4zM96.9 116.9h3.4v3.4h-3.4zM107.7 116.9h3.4v3.4h-3.4zM118.4 116.9h3.4v3.4h-3.4zM129.2 116.9h3.4v3.4h-3.4zM140 116.9h3.4v3.4H140zM150.7 116.9h3.4v3.4h-3.4zM0 127.5h3.4v3.4H0zM10.7 127.5h3.4v3.4h-3.4zM21.5 127.5h3.4v3.4h-3.4zM32.3 127.5h3.4v3.4h-3.4zM43 127.5h3.4v3.4H43zM53.8 127.5h3.4v3.4h-3.4zM64.6 127.5H68v3.4h-3.4zM75.4 127.5h3.4v3.4h-3.4zM86.1 127.5h3.4v3.4h-3.4zM96.9 127.5h3.4v3.4h-3.4zM107.7 127.5h3.4v3.4h-3.4zM118.4 127.5h3.4v3.4h-3.4zM129.2 127.5h3.4v3.4h-3.4zM140 127.5h3.4v3.4H140zM150.7 127.5h3.4v3.4h-3.4zM0 138.1h3.4v3.4H0zM10.7 138.1h3.4v3.4h-3.4zM21.5 138.1h3.4v3.4h-3.4zM32.3 138.1h3.4v3.4h-3.4zM43 138.1h3.4v3.4H43zM53.8 138.1h3.4v3.4h-3.4zM64.6 138.1H68v3.4h-3.4zM75.4 138.1h3.4v3.4h-3.4zM86.1 138.1h"
+      },
+      {
+        "url": "https://thomsonreuterscorporategroupweb.sc.omtrdc.net/b/ss/trcgclientweb1401,trcgclientwebglobal/1/JS-2.22.0-LCXS/s33537272292914?AQB=1&ndh=1&pf=1&t=20%2F8%2F2026%2019%3A59%3A36%200%20-240&mid=66862859672684849294612602885721976823&aamlh=6&ce=UTF-8&pageName=Intuitive%20%7C%20ISRG%20Investor%20events%20%26%20presentations&g=https%3A%2F%2Fisrg.gcs-web.com%2Fevents-and-presentations&cc=USD&aamb=6G1ynYcLPuiQxYZrsz_pkqfLG9yMXBpb2zX5dvJdYQJzPXImdj0y&s=1400x900&c=24&j=1.6&v=N&k=Y&bw=1400&bh=900&mcorgid=98CF678254E93B1B0A4C98A5%40AdobeOrg&AQE=1",
+        "status": 200,
+        "ct": "image/gif;charset=utf-8",
+        "bodySlice": ""
+      },
+      {
+        "url": "https://www.google.com/ccm/collect?rcb=7&frm=0&apvc=1&ae=g&auid=331566444.1789919979&dt=Intuitive%20%7C%20ISRG%20Investor%20events%20%26%20presentations&en=page_view&dl=https%3A%2F%2Fisrg.gcs-web.com%2Fevents-and-presentations&scrsrc=www.googletagmanager.com&rnd=665915907.1789919979&navt=n&npa=0&ep.ads_data_redaction=0&gtm=45He69g1v79185191za200zd79185191xeaxf1&gcd=13l3l3l3l1l1&dma=0&tag_exp=115938465~115938469~118897920~118897930~120385423~120469145~120469153~120847435&tft=1789919979245&tfd=5597&fmt=8",
+        "status": 200,
+        "ct": "",
+        "bodySlice": ""
+      },
+      {
+        "url": "https://isi-media.imgix.net/assets/isrg.js",
+        "status": 200,
+        "ct": "application/javascript",
+        "bodySlice": ""
+      },
+      {
+        "url": "https://isrg.gcs-web.com/sites/g/files/knoqqb87176/themes/site/nir_pid2927/dist/media/svg--media/sprite-sheet-folder/icons-symbol.svg",
+        "status": 200,
+        "ct": "image/svg+xml",
+        "bodySlice": "<?xml version=\"1.0\" encoding=\"utf-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><symbol viewBox=\"0 0 154.1 194.7\" id=\"icon_custom-DotsLower_FeatureGr\" xmlns=\"http://www.w3.org/2000/svg\"><style>.aast0{fill:#8a8a8a}</style><path class=\"aast0\" d=\"M86.1 0h3.4v3.4h-3.4zM96.9 0h3.4v3.4h-3.4zM107.7 0h3.4v3.4h-3.4zM118.4 0h3.4v3.4h-3.4zM129.2 0h3.4v3.4h-3.4zM140 0h3.4v3.4H140zM150.7 0h3.4v3.4h-3.4zM86.1 10.6h3.4V14h-3.4zM96.9 10.6h3.4V14h-3.4zM107.7 10.6h3.4V14h-3.4zM129.2 10.6h3.4V14h-3.4zM140 10.6h3.4V14H140zM150.7 10.6h3.4V14h-3.4zM86.1 21.3h3.4v3.4h-3.4zM96.9 21.3h3.4v3.4h-3.4zM107.7 21.3h3.4v3.4h-3.4zM118.4 21.3h3.4v3.4h-3.4zM129.2 21.3h3.4v3.4h-3.4zM140 21.3h3.4v3.4H140zM150.7 21.3h3.4v3.4h-3.4zM86.1 31.9h3.4v3.4h-3.4zM96.9 31.9h3.4v3.4h-3.4zM107.7 31.9h3.4v3.4h-3.4zM118.4 31.9h3.4v3.4h-3.4zM129.2 31.9h3.4v3.4h-3.4zM140 31.9h3.4v3.4H140zM150.7 31.9h3.4v3.4h-3.4zM86.1 42.5h3.4v3.4h-3.4zM96.9 42.5h3.4v3.4h-3.4zM107.7 42.5h3.4v3.4h-3.4zM118.4 42.5h3.4v3.4h-3.4zM129.2 42.5h3.4v3.4h-3.4zM140 42.5h3.4v3.4H140zM150.7 42.5h3.4v3.4h-3.4zM86.1 53.1h3.4v3.4h-3.4zM96.9 53.1h3.4v3.4h-3.4zM107.7 53.1h3.4v3.4h-3.4zM118.4 53.1h3.4v3.4h-3.4zM129.2 53.1h3.4v3.4h-3.4zM140 53.1h3.4v3.4H140zM150.7 53.1h3.4v3.4h-3.4zM86.1 63.8h3.4v3.4h-3.4zM96.9 63.8h3.4v3.4h-3.4zM107.7 63.8h3.4v3.4h-3.4zM118.4 63.8h3.4v3.4h-3.4zM129.2 63.8h3.4v3.4h-3.4zM140 63.8h3.4v3.4H140zM150.7 63.8h3.4v3.4h-3.4zM86.1 74.4h3.4v3.4h-3.4zM96.9 74.4h3.4v3.4h-3.4zM107.7 74.4h3.4v3.4h-3.4zM118.4 74.4h3.4v3.4h-3.4zM129.2 74.4h3.4v3.4h-3.4zM140 74.4h3.4v3.4H140zM150.7 74.4h3.4v3.4h-3.4zM86.1 85h3.4v3.4h-3.4zM107.7 85h3.4v3.4h-3.4zM118.4 85h3.4v3.4h-3.4zM129.2 85h3.4v3.4h-3.4zM140 85h3.4v3.4H140zM150.7 85h3.4v3.4h-3.4zM86.1 95.6h3.4V99h-3.4zM96.9 95.6h3.4V99h-3.4zM107.7 95.6h3.4V99h-3.4zM118.4 95.6h3.4V99h-3.4zM129.2 95.6h3.4V99h-3.4zM140 95.6h3.4V99H140zM150.7 95.6h3.4V99h-3.4zM86.1 106.3h3.4v3.4h-3.4zM96.9 106.3h3.4v3.4h-3.4zM107.7 106.3h3.4v3.4h-3.4zM118.4 106.3h3.4v3.4h-3.4zM129.2 106.3h3.4v3.4h-3.4zM140 106.3h3.4v3.4H140zM150.7 106.3h3.4v3.4h-3.4zM0 116.9h3.4v3.4H0zM10.7 116.9h3.4v3.4h-3.4zM21.5 116.9h3.4v3.4h-3.4zM32.3 116.9h3.4v3.4h-3.4zM43 116.9h3.4v3.4H43zM53.8 116.9h3.4v3.4h-3.4zM64.6 116.9H68v3.4h-3.4zM75.4 116.9h3.4v3.4h-3.4zM86.1 116.9h3.4v3.4h-3.4zM96.9 116.9h3.4v3.4h-3.4zM107.7 116.9h3.4v3.4h-3.4zM118.4 116.9h3.4v3.4h-3.4zM129.2 116.9h3.4v3.4h-3.4zM140 116.9h3.4v3.4H140zM150.7 116.9h3.4v3.4h-3.4zM0 127.5h3.4v3.4H0zM10.7 127.5h3.4v3.4h-3.4zM21.5 127.5h3.4v3.4h-3.4zM32.3 127.5h3.4v3.4h-3.4zM43 127.5h3.4v3.4H43zM53.8 127.5h3.4v3.4h-3.4zM64.6 127.5H68v3.4h-3.4zM75.4 127.5h3.4v3.4h-3.4zM86.1 127.5h3.4v3.4h-3.4zM96.9 127.5h3.4v3.4h-3.4zM107.7 127.5h3.4v3.4h-3.4zM118.4 127.5h3.4v3.4h-3.4zM129.2 127.5h3.4v3.4h-3.4zM140 127.5h3.4v3.4H140zM150.7 127.5h3.4v3.4h-3.4zM0 138.1h3.4v3.4H0zM10.7 138.1h3.4v3.4h-3.4zM21.5 138.1h3.4v3.4h-3.4zM32.3 138.1h3.4v3.4h-3.4zM43 138.1h3.4v3.4H43zM53.8 138.1h3.4v3.4h-3.4zM64.6 138.1H68v3.4h-3.4zM75.4 138.1h3.4v3.4h-3.4zM86.1 138.1h"
+      },
+      {
+        "url": "https://thomsonreuterscorporategroupweb.sc.omtrdc.net/b/ss/trcgclientweb1401,trcgclientwebglobal/1/JS-2.22.0-LCXS/s37649718087089?AQB=1&ndh=1&pf=1&t=20%2F8%2F2026%2019%3A59%3A44%200%20-240&mid=66862859672684849294612602885721976823&aamlh=6&ce=UTF-8&pageName=Q2%202026%20INTUITIVE%20Earnings%20Conference%20Call%20%7C%20Intuitive%20Surgical&g=https%3A%2F%2Fisrg.gcs-web.com%2Fevents%2Fevent-details%2Fq2-2026-intuitive-earnings-conference-call&cc=USD&aamb=6G1ynYcLPuiQxYZrsz_pkqfLG9yMXBpb2zX5dvJdYQJzPXImdj0y&c.&a.&activitymap.&page=Intuitive%20%7C%20ISRG%20Investor%20events%20%26%20presentations&link=Accept%20All%20Cookies&region=onetrust-button-group&pageIDType=1&.activitymap&.a&.c&pid=Intuitive%20%7C%20ISRG%20Investor%20events%20%26%20presentations&pidt=1&oid=Accept%20All%20Cookies&oidt=3&ot=SUBMIT&s=1400x900&c=24&j=1.6&v=N&k=Y&bw=1400&bh=900&mcorgid=98CF678254E93B1B0A4C98A5%40AdobeOrg&AQE=1",
+        "status": 200,
+        "ct": "image/gif;charset=utf-8",
+        "bodySlice": ""
+      },
+      {
+        "url": "https://isi-media.imgix.net/assets/isrg.js",
+        "status": 200,
+        "ct": "application/javascript",
+        "bodySlice": ""
+      },
+      {
+        "url": "https://isrg.gcs-web.com/sites/g/files/knoqqb87176/themes/site/nir_pid2927/dist/media/svg--media/sprite-sheet-folder/icons-symbol.svg",
+        "status": 200,
+        "ct": "image/svg+xml",
+        "bodySlice": "<?xml version=\"1.0\" encoding=\"utf-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><symbol viewBox=\"0 0 154.1 194.7\" id=\"icon_custom-DotsLower_FeatureGr\" xmlns=\"http://www.w3.org/2000/svg\"><style>.aast0{fill:#8a8a8a}</style><path class=\"aast0\" d=\"M86.1 0h3.4v3.4h-3.4zM96.9 0h3.4v3.4h-3.4zM107.7 0h3.4v3.4h-3.4zM118.4 0h3.4v3.4h-3.4zM129.2 0h3.4v3.4h-3.4zM140 0h3.4v3.4H140zM150.7 0h3.4v3.4h-3.4zM86.1 10.6h3.4V14h-3.4zM96.9 10.6h3.4V14h-3.4zM107.7 10.6h3.4V14h-3.4zM129.2 10.6h3.4V14h-3.4zM140 10.6h3.4V14H140zM150.7 10.6h3.4V14h-3.4zM86.1 21.3h3.4v3.4h-3.4zM96.9 21.3h3.4v3.4h-3.4zM107.7 21.3h3.4v3.4h-3.4zM118.4 21.3h3.4v3.4h-3.4zM129.2 21.3h3.4v3.4h-3.4zM140 21.3h3.4v3.4H140zM150.7 21.3h3.4v3.4h-3.4zM86.1 31.9h3.4v3.4h-3.4zM96.9 31.9h3.4v3.4h-3.4zM107.7 31.9h3.4v3.4h-3.4zM118.4 31.9h3.4v3.4h-3.4zM129.2 31.9h3.4v3.4h-3.4zM140 31.9h3.4v3.4H140zM150.7 31.9h3.4v3.4h-3.4zM86.1 42.5h3.4v3.4h-3.4zM96.9 42.5h3.4v3.4h-3.4zM107.7 42.5h3.4v3.4h-3.4zM118.4 42.5h3.4v3.4h-3.4zM129.2 42.5h3.4v3.4h-3.4zM140 42.5h3.4v3.4H140zM150.7 42.5h3.4v3.4h-3.4zM86.1 53.1h3.4v3.4h-3.4zM96.9 53.1h3.4v3.4h-3.4zM107.7 53.1h3.4v3.4h-3.4zM118.4 53.1h3.4v3.4h-3.4zM129.2 53.1h3.4v3.4h-3.4zM140 53.1h3.4v3.4H140zM150.7 53.1h3.4v3.4h-3.4zM86.1 63.8h3.4v3.4h-3.4zM96.9 63.8h3.4v3.4h-3.4zM107.7 63.8h3.4v3.4h-3.4zM118.4 63.8h3.4v3.4h-3.4zM129.2 63.8h3.4v3.4h-3.4zM140 63.8h3.4v3.4H140zM150.7 63.8h3.4v3.4h-3.4zM86.1 74.4h3.4v3.4h-3.4zM96.9 74.4h3.4v3.4h-3.4zM107.7 74.4h3.4v3.4h-3.4zM118.4 74.4h3.4v3.4h-3.4zM129.2 74.4h3.4v3.4h-3.4zM140 74.4h3.4v3.4H140zM150.7 74.4h3.4v3.4h-3.4zM86.1 85h3.4v3.4h-3.4zM107.7 85h3.4v3.4h-3.4zM118.4 85h3.4v3.4h-3.4zM129.2 85h3.4v3.4h-3.4zM140 85h3.4v3.4H140zM150.7 85h3.4v3.4h-3.4zM86.1 95.6h3.4V99h-3.4zM96.9 95.6h3.4V99h-3.4zM107.7 95.6h3.4V99h-3.4zM118.4 95.6h3.4V99h-3.4zM129.2 95.6h3.4V99h-3.4zM140 95.6h3.4V99H140zM150.7 95.6h3.4V99h-3.4zM86.1 106.3h3.4v3.4h-3.4zM96.9 106.3h3.4v3.4h-3.4zM107.7 106.3h3.4v3.4h-3.4zM118.4 106.3h3.4v3.4h-3.4zM129.2 106.3h3.4v3.4h-3.4zM140 106.3h3.4v3.4H140zM150.7 106.3h3.4v3.4h-3.4zM0 116.9h3.4v3.4H0zM10.7 116.9h3.4v3.4h-3.4zM21.5 116.9h3.4v3.4h-3.4zM32.3 116.9h3.4v3.4h-3.4zM43 116.9h3.4v3.4H43zM53.8 116.9h3.4v3.4h-3.4zM64.6 116.9H68v3.4h-3.4zM75.4 116.9h3.4v3.4h-3.4zM86.1 116.9h3.4v3.4h-3.4zM96.9 116.9h3.4v3.4h-3.4zM107.7 116.9h3.4v3.4h-3.4zM118.4 116.9h3.4v3.4h-3.4zM129.2 116.9h3.4v3.4h-3.4zM140 116.9h3.4v3.4H140zM150.7 116.9h3.4v3.4h-3.4zM0 127.5h3.4v3.4H0zM10.7 127.5h3.4v3.4h-3.4zM21.5 127.5h3.4v3.4h-3.4zM32.3 127.5h3.4v3.4h-3.4zM43 127.5h3.4v3.4H43zM53.8 127.5h3.4v3.4h-3.4zM64.6 127.5H68v3.4h-3.4zM75.4 127.5h3.4v3.4h-3.4zM86.1 127.5h3.4v3.4h-3.4zM96.9 127.5h3.4v3.4h-3.4zM107.7 127.5h3.4v3.4h-3.4zM118.4 127.5h3.4v3.4h-3.4zM129.2 127.5h3.4v3.4h-3.4zM140 127.5h3.4v3.4H140zM150.7 127.5h3.4v3.4h-3.4zM0 138.1h3.4v3.4H0zM10.7 138.1h3.4v3.4h-3.4zM21.5 138.1h3.4v3.4h-3.4zM32.3 138.1h3.4v3.4h-3.4zM43 138.1h3.4v3.4H43zM53.8 138.1h3.4v3.4h-3.4zM64.6 138.1H68v3.4h-3.4zM75.4 138.1h3.4v3.4h-3.4zM86.1 138.1h"
+      },
+      {
+        "url": "https://isi-media.imgix.net/assets/isrg.js",
+        "status": 200,
+        "ct": "application/javascript",
+        "bodySlice": ""
+      },
+      {
+        "url": "https://isrg.gcs-web.com/sites/g/files/knoqqb87176/themes/site/nir_pid2927/dist/media/svg--media/sprite-sheet-folder/icons-symbol.svg",
+        "status": 200,
+        "ct": "image/svg+xml",
+        "bodySlice": "<?xml version=\"1.0\" encoding=\"utf-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><symbol viewBox=\"0 0 154.1 194.7\" id=\"icon_custom-DotsLower_FeatureGr\" xmlns=\"http://www.w3.org/2000/svg\"><style>.aast0{fill:#8a8a8a}</style><path class=\"aast0\" d=\"M86.1 0h3.4v3.4h-3.4zM96.9 0h3.4v3.4h-3.4zM107.7 0h3.4v3.4h-3.4zM118.4 0h3.4v3.4h-3.4zM129.2 0h3.4v3.4h-3.4zM140 0h3.4v3.4H140zM150.7 0h3.4v3.4h-3.4zM86.1 10.6h3.4V14h-3.4zM96.9 10.6h3.4V14h-3.4zM107.7 10.6h3.4V14h-3.4zM129.2 10.6h3.4V14h-3.4zM140 10.6h3.4V14H140zM150.7 10.6h3.4V14h-3.4zM86.1 21.3h3.4v3.4h-3.4zM96.9 21.3h3.4v3.4h-3.4zM107.7 21.3h3.4v3.4h-3.4zM118.4 21.3h3.4v3.4h-3.4zM129.2 21.3h3.4v3.4h-3.4zM140 21.3h3.4v3.4H140zM150.7 21.3h3.4v3.4h-3.4zM86.1 31.9h3.4v3.4h-3.4zM96.9 31.9h3.4v3.4h-3.4zM107.7 31.9h3.4v3.4h-3.4zM118.4 31.9h3.4v3.4h-3.4zM129.2 31.9h3.4v3.4h-3.4zM140 31.9h3.4v3.4H140zM150.7 31.9h3.4v3.4h-3.4zM86.1 42.5h3.4v3.4h-3.4zM96.9 42.5h3.4v3.4h-3.4zM107.7 42.5h3.4v3.4h-3.4zM118.4 42.5h3.4v3.4h-3.4zM129.2 42.5h3.4v3.4h-3.4zM140 42.5h3.4v3.4H140zM150.7 42.5h3.4v3.4h-3.4zM86.1 53.1h3.4v3.4h-3.4zM96.9 53.1h3.4v3.4h-3.4zM107.7 53.1h3.4v3.4h-3.4zM118.4 53.1h3.4v3.4h-3.4zM129.2 53.1h3.4v3.4h-3.4zM140 53.1h3.4v3.4H140zM150.7 53.1h3.4v3.4h-3.4zM86.1 63.8h3.4v3.4h-3.4zM96.9 63.8h3.4v3.4h-3.4zM107.7 63.8h3.4v3.4h-3.4zM118.4 63.8h3.4v3.4h-3.4zM129.2 63.8h3.4v3.4h-3.4zM140 63.8h3.4v3.4H140zM150.7 63.8h3.4v3.4h-3.4zM86.1 74.4h3.4v3.4h-3.4zM96.9 74.4h3.4v3.4h-3.4zM107.7 74.4h3.4v3.4h-3.4zM118.4 74.4h3.4v3.4h-3.4zM129.2 74.4h3.4v3.4h-3.4zM140 74.4h3.4v3.4H140zM150.7 74.4h3.4v3.4h-3.4zM86.1 85h3.4v3.4h-3.4zM107.7 85h3.4v3.4h-3.4zM118.4 85h3.4v3.4h-3.4zM129.2 85h3.4v3.4h-3.4zM140 85h3.4v3.4H140zM150.7 85h3.4v3.4h-3.4zM86.1 95.6h3.4V99h-3.4zM96.9 95.6h3.4V99h-3.4zM107.7 95.6h3.4V99h-3.4zM118.4 95.6h3.4V99h-3.4zM129.2 95.6h3.4V99h-3.4zM140 95.6h3.4V99H140zM150.7 95.6h3.4V99h-3.4zM86.1 106.3h3.4v3.4h-3.4zM96.9 106.3h3.4v3.4h-3.4zM107.7 106.3h3.4v3.4h-3.4zM118.4 106.3h3.4v3.4h-3.4zM129.2 106.3h3.4v3.4h-3.4zM140 106.3h3.4v3.4H140zM150.7 106.3h3.4v3.4h-3.4zM0 116.9h3.4v3.4H0zM10.7 116.9h3.4v3.4h-3.4zM21.5 116.9h3.4v3.4h-3.4zM32.3 116.9h3.4v3.4h-3.4zM43 116.9h3.4v3.4H43zM53.8 116.9h3.4v3.4h-3.4zM64.6 116.9H68v3.4h-3.4zM75.4 116.9h3.4v3.4h-3.4zM86.1 116.9h3.4v3.4h-3.4zM96.9 116.9h3.4v3.4h-3.4zM107.7 116.9h3.4v3.4h-3.4zM118.4 116.9h3.4v3.4h-3.4zM129.2 116.9h3.4v3.4h-3.4zM140 116.9h3.4v3.4H140zM150.7 116.9h3.4v3.4h-3.4zM0 127.5h3.4v3.4H0zM10.7 127.5h3.4v3.4h-3.4zM21.5 127.5h3.4v3.4h-3.4zM32.3 127.5h3.4v3.4h-3.4zM43 127.5h3.4v3.4H43zM53.8 127.5h3.4v3.4h-3.4zM64.6 127.5H68v3.4h-3.4zM75.4 127.5h3.4v3.4h-3.4zM86.1 127.5h3.4v3.4h-3.4zM96.9 127.5h3.4v3.4h-3.4zM107.7 127.5h3.4v3.4h-3.4zM118.4 127.5h3.4v3.4h-3.4zM129.2 127.5h3.4v3.4h-3.4zM140 127.5h3.4v3.4H140zM150.7 127.5h3.4v3.4h-3.4zM0 138.1h3.4v3.4H0zM10.7 138.1h3.4v3.4h-3.4zM21.5 138.1h3.4v3.4h-3.4zM32.3 138.1h3.4v3.4h-3.4zM43 138.1h3.4v3.4H43zM53.8 138.1h3.4v3.4h-3.4zM64.6 138.1H68v3.4h-3.4zM75.4 138.1h3.4v3.4h-3.4zM86.1 138.1h"
+      },
+      {
+        "url": "https://isi-media.imgix.net/assets/isrg.js",
+        "status": 200,
+        "ct": "application/javascript",
+        "bodySlice": ""
+      },
+      {
+        "url": "https://isrg.gcs-web.com/sites/g/files/knoqqb87176/themes/site/nir_pid2927/dist/media/svg--media/sprite-sheet-folder/icons-symbol.svg",
+        "status": 200,
+        "ct": "image/svg+xml",
+        "bodySlice": "<?xml version=\"1.0\" encoding=\"utf-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><symbol viewBox=\"0 0 154.1 194.7\" id=\"icon_custom-DotsLower_FeatureGr\" xmlns=\"http://www.w3.org/2000/svg\"><style>.aast0{fill:#8a8a8a}</style><path class=\"aast0\" d=\"M86.1 0h3.4v3.4h-3.4zM96.9 0h3.4v3.4h-3.4zM107.7 0h3.4v3.4h-3.4zM118.4 0h3.4v3.4h-3.4zM129.2 0h3.4v3.4h-3.4zM140 0h3.4v3.4H140zM150.7 0h3.4v3.4h-3.4zM86.1 10.6h3.4V14h-3.4zM96.9 10.6h3.4V14h-3.4zM107.7 10.6h3.4V14h-3.4zM129.2 10.6h3.4V14h-3.4zM140 10.6h3.4V14H140zM150.7 10.6h3.4V14h-3.4zM86.1 21.3h3.4v3.4h-3.4zM96.9 21.3h3.4v3.4h-3.4zM107.7 21.3h3.4v3.4h-3.4zM118.4 21.3h3.4v3.4h-3.4zM129.2 21.3h3.4v3.4h-3.4zM140 21.3h3.4v3.4H140zM150.7 21.3h3.4v3.4h-3.4zM86.1 31.9h3.4v3.4h-3.4zM96.9 31.9h3.4v3.4h-3.4zM107.7 31.9h3.4v3.4h-3.4zM118.4 31.9h3.4v3.4h-3.4zM129.2 31.9h3.4v3.4h-3.4zM140 31.9h3.4v3.4H140zM150.7 31.9h3.4v3.4h-3.4zM86.1 42.5h3.4v3.4h-3.4zM96.9 42.5h3.4v3.4h-3.4zM107.7 42.5h3.4v3.4h-3.4zM118.4 42.5h3.4v3.4h-3.4zM129.2 42.5h3.4v3.4h-3.4zM140 42.5h3.4v3.4H140zM150.7 42.5h3.4v3.4h-3.4zM86.1 53.1h3.4v3.4h-3.4zM96.9 53.1h3.4v3.4h-3.4zM107.7 53.1h3.4v3.4h-3.4zM118.4 53.1h3.4v3.4h-3.4zM129.2 53.1h3.4v3.4h-3.4zM140 53.1h3.4v3.4H140zM150.7 53.1h3.4v3.4h-3.4zM86.1 63.8h3.4v3.4h-3.4zM96.9 63.8h3.4v3.4h-3.4zM107.7 63.8h3.4v3.4h-3.4zM118.4 63.8h3.4v3.4h-3.4zM129.2 63.8h3.4v3.4h-3.4zM140 63.8h3.4v3.4H140zM150.7 63.8h3.4v3.4h-3.4zM86.1 74.4h3.4v3.4h-3.4zM96.9 74.4h3.4v3.4h-3.4zM107.7 74.4h3.4v3.4h-3.4zM118.4 74.4h3.4v3.4h-3.4zM129.2 74.4h3.4v3.4h-3.4zM140 74.4h3.4v3.4H140zM150.7 74.4h3.4v3.4h-3.4zM86.1 85h3.4v3.4h-3.4zM107.7 85h3.4v3.4h-3.4zM118.4 85h3.4v3.4h-3.4zM129.2 85h3.4v3.4h-3.4zM140 85h3.4v3.4H140zM150.7 85h3.4v3.4h-3.4zM86.1 95.6h3.4V99h-3.4zM96.9 95.6h3.4V99h-3.4zM107.7 95.6h3.4V99h-3.4zM118.4 95.6h3.4V99h-3.4zM129.2 95.6h3.4V99h-3.4zM140 95.6h3.4V99H140zM150.7 95.6h3.4V99h-3.4zM86.1 106.3h3.4v3.4h-3.4zM96.9 106.3h3.4v3.4h-3.4zM107.7 106.3h3.4v3.4h-3.4zM118.4 106.3h3.4v3.4h-3.4zM129.2 106.3h3.4v3.4h-3.4zM140 106.3h3.4v3.4H140zM150.7 106.3h3.4v3.4h-3.4zM0 116.9h3.4v3.4H0zM10.7 116.9h3.4v3.4h-3.4zM21.5 116.9h3.4v3.4h-3.4zM32.3 116.9h3.4v3.4h-3.4zM43 116.9h3.4v3.4H43zM53.8 116.9h3.4v3.4h-3.4zM64.6 116.9H68v3.4h-3.4zM75.4 116.9h3.4v3.4h-3.4zM86.1 116.9h3.4v3.4h-3.4zM96.9 116.9h3.4v3.4h-3.4zM107.7 116.9h3.4v3.4h-3.4zM118.4 116.9h3.4v3.4h-3.4zM129.2 116.9h3.4v3.4h-3.4zM140 116.9h3.4v3.4H140zM150.7 116.9h3.4v3.4h-3.4zM0 127.5h3.4v3.4H0zM10.7 127.5h3.4v3.4h-3.4zM21.5 127.5h3.4v3.4h-3.4zM32.3 127.5h3.4v3.4h-3.4zM43 127.5h3.4v3.4H43zM53.8 127.5h3.4v3.4h-3.4zM64.6 127.5H68v3.4h-3.4zM75.4 127.5h3.4v3.4h-3.4zM86.1 127.5h3.4v3.4h-3.4zM96.9 127.5h3.4v3.4h-3.4zM107.7 127.5h3.4v3.4h-3.4zM118.4 127.5h3.4v3.4h-3.4zM129.2 127.5h3.4v3.4h-3.4zM140 127.5h3.4v3.4H140zM150.7 127.5h3.4v3.4h-3.4zM0 138.1h3.4v3.4H0zM10.7 138.1h3.4v3.4h-3.4zM21.5 138.1h3.4v3.4h-3.4zM32.3 138.1h3.4v3.4h-3.4zM43 138.1h3.4v3.4H43zM53.8 138.1h3.4v3.4h-3.4zM64.6 138.1H68v3.4h-3.4zM75.4 138.1h3.4v3.4h-3.4zM86.1 138.1h"
+      },
+      {
+        "url": "https://isi-media.imgix.net/assets/isrg.js",
+        "status": 200,
+        "ct": "application/javascript",
+        "bodySlice": ""
+      },
+      {
+        "url": "https://isrg.intuitive.com/sites/g/files/knoqqb87176/themes/site/nir_pid2927/dist/media/svg--media/sprite-sheet-folder/icons-symbol.svg",
+        "status": 200,
+        "ct": "image/svg+xml",
+        "bodySlice": "<?xml version=\"1.0\" encoding=\"utf-8\"?><svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><symbol viewBox=\"0 0 154.1 194.7\" id=\"icon_custom-DotsLower_FeatureGr\" xmlns=\"http://www.w3.org/2000/svg\"><style>.aast0{fill:#8a8a8a}</style><path class=\"aast0\" d=\"M86.1 0h3.4v3.4h-3.4zM96.9 0h3.4v3.4h-3.4zM107.7 0h3.4v3.4h-3.4zM118.4 0h3.4v3.4h-3.4zM129.2 0h3.4v3.4h-3.4zM140 0h3.4v3.4H140zM150.7 0h3.4v3.4h-3.4zM86.1 10.6h3.4V14h-3.4zM96.9 10.6h3.4V14h-3.4zM107.7 10.6h3.4V14h-3.4zM129.2 10.6h3.4V14h-3.4zM140 10.6h3.4V14H140zM150.7 10.6h3.4V14h-3.4zM86.1 21.3h3.4v3.4h-3.4zM96.9 21.3h3.4v3.4h-3.4zM107.7 21.3h3.4v3.4h-3.4zM118.4 21.3h3.4v3.4h-3.4zM129.2 21.3h3.4v3.4h-3.4zM140 21.3h3.4v3.4H140zM150.7 21.3h3.4v3.4h-3.4zM86.1 31.9h3.4v3.4h-3.4zM96.9 31.9h3.4v3.4h-3.4zM107.7 31.9h3.4v3.4h-3.4zM118.4 31.9h3.4v3.4h-3.4zM129.2 31.9h3.4v3.4h-3.4zM140 31.9h3.4v3.4H140zM150.7 31.9h3.4v3.4h-3.4zM86.1 42.5h3.4v3.4h-3.4zM96.9 42.5h3.4v3.4h-3.4zM107.7 42.5h3.4v3.4h-3.4zM118.4 42.5h3.4v3.4h-3.4zM129.2 42.5h3.4v3.4h-3.4zM140 42.5h3.4v3.4H140zM150.7 42.5h3.4v3.4h-3.4zM86.1 53.1h3.4v3.4h-3.4zM96.9 53.1h3.4v3.4h-3.4zM107.7 53.1h3.4v3.4h-3.4zM118.4 53.1h3.4v3.4h-3.4zM129.2 53.1h3.4v3.4h-3.4zM140 53.1h3.4v3.4H140zM150.7 53.1h3.4v3.4h-3.4zM86.1 63.8h3.4v3.4h-3.4zM96.9 63.8h3.4v3.4h-3.4zM107.7 63.8h3.4v3.4h-3.4zM118.4 63.8h3.4v3.4h-3.4zM129.2 63.8h3.4v3.4h-3.4zM140 63.8h3.4v3.4H140zM150.7 63.8h3.4v3.4h-3.4zM86.1 74.4h3.4v3.4h-3.4zM96.9 74.4h3.4v3.4h-3.4zM107.7 74.4h3.4v3.4h-3.4zM118.4 74.4h3.4v3.4h-3.4zM129.2 74.4h3.4v3.4h-3.4zM140 74.4h3.4v3.4H140zM150.7 74.4h3.4v3.4h-3.4zM86.1 85h3.4v3.4h-3.4zM107.7 85h3.4v3.4h-3.4zM118.4 85h3.4v3.4h-3.4zM129.2 85h3.4v3.4h-3.4zM140 85h3.4v3.4H140zM150.7 85h3.4v3.4h-3.4zM86.1 95.6h3.4V99h-3.4zM96.9 95.6h3.4V99h-3.4zM107.7 95.6h3.4V99h-3.4zM118.4 95.6h3.4V99h-3.4zM129.2 95.6h3.4V99h-3.4zM140 95.6h3.4V99H140zM150.7 95.6h3.4V99h-3.4zM86.1 106.3h3.4v3.4h-3.4zM96.9 106.3h3.4v3.4h-3.4zM107.7 106.3h3.4v3.4h-3.4zM118.4 106.3h3.4v3.4h-3.4zM129.2 106.3h3.4v3.4h-3.4zM140 106.3h3.4v3.4H140zM150.7 106.3h3.4v3.4h-3.4zM0 116.9h3.4v3.4H0zM10.7 116.9h3.4v3.4h-3.4zM21.5 116.9h3.4v3.4h-3.4zM32.3 116.9h3.4v3.4h-3.4zM43 116.9h3.4v3.4H43zM53.8 116.9h3.4v3.4h-3.4zM64.6 116.9H68v3.4h-3.4zM75.4 116.9h3.4v3.4h-3.4zM86.1 116.9h3.4v3.4h-3.4zM96.9 116.9h3.4v3.4h-3.4zM107.7 116.9h3.4v3.4h-3.4zM118.4 116.9h3.4v3.4h-3.4zM129.2 116.9h3.4v3.4h-3.4zM140 116.9h3.4v3.4H140zM150.7 116.9h3.4v3.4h-3.4zM0 127.5h3.4v3.4H0zM10.7 127.5h3.4v3.4h-3.4zM21.5 127.5h3.4v3.4h-3.4zM32.3 127.5h3.4v3.4h-3.4zM43 127.5h3.4v3.4H43zM53.8 127.5h3.4v3.4h-3.4zM64.6 127.5H68v3.4h-3.4zM75.4 127.5h3.4v3.4h-3.4zM86.1 127.5h3.4v3.4h-3.4zM96.9 127.5h3.4v3.4h-3.4zM107.7 127.5h3.4v3.4h-3.4zM118.4 127.5h3.4v3.4h-3.4zM129.2 127.5h3.4v3.4h-3.4zM140 127.5h3.4v3.4H140zM150.7 127.5h3.4v3.4h-3.4zM0 138.1h3.4v3.4H0zM10.7 138.1h3.4v3.4h-3.4zM21.5 138.1h3.4v3.4h-3.4zM32.3 138.1h3.4v3.4h-3.4zM43 138.1h3.4v3.4H43zM53.8 138.1h3.4v3.4h-3.4zM64.6 138.1H68v3.4h-3.4zM75.4 138.1h3.4v3.4h-3.4zM86.1 138.1h"
+      }
+    ]
+  },
+  "tjx": {
+    "pdfClean": [],
+    "links": [
+      {
+        "t": "Press Releases",
+        "h": "https://investor.tjx.com/investors/press-releases"
+      },
+      {
+        "t": "Presentations & Marketing",
+        "h": "https://www.tjx.com/investors/investor-information/presentations-marketing"
+      },
+      {
+        "t": "Read our full Global Corporate Responsibility Report",
+        "h": "https://www.tjx.com/docs/default-source/corporate-responsibility/tjx-2026-global-corporate-responsibility-report.pdf"
+      },
+      {
+        "t": "Presentations & Marketing",
+        "h": "https://www.tjx.com/investors/investor-information/presentations-marketing"
+      },
+      {
+        "t": "Press Releases",
+        "h": "https://investor.tjx.com/investors/press-releases"
+      },
+      {
+        "t": "TJX Press Releases",
+        "h": "https://investor.tjx.com/investors/press-releases"
+      },
+      {
+        "t": "TJX Global Corporate Responsibility Report",
+        "h": "https://www.tjx.com/docs/default-source/corporate-responsibility/tjx-2026-global-corporate-responsibility-report.pdf"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://edge.media-server.com/mmc/p/iado7jt6/"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2027-earnings-press-release.pdf?sfvrsn=76c709ce_1"
+      },
+      {
+        "t": "Reconciliations of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2027-reconciliations-of-financials.pdf?sfvrsn=d4fc756b_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2027-form-10-q.pdf"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://edge.media-server.com/mmc/p/wg9zjttx/"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2027-earnings-press-release.pdf?sfvrsn=8b3a4acc_1"
+      },
+      {
+        "t": "Reconciliations of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2027-reconciliations-of-financials.pdf?sfvrsn=1f9ed924_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2027-form-10-q.pdf?sfvrsn=a08215e6_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://edge.media-server.com/mmc/p/z7wqt9vz"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2026-earnings-press-release.pdf?sfvrsn=47359cb1_1"
+      },
+      {
+        "t": "Reconciliations of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2026-reconciliations-of-financials.pdf?sfvrsn=ec951716_1"
+      },
+      {
+        "t": "Form 10-K",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fiscal-year-2026-form-10-k.pdf?sfvrsn=1887d666_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://edge.media-server.com/mmc/p/obusdnyr/"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2026-earnings-press-release.pdf?sfvrsn=d2151387_1"
+      },
+      {
+        "t": "Reconciliations of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2026-reconciliations-of-financials.pdf?sfvrsn=ef7755fb_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2026-form-10-q.pdf?sfvrsn=5518d4aa_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-second-quarter-fiscal-2026-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2026-earnings-press-release.pdf?sfvrsn=fa589a86_1"
+      },
+      {
+        "t": "Reconciliations of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2026-reconciliations-of-financials.pdf?sfvrsn=3441b4ed_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2026-form-10-q.pdf?sfvrsn=4f027398_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-first-quarter-fiscal-2026-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2026-earnings-press-release.pdf?sfvrsn=f44f3d4c_1"
+      },
+      {
+        "t": "Reconciliations of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2026-reconciliations-of-financials.pdf?sfvrsn=688933fe_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2026-form-10-q.pdf?sfvrsn=97723280_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-fourth-quarter-fiscal-2025-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2025-earnings-press-release.pdf?sfvrsn=bf90af37_1"
+      },
+      {
+        "t": "Reconciliations of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2025-reconciliations-of-financials.pdf?sfvrsn=b3b270fd_2"
+      },
+      {
+        "t": "Form 10-K",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2025-form-10-k.pdf?sfvrsn=c5d86f44_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-third-quarter-fiscal-2025-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2025-earnings-press-release.pdf?sfvrsn=31e21f18_1"
+      },
+      {
+        "t": "Reconciliations of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2025-reconciliations-of-financials.pdf?sfvrsn=38fa96e6_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2025-form-10-q.pdf?sfvrsn=1d7a8a17_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-second-quarter-fiscal-2025-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2025-earnings-press-release.pdf?sfvrsn=54c487c5_1"
+      },
+      {
+        "t": "Reconciliations of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2025-reconciliations-of-financials.pdf?sfvrsn=72d9df2c_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2025-form-10-q.pdf?sfvrsn=225d9c6d_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-first-quarter-fiscal-2025-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2025-earnings-press-release.pdf?sfvrsn=f6c4ded1_1"
+      },
+      {
+        "t": "Reconciliations of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2025-reconciliations-of-financials.pdf?sfvrsn=fbd58b7b_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2025-form-10-q.pdf?sfvrsn=ea252f0e_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-fourth-quarter-fiscal-2024-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2024-earnings-press-release.pdf?sfvrsn=80fe9774_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2024-reconciliations-of-financials.pdf?sfvrsn=393f2093_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2024-sales-and-margin-comparability-table.pdf?sfvrsn=d85db41b_1"
+      },
+      {
+        "t": "Form 10-K",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2024-form-10-k.pdf?sfvrsn=37b003ac_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-third-quarter-fiscal-2024-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2024-earnings-press-release.pdf?sfvrsn=9842cf52_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2024-reconciliations-of-financials.pdf?sfvrsn=c6e1acb9_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2024-sales-and-margin-comparability-table.pdf?sfvrsn=de1aa166_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2024-form-10-q.pdf?sfvrsn=fb845858_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-second-quarter-fiscal-2024-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2024-earnings-press-release.pdf?sfvrsn=176b37f4_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2024-reconciliations-of-financials.pdf?sfvrsn=25e446b5_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2024-sales-and-margin-comparability-table.pdf?sfvrsn=d059e463_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2024-form-10-q.pdf?sfvrsn=579ada0c_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-first-quarter-fiscal-2024-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2024-earnings-press-release.pdf?sfvrsn=ddeb6afb_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2024-reconciliations-of-financials.pdf?sfvrsn=4c5e0dd4_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2024-sales-and-margin-comparability-table.pdf?sfvrsn=a473f90c_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2024-form-10-q.pdf?sfvrsn=ef1e5703_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-fourth-quarter-fiscal-year-2023-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2023-earnings-press-release.pdf?sfvrsn=e2de1747_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2023-reconciliation-of-financials.pdf?sfvrsn=27957026_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2023-sales-and-margin-comparability-table.pdf?sfvrsn=e6cc1e96_1"
+      },
+      {
+        "t": "Form 10-K",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2023-form-10-k.pdf?sfvrsn=ce57a4bd_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-third-quarter-fiscal-2023-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2023-earnings-press-release.pdf?sfvrsn=aa049505_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2023-reconciliation-of-financials.pdf?sfvrsn=9ed93f0f_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2023-sales-and-margin-comparability-table.pdf?sfvrsn=2ad41735_3"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2023-form-10-q.pdf?sfvrsn=a48c7275_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-second-quarter-fiscal-2023-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2023-earnings-press-release.pdf?sfvrsn=a8f538b3_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2023-reconciliations-of-financials.pdf?sfvrsn=c263a6c1_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2023-sales-and-margin-comparability-table.pdf?sfvrsn=67c8d7c5_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2023-form-10-q.pdf?sfvrsn=3beb976_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-first-quarter-fiscal-2023-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2023-earnings-press-release.pdf?sfvrsn=19570a7f_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2023-reconciliation-of-financials.pdf?sfvrsn=489d3ac8_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2023-form-10-q.pdf?sfvrsn=1ebe48b3_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-fourth-quarter-fiscal-year-2022-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2022-earnings-press-release.pdf?sfvrsn=1fc12390_1"
+      },
+      {
+        "t": "Form 10-K",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2022-form-10-k.pdf?sfvrsn=5c5713ce_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-third-quarter-fiscal-year-2022-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2022-earnings-press-release.pdf?sfvrsn=ce356a4c_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2022-form-10-q.pdf?sfvrsn=1307a63f_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-second-quarter-fiscal-year-2022-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2022-earnings-press-release.pdf?sfvrsn=b62533e1_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2022-form-10-q.pdf?sfvrsn=5496f6ea_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-first-quarter-fiscal-2022-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2022-earnings-press-release.pdf?sfvrsn=789f534d_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2022-form-10-q.pdf?sfvrsn=a769a1e0_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-fourth-quarter-and-full-year-fiscal-2021-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2021-earnings-press-release.pdf?sfvrsn=ac7d0f10_1"
+      },
+      {
+        "t": "Form 10-K",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2021-form-10-k.pdf?sfvrsn=bb212749_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-third-quarter-fiscal-year-2021-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2021-earnings-press-release.pdf?sfvrsn=35b25b4d_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2021-form-10-q.pdf?sfvrsn=d38a202b_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-second-quarter-fiscal-year-2021-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2021-earnings-press-release.pdf?sfvrsn=8ef9286f_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2021-form-10-q.pdf?sfvrsn=ed3480df_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-first-quarter-fiscal-2021-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy21-earnings-press-release.pdf?sfvrsn=32ebd4de_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy21-form-10-q.pdf?sfvrsn=3841d382_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-fourth-quarter-and-full-year-fiscal-2020-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q4-fy20-earnings-press-release.pdf?sfvrsn=9888ed47_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q4-fy20-reconciliations-of-financials.pdf?sfvrsn=5bf34545_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q4-fy20-sales-and-margin-comparability-table.pdf?sfvrsn=bb43fd9_1"
+      },
+      {
+        "t": "Form 10-K",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-form-10-k-february-2020.pdf?sfvrsn=c4dd6e2c_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-third-quarter-fiscal-year-2020-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q3-fy20-earnings-press-release.pdf?sfvrsn=e62488a1_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q3-fy20-reconciliations-of-financials.pdf?sfvrsn=7951525a_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q3-fy20-sales-and-margin-comparability-table.pdf?sfvrsn=7f982a07_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-form-10-q-november-2019.pdf?sfvrsn=4ad37ccd_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-second-quarter-fiscal-year-2020-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q2-fy20-earnings-press-release.pdf?sfvrsn=8a75c3cd_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q2-fy20-reconciliations-of-financials.pdf?sfvrsn=553ef7d2_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q2-fy20-sales-and-margin-comparability-table.pdf?sfvrsn=523805ba_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/aug30-10q.pdf?sfvrsn=87c38303_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-first-quarter-fiscal-year-2020-earnings-results-conference-call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy20-earnings-press-release.pdf?sfvrsn=db6ffe0e_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q1-fy20-reconciliations-of-financials.pdf?sfvrsn=c1d9a65d_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q1-fy20-sales-and-margin-comparability-table.pdf?sfvrsn=78af2ed1_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy20-10q.pdf?sfvrsn=e14f7f0e_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/tjx-fourth-quarter-and-full-year-fiscal-2019-earnings-results-conference-call.mp4"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q4-fy19-earnings-press-release.pdf?sfvrsn=7b6ea4af_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q4fy19-reconciliation-of-financials.pdf?sfvrsn=90559598_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q4fy19-sales-and-margin-comparability-table.pdf?sfvrsn=ef2917f_1"
+      },
+      {
+        "t": "Form 10-K",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q4fy19-10k.pdf?sfvrsn=42595814_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/Third_Quarter_Fiscal_Year_2019_Earnings_Results_Conference_Call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q3-fy19-earnings-press-release.pdf?sfvrsn=df3830e4_1"
+      },
+      {
+        "t": "Reconcilation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/default-document-library/quarterly-results/q3fy19-reconcilation-of-financials.pdf?sfvrsn=b74653a2_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q3fy19-sales-and-margin-comparability-table.pdf?sfvrsn=b3885e69_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q3fy19-10q.pdf?sfvrsn=af1c5fbf_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/Second_Quarter_Fiscal_Year_2019_Earnings_Results_Conference_Call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q2-fy19-earnings-press-release.pdf?sfvrsn=90ade3fa_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q2fy19-reconciliation-of-financials.pdf?sfvrsn=77a6a28_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q2fy19-sales-and-margin-comparability-table.pdf?sfvrsn=6d652bf2_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q2fy19-10q.pdf?sfvrsn=46d89c6f_1"
+      },
+      {
+        "t": "Earnings Results Conference Call",
+        "h": "https://www.tjx.com/files/webcasts/First_Quarter_Fiscal_Year_2019_Earnings_Results_Conference_Call.mp3"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy19-earnings-press-release.pdf?sfvrsn=f7f571e3_1"
+      },
+      {
+        "t": "Reconciliation of Financials",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q1fy19-reconciliation-of-financials.pdf?sfvrsn=cc2070af_1"
+      },
+      {
+        "t": "Sales and Margin Comparability Table",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q1fy19-sales-and-margin-comparability-table.pdf?sfvrsn=dc41413f_1"
+      },
+      {
+        "t": "Form 10-Q",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q1fy19-10q.pdf?sfvrsn=dc5fd73_1"
+      }
+    ],
+    "sections": [
+      "Q2 Fiscal 2027",
+      "Q1 Fiscal 2027",
+      "Q4 Fiscal 2026",
+      "Q3 Fiscal 2026",
+      "Q2 Fiscal 2026",
+      "Q1 Fiscal 2026",
+      "Q4 Fiscal 2025",
+      "Q3 Fiscal 2025",
+      "Q2 Fiscal 2025",
+      "Q1 Fiscal 2025",
+      "Q4 Fiscal 2024",
+      "Q3 Fiscal 2024",
+      "Q2 Fiscal 2024",
+      "Q1 Fiscal 2024",
+      "Q4 Fiscal 2023",
+      "Q3 Fiscal 2023",
+      "Q2 Fiscal 2023",
+      "Q1 Fiscal 2023",
+      "Q4 Fiscal 2022",
+      "Q3 Fiscal 2022",
+      "Q2 Fiscal 2022",
+      "Q1 Fiscal 2022",
+      "Q4 Fiscal 2021",
+      "Q3 Fiscal 2021",
+      "Q2 Fiscal 2021",
+      "Q1 Fiscal 2021",
+      "Q4 Fiscal 2020",
+      "Q3 Fiscal 2020",
+      "Q2 Fiscal 2020",
+      "Q1 Fiscal 2020",
+      "Q4 Fiscal 2019",
+      "Q3 Fiscal 2019",
+      "Q2 Fiscal 2019",
+      "Q1 Fiscal 2019"
+    ]
+  },
+  "ul": {
+    "home": {
+      "pdfs": [],
+      "links": [
+        {
+          "t": "Skip to content",
+          "h": "https://www.unilever.com/investors/results-events/#main"
+        },
+        {
+          "t": "Menu",
+          "h": "https://www.unilever.com/investors/results-events/#uco-header-menu"
+        },
+        {
+          "t": "",
+          "h": "https://www.unilever.com/investors/results-events/#"
+        },
+        {
+          "t": "Latest results",
+          "h": "https://www.unilever.com/investors/results-events/results-events-webcasts/latest-results/"
+        },
+        {
+          "t": "Upcoming results and events",
+          "h": "https://www.unilever.com/investors/results-events/upcoming-results/"
+        },
+        {
+          "t": "Results library",
+          "h": "https://www.unilever.com/investors/results-events/results-events-webcasts/?tags=Quarterly+Results"
+        },
+        {
+          "t": "Presentations and events",
+          "h": "https://www.unilever.com/investors/results-events/results-events-webcasts/?tags=Conferences%2CInvestor+seminars+%26+presentations"
+        },
+        {
+          "t": "Q2 2026 Full Announcement (PDF 361.96 KB)",
+          "h": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf"
+        },
+        {
+          "t": "Q2 2026 Highlights (PDF 90.27 KB)",
+          "h": "https://www.unilever.com/files/unilever-q2-2026-results-key-highlights.pdf"
+        },
+        {
+          "t": "Q2 2026 Presentation (PDF 2.36 MB)",
+          "h": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf"
+        },
+        {
+          "t": "Q2 2026 Video Transcript (PDF 486.08 KB)",
+          "h": "https://www.unilever.com/files/unilever-q2-2026-transcript.pdf"
+        },
+        {
+          "t": "Hindustan Unilever Capital Markets Day 2026",
+          "h": "https://www.unilever.com/investors/results-events/results-events-webcasts/hindustan-unilever-capital-markets-day-2026/"
+        },
+        {
+          "t": "Barclays Global Consumer Staples Conference 2026",
+          "h": "https://www.unilever.com/investors/results-events/results-events-webcasts/barclays-global-consumer-staples-conference-2026/"
+        },
+        {
+          "t": "Deutsche Bank Global Consumer Conference 2026",
+          "h": "https://www.unilever.com/investors/results-events/results-events-webcasts/deutsche-bank-global-consumer-conference-2026/"
+        },
+        {
+          "t": "Accounting policies and restatements",
+          "h": "https://www.unilever.com/investors/results-events/accounting-policies-and-restatements/"
+        },
+        {
+          "t": "Back to top",
+          "h": "https://www.unilever.com/investors/results-events/#top"
+        },
+        {
+          "t": "Share this page on Facebook",
+          "h": "https://www.facebook.com/sharer/sharer.php?u=https://www.unilever.com/investors/results-events/"
+        },
+        {
+          "t": "Share this page on X",
+          "h": "https://x.com/intent/tweet?text=&url=https://www.unilever.com/investors/results-events/"
+        },
+        {
+          "t": "Share this page on Linked In",
+          "h": "https://www.linkedin.com/shareArticle?mini=true&title=&summary=&source=&url=https://www.unilever.com/investors/results-events/"
+        },
+        {
+          "t": "Share this page on E-mail",
+          "h": "mailto:?&subject=&body=https://www.unilever.com/investors/results-events/"
+        },
+        {
+          "t": "Cookie settings",
+          "h": "https://www.unilever.com/investors/results-events/#"
+        }
+      ],
+      "title": "Results and events | Unilever"
+    },
+    "archives": {
+      "Skip to content": {
+        "url": "https://www.unilever.com/investors/results-events/#main",
+        "pdfs": [],
+        "links": [
+          {
+            "t": "Presentations and events",
+            "h": "https://www.unilever.com/investors/results-events/results-events-webcasts/?tags=Conferences%2CInvestor+seminars+%26+presentations"
+          },
+          {
+            "t": "Q2 2026 Full Announcement (PDF 361.96 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf"
+          },
+          {
+            "t": "Q2 2026 Highlights (PDF 90.27 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-key-highlights.pdf"
+          },
+          {
+            "t": "Q2 2026 Presentation (PDF 2.36 MB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf"
+          },
+          {
+            "t": "Q2 2026 Video Transcript (PDF 486.08 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-transcript.pdf"
+          }
+        ]
+      },
+      "Menu": {
+        "url": "https://www.unilever.com/investors/results-events/#uco-header-menu",
+        "pdfs": [],
+        "links": [
+          {
+            "t": "Presentations and events",
+            "h": "https://www.unilever.com/investors/results-events/results-events-webcasts/?tags=Conferences%2CInvestor+seminars+%26+presentations"
+          },
+          {
+            "t": "Q2 2026 Full Announcement (PDF 361.96 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf"
+          },
+          {
+            "t": "Q2 2026 Highlights (PDF 90.27 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-key-highlights.pdf"
+          },
+          {
+            "t": "Q2 2026 Presentation (PDF 2.36 MB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf"
+          },
+          {
+            "t": "Q2 2026 Video Transcript (PDF 486.08 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-transcript.pdf"
+          }
+        ]
+      },
+      "https://www.unilever.com/investors/results-events/#": {
+        "url": "https://www.unilever.com/investors/results-events/#",
+        "pdfs": [],
+        "links": [
+          {
+            "t": "Presentations and events",
+            "h": "https://www.unilever.com/investors/results-events/results-events-webcasts/?tags=Conferences%2CInvestor+seminars+%26+presentations"
+          },
+          {
+            "t": "Q2 2026 Full Announcement (PDF 361.96 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf"
+          },
+          {
+            "t": "Q2 2026 Highlights (PDF 90.27 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-key-highlights.pdf"
+          },
+          {
+            "t": "Q2 2026 Presentation (PDF 2.36 MB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf"
+          },
+          {
+            "t": "Q2 2026 Video Transcript (PDF 486.08 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-transcript.pdf"
+          }
+        ]
+      },
+      "Latest results": {
+        "url": "https://www.unilever.com/investors/results-events/results-events-webcasts/latest-results/",
+        "pdfs": [],
+        "links": [
+          {
+            "t": "Q2 2026 Full Announcement (PDF 361.96 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf"
+          },
+          {
+            "t": "Q2 2026 Highlights (PDF 90.27 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-key-highlights.pdf"
+          },
+          {
+            "t": "Q2 2026 Presentation (PDF 2.36 MB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf"
+          },
+          {
+            "t": "Q2 2026 Video Transcript (PDF 486.08 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-transcript.pdf"
+          },
+          {
+            "t": "Regulatory announcements",
+            "h": "https://www.unilever.com/investors/regulatory-announcements/"
+          }
+        ]
+      },
+      "Upcoming results and events": {
+        "url": "https://www.unilever.com/investors/results-events/upcoming-results/",
+        "pdfs": [],
+        "links": []
+      },
+      "Results library": {
+        "url": "https://www.unilever.com/investors/results-events/results-events-webcasts/?tags=Quarterly+Results",
+        "pdfs": [
+          "https://www.unilever.com/files/unilever-q1-2026-full-announcement.pdf&quot;],&quot;download&quot;:[0,&quot;unilever-q1-2026-full-announcement.pdf&quot;],&quot;originalFilename&quot;:[0,&quot;unilever-q1-2026-full-announcement.pdf",
+          "https://www.unilever.com/files/ir-q4-2025-full-announcement.pdf&quot;],&quot;download&quot;:[0,&quot;ir-q4-2025-full-announcement.pdf&quot;],&quot;originalFilename&quot;:[0,&quot;ir-q4-2025-full-announcement.pdf",
+          "https://www.unilever.com/files/unilever-q1-2026-full-announcement.pdf",
+          "https://www.unilever.com/files/ir-q4-2025-full-announcement.pdf",
+          "https://www.unilever.com/files/q3-2025-full-announcement.pdf",
+          "https://www.unilever.com/files/ir-q2-2025-full-announcement.pdf",
+          "https://www.unilever.com/files/ir-q1-2025-full-announcement.pdf",
+          "https://www.unilever.com/files/ir-q4-2024-full-announcement.pdf",
+          "https://www.unilever.com/files/ir-q3-2024-full-announcement.pdf",
+          "https://www.unilever.com/files/ir-q2-2024-full-announcement.pdf",
+          "https://www.unilever.com/files/ir-q1-2024-full-announcement.pdf"
+        ],
+        "links": [
+          {
+            "t": "Q2 2026 Full Announcement (PDF 361.96 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf"
+          },
+          {
+            "t": "Q2 2026 Highlights (PDF 90.27 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-key-highlights.pdf"
+          },
+          {
+            "t": "Q2 2026 Presentation (PDF 2.36 MB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf"
+          },
+          {
+            "t": "Q2 2026 Video Transcript (PDF 486.08 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-transcript.pdf"
+          },
+          {
+            "t": "Unilever historical HPC financials (PDF 219.72 KB)",
+            "h": "https://www.unilever.com/files/unilever-historical-hpc-financials-pdf.pdf"
+          },
+          {
+            "t": "Q1 2026 Full Announcement (PDF 342.85 KB)",
+            "h": "https://www.unilever.com/files/unilever-q1-2026-full-announcement.pdf"
+          },
+          {
+            "t": "Q1 2026 Highlights (PDF 190.35 KB)",
+            "h": "https://www.unilever.com/files/unilever-q1-2026-highlights.pdf"
+          },
+          {
+            "t": "Q1 2026 Presentation (PDF 2.64 MB)",
+            "h": "https://www.unilever.com/files/unilever-q1-2026-presentation.pdf"
+          },
+          {
+            "t": "Q1 2026 Video Transcript (PDF 244.05 KB)",
+            "h": "https://www.unilever.com/files/unilever-q1-2026-transcript.pdf"
+          },
+          {
+            "t": "Q4 2025 Full Announcement (PDF 1.16 MB)",
+            "h": "https://www.unilever.com/files/ir-q4-2025-full-announcement.pdf"
+          },
+          {
+            "t": "Q4 2025 Highlights (PDF 166.91 KB)",
+            "h": "https://www.unilever.com/files/ir-q4-2025-highlights.pdf"
+          },
+          {
+            "t": "Unilever Historical Financials excluding Ice Cream (PDF 317.79 KB)",
+            "h": "https://www.unilever.com/files/unilever-historical-financials-excluding-ice-cream-pdf.pdf"
+          },
+          {
+            "t": "Unilever Half Year Historical Financials excluding Ice Cream (PDF 175.49 KB)",
+            "h": "https://www.unilever.com/files/unilever-half-year-historical-financials-excluding-ice-cream-pdf.pdf"
+          },
+          {
+            "t": "Q4 2025 Presentation (PDF 2.15 MB)",
+            "h": "https://www.unilever.com/files/q4-2025-presentation.pdf"
+          },
+          {
+            "t": "Q4 2025 Video Transcript (PDF 224.14 KB)",
+            "h": "https://www.unilever.com/files/q4-2025-video-transcript.pdf"
+          },
+          {
+            "t": "Unilever historical financials excluding Ice Cream (PDF 317.79 KB)",
+            "h": "https://www.unilever.com/files/unilever-historical-financials-excluding-ice-cream-pdf.pdf"
+          },
+          {
+            "t": "Q3 2025 Full Announcement (PDF 454.66 KB)",
+            "h": "https://www.unilever.com/files/q3-2025-full-announcement.pdf"
+          },
+          {
+            "t": "Q3 2025 Highlights (PDF 195.08 KB)",
+            "h": "https://www.unilever.com/files/q3-2025-highlights.pdf"
+          },
+          {
+            "t": "Q3 2025 Presentation (PDF 1.06 MB)",
+            "h": "https://www.unilever.com/files/ir-q3-2025-presentation.pdf"
+          },
+          {
+            "t": "Q3 2025 Video Transcript (PDF 242.55 KB)",
+            "h": "https://www.unilever.com/files/q3-2025-video-transcript.pdf"
+          },
+          {
+            "t": "Q2 2025 Full Announcement (PDF 572.49 KB)",
+            "h": "https://www.unilever.com/files/ir-q2-2025-full-announcement.pdf"
+          },
+          {
+            "t": "Q2 2025 Highlights (PDF 335.3 KB)",
+            "h": "https://www.unilever.com/files/ir-q2-2025-highlights.pdf"
+          },
+          {
+            "t": "Q2 2025 Presentation (PDF 2.63 MB)",
+            "h": "https://www.unilever.com/files/ir-q2-2025-presentation.pdf"
+          },
+          {
+            "t": "Q2 2025 Video Transcript (PDF 273.51 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-h1-2025-results-webcast-transcript.pdf"
+          },
+          {
+            "t": "Q1 2025 Full Announcement (PDF 527.27 KB)",
+            "h": "https://www.unilever.com/files/ir-q1-2025-full-announcement.pdf"
+          },
+          {
+            "t": "Q1 2025 Highlights (PDF 261.89 KB)",
+            "h": "https://www.unilever.com/files/ir-q1-2025-highlights.pdf"
+          },
+          {
+            "t": "Q1 2025 Presentation (PDF 1.9 MB)",
+            "h": "https://www.unilever.com/files/ir-q1-2025-results-presentation.pdf"
+          },
+          {
+            "t": "Q1 2025 Webcast Transcript (PDF 244.39 KB)",
+            "h": "https://www.unilever.com/files/q1-2025-video-transcript.pdf"
+          },
+          {
+            "t": "Q4 2024 Full Announcement (PDF 382.63 KB)",
+            "h": "https://www.unilever.com/files/ir-q4-2024-full-announcement.pdf"
+          },
+          {
+            "t": "Q4 2024 Highlights (PDF 116.69 KB)",
+            "h": "https://www.unilever.com/files/ir-q4-2024-highlights.pdf"
+          },
+          {
+            "t": "Q4 2024 Presentation (PDF 2.16 MB)",
+            "h": "https://www.unilever.com/files/ir-q4-2024-results-presentation.pdf"
+          },
+          {
+            "t": "Q4 2024 Webcast Transcript (PDF 294.48 KB)",
+            "h": "https://www.unilever.com/files/ir-q4-2024-video-transcript.pdf"
+          },
+          {
+            "t": "Q3 2024 Full Announcement (PDF 286.1 KB)",
+            "h": "https://www.unilever.com/files/ir-q3-2024-full-announcement.pdf"
+          },
+          {
+            "t": "Q3 2024 Highlights (PDF 192.37 KB)",
+            "h": "https://www.unilever.com/files/ir-q3-2024-highlights.pdf"
+          },
+          {
+            "t": "Q3 2024 Presentation (PDF 1.16 MB)",
+            "h": "https://www.unilever.com/files/ir-q3-2024-results-presentation.pdf"
+          },
+          {
+            "t": "Q3 2024 Webcast Transcript (PDF 217.94 KB)",
+            "h": "https://www.unilever.com/files/unilever-q3-2024-trading-statement-full-transcript.pdf"
+          },
+          {
+            "t": "Q2 2024 Full Announcement (PDF 568.65 KB)",
+            "h": "https://www.unilever.com/files/ir-q2-2024-full-announcement.pdf"
+          },
+          {
+            "t": "Q2 2024 Highlights (PDF 324.46 KB)",
+            "h": "https://www.unilever.com/files/ir-q2-2024-highlights.pdf"
+          },
+          {
+            "t": "Q2 2024 Presentation (PDF 1.57 MB)",
+            "h": "https://www.unilever.com/files/ir-q2-2024-results-presentation.pdf"
+          },
+          {
+            "t": "Q2 2024 Webcast Transcript (PDF 230.55 KB)",
+            "h": "https://www.unilever.com/files/h1-2024-video-transcript.pdf"
+          },
+          {
+            "t": "Q1 2024 Full Announcement (PDF 335.75 KB)",
+            "h": "https://www.unilever.com/files/ir-q1-2024-full-announcement.pdf"
+          },
+          {
+            "t": "Q1 2024 Highlights (PDF 262.55 KB)",
+            "h": "https://www.unilever.com/files/ir-q1-2024-highlights.pdf"
+          },
+          {
+            "t": "Q1 2024 Presentation (PDF 2.23 MB)",
+            "h": "https://www.unilever.com/files/ir-q1-2024-results-presentation.pdf"
+          },
+          {
+            "t": "Q1 2024 Webcast Transcript (PDF 1.1 MB)",
+            "h": "https://www.unilever.com/files/q1-2024-transcript.pdf"
+          }
+        ]
+      },
+      "Presentations and events": {
+        "url": "https://www.unilever.com/investors/results-events/results-events-webcasts/?tags=Conferences%2CInvestor+seminars+%26+presentations",
+        "pdfs": [
+          "https://www.unilever.com/files/unilever-q1-2026-full-announcement.pdf&quot;],&quot;download&quot;:[0,&quot;unilever-q1-2026-full-announcement.pdf&quot;],&quot;originalFilename&quot;:[0,&quot;unilever-q1-2026-full-announcement.pdf",
+          "https://www.unilever.com/files/ir-q4-2025-full-announcement.pdf&quot;],&quot;download&quot;:[0,&quot;ir-q4-2025-full-announcement.pdf&quot;],&quot;originalFilename&quot;:[0,&quot;ir-q4-2025-full-announcement.pdf",
+          "https://www.unilever.com/files/introduction-to-the-magnum-ice-cream-company.pdf"
+        ],
+        "links": [
+          {
+            "t": "View the presentation (PDF 13.74 MB)",
+            "h": "https://www.unilever.com/files/unilever-barclays-global-consumer-conference-2026-presentation.pdf"
+          },
+          {
+            "t": "View the transcript (PDF 122.96 KB)",
+            "h": "https://www.unilever.com/files/unilever-barclays-global-consumer-conference-2026-transcript.pdf"
+          },
+          {
+            "t": "View the transcript (PDF 437.83 KB)",
+            "h": "https://www.unilever.com/files/unilever-barclays-consumer-heath-conference-2026-transcript.pdf"
+          },
+          {
+            "t": "View the transcript (PDF 363.02 KB)",
+            "h": "https://www.unilever.com/files/unilever-bnp-paribas-ceo-conference-2026-transcript.pdf"
+          },
+          {
+            "t": "View the transcript (PDF 257.28 KB)",
+            "h": "https://www.unilever.com/files/unilever-deutsche-bank-global-consumer-conference-2026-transcript.pdf"
+          },
+          {
+            "t": "View the presentation (PDF 15.96 MB)",
+            "h": "https://www.unilever.com/files/deutsche-bank-global-consumer-conference-presentation-2026.pdf"
+          },
+          {
+            "t": "View the transcript (PDF 188.3 KB)",
+            "h": "https://www.unilever.com/files/barclays-fireside-chat-transcript.pdf"
+          },
+          {
+            "t": "View the transcript (PDF 139.19 KB)",
+            "h": "https://www.unilever.com/files/a-sharper-focused-hpc-pureplay-transcript.pdf"
+          },
+          {
+            "t": "View the presentation (PDF 7.87 MB)",
+            "h": "https://www.unilever.com/files/a-sharper-focused-hpc-pureplay-presentation.pdf"
+          },
+          {
+            "t": "View the transcript (PDF 118.61 KB)",
+            "h": "https://www.unilever.com/files/unilever-cagny-2026-transcript.pdf"
+          },
+          {
+            "t": "View the presentation (PDF 16.03 MB)",
+            "h": "https://www.unilever.com/files/cagny-2026-presentation.pdf"
+          },
+          {
+            "t": "View the transcript (PDF 199.45 KB)",
+            "h": "https://www.unilever.com/files/jp-morgan-fireside-chat-with-fernando-fernandez-ceo-webcast-transcript.pdf"
+          },
+          {
+            "t": "View the presentation deck (PDF 15.47 MB)",
+            "h": "https://www.unilever.com/files/unilever-barclays-global-consumer-stalpes-conference-boston-september-2025.pdf"
+          },
+          {
+            "t": "View the transcript (PDF 164.73 KB)",
+            "h": "https://www.unilever.com/files/barclays-global-consumer-staples-conference-2025-webcast-transcript.pdf"
+          },
+          {
+            "t": "Introduction to The Magnum Ice Cream Company (PDF 4.5 MB)",
+            "h": "https://www.unilever.com/files/introduction-to-the-magnum-ice-cream-company.pdf"
+          },
+          {
+            "t": "View the transcript (PDF 217.73 KB)",
+            "h": "https://www.unilever.com/files/barclays-fireside-chat-with-fernando-fernandez-ceo-webcast-transcript.pdf"
+          }
+        ]
+      },
+      "Q2 2026 Full Announcement (PDF 361.96 KB)": {
+        "url": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf",
+        "pdfs": [],
+        "links": []
+      },
+      "Q2 2026 Highlights (PDF 90.27 KB)": {
+        "url": "https://www.unilever.com/files/unilever-q2-2026-results-key-highlights.pdf",
+        "pdfs": [],
+        "links": []
+      },
+      "Q2 2026 Presentation (PDF 2.36 MB)": {
+        "url": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf",
+        "pdfs": [],
+        "links": []
+      },
+      "Q2 2026 Video Transcript (PDF 486.08 KB)": {
+        "url": "https://www.unilever.com/files/unilever-q2-2026-transcript.pdf",
+        "pdfs": [],
+        "links": []
+      },
+      "Hindustan Unilever Capital Markets Day 2026": {
+        "url": "https://www.unilever.com/investors/results-events/results-events-webcasts/hindustan-unilever-capital-markets-day-2026/",
+        "pdfs": [],
+        "links": []
+      },
+      "Barclays Global Consumer Staples Conference 2026": {
+        "url": "https://www.unilever.com/investors/results-events/results-events-webcasts/barclays-global-consumer-staples-conference-2026/",
+        "pdfs": [],
+        "links": [
+          {
+            "t": "View the presentation here (PDF 13.74 MB)",
+            "h": "https://www.unilever.com/files/unilever-barclays-global-consumer-conference-2026-presentation.pdf"
+          },
+          {
+            "t": "View the transcript here (PDF 122.96 KB)",
+            "h": "https://www.unilever.com/files/unilever-barclays-global-consumer-conference-2026-transcript.pdf"
+          }
+        ]
+      },
+      "Deutsche Bank Global Consumer Conference 2026": {
+        "url": "https://www.unilever.com/investors/results-events/results-events-webcasts/deutsche-bank-global-consumer-conference-2026/",
+        "pdfs": [],
+        "links": [
+          {
+            "t": "View the presentation here (PDF 15.96 MB)",
+            "h": "https://www.unilever.com/files/deutsche-bank-global-consumer-conference-presentation-2026.pdf"
+          },
+          {
+            "t": "View the transcript here (PDF 257.28 KB)",
+            "h": "https://www.unilever.com/files/unilever-deutsche-bank-global-consumer-conference-2026-transcript.pdf"
+          }
+        ]
+      },
+      "Accounting policies and restatements": {
+        "url": "https://www.unilever.com/investors/results-events/accounting-policies-and-restatements/",
+        "pdfs": [
+          "https://www.unilever.com/files/444e3430-238d-42f9-8673-72ed30eb3334/venezuela-price-inflation-unilever-040118.pdf"
+        ],
+        "links": [
+          {
+            "t": "Unilever historical HPC financials - H1 2026 update (PDF 219.72 KB)",
+            "h": "https://www.unilever.com/files/unilever-historical-hpc-financials-pdf.pdf"
+          },
+          {
+            "t": "Unilever historical financials excluding Ice Cream (PDF 317.79 KB)",
+            "h": "https://www.unilever.com/files/unilever-historical-financials-excluding-ice-cream-pdf.pdf"
+          },
+          {
+            "t": "Unilever Half Year Historical Financials excluding Ice Cream (PDF 175.49 KB)",
+            "h": "https://www.unilever.com/files/unilever-half-year-historical-financials-excluding-ice-cream-pdf.pdf"
+          },
+          {
+            "t": "Business Group restatements.pdf (PDF 1.06 MB)",
+            "h": "https://www.unilever.com/files/7b3b1c9e-78ae-48e6-bb97-000c9855e01a/unilever-business-group-restatements.pdf"
+          },
+          {
+            "t": "Treatment of hyperinflation in Turkey in USG (PDF 99.39 KB)",
+            "h": "https://www.unilever.com/files/a9276755-3789-475c-9a70-4350b4dde9a9/treatment-of-hyperinflation-in-turkey-in-usg.pdf"
+          },
+          {
+            "t": "Treatment of hyperinflationary countries in USG (PDF 177.71 KB)",
+            "h": "https://www.unilever.com/files/a7caa45a-6e64-462b-90e4-e3313bac6eb2/treatment-of-hyperinflationary-countries-in-underlying-sales-growth--usg.pdf"
+          },
+          {
+            "t": "Unilever Argentina adoption of IAS 29 (PDF 55.49 KB)",
+            "h": "https://www.unilever.com/files/f7c2e05e-35cd-4430-8eab-c5cf49f03ad6/unilever-argentina-adoption-of-ias-29.pdf"
+          },
+          {
+            "t": "Venezuela price inflation (PDF 156.29 KB)",
+            "h": "https://www.unilever.com/files/444e3430-238d-42f9-8673-72ed30eb3334/venezuela-price-inflation-unilever-040118.pdf"
+          },
+          {
+            "t": "Unilever reporting changes (PDF 84.12 KB)",
+            "h": "https://www.unilever.com/files/bfdab327-07f4-4632-ad47-dda00c081c26/unilever-reporting-changes.pdf"
+          }
+        ]
+      },
+      "Back to top": {
+        "url": "https://www.unilever.com/investors/results-events/#top",
+        "pdfs": [],
+        "links": [
+          {
+            "t": "Presentations and events",
+            "h": "https://www.unilever.com/investors/results-events/results-events-webcasts/?tags=Conferences%2CInvestor+seminars+%26+presentations"
+          },
+          {
+            "t": "Q2 2026 Full Announcement (PDF 361.96 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf"
+          },
+          {
+            "t": "Q2 2026 Highlights (PDF 90.27 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-key-highlights.pdf"
+          },
+          {
+            "t": "Q2 2026 Presentation (PDF 2.36 MB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf"
+          },
+          {
+            "t": "Q2 2026 Video Transcript (PDF 486.08 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-transcript.pdf"
+          }
+        ]
+      },
+      "Share this page on Facebook": {
+        "url": "https://www.facebook.com/sharer/sharer.php?u=https://www.unilever.com/investors/results-events/",
+        "pdfs": [],
+        "links": []
+      },
+      "Share this page on X": {
+        "url": "https://x.com/i/jf/onboarding/web?redirect_after_login=%2Fintent%2Ftweet%3Ftext%3D%26url%3Dhttps%3A%2F%2Fwww.unilever.com%2Finvestors%2Fresults-events%2F&mode=login",
+        "pdfs": [],
+        "links": []
+      },
+      "Share this page on Linked In": {
+        "url": "https://www.linkedin.com/login/?session_redirect=https%3A%2F%2Fwww.linkedin.com%2FshareArticle%3Fmini%3Dtrue%26title%3D%26summary%3D%26source%3D%26url%3Dhttps%3A%2F%2Fwww.unilever.com%2Finvestors%2Fresults-events%2F",
+        "pdfs": [],
+        "links": []
+      },
+      "Cookie settings": {
+        "url": "https://www.unilever.com/investors/results-events/#",
+        "pdfs": [],
+        "links": [
+          {
+            "t": "Presentations and events",
+            "h": "https://www.unilever.com/investors/results-events/results-events-webcasts/?tags=Conferences%2CInvestor+seminars+%26+presentations"
+          },
+          {
+            "t": "Q2 2026 Full Announcement (PDF 361.96 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf"
+          },
+          {
+            "t": "Q2 2026 Highlights (PDF 90.27 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-key-highlights.pdf"
+          },
+          {
+            "t": "Q2 2026 Presentation (PDF 2.36 MB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf"
+          },
+          {
+            "t": "Q2 2026 Video Transcript (PDF 486.08 KB)",
+            "h": "https://www.unilever.com/files/unilever-q2-2026-transcript.pdf"
+          }
+        ]
+      }
+    }
+  },
+  "errors": []
+}

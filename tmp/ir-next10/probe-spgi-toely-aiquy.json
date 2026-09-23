@@ -1,0 +1,68 @@
+{
+  "spgi": [
+    {
+      "url": "https://investor.spglobal.com/feed/FinancialReport.svc/GetFinancialReportList?languageId=1&reportType=Quarterly&pageSize=80",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://investor.spglobal.com/feed/FinancialReport.svc/GetFinancialReportList?languageId=1&bodyType=3&pageSize=80&reportType=Quarterly",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://investor.spglobal.com/feed/Presentation.svc/GetPresentationList?pageSize=80&includeTags=true",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    }
+  ],
+  "toely": [
+    {
+      "url": "https://www.tel.com/ir/",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://www.tel.com/ir/library/",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://www.tel.com/ir/library/report/",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://www.tel.com/ir/finance/",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://www.tel.com/ir/library/presentation/",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://www.tel.com/en/ir/library/",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    }
+  ],
+  "aiquy": [
+    {
+      "url": "https://www.airliquide.com/investors",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://www.airliquide.com/group/investors",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://www.airliquide.com/investors/results-presentations",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://www.airliquide.com/investors/financial-information",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://www.airliquide.com/investors/publications",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    },
+    {
+      "url": "https://www.airliquide.com/investors/results",
+      "error": "<urlopen error Tunnel connection failed: 403 Forbidden>"
+    }
+  ]
+}

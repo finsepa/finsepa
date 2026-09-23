@@ -1,0 +1,267 @@
+{
+  "years": [
+    "2022",
+    "2023",
+    "2024",
+    "2025",
+    "2026"
+  ],
+  "earnings_hits": [
+    {
+      "year": "2024",
+      "title": "<h3 class=\"c--title\">Scotiabank announces agreement to acquire 14.9% equity interest in KeyCorp</h3>\n",
+      "desc": "<p>Conference call August 12, 2024</p>\n<p><br>\n<a href=\"https://www.gowebcasting.com/13627\">Webcast</a><br>\n<a href=\"https://www.scotiabank.com/corporate/en/home/media-centre/media-centre/news-release",
+      "files": []
+    }
+  ],
+  "all_2022plus": {
+    "2022": [
+      {
+        "description": "<p>September 13, 2022</p>\n<p>Question-and-answer session participation, starting at 9:00 a.m. EDT, by Raj Viswanathan, Scotiabank's Group Head and Chief Financial Officer, at Barclays 20th Annual Global Financial Services Conference on September 13, 2022.&nbsp;</p>\n<p>Webcast no longer available</p>\n",
+        "title": "<h3 class=\"c--title\">Barclays Global Financial Services Conference</h3>\n",
+        "nodeName": "barclays",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>September 8, 2022</p>\n<p>Question-and-answer session participation, starting at 8:30 a.m. EDT, by Brian Porter, Scotiabank's President and Chief Executive Officer, at the 23rd Annual Global Banking and Markets Financials Summit on September 8, 2022.</p>\n<p>Webcast no longer available</p>\n",
+        "title": "<h3 class=\"c--title\">Scotiabank Financials Summit</h3>\n",
+        "nodeName": "Summit",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>March 22, 2022</p>\n<p>Question-and-answer session participation, starting at 9:45 a.m. EDT, by Dan Rees, Scotiabank's Group Head of Canadian Banking, at National Bank Financial\u2019s 20th Annual Financial Services Conference on March 22, 2022.</p>\n<p>Webcast no longer available</p>\n",
+        "title": "<h3 class=\"c--title\">National Bank Financial Services Conference</h3>\n",
+        "nodeName": "national-bank-financial-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>March 8, 2022</p>\n<p>Question-and-answer session participation, starting at 10:00 a.m. EST, by Raj Viswanathan, Scotiabank\u2019s Group Head &amp; Chief Financial Officer, at the 2022 RBC Capital Markets Global Financial Institutions Conference on March 8, 2022.</p>\n<p>Webcast no longer available</p>\n",
+        "title": "<h3 class=\"c--title\">RBC Capital Markets Global Financial Institutions Conference</h3>\n",
+        "link_1_type": "External Link (New Tab)",
+        "nodeName": "rbc-global-financial-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>January 10, 2022<br>\n<br>\nQuestion-and-answer session participation, starting at 1:45pm, by Scotiabank's Brian Porter, President and Chief Executive Officer, at the RBC Capital Markets Canadian Bank CEO Conference in Toronto, on Monday, January 10, 2022.</p>\n<p>Webcast no longer available</p>\n",
+        "title": "<h3 class=\"c--title\">RBC Canadian Bank CEO Conference</h3>\n",
+        "link_1_type": "Internal Link (New Tab)",
+        "nodeName": "rbc-ceo-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      }
+    ],
+    "2023": [
+      {
+        "description": "<p>December 13, 2023</p>\n<p>The event features presentations by Scotiabank's senior leadership team, who provide an update on Scotiabank's strategy, and includes question-and-answer sessions from institutional investors and our coverage analysts.</p>\n",
+        "title": "<h3 class=\"c--title\">Investor Day 2023</h3>\n",
+        "link_1_path": "https://www.scotiabank.com/ca/en/about/investors-shareholders/investor-day.html",
+        "link_1_text": "Learn more (English)",
+        "link_1_type": "Internal Link (New Tab)",
+        "link_2_path": "https://www.scotiabank.com/ca/fr/qui-nous-sommes/investisseurs-et-actionnaires/journee-des-investisseurs.html",
+        "link_2_text": "D\u00e9tails (French)",
+        "link_2_type": "Internal Link (New Tab)",
+        "nodeName": "investor-day",
+        "fileDetails": [
+          {
+            "path": "https://www.scotiabank.com/ca/en/about/investors-shareholders/investor-day.html",
+            "fileType": "Link",
+            "size": "",
+            "linkType": "Internal Link (New Tab)",
+            "ctaCardText": "Learn more (English)"
+          },
+          {
+            "path": "https://www.scotiabank.com/ca/fr/qui-nous-sommes/investisseurs-et-actionnaires/journee-des-investisseurs.html",
+            "fileType": "Link",
+            "size": "",
+            "linkType": "Internal Link (New Tab)",
+            "ctaCardText": "D\u00e9tails (French)"
+          }
+        ],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>September 6, 2023</p>\n<p>Question-and-answer session participation, starting at 9:00 a.m. ET, by Scott Thomson, Scotiabank's President and Chief Executive Officer, at the 24th Annual Global Banking and Markets Financials Summit on September 6, 2023.</p>\n<p>Webcast no longer available</p>\n",
+        "title": "<h3 class=\"c--title\">Scotiabank Financials Summit</h3>\n",
+        "nodeName": "scotiabank-financials-summit",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>March 29, 2023</p>\n<p>Question-and-answer session participation, starting at 9:45 a.m. EDT, by Phil Thomas, Scotiabank\u2019s Chief Risk Officer, at National Bank Financial\u2019s 21st Annual Financial Services Conference on March 29, 2023.</p>\n<p>Webcast no longer available</p>\n",
+        "title": "<h3 class=\"c--title\">National Bank Financial Services Conference</h3>\n",
+        "nodeName": "national-bank-financial-services-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>March 7, 2023</p>\n<p>Question-and-answer session participation, starting at 3:20 p.m. EST, by Raj Viswanathan, Scotiabank\u2019s Group Head &amp; Chief Financial Officer, at the 2023 RBC Capital Markets Global Financial Institutions Conference on March 7, 2023.</p>\n<p>Webcast no longer available</p>\n",
+        "title": "<h3 class=\"c--title\">RBC Capital Markets Global Financial Institutions Conference</h3>\n",
+        "nodeName": "rbc-capital-markets-global-financial-institutions-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>January 9, 2023</p>\n<p>Question-and-answer session participation, starting at 9:20am, by Scotiabank's President, Scott Thomson at the RBC Capital Markets Canadian Bank CEO Conference in Toronto, on Monday, January 9, 2023.</p>\n<p>Webcast no longer available</p>\n",
+        "title": "<h3 class=\"c--title\">RBC Canadian Bank CEO Conference</h3>\n",
+        "link_1_type": "Internal Link (New Tab)",
+        "nodeName": "rbc-canadian-bank-ceo-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      }
+    ],
+    "2024": [
+      {
+        "description": "<p>September 9, 2024</p>\n<p>Question-and-answer session participation, starting at 2:00 p.m. ET, by Aris Bogdaneris Scotiabank's Group Head, Canadian Banking, at the Barclays Global Financial Services Conference on September 9, 2024.</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">Barclays Global Financial Services Conference</h3>\n",
+        "nodeName": "barclays-global-financial-services-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>September 4, 2024</p>\n<p>Question-and-answer session participation, starting at 9:00 a.m. ET, by Scott Thomson, Scotiabank's President and Chief Executive Officer, at the 25<sup>th</sup> Annual Global Banking and Markets Financials Summit on September 4, 2024.</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">Scotiabank Financials Summit</h3>\n",
+        "nodeName": "scotiabank-financials-summit-2024",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>Conference call August 12, 2024</p>\n<p><br>\n<a href=\"https://www.gowebcasting.com/13627\">Webcast</a><br>\n<a href=\"https://www.scotiabank.com/corporate/en/home/media-centre/media-centre/news-release.html?id=%204136&amp;language=en\">Press Release</a><br>\n<a href=\"/content/dam/scotiabank/corporate/Documents/webcast_081224.pdf\" target=\"_blank\" title=\"Scotiabank webcast August 12, 2024\">Presentation</a><br>\n<a href=\"/content/dam/scotiabank/corporate/Documents/BNS_KeyCorp_Transcript_2024.pdf\" target=\"_blank\">Transcript</a>&nbsp;</p>\n",
+        "title": "<h3 class=\"c--title\">Scotiabank announces agreement to acquire 14.9% equity interest in KeyCorp</h3>\n",
+        "nodeName": "scotiabank-webcast-august-12-2024",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>March 26, 2024</p>\n<p>Question-and-answer session participation, starting at 11:05 a.m. EDT, by Aris Bogdaneris, Scotiabank's Group Head of Canadian Banking, at National Bank Financial\u2019s 22nd Annual Financial Services Conference on March 26, 2024.</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">National Bank Financial Services Conference</h3>\n",
+        "link_1_type": "External Link (New Tab)",
+        "nodeName": "national-bank-financial-services-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>March 5, 2024</p>\n<p>Question-and-answer session participation, starting at 11:20 a.m. ET, by Raj Viswanathan, Scotiabank\u2019s Group Head &amp; Chief Financial Officer, at the 2024 RBC Capital Markets Global Financial Institutions Conference on March 5, 2024.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">RBC Capital Markets Global Financial Institutions Conference</h3>\n",
+        "link_1_type": "External Link (New Tab)",
+        "link_2_type": "Internal Link (New Tab)",
+        "nodeName": "rbc-capital-markets-global-financial-institutions-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>January 9, 2024</p>\n<p>Question-and-answer session participation, starting at 9:20am, by Scotiabank's President and CEO, Scott Thomson at the RBC Capital Markets Canadian Bank CEO Conference in Toronto, on Tuesday, January 9, 2024.</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">RBC Canadian Bank CEO Conference</h3>\n",
+        "link_1_type": "External Link (New Tab)",
+        "link_2_type": "Internal Link (New Tab)",
+        "nodeName": "rbc-canadian-bank-ceo-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      }
+    ],
+    "2025": [
+      {
+        "description": "<p>September 9, 2025</p>\n<p>Question-and-answer session participation, starting at 9:00 a.m. ET, by Phil Thomas, Scotiabank's Group Head &amp; Chief Risk Officer, at the Barclays Global Financial Services Conference on September 9, 2025.</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">Barclays Global Financial Services Conference</h3>\n",
+        "link_1_type": "External Link (New Tab)",
+        "nodeName": "Barclays-global-financial-services-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>September 3, 2025</p>\n<p>Question-and-answer session participation, starting at 9:00 a.m. ET, by Scott Thomson, Scotiabank's President and Chief Executive Officer, at the 26<sup>th</sup>&nbsp;Annual Global Banking and Markets Financials Summit on September 3, 2025.</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">Scotiabank Financials Summit</h3>\n",
+        "nodeName": "Scotiabank-financials-summit",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>25th March 2025<br>\n<br>\nQuestion-and-answer session participation, starting at 11:00 a.m. ET, by Aris Bogdaneris Scotiabank's Group Head, Canadian Banking, at the National Bank 23rd Financial Services Conference on March 25, 2025.</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">National Bank 23rd Financial Services Conference</h3>\n",
+        "nodeName": "national-bank-23rd-financial-services-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>March 5, 2025</p>\n<p>Question-and-answer session participation, starting at 8:40 a.m. ET, by Phil Thomas, Scotiabank's Group Head &amp; Chief Risk Officer, at the 2025 RBC Capital Markets Global Financial Institutions Conference on March 5, 2025.</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">RBC Capital Markets Global Financial Institutions Conference</h3>\n",
+        "nodeName": "rbc-capital-markets-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>January 7, 2025</p>\n<p>Question-and-answer session participation, starting at 1:20 p.m. ET, by Scott Thomson, Scotiabank's President and Chief Executive Officer, at RBC Capital Markets Canadian Bank CEO Conference on January 7, 2025.<br>\n<br>\n<b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">RBCCM Canadian Bank CEO Conference</h3>\n",
+        "link_1_type": "External Link (Same Tab)",
+        "nodeName": "rbccm-canadian-bank-ceo-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      }
+    ],
+    "2026": [
+      {
+        "description": "<p>September 14, 2026</p>\n<p>Question-and-answer session starting at 11:15 a.m. ET, with Aris Bogdaneris Scotiabank's Group Head, Canadian Banking, at the Barclays Global Financial Services Conference on September 14, 2026.</p>\n",
+        "title": "<h3 class=\"c--title\">Barclays Global Financial Services Conference</h3>\n",
+        "link_1_path": "https://cc.webcasts.com/barc002/091426a_js/?entity=2_1TMIQPU",
+        "link_1_text": "Webcast",
+        "link_1_type": "External Link (New Tab)",
+        "nodeName": "barclays-global-financial-services-conference",
+        "fileDetails": [
+          {
+            "path": "https://cc.webcasts.com/barc002/091426a_js/?entity=2_1TMIQPU",
+            "fileType": "Link",
+            "size": "",
+            "linkType": "External Link (New Tab)",
+            "ctaCardText": "Webcast"
+          }
+        ],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>September 9, 2026</p>\n<p>Question-and-answer session starting at 9:00 a.m. ET, with Scott Thomson, Scotiabank's President and Chief Executive Officer, at the 27th Annual Global Banking and Markets Financials Summit on September 9, 2026.</p>\n",
+        "title": "<h3 class=\"c--title\">Scotiabank Financials Summit</h3>\n",
+        "link_1_path": "https://onlinexperiences.com/Launch/Event/ShowKey=297693",
+        "link_1_text": "Webcast",
+        "link_1_type": "External Link (New Tab)",
+        "nodeName": "scotiabank-financials-summit",
+        "fileDetails": [
+          {
+            "path": "https://onlinexperiences.com/Launch/Event/ShowKey=297693",
+            "fileType": "Link",
+            "size": "",
+            "linkType": "External Link (New Tab)",
+            "ctaCardText": "Webcast"
+          }
+        ],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>March 24, 2026</p>\n<p>Question-and-answer session, starting at 11:00 a.m. ET, with Aris Bogdaneris, Scotiabank's Group Head, Canadian Banking, at the National Bank 24th Annual Financial Services Conference on March 24, 2026.</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">National Bank 24th Annual Financial Services Conference</h3>\n",
+        "link_1_type": "External Link (New Tab)",
+        "nodeName": "national-bank-24th-financial-services-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>March 11, 2026</p>\n<p>Question-and-answer session, starting at 1:20 p.m. ET, with Raj Viswanathan, Scotiabank's Group Head &amp; Chief Financial Officer, at the 2026 RBC Capital Markets Global Financial Institutions Conference on March 11, 2026.</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">RBC Capital Markets Global Financial Institutions Conference</h3>\n",
+        "link_1_type": "External Link (New Tab)",
+        "nodeName": "rbc-capital-markets-global-financial-institutions-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      },
+      {
+        "description": "<p>January 6, 2026</p>\n<p>Question-and-answer session, starting at 12:40 p.m. ET, with Scott Thomson, Scotiabank's President and Chief Executive Officer, at RBC Capital Markets Canadian Bank CEO Conference on January 6, 2026.</p>\n<p><b>Webcast no longer available</b></p>\n",
+        "title": "<h3 class=\"c--title\">RBCCM Canadian Bank CEO Conference</h3>\n",
+        "link_1_type": "External Link (New Tab)",
+        "nodeName": "rbccm-canadian-bank-ceo-conference",
+        "fileDetails": [],
+        "titleFormatted": ""
+      }
+    ]
+  }
+}

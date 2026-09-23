@@ -2,8 +2,11 @@
 
 export const EARNINGS_IR_VAULT_START_YMD = "2022-01-01";
 
-/** Screener market-cap top N for the IR vault (Phase 1 was 25). */
-export const EARNINGS_IR_VAULT_TOP_N = 35;
+/** Screener market-cap top N for vault cron/backfill batches (keep modest). */
+export const EARNINGS_IR_VAULT_TOP_N = 50;
+
+/** Hand-seed coverage goal (~500 liquid names by mcap). */
+export const EARNINGS_IR_VAULT_COVERAGE_GOAL = 500;
 
 /** Issuers with first-party IR PDFs — do not lock SEC HTML as a filings/slides fallback. */
 export const EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS = new Set([
@@ -105,6 +108,56 @@ export const EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS = new Set([
   "NOW",
   "SONY",
   "DHR",
+  "NEM",
+  "BMY",
+  "GLW",
+  "CB",
+  "BKNG",
+  "PLD",
+  "VRTX",
+  "UL",
+  "ISRG",
+  "TJX",
+  "NET",
+  "PGR",
+  "MFG",
+  "FRCOY",
+  "BNPQY",
+  "BMO",
+  "CFRUY",
+  "BTI",
+  "FTNT",
+  "LMT",
+  "SPGI",
+  "TOELY",
+  "AIQUY",
+  "HDB",
+  "PH",
+  "MPC",
+  "MDT",
+  "SNOW",
+  "MTSUY",
+  "ZIJMY",
+  "BNS",
+  "MO",
+  "ACN",
+  "CVS",
+  "VLO",
+  "PDD",
+  "BP",
+  "OVCHY",
+  "ZURVY",
+  "ASX",
+  "SBUX",
+  "HOOD",
+  "AXAHY",
+  "ADP",
+  "LOW",
+  "SPOT",
+  "CM",
+  "SYK",
+  "ENB",
+  "PSX",
 ]);
 
 export type EarningsIrVaultDocStatus = "locked" | "found" | "missing";

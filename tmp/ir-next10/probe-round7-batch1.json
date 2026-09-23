@@ -1,0 +1,92 @@
+{
+  "bns": [
+    {
+      "url": "https://www.scotiabank.com/ca/en/about/investors-shareholders.html",
+      "final": "https://www.scotiabank.com/ca/en/about/investors-shareholders.html",
+      "status": 200,
+      "len": 184291,
+      "head": "\n<!DOCTYPE HTML>\n<html lang=\"en\" data-locale=\"en_ca\" data-env=\"production\" data-wcmmode=\"publish\" da",
+      "html": "tmp/ir-next10/bns-page.html",
+      "n_pdfs": 2,
+      "pdf_sample": [
+        "/content/dam/scotiabank/canada/common/documents/Disclosure-Policy-January-2026.pdf",
+        "/content/dam/scotiabank/corporate/quarterly-reports/2026/q3/Q326_Scotiabank_Investor_Factsheet.pdf"
+      ]
+    },
+    {
+      "url": "https://www.scotiabank.com/ca/en/about/investors-shareholders/financial-results.html",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.scotiabank.com/ca/en/about/investors-shareholders/financial-results/quarterly-results.html",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.scotiabank.com/content/dam/scotiabank/canada/en/documents/about/investors-shareholders/",
+      "final": "https://www.scotiabank.com/rd/cda/errorpage/0,1190,ca-en,00.html",
+      "status": 200,
+      "len": 17162,
+      "head": "<!doctype html><html lang=\"en\" class=\"no-js\"> <head><script src=\"//assets.adobedtm.com/1898c2c17628d",
+      "html": "tmp/ir-next10/bns-page.html",
+      "n_pdfs": 0,
+      "pdf_sample": []
+    }
+  ],
+  "mo": [
+    {
+      "url": "https://investor.altria.com/",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://investor.altria.com/financials-filings/quarterly-results/default.aspx",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://investor.altria.com/feed/FinancialReport.svc/GetFinancialReportList?languageId=1&reportType=Quarterly&pageSize=80&includeTags=true",
+      "final": "https://investor.altria.com/feed/FinancialReport.svc/GetFinancialReportList?languageId=1&reportType=Quarterly&pageSize=80&includeTags=true",
+      "status": 200,
+      "len": 59293,
+      "head": "{\"GetFinancialReportListResult\":[{\"CoverImagePath\":\"\",\"LanguageId\":1,\"ReportId\":2576,\"ReportOrder\":0",
+      "saved": "tmp/ir-next10/mo-svc.json"
+    },
+    {
+      "url": "https://investor.altria.com/feed/PressRelease.svc/GetPressReleaseList?LanguageId=1&bodyType=0&pressReleaseDateFilter=3&categoryId=1cb807d2-208f-4bc3-9133-6a9ad45ac3b0&pageSize=-1&pageNumber=0&tagList=&includeTags=true&year=-1&excludeSelection=1",
+      "final": "https://investor.altria.com/feed/PressRelease.svc/GetPressReleaseList?LanguageId=1&bodyType=0&pressReleaseDateFilter=3&categoryId=1cb807d2-208f-4bc3-9133-6a9ad45ac3b0&pageSize=-1&pageNumber=0&tagList=&includeTags=true&year=-1&excludeSelection=1",
+      "status": 200,
+      "len": 262711,
+      "head": "{\"GetPressReleaseListResult\":[{\"Attachments\":[],\"Body\":null,\"Category\":\"\",\"DocumentFileSize\":null,\"D",
+      "saved": "tmp/ir-next10/mo-press.json"
+    }
+  ],
+  "acn": [
+    {
+      "url": "https://investor.accenture.com/",
+      "final": "https://investor.accenture.com/",
+      "status": 200,
+      "len": 139216,
+      "head": "\r\n<!DOCTYPE html>\r\n<html lang=\"en\" xml:lang=\"en\" xmlns=\"http://www.w3.org/1999/xhtml\"  >\r\n<head>\r\n  ",
+      "html": "tmp/ir-next10/acn-page.html",
+      "n_pdfs": 6,
+      "pdf_sample": [
+        "/~/media/Files/A/accenture-v4/investors/earnings-reports/2024/q4/q4-fy2024-infographics-final.pdf",
+        "/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/accenture-3q-fy26-earnings-release.pdf",
+        "/~/media/Files/A/accenture-v4/investors/home/accenture-2025-letter-to-shareholders.pdf",
+        "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/accenture-first-quarter-fisc",
+        "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/accentures-first-quarter-fis",
+        "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/first-quarter-fiscal-2026-ea"
+      ]
+    },
+    {
+      "url": "https://investor.accenture.com/financials/quarterly-results/default.aspx",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://investor.accenture.com/feed/FinancialReport.svc/GetFinancialReportList?languageId=1&reportType=Quarterly&pageSize=80&includeTags=true",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://investor.accenture.com/feed/PressRelease.svc/GetPressReleaseList?LanguageId=1&bodyType=0&pressReleaseDateFilter=3&categoryId=1cb807d2-208f-4bc3-9133-6a9ad45ac3b0&pageSize=-1&pageNumber=0&tagList=&includeTags=true&year=-1&excludeSelection=1",
+      "error": "HTTP Error 403: Forbidden"
+    }
+  ]
+}

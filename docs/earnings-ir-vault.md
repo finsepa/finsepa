@@ -66,19 +66,21 @@ npm run earnings:ir-docs-mirror -- --tickers=COST,KO,CAT --plain-only
 
 Merge is **lock-once**: a correct lock is never overwritten. Wrong SEC locks must be unlocked first or they stick forever.
 
-## Scope (don’t boil the ocean)
+## Scope (goal: ~500 companies)
+
+North star: first-party IR Slides/Filings for ≈**500** liquid names (Q1 2022 → latest), filled **next-10-by-mcap** in batches of **three tickers at a time**. Skip OTC pink / preferred / duplicate share classes; prefer US listings + major ADRs.
 
 | Layer | What we do |
 |-------|------------|
-| **History** | Curated ~25–50 large names, Q1 2022 → latest. Hand-checked IR PDFs. |
+| **History** | Hand-checked IR PDFs, working down the top500 mcap list. |
 | **Going forward** | Cron / latest-quarter pull for issuers we already learned. |
-| **Long tail** | Stay yellow. Do not historically green ~2500 names. |
+| **Beyond ~500** | Stay yellow. Do not historically green the full long tail. |
 
 ## IR-PDF-only names
 
 These must never get SEC HTML as a “helpful” fallback:
 
-`AMAT` · `MRK` · `COST` · `KO` · `CAT` · `PLTR` · `UNH` · `LRCX` · `CVX` · `HSBC` · `GOOGL`/`GOOG` · `AVGO` · `ORCL` · `ABBV` · `ADBE` · `DELL` · `MS` · `GE` · `PG` · `NFLX` · `HD` · `GS` · `PM` · `RY` · `ARM` · `BABA` · `PANW` · `SHEL` · `WFC` · `RTX` · `NVS` · `MUFG` · `SNDK` · `NSRGY` · `GEV` · `AZN` · `ANET` · `SIEGY` · `SAP` · `LVMUY` · `LRLCY` · `KLAC` · `TXN` · `SFTBY` · `BHP` · `C` · `TM` · `IBM` · `TMO` · `AXP` · `LIN` · `SAN` · `CRWD` · `AMGN` · `MRVL` · `VZ` · `TTE` · `STX` · `CRM` · `DIS` · `AMD` · `PEP` · `INTU` · `QCOM` · `APH` · `TD` · `TMUS` · `NVO` · `SCHW` · `ADI` · `DE` · `MCD` · `T` · `GILD` · `ABT` · `BLK` · `NEE` · `RIO` · `WELL` · `UNP` · `SMFG` · `WDC` · `UBS` · `COP` · `BA` · `SHOP` · `SCCO` · `PFE` · `BBVA` · `BUD` · `IBKR` · `ETN` · `BX` · `UBER` · `NOW` · `SONY` · `DHR`
+`AMAT` · `MRK` · `COST` · `KO` · `CAT` · `PLTR` · `UNH` · `LRCX` · `CVX` · `HSBC` · `GOOGL`/`GOOG` · `AVGO` · `ORCL` · `ABBV` · `ADBE` · `DELL` · `MS` · `GE` · `PG` · `NFLX` · `HD` · `GS` · `PM` · `RY` · `ARM` · `BABA` · `PANW` · `SHEL` · `WFC` · `RTX` · `NVS` · `MUFG` · `SNDK` · `NSRGY` · `GEV` · `AZN` · `ANET` · `SIEGY` · `SAP` · `LVMUY` · `LRLCY` · `KLAC` · `TXN` · `SFTBY` · `BHP` · `C` · `TM` · `IBM` · `TMO` · `AXP` · `LIN` · `SAN` · `CRWD` · `AMGN` · `MRVL` · `VZ` · `TTE` · `STX` · `CRM` · `DIS` · `AMD` · `PEP` · `INTU` · `QCOM` · `APH` · `TD` · `TMUS` · `NVO` · `SCHW` · `ADI` · `DE` · `MCD` · `T` · `GILD` · `ABT` · `BLK` · `NEE` · `RIO` · `WELL` · `UNP` · `SMFG` · `WDC` · `UBS` · `COP` · `BA` · `SHOP` · `SCCO` · `PFE` · `BBVA` · `BUD` · `IBKR` · `ETN` · `BX` · `UBER` · `NOW` · `SONY` · `DHR` · `NEM` · `BMY` · `GLW` · `CB` · `BKNG` · `PLD` · `VRTX` · `UL` · `ISRG` · `TJX` · `NET` · `PGR` · `MFG` · `FRCOY` · `BNPQY` · `BMO` · `CFRUY` · `BTI` · `FTNT` · `LMT` · `SPGI` · `TOELY` · `AIQUY` · `HDB` · `PH` · `MPC` · `MDT` · `SNOW` · `MTSUY` · `ZIJMY`
 
 Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-types.ts`).
 
@@ -94,9 +96,79 @@ Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-
 | Wire-up | `lib/market/ir-seed-apply.ts` (`DEDICATED_IR_SEED_TICKERS`) |
 | Preview proxy | `GET /api/ir-pdf` + `lib/market/ir-pdf-proxy-allowlist.ts` |
 
-## Status snapshot (2026-09-16)
+## Status snapshot (2026-09-22)
 
-Next-10 #3 by mcap — wired: **PFE, BBVA, BUD, IBKR, ETN, BX, UBER, NOW, SONY, DHR**. BUD Q1’23+ on `cdn.builder.io`. BX yellow (combined Press+Presentation; filings empty). UBER yellow (Q1–Q2’22 HTML press only). **NOW** green (`s205.q4cdn.com/916135447`). **SONY** March FY green (`sony.com/.../presen/er/pdf/`; IR FY tag = Finsepa fy−1). **DHR** green (Presentation `/image/` + press `?asPDF`). Never SEC HTML; empty slots left empty.
+**Goal:** ~500 companies IR coverage. Next-10 #9 in progress (~168 dedicated).
+
+Next-10 #9 by mcap — **EQIX, CAIXY, ING, FCX, ITOCY, MCK, APP, GSK, AAGIY, SNY** (discovery rerunning after stalled FCX/ITOCY/MCK agent).
+
+Next-10 #8 by mcap — wired: **SBUX, HOOD, AXAHY, ADP, LOW, SPOT, CM, SYK, ENB, PSX**.
+
+- **SBUX** (yellow): late-Sept FY; Earnings at a Glance + Earnings Release on `s203.q4cdn.com/326826266`; Q1–Q3’22 filings-only.
+- **HOOD** (green): calendar; Earnings Presentation + Press Release on `investors.robinhood.com/static-files` Q1’22→Q2’26.
+- **AXAHY** (yellow): semi-annual; HY→Q2 / FY→Q4 presentation+press on Prismic; Q1/Q3 empty.
+- **ADP** (green): June FY; Earnings Deck/Presentation + Earnings Release on `s205.q4cdn.com/887941133` Q1’22→Q4’26.
+- **LOW** (yellow): filings-only press on `corporate.lowes.com` (infographic not locked as slides).
+- **SPOT** (yellow): Shareholder Deck/Letter slides-only on `s29.q4cdn.com/175625835`.
+- **CM** (green): Oct 31 FY; presentation + newsrelease on cibc.com quarterly-results Q1’22→Q3’26.
+- **SYK** (yellow): filings-only press on `s22.q4cdn.com/857738142` (no quarterly decks).
+- **ENB** (yellow): Earnings Presentation slides-only on enbridge.com media (HTML press).
+- **PSX** (green): Presentation + Earnings Release on `s22.q4cdn.com/128149789` Q1’22→Q2’26.
+
+Next-10 #7 by mcap — wired: **BNS, MO, ACN, CVS, VLO, PDD, BP, OVCHY, ZURVY, ASX**.
+
+- **BNS** (green): Oct 31 FY; Investor Presentation + Quarterly Press Release-EN.
+- **MO** (green): Sitecore Presentation + Press/Earnings Release Q1’22→Q2’26.
+- **ACN** (yellow): Aug 31 FY; Q3’23 filings-only.
+- **CVS** (green): q4cdn Earnings-Presentation + Earnings-Release.
+- **VLO** / **PDD** (yellow): filings-only.
+- **BP** (green): `bp.com/api/files` results + presentation slides.
+- **OVCHY** (green): OCBC `iwov-resources/.../quarterly-results` Highlights/Presentation + Press/Media Release.
+- **ZURVY** (yellow): HY/FY decks; Q1/Q3 release-only.
+- **ASX** (green): ASE Technology Holding — TodayIR Presentation + Press Release.
+
+Next-10 #6 by mcap — wired: **TOELY, SPGI, AIQUY, MPC, HDB, PH, MDT, SNOW, MTSUY, ZIJMY**.
+
+- **SPGI** GREEN — Q1’22→Q2’26; Earnings Call Slides + Earnings Release (`s29.q4cdn.com/690959130`).
+- **TOELY** GREEN — March FY Q1’22→Q1’27; `*presentations-e.pdf` + `*tanshin-e.pdf` on tel.com.
+- **AIQUY** GREEN — Q1’22→Q2’26 activity/H1/FY presentation + press (`airliquide.com/sites/.../files`).
+- **MPC** GREEN — Q1’22→Q2’26 slides + press on `s2.q4cdn.com/142437514` (doc_news fills older PRs).
+- **HDB** YELLOW — March FY; earnings-presentation + press-release; solid Q1’24→Q1’27; FY22–23 sparse.
+- **PH** GREEN — June FY Q1’22→Q4’26; Earnings Presentation + press on cloudfront.
+- **MDT** GREEN — late-April FY Q1’22→Q1’27; Presentation + Press on `investorrelations.medtronic.com`.
+- **SNOW** YELLOW — Jan FY; Investor Presentation slides on `s26.q4cdn.com/463892824`; filings null (HTML press).
+- **MTSUY** YELLOW — March FY; meetings + earnings PDFs on mitsubishicorp.com; early FY22–23 gaps.
+- **ZIJMY** YELLOW — calendar; English results PDFs on zijinmining.com; no slide decks; several empties.
+
+Next-10 #5 by mcap — wired: **MFG, FRCOY, BNPQY, NET, FTNT, LMT, PGR, BMO, CFRUY, BTI**.
+
+- **NET** GREEN — Cloudflare Supplemental → Slides; Exhibit 99.1 → Filings (`cloudflare.net/files`).
+- **FTNT** YELLOW — `investor.fortinet.com/static-files` decks all quarters; EX 99.1 for recent only.
+- **LMT** YELLOW — MediaRoom Conf-Call-Charts + Earnings-Release; gaps Q2/Q4’24 (+ older).
+- **PGR** YELLOW — IR Call → Slides (mostly Q2/Q4); GlobeNewswire Complete Earnings Release → Filings.
+- **MFG** YELLOW — Mizuho March FY; Summary *_2 → Slides; data pack → Filings; Q1–Q3’24 filings null.
+- **FRCOY** GREEN — Fast Retailing August FY; `*_results_en.pdf` + `tanshin*eng.pdf`.
+- **BNPQY** GREEN — BNP calendar; `invest.bnpparibas/en/document/{q}q{yy}-slides|-pr` (PDF without `.pdf`).
+- **BMO** GREEN — October FY; AnalystPresentation + EarningsRelease under `/ir/qtrinfo/`.
+- **CFRUY** YELLOW — Richemont EN presentation + ad-hoc press; Q2/Q4’22 sales filings-only.
+- **BTI** YELLOW — UK semi-annual; HY→Q2 / FY→Q4 on bat.com; Q1/Q3 empty by design.
+
+Prior next-10 #4 — wired: **ISRG, TJX, UL, CB, PLD, NEM, GLW, VRTX, BMY, BKNG**.
+
+- **NEM** — Newmont q4cdn Presentation + Press Release.
+- **BMY** — Bristol Myers Squibb presentation + press (bms.com / q4cdn).
+- **GLW** — Corning q4cdn earnings PDFs.
+- **CB** YELLOW — Chubb Corporate Presentation + press; slides missing Q4’22 / Q1–Q2’23 / Q1’24.
+- **BKNG** YELLOW — Booking q4cdn; older quarters may be filings-only (presentation gaps).
+- **PLD** YELLOW — Prologis supplemental PDF → Slides; filings empty (HTML release).
+- **VRTX** YELLOW — Vertex `investors.vrtx.com/static-files` presentations; filings empty (HTML release).
+- **UL** YELLOW — Unilever `/files/` presentation + full announcement from Q4’23; Q1/Q3’23 filings via UUID paths; earlier empty.
+- **ISRG** YELLOW — Intuitive `static-files` Investor Presentations + `/node/N/pdf` press filings (Q4’24→Q2’26); older quarters often slides-only or empty.
+- **TJX** YELLOW — January FY. Filings-only press PDFs on `tjx.com/docs/.../quarterly-results/` (Q4’22→Q2’27); no IR slide deck.
+
+Never SEC HTML; empty slots left empty.
+
+Prior next-10 #3: **PFE, BBVA, BUD, IBKR, ETN, BX, UBER, NOW, SONY, DHR**. BUD Q1’23+ on `cdn.builder.io`. BX yellow (combined Press+Presentation; filings empty). UBER yellow (Q1–Q2’22 HTML press only). **NOW** green (`s205.q4cdn.com/916135447`). **SONY** March FY green (`sony.com/.../presen/er/pdf/`; IR FY tag = Finsepa fy−1). **DHR** green (Presentation `/image/` + press `?asPDF`).
 
 - **RIO** YELLOW — Calendar FY. HY (Q2) + Annual (Q4) on `riotinto.com` results media (incl. Q2’26); Q1/Q3 empty.
 - **WELL** YELLOW — Business Update + Earnings Release; Q4’22 slides empty.

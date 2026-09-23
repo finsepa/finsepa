@@ -14,3 +14,7 @@ North star: scale for ≈500–1,000 DAU; UX/speed like Google/Yahoo Finance; mi
 ## Earnings IR vault (slides + filings)
 
 First-party IR PDFs on the stock earnings tab. Fill **3 tickers at a time**; never lock SEC HTML. See `docs/earnings-ir-vault.md`.
+
+## Earnings transcript + audio
+
+Replicate Quartr’s **method** with our own captures (issuer IR / Podcasts / YouTube), not Quartr files. Apple audio lasts ~2 weeks — capture in-window. See `docs/earnings-transcript-audio.md`.

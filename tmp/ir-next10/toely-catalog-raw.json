@@ -1,0 +1,294 @@
+{
+  "ticker": "TOELY",
+  "fy": "march-31",
+  "pattern": "presentations-e.pdf=slides, tanshin-e.pdf=filings; never transcript/QA",
+  "hosts": [
+    "www.tel.com"
+  ],
+  "by_issuer_label": {
+    "FY2008Q1": {
+      "slides": null,
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002wy5-att/fy2008q1tanshine.pdf"
+    },
+    "FY2008Q2": {
+      "slides": null,
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002wu2-att/fy2008q2tanshine.pdf"
+    },
+    "FY2008Q3": {
+      "slides": null,
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002wq9-att/fy2008q3tanshine.pdf"
+    },
+    "FY2008Q4": {
+      "slides": null,
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002wm6-att/fy2008q4tanshine.pdf"
+    },
+    "FY2009Q1": {
+      "slides": null,
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002wi8-att/fy2009q1tanshine_1.pdf"
+    },
+    "FY2009Q2": {
+      "slides": null,
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002wea-att/fy2009q2tanshine.pdf"
+    },
+    "FY2009Q3": {
+      "slides": null,
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002wah-att/fy2009q3tanshine.pdf"
+    },
+    "FY2009Q4": {
+      "slides": null,
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002w4v-att/fy2009q4tanshine.pdf"
+    },
+    "FY2010Q1": {
+      "slides": null,
+      "filings": null
+    },
+    "FY2010Q2": {
+      "slides": null,
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002vwp-att/fy2010q2tanshine-2.pdf"
+    },
+    "FY2010Q3": {
+      "slides": null,
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002vsw-att/fy2010q3tanshine1.pdf"
+    },
+    "FY2010Q4": {
+      "slides": null,
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002vp3-att/fy2010q4tanshine.pdf"
+    },
+    "FY2022Q1": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002ovm-att/fy22q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002ovm-att/fy22q1tanshin-e.pdf"
+    },
+    "FY2022Q2": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj00000007tg-att/fy22q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj00000007tg-att/fy22q2tanshin-e.pdf"
+    },
+    "FY2022Q3": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj00000007ri-att/fy22q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj00000007ri-att/fy22q3tanshin-e.pdf"
+    },
+    "FY2022Q4": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj00000007nc-att/fy22q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj00000007nc-att/fy22q4tanshin-e.pdf"
+    },
+    "FY2023Q1": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj00000007km-att/fy23q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj00000007km-att/fy23q1tanshin-e.pdf"
+    },
+    "FY2023Q2": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj00000007ih-att/fy23q2presentations-e_2.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj00000007ih-att/fy23q2tanshin-e.pdf"
+    },
+    "FY2023Q3": {
+      "slides": "https://www.tel.com/ir/library/report/a4fd9v000000007q-att/fy23q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/a4fd9v000000007q-att/fy23q3tanshin-e.pdf"
+    },
+    "FY2023Q4": {
+      "slides": "https://www.tel.com/ir/library/report/a4fd9v000000004h-att/fy23q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/a4fd9v000000004h-att/fy23q4tanshin-e.pdf"
+    },
+    "FY2024Q1": {
+      "slides": "https://www.tel.com/ir/library/report/ta7l33000000009p-att/fy24q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/ta7l33000000009p-att/fy24q1tanshin-e.pdf"
+    },
+    "FY2024Q2": {
+      "slides": "https://www.tel.com/ir/library/report/plgm7r000000003e-att/fy24q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/plgm7r000000003e-att/fy24q2tanshin-e.pdf"
+    },
+    "FY2024Q3": {
+      "slides": "https://www.tel.com/ir/library/report/a5hghd00000000bq-att/fy24q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/a5hghd00000000bq-att/fy24q3tanshin-e.pdf"
+    },
+    "FY2024Q4": {
+      "slides": "https://www.tel.com/ir/library/report/ll4pka00000000l9-att/fy24q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/ll4pka00000000l9-att/fy24q4tanshin-e.pdf"
+    },
+    "FY2025Q1": {
+      "slides": "https://www.tel.com/ir/library/report/tpc8u500000000s3-att/fy25q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/tpc8u500000000s3-att/fy25q1tanshin-e.pdf"
+    },
+    "FY2025Q2": {
+      "slides": "https://www.tel.com/ir/library/report/o6kifa00000000nf-att/fy25q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/o6kifa00000000nf-att/fy25q2tanshin-e.pdf"
+    },
+    "FY2025Q3": {
+      "slides": "https://www.tel.com/ir/library/report/c2l1qi00000000sj-att/fy25q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/c2l1qi00000000sj-att/fy25q3tanshin-e.pdf"
+    },
+    "FY2025Q4": {
+      "slides": "https://www.tel.com/ir/library/report/l8gqgo00000000gl-att/fy25q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/l8gqgo00000000gl-att/fy25q4tanshin-e.pdf"
+    },
+    "FY2026Q1": {
+      "slides": "https://www.tel.com/ir/library/report/cpkomu00000000kv-att/fy26q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/cpkomu00000000kv-att/fy26q1tanshin-e.pdf"
+    },
+    "FY2026Q2": {
+      "slides": "https://www.tel.com/ir/library/report/n0n82r00000000hl-att/fy26q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/n0n82r00000000hl-att/fy26q2tanshin-e.pdf"
+    },
+    "FY2026Q3": {
+      "slides": "https://www.tel.com/ir/library/report/qemr4i00000000dj-att/fy26q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/qemr4i00000000dj-att/fy26q3tanshin-e.pdf"
+    },
+    "FY2026Q4": {
+      "slides": "https://www.tel.com/ir/library/report/pjuomj00000000tf-att/fy26q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/pjuomj00000000tf-att/fy26q4tanshin-e.pdf"
+    },
+    "FY2027Q1": {
+      "slides": "https://www.tel.com/ir/irta3a00000006g5-att/fy27q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/irta3a00000006g5-att/fy27q1tanshin-e.pdf"
+    },
+    "FY2049Q3": {
+      "slides": null,
+      "filings": null
+    },
+    "FY2049Q4": {
+      "slides": null,
+      "filings": null
+    },
+    "FY2050Q1": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002uqu-att/fy50q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002uqu-att/fy50q1tanshin-e.pdf"
+    },
+    "FY2050Q2": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002un1-att/fy50q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002un1-att/fy50q2tanshin-e.pdf"
+    },
+    "FY2050Q3": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002uj8-att/fy50q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002uj8-att/fy50q3tanshin-e.pdf"
+    },
+    "FY2050Q4": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002u7t-att/fy50q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002u7t-att/fy50q4tanshin-e.pdf"
+    },
+    "FY2051Q1": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002uff-att/fy51q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002uff-att/fy51q1tanshin-e.pdf"
+    },
+    "FY2051Q2": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002ubm-att/fy51q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002ubm-att/fy51q2tanshin-e.pdf"
+    },
+    "FY2051Q3": {
+      "slides": "https://www.tel.com/ir/library/report/f3pkth000000085v-att/fy51q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/f3pkth000000085v-att/fy51q3tanshin-e.pdf"
+    },
+    "FY2051Q4": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002u40-att/fy51q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002u40-att/fy51q4tanshin-e.pdf"
+    },
+    "FY2052Q1": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002twe-att/fy52q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002twe-att/fy52q1tanshin-e.pdf"
+    },
+    "FY2052Q2": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002tsl-att/fy52q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002tsl-att/fy52q2tanshin-e.pdf"
+    },
+    "FY2052Q3": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002tos-att/fy52q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002tos-att/fy52q3tanshin-e.pdf"
+    },
+    "FY2052Q4": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002tkz-att/fy52q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002tkz-att/fy52q4tanshin-e.pdf"
+    },
+    "FY2053Q1": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002th6-att/fy53q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002th6-att/fy53q1tanshin-e.pdf"
+    },
+    "FY2053Q2": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002tdd-att/fy53q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002tdd-att/fy53q2tanshin-e.pdf"
+    },
+    "FY2053Q3": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002t9k-att/fy53q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002t9k-att/fy53q3tanshin-e.pdf"
+    },
+    "FY2053Q4": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002t5r-att/fy53q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002t5r-att/fy53q4tanshin-e.pdf"
+    },
+    "FY2054Q1": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002t5r-att/fy54q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002t1y-att/fy54q1tanshin-e.pdf"
+    },
+    "FY2054Q2": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002sy5-att/fy54q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002sy5-att/fy54q2tanshin-e.pdf"
+    },
+    "FY2054Q3": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002suc-att/fy54q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002suc-att/fy54q3tanshin-e.pdf"
+    },
+    "FY2054Q4": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002sqj-att/fy54q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002sqj-att/fy54q4tanshin-e.pdf"
+    },
+    "FY2055Q1": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002smq-att/fy55q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002smq-att/fy55q1tanshin-e_1.pdf"
+    },
+    "FY2055Q2": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002six-att/fy55q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002six-att/fy55q2tanshin-e.pdf"
+    },
+    "FY2055Q3": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002sf4-att/fy55q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002sf4-att/fy55q3tanshin-e.pdf"
+    },
+    "FY2055Q4": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002sbb-att/fy55q4presentations-e_1.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002sbb-att/fy55q4tanshin-e_1.pdf"
+    },
+    "FY2056Q1": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002s7i-att/fy56q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002s7i-att/fy56q1tanshin-e.pdf"
+    },
+    "FY2056Q2": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002s3p-att/fy56q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002s3p-att/fy56q2tanshin-e.pdf"
+    },
+    "FY2056Q3": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002rzw-att/fy56q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002rzw-att/fy56q3tanshin-e.pdf"
+    },
+    "FY2056Q4": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002rw3-att/fy56q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002rw3-att/fy56q4tanshin-e.pdf"
+    },
+    "FY2057Q1": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002rsa-att/fy57q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002rsa-att/fy57q1tanshin-e.pdf"
+    },
+    "FY2057Q2": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002roh-att/fy57q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002roh-att/fy57q2tanshin-e.pdf"
+    },
+    "FY2057Q3": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002rko-att/fy57q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002rko-att/fy57q3tanshin_teisei-e.pdf"
+    },
+    "FY2057Q4": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002rgv-att/fy57Q4_presentations_e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002rgv-att/fy57q4tanshin-e.pdf"
+    },
+    "FY2058Q1": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002rd2-att/fy58q1presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002rd2-att/fy58q1tanshin-e.pdf"
+    },
+    "FY2058Q2": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002ph2-att/fy58q2presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002ph2-att/fy58q2tanshin-e.pdf"
+    },
+    "FY2058Q3": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000002p48-att/fy58q3presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000002p48-att/fy58q3tanshin-e.pdf"
+    },
+    "FY2058Q4": {
+      "slides": "https://www.tel.com/ir/library/report/hq95qj0000000puk-att/fy58q4presentations-e.pdf",
+      "filings": "https://www.tel.com/ir/library/report/hq95qj0000000puk-att/fy58q4tanshin-e.pdf"
+    }
+  }
+}

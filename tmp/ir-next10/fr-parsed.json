@@ -1,0 +1,977 @@
+{
+  "merged": {
+    "Q3 2026": {
+      "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20260709_results_en.pdf",
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202608_3q_eng.pdf",
+      "summary": "https://www.fastretailing.com/eng/ir/library/pdf/fr_ir_e_n20260709_3q_summary.pdf",
+      "qa": "https://www.fastretailing.com/eng/ir/library/pdf/faq20260709_en.pdf",
+      "raw": [
+        {
+          "t": "FAST RETAILING Results for September 2025 to May 2026, and Estimates for FY2026 (1.1MB) (opens in a ",
+          "h": "https://www.fastretailing.com/eng/ir/library/pdf/20260709_results_en.pdf",
+          "p": "FAST RETAILING Results for September 2025 to May 2026, and Estimates for FY2026 (1.1MB) (opens in a new window)"
+        },
+        {
+          "t": "(205KB) (opens in a new window)",
+          "h": "https://www.fastretailing.com/eng/ir/library/pdf/fr_ir_e_n20260709_3q_summary.pdf",
+          "p": "(205KB) (opens in a new window)"
+        },
+        {
+          "t": "(IR News) (opens in a new window)",
+          "h": "https://www.fastretailing.com/eng/ir/news/2607091800.html",
+          "p": "(IR News) (opens in a new window)"
+        },
+        {
+          "t": "(788KB) (opens in a new window)",
+          "h": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202608_3q_eng.pdf",
+          "p": "(788KB) (opens in a new window)"
+        },
+        {
+          "t": "(246KB) (opens in a new window)",
+          "h": "https://www.fastretailing.com/eng/ir/library/pdf/faq20260709_en.pdf",
+          "p": "(246KB) (opens in a new window)"
+        },
+        {
+          "t": "(opens in a new window)",
+          "h": "https://www.fastretailing.com/eng/ir/library/faq20260709.html",
+          "p": "(opens in a new window)"
+        },
+        {
+          "t": "Archive",
+          "h": "https://www.fastretailing.com/eng/ir/library/earning_back.html",
+          "p": "Archive"
+        },
+        {
+          "t": "Corporate Governance",
+          "h": "https://www.fastretailing.com/eng/about/governance/",
+          "p": "Corporate Governance"
+        },
+        {
+          "t": "Disclaimer",
+          "h": "https://www.fastretailing.com/eng/disclaimer/",
+          "p": "Disclaimer"
+        },
+        {
+          "t": "Terms of Use",
+          "h": "https://www.fastretailing.com/eng/termsofuse/",
+          "p": "Terms of Use"
+        },
+        {
+          "t": "Site Map",
+          "h": "https://www.fastretailing.com/eng/sitemap/",
+          "p": "Site Map"
+        },
+        {
+          "t": "Privacy Policy",
+          "h": "https://www.fastretailing.com/eng/privacy/",
+          "p": "Privacy Policy"
+        },
+        {
+          "t": "Your California Privacy Rights",
+          "h": "https://www.fastretailing.com/eng/privacy/privacystatementcalifornia.html",
+          "p": "Your California Privacy Rights"
+        },
+        {
+          "t": "EU Recruitment Privacy Policy",
+          "h": "https://www.fastretailing.com/eng/privacy/eurecruitment.html",
+          "p": "EU Recruitment Privacy Policy"
+        },
+        {
+          "t": "About Us",
+          "h": "https://www.fastretailing.com/eng/about/",
+          "p": "About Us"
+        },
+        {
+          "t": "Vision",
+          "h": "https://www.fastretailing.com/eng/about/frway/",
+          "p": "Vision"
+        },
+        {
+          "t": "CEO Message",
+          "h": "https://www.fastretailing.com/eng/ir/direction/message.html",
+          "p": "CEO Message"
+        },
+        {
+          "t": "Company Overview",
+          "h": "https://www.fastretailing.com/eng/about/company/",
+          "p": "Company Overview"
+        },
+        {
+          "t": "Our Business",
+          "h": "https://www.fastretailing.com/eng/about/business/",
+          "p": "Our Business"
+        },
+        {
+          "t": "History",
+          "h": "https://www.fastretailing.com/eng/about/history/",
+          "p": "History"
+        },
+        {
+          "t": "Press Releases",
+          "h": "https://www.fastretailing.com/eng/about/news/",
+          "p": "Press Releases"
+        },
+        {
+          "t": "Photo Library",
+          "h": "https://www.fastretailing.com/eng/about/photolibrary/",
+          "p": "Photo Library"
+        },
+        {
+          "t": "Governance",
+          "h": "https://www.fastretailing.com/eng/about/governance/",
+          "p": "Governance"
+        },
+        {
+          "t": "What's New",
+          "h": "https://www.fastretailing.com/eng/about/whatsnew/",
+          "p": "What's New"
+        },
+        {
+          "t": "Links",
+          "h": "https://www.fastretailing.com/eng/about/links/",
+          "p": "Links"
+        },
+        {
+          "t": "Group Companies",
+          "h": "https://www.fastretailing.com/eng/group/",
+          "p": "Group Companies"
+        },
+        {
+          "t": "Group News",
+          "h": "https://www.fastretailing.com/eng/group/news/",
+          "p": "Group News"
+        },
+        {
+          "t": "Group Outlets",
+          "h": "https://www.fastretailing.com/eng/group/shoplist/",
+          "p": "Group Outlets"
+        },
+        {
+          "t": "UNIQLO Business",
+          "h": "https://www.fastretailing.com/eng/group/strategy/",
+          "p": "UNIQLO Business"
+        },
+        {
+          "t": "GU",
+          "h": "https://www.fastretailing.com/eng/group/gov/",
+          "p": "GU"
+        },
+        {
+          "t": "Theory",
+          "h": "https://www.fastretailing.com/eng/group/theory/",
+          "p": "Theory"
+        },
+        {
+          "t": "PLST",
+          "h": "https://www.fastretailing.com/eng/group/plst/",
+          "p": "PLST"
+        },
+        {
+          "t": "COMPTOIR DES COTONNIERS / PRINCESSE tam.tam",
+          "h": "https://www.fastretailing.com/eng/group/comptoir/",
+          "p": "COMPTOIR DES COTONNIERS / PRINCESSE tam.tam"
+        },
+        {
+          "t": "Investor Relations",
+          "h": "https://www.fastretailing.com/eng/ir/",
+          "p": "Investor Relations"
+        },
+        {
+          "t": "Management Strategy",
+          "h": "https://www.fastretailing.com/eng/ir/direction/",
+          "p": "Management Strategy"
+        },
+        {
+          "t": "IR Policy",
+          "h": "https://www.fastretailing.com/eng/ir/policy/",
+          "p": "IR Policy"
+        },
+        {
+          "t": "IR News",
+          "h": "https://www.fastretailing.com/eng/ir/news/",
+          "p": "IR News"
+        },
+        {
+          "t": "Financial Position & Business Results",
+          "h": "https://www.fastretailing.com/eng/ir/financial/",
+          "p": "Financial Position & Business Results"
+        },
+        {
+          "t": "Monthly Retail Data",
+          "h": "https://www.fastretailing.com/eng/ir/monthly/",
+          "p": "Monthly Retail Data"
+        },
+        {
+          "t": "IR Library",
+          "h": "https://www.fastretailing.com/eng/ir/library/",
+          "p": "IR Library"
+        },
+        {
+          "t": "Stock Information & Procedures",
+          "h": "https://www.fastretailing.com/eng/ir/stockinfo/",
+          "p": "Stock Information & Procedures"
+        },
+        {
+          "t": "IR Calendar",
+          "h": "https://www.fastretailing.com/eng/ir/calendar/",
+          "p": "IR Calendar"
+        },
+        {
+          "t": "IR FAQ",
+          "h": "https://www.fastretailing.com/eng/ir/faq/",
+          "p": "IR FAQ"
+        },
+        {
+          "t": "IR Site Map",
+          "h": "https://www.fastretailing.com/eng/ir/sitemap/",
+          "p": "IR Site Map"
+        },
+        {
+          "t": "Sustainability",
+          "h": "https://www.fastretailing.com/eng/sustainability/",
+          "p": "Sustainability"
+        },
+        {
+          "t": "Sustainability at Fast Retailing",
+          "h": "https://www.fastretailing.com/eng/sustainability/vision/",
+          "p": "Sustainability at Fast Retailing"
+        },
+        {
+          "t": "Create New Value Through Products and Services",
+          "h": "https://www.fastretailing.com/eng/sustainability/products/",
+          "p": "Create New Value Through Products and Services"
+        },
+        {
+          "t": "Respect Human Rights in Our Supply Chain",
+          "h": "https://www.fastretailing.com/eng/sustainability/labor/",
+          "p": "Respect Human Rights in Our Supply Chain"
+        },
+        {
+          "t": "Respect the Environment",
+          "h": "https://www.fastretailing.com/eng/sustainability/environment/",
+          "p": "Respect the Environment"
+        },
+        {
+          "t": "Stores and Communities",
+          "h": "https://www.fastretailing.com/eng/sustainability/community/",
+          "p": "Stores and Communities"
+        },
+        {
+          "t": "Support Employee Fulfillment",
+          "h": "https://www.fastretailing.com/eng/sustainability/employee/",
+          "p": "Support Employee Fulfillment"
+        },
+        {
+          "t": "Governance",
+          "h": "https://www.fastretailing.com/eng/sustainability/governance/",
+          "p": "Governance"
+        },
+        {
+          "t": "Sustainability Communications",
+          "h": "https://www.fastretailing.com/eng/sustainability/report/",
+          "p": "Sustainability Communications"
+        },
+        {
+          "t": "News & Updates",
+          "h": "https://www.fastretailing.com/eng/sustainability/news/",
+          "p": "News & Updates"
+        },
+        {
+          "t": "Career (opens in a new window)",
+          "h": "https://www.fastretailing.com/employment/en/",
+          "p": "Career (opens in a new window)"
+        },
+        {
+          "t": "Fast Retailing Foundation",
+          "h": "https://www.fastretailing.com/eng/frfoundation.html",
+          "p": "Fast Retailing Foundation"
+        },
+        {
+          "t": "Corporate Governance",
+          "h": "https://www.fastretailing.com/eng/about/governance/",
+          "p": "Corporate Governance | Disclaimer | Privacy Policy | Your California Privacy Rights | EU Recruitment Privacy Policy | Te"
+        },
+        {
+          "t": "Disclaimer",
+          "h": "https://www.fastretailing.com/eng/disclaimer/",
+          "p": "Corporate Governance | Disclaimer | Privacy Policy | Your California Privacy Rights | EU Recruitment Privacy Policy | Te"
+        },
+        {
+          "t": "Privacy Policy",
+          "h": "https://www.fastretailing.com/eng/privacy/",
+          "p": "Corporate Governance | Disclaimer | Privacy Policy | Your California Privacy Rights | EU Recruitment Privacy Policy | Te"
+        },
+        {
+          "t": "Your California Privacy Rights",
+          "h": "https://www.fastretailing.com/eng/privacy/privacystatementcalifornia.html",
+          "p": "Corporate Governance | Disclaimer | Privacy Policy | Your California Privacy Rights | EU Recruitment Privacy Policy | Te"
+        },
+        {
+          "t": "EU Recruitment Privacy Policy",
+          "h": "https://www.fastretailing.com/eng/privacy/eurecruitment.html",
+          "p": "Corporate Governance | Disclaimer | Privacy Policy | Your California Privacy Rights | EU Recruitment Privacy Policy | Te"
+        },
+        {
+          "t": "Terms of Use",
+          "h": "https://www.fastretailing.com/eng/termsofuse/",
+          "p": "Corporate Governance | Disclaimer | Privacy Policy | Your California Privacy Rights | EU Recruitment Privacy Policy | Te"
+        },
+        {
+          "t": "Sitemap",
+          "h": "https://www.fastretailing.com/eng/sitemap/",
+          "p": "Corporate Governance | Disclaimer | Privacy Policy | Your California Privacy Rights | EU Recruitment Privacy Policy | Te"
+        },
+        {
+          "t": "Powered by Megahub Limited Disclaimer (opens in a new window)",
+          "h": "http://delaycontent.megahubhk.com/Client/Uniqlo/UniqloDisclaimer.aspx",
+          "p": "Powered by Megahub Limited Disclaimer (opens in a new window)"
+        }
+      ]
+    },
+    "Q2 2026": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202608_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2026": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202608_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2025": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2025": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2025": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2024": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2024": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2023": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2023": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2022": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2022": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2022": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2021": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202108_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2021": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202108_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2021": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202108_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2021": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202108_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2020": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202008_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2020": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202008_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2020": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202008_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2020": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202008_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2019": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201908_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2019": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201908_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2019": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201908_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2019": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201908_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2018": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201808_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2018": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201808_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2018": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201808_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2018": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201808_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2017": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201708_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2017": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201708_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2017": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201708_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2017": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201708_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2016": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201608_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2016": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201608_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2016": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201608_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2016": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201608_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2015": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201508_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2015": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201508_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2015": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201508_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q1 2015": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201508_1q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q4 2014": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201408_4q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q3 2014": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201408_3q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    },
+    "Q2 2014": {
+      "slides": null,
+      "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201408_2q_eng.pdf",
+      "summary": null,
+      "qa": null,
+      "raw": []
+    }
+  },
+  "tmap": {
+    "Q3 2026": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202608_3q_eng.pdf",
+    "Q2 2026": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202608_2q_eng.pdf",
+    "Q1 2026": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202608_1q_eng.pdf",
+    "Q4 2025": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_4q_eng.pdf",
+    "Q3 2025": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_3q_eng.pdf",
+    "Q2 2025": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_2q_eng.pdf",
+    "Q1 2025": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_1q_eng.pdf",
+    "Q4 2024": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_4q_eng.pdf",
+    "Q3 2024": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_3q_eng.pdf",
+    "Q2 2024": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_2q_eng.pdf",
+    "Q1 2024": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_1q_eng.pdf",
+    "Q4 2023": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_4q_eng.pdf",
+    "Q3 2023": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_3q_eng.pdf",
+    "Q2 2023": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_2q_eng.pdf",
+    "Q1 2023": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_1q_eng.pdf",
+    "Q4 2022": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_4q_eng.pdf",
+    "Q3 2022": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_3q_eng.pdf",
+    "Q2 2022": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_2q_eng.pdf",
+    "Q1 2022": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_1q_eng.pdf",
+    "Q4 2021": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202108_4q_eng.pdf",
+    "Q3 2021": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202108_3q_eng.pdf",
+    "Q2 2021": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202108_2q_eng.pdf",
+    "Q1 2021": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202108_1q_eng.pdf",
+    "Q4 2020": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202008_4q_eng.pdf",
+    "Q3 2020": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202008_3q_eng.pdf",
+    "Q2 2020": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202008_2q_eng.pdf",
+    "Q1 2020": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202008_1q_eng.pdf",
+    "Q4 2019": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201908_4q_eng.pdf",
+    "Q3 2019": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201908_3q_eng.pdf",
+    "Q2 2019": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201908_2q_eng.pdf",
+    "Q1 2019": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201908_1q_eng.pdf",
+    "Q4 2018": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201808_4q_eng.pdf",
+    "Q3 2018": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201808_3q_eng.pdf",
+    "Q2 2018": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201808_2q_eng.pdf",
+    "Q1 2018": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201808_1q_eng.pdf",
+    "Q4 2017": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201708_4q_eng.pdf",
+    "Q3 2017": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201708_3q_eng.pdf",
+    "Q2 2017": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201708_2q_eng.pdf",
+    "Q1 2017": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201708_1q_eng.pdf",
+    "Q4 2016": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201608_4q_eng.pdf",
+    "Q3 2016": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201608_3q_eng.pdf",
+    "Q2 2016": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201608_2q_eng.pdf",
+    "Q1 2016": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201608_1q_eng.pdf",
+    "Q4 2015": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201508_4q_eng.pdf",
+    "Q3 2015": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201508_3q_eng.pdf",
+    "Q2 2015": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201508_2q_eng.pdf",
+    "Q1 2015": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201508_1q_eng.pdf",
+    "Q4 2014": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201408_4q_eng.pdf",
+    "Q3 2014": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201408_3q_eng.pdf",
+    "Q2 2014": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin201408_2q_eng.pdf"
+  },
+  "results": [
+    {
+      "t": "Fast Retailing First\u2212half Results for September 2025 to February 2026, and Estimates for FY2026 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20260409_results_en.pdf"
+    },
+    {
+      "t": "FAST RETAILING Results for September to November 2025 and Estimates for FY2026 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20260108_results_en.pdf"
+    },
+    {
+      "t": "FAST RETAILING Results for FY2025 and Estimates for FY2026 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20251009_results_en.pdf"
+    },
+    {
+      "t": "FAST RETAILING Results for September 2024 to May 2025, and Estimates for FY2025 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20250710_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing First\u2212half Results for September 2024 to February 2025, and Estimates for FY2025 (560KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20250410_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2024 and Estimates for FY2025 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20250109_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for FY2024 and Estimates for FY2025 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20241010_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2023 to May 2024 and Estimates for FY2024 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20240711_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing First\u2212half Results for September 2023 to February 2024, and Estimates for FY2024 (705KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20240411_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2023 and Estimates for FY2024 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20240111_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for FY2023 and Estimates for FY2024 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20231012_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2022 to May 2023 and Estimates for FY2023 (762KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20230713_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing First\u2212half Results for September 2022 to February 2023, and Estimates for FY2023 (1.2MB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20230413_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2022 and Estimates for FY2023 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20230112_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for FY2022 and Estimates for FY2023 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20221013_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2021 to May 2022 and Estimates for FY2022 (6.5MB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20220714_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing First\u2212half Results for September 2021 to February 2022, and Estimates for FY2022 (6.9MB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20220414_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2021 and Estimates for FY2022 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20220113_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for FY2021 and Estimates for FY2022 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20211014_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2020 to May 2021 and Estimates for FY2021 (6.6MB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20210715_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing First half Results for September 2020 to February 2021, and Estimates for FY2021(6.9MB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20210408_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2020 and Estimates for FY2021 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20210114_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for FY2020 and Estimates for FY2021 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20201015_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2019 to May 2020 and Estimates for FY2020 (7.7MB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20200709_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing First-half Results for September 2019 to February 2020, and Estimates for FY2020  (5.6MB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20200409_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2019 and Estimates for FY2020 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20200109_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for FY2019 and Estimates for FY2020 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20191010_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2018 to May 2019 and Estimates for FY2019 (4,871KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20190711_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing First-half Results for September 2018 to February 2019, and Estimates for FY2019 (4.6MB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20190411_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2018 and Estimates for Fiscal 2019 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20190110_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for Fiscal 2018 and Estimates for Fiscal 2019 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20181011_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2017 to May 2018, and Estimates for Fiscal 2018 (3,579KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20180712_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing First-half Results for September 2017 to February 2018, and Estimates for Fiscal 2018 (3,552KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20180412_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2017 and Estimates for Fiscal 2018 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20180111_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for Fiscal 2017 and Estimates for Fiscal 2018 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20171012_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2016 to May 2017 and Estimates for Fiscal 2017 (3,552KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20170713_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing First-half Results for September 2016 to February 2017, and Estimates for Fiscal 2017 (3,996KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20170413_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2016 and Estimates for Fiscal 2017 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20170112_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for Fiscal 2016 and Estimates for Fiscal 2017 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20161013_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2015 to May 2016 and Estimates for Fiscal 2016 (3,816KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20160714_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2015 to February 2016 and Estimates for Fiscal 2016 (2,188KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20160407_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2015 and Estimates for Fiscal 2016 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20160107_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for Fiscal 2015 and Estimates for Fiscal 2016 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20151008_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2014 to May 2015 and Estimates for Fiscal 2015 (6,888KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20150709_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2014 to February 2015 and Estimates for Fiscal 2015 (3,639KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20150409_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2014 and Estimates for Fiscal 2015 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20150108_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for Fiscal 2014 and Estimates for Fiscal 2015 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20141009_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for the Nine Months to May 2014 and Estimates for Fiscal 2014 (2,161KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20140710_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for the Six Months to February 2014 and Estimates for Fiscal 2014 (2,224KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20140410_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2013 and Estimates for Fiscal 2014 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20140109_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for Fiscal 2012 and Estimates for Fiscal 2013 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20131010_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2012 to May 2013 and Estimates for Fiscal 2013 (1,027KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20130711_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September 2012 to February 2013 and Estimates for Fiscal 2013 (2,054KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20130411_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Financial Results for September to November and Estimates for Fiscal 2013 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20130110_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for Fiscal 2012 and Estimates for Fiscal 2013 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20121011_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for the Nine Months to May 2012 & Estimates for Fiscal 2012 (444KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20120706_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for the Six Months to February 2012 & Estimates for Fiscal 2012 (238KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20120412_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for September to November 2011 and Estimates for Fiscal 2012 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20120112_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for Fiscal 2011 and Estimates for Fiscal 2012 (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20111012_results_en.pdf"
+    },
+    {
+      "t": "Fast Retailing Results for the Nine Months through May 2011 & Estimates for Fiscal 2011 (336KB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20110714_results_en.pdf"
+    },
+    {
+      "t": "FR Results for the Six Months through February 2011 & Estimates for Fiscal 2011 (278B) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20110407_results_en.pdf"
+    },
+    {
+      "t": "FAST RETAILING Results for September 2025 to May 2026, and Estimates for FY2026 (1.1MB) (opens in a new window)",
+      "h": "https://www.fastretailing.com/eng/ir/library/pdf/20260709_results_en.pdf"
+    }
+  ]
+}

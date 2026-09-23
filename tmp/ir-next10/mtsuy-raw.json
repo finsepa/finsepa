@@ -1,0 +1,32 @@
+{
+  "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/": {
+    "error": "HTTP Error 403: Forbidden"
+  },
+  "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/": {
+    "error": "HTTP Error 403: Forbidden"
+  },
+  "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/fs2020.html": {
+    "error": "HTTP Error 403: Forbidden"
+  },
+  "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/fs2021.html": {
+    "error": "HTTP Error 403: Forbidden"
+  },
+  "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/fs2022.html": {
+    "error": "HTTP Error 403: Forbidden"
+  },
+  "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/fs2023.html": {
+    "error": "HTTP Error 403: Forbidden"
+  },
+  "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/fs2024.html": {
+    "error": "HTTP Error 403: Forbidden"
+  },
+  "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/fs2025.html": {
+    "error": "HTTP Error 403: Forbidden"
+  },
+  "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/fs2026.html": {
+    "error": "HTTP Error 403: Forbidden"
+  },
+  "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/fs2027.html": {
+    "error": "HTTP Error 403: Forbidden"
+  }
+}

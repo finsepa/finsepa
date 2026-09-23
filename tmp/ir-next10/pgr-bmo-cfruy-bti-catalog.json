@@ -1,0 +1,362 @@
+{
+  "PGR": {
+    "ticker": "PGR",
+    "name": "Progressive Corporation",
+    "irPages": [
+      "https://investors.progressive.com/financials/financial-results/default.aspx",
+      "https://investors.progressive.com/events/presentations/default.aspx",
+      "https://investors.progressive.com/financials/financial-news-releases/default.aspx"
+    ],
+    "fiscalNotes": "Calendar FY. Progressive reports financials monthly; quarterly IR webcast decks (slides) typically for Q2 and Q4 only (some gaps on Q1/Q3). Filings = quarter-end month Complete Earnings Release PDF via GlobeNewswire Resource/Download linked from IR press releases \u2014 not 10-Q/10-K or Shareholder Report PDFs.",
+    "knownQuarterDocs": {
+      "Q1 2022": {
+        "slides": null,
+        "filings": "https://ml.globenewswire.com/Resource/Download/3780ab8c-b0e9-4129-b5eb-82406ba37271"
+      },
+      "Q2 2022": {
+        "slides": "https://s202.q4cdn.com/605347829/files/doc_financials/2022/q2/2022-q2-ir-presentation.pdf",
+        "filings": "https://ml.globenewswire.com/Resource/Download/6441a584-e1ab-4bd5-ad3d-9e7b23029f25"
+      },
+      "Q3 2022": {
+        "slides": null,
+        "filings": "https://ml.globenewswire.com/Resource/Download/9c712331-ff74-49e5-9efa-b0a09d04c1ab"
+      },
+      "Q4 2022": {
+        "slides": "https://s202.q4cdn.com/605347829/files/doc_financials/2022/q4/feb-2023-ir-call.pdf",
+        "filings": "https://ml.globenewswire.com/Resource/Download/a9878971-06ea-4e99-8a46-140d69d79006"
+      },
+      "Q1 2023": {
+        "slides": null,
+        "filings": "https://ml.globenewswire.com/Resource/Download/7eebd367-356e-45ca-b2a5-98c0af94702f"
+      },
+      "Q2 2023": {
+        "slides": "https://s202.q4cdn.com/605347829/files/doc_financials/2023/Q2/q2-23-investor-relations.pdf",
+        "filings": "https://ml.globenewswire.com/Resource/Download/e523cd46-cdd0-4c27-9446-68e323b5f22e"
+      },
+      "Q3 2023": {
+        "slides": null,
+        "filings": "https://ml.globenewswire.com/Resource/Download/24f7df40-c274-4837-9ab9-71f49011100c"
+      },
+      "Q4 2023": {
+        "slides": "https://s202.q4cdn.com/605347829/files/doc_events/2024/02/2023q4_presentation.pdf",
+        "filings": "https://ml.globenewswire.com/Resource/Download/581935d0-73d1-41fa-8cf2-f4dccbad47d2"
+      },
+      "Q1 2024": {
+        "slides": null,
+        "filings": "https://ml.globenewswire.com/Resource/Download/38d3899e-d80c-4f2e-983c-3245fd7ed90a"
+      },
+      "Q2 2024": {
+        "slides": "https://s202.q4cdn.com/605347829/files/doc_financials/2024/q2/Q2_2024_Investor_Relations_8-6-24.pdf",
+        "filings": "https://ml.globenewswire.com/Resource/Download/545fc9c4-4eb5-48c2-9ce1-9fb8f9acb474"
+      },
+      "Q3 2024": {
+        "slides": null,
+        "filings": "https://ml.globenewswire.com/Resource/Download/10a48677-e8ff-4467-813b-dffad6eecaa6"
+      },
+      "Q4 2024": {
+        "slides": "https://s202.q4cdn.com/605347829/files/doc_financials/2024/q4/Q4_2024_Investor-Relations.pdf",
+        "filings": "https://ml.globenewswire.com/Resource/Download/14010827-c814-4ace-8e26-84b5b2e03387"
+      },
+      "Q1 2025": {
+        "slides": null,
+        "filings": "https://ml.globenewswire.com/Resource/Download/74d2643c-b7d1-42af-81c0-083db87e54f4"
+      },
+      "Q2 2025": {
+        "slides": "https://s202.q4cdn.com/605347829/files/doc_financials/2025/q2/2025-Q2_Investor-Relations-Call_FINAL.pdf",
+        "filings": "https://ml.globenewswire.com/Resource/Download/6238ae99-9bd9-495d-817b-f02115dea5db"
+      },
+      "Q3 2025": {
+        "slides": null,
+        "filings": "https://ml.globenewswire.com/Resource/Download/cf10b395-b40b-429e-91e4-52a8da2b2cf9"
+      },
+      "Q4 2025": {
+        "slides": "https://s202.q4cdn.com/605347829/files/doc_financials/2025/q4/25P20588_Q4_2025_IR_Call.pdf",
+        "filings": "https://ml.globenewswire.com/Resource/Download/77cdd94c-ff89-4af3-a3ad-6fbcb603c265"
+      },
+      "Q1 2026": {
+        "slides": null,
+        "filings": "https://ml.globenewswire.com/Resource/Download/fefd8f5c-55b4-4317-b656-aa6a1c3e3e8b"
+      },
+      "Q2 2026": {
+        "slides": "https://s202.q4cdn.com/605347829/files/doc_financials/2026/q2/26P20224_Q2_2026_IR_Call.pdf",
+        "filings": "https://ml.globenewswire.com/Resource/Download/80356bff-8751-4f27-b604-5c4f266c944e"
+      }
+    },
+    "trafficLight": "yellow",
+    "why": "FinancialReport API: IR webcast slides for Q2/Q4 (and verified). Filings = quarter-end month Complete Earnings Release via ml.globenewswire.com/Resource/Download linked from IR press bodies. Reject 10-Q/10-K, Shareholder Report PDFs, monthly-only (non quarter-end) releases. Ticker yellow: 9 green / 9 yellow quarters \u2014 Q1/Q3 IR decks generally not published.",
+    "cdnAllowlistHints": [
+      "s202.q4cdn.com",
+      "ml.globenewswire.com"
+    ]
+  },
+  "BMO": {
+    "ticker": "BMO",
+    "name": "Bank of Montreal",
+    "irPages": [
+      "https://www.bmo.com/main/about-bmo/investor-relations/presentations-events",
+      "https://www.bmo.com/main/about-bmo/investor-relations/"
+    ],
+    "fiscalNotes": "Issuer FY ends October 31 (Canadian bank). Finsepa labels use issuer fiscal quarter tags as published (Q1 ends Jan 31, Q2 Apr 30, Q3 Jul 31, Q4 Oct 31). Pattern: /ir/qtrinfo/1/{YYYY}-q{N}/Q{N}{YY}_AnalystPresentation.pdf and Q{N}{YY}_EarningsRelease.pdf. Latest reported: Q3 2026 (Aug 25, 2026). Reject ReportToShareholders / transcripts / supplements.",
+    "knownQuarterDocs": {
+      "Q1 2022": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2022-q1/Q122_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2022-q1/Q122_EarningsRelease.pdf"
+      },
+      "Q2 2022": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2022-q2/Q222_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2022-q2/Q222_EarningsRelease.pdf"
+      },
+      "Q3 2022": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2022-q3/Q322_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2022-q3/Q322_EarningsRelease.pdf"
+      },
+      "Q4 2022": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2022-q4/Q422_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2022-q4/Q422_EarningsRelease.pdf"
+      },
+      "Q1 2023": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2023-q1/Q123_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2023-q1/Q123_EarningsRelease.pdf"
+      },
+      "Q2 2023": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2023-q2/Q223_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2023-q2/Q223_EarningsRelease.pdf"
+      },
+      "Q3 2023": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2023-q3/Q323_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2023-q3/Q323_EarningsRelease.pdf"
+      },
+      "Q4 2023": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2023-q4/Q423_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2023-q4/Q423_EarningsRelease.pdf"
+      },
+      "Q1 2024": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2024-q1/Q124_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2024-q1/Q124_EarningsRelease.pdf"
+      },
+      "Q2 2024": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2024-q2/Q224_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2024-q2/Q224_EarningsRelease.pdf"
+      },
+      "Q3 2024": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2024-q3/Q324_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2024-q3/Q324_EarningsRelease.pdf"
+      },
+      "Q4 2024": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2024-q4/Q424_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2024-q4/Q424_EarningsRelease.pdf"
+      },
+      "Q1 2025": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2025-q1/Q125_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2025-q1/Q125_EarningsRelease.pdf"
+      },
+      "Q2 2025": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2025-q2/Q225_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2025-q2/Q225_EarningsRelease.pdf"
+      },
+      "Q3 2025": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2025-q3/Q325_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2025-q3/Q325_EarningsRelease.pdf"
+      },
+      "Q4 2025": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2025-q4/Q425_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2025-q4/Q425_EarningsRelease.pdf"
+      },
+      "Q1 2026": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2026-q1/Q126_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2026-q1/Q126_EarningsRelease.pdf"
+      },
+      "Q2 2026": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2026-q2/Q226_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2026-q2/Q226_EarningsRelease.pdf"
+      },
+      "Q3 2026": {
+        "slides": "https://www.bmo.com/ir/qtrinfo/1/2026-q3/Q326_AnalystPresentation.pdf",
+        "filings": "https://www.bmo.com/ir/qtrinfo/1/2026-q3/Q326_EarningsRelease.pdf"
+      }
+    },
+    "trafficLight": "green",
+    "why": "HTTP Range-verified Q{N}{YY}_AnalystPresentation.pdf (slides) + Q{N}{YY}_EarningsRelease.pdf (filings) for all 19 quarters Q1 2022\u2013Q3 2026 under www.bmo.com/ir/qtrinfo/1/{YYYY}-q{N}/. Ticker green.",
+    "cdnAllowlistHints": [
+      "www.bmo.com",
+      "bmo.com"
+    ]
+  },
+  "CFRUY": {
+    "ticker": "CFRUY",
+    "name": "Compagnie Financiere Richemont",
+    "irPages": [
+      "https://www.richemont.com/investors/results-reports-presentations/"
+    ],
+    "fiscalNotes": "March 31 FY. Map IR fiscal tags to calendar quarters: FY{N} Q1 sales (ended 30 Jun N-1)\u2192Q2 {N-1}; FY{N} Interim/H1 (30 Sep N-1)\u2192Q3 {N-1}; FY{N} Q3 sales (31 Dec N-1)\u2192Q4 {N-1}; FY{N} Annual (31 Mar N)\u2192Q1 {N}. Prefer English full presentation + EN ad-hoc press PDF. Reject transcripts, annual/interim reports, FR duplicates, group snapshot, section-only presentation slices. Latest reported: FY27 Q1 sales = Q2 2026.",
+    "knownQuarterDocs": {
+      "Q1 2022": {
+        "slides": "https://www.richemont.com/media/3tpjbsyy/richemont-fy22-annual-results-presentation-en-1.pdf",
+        "filings": "https://www.richemont.com/media/ehcjuas2/ad-hoc-announcement-pursuant-to-art-53-lr-fy22-annual-results-en-2.pdf"
+      },
+      "Q2 2022": {
+        "slides": null,
+        "filings": "https://www.richemont.com/media/fnzpraik/ad-hoc-announcement-pursuant-to-art-53-lr-trading-update-for-the-first-quarter-ended-30-june-2022-3-1.pdf"
+      },
+      "Q3 2022": {
+        "slides": "https://www.richemont.com/media/auiekb3h/richemont-fy23-interim-results-presentation-en-1.pdf",
+        "filings": "https://www.richemont.com/media/jalk3tuv/ad-hoc-announcement-pursuant-to-art-53-lr-fy23-interim-results-en.pdf"
+      },
+      "Q4 2022": {
+        "slides": null,
+        "filings": "https://www.richemont.com/media/uwlpckry/ad-hoc-announcement-pursuant-to-art-53-lr-trading-update-fy23-q3-en-2.pdf"
+      },
+      "Q1 2023": {
+        "slides": "https://www.richemont.com/media/3jpfzwih/richemont-fy23-annual-results-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/5yyhfjqn/2023-05-12-en.pdf"
+      },
+      "Q2 2023": {
+        "slides": "https://www.richemont.com/media/oxvnnygv/q1-24-trading-update-presentation.pdf",
+        "filings": "https://www.richemont.com/media/vlqpgz4b/ad-hoc-announcement-pursuant-to-art-53-lr-fy24-q1-trading-update-en.pdf"
+      },
+      "Q3 2023": {
+        "slides": "https://www.richemont.com/media/mugk3ieo/richemont-fy24-interim-results-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/elfp1h03/ad-hoc-announcement-pursuant-to-art-53-lr-fy24-interim-results-en.pdf"
+      },
+      "Q4 2023": {
+        "slides": "https://www.richemont.com/media/mwtdoug3/richemont-fy24-q3-trading-update-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/a3qfsf55/ad-hoc-announcement-pursuant-to-art-53-lr-fy24-q3-trading-update-en.pdf"
+      },
+      "Q1 2024": {
+        "slides": "https://www.richemont.com/media/315psstb/richemont-fy24-annual-results-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/cjcf3n3c/ad-hoc-announcement-pursuant-to-art-53-lr-fy24-annual-results-en.pdf"
+      },
+      "Q2 2024": {
+        "slides": "https://www.richemont.com/media/skuh20h5/richemont-fy25-q1-sales-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/iljbpjkt/ad-hoc-announcement-pursuant-to-art-53-lr-fy25-q1-sales-for-the-first-quarter-ended-30-june-2024.pdf"
+      },
+      "Q3 2024": {
+        "slides": "https://www.richemont.com/media/d20d21h1/richemont-fy25-interim-results-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/5hibkj00/ad-hoc-announcement-pursuant-to-art-53-lr-fy25-interim-results-en.pdf"
+      },
+      "Q4 2024": {
+        "slides": "https://www.richemont.com/media/p1zlvmwh/richemont-fy25-q3-sales-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/hqsguwxq/ad-hoc-announcement-pursuant-to-art-53-lr-fy25-q3-sales-en.pdf"
+      },
+      "Q1 2025": {
+        "slides": "https://www.richemont.com/media/nptj0zrk/richemont-fy25-annual-results-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/q2ugvbo1/ad-hoc-announcement-pursuant-to-art-53-lr-fy25-annual-results-en.pdf"
+      },
+      "Q2 2025": {
+        "slides": "https://www.richemont.com/media/npanhckb/richemont-fy26-q1-sales-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/0m0imznf/ad-hoc-announcement-pursuant-to-art-53-lr-fy26-q1-sales-for-the-first-quarter-ended-30-june-2025.pdf"
+      },
+      "Q3 2025": {
+        "slides": "https://www.richemont.com/media/2wgjx0p3/richemont-fy26-interim-results-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/ugsfheuv/ad-hoc-announcement-pursuant-to-art-53-lr-fy26-interim-results-en.pdf"
+      },
+      "Q4 2025": {
+        "slides": "https://www.richemont.com/media/n3hhsz50/richemont-fy26-q3-sales-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/ljtfis42/ad-hoc-announcement-pursuant-to-art-53-lr-fy26-q3-sales-en.pdf"
+      },
+      "Q1 2026": {
+        "slides": "https://www.richemont.com/media/ngtd2kgn/richemont-fy26-annual-results-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/ovfnkffy/ad-hoc-announcement-pursuant-to-art-53-lr-fy26-annual-results-en.pdf"
+      },
+      "Q2 2026": {
+        "slides": "https://www.richemont.com/media/h12nx3lz/richemont-fy27-q1-sales-presentation-en.pdf",
+        "filings": "https://www.richemont.com/media/xikaciqj/ad-hoc-announcement-pursuant-to-art-53-lr-fy27-q1-sales-en.pdf"
+      }
+    },
+    "trafficLight": "yellow",
+    "why": "EN presentation + ad-hoc press on richemont.com/media for nearly all quarters Q1 2022\u2013Q2 2026 after March-FY\u2192calendar mapping. Yellow: FY23 Q1/Q3 sales (calendar Q2/Q4 2022) have press only \u2014 no standalone sales presentation published. Reject transcripts, annual/interim reports, FR duplicates.",
+    "cdnAllowlistHints": [
+      "www.richemont.com",
+      "richemont.com"
+    ]
+  },
+  "BTI": {
+    "ticker": "BTI",
+    "name": "British American Tobacco",
+    "irPages": [
+      "https://www.bat.com/investors-and-reporting/results-centre",
+      "https://www.bat.com/investors-and-reporting"
+    ],
+    "fiscalNotes": "Calendar FY; UK semi-annual reporting only. HY (to 30 Jun)\u2192Q2; FY (to 31 Dec)\u2192Q4. Q1 and Q3 intentionally empty (no earnings pack \u2014 leave null). Reject First/Full Year Pre-Close trading updates, CAGNY/conference decks, transcripts, annual report. HY 2026 announcement filename uses typo Annoucement.pdf. Latest reported: HY 2026 = Q2 2026.",
+    "knownQuarterDocs": {
+      "Q1 2022": {
+        "slides": null,
+        "filings": null
+      },
+      "Q2 2022": {
+        "slides": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/HY_2022_Presentation_Slides.pdf",
+        "filings": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/HY_2022_Announcement.pdf"
+      },
+      "Q3 2022": {
+        "slides": null,
+        "filings": null
+      },
+      "Q4 2022": {
+        "slides": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/FY_2022_Presentation_Slides.pdf",
+        "filings": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/FY_2022_Announcement.pdf"
+      },
+      "Q1 2023": {
+        "slides": null,
+        "filings": null
+      },
+      "Q2 2023": {
+        "slides": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/HY_2023_Presentation_Slides.pdf",
+        "filings": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/HY_2023_Announcement.pdf"
+      },
+      "Q3 2023": {
+        "slides": null,
+        "filings": null
+      },
+      "Q4 2023": {
+        "slides": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/FY_2023_Presentation_Slides.pdf",
+        "filings": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/FY_2023_Announcement.pdf"
+      },
+      "Q1 2024": {
+        "slides": null,
+        "filings": null
+      },
+      "Q2 2024": {
+        "slides": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/HY_2024_Presentation_Slides.pdf",
+        "filings": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/HY_2024_Announcement.pdf"
+      },
+      "Q3 2024": {
+        "slides": null,
+        "filings": null
+      },
+      "Q4 2024": {
+        "slides": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/FY_2024_Presentation_Slides.pdf",
+        "filings": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/FY_2024_Announcement.pdf"
+      },
+      "Q1 2025": {
+        "slides": null,
+        "filings": null
+      },
+      "Q2 2025": {
+        "slides": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/HY_2025_Presentation_Slides.pdf",
+        "filings": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/HY_2025_Announcement.pdf"
+      },
+      "Q3 2025": {
+        "slides": null,
+        "filings": null
+      },
+      "Q4 2025": {
+        "slides": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/FY_2025_Presentation.pdf",
+        "filings": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/FY_2025_Announcement.pdf"
+      },
+      "Q1 2026": {
+        "slides": null,
+        "filings": null
+      },
+      "Q2 2026": {
+        "slides": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/HY_2026_Presentation_Slides.pdf",
+        "filings": "https://www.bat.com/content/dam/batcom/global/main-nav/investors-and-reporting/results-centre/pdf/HY_2026_Annoucement.pdf"
+      }
+    },
+    "trafficLight": "yellow",
+    "why": "DAM results-centre PDFs: HY\u2192Q2 and FY\u2192Q4 presentation + announcement for 2022\u2013HY2026 (9 green). Q1/Q3 empty by design (9 red) \u2014 UK semi-annual only; Pre-Close updates rejected. Ticker yellow.",
+    "cdnAllowlistHints": [
+      "www.bat.com",
+      "bat.com"
+    ]
+  }
+}

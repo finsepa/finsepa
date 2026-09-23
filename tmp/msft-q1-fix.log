@@ -1,0 +1,13 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.15
+
+=== Q1 2026 (q1-2026) ===
+speakers 10 paras 168
+wrote lib/market/fixtures/msft-q1-2026-transcript.json
+
+Summary
+┌─────────┬───────────┬────────┐
+│ (index) │ slug      │ status │
+├─────────┼───────────┼────────┤
+│ 0       │ 'q1-2026' │ 'ok'   │
+└─────────┴───────────┴────────┘

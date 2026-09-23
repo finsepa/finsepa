@@ -1,0 +1,162 @@
+{
+  "spgi": [
+    {
+      "url": "https://investor.spglobal.com/feed/FinancialReport.svc/GetFinancialReportList?languageId=1&reportType=Quarterly&pageSize=100&includeTags=true",
+      "status": 200,
+      "len": 234964,
+      "saved": "tmp/ir-next10/spgi-svc-1.bin",
+      "head": "{\"GetFinancialReportListResult\":[{\"CoverImagePath\":\"\",\"LanguageId\":1,\"ReportId\":"
+    },
+    {
+      "url": "https://investor.spglobal.com/feed/Presentation.svc/GetPresentationList?pageSize=100&includeTags=true",
+      "error": "HTTP Error 403: Forbidden"
+    }
+  ],
+  "toely": [
+    {
+      "url": "https://www.tel.com/ir/",
+      "final": "https://www.tel.com/ir/",
+      "status": 200,
+      "title": "Investor Relations | Tokyo Electron Ltd.",
+      "pdfs": [
+        "https://www.tel.com/ir/irta3a00000006g5-att/FY27Q1_EarningCall_QA_E.pdf",
+        "https://www.tel.com/ir/irta3a00000006g5-att/fy27q1presentations-e.pdf",
+        "https://www.tel.com/ir/irta3a00000006g5-att/fy27q1tanshin-e.pdf",
+        "https://www.tel.com/ir/irta3a00000006g5-att/fy27q1transcript-e.pdf",
+        "https://www.tel.com/irta3a00000001ah-att/MSA_Statement.pdf",
+        "https://www.tel.com/news/ir/2026/ahl7jh00000000fd-att/20260803_001_e.pdf",
+        "https://www.tel.com/news/ir/2026/b4np7600000000ii-att/20260917_001_e.pdf",
+        "https://www.tel.com/news/ir/2026/qlfobq00000000ia-att/20260915_001_e.pdf",
+        "https://www.tel.com/news/ir/2026/rf97m800000000g3-att/20260730_002_e.pdf"
+      ],
+      "n_pdfs": 9
+    },
+    {
+      "url": "https://www.tel.com/ir/library/",
+      "final": "https://www.tel.com/ir/library/",
+      "status": 200,
+      "title": "IR Library | Investor Relations | Tokyo Electron Ltd.",
+      "pdfs": [
+        "https://www.tel.com/irta3a00000001ah-att/MSA_Statement.pdf"
+      ],
+      "n_pdfs": 1
+    },
+    {
+      "url": "https://www.tel.com/ir/library/report/",
+      "final": "https://www.tel.com/ir/library/report/",
+      "status": 200,
+      "title": "Earnings Release | Investor Relations | Tokyo Electron Ltd.",
+      "pdfs": [
+        "https://www.tel.com/ir/library/report/a4fd9v000000004h-att/FY2023Q4_Transcript_English.pdf",
+        "https://www.tel.com/ir/library/report/a4fd9v000000004h-att/fy23q4presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/a4fd9v000000004h-att/fy23q4tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/a4fd9v000000007q-att/FY2023Q3_Transcript_English.pdf",
+        "https://www.tel.com/ir/library/report/a4fd9v000000007q-att/fy23q3presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/a4fd9v000000007q-att/fy23q3tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/a5hghd00000000bq-att/FY2024Q3_Transcript_English.pdf",
+        "https://www.tel.com/ir/library/report/a5hghd00000000bq-att/fy24q3presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/a5hghd00000000bq-att/fy24q3tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/c2l1qi00000000sj-att/FY2025Q3_Transcript_English_rev.00.pdf",
+        "https://www.tel.com/ir/library/report/c2l1qi00000000sj-att/fy25q3presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/c2l1qi00000000sj-att/fy25q3tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/cghpfh00000000km-att/FY25Q4_EarningCall_QA_E.pdf",
+        "https://www.tel.com/ir/library/report/cpkomu00000000kv-att/FY26Q1_EarningCall_QA_E.pdf",
+        "https://www.tel.com/ir/library/report/cpkomu00000000kv-att/fy26q1presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/cpkomu00000000kv-att/fy26q1tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/cpkomu00000000kv-att/fy26q1transcript-e.pdf",
+        "https://www.tel.com/ir/library/report/f3pkth000000085v-att/PartialCorrectionstoPastConsolidatedFinancialReviews.pdf",
+        "https://www.tel.com/ir/library/report/f3pkth000000085v-att/PartialCorrectionstoPresentations.pdf",
+        "https://www.tel.com/ir/library/report/f3pkth000000085v-att/fy51q3presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/f3pkth000000085v-att/fy51q3tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007ih-att/FY2023Q2_Transcript_English.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007ih-att/fy23q2presentations-e_2.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007ih-att/fy23q2tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007km-att/FY2023Q1_Transcript_English.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007km-att/fy23q1presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007km-att/fy23q1tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007nc-att/FY2022Q4_Transcript_English.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007nc-att/fy22q4presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007nc-att/fy22q4tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007ri-att/FY2022Q3_Transcript_English.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007ri-att/fy22q3presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007ri-att/fy22q3tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007tg-att/FY2022Q2_Transcript_English.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007tg-att/fy22q2presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj00000007tg-att/fy22q2tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000000puk-att/fy58q4presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000000puk-att/fy58q4tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002ovm-att/fy22q1presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002ovm-att/fy22q1tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002p48-att/fy58q3presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002p48-att/fy58q3tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002ph2-att/fy58q2presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002ph2-att/fy58q2tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rd2-att/fy58q1presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rd2-att/fy58q1tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rgv-att/2021fy57q4presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rgv-att/fy57Q4_presentations_e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rgv-att/fy57q4tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rko-att/fy57q3presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rko-att/fy57q3tanshin_r1-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rko-att/fy57q3tanshin_teisei-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002roh-att/fy57q2presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002roh-att/fy57q2tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rsa-att/fy57q1presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rsa-att/fy57q1tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rw3-att/fy56q4presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rw3-att/fy56q4tanshin-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rzw-att/fy56q3presentations-e.pdf",
+        "https://www.tel.com/ir/library/report/hq95qj0000002rzw-att/fy56q3tanshin-e.pdf"
+      ],
+      "n_pdfs": 265
+    },
+    {
+      "url": "https://www.tel.com/ir/library/presentation/",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.tel.com/ir/finance/results.html",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.tel.com/ir/finance/",
+      "final": "https://www.tel.com/ir/finance/",
+      "status": 200,
+      "title": "Financial Information | Investor Relations | Tokyo Electron Ltd.",
+      "pdfs": [
+        "https://www.tel.com/irta3a00000001ah-att/MSA_Statement.pdf"
+      ],
+      "n_pdfs": 1
+    }
+  ],
+  "aiquy": [
+    {
+      "url": "https://www.airliquide.com/investors",
+      "final": "https://www.airliquide.com/investors/credit-investors/presentation",
+      "status": 200,
+      "title": "Credit investor presentation | Air Liquide",
+      "pdfs": [
+        "/sites/airliquide.com/files/2026-08/h1-2026-credit-investors-presentation.pdf",
+        "https://www.airliquide.com/sites/airliquide.com/files/2026-03/air-liquide-2025-universal-registration-document-interactive.pdf",
+        "https://www.airliquide.com/sites/airliquide.com/files/2026-03/air-liquide-2025-universal-registration-document-interactive.pdf"
+      ],
+      "n_pdfs": 2
+    },
+    {
+      "url": "https://www.airliquide.com/investors/results-presentations",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.airliquide.com/group/investors/results",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.airliquide.com/investors/financial-results",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.airliquide.com/en/investors",
+      "error": "HTTP Error 404: Not Found"
+    }
+  ]
+}

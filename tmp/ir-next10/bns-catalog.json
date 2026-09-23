@@ -1,0 +1,87 @@
+{
+  "ticker": "BNS",
+  "fy": "10-31",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2022/q1/Q122_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2022/q1/Q122_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2022/q2/Q222_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2022/q2/Q222_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2022/q3/Q322_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2022/q3/Q322_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2022/q4/Q422_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2022/q4/Q422_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2023/q1/Q123_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2023/q1/Q123_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2023/q2/Q223_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2023/q2/Q223_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2023/q3/Q323_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2023/q3/Q323_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2023/q4/Q423_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2023/q4/Q423_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2024/q1/Q124_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2024/q1/Q124_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2024/q2/Q224_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2024/q2/Q224_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2024/q3/Q324_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2024/q3/Q324_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2024/q4/Q424_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2024/q4/Q424_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q1/Q125_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q1/Q125_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q2/Q225_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q2/Q225_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q3/Q325_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q3/Q325_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Q425_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2025/q4/Q425_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2026/q1/Q126_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2026/q1/Q126_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2026/q2/Q226_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2026/q2/Q226_Quarterly_Press_Release-EN.pdf"
+    },
+    "Q3 2026": {
+      "slides": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2026/q3/Q326_Investor_Presentation.pdf",
+      "filings": "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2026/q3/Q326_Quarterly_Press_Release-EN.pdf"
+    }
+  },
+  "notes": "Bank of Nova Scotia (Scotiabank). October 31 FY (Canadian bank; same calendar as BMO). Finsepa labels = issuer fiscal quarters (Q1~Jan 31, Q2~Apr 30, Q3~Jul 31, Q4~Oct 31). Latest: Q3 2026 (Aug 25 2026); Q4 2026 due Dec 2 2026. Pattern: scotiabank.com/content/dam/.../quarterly-reports/{FY}/q{N}/Q{N}{YY}_Investor_Presentation.pdf (slides) + Q{N}{YY}_Quarterly_Press_Release-EN.pdf (filings). Reject Report to Shareholders, Supplementary Financial Info, Marketing Presentation, Factsheet. All 19 URLs Range-verified %PDF earlier this run (before Akamai rate-limit 403). Ticker GREEN.",
+  "hosts": [
+    "www.scotiabank.com"
+  ],
+  "verified": "range-get-%PDF-all-19-pre-akamai-lockout"
+}

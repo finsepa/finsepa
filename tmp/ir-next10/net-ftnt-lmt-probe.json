@@ -1,0 +1,30 @@
+{
+  "ftnt_home": {
+    "error": "Error: page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://investor.fortinet.com/\nCall log:\n  - navigating to \"https://investor.fortinet.com/\", waiting until \"domcontentloaded\"\n",
+    "url": "https://investor.fortinet.com/"
+  },
+  "ftnt_financial": {
+    "error": "Error: page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://investor.fortinet.com/financial-releases\nCall log:\n  - navigating to \"https://investor.fortinet.com/financial-releases\", waiting until \"domcontentloaded\"\n",
+    "url": "https://investor.fortinet.com/financial-releases"
+  },
+  "ftnt_events": {
+    "error": "Error: page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://investor.fortinet.com/events-and-presentations\nCall log:\n  - navigating to \"https://investor.fortinet.com/events-and-presentations\", waiting until \"domcontentloaded\"\n",
+    "url": "https://investor.fortinet.com/events-and-presentations"
+  },
+  "ftnt_sec": {
+    "error": "Error: page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://investor.fortinet.com/financials/sec-filings\nCall log:\n  - navigating to \"https://investor.fortinet.com/financials/sec-filings\", waiting until \"domcontentloaded\"\n",
+    "url": "https://investor.fortinet.com/financials/sec-filings"
+  },
+  "lmt_home": {
+    "error": "Error: page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://investors.lockheedmartin.com/\nCall log:\n  - navigating to \"https://investors.lockheedmartin.com/\", waiting until \"domcontentloaded\"\n",
+    "url": "https://investors.lockheedmartin.com/"
+  },
+  "lmt_qr": {
+    "error": "Error: page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://investors.lockheedmartin.com/financials/quarterly-results\nCall log:\n  - navigating to \"https://investors.lockheedmartin.com/financials/quarterly-results\", waiting until \"domcontentloaded\"\n",
+    "url": "https://investors.lockheedmartin.com/financials/quarterly-results"
+  },
+  "lmt_news": {
+    "error": "Error: page.goto: Navigation to \"https://news.lockheedmartin.com/\" is interrupted by another navigation to \"chrome-error://chromewebdata/\"\nCall log:\n  - navigating to \"https://news.lockheedmartin.com/\", waiting until \"domcontentloaded\"\n",
+    "url": "https://news.lockheedmartin.com/"
+  }
+}

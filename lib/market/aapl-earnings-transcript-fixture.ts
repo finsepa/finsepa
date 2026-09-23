@@ -1,6 +1,8 @@
 /**
- * AAPL earnings call transcripts — speaker-segmented from stockanalysis (Quartr audio).
- * Refresh: npx tsx scripts/aapl-import-earnings-transcripts.ts --force
+ * AAPL earnings call transcripts.
+ * Going forward: capture Apple Podcasts audio (`aapl-capture-earnings-audio.ts`)
+ * then ASR/align — see docs/earnings-transcript-audio.md.
+ * Historical fixtures were bootstrapped via stockanalysis when Apple’s ~2-week window had closed.
  */
 
 import q2_2025 from "@/lib/market/fixtures/aapl-q2-2025-transcript.json";

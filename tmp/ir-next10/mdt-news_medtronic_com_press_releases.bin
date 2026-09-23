@@ -1,0 +1,3229 @@
+<!DOCTYPE html>
+
+<html dir="ltr" class="medtronic-com-us-en " lang="en">
+
+<head>
+<!-- begin spin_special_output(head_start) -->
+<script type="text/javascript" src="js/jquery.js" wd_script_id="jquery.js" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg=="></script>
+<style type="text/css" wd_script_id="search_form_style" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+		.wd_search_form .wd_input_datepicker {
+			margin-right: 2px;
+		}
+		.wd_search_type_checkbox {
+			margin-left: 20px;
+		}
+		</style>
+<script type="text/javascript" src="js/jquery-webdriver.js" wd_script_id="jquery-webdriver.js" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg=="></script>
+<script type="text/javascript" src="js/webdriver.js" wd_script_id="webdriver.js" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg=="></script>
+<script type="text/javascript" wd_script_id="search_form_script" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+			function wd_toggle_search_form(link, advanced) {
+				var $ = webDriver.jQuery;
+				var $container = $(link).closest(".wd_search_form_container");
+				var basic_form = $container.find(".wd_search_form_basic");
+				var basic_query = basic_form.find('input[name="query"]');
+				var advanced_form = $container.find(".wd_search_form_advanced");
+				var advanced_query = advanced_form.find('input[name="query"]');
+
+				if (advanced) {
+					advanced_query.val(basic_query.val());
+					advanced_form.show();
+					basic_form.hide();
+				} else {
+					basic_query.val(advanced_query.val());
+					basic_form.show();
+					advanced_form.hide();
+				}
+
+				var target_form = advanced ? advanced_form : basic_form;
+				var focus_target = target_form.find('input[name="query"]').filter(":visible:not(:disabled)").get(0);
+				if (!focus_target)
+					focus_target = target_form.find(":input").filter(":visible:not(:disabled)").get(0);
+				if (focus_target)
+					setTimeout(function() { focus_target.focus(); }, 0);
+			}
+
+			function wd_toggle_search_type_checkboxes(radio) {
+				var $ = webDriver.jQuery;
+				var $radio = $(radio);
+				var all = $radio.val() == "All" ? $radio.is(":checked") : !$radio.is(":checked");
+				var $checkboxes = $radio.closest(".wd_form_field").find(".wd_search_type_checkbox");
+				$checkboxes.find('input[type="checkbox"]').prop("disabled", all);
+				$checkboxes.toggle(!all);
+			}
+
+			webDriver.jQuery(function ($) {
+				$('.wd_search_type_radio input[type="radio"]').each(function() {wd_toggle_search_type_checkboxes(this);});
+			});
+		</script>
+<style type="text/css" wd_script_id="template subscribe_link:base:system style" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+div.wd_subscribe_link {
+	text-align: right;
+	margin: 10px 0;
+	padding: 0px;
+	border: 0px;
+}
+span.wd_subscribe_icon {
+	margin-left: 1em;
+}
+.wd_subscribe_link img {
+	vertical-align: middle;
+}
+</style>
+<style type="text/css" wd_script_id="item_search_form_style" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+		.wd_item_search_form_container .wd_search_form_basic {
+			display: inline-block;
+		}
+		.wd_search_basic_fields {
+			display: inline-block;
+			background-color: #f1f1f1;
+			border: 1px solid #d3d3d3;
+			padding: 3px;
+			vertical-align: middle;
+		}
+		.wd_search_basic_fields > * {
+			vertical-align: middle;
+		}
+		.wd_item_search_form_container .wd_input_datepicker {
+			margin-right: 2px;
+		}
+		.wd_search_button {
+			color: #999999;
+		}
+		.wd_search_button.wd_highlight {
+			color: #000000;
+		}
+		.wd_search_advanced_link,
+		.wd_search_titles_only,
+		.wd_checkbox {
+			white-space: nowrap;
+		}
+		</style>
+<script type="text/javascript" wd_script_id="item_search_form_script" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+			function wd_item_search_form_toggle(link, advanced) {
+				var $ = webDriver.jQuery;
+				var $container = $(link).closest(".wd_item_search_form_container");
+				var $basic_form = $container.find(".wd_search_form_basic");
+				var $advanced_form = $container.find(".wd_search_form_advanced");
+				var $target_form = advanced ? $advanced_form : $basic_form;
+
+				var $basic_inputs = $basic_form.find(":input");
+				$basic_inputs.each(function() {
+					var $advanced_input = $advanced_form.find(this.tagName+'[name="'+this.name+'"]');
+					if ($advanced_input.length > 0) {
+						if (advanced)
+							$advanced_input.val($(this).val());
+						else
+							$(this).val($advanced_input.val());
+					}
+				});
+
+				$basic_form.toggle(!advanced);
+				$advanced_form.toggle(advanced);
+
+				var $focus_target = $target_form.find("input[name=\"keywords\"]").filter(":visible:not(:disabled)").first();
+				if ($focus_target.length === 0)
+					$focus_target = $target_form.find(":input").filter(":visible:not(:disabled)").first();
+				var focus_target = $focus_target.length > 0 ? $focus_target.get(0) : null;
+				if (focus_target)
+					setTimeout(function() { focus_target.focus(); }, 0);
+			}
+
+			function wd_item_search_form_highlight(form) {
+				var $btn = $(form).find('input[type="submit"],button[type="submit"]');
+				$btn.addClass("wd_highlight");
+			}
+
+			function wd_item_search_form_submit(form, in_submit) {
+				var $form = $(form);
+
+				var have_url = false;
+				$form.find("select").each(function() {
+					var $select = $(this);
+					
+					if (!$select.val())
+						$select.prop("disabled", "disabled");
+
+					var url = $select.find("option:selected").attr("wd_url");
+					if (url && !have_url) {
+						$form.attr("action", url);
+						$select.prop("disabled", "disabled");
+						$form.find('input[name="s"]').prop("disabled", "disabled");
+						have_url = true;
+					}
+				});
+
+				$form.find("input").each(function() {
+					var $input = $(this);
+					
+					if (!$input.val())
+						$input.prop("disabled", "disabled");
+				});
+
+				if (!in_submit)
+					$form.submit();
+			}
+		</script>
+<link href="css/wd_wcag.css" type="text/css" rel="stylesheet" wd_script_id="wd_wcag.css">
+<script type="text/javascript" src="js/wd_wai_calendar_button.js" wd_script_id="wd_wai_calendar_button.js" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg=="></script>
+<script type="text/javascript" src="js/wd_wai_datepicker.js" wd_script_id="wd_wai_datepicker.js" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg=="></script>
+<script type="text/javascript" src="js/wd_wai_datepicker_day.js" wd_script_id="wd_wai_datepicker_day.js" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg=="></script>
+<link href="css/wd_wai_datepicker.css" type="text/css" rel="stylesheet" wd_script_id="wd_wai_datepicker.css">
+<script type="text/javascript" wd_script_id="form_wai_dp__scriptnf_start" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+							window.addEventListener("load" , function () {
+								let dp_input = document.getElementById("wd_wai_dp_input_nf_start");
+								let dp_button = document.getElementById("wd_wai_dp_button_nf_start");
+								let dp_dialog = document.getElementById("wd_datepicker_dialog_nf_start"  );
+								let wd_datePicker = new DatePicker(dp_input, dp_button, dp_dialog, "2001-09-17","2026-09-16"  );
+								wd_datePicker.init();
+							});   
+						</script>
+<script type="text/javascript" wd_script_id="form_wai_dp__scriptnf_end" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+							window.addEventListener("load" , function () {
+								let dp_input = document.getElementById("wd_wai_dp_input_nf_end");
+								let dp_button = document.getElementById("wd_wai_dp_button_nf_end");
+								let dp_dialog = document.getElementById("wd_datepicker_dialog_nf_end"  );
+								let wd_datePicker = new DatePicker(dp_input, dp_button, dp_dialog, "2001-09-17","2026-09-16"  );
+								wd_datePicker.init();
+							});   
+						</script>
+<script type="text/javascript" src="js/wd_form.js" wd_script_id="wd_form.js" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg=="></script>
+<link href="css/wd_form.css" type="text/css" rel="stylesheet" wd_script_id="wd_form.css">
+<link href="thirdparty/font-awesome/css/font-awesome.min.css" type="text/css" rel="stylesheet" wd_script_id="font-awesome.min.css">
+<style type="text/css" wd_script_id="template asset_type_link:base:system style" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+ul.wd_asset_type_link_list {
+	margin: 0;
+	padding: 0;
+	overflow: auto;
+	list-style: none;
+	color: #cccccc;
+	font-size: 0.8333em;
+}
+li.wd_asset_type_link {
+	float: left;
+	padding: 0.2em;
+	white-space: nowrap;
+}
+li.wd_asset_type_link ~ li.wd_asset_type_link {
+	padding-left: 0.5em;
+}
+li.wd_asset_type_link .wd_icon {
+	color: #4f5051;
+}
+li.wd_asset_type_link .wd_title {
+	font-size: 1em;
+	font-weight: normal;
+}
+li.wd_asset_type_link span.wd_count:before {
+	content: "(";
+}
+li.wd_asset_type_link span.wd_count:after {
+	content: ")";
+}</style>
+<style type="text/css" wd_script_id="template_list_simple_style" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+						ul.wd_layout-simple {
+							padding: 0;
+							margin: 10px 0;
+							list-style: none;
+						}
+					</style>
+<style type="text/css" wd_script_id="template item:newsfeed_releases:system style" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+.wd_item {
+	overflow:auto;
+}
+.wd_item .wd_thumbnail {
+	float: left;
+	margin: 0 5px 5px 0;
+}
+.wd_item .wd_date {
+	text-transform: uppercase;
+	font-weight: bold;
+	font-size: 1.167em;
+	color: #cccccc;
+}
+.wd_item .wd_title {
+	font-weight: bold;
+	font-size: 2em;
+}
+.wd_item .wd_subtitle {
+	font-weight: bold;
+}
+.wd_item .wd_summary p {
+	margin-bottom: 0;
+}
+.wd_asset_type_link_list {
+	display: inline-block;
+	margin: 10px 0 0 0;
+	padding: 2px;
+}
+.wd_item_wrapper {
+	margin-left: 149px;
+}
+.wd_item_wrapper:first-child,
+.wd_layout-masonry .wd_item_wrapper,
+.wd_layout-grid .wd_item_wrapper {
+	margin-left: 0;
+}
+.wd_layout-masonry .wd_item,
+.wd_layout-grid .wd_item {
+	border: 1px solid #e1e1e1;
+	padding: 5px;
+}
+.wd_layout-masonry .wd_thumbnail,
+.wd_layout-grid .wd_thumbnail {
+	float: none;
+	text-align: center;
+	margin: 0 0 5px 0;
+}
+</style>
+<script type="text/javascript" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">webDriver.push_jQuery();</script>
+<script type="text/javascript" src="js/jquery-ui.js" wd_script_id="jquery-ui.js" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg=="></script>
+<script type="text/javascript" src="js/wd_resize.js" wd_script_id="wd_resize.js" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg=="></script>
+<link href="css/wd_linkmenu.css" type="text/css" rel="stylesheet" wd_script_id="wd_linkmenu.css">
+<script type="text/javascript" wd_script_id="wd_linkmenu_script" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+(function($, undefined) {
+	webDriver.resizeLinkMenu = function() {
+		$(this).data("wd_linkmenu_element").wd_linkmenu("resize");
+		return false;
+	};
+	
+	var wd_linkmenu = function(element, options) {
+		this.init(element, options);
+	};
+	
+	wd_linkmenu.prototype = {
+		init: function(element, options) {
+			var self = this;
+			
+			this.$element = $(element);
+			this._options = {
+				"class": "",
+				"label": "Menu",
+			};
+			
+			this.options(options);
+			
+			this.$active = this.$orig_active = this.$element.find(".wd_linkmenu-active");
+			var label = this.$active ? this.$active.text() : this._options["label"];
+			
+			this.$header = $("<div>")
+					.addClass("wd_linkmenu-header")
+					.attr("tabindex","0")
+					.data("wd_linkmenu_element", this.$element)
+					.attr("wd_resize", "resizeLinkMenu")
+					.on("click.wd_linkmenu", function(event) {
+						self.toggle();
+						event.preventDefault();
+					})
+					.insertBefore(this.$element)
+			;
+			if (this._options["class"])
+				this.$header.addClass(this._options["class"]);
+			var attr_string = this.$element.attr("wd_linkmenu_header");
+			if (attr_string) {
+				var attrs = JSON.parse(attr_string);
+				for(var name in attrs)
+					this.$header.attr(name, attrs[name]);
+			}
+			this.$label = $("<span>")
+					.addClass("wd_linkmenu-label")
+					.text(label)
+					.appendTo(this.$header);
+			this.$icon = $("<span class=\"wd_linkmenu-icon fa fa-chevron-down\" title=\"Open\"><\/span>")
+					.appendTo(this.$header);
+
+			this.$items = this.$element.children(".wd_linkmenu-item");
+			this.$items
+					.addClass("wd_linkmenu-listitem")
+					.prop("tabIndex", -1)
+			;
+			
+			// Remove any non-items (e.g. unintended text nodes)
+			this.$element.empty();
+			this.$element.append(this.$items);
+
+			this.$element.addClass("wd_linkmenu-list");
+			
+			// TODO: make tabs treat show/hide similar to Load, Resize
+			this.$element.closest("div.wd_assets").bind("wd_assets_show", function() {self.resize();});
+			this.$element.closest("div.wd_tab_content").bind("wd_tab_show", function() {self.resize();});
+
+			this.$element
+					.appendTo($("body"))
+					.hide()
+			;
+			
+			this.need_size = true;
+			this.resize();
+
+			this.$header.on("keydown.wd_linkmenu", function(event) {self.onkeydown(event,false);});
+			this.$header.on("blur.wd_linkmenu", function() {self.onblur();});
+			
+			this.$element.on("keydown.wd_linkmenu", function(event) {self.onkeydown(event,true);});
+			this.$element.on("blur.wd_linkmenu", function() {self.onblur();});
+			this.$element.on("mousemove.wd_linkmenu", function(event) {self.onmousemove(event);});
+			this.$items.not(".wd_disabled").on("click.wd_linkmenu", function() {self.onitemclick(this);})
+		},
+		
+		options: function(options) {
+			if (options) {
+				$.extend(this._options, options);
+			} else {
+				return this._options;
+			}
+		},
+		
+		reload: function(options) {
+			if (options) {
+				this.options(options);
+			}
+			
+			this.reset();
+		},
+
+		reset: function() {
+		},
+
+		onkeydown: function(event, on_item) {
+			var key = event.which || event.keyCode;
+			var used = false;
+			switch (key) {
+				case 13: // Return
+				case 32: // Space
+					if (!on_item) {
+						this.toggle();
+						used = true;
+					}
+					break;
+				case 27: // Escape
+					this.close();
+					used = true;
+					break;
+				case 9: // Tab
+					if (on_item)
+						this.$header[0].focus(); // Move focus back to normal flow
+					break;
+				case 33: // Page Up
+				case 36: // Home
+					if (!on_item)
+						this.open();
+					this.first();
+					used = true;
+					break;
+				case 34: // Page Down
+				case 35: // End
+					if (!on_item)
+						this.open();
+					this.last();
+					used = true;
+					break;
+				case 38: // Up
+				case 37: // Left
+					if (!on_item)
+						this.open();
+					this.prev();
+					used = true;
+					break;
+				case 40: // Down
+				case 39: // Right
+					if (!on_item)
+						this.open();
+					this.next();
+					used = true;
+					break;
+			}
+			
+			if (used) {
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			}
+		},
+
+		onmousemove: function(event) {
+			var $item = $(event.target);
+			if ($item.hasClass("wd_linkmenu-listitem"))
+				this.goto($item);
+		},
+				
+		onitemclick: function(item) {
+			$item = $(item);
+			this.$label.text($item.text());
+			this.$orig_active = this.$active = $item;
+			this.close();
+			this.$header[0].focus();
+		},
+				
+		open: function() {
+			var self = this;
+			$(document).on("mousedown.wd_linkmenu touchstart.wd_linkmenu", function(event) {
+				if ($(event.target).closest(self.$header.add(self.$element)).length == 0)
+					self.close();
+			});
+			
+			this.$header.addClass("wd_linkmenu-active");
+			this.$element
+					.show()
+					.position({my:"left top",at:"left bottom",of:this.$header})
+			;
+			this.goto(this.$active);
+		},
+				
+		close: function() {
+			this.$element.hide();
+			this.set_active(this.$orig_active);
+			this.$header.removeClass("wd_linkmenu-active");
+			
+			$(document).off(".wd_linkmenu");
+		},
+				
+		onblur: function() {
+			if (!this.ignore_blur)
+				this.close();
+			this.ignore_blur = false;
+		},
+				
+		toggle: function() {
+			this.$element.is(":visible") ? this.close() : this.open();
+		},
+				
+		set_active: function($item) {
+			if ($item.length > 0) {
+				if (this.$active)
+					this.$active.removeClass("wd_linkmenu-active");
+				this.$active = $item;
+				this.$active.addClass("wd_linkmenu-active");
+			}
+		},
+				
+		goto: function($item) {
+			if ($item.length > 0) {
+				this.set_active($item);
+				this.ignore_blur = true;
+				this.$active[0].focus();
+			}
+		},
+				
+		next: function() {
+			if (!this.$active)
+				this.first();
+			else
+				this.goto(this.$active.next());
+		},
+
+		prev: function() {
+			if (!this.$active)
+				this.last();
+			else
+				this.goto(this.$active.prev());
+		},
+				
+		first: function() {
+			this.goto(this.$items.first());
+		},
+		
+		last: function() {
+			this.goto(this.$items.last());
+		},
+		
+		destroy: function() {
+			this.$items
+				.removeClass("wd_linkmenu-listitem")
+				.off(".wd_linkmenu")
+			;
+			this.$element
+				.off(".wd_linkmenu")
+				.removeClass("wd_linkmenu-list")
+				.insertBefore(this.$header)
+			;
+			this.$header.remove();
+		},
+		
+		resize: function() {
+			if (this.need_size && this.$label.is(":visible")) {
+				var temp_show = !this.$element.is(":visible");
+				if (temp_show) {
+					this.$element.show();
+				}
+				
+				this.$label.width("auto");
+				this.$element.width("auto");
+				this.$label.width(this.$element.width());
+				this.$element.width(this.$header.width());
+
+				if (temp_show) {
+					this.$element.hide();
+				}
+				this.need_size = false;
+			}
+		}
+	};
+
+	$.fn.wd_linkmenu = function(options) {
+		var args = Array.prototype.slice.call(arguments, 1);
+		var result = this;
+		
+		this.each(function() {
+			var instance = $(this).data("wd_linkmenu");
+			if (typeof options == "string") {
+				var res = instance[options].apply(instance, args);
+				if (typeof res != "undefined") {
+					result = res;
+					return false;
+				}
+			} else {
+                if (!instance) {
+					instance = new wd_linkmenu(this, options);
+					$(this).data("wd_linkmenu", instance);
+				}
+				
+                instance.reload(options);
+			}
+        });
+		
+		return result;
+    };
+})(webDriver.jQuery);
+</script>
+<script type="text/javascript" wd_script_id="wd_linkmenu_init_script" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+			webDriver.jQuery(function($) {
+				$(".wd_linkmenu").each(function() {
+					var $menu = $(this);
+					$menu.wd_linkmenu();
+				});
+			});
+		</script>
+<style type="text/css" wd_script_id="page_menu_style" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+		.wd_page_menu {
+			overflow: auto;
+		}
+		.wd_page_limit {
+			float: left;
+			margin: 0;
+			padding: 8px 0;
+		}
+		.wd_page_links {
+			float: right;
+			margin: 0;
+			padding: 0;
+			list-style-type: none;
+		}
+		.wd_page_link {
+			display: inline-block;
+			margin: 0;
+			padding: 8px;
+			border: 1px solid #cccccc;
+			border-left: none;
+		}
+		.wd_page_active {
+			background-color: #eeeeee;
+		}
+		.wd_page_link:first-child {
+			border-left: 1px solid #cccccc;
+			border-top-left-radius: 3px;
+			border-bottom-left-radius: 3px;
+		}
+		.wd_page_link:last-child {
+			border-top-right-radius: 3px;
+			border-bottom-right-radius: 3px;
+		}
+	</style>
+<style type="text/css" wd_script_id="template page:newsfeed_releases:site style" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">.wd_category_header {
+	margin: 10px 0;
+	overflow: auto;
+}
+.wd_thumbnail {
+	float: left;
+	margin: 0 5px 5px 0;
+}
+.wd_item_list {
+	margin: 10px 0;
+	overflow: auto;
+}
+.wd_item {
+	padding: 0;
+	margin: 0 0 10px 0;
+}
+</style>
+<script type="text/javascript" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">webDriver.pop_jQuery();</script>
+
+<!-- end spin_special_output(head_start) -->
+
+
+	    <!-- OneTrust Cookies Consent Notice PROD start for medtronic.com -->
+    <script type="text/javascript" src="https://cdn.cookielaw.org/consent/7d3bbabe-76bb-430d-a2f3-0d88d8048fc2/OtAutoBlock.js" ></script>
+    <script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js"  type="text/javascript" charset="UTF-8" data-domain-script="7d3bbabe-76bb-430d-a2f3-0d88d8048fc2" ></script>
+    <!-- <script type="text/javascript">
+    function OptanonWrapper() { }
+    </script> -->
+    <!-- OneTrust Cookies Consent Notice PROD end for medtronic.com -->
+    
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<script src="https://assets.adobedtm.com/e5d3245550c3/f220130056f5/launch-8272b5e803f6.min.js"></script>  
+
+<script type="text/javascript">var SITEPATH = "\/us\u002Den";</script>
+
+	
+	
+<link rel="stylesheet" href="./index_room_files/left-to-right.min.fed62e2357b5d97810a116832cde6d7d.css" type="text/css">
+<link rel="stylesheet" href="./index_room_files/global-nav.min.edb008d8f269c685a0f69c5cace33a33.css" type="text/css">		
+<script type="text/javascript" src="./index_room_files/modernizr-2.8.3.min.f5db613597ac637527a29e8fd2e83b39.js"></script>
+<link rel="stylesheet" href="./index_room_files/print.6419672f54489050a939eb095699bbb7.css" type="text/css" media="print">
+
+
+<style id="antiClickjack"></style>
+
+<script type="text/javascript">
+	if (self === top) {
+		var antiClickjack = document.getElementById("antiClickjack");
+		antiClickjack.parentNode.removeChild(antiClickjack);
+	} else {
+		top.location = self.location;
+	}
+</script>	
+
+<!-- <script type="text/javascript" src="./index_room_files/launch-c7f3f5a4c9fc.min.js"></script>
+
+ -->
+<script type="text/javascript">if (typeof _satellite !== "undefined") { _satellite.setCookie("sat_track", "false"); }</script>
+
+
+<link rel="apple-touch-icon-precomposed" href="https://www.medtronic.com/content/dam/medtronic-com/apple-touch-icon-precomposed.png">
+
+
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.medtronic.com/content/dam/medtronic-com/favicon.ico">
+<link rel="shortcut icon" type="image/vnd.microsoft.icon" href="https://www.medtronic.com/content/dam/medtronic-com/favicon.ico">
+
+<title>Press releases | Medtronic</title>
+
+ <meta name="keywords" content="" />
+ <meta name="description" content="" />
+ <meta name="twitter:card" content="summary" />
+ <meta property="og:site_name" content="Medtronic News" />
+ <meta property="og:url" content="https://news.medtronic.com/press-releases" />
+ <meta property="og:type" content="article" />
+
+<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css" />
+<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css" />
+<link rel="stylesheet" type="text/css" href="css/jquery.fancybox.min.css">
+
+<link rel="stylesheet" type="text/css" href="css/footer.css">
+<link rel="stylesheet" type="text/css" href="css/wdcontent.css">
+
+
+
+<link rel="alternate" href="https://news.medtronic.com/press-releases?pagetemplate=rss" type="application/rss+xml" title="Press releases | Medtronic">
+<meta name="google-site-verification" content="LpzHqCe88BVF3k7PXedZbAQePRiDZqvbpiO8_zoX2bI" />
+
+
+<!-- begin spin_special_output(head_end) -->
+<!-- OneTrust Cookies Consent Notice start -->
+<script src="" type="text/javascript" charset="UTF-8"></script>
+<script type="text/javascript">
+	function OptanonWrapper() { }
+</script>
+<!-- OneTrust Cookies Consent Notice end -->
+
+<link rel="canonical" href="https://news.medtronic.com/press-releases" />
+<!-- end spin_special_output(head_end) -->
+</head>
+
+
+
+
+<body class="wd_pageid_20295">
+
+<div class="global-wrap">
+
+		
+	<div class="header"><header class="header">
+	
+	<a class="sr-only sr-only-focusable" href="#header-skip" aria-label="Skip to main content">Skip to main content</a>
+
+	<div class="container-fluid">
+
+		
+		<ul class="unstyled header__select list-inline">
+			<i class="fa fa-map-marker" aria-hidden="true"></i>
+			<li class="select-language">
+				
+				<div class="hidden">
+					
+						<a href="https://www.medtronic.com/us-en/index.html" class="hidden" data-locale="en_US">https://www.medtronic.com/us-en/index.html</a>
+					
+				</div>
+			</li>
+
+			
+			<li class="select-country">
+				<select style="width: 100%;" autocomplete="off" name="country" id="headerCountry" aria-label="CountrySelector">
+					<option>Select Country / Region</option>
+					
+						<option value="en_XA">
+							Adriatic
+							
+						</option>
+						<option value="en_SA">
+							Arabia							
+						</option>
+						<option value="es_AR">
+							Argentina
+							
+						</option>
+					
+						<option value="en_XP">
+							Asia-Pacific
+							
+						</option>
+					
+						<option value="en_XB">
+							Australia and New Zealand
+							
+						</option>
+					
+						<option value="en_BD">
+							Bangladesh
+							
+						</option>
+					
+						<option value="fr_BE">
+							Belgique (Belgium)
+							
+								- Français
+						</option>
+					
+						<option value="nl_BE">
+							België (Belgium)
+							
+								- Nederlands
+						</option>
+					
+						<option value="pt_BR">
+							Brasil (Brazil)
+							
+						</option>
+					
+						<option value="bg_BG">
+							Bulgaria
+							
+						</option>
+					
+						<option value="en_CA">
+							Canada
+							
+								- English
+						</option>
+					
+						<option value="fr_CA">
+							Canada
+							
+								- Français
+						</option>
+					
+						<option value="cs_CZ">
+							Česká republika (Czech Republic)
+							
+						</option>
+					
+						<option value="es_CL">
+							Chile
+							
+						</option>
+					
+						<option value="zh_CN">
+							中国 (China)
+							
+						</option>
+					
+						<option value="es_CO">
+							Colombia
+							
+						</option>
+					
+						<option value="es_CR">
+							Costa Rica
+							
+						</option>
+					
+						<option value="sr_RS">
+							Србија (Serbia)
+							
+						</option>
+					
+						<option value="da_DK">
+							Danmark (Denmark)
+							
+						</option>
+					
+						<option value="de_DE">
+							Deutschland (Germany)
+							
+						</option>
+					
+						<option value="es_EC">
+							Ecuador
+							
+						</option>
+					
+						<option value="es_ES">
+							España (Spain)
+							
+						</option>
+					
+						<option value="en_XD">
+							Europe
+							
+						</option>
+					
+						<option value="fr_FR">
+							France
+							
+						</option>
+					
+						<option value="el_GR">
+							Ελλάδα (Greece)
+							
+						</option>
+					
+						<option value="zh_HK">
+							香港特区 (Hong Kong SAR)
+							
+						</option>
+					
+						<option value="en_IN">
+							Indian Subcontinent
+							
+						</option>
+					
+						<option value="en_IE">
+							Ireland
+							
+						</option>
+					
+						<option value="iw_IL">
+							Israel&nbsp;&nbsp;ישראל
+							
+						</option>
+					
+						<option value="it_IT">
+							Italia (Italy)
+							
+						</option>
+					
+						<option value="ja_JP">
+							日本 (Japan)
+							
+						</option>
+					
+						<option value="es_XL">
+							Latinoamérica
+							
+						</option>
+					
+						<option value="hu_HU">
+							Magyarország (Hungary)
+							
+						</option>
+					
+						<option value="es_MX">
+							México (Mexico)
+							
+						</option>
+					
+						<option value="en_ME">
+							Middle East and North Africa
+							
+						</option>
+					
+						<option value="nl_NL">
+							Nederland (Netherlands)
+							
+						</option>
+					
+						<option value="nn_NO">
+							Norge (Norway)
+							
+						</option>
+					
+						<option value="de_AT">
+							Österreich (Austria)
+							
+						</option>
+					
+						<option value="es_PA">
+							Panama
+							
+						</option>
+					
+						<option value="pt_PT">
+							Portugal
+							
+						</option>
+					
+						<option value="es_PY">
+							Paraguay
+							
+						</option>
+					
+						<option value="es_PE">
+							Perú (Peru)
+							
+						</option>
+					
+						<option value="pl_PL">
+							Polska (Poland)
+							
+						</option>
+					
+						<option value="ru_RU">
+							Российская Федерация (Russia)
+							
+						</option>
+					
+						<option value="es_PR">
+							Puerto Rico
+							
+						</option>
+					
+						<option value="ro_RO">
+							Romania
+							
+						</option>
+					
+						<option value="de_CH">
+							Schweiz (Switzerland)
+							
+								- Deutsch
+						</option>
+					
+						<option value="sk_SK">
+							Slovenská republika (Slovak Republic)
+							
+						</option>
+					
+						<option value="en_XS">
+							Southeast Asia
+							
+						</option>
+					
+						<option value="en_ZA">
+							South Africa and Sub-Sahara
+							
+						</option>
+					
+						<option value="ko_KR">
+							대한민국 (South Korea)
+							
+						</option>
+					
+						<option value="fr_CH">
+							Suisse (Switzerland)
+							
+								- Français
+						</option>
+					
+						<option value="sv_FI">
+							Suomi (Finland)
+							
+						</option>
+					
+						<option value="sv_SE">
+							Sverige (Sweden)
+							
+						</option>
+					
+						<option value="zh_TW">
+							台湾地区 (Taiwan)
+							
+						</option>
+					
+						<option value="tr_TR">
+							Türkiye (Turkey)
+							
+						</option>
+					
+						<option value="en_GB">
+							United Kingdom
+							
+						</option>
+					
+						<option value="en_US" selected="">
+							United States
+							
+						</option>
+					
+						<option value="es_UY">
+							Uruguay
+							
+						</option>
+					
+						<option value="uk_UA">
+							Україна (Ukraine)
+							
+						</option>
+					
+				</select>
+			</li>
+			<div class="hidden">
+				
+					<a href="https://adriatic.medtronic.com/xa-en/index.html" class="hidden" data-locale="en_XA">Adriatic</a>
+				
+			
+					<a href="https://www.medtronic.com/en-sa/index.html" class="hidden" data-locale="en_SA">Arabia</a>
+					<a href="https://www.medtronic.com/ar-es/index.html" class="hidden" data-locale="es_AR">Argentina</a>
+				
+			
+				
+					<a href="https://asiapac.medtronic.com/xp-en/index.html" class="hidden" data-locale="en_XP">Asia-Pacific</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/au-en/index.html" class="hidden" data-locale="en_XB">Australia and New Zealand</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/bd-en/index.html?" class="hidden" data-locale="en_BD">Bangladesh</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/be-fr/index.html" class="hidden" data-locale="fr_BE">Belgique (Belgium)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/be-nl/index.html" class="hidden" data-locale="nl_BE">België (Belgium)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/br-pt/index.html?" class="hidden" data-locale="pt_BR">Brasil (Brazil)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/bg-bg/index.html" class="hidden" data-locale="bg_BG">Bulgaria</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/en-ca/index.html" class="hidden" data-locale="en_CA">Canada</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/fr-ca/index.html" class="hidden" data-locale="fr_CA">Canada</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/cz-cs/index.html" class="hidden" data-locale="cs_CZ">Česká republika (Czech Republic)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/cl-es/index.html" class="hidden" data-locale="es_CL">Chile</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/cn-zh/index.html?" class="hidden" data-locale="zh_CN">中国 (China)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/es-co/index.html" class="hidden" data-locale="es_CO">Colombia</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/cr-es/index.html" class="hidden" data-locale="es_CR">Costa Rica</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/rs-sr/index.html" class="hidden" data-locale="sr_RS">Србија (Serbia)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/dk-da/index.html" class="hidden" data-locale="da_DK">Danmark (Denmark)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/de-de/index.html" class="hidden" data-locale="de_DE">Deutschland (Germany)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ec-es/index.html" class="hidden" data-locale="es_EC">Ecuador</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/es-es/index.html" class="hidden" data-locale="es_ES">España (Spain)</a>
+				
+			
+				
+					<a href="https://europe.medtronic.com/xd-en/index.html" class="hidden" data-locale="en_XD">Europe</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/fr-fr/index.html" class="hidden" data-locale="fr_FR">France</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/gr-el/index.html" class="hidden" data-locale="el_GR">Ελλάδα (Greece)</a>
+				
+			
+				
+					<a href="https://global.medtronic.com/xg-en/about/hong-kong.html?" class="hidden" data-locale="zh_HK">香港特区 (Hong Kong SAR)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/in-en/index.html" class="hidden" data-locale="en_IN">Indian Subcontinent</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/en-ie/index.html" class="hidden" data-locale="en_IE">Ireland</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/il-he/index.html" class="hidden" data-locale="iw_IL">Israel&nbsp;&nbsp;ישראל</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/it-it/index.html" class="hidden" data-locale="it_IT">Italia (Italy)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/jp-ja/index.html?" class="hidden" data-locale="ja_JP">日本 (Japan)</a>
+				
+			
+				
+					<a href="https://latinoamerica.medtronic.com/xl-es/index.html" class="hidden" data-locale="es_XL">Latinoamérica</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/hu-hu/index.html" class="hidden" data-locale="hu_HU">Magyarország (Hungary)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/mx-es/index.html" class="hidden" data-locale="es_MX">México (Mexico)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/me-en/index.html" class="hidden" data-locale="en_ME">Middle East and North Africa</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/nl-nl/index.html?" class="hidden" data-locale="nl_NL">Nederland (Netherlands)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/no-nn/index.html" class="hidden" data-locale="nn_NO">Norge (Norway)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/at-de/index.html" class="hidden" data-locale="de_AT">Österreich (Austria)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/pa-es/index.html" class="hidden" data-locale="es_PA">Panama</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/pt-pt/index.html?" class="hidden" data-locale="pt_PT">Portugal</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/py-es/index.html" class="hidden" data-locale="es_PY">Paraguay</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/pe-es/index.html" class="hidden" data-locale="es_PE">Perú (Peru)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/pl-pl/index.html" class="hidden" data-locale="pl_PL">Polska (Poland)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ru-ru/index.html?" class="hidden" data-locale="ru_RU">Российская Федерация (Russia)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/pr-es/index.html" class="hidden" data-locale="es_PR">Puerto Rico</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ro-ro/index.html" class="hidden" data-locale="ro_RO">Romania</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ch-de/index.html" class="hidden" data-locale="de_CH">Schweiz (Switzerland)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/sk-sk/index.html" class="hidden" data-locale="sk_SK">Slovenská republika (Slovak Republic)</a>
+				
+			
+				
+					<a href="https://sea.medtronic.com/xs-en/index.html" class="hidden" data-locale="en_XS">Southeast Asia</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/za-en/index.html" class="hidden" data-locale="en_ZA">South Africa and Sub-Sahara</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/kr-ko/index.html" class="hidden" data-locale="ko_KR">대한민국 (South Korea)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ch-fr/index.html" class="hidden" data-locale="fr_CH">Suisse (Switzerland)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/fi-fi/index.html" class="hidden" data-locale="sv_FI">Suomi (Finland)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/se-sv/index.html" class="hidden" data-locale="sv_SE">Sverige (Sweden)</a>
+				
+			
+				
+					<a href="https://global.medtronic.com/xg-en/about/taiwan.html?" class="hidden" data-locale="zh_TW">台湾地区 (Taiwan)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/tr-tr/index.html?" class="hidden" data-locale="tr_TR">Türkiye (Turkey)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/uk-en/index.html" class="hidden" data-locale="en_GB">United Kingdom</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/us-en/index.html" class="hidden" data-locale="en_US">United States</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/uy-es/index.html" class="hidden" data-locale="es_UY">Uruguay</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ua-uk/index.html" class="hidden" data-locale="uk_UA">Україна (Ukraine)</a>
+				
+			</div>
+
+		</ul>
+
+		<a class="header__logo" href="https://www.medtronic.com/en-us/index.html">
+			<img src="images/logo-en-rgb-bl.svg" alt="Medtronic Logo">
+		</a>
+		
+	</div>
+</header>
+		
+		<div class="nav-list-item primary-nav-item">
+
+
+</div>
+
+	
+
+
+
+	<nav class="breadcrumbs">
+	<div class="container-fluid">
+
+		<p>
+			<a href="https://news.medtronic.com/index.php?s=20303">Home</a>
+
+			
+	<span class="divider">
+		<i class="fa fa-chevron-right" aria-hidden="true"></i>	
+	</span>
+	<span class="active">
+	 Press releases	 </span>
+	
+			<!-- 
+	<span class="divider">
+	<i class="icon shape-mdt-chevron--right" aria-hidden="true">
+	  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7.6 11.9"><path fill="#004B87" d="M1.5 0L.1 1.5 4.6 6 .1 10.4l1.5 1.5 6-5.9-6.1-6z"></path></svg>
+	</i>
+  </span>
+
+			
+		
+			<a href="https://www.medtronic.com/us-en/about.html">About Medtronic</a>
+			
+	<span class="divider">
+	<i class="icon shape-mdt-chevron--right" aria-hidden="true">
+	  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7.6 11.9"><path fill="#004B87" d="M1.5 0L.1 1.5 4.6 6 .1 10.4l1.5 1.5 6-5.9-6.1-6z"></path></svg>
+	</i>
+  </span>
+			<span class="active">Citizenship</span> -->
+		</p>
+	</div>
+</nav>
+
+	<div class="horizontal-inpage section">
+	
+	<nav class="local-nav">
+   <div class="navbar-header">
+	  <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+		 <span class="sr-only">Toggle navigation</span>
+		 <i class="icon shape-mdt-chevron--down" aria-hidden="true">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7.6 11.9">
+			   <path fill="#e8e8e7" d="M1.5 0L.1 1.5 4.6 6 .1 10.4l1.5 1.5 6-5.9-6.1-6z"></path>
+			</svg>
+		 </i>
+	  </button>
+	  <p class="navbar-brand">Newsroom</p>
+   </div>
+   <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+
+
+	<ul class="wd_nav">
+
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/index.php?s=20303" target="_self">Home</a>
+
+	</li>
+
+
+
+
+<li class=" active">
+
+	    	<a href="https://news.medtronic.com/press-releases" target="_self">Press releases</a>
+
+	
+	
+</li>
+
+
+
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/business-regional-news" target="_self">Business & regional news</a>
+
+	</li>
+
+
+
+
+<li class="dropdown">
+
+			<a data-target="#" href="https://news.medtronic.com/featured-stories" data-toggle="dropdown" role="button" aria-haspopup="true" class="dropdown-toggle" aria-expanded="false">
+               Stories               
+                  <span class="downarrow icon shape-mdt-chevron--down"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 7.5" style="width: 7px;"><path fill="#fff" d="M11.9 1.5L10.5 0 5.9 4.5 1.5 0 .1 1.5l5.9 6 5.9-6z"></path></svg></span>
+               
+        </a>
+
+        <ul class="wd_subnav dropdown-menu">
+
+
+<li class="">
+
+	    	<a href="index.php?s=34141&cat=2" target="_self">Company news</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="health-and-wellness" target="_self">Health & wellness</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="innovation" target="_self">Innovation</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="leadership-perspectives" target="_self">Leadership perspectives</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="making-an-impact" target="_self">Our impact</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="index.php?s=34141" target="_self">See all stories</a>
+
+	</li>
+
+
+</ul>
+
+
+
+    </li>
+
+
+
+
+<li class="dropdown">
+
+			<a data-target="#" href="https://www.medtronic.com/en-us/index.html" data-toggle="dropdown" role="button" aria-haspopup="true" class="dropdown-toggle" aria-expanded="false">
+               Medtronic.com               
+                  <span class="downarrow icon shape-mdt-chevron--down"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 7.5" style="width: 7px;"><path fill="#fff" d="M11.9 1.5L10.5 0 5.9 4.5 1.5 0 .1 1.5l5.9 6 5.9-6z"></path></svg></span>
+               
+        </a>
+
+        <ul class="wd_subnav dropdown-menu">
+
+
+<li class="">
+
+	    	<a href="https://www.medtronic.com/en-us/healthcare-professionals.html" target="_blank">Healthcare Professionals</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://www.medtronic.com/en-us/l/patients.html" target="_blank">Patients & Caregivers</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://www.medtronic.com/en-us/our-company.html" target="_blank">Our Company</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://www.medtronic.com/en-us/our-impact.html" target="_blank">Our Impact</a>
+
+	</li>
+
+
+</ul>
+
+
+
+    </li>
+
+
+
+
+<li class="dropdown">
+
+			<a data-target="#" href="media-kits" data-toggle="dropdown" role="button" aria-haspopup="true" class="dropdown-toggle" aria-expanded="false">
+               Media               
+                  <span class="downarrow icon shape-mdt-chevron--down"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 7.5" style="width: 7px;"><path fill="#fff" d="M11.9 1.5L10.5 0 5.9 4.5 1.5 0 .1 1.5l5.9 6 5.9-6z"></path></svg></span>
+               
+        </a>
+
+        <ul class="wd_subnav dropdown-menu">
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/media-kits" target="_self">Media kits</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/awards" target="_self">Honors & awards</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://www.medtronic.com/en-us/our-company/leadership.html" target="_self">Leadership</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/in-the-news" target="_self">In the news</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/email-alerts" target="_self">Email alerts</a>
+
+	</li>
+
+
+</ul>
+
+
+
+    </li>
+
+
+</ul>
+
+
+
+	<div class="wd_nav-search">
+	<div class="wd_search_form_container"><form name="basic_search" method="get" action="https://news.medtronic.com/index.php?s=20322" class="wd_search_form wd_search_form_basic"><input type="hidden" name="s" value="search_results" /><input type="text" name="query" value="" size="32" placeholder="Search all newsroom stories..." title="Search all newsroom stories..." /> <input type="submit" name="submit" value="Search"></form>
+</div>	</div>
+
+   </div>
+</nav>
+
+</div>
+
+
+ 
+
+
+
+
+			<header id="header-skip"  class="wd_artl_pg_header __main">
+					  						<figure class="img_header_wrap">
+							<img src="/image/EB%2BBackground.jpg" alt="">
+						</figure>
+						
+					<div class="container">
+					  
+								 <div class="inner_wrap">
+								 												<h1 class="wd_page_hd">Press releases</h1> 
+											 
+										<div class="header_desc">
+																					</div>
+								   </div>
+								   						   
+					</div>
+				   
+			</header> 
+
+						<div class="top-disclaimer">
+												</div>
+
+		<div   class="container-fluid content-wrap wd_default " role="main">
+				
+					<section class="wd_main_content">
+					
+					<div id="wd_printable_content" class="fr-view">
+<div class="wd_newsfeed_releases">
+<script type="text/javascript" wd_script_id="wd_wai_datepicker_translate_script" nonce="YjdhNDA4MjIxZmMxZGQ5NDc3MWNjNjI0ZWE3YzVlZjY1YzgzMWIzZg==">
+
+var wd_wai_langData = {
+		"dayLabels": ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
+		"dayLabelsShort": ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+		"monthLabels": ["January","February","March","April","May","June","July","August","September","October","November","December"],
+	};
+
+</script>
+
+ <div class="wd_wai_datepicker">
+  <div 
+       class="wd_wai_datepickerDialog"  id="wd_datepicker_dialog_nf_start"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="wd_wai_id_dialog_label_nf_start">
+    <div class="wd_wai_header">
+      <button class="wd_wai_prevYear" aria-label="previous year">
+        <span class="fa fa-angle-double-left fa-lg"></span>
+      </button>
+      <button class="wd_wai_prevMonth" aria-label="previous month">
+        <span class="fa fa-angle-left fa-lg"></span>
+      </button>
+      <div id="wd_wai_id_dialog_label_nf_start"
+          class="wd_wai_monthYear"
+          aria-live="polite">
+        Month Year
+      </div>
+      <button class="wd_wai_nextMonth" aria-label="next month">
+        <span class="fa fa-angle-right fa-lg"></span>
+      </button>
+      <button class="wd_wai_nextYear" aria-label="next year">
+        <span class="fa fa-angle-double-right fa-lg"></span>
+      </button>
+    </div>
+    <table id="wd_wai_myDatepickerGrid_nf_start"
+           class="wd_wai_dates"
+           role="grid"
+           aria-labelledby="wd_wai_id_dialog_label_nf_start">
+      <thead>
+        <tr class="wd_wai_week_row">
+          <th scope="col" abbr="Sunday">
+            Su
+          </th>
+          <th scope="col" abbr="Monday">
+            Mo
+          </th>
+          <th scope="col" abbr="Tuesday">
+            Tu
+          </th>
+          <th scope="col" abbr="Wednesday">
+            We
+          </th>
+          <th scope="col" abbr="Thursday">
+            Th
+          </th>
+          <th scope="col" abbr="Friday">
+            Fr
+          </th>
+          <th scope="col" abbr="Saturday">
+            Sa
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              25
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              26
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              27
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              28
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              29
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              30
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              1
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              2
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              3
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              4
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              5
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              6
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              7
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              8
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              9
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              10
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              11
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              12
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              13
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="0">
+              14
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              15
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              16
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              17
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              18
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              19
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              20
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              21
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              22
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              23
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              24
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              25
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              26
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              27
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              28
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              29
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              30
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              31
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              1
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              2
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              3
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              4
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              5
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="wd_wai_dialogButtonGroup">
+      <button class="wd_wai_dialogButton wd_wai_dp_cancelbuton" value="Cancel">Cancel      </button>
+      <button class="wd_wai_dialogButton wd_wai_dp_okbuton" value="Go">Go</button>
+    </div>
+  </div>
+
+ </div>
+
+
+ <div class="wd_wai_datepicker">
+  <div 
+       class="wd_wai_datepickerDialog"  id="wd_datepicker_dialog_nf_end"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="wd_wai_id_dialog_label_nf_end">
+    <div class="wd_wai_header">
+      <button class="wd_wai_prevYear" aria-label="previous year">
+        <span class="fa fa-angle-double-left fa-lg"></span>
+      </button>
+      <button class="wd_wai_prevMonth" aria-label="previous month">
+        <span class="fa fa-angle-left fa-lg"></span>
+      </button>
+      <div id="wd_wai_id_dialog_label_nf_end"
+          class="wd_wai_monthYear"
+          aria-live="polite">
+        Month Year
+      </div>
+      <button class="wd_wai_nextMonth" aria-label="next month">
+        <span class="fa fa-angle-right fa-lg"></span>
+      </button>
+      <button class="wd_wai_nextYear" aria-label="next year">
+        <span class="fa fa-angle-double-right fa-lg"></span>
+      </button>
+    </div>
+    <table id="wd_wai_myDatepickerGrid_nf_end"
+           class="wd_wai_dates"
+           role="grid"
+           aria-labelledby="wd_wai_id_dialog_label_nf_end">
+      <thead>
+        <tr class="wd_wai_week_row">
+          <th scope="col" abbr="Sunday">
+            Su
+          </th>
+          <th scope="col" abbr="Monday">
+            Mo
+          </th>
+          <th scope="col" abbr="Tuesday">
+            Tu
+          </th>
+          <th scope="col" abbr="Wednesday">
+            We
+          </th>
+          <th scope="col" abbr="Thursday">
+            Th
+          </th>
+          <th scope="col" abbr="Friday">
+            Fr
+          </th>
+          <th scope="col" abbr="Saturday">
+            Sa
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              25
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              26
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              27
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              28
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              29
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              30
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              1
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              2
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              3
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              4
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              5
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              6
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              7
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              8
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              9
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              10
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              11
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              12
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              13
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="0">
+              14
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              15
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              16
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              17
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              18
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              19
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              20
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              21
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              22
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              23
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              24
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              25
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              26
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              27
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              28
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              29
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              30
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton" tabindex="-1">
+              31
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              1
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              2
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              3
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              4
+            </button>
+          </td>
+          <td class="wd_wai_dateCell">
+            <button class="wd_wai_dateButton"
+                    tabindex="-1"
+                    disabled="">
+              5
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="wd_wai_dialogButtonGroup">
+      <button class="wd_wai_dialogButton wd_wai_dp_cancelbuton" value="Cancel">Cancel      </button>
+      <button class="wd_wai_dialogButton wd_wai_dp_okbuton" value="Go">Go</button>
+    </div>
+  </div>
+
+ </div>
+
+<div class="wd_subscribe_link">
+	<a href="https://news.medtronic.com/email-alerts?type=2">
+		<span class="wd_subscribe_title">Email alerts</span><span class="wd_subscribe_icon"><img src="images/webdriver/email_alerts.png" title="Email alerts" role="presentation"/></span>
+	</a>
+</div>
+
+<div class="wd_item_search_form_container"><form name="item_basic_search_20295" method="get" action="https://news.medtronic.com/press-releases" onsubmit="wd_item_search_form_submit(this, true);" class="wd_search_form wd_search_form_basic"><div class="wd_search_basic_fields"><label for="item_basic_search_20295_year" class="wd_sr-only">Year</label>
+<select name="year" onchange="wd_item_search_form_highlight(this.form);" id="item_basic_search_20295_year">
+ <option value="">All Years</option>
+ <option value="2026">2026</option>
+ <option value="2025">2025</option>
+ <option value="2024">2024</option>
+ <option value="2023">2023</option>
+ <option value="2022">2022</option>
+ <option value="2021">2021</option>
+ <option value="2020">2020</option>
+ <option value="2019">2019</option>
+ <option value="2018">2018</option>
+ <option value="2017">2017</option>
+ <option value="2016">2016</option>
+ <option value="2015">2015</option>
+ <option value="2014">2014</option>
+ <option value="2013">2013</option>
+ <option value="2012">2012</option>
+ <option value="2011">2011</option>
+ <option value="2010">2010</option>
+ <option value="2009">2009</option>
+ <option value="2008" disabled>2008</option>
+ <option value="2007" disabled>2007</option>
+ <option value="2006">2006</option>
+ <option value="2005">2005</option>
+ <option value="2004">2004</option>
+ <option value="2003">2003</option>
+ <option value="2002" disabled>2002</option>
+ <option value="2001">2001</option>
+</select>
+<label for="item_basic_search_20295_category" class="wd_sr-only">Category</label>
+<select name="category" onchange="wd_item_search_form_highlight(this.form);" id="item_basic_search_20295_category">
+ <option value="">All Categories</option>
+ <option value="778">Cardiovascular Portfolio</option>
+ <option value="779">Corporate</option>
+ <option value="775">Diabetes</option>
+ <option value="777">Medical Surgical Portfolio </option>
+ <option value="776">Neuroscience Portfolio</option>
+ <option value="uncategorized">Uncategorized</option>
+</select>
+<label for="item_basic_search_20295_keywords" class="wd_sr-only">Keywords</label><input type="text" name="keywords" value="" size="32" placeholder="Search" wd_original_value="" onkeyup="if (this.value.trim().length &gt; 1 &amp;&amp; this.value != $(this).attr('wd_original_value')) wd_item_search_form_highlight(this.form);" id="item_basic_search_20295_keywords" /> <button type="submit" class="wd_search_button" title="Search">Search</button></div> <a class="wd_search_advanced_link" href="#" onclick="wd_item_search_form_toggle(this, true); return false;">Advanced Search</a></form>
+ <form method="get" class="wd_search_form wd_search_form_advanced" style="display:none;" name="item_advanced_search_20295" action="https://news.medtronic.com/press-releases" enctype="multipart/form-data" onsubmit="disable_submit(this, true);wd_item_search_form_submit(this, true);">
+   <input type="hidden" name="advanced" value="1" />
+   <div class="wd_form_field wd_form_field_pos_right">
+    <div class="wd_form_field_label">
+<label for="item_advanced_search_20295_keywords">Search</label>
+    </div>
+    <div class="wd_form_field_input">
+     <input type="text" name="keywords" value="" size="40" placeholder="Keywords" id="item_advanced_search_20295_keywords" />&nbsp;<span class="wd_search_titles_only"><input type="checkbox" name="titles_only" value="1" id="items_search_20295_titles_only" />&nbsp;<label for="items_search_20295_titles_only">Search Headlines Only</label></span>
+    </div>
+   </div>
+   <div class="wd_form_field wd_form_field_pos_right">
+    <div class="wd_form_field_label">
+<label for="item_advanced_search_20295_category">Category</label>
+    </div>
+    <div class="wd_form_field_input">
+<div class="wd_input_border">
+<select name="category" id="item_advanced_search_20295_category">
+ <option value="">All Categories</option>
+ <option value="778">Cardiovascular Portfolio</option>
+ <option value="779">Corporate</option>
+ <option value="775">Diabetes</option>
+ <option value="777">Medical Surgical Portfolio </option>
+ <option value="776">Neuroscience Portfolio</option>
+ <option value="uncategorized">Uncategorized</option>
+</select>
+</div>
+    </div>
+   </div>
+   <div class="wd_form_field wd_form_field_pos_right">
+    <div class="wd_form_field_label">
+<label for="wd_wai_dp_input_nf_start">From</label>
+    </div>
+    <div class="wd_form_field_input">
+<input type="text" name="start" value="" size="32" placeholder="Date" dp_id="nf_start" dp_num="1" minDate="2001-09-17" maxDate="2026-09-16" id="wd_wai_dp_input_nf_start" /><button type="button" class="icon wd_wai_dp_button" id="wd_wai_dp_button_nf_start"  title="Choose Date"><span class="wd_datepicker-icon fa fa-calendar"></span></button>
+    </div>
+   </div>
+   <div class="wd_form_field wd_form_field_pos_right">
+    <div class="wd_form_field_label">
+<label for="wd_wai_dp_input_nf_end">To</label>
+    </div>
+    <div class="wd_form_field_input">
+<input type="text" name="end" value="" size="32" placeholder="Date" dp_id="nf_end" dp_num="2" minDate="2001-09-17" maxDate="2026-09-16" id="wd_wai_dp_input_nf_end" /><button type="button" class="icon wd_wai_dp_button" id="wd_wai_dp_button_nf_end"  title="Choose Date"><span class="wd_datepicker-icon fa fa-calendar"></span></button>
+    </div>
+   </div>
+   <fieldset class="wd_form_field wd_form_field_pos_right">
+    <legend class="wd_form_field_label">Asset Types</legend>
+    <div class="wd_form_field_input">
+<span class="wd_checkbox"><input type="checkbox" name="asset_types[]" checked="yes" value="117" id="item_advanced_search_20295_asset_types_117" />&nbsp;<label for="item_advanced_search_20295_asset_types_117">Photos</label></span> <span class="wd_checkbox"><input type="checkbox" name="asset_types[]" checked="yes" value="115" id="item_advanced_search_20295_asset_types_115" />&nbsp;<label for="item_advanced_search_20295_asset_types_115">Video</label></span> <span class="wd_checkbox"><input type="checkbox" name="asset_types[]" checked="yes" value="116" id="item_advanced_search_20295_asset_types_116" />&nbsp;<label for="item_advanced_search_20295_asset_types_116">Audio</label></span> <span class="wd_checkbox"><input type="checkbox" name="asset_types[]" checked="yes" value="118" id="item_advanced_search_20295_asset_types_118" />&nbsp;<label for="item_advanced_search_20295_asset_types_118">Documents</label></span> <span class="wd_checkbox"><input type="checkbox" name="asset_types[]" checked="yes" value="125" id="item_advanced_search_20295_asset_types_125" />&nbsp;<label for="item_advanced_search_20295_asset_types_125">Events</label></span> <span class="wd_checkbox"><input type="checkbox" name="asset_types[]" checked="yes" value="136" id="item_advanced_search_20295_asset_types_136" />&nbsp;<label for="item_advanced_search_20295_asset_types_136">Standard</label></span>
+    </div>
+   </fieldset>
+   <input type="hidden" name="have_asset_types" value="1" />
+  <div class="wd_form_footer">
+   <div class="wd_form_buttons">
+<input type="submit" value="Search">&nbsp;<a href="#" onclick="wd_item_search_form_toggle(this, false); return false;">Basic Search</a>
+   </div>
+  </div>
+ </form>
+</div>
+
+
+<ul class="wd_layout-simple wd_item_list"><li class="wd_item"><div class="wd_thumbnail"><a href="https://news.medtronic.com/2026-09-16-Medtronic-announces-FDA-clearance-for-LigaSure-TM-RAS-Maryland-instrument-on-the-Hugo-TM-RAS-system"><img src="https://mmx.prnewswire.com/media/MS1989396/Photo-1_Medtronic-Hugo-RAS-system_LigaSure-RAS-instrument_FDA-clearance-ID-f83e27d06e8b.jpg?id=OA2951556&p=thumbnail" alt="" border="0"/></a></div>
+<div class="wd_item_wrapper">
+	<div class="wd_date">Sep 16, 2026</div>
+	<div class="wd_title"><a href="https://news.medtronic.com/2026-09-16-Medtronic-announces-FDA-clearance-for-LigaSure-TM-RAS-Maryland-instrument-on-the-Hugo-TM-RAS-system">Medtronic announces FDA clearance for LigaSure™ RAS Maryland instrument on the Hugo™ RAS system</a></div>
+	
+	<div class="wd_summary"><p>Trusted vessel-sealing technology used in more than 45 million procedures worldwide is now cleared for robotic-assisted surgery in the U.S. GALWAY, Ireland, Sept. 16, 2026 /PRNewswire/ --...</p></div>
+	
+	<ul class="wd_layout-simple wd_asset_type_link_list"><li class="wd_asset_type_link"><a href="https://news.medtronic.com/2026-09-16-Medtronic-announces-FDA-clearance-for-LigaSure-TM-RAS-Maryland-instrument-on-the-Hugo-TM-RAS-system#assets_20295_124214-117">
+<span class="wd_icon fa fa-photo" title="Photos" style="font-size: 1.2em;"></span>
+<span class="wd_title">Photos</span>
+<span class="wd_count">2</span>
+</a>
+</li></ul>
+</div>
+</li><li class="wd_item">
+<div class="wd_item_wrapper">
+	<div class="wd_date">Sep 14, 2026</div>
+	<div class="wd_title"><a href="https://news.medtronic.com/2026-09-14-Medtronic-Launches-Exchange-Offer-to-Complete-Separation-of-MiniMed-Group,-Inc">Medtronic Launches Exchange Offer to Complete Separation of MiniMed Group, Inc.</a></div>
+	
+	<div class="wd_summary"><p>Medtronic shareholders can exchange their Medtronic ordinary shares for shares of MiniMed Provides Medtronic shareholders with option for a generally tax-free exchange for U.S. federal income tax...</p></div>
+	
+	
+</div>
+</li><li class="wd_item">
+<div class="wd_item_wrapper">
+	<div class="wd_date">Sep 4, 2026</div>
+	<div class="wd_title"><a href="https://news.medtronic.com/2026-09-04-Medtronic-executives-to-speak-at-upcoming-investor-conferences">Medtronic executives to speak at upcoming investor conferences</a></div>
+	
+	<div class="wd_summary"><p>Medtronic plc (NYSE:MDT), a global leader in healthcare technology, today announced it will participate in the following investor conferences: 2026 Wells Fargo Healthcare Conference Tuesday,...</p></div>
+	
+	
+</div>
+</li><li class="wd_item"><div class="wd_thumbnail"><a href="https://news.medtronic.com/2026-09-01-Medtronic-reports-first-quarter-fiscal-2027-results-delivers-broad-based-portfolio-performance-and-raises-fiscal-2027-guidance"><img src="/image/FY27Q1-MDT-Earnings-1pager.jpg" alt="" border="0"/></a></div>
+<div class="wd_item_wrapper">
+	<div class="wd_date">Sep 1, 2026</div>
+	<div class="wd_title"><a href="https://news.medtronic.com/2026-09-01-Medtronic-reports-first-quarter-fiscal-2027-results-delivers-broad-based-portfolio-performance-and-raises-fiscal-2027-guidance">Medtronic reports first quarter fiscal 2027 results; delivers broad-based portfolio performance and raises fiscal 2027 guidance</a></div>
+	
+	<div class="wd_summary"><p>Strength across the company's largest franchises, new growth platforms, and recent portfolio investments support the long-term growth trajectory GALWAY, Ireland, Sept. 1, 2026 /PRNewswire/ --...</p></div>
+	
+	<ul class="wd_layout-simple wd_asset_type_link_list"><li class="wd_asset_type_link"><a href="https://news.medtronic.com/2026-09-01-Medtronic-reports-first-quarter-fiscal-2027-results-delivers-broad-based-portfolio-performance-and-raises-fiscal-2027-guidance#assets_20295_124211-117">
+<span class="wd_icon fa fa-photo" title="Photos" style="font-size: 1.2em;"></span>
+<span class="wd_title">Photos</span>
+<span class="wd_count">3</span>
+</a>
+</li></ul>
+</div>
+</li><li class="wd_item">
+<div class="wd_item_wrapper">
+	<div class="wd_date">Sep 1, 2026</div>
+	<div class="wd_title"><a href="https://news.medtronic.com/2026-09-01-Medtronic-Announces-Strategic-Partnership-with-Cornerstone-Robotics-to-Further-Expand-Global-Access-to-Robotic-Assisted-Surgery">Medtronic Announces Strategic Partnership with Cornerstone Robotics to Further Expand Global Access to Robotic-Assisted Surgery</a></div>
+	
+	<div class="wd_summary"><p>Partnership expands Medtronic's robotic-assisted surgery portfolio to expand access globally and gives surgeons and health systems more choice and flexibility $700 million investment includes...</p></div>
+	
+	
+</div>
+</li></ul>
+<div class="wd_page_menu"><div class="wd_page_limit">Show <span role="menu" wd_linkmenu_header="{&quot;title&quot;:&quot;Select number of items per page&quot;}" class="wd_linkmenu"><a href="https://news.medtronic.com/press-releases?l=5" aria-label="Show 5 per page" role="menuitem" aria-current="true" class="wd_linkmenu-item wd_linkmenu-active">5</a><a href="https://news.medtronic.com/press-releases?l=10" aria-label="Show 10 per page" role="menuitem" class="wd_linkmenu-item">10</a><a href="https://news.medtronic.com/press-releases?l=25" aria-label="Show 25 per page" role="menuitem" class="wd_linkmenu-item">25</a><a href="https://news.medtronic.com/press-releases?l=50" aria-label="Show 50 per page" role="menuitem" class="wd_linkmenu-item">50</a><a href="https://news.medtronic.com/press-releases?l=100" aria-label="Show 100 per page" role="menuitem" class="wd_linkmenu-item">100</a></span> per page</div><nav role="navigation" aria-label="Page Navigation"><ul class="wd_page_links"><li class="wd_page_link wd_page_prev"><span>&laquo;</span></li><li class="wd_page_link wd_page_active"><span aria-current="page" aria-label="Current page 1">1</span></li><li class="wd_page_link wd_page_mid2"><a aria-label="Show page 2" href="https://news.medtronic.com/press-releases?o=5">2</a></li><li class="wd_page_link wd_page_mid2"><a aria-label="Show page 3" href="https://news.medtronic.com/press-releases?o=10">3</a></li><li class="wd_page_link wd_page_mid2"><a aria-label="Show page 4" href="https://news.medtronic.com/press-releases?o=15">4</a></li><li class="wd_page_link wd_page_mid2"><a aria-label="Show page 5" href="https://news.medtronic.com/press-releases?o=20">5</a></li><li class="wd_page_link wd_page_mid2"><a aria-label="Show page 6" href="https://news.medtronic.com/press-releases?o=25">6</a></li><li class="wd_page_link wd_page_mid2"><a aria-label="Show page 7" href="https://news.medtronic.com/press-releases?o=30">7</a></li><li class="wd_page_link wd_page_mid2"><a aria-label="Show page 8" href="https://news.medtronic.com/press-releases?o=35">8</a></li><li class="wd_page_link wd_page_mid2"><a aria-label="Show page 9" href="https://news.medtronic.com/press-releases?o=40">9</a></li><li class="wd_page_link wd_page_skip2"><span>&hellip;</span></li><li class="wd_page_link wd_page_end"><a aria-label="Show page 362" href="https://news.medtronic.com/press-releases?o=1805">362</a></li><li class="wd_page_link wd_page_next"><a aria-label="Show next page" href="https://news.medtronic.com/press-releases?o=5">&raquo;</a></li></ul></nav></div>
+
+
+
+</div>
+</div>		
+			</section>
+	</div>
+
+	
+	
+
+
+
+	
+
+
+ 
+
+
+<section class="wd_feat_stories_wrap">
+
+	 
+
+	<div class="container">
+		<div class="row">
+			<div class="col-md-12">
+
+			  
+		 
+
+
+			</div>
+		</div>
+	</div>
+
+</section>
+
+ 
+
+ 
+
+<div class="top-disclaimer" style="margin-top:0;">
+ 
+</div>
+
+ 
+
+<!--   -->
+
+<div class="footer">
+
+<footer>
+    <div class="xfpage page basicpage">
+        <div class="root container responsivegrid">
+            <div id="container-f2fbd5333c" class="cmp-container bg-transparent">
+                <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                    <div class="container responsivegrid mdt-container aem-GridColumn aem-GridColumn--default--12">
+                        <div id="container-ca0a6ecab2" class="cmp-container">
+                            <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                                <div
+                                    class="container responsivegrid mdt-footer-sitenav aem-GridColumn aem-GridColumn--default--12"
+                                >
+                                    <div id="container-6d6767f039" class="cmp-container">
+                                        <div class="aem-Grid aem-Grid--12 aem-Grid--default--12 aem-Grid--phone--12">
+                                            <div
+                                                class="container responsivegrid aem-GridColumn--default--none aem-GridColumn--phone--none aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--offset--phone--0 aem-GridColumn--default--3 aem-GridColumn--offset--default--0"
+                                            >
+                                                <div id="container-6c781e91d3" class="cmp-container">
+                                                    <div
+                                                        class="aem-Grid aem-Grid--3 aem-Grid--default--3 aem-Grid--phone--12"
+                                                    >
+                                                        <div
+                                                            class="menulist aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--default--3"
+                                                        >
+                                                            <div class="list vertical-list">
+                                                                <ul>
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/our-company/careers.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Careers</span>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/contact-us.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Contact &amp; Support</span>
+                                                                        </a>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="container responsivegrid aem-GridColumn--default--none aem-GridColumn--phone--none aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--offset--phone--0 aem-GridColumn--default--3 aem-GridColumn--offset--default--0"
+                                            >
+                                                <div id="container-975ffc3827" class="cmp-container">
+                                                    <div
+                                                        class="aem-Grid aem-Grid--3 aem-Grid--default--3 aem-Grid--phone--12"
+                                                    >
+                                                        <div
+                                                            class="menulist aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--default--3"
+                                                        >
+                                                            <div class="list vertical-list">
+                                                                <ul>
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://americas.connect.medtronic.com/apps/portal/login"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                            aria-label="Opens in a new window"
+                                                                        >
+                                                                            <span>Order Products</span>
+
+                                                                            <span class="accessible-message"
+                                                                                >(open in new window)</span
+                                                                            >
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.diabetes.shop/"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                            aria-label="Opens in a new window"
+                                                                        >
+                                                                            <span>Diabetes Supplies</span>
+
+                                                                            <span class="accessible-message"
+                                                                                >(open in new window)</span
+                                                                            >
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://manuals.medtronic.com/manuals/main/region"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                            aria-label="Opens in a new window"
+                                                                        >
+                                                                            <span>Product Manuals</span>
+
+                                                                            <span class="accessible-message"
+                                                                                >(open in new window)</span
+                                                                            >
+                                                                        </a>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="container responsivegrid aem-GridColumn--default--none aem-GridColumn--phone--none aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--offset--phone--0 aem-GridColumn--default--3 aem-GridColumn--offset--default--0"
+                                            >
+                                                <div id="container-f57bc0ea33" class="cmp-container">
+                                                    <div
+                                                        class="aem-Grid aem-Grid--3 aem-Grid--default--3 aem-Grid--phone--12"
+                                                    >
+                                                        <div
+                                                            class="menulist aem-GridColumn--default--none aem-GridColumn aem-GridColumn--phone--3 aem-GridColumn--default--3 aem-GridColumn--offset--default--0"
+                                                        >
+                                                            <div class="list vertical-list">
+                                                                <ul>
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/e/product-security.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Product Security</span>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/our-company/governance/principles-ethics/ca-proposition-65.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span
+                                                                                >Information About Proposition 65 for
+                                                                                California Customers</span
+                                                                            >
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/our-company/governance/principles-ethics/dmca-notification.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span
+                                                                                >Digital Millennium Copyright Act (DMCA)
+                                                                                Notification</span
+                                                                            >
+                                                                        </a>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="container responsivegrid aem-GridColumn--default--none aem-GridColumn--phone--none aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--offset--phone--0 aem-GridColumn--default--3 aem-GridColumn--offset--default--0"
+                                            >
+                                                <div id="container-162f176b7e" class="cmp-container">
+                                                    <div
+                                                        class="aem-Grid aem-Grid--3 aem-Grid--default--3 aem-Grid--phone--12"
+                                                    >
+                                                        <div
+                                                            class="ghost aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--default--3"
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    class="container responsivegrid mdt-footer-section aem-GridColumn aem-GridColumn--default--12"
+                                >
+                                    <div id="container-e0210c9184" class="cmp-container">
+                                        <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                                            <div
+                                                class="container responsivegrid mdt-footer-logo aem-GridColumn aem-GridColumn--default--12"
+                                            >
+                                                <div id="container-2abba7075f" class="cmp-container">
+                                                    <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                                                        <div
+                                                            class="footerlogo aem-GridColumn aem-GridColumn--default--12"
+                                                        >
+                                                            <div class="mdt-footer-logo">
+                                                                <span class="icon-medtronic-logo"></span>
+                                                                <span class="logo-help-text"
+                                                                    >Engineering the extraordinary</span
+                                                                >
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="container responsivegrid footer-social-menu aem-GridColumn aem-GridColumn--default--12"
+                                            >
+                                                <div id="container-814152a6f4" class="cmp-container">
+                                                    <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                                                        <div
+                                                            class="socialchannel aem-GridColumn aem-GridColumn--default--12"
+                                                        >
+                                                            <div class="list list-social-link">
+                                                                <ul class="cmp-list">
+                                                                    <li class="cmp-list__item">
+                                                                        <a
+                                                                            href="https://www.facebook.com/Medtronic"
+                                                                            aria-label="Opens in a new window"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"share-icons":{"dc:description":"Share"}}'
+                                                                            data-action="Share"
+                                                                        >
+                                                                            <article>
+                                                                                <span style="display: none"
+                                                                                    >Facebook</span
+                                                                                >
+                                                                                <span
+                                                                                    class="cmp-list__item-title icon-facebook"
+                                                                                ></span>
+                                                                            </article>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li class="cmp-list__item">
+                                                                        <a
+                                                                            href="https://www.youtube.com/user/MedtronicCorp"
+                                                                            aria-label="Opens in a new window"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"share-icons":{"dc:description":"Share"}}'
+                                                                            data-action="Share"
+                                                                        >
+                                                                            <article>
+                                                                                <span style="display: none"
+                                                                                    >Youtube</span
+                                                                                >
+                                                                                <span
+                                                                                    class="cmp-list__item-title icon-youtube"
+                                                                                ></span>
+                                                                            </article>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li class="cmp-list__item">
+                                                                        <a
+                                                                            href="https://www.linkedin.com/company/medtronic"
+                                                                            aria-label="Opens in a new window"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"share-icons":{"dc:description":"Share"}}'
+                                                                            data-action="Share"
+                                                                        >
+                                                                            <article>
+                                                                                <span style="display: none"
+                                                                                    >Linkedin</span
+                                                                                >
+                                                                                <span
+                                                                                    class="cmp-list__item-title icon-linkedin"
+                                                                                ></span>
+                                                                            </article>
+                                                                        </a>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            class="menulist list list-pipe-separated add-privacy-icon aem-GridColumn aem-GridColumn--default--12"
+                                                        >
+                                                            <div class="list vertical-list">
+                                                                <ul>
+                                                                    <li>
+                                                                        <a
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Your Privacy Choices</span>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/privacy-notice.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Privacy Notice</span>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/terms-of-use.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Terms of Use</span>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/terms-of-use/accessibility-statement.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Accessibility Statement</span>
+                                                                        </a>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="container responsivegrid aem-GridColumn aem-GridColumn--default--12">
+                                    <div id="container-931f6dade5" class="cmp-container">
+                                        <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                                            <div class="footer_copyright aem-GridColumn aem-GridColumn--default--12">
+                                                <div class="mdt-footer-copyright">
+                                                    <div class="mdt-address">
+                                                        <span>Operational Headquarters</span>
+                                                        <span>710 Medtronic Parkway, Minneapolis,</span>
+                                                        <span>MN 55432-5604 USA</span>
+                                                    </div>
+                                                    <div class="cmp-text">
+                                                        <p class="a-code">L001-12022025: 2025-12</p>
+                                                        <p>&copy; 2026 Medtronic</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+</div>
+
+	
+</div> <!--  Global-wrap END  -->
+
+
+
+	
+<script defer type="text/javascript" src="./index_room_files/clientlib-base.min.b484743158faaaad70fc0abbe2c95300.js"></script>
+	
+<script defer type="text/javascript" src="./index_room_files/cookie-implicit.min.c351a6f9739bff35c34854793d0170f3.js"></script>
+<script defer type="text/javascript" src="./index_room_files/clientlib.min.1d44829d33185741563fd622bb93cd62.js"></script>
+<script defer type="text/javascript" src="./index_room_files/clientlibs.min.f14119d4a162afee5cfd69cc372a398c.js"></script>	   
+	
+<script defer type="text/javascript" src="./index_room_files/global-nav.min.0099f555955b21d6a7840382d3216bdb.js"></script>
+
+
+
+<!-- Fancybox for modal -->
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+<script>
+	//Latest JS needs to be scoped appropriately  
+	var $latest_j = jQuery.noConflict();
+     console.log("Version: "+$latest_j.fn.jquery);
+</script>
+<script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript" defer src="js/wd_scripts.js"></script>
+
+<script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script>
+	//Latest JS needs to be scoped appropriately  
+	var $j11 = jQuery.noConflict();
+     console.log("Version: "+$j11.fn.jquery);
+</script>
+	<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+
+	<script type="text/javascript">
+        $j11(document).on('ready', function () {
+			$j11(".slick-carousel").slick({
+				infinite: true,
+				arrows: true,
+				prevArrow: '<button type="button" class="slick-prev"></button>',
+				nextArrow: '<button type="button" class="slick-next"></button>',
+				slidesToShow: 3,
+				slidesToScroll: 3,
+				responsive: [{
+					breakpoint: 960,
+					settings: {
+						slidesToShow: 2,
+						slidesToScroll: 2,
+						infinite: true
+					}
+				}]
+			});
+
+
+        });
+  </script>
+
+
+<link rel="stylesheet" href="./css/clientlib_style.css">
+
+
+<script type="text/javascript">_satellite.pageBottom();</script>
+<script type="text/javascript">
+$(document).ready(function() {
+	// dataLayer content
+	window.appEventData = window.appEventData || [];
+
+	
+	$(window).load(function() {
+		window.appEventData.push({
+			"event": "Page Loaded",
+			"pageInfo":{
+				"pageName":"Press releases | Medtronic",
+				"url":"https://news.medtronic.com/press-releases",
+				"path":"/press-releases",
+				"queryString":"",
+				"referrer":"",
+				"title":"Press releases | Medtronic",
+				"region":"US"
+			}
+		});
+	})
+	$('.nav-items__level-1--link, .wd_nav > li > a').click(function() {
+		window.appEventData.push({
+			"event": "Menu Click",
+			"eventInfo": {
+				"eventName": $(this).text().trim(),
+				"destinationUrl": $(this).attr('href'),
+				"eventLocation": "Header"
+			}
+		});
+	})
+	$('.single_slider_carousel .item a').click(function() {
+		var num = $(this).parents('.item').index() + 1;
+		var title = $(this).parents('.item').find('h4').text();
+		var url = $(this).attr('href');
+		
+		window.appEventData.push({
+			"event": "HP_Slider Click",
+			"eventInfo": {
+			"eventName": "Slider : "+num+" : "+title,
+				"destinationUrl": url,
+				"eventLocation": "Header"
+			}
+		});
+	})
+	setTimeout(function() {
+		$('.wd_featureboxes_alert .wd_featurebox .wd_image_tbl_pollyf a').click(function() {
+			var title = $(this).parents('.wd_featurebox_container').find('.wd_featurebox_title').text();
+			var url = $(this).attr('href');
+
+			window.appEventData.push({
+				"event": "Leaderboard banner Click",
+				"eventInfo": {
+					"eventName": title,
+					"destinationUrl": url,
+					"eventLocation": "Header"
+				}
+			});
+		})
+	}, 2000);
+	
+	setTimeout(function() {
+		$('.nav-items a:not(.has-submenu)').click(function() {
+			var parent = $(this).parents('.primary-nav-item').find('> a').text().trim();
+			if($(this).hasClass('nav-items__level-3--link')) {
+				parent += ':' + $(this).parents('.secondary-nav-item').find('> a').text().trim();
+			}
+			var title = $(this).text().trim();
+			var url = $(this).attr('href');
+
+			window.appEventData.push({
+			    "event": "Sub Menu Click",
+				"eventInfo": {
+					"eventName": parent+":"+title,
+					"destinationUrl": url,
+					"eventLocation": "Header"
+				}
+			});
+		})
+	}, 2000);
+
+	$('.wd_subnav a').click(function() {
+		var parent = $(this).closest('.dropdown').find('> a').text().trim();
+		var title = $(this).text().trim();
+		var url = $(this).attr('href');
+		
+		window.appEventData.push({
+		    "event": "Sub Menu Click",
+			"eventInfo": {
+				"eventName": parent+":"+title,
+				"destinationUrl": url,
+				"eventLocation": "Header"
+			}
+		});
+	})
+
+	setTimeout(function() {
+		$('.wd_feat_stories_wrap a, .wd_left_right_fb a, .wd_middle_fb a, .wd_bottom_fb a, .wd_main_content a').click(function() {
+			var url =$(this).attr('href');
+			var text;
+			if ($(this).find('img').length) {
+				if ($(this).parents('.wd_image_tbl_pollyf, .wd_featurebox').length) {
+					text = $(this).parents('.wd_featurebox_container').find('.wd_featurebox_title').text();
+				} else {
+					text = $(this).find('img').attr('alt');
+				}
+			} else {
+				text = $(this).text().trim();
+			}
+
+			if (text == undefined) {
+				text = 'No text available.';
+			}
+				
+			window.appEventData.push({
+				"event": "Link Click",
+				"eventInfo": {
+					"eventName": text,
+					"destinationUrl": url,
+					"eventLocation": "Body"
+				}
+			});
+		})
+	}, 2000);
+
+	$('footer a').click(function() {
+		var title = $(this).text().trim();
+		var url = $(this).attr('href');
+
+		window.appEventData.push({
+		    "event": "Footer Link Click",
+		    "eventInfo": {
+		        "eventName": title, 
+		        "destinationUrl": url,
+		        "eventLocation": 'Footer'
+		    }
+		});
+
+	})
+	$('.wd_featurebox-subscribe form').submit(function() {
+		var title = $(this).parents('.wd_featurebox_container').find('.wd_featurebox_title').text();
+		if($(this).find('.wd_form_field_error').length) {
+			var errorMsg = '';
+			var errorValidMsg = '';
+			var noneFilled = 'None of the Fields Filled';
+			var label;
+			$(this).find('.wd_form_field_error').each(function() {
+				label = $(this).parents('.wd_form_field').find('label').text();
+				label = label.replace('*', '').trim();
+				if (!$(this).next().val()) {
+					errorMsg += label + ', ';
+				} else {
+					errorValidMsg += label + ' Not Valid.';
+				}
+			})
+			$(this).find('input[type=text]').each(function() {
+				if ($(this).val()) {
+					noneFilled = '';
+					return false;
+				}
+			})
+			if (noneFilled != '') {
+				errorMsg = noneFilled;
+			} else if (errorMsg != '') {
+				errorMsg = errorMsg.replace(/,\s*$/, "");
+				errorMsg += ' Not Filled. ';
+			}
+
+			errorMsg += errorValidMsg;
+
+			errorMsg = errorMsg.trim();
+
+			window.appEventData.push({
+			    "event": "Form Error",
+			    "eventInfo": {
+			        "errorMessage": errorMsg, 
+			        "formName": title, 
+			        "eventLocation": 'Body'
+			    }
+			});
+		} else {
+
+			window.appEventData.push({
+			    "event": "Form Submit",
+			    "eventInfo": {
+			        "formName": title, 
+			        "eventLocation": 'Body'
+			    }
+			});
+		}
+
+	})
+	$('.wd_subscribe2 form').submit(function() {
+		if($(this).find('.wd_form_field_error').length) {
+			var errorMsg = '';
+			var errorValidMsg = '';
+			var noneFilled = 'None of the Fields Filled';
+			var label;
+			$(this).find('.wd_form_field_error').each(function() {
+				label = $(this).parents('.wd_form_field').find('label').text();
+				label = label.replace('*', '').trim();
+				if ($(this).parents('.wd_form_field').find('div[id*=recaptcha]').length) {
+					label = 'reCAPTCHA';
+				}
+				if (!$(this).next().val()) {
+					errorMsg += label + ', ';
+				} else {
+					errorValidMsg += label + ' Not Valid.';
+				}
+			})
+			$(this).find('input[type=text]').each(function() {
+				if ($(this).val()) {
+					noneFilled = '';
+					return false;
+				}
+			})
+			if (noneFilled != '') {
+				errorMsg = noneFilled;
+			} else if (errorMsg != '') {
+				errorMsg = errorMsg.replace(/,\s*$/, "");
+				errorMsg += ' Not Filled. ';
+			}
+
+			errorMsg += errorValidMsg;
+
+			errorMsg = errorMsg.trim();
+
+			window.appEventData.push({
+			    "event": "Form Error",
+			    "eventInfo": {
+			        "errorMessage": errorMsg, 
+			        "formName": "Email Alerts", 
+			        "eventLocation": 'Body'
+			    }
+			});
+		} else {
+
+			window.appEventData.push({
+			    "event": "Form Submit",
+			    "eventInfo": {
+			        "formName": "Email Alerts", 
+			        "eventLocation": 'Body'
+			    }
+			});
+		}
+
+	})
+
+	$('.twitter-tweet').addClass('wd_social-wrap');
+
+	$('.wd_featureboxes_featured_stories .wd_standard-teaser .item').each(function(){
+		$(this).find('img').parent('.itemlink').addClass('wd_image-link');
+		var hackedLink = $(this).find('.item_name a:nth-child(2)').attr('href');
+		console.log(hackedLink);
+		$(this).find('.itemlink').attr('href',hackedLink);
+		$(this).find('ul').addClass('wd_added-category item_summary');
+		$(this).find('.wd_image-link').insertBefore($(this).find('.item_name'));
+		$(this).find('.wd_added-category').insertBefore($(this).find('.item_name'));
+		$(this).find('.wd_added-category, .item_name').wrapAll('<div class="wd_tile-wrap" />');
+		$(this).find('.wd_tile-wrap').append('<a class="wd_btn-readmore" href="'+hackedLink+'">Read More</a>');
+	});
+
+	
+	//IN THE NEWS FEATUREBOX
+
+	// Wraps date, name, and summary in one div 
+	$('.wd_news_headlines-teaser .item').each(function() { 
+		$(this).find('.item_date, .item_name, .item_summary').wrapAll('<div class="wd_content-wrap"></div>');
+	});
+	
+});
+</script>
+
+<!-- begin spin_special_output(body_end) -->
+<script wd_script_id="piwik_tracking_code"></script>
+<!-- Piwik Tracking Code -->
+<script type="text/plain" class="optanon-category-2">
+  var _paq = _paq || [];
+
+  _paq.push(["setCustomVariable", 1, "Content Type", "News Releases Feed", "page"]);
+
+  _paq.push(["setCustomVariable", 3, "Navigation Page", "Press releases", "page"]);
+
+  _paq.push(["trackPageView"]);
+  _paq.push(["enableLinkTracking"]);
+  (function() {
+    var u="//stats.drivetheweb.com/";
+    _paq.push(["setTrackerUrl", u+"piwik.php"]);
+    _paq.push(["setSiteId", 6065]);
+    var d=document, g=d.createElement("script"), s=d.getElementsByTagName("script")[0];
+    g.type="text/javascript"; g.async=true; g.defer=true; g.src=u+"piwik.js"; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<noscript>
+	<img src="https://stats.drivetheweb.com/piwik.php?idsite=6065&rec=1" style="border:0" alt="" />
+</noscript>
+<!-- End Piwik Tracking Code -->
+		
+<!-- end spin_special_output(body_end) -->
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3f2f4474ee3ccd4',t:'MTc5MDA5NzM1Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>

@@ -28,6 +28,9 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
       parsed.pathname.includes("/financial_tables_pdf/") ||
       parsed.pathname.includes("/klatencor/") ||
       parsed.pathname.includes("/earnings_slide_presentation/") ||
+      parsed.pathname.includes("/prologis/") ||
+      // Parker-Hannifin earnings decks + press PDFs.
+      /\/parker\/(?:db\/\d+\/\d+\/(?:pdf|presentation|file)\/|news\/)/i.test(parsed.pathname) ||
       // Marvell Q4 FY26 deck lives under /file/ on the same CDN hash.
       /\/marvell\/db\/\d+\/\d+\/file\//i.test(parsed.pathname))
   ) {
@@ -386,6 +389,336 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
   if (h === "investor.tsmc.com" || h === "tsmc.com" || h.endsWith(".tsmc.com")) return true;
   // Cisco IR q4cdn PDFs.
   if (h === "investor.cisco.com" || h === "cisco.com" || h.endsWith(".cisco.com")) return true;
+  // Newmont IR earnings PDFs (s24.q4cdn.com/382246808).
+  if (h === "s24.q4cdn.com" && parsed.pathname.includes("/382246808/") && /\.pdf(?:$|[?#])/i.test(parsed.pathname)) {
+    return true;
+  }
+  // Bristol Myers Squibb IR PDFs (www.bms.com + s21.q4cdn.com/104148044).
+  if (h === "bms.com" || h.endsWith(".bms.com")) return true;
+  if (h === "s21.q4cdn.com" && parsed.pathname.includes("/104148044/") && /\.pdf(?:$|[?#])/i.test(parsed.pathname)) {
+    return true;
+  }
+  // Corning IR earnings PDFs (s203.q4cdn.com/212458750).
+  if (h === "s203.q4cdn.com" && parsed.pathname.includes("/212458750/") && /\.pdf(?:$|[?#])/i.test(parsed.pathname)) {
+    return true;
+  }
+  // Chubb IR press releases (s201.q4cdn.com/471466897).
+  if (h === "s201.q4cdn.com" && parsed.pathname.includes("/471466897/") && /\.pdf(?:$|[?#])/i.test(parsed.pathname)) {
+    return true;
+  }
+  // Vertex IR GCS static-files presentations.
+  if (
+    h === "investors.vrtx.com" ||
+    (h.endsWith(".vrtx.com") && /\/static-files\//i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Intuitive Surgical IR GCS static-files presentations + `/node/N/pdf` press.
+  if (
+    h === "isrg.intuitive.com" ||
+    h === "isrg.gcs-web.com" ||
+    (h.endsWith(".intuitive.com") &&
+      (/\/static-files\//i.test(parsed.pathname) || /\/node\/\d+\/pdf\/?$/i.test(parsed.pathname)))
+  ) {
+    return true;
+  }
+  // Unilever IR results PDFs under /files/.
+  if ((h === "unilever.com" || h === "www.unilever.com" || h.endsWith(".unilever.com")) && /\.pdf(?:$|[?#])/i.test(parsed.pathname)) {
+    return true;
+  }
+  // TJX IR earnings press release PDFs (docs DAM + investor.tjx.com static-files).
+  if (
+    h === "investor.tjx.com" ||
+    h === "tjx.com" ||
+    h === "www.tjx.com" ||
+    (h.endsWith(".tjx.com") &&
+      (/\/static-files\//i.test(parsed.pathname) ||
+        /\/docs\/default-source\/investor-docs\//i.test(parsed.pathname)))
+  ) {
+    return true;
+  }
+  // Cloudflare IR earnings PDFs (cloudflare.net/files).
+  if (
+    (h === "cloudflare.net" || h.endsWith(".cloudflare.net")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Progressive IR PDFs (s202.q4cdn.com/605347829).
+  if (h === "s202.q4cdn.com" && parsed.pathname.includes("/605347829/") && /\.pdf(?:$|[?#])/i.test(parsed.pathname)) {
+    return true;
+  }
+  // Mizuho FG IR PDFs (library.mizuhogroup.com + Webflow CDN).
+  if (
+    h === "library.mizuhogroup.com" ||
+    (h === "cdn.prod.website-files.com" &&
+      parsed.pathname.includes("/67cb23eaf0c6c4d4080e059a/") &&
+      /\.pdf(?:$|[?#])/i.test(parsed.pathname)) ||
+    ((h === "www.mizuhogroup.com" || h.endsWith(".mizuhogroup.com")) && /\.pdf(?:$|[?#])/i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Fast Retailing IR library PDFs.
+  if (
+    (h === "www.fastretailing.com" || h === "fastretailing.com" || h.endsWith(".fastretailing.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // BNP Paribas IR document PDFs (no .pdf suffix).
+  if (
+    (h === "invest.bnpparibas" || h.endsWith(".bnpparibas")) &&
+    /\/en\/document\/\dq\d{2}-(slides|pr)\/?$/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Progressive Complete Earnings Release (GlobeNewswire Resource/Download).
+  if (
+    (h === "ml.globenewswire.com" || h.endsWith(".globenewswire.com")) &&
+    /\/Resource\/Download\/[a-f0-9-]{36}\/?$/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Bank of Montreal IR quarter packs.
+  if (
+    (h === "www.bmo.com" || h === "bmo.com" || h.endsWith(".bmo.com")) &&
+    parsed.pathname.includes("/ir/qtrinfo/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Richemont IR media PDFs.
+  if (
+    (h === "www.richemont.com" || h === "richemont.com" || h.endsWith(".richemont.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // BAT results-centre DAM PDFs.
+  if ((h === "www.bat.com" || h === "bat.com" || h.endsWith(".bat.com")) && /\.pdf(?:$|[?#])/i.test(parsed.pathname)) {
+    return true;
+  }
+  // Fortinet IR GCS static-files.
+  if (
+    h === "investor.fortinet.com" ||
+    h === "fortinet.gcs-web.com" ||
+    (h.endsWith(".fortinet.com") && /\/static-files\//i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Lockheed Martin MediaRoom + IR static-files.
+  if (
+    (h === "filecache.mediaroom.com" &&
+      /\/mr5mr_lockheedmartin\//i.test(parsed.pathname) &&
+      /\.pdf(?:$|[?#])/i.test(parsed.pathname)) ||
+    ((h === "investors.lockheedmartin.com" || h.endsWith(".lockheedmartin.com")) &&
+      /\/static-files\//i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Tokyo Electron IR earnings PDFs (www.tel.com).
+  if (
+    (h === "www.tel.com" || h === "tel.com" || h.endsWith(".tel.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Air Liquide IR earnings PDFs (www.airliquide.com/sites/.../files/).
+  if (
+    (h === "www.airliquide.com" || h === "airliquide.com" || h.endsWith(".airliquide.com")) &&
+    parsed.pathname.includes("/sites/") &&
+    parsed.pathname.includes("/files/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // HDFC Bank IR earnings PDFs (www.hdfc.bank.in / hdfcbank.com DAM).
+  if (
+    (h === "www.hdfc.bank.in" ||
+      h === "hdfc.bank.in" ||
+      h === "www.hdfcbank.com" ||
+      h.endsWith(".hdfcbank.com")) &&
+    parsed.pathname.includes("/content/dam/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Medtronic IR earnings PDFs.
+  if (
+    (h === "investorrelations.medtronic.com" || h.endsWith(".medtronic.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Mitsubishi Corporation IR English PDFs.
+  if (
+    (h === "www.mitsubishicorp.com" || h.endsWith(".mitsubishicorp.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Zijin Mining English results PDFs.
+  if (
+    (h === "www.zijinmining.com" ||
+      h === "zijinmining.com" ||
+      h.endsWith(".zijinmining.com") ||
+      h === "www.zjky.cn" ||
+      h.endsWith(".zjky.cn")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Scotiabank quarterly-reports IR PDFs.
+  if (
+    (h === "www.scotiabank.com" || h === "scotiabank.com" || h.endsWith(".scotiabank.com")) &&
+    parsed.pathname.includes("/corporate/quarterly-reports/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Altria Sitecore CDN + www.altria.com media + q4cdn (505541855) earnings PDFs.
+  if (
+    (h === "edge.sitecorecloud.io" || h.endsWith(".sitecorecloud.io")) &&
+    parsed.pathname.includes("/Project/Altria/") &&
+    (/\.pdf(?:$|[?#])/i.test(parsed.pathname) || /\.pdf(?:$|[?#])/i.test(url))
+  ) {
+    return true;
+  }
+  if (
+    ((h === "www.altria.com" || h === "altria.com" || h.endsWith(".altria.com")) &&
+      /\.pdf(?:$|[?#])/i.test(parsed.pathname)) ||
+    ((h === "s204.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+      parsed.pathname.includes("/505541855/") &&
+      /\.pdf(?:$|[?#])/i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Accenture IR media PDFs (accenture-v4 + Accenture-IR-V3).
+  if (
+    (h === "investor.accenture.com" || h.endsWith(".accenture.com")) &&
+    parsed.pathname.includes("/media/Files/A/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // PDD Holdings GCS static-files earnings releases.
+  if (
+    (h === "investor.pddholdings.com" || h.endsWith(".pddholdings.com")) &&
+    (/\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname) ||
+      /\/node\/\d+\/pdf\/?$/i.test(parsed.pathname) ||
+      /\.pdf(?:$|[?#])/i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // BP IR Contentful file API PDFs.
+  if (
+    (h === "www.bp.com" || h === "bp.com" || h.endsWith(".bp.com")) &&
+    parsed.pathname.includes("/api/files/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // OCBC (OVCHY) iwov-resources quarterly PDFs.
+  if (
+    (h === "www.ocbc.com" || h === "ocbc.com" || h.endsWith(".ocbc.com")) &&
+    parsed.pathname.includes("/iwov-resources/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Zurich Insurance media-assets IR PDFs.
+  if (
+    (h === "www.zurich.com" || h === "zurich.com" || h.endsWith(".zurich.com")) &&
+    parsed.pathname.includes("/media-assets/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // ASE Technology Holding (ASX) TodayIR media PDFs.
+  if (
+    (h === "media-aseholdco.todayir.com" || h.endsWith(".todayir.com")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Starbucks IR q4cdn (326826266) Earnings at a Glance + Earnings Release.
+  if (
+    (h === "s203.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/326826266/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Robinhood IR GCS static-files (presentation + press; no .pdf suffix).
+  if (
+    (h === "investors.robinhood.com" || h.endsWith(".robinhood.com")) &&
+    /\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // AXA (AXAHY) Prismic CDN results presentations + press.
+  if (
+    (h === "www-axa-com.cdn.prismic.io" || h.endsWith(".prismic.io")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Lowe's IR Drupal files (infographic slides + earnings/press release).
+  if (
+    (h === "corporate.lowes.com" || h.endsWith(".lowes.com")) &&
+    parsed.pathname.includes("/sites/lowes-corp/files/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // ADP IR q4cdn (887941133) Earnings Deck/Presentation + Earnings Release.
+  if (
+    (h === "s205.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/887941133/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Spotify IR q4cdn (175625835) Shareholder Deck / Letter.
+  if (
+    (h === "s29.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/175625835/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // CIBC (CM) quarterly-results presentation + news release.
+  if (
+    (h === "www.cibc.com" || h.endsWith(".cibc.com")) &&
+    parsed.pathname.includes("/quarterly-results/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Stryker IR q4cdn (857738142) earnings press releases.
+  if (
+    (h === "s22.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/857738142/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Enbridge IR media earnings presentations.
+  if (
+    (h === "www.enbridge.com" || h.endsWith(".enbridge.com")) &&
+    (parsed.pathname.includes("/Investor-Relations/") || parsed.pathname.includes("/investor-relations/")) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Phillips 66 IR q4cdn (128149789) presentation + earnings release.
+  if (
+    (h === "s22.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/128149789/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
   // Amazon IR-hosted Form 10-Q / 10-K PDFs (SEC Forms column on ir.aboutamazon.com).
   if (h === "d18rn0p25nwr6d.cloudfront.net" && /\/CIK-\d+\//i.test(parsed.pathname) && /\.pdf$/i.test(parsed.pathname)) {
     return true;

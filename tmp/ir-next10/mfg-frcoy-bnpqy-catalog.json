@@ -1,0 +1,324 @@
+{
+  "generatedAt": "2026-09-22",
+  "scope": "Q1 2022 through latest reported (as of discovery)",
+  "peerNotes": {
+    "SMFG": "March FY Japanese megabank peer \u2014 Investors Meeting Presentation (*_e_pre.pdf) as Slides; Financial Results (*_e01.pdf) as Filings; Q1/Q3 often slides-empty. See lib/market/ir-seed-smfg-match.ts",
+    "SONY": "March FY \u2014 IR filename year = Finsepa fy\u22121 (26q1 \u2192 Q1 2027). See lib/market/ir-seed-sony-match.ts",
+    "TM": "March FY Toyota \u2014 presentation_2_en as Slides; English summary as Filings"
+  },
+  "MFG": {
+    "ticker": "MFG",
+    "name": "Mizuho Financial Group (ADR)",
+    "irPages": [
+      "https://www.mizuhogroup.com/investors/financial-information",
+      "https://www.mizuhogroup.com/investors/financial-information?tab=financial-statements",
+      "https://www.mizuhogroup.com/investors/financial-information?tab=briefing",
+      "https://www.mizuhogroup.com/investors/financial-information/financial-statements-data/archive",
+      "https://www.mizuhogroup.com/investors/archived-presentations"
+    ],
+    "fiscalNotes": {
+      "fyEndMonth": 3,
+      "fyEnd": "03-31",
+      "mapping": "Same as SMFG/SONY: Japanese bank FY ends March 31. Issuer IR tag data{YY}_* uses IR FY label = Finsepa fy\u22121 (e.g. data25_1q / fg-data26_1q \u2192 Finsepa Q1 2026 / Q1 2027). Period Apr\u2013Jun 2026 = Finsepa Q1 2027.",
+      "slides": "Summary of Financial Results PDF (*_2.pdf / fg-data*_2.pdf). For FY2023 Q1\u2013Q3 (Finsepa Q1\u2013Q3 2024) English data*_2 packs not on CDN \u2014 used Archived Presentations Summary/Investor H1 decks instead; filings left null.",
+      "filings": "Financial Results data pack (data{YY}_1q|2q|3q|fy.pdf / fg-data*). Reject capital-ratio *_3, Fixed Income, IR Day, 20-F, Form 6-K, Mizuho Securities earnings (securities/financial-results).",
+      "latestReported": "Q1 2027 (FY26 Q1, Apr\u2013Jun 2026, released ~2026-07-30)"
+    },
+    "knownQuarterDocs": {
+      "Q1 2022": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b974bcb13dddb984f03b57_data21_1q_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b974bba7ed74416c2ebfb7_data21_1q.pdf"
+      },
+      "Q2 2022": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b974bc474f282c7a16c7b6_data21_2q_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b974bb4f207c55dde54ccb_data21_2q.pdf"
+      },
+      "Q3 2022": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b972d77a04bff126365d0e_data21_3q_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b974bb9801575d2be2e95c_data21_3q.pdf"
+      },
+      "Q4 2022": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b974bc4f207c55dde54cfb_data21_fy_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b974be49f92aba79c3aea9_data21_fy.pdf"
+      },
+      "Q1 2023": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b9724196f70e450ee90b69_data22_1q_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b972412198043564061a2a_data22_1q.pdf"
+      },
+      "Q2 2023": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b97241ff6b914fd366beb6_data22_2q_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b972414f37775f7853bdd2_data22_2q.pdf"
+      },
+      "Q3 2023": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b9732798d172c6456ee636_data22_3q_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b97241078ac152f856b06c_data22_3q.pdf"
+      },
+      "Q4 2023": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b9724139eb98580d1e80c8_data22_fy_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b9724298f272e00b27c6e7_data22_fy.pdf"
+      },
+      "Q1 2024": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68503e0d2bb720d46083f0a0_202308_1.pdf",
+        "filings": null
+      },
+      "Q2 2024": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68503bddf11739fb1a832378_202311_3.pdf",
+        "filings": null
+      },
+      "Q3 2024": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/685037ca9316e19d4918547c_202402_2.pdf",
+        "filings": null
+      },
+      "Q4 2024": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b96fa2bcb886caa0f0a734_data23_fy_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b96fa2ca9a27f3cb0e078b_data23_fy.pdf"
+      },
+      "Q1 2025": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b969921fde88debcfd5d5e_data24_1q_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b9699531c80f234c73bbef_data24_1q.pdf"
+      },
+      "Q2 2025": {
+        "slides": "https://library.mizuhogroup.com/asset/1c53d24d-9146-4ad0-ab68-2907806717f0/data24_2q_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b969924092f0277938e10c_data24_2q.pdf"
+      },
+      "Q3 2025": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b96993cc9d10565249e592_data24_3q_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b96992df9a9cef26762b7f_data24_3q.pdf"
+      },
+      "Q4 2025": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/685028f9b2059a1774899910_data24_fy_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/685028cbfb401efcae3bdea2_data24_fy.pdf"
+      },
+      "Q1 2026": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b967a098646369e6f07cb1_data25_1q_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b9677c697afeea80e963e6_data25_1q.pdf"
+      },
+      "Q2 2026": {
+        "slides": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/6944bf681d3ea190eed2cb4d_data25_2q_2.pdf",
+        "filings": "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/6944bf6912496c5d8bd1846c_data25_2q.pdf"
+      },
+      "Q3 2026": {
+        "slides": "https://library.mizuhogroup.com/m/49d9b9953d3af2d3/original/data25_3q_2.pdf",
+        "filings": "https://library.mizuhogroup.com/asset/aaa1eb27-5544-4bd0-8ec7-56b48a32efcc/data25_3q.pdf"
+      },
+      "Q4 2026": {
+        "slides": "https://library.mizuhogroup.com/asset/016d3852-3288-4b49-9f3f-40a50e222e50/data25_fy_2.pdf",
+        "filings": "https://library.mizuhogroup.com/asset/8e1911ca-5e38-4c5b-9dbf-43a9d2de3760/data25_fy.pdf"
+      },
+      "Q1 2027": {
+        "slides": "https://library.mizuhogroup.com/asset/9ff487db-e8c6-49e3-84e7-c94408d171ec/fg-data26_1q_2.pdf",
+        "filings": "https://library.mizuhogroup.com/asset/fea20513-63d3-4eab-b6f9-1f98bdf10e09/fg-data26_1q.pdf"
+      }
+    },
+    "trafficLight": "yellow",
+    "trafficLightWhy": "18/21 quarters green (data pack + Summary *_2). Yellow: Q1\u2013Q3 2024 \u2014 English FG data23_1q/2q/3q packs not on CDN (data23-1q pages 404); slides filled from Archived Presentations Summary/H1 decks; filings left null. Rejected Mizuho Securities /securities/financial-results packs.",
+    "cdnAllowlistHints": [
+      "library.mizuhogroup.com",
+      "cdn.prod.website-files.com",
+      "www.mizuho-fg.co.jp",
+      "www.mizuhogroup.com"
+    ]
+  },
+  "FRCOY": {
+    "ticker": "FRCOY",
+    "name": "Fast Retailing Co Ltd ADR (Uniqlo)",
+    "irPages": [
+      "https://www.fastretailing.com/eng/ir/library/earning.html",
+      "https://www.fastretailing.com/eng/ir/library/earning_back.html",
+      "https://www.fastretailing.com/eng/ir/library/tanshin.html",
+      "https://www.fastretailing.com/eng/ir/"
+    ],
+    "fiscalNotes": {
+      "fyEndMonth": 8,
+      "fyEnd": "08-31",
+      "mapping": "August FY (Sep 1 \u2013 Aug 31). Issuer FY2026 = Sep 2025\u2013Aug 2026. Finsepa Q labels with FY_END 08-31 match issuer: Q1=Sep\u2013Nov, Q2=Sep\u2013Feb (1H), Q3=Sep\u2013May (9M), Q4=full year to Aug. Announcement-date heuristic for YYYYMMDD_results_en.pdf: Oct\u2192Q4 same year; Jan\u2192Q1; Apr\u2192Q2; Jul\u2192Q3.",
+      "slides": "Earnings presentation: https://www.fastretailing.com/eng/ir/library/pdf/{YYYYMMDD}_results_en.pdf",
+      "filings": "Results announcement (tanshin): https://www.fastretailing.com/eng/ir/library/pdf/tanshin{YYYY}08_{q}q_eng.pdf where YYYY is FY-end year. Reject FAQ/Q&A, factbook, Japanese-only results.pdf without _en.",
+      "latestReported": "Q3 2026 (nine months to May 2026, announced 2026-07-09)"
+    },
+    "knownQuarterDocs": {
+      "Q1 2022": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20220113_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_1q_eng.pdf"
+      },
+      "Q2 2022": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20220414_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_2q_eng.pdf"
+      },
+      "Q3 2022": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20220714_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_3q_eng.pdf"
+      },
+      "Q4 2022": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20221013_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202208_4q_eng.pdf"
+      },
+      "Q1 2023": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20230112_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_1q_eng.pdf"
+      },
+      "Q2 2023": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20230413_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_2q_eng.pdf"
+      },
+      "Q3 2023": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20230713_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_3q_eng.pdf"
+      },
+      "Q4 2023": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20231012_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202308_4q_eng.pdf"
+      },
+      "Q1 2024": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20240111_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_1q_eng.pdf"
+      },
+      "Q2 2024": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20240411_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_2q_eng.pdf"
+      },
+      "Q3 2024": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20240711_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_3q_eng.pdf"
+      },
+      "Q4 2024": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20241010_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202408_4q_eng.pdf"
+      },
+      "Q1 2025": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20250109_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_1q_eng.pdf"
+      },
+      "Q2 2025": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20250410_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_2q_eng.pdf"
+      },
+      "Q3 2025": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20250710_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_3q_eng.pdf"
+      },
+      "Q4 2025": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20251009_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202508_4q_eng.pdf"
+      },
+      "Q1 2026": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20260108_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202608_1q_eng.pdf"
+      },
+      "Q2 2026": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20260409_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202608_2q_eng.pdf"
+      },
+      "Q3 2026": {
+        "slides": "https://www.fastretailing.com/eng/ir/library/pdf/20260709_results_en.pdf",
+        "filings": "https://www.fastretailing.com/eng/ir/library/pdf/tanshin202608_3q_eng.pdf"
+      }
+    },
+    "trafficLight": "green",
+    "trafficLightWhy": "All 19 in-scope quarters (Q1 2022\u2013Q3 2026) have distinct English results presentation (*_results_en.pdf) + tanshin results announcement; all URLs verified %PDF-.",
+    "cdnAllowlistHints": [
+      "www.fastretailing.com"
+    ]
+  },
+  "BNPQY": {
+    "ticker": "BNPQY",
+    "name": "BNP Paribas SA ADR",
+    "irPages": [
+      "https://invest.bnpparibas/en/results",
+      "https://invest.bnpparibas/en/search/reports/documents/results"
+    ],
+    "fiscalNotes": {
+      "fyEndMonth": 12,
+      "fyEnd": "12-31",
+      "mapping": "Calendar FY. Finsepa Qn YYYY = calendar quarter. Document slugs use {q}q{yy} with yy = calendar year mod 100 (2q26 = Q2 2026).",
+      "slides": "https://invest.bnpparibas/en/document/{q}q{yy}-slides \u2014 URL itself returns application/pdf (%PDF-), not an HTML wrapper.",
+      "filings": "https://invest.bnpparibas/en/document/{q}q{yy}-pr \u2014 press release results PDF. Reject transcripts, appendices, quarterly series xlsx, Universal Registration Document amendments, debt-investor decks.",
+      "latestReported": "Q2 2026 (released 2026-07-23)"
+    },
+    "knownQuarterDocs": {
+      "Q1 2022": {
+        "slides": "https://invest.bnpparibas/en/document/1q22-slides",
+        "filings": "https://invest.bnpparibas/en/document/1q22-pr"
+      },
+      "Q2 2022": {
+        "slides": "https://invest.bnpparibas/en/document/2q22-slides",
+        "filings": "https://invest.bnpparibas/en/document/2q22-pr"
+      },
+      "Q3 2022": {
+        "slides": "https://invest.bnpparibas/en/document/3q22-slides",
+        "filings": "https://invest.bnpparibas/en/document/3q22-pr"
+      },
+      "Q4 2022": {
+        "slides": "https://invest.bnpparibas/en/document/4q22-slides",
+        "filings": "https://invest.bnpparibas/en/document/4q22-pr"
+      },
+      "Q1 2023": {
+        "slides": "https://invest.bnpparibas/en/document/1q23-slides",
+        "filings": "https://invest.bnpparibas/en/document/1q23-pr"
+      },
+      "Q2 2023": {
+        "slides": "https://invest.bnpparibas/en/document/2q23-slides",
+        "filings": "https://invest.bnpparibas/en/document/2q23-pr"
+      },
+      "Q3 2023": {
+        "slides": "https://invest.bnpparibas/en/document/3q23-slides",
+        "filings": "https://invest.bnpparibas/en/document/3q23-pr"
+      },
+      "Q4 2023": {
+        "slides": "https://invest.bnpparibas/en/document/4q23-slides",
+        "filings": "https://invest.bnpparibas/en/document/4q23-pr"
+      },
+      "Q1 2024": {
+        "slides": "https://invest.bnpparibas/en/document/1q24-slides",
+        "filings": "https://invest.bnpparibas/en/document/1q24-pr"
+      },
+      "Q2 2024": {
+        "slides": "https://invest.bnpparibas/en/document/2q24-slides",
+        "filings": "https://invest.bnpparibas/en/document/2q24-pr"
+      },
+      "Q3 2024": {
+        "slides": "https://invest.bnpparibas/en/document/3q24-slides",
+        "filings": "https://invest.bnpparibas/en/document/3q24-pr"
+      },
+      "Q4 2024": {
+        "slides": "https://invest.bnpparibas/en/document/4q24-slides",
+        "filings": "https://invest.bnpparibas/en/document/4q24-pr"
+      },
+      "Q1 2025": {
+        "slides": "https://invest.bnpparibas/en/document/1q25-slides",
+        "filings": "https://invest.bnpparibas/en/document/1q25-pr"
+      },
+      "Q2 2025": {
+        "slides": "https://invest.bnpparibas/en/document/2q25-slides",
+        "filings": "https://invest.bnpparibas/en/document/2q25-pr"
+      },
+      "Q3 2025": {
+        "slides": "https://invest.bnpparibas/en/document/3q25-slides",
+        "filings": "https://invest.bnpparibas/en/document/3q25-pr"
+      },
+      "Q4 2025": {
+        "slides": "https://invest.bnpparibas/en/document/4q25-slides",
+        "filings": "https://invest.bnpparibas/en/document/4q25-pr"
+      },
+      "Q1 2026": {
+        "slides": "https://invest.bnpparibas/en/document/1q26-slides",
+        "filings": "https://invest.bnpparibas/en/document/1q26-pr"
+      },
+      "Q2 2026": {
+        "slides": "https://invest.bnpparibas/en/document/2q26-slides",
+        "filings": "https://invest.bnpparibas/en/document/2q26-pr"
+      }
+    },
+    "trafficLight": "green",
+    "trafficLightWhy": "All 18 in-scope quarters (Q1 2022\u2013Q2 2026) have distinct {q}q{yy}-slides + {q}q{yy}-pr document URLs that return application/pdf; verified %PDF-.",
+    "cdnAllowlistHints": [
+      "invest.bnpparibas"
+    ]
+  },
+  "verification": {
+    "method": "GET Range bytes=0-8; require magic %PDF-",
+    "urlCount": 113,
+    "failedCount": 0,
+    "failed": []
+  }
+}

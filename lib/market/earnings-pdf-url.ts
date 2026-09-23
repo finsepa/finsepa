@@ -5,7 +5,9 @@ function isGcsNodePdfPath(host: string, pathname: string): boolean {
     h !== "investors.broadcom.com" &&
     h !== "broadcom.gcs-web.com" &&
     h !== "investor.sandisk.com" &&
-    h !== "sandisk.gcs-web.com"
+    h !== "sandisk.gcs-web.com" &&
+    h !== "isrg.intuitive.com" &&
+    h !== "isrg.gcs-web.com"
   ) {
     return false;
   }
@@ -52,18 +54,34 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
     ) {
       return true;
     }
+    // BNP Paribas IR document URLs (`/en/document/{q}q{yy}-slides|pr`) — PDF bytes, no `.pdf` suffix.
+    if (
+      (u.hostname === "invest.bnpparibas" || u.hostname.endsWith(".bnpparibas")) &&
+      /\/en\/document\/\dq\d{2}-(slides|pr)\/?$/i.test(u.pathname)
+    ) {
+      return true;
+    }
+    // GlobeNewswire Resource/Download UUIDs — PDF bytes, no `.pdf` suffix (e.g. Progressive).
+    if (
+      (u.hostname === "ml.globenewswire.com" || u.hostname.endsWith(".globenewswire.com")) &&
+      /\/Resource\/Download\/[a-f0-9-]{36}\/?$/i.test(u.pathname)
+    ) {
+      return true;
+    }
     return /\.pdf(?:$|[?#])/i.test(u.pathname) || /\.pdf(?:$|[?#])/i.test(t);
   } catch {
     if (/investors\.micron\.com\/static-files\//i.test(t)) return false;
     return (
       /\.pdf(?:$|[?#])/i.test(t) ||
       /\/static-files\/[a-f0-9-]{36}/i.test(t) ||
-      /(?:investors\.broadcom\.com|broadcom\.gcs-web\.com|investor\.sandisk\.com|sandisk\.gcs-web\.com)\/node\/\d+\/pdf/i.test(
+      /(?:investors\.broadcom\.com|broadcom\.gcs-web\.com|investor\.sandisk\.com|sandisk\.gcs-web\.com|isrg\.intuitive\.com|isrg\.gcs-web\.com)\/node\/\d+\/pdf/i.test(
         t,
       ) ||
       /verizon\.com\/about\/file\/\d+\/download\?[^#]*token=/i.test(t) ||
       /cdn\.builder\.io\/o\/assets%2F2e5c7fb020194c1a8ee80f743d0b923e%2F[^?\s]+[^#]*alt=media/i.test(t) ||
-      /investors\.danaher\.com\/[^?\s]+Danaher-Reports[^?\s]*\?[^#]*asPDF/i.test(t)
+      /investors\.danaher\.com\/[^?\s]+Danaher-Reports[^?\s]*\?[^#]*asPDF/i.test(t) ||
+      /invest\.bnpparibas\/en\/document\/\dq\d{2}-(slides|pr)/i.test(t) ||
+      /globenewswire\.com\/Resource\/Download\/[a-f0-9-]{36}/i.test(t)
     );
   }
 }

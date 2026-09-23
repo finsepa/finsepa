@@ -1,0 +1,85 @@
+{
+  "ticker": "MO",
+  "fy": "calendar",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2022/2022-Q1/Presentation.pdf?sc_lang=en",
+      "filings": "https://s204.q4cdn.com/505541855/files/doc_financials/2022/q1/Press-Release-(1).pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2022/2022-Q2/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2022/2022-Q2/Press-Release.pdf?sc_lang=en"
+    },
+    "Q3 2022": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2022/2022-Q3/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2022/2022-Q3/Press-Release.pdf?sc_lang=en"
+    },
+    "Q4 2022": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2023/2022-Q4/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2023/2022-Q4/Press-Release.pdf?sc_lang=en"
+    },
+    "Q1 2023": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2023/2023-Q1/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2023/2023-Q1/Press-Release.pdf?sc_lang=en"
+    },
+    "Q2 2023": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2023/2023-Q2/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2023/2023-Q2/Press-Release.pdf?sc_lang=en"
+    },
+    "Q3 2023": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2023/2023-Q3/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2023/2023-Q3/Press-Release.pdf?sc_lang=en"
+    },
+    "Q4 2023": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2024/2023-Q4/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2024/2023-Q4/Press-Release.pdf?sc_lang=en"
+    },
+    "Q1 2024": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2024/2024-Q1/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2024/2024-Q1/Press-Release.pdf?sc_lang=en"
+    },
+    "Q2 2024": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2024/2024-Q2/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2024/2024-Q2/Press-Release.pdf?sc_lang=en"
+    },
+    "Q3 2024": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2024/2024-Q3/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2024/2024-Q3/Press-Release.pdf?sc_lang=en"
+    },
+    "Q4 2024": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2025/2024-Q4/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2025/2024-Q4/Press-Release.pdf?sc_lang=en"
+    },
+    "Q1 2025": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2025/2025-Q1/Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2025/2025-Q1/Press-Release.pdf?sc_lang=en"
+    },
+    "Q2 2025": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2025/2025-Q2/Q2-2025-Earnings-Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2025/2025-Q2/Press-Release.pdf?sc_lang=en"
+    },
+    "Q3 2025": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2025/2025-Q3/Q3-2025-Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2025/2025-Q3/Q3-2025-Press-Release.pdf?sc_lang=en"
+    },
+    "Q4 2025": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2026/2025-Q4/Q4-2025-Earnings---Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2026/2025-Q4/Q4-2025-Earnings---Release.pdf?sc_lang=en"
+    },
+    "Q1 2026": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2026/2026-Q1/Q1-2026-Earnings--Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2026/2026-Q1/Q1-2026-Earnings---Release.pdf?sc_lang=en"
+    },
+    "Q2 2026": {
+      "slides": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2026/2026-Q2/Altria-Q2-2026-Earnings---Presentation.pdf?sc_lang=en",
+      "filings": "https://edge.sitecorecloud.io/altriaclien9c5f-altriaclien2f33-prod0b41-3d12/media/Project/Altria/Altria/Investors/events-and-presentations/2026/2026-Q2/Altria-Q2-2026-Earnings---Release.pdf?sc_lang=en"
+    }
+  },
+  "notes": "Altria Group. Calendar FY. Latest: Q2 2026 (Jul 30 2026); Q3 2026 scheduled Oct 29 2026. Slides=Earnings Presentation PDF; Filings=Press/Earnings Release PDF. Primary host edge.sitecorecloud.io under /Investors/events-and-presentations/{folderYear}/{YYYY}-Q{N}/; Q1 2022 filings on s204.q4cdn.com/505541855. Reject Quarterly Metrics, Reconciliations, CAGNY, Annual Meeting. Ticker GREEN.",
+  "hosts": [
+    "edge.sitecorecloud.io",
+    "s204.q4cdn.com",
+    "www.altria.com",
+    "investor.altria.com"
+  ]
+}

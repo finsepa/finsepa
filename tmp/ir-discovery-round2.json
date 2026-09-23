@@ -1,0 +1,561 @@
+{
+  "isrg": {
+    "pressList": [
+      {
+        "t": "Intuitive Announces Second Quarter Earnings",
+        "h": "https://isrg.intuitive.com/news-releases/news-release-details/intuitive-announces-second-quarter-earnings-6"
+      },
+      {
+        "t": "Intuitive Announces First Quarter Earnings",
+        "h": "https://isrg.intuitive.com/news-releases/news-release-details/intuitive-announces-first-quarter-earnings-7"
+      }
+    ],
+    "pressDocs": [
+      {
+        "text": "Intuitive Announces Second Quarter Earnings",
+        "url": "https://isrg.intuitive.com/news-releases/news-release-details/intuitive-announces-second-quarter-earnings-6",
+        "nid": "23231",
+        "pdf": "https://isrg.intuitive.com/node/23231/pdf",
+        "title": "Intuitive Announces Second Quarter Earnings | Intuitive Surgical",
+        "bodyStart": "Skip to main navigation\nMy Intuitive\nEvents\nContact Us\nUnited States\nProducts & Services\nHealthcare Professionals\nPatients\nAbout\nInvestors\nOverview\nStock Info\nPress\nEvents\nSEC Filings\nFAQs\nAudio Archives\nInvestor Contact\nIntuitive Announces Second Quarter Earnings\nJuly 16, 2026 at 4:05 PM EDT\nPDF Ve"
+      },
+      {
+        "text": "Intuitive Announces First Quarter Earnings",
+        "url": "https://isrg.intuitive.com/news-releases/news-release-details/intuitive-announces-first-quarter-earnings-7",
+        "nid": "23036",
+        "pdf": "https://isrg.intuitive.com/node/23036/pdf",
+        "title": "Intuitive Announces First Quarter Earnings | Intuitive Surgical",
+        "bodyStart": "Skip to main navigation\nMy Intuitive\nEvents\nContact Us\nUnited States\nProducts & Services\nHealthcare Professionals\nPatients\nAbout\nInvestors\nOverview\nStock Info\nPress\nEvents\nSEC Filings\nFAQs\nAudio Archives\nInvestor Contact\nIntuitive Announces First Quarter Earnings\nApril 21, 2026 at 4:38 PM EDT\nPDF Ve"
+      }
+    ],
+    "eventDocs": [
+      {
+        "event": "Q2 2026 INTUITIVE Earnings Conference Call",
+        "error": "page.goto: net::ERR_ABORTED at javascript:void(0);\nCall log:\n  - navigating to \"javascript:void(0);\", waiting until \"networkidle\"\n"
+      }
+    ],
+    "homeLinks": [
+      {
+        "t": "Events",
+        "h": "https://isrg.intuitive.com/events-and-presentations"
+      },
+      {
+        "t": "Q2 2026 INTUITIVE Earnings Conference Call",
+        "h": "https://isrg.intuitive.com/events/event-details/q2-2026-intuitive-earnings-conference-call"
+      },
+      {
+        "t": "Q2 2026 Investor Presentation",
+        "h": "https://isrg.intuitive.com/static-files/76f7007b-e586-4661-82fb-0409f15b83d5"
+      },
+      {
+        "t": "2026 Annual Shareholders Meeting Rules of Conduct",
+        "h": "https://isrg.intuitive.com/static-files/fe75d11e-471f-4215-b9ee-26fb7515ed02"
+      },
+      {
+        "t": "View All",
+        "h": "https://isrg.intuitive.com/events-and-presentations"
+      },
+      {
+        "t": "Q2 2026 Financial Data Tables",
+        "h": "https://isrg.intuitive.com/static-files/6ea9f7b2-ca9a-4441-96e2-9c95729cdce2"
+      },
+      {
+        "t": "2026 Proxy Statement",
+        "h": "https://isrg.intuitive.com/static-files/f8b309dc-79d2-4f01-88c9-a2e68546dcba"
+      },
+      {
+        "t": "2025 Annual Report",
+        "h": "https://isrg.intuitive.com/static-files/d01bbc25-f8cf-433b-8ebb-b5afc1926236"
+      },
+      {
+        "t": "2025 Intuitive Corporate Impact Report",
+        "h": "https://isrg.intuitive.com/static-files/5ef323d0-7b83-40bf-93c3-e624be43b433"
+      },
+      {
+        "t": "J.P. Morgan Healthcare Conference 2026 Presentation",
+        "h": "https://isrg.intuitive.com/static-files/213c60fa-3473-4b2d-be8b-4a34791e86ae"
+      },
+      {
+        "t": "Corporate Governance Guidelines",
+        "h": "https://isrg.intuitive.com/static-files/bc8fe69d-aa33-40d4-be4d-8178651946c7"
+      }
+    ]
+  },
+  "tjx": {
+    "press": [
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2027-earnings-press-release.pdf?sfvrsn=76c709ce_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2027-earnings-press-release.pdf?sfvrsn=8b3a4acc_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2026-earnings-press-release.pdf?sfvrsn=47359cb1_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2026-earnings-press-release.pdf?sfvrsn=d2151387_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2026-earnings-press-release.pdf?sfvrsn=fa589a86_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2026-earnings-press-release.pdf?sfvrsn=f44f3d4c_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2025-earnings-press-release.pdf?sfvrsn=bf90af37_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2025-earnings-press-release.pdf?sfvrsn=31e21f18_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2025-earnings-press-release.pdf?sfvrsn=54c487c5_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2025-earnings-press-release.pdf?sfvrsn=f6c4ded1_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2024-earnings-press-release.pdf?sfvrsn=80fe9774_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2024-earnings-press-release.pdf?sfvrsn=9842cf52_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2024-earnings-press-release.pdf?sfvrsn=176b37f4_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2024-earnings-press-release.pdf?sfvrsn=ddeb6afb_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2023-earnings-press-release.pdf?sfvrsn=e2de1747_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2023-earnings-press-release.pdf?sfvrsn=aa049505_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2023-earnings-press-release.pdf?sfvrsn=a8f538b3_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2023-earnings-press-release.pdf?sfvrsn=19570a7f_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2022-earnings-press-release.pdf?sfvrsn=1fc12390_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2022-earnings-press-release.pdf?sfvrsn=ce356a4c_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2022-earnings-press-release.pdf?sfvrsn=b62533e1_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2022-earnings-press-release.pdf?sfvrsn=789f534d_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2021-earnings-press-release.pdf?sfvrsn=ac7d0f10_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2021-earnings-press-release.pdf?sfvrsn=35b25b4d_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2021-earnings-press-release.pdf?sfvrsn=8ef9286f_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy21-earnings-press-release.pdf?sfvrsn=32ebd4de_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q4-fy20-earnings-press-release.pdf?sfvrsn=9888ed47_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q3-fy20-earnings-press-release.pdf?sfvrsn=e62488a1_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q2-fy20-earnings-press-release.pdf?sfvrsn=8a75c3cd_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy20-earnings-press-release.pdf?sfvrsn=db6ffe0e_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q4-fy19-earnings-press-release.pdf?sfvrsn=7b6ea4af_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q3-fy19-earnings-press-release.pdf?sfvrsn=df3830e4_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q2-fy19-earnings-press-release.pdf?sfvrsn=90ade3fa_1"
+      },
+      {
+        "t": "Earnings Press Release",
+        "h": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy19-earnings-press-release.pdf?sfvrsn=f7f571e3_1"
+      }
+    ],
+    "presentations": [],
+    "allPdfLabels": [
+      "Read our full Global Corporate Responsibility Report :: https://www.tjx.com/docs/default-source/corporate-responsibility/tjx-2026-global-corporate-responsibility-report.pdf",
+      "TJX Global Corporate Responsibility Report :: https://www.tjx.com/docs/default-source/corporate-responsibility/tjx-2026-global-corporate-responsibility-report.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2027-earnings-press-release.pdf",
+      "Reconciliations of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2027-reconciliations-of-financials.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2027-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2027-earnings-press-release.pdf",
+      "Reconciliations of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2027-reconciliations-of-financials.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2027-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2026-earnings-press-release.pdf",
+      "Reconciliations of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2026-reconciliations-of-financials.pdf",
+      "Form 10-K :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fiscal-year-2026-form-10-k.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2026-earnings-press-release.pdf",
+      "Reconciliations of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2026-reconciliations-of-financials.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2026-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2026-earnings-press-release.pdf",
+      "Reconciliations of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2026-reconciliations-of-financials.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2026-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2026-earnings-press-release.pdf",
+      "Reconciliations of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2026-reconciliations-of-financials.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2026-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2025-earnings-press-release.pdf",
+      "Reconciliations of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2025-reconciliations-of-financials.pdf",
+      "Form 10-K :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2025-form-10-k.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2025-earnings-press-release.pdf",
+      "Reconciliations of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2025-reconciliations-of-financials.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2025-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2025-earnings-press-release.pdf",
+      "Reconciliations of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2025-reconciliations-of-financials.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2025-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2025-earnings-press-release.pdf",
+      "Reconciliations of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2025-reconciliations-of-financials.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2025-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2024-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2024-reconciliations-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2024-sales-and-margin-comparability-table.pdf",
+      "Form 10-K :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2024-form-10-k.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2024-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2024-reconciliations-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2024-sales-and-margin-comparability-table.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2024-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2024-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2024-reconciliations-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2024-sales-and-margin-comparability-table.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2024-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2024-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2024-reconciliations-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2024-sales-and-margin-comparability-table.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2024-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2023-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2023-reconciliation-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2023-sales-and-margin-comparability-table.pdf",
+      "Form 10-K :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2023-form-10-k.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2023-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2023-reconciliation-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2023-sales-and-margin-comparability-table.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2023-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2023-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2023-reconciliations-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2023-sales-and-margin-comparability-table.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2023-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2023-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2023-reconciliation-of-financials.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2023-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2022-earnings-press-release.pdf",
+      "Form 10-K :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2022-form-10-k.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2022-earnings-press-release.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2022-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2022-earnings-press-release.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2022-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2022-earnings-press-release.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2022-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2021-earnings-press-release.pdf",
+      "Form 10-K :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2021-form-10-k.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2021-earnings-press-release.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2021-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2021-earnings-press-release.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2021-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy21-earnings-press-release.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy21-form-10-q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q4-fy20-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q4-fy20-reconciliations-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q4-fy20-sales-and-margin-comparability-table.pdf",
+      "Form 10-K :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-form-10-k-february-2020.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q3-fy20-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q3-fy20-reconciliations-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q3-fy20-sales-and-margin-comparability-table.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-form-10-q-november-2019.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q2-fy20-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q2-fy20-reconciliations-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q2-fy20-sales-and-margin-comparability-table.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/aug30-10q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy20-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q1-fy20-reconciliations-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q1-fy20-sales-and-margin-comparability-table.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy20-10q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q4-fy19-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q4fy19-reconciliation-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q4fy19-sales-and-margin-comparability-table.pdf",
+      "Form 10-K :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q4fy19-10k.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q3-fy19-earnings-press-release.pdf",
+      "Reconcilation of Financials :: https://www.tjx.com/docs/default-source/default-document-library/quarterly-results/q3fy19-reconcilation-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q3fy19-sales-and-margin-comparability-table.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q3fy19-10q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q2-fy19-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q2fy19-reconciliation-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q2fy19-sales-and-margin-comparability-table.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q2fy19-10q.pdf",
+      "Earnings Press Release :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-q1-fy19-earnings-press-release.pdf",
+      "Reconciliation of Financials :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q1fy19-reconciliation-of-financials.pdf",
+      "Sales and Margin Comparability Table :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q1fy19-sales-and-margin-comparability-table.pdf",
+      "Form 10-Q :: https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/q1fy19-10q.pdf"
+    ]
+  },
+  "ul": {
+    "docs": [
+      {
+        "t": "Q2 2026 Full Announcement (PDF 361.96 KB)",
+        "h": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf"
+      },
+      {
+        "t": "Q2 2026 Highlights (PDF 90.27 KB)",
+        "h": "https://www.unilever.com/files/unilever-q2-2026-results-key-highlights.pdf"
+      },
+      {
+        "t": "Q2 2026 Presentation (PDF 2.36 MB)",
+        "h": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf"
+      },
+      {
+        "t": "Q2 2026 Video Transcript (PDF 486.08 KB)",
+        "h": "https://www.unilever.com/files/unilever-q2-2026-transcript.pdf"
+      },
+      {
+        "t": "Unilever historical HPC financials (PDF 219.72 KB)",
+        "h": "https://www.unilever.com/files/unilever-historical-hpc-financials-pdf.pdf"
+      },
+      {
+        "t": "Q1 2026 Full Announcement (PDF 342.85 KB)",
+        "h": "https://www.unilever.com/files/unilever-q1-2026-full-announcement.pdf"
+      },
+      {
+        "t": "Q1 2026 Highlights (PDF 190.35 KB)",
+        "h": "https://www.unilever.com/files/unilever-q1-2026-highlights.pdf"
+      },
+      {
+        "t": "Q1 2026 Presentation (PDF 2.64 MB)",
+        "h": "https://www.unilever.com/files/unilever-q1-2026-presentation.pdf"
+      },
+      {
+        "t": "Q1 2026 Video Transcript (PDF 244.05 KB)",
+        "h": "https://www.unilever.com/files/unilever-q1-2026-transcript.pdf"
+      },
+      {
+        "t": "Q4 2025 Full Announcement (PDF 1.16 MB)",
+        "h": "https://www.unilever.com/files/ir-q4-2025-full-announcement.pdf"
+      },
+      {
+        "t": "Q4 2025 Highlights (PDF 166.91 KB)",
+        "h": "https://www.unilever.com/files/ir-q4-2025-highlights.pdf"
+      },
+      {
+        "t": "Unilever Historical Financials excluding Ice Cream (PDF 317.79 KB)",
+        "h": "https://www.unilever.com/files/unilever-historical-financials-excluding-ice-cream-pdf.pdf"
+      },
+      {
+        "t": "Unilever Half Year Historical Financials excluding Ice Cream (PDF 175.49 KB)",
+        "h": "https://www.unilever.com/files/unilever-half-year-historical-financials-excluding-ice-cream-pdf.pdf"
+      },
+      {
+        "t": "Q4 2025 Presentation (PDF 2.15 MB)",
+        "h": "https://www.unilever.com/files/q4-2025-presentation.pdf"
+      },
+      {
+        "t": "Q4 2025 Video Transcript (PDF 224.14 KB)",
+        "h": "https://www.unilever.com/files/q4-2025-video-transcript.pdf"
+      },
+      {
+        "t": "Q3 2025 Full Announcement (PDF 454.66 KB)",
+        "h": "https://www.unilever.com/files/q3-2025-full-announcement.pdf"
+      },
+      {
+        "t": "Q3 2025 Highlights (PDF 195.08 KB)",
+        "h": "https://www.unilever.com/files/q3-2025-highlights.pdf"
+      },
+      {
+        "t": "Q3 2025 Presentation (PDF 1.06 MB)",
+        "h": "https://www.unilever.com/files/ir-q3-2025-presentation.pdf"
+      },
+      {
+        "t": "Q3 2025 Video Transcript (PDF 242.55 KB)",
+        "h": "https://www.unilever.com/files/q3-2025-video-transcript.pdf"
+      },
+      {
+        "t": "Q2 2025 Full Announcement (PDF 572.49 KB)",
+        "h": "https://www.unilever.com/files/ir-q2-2025-full-announcement.pdf"
+      },
+      {
+        "t": "Q2 2025 Highlights (PDF 335.3 KB)",
+        "h": "https://www.unilever.com/files/ir-q2-2025-highlights.pdf"
+      },
+      {
+        "t": "Q2 2025 Presentation (PDF 2.63 MB)",
+        "h": "https://www.unilever.com/files/ir-q2-2025-presentation.pdf"
+      },
+      {
+        "t": "Q2 2025 Video Transcript (PDF 273.51 KB)",
+        "h": "https://www.unilever.com/files/unilever-q2-h1-2025-results-webcast-transcript.pdf"
+      },
+      {
+        "t": "Q1 2025 Full Announcement (PDF 527.27 KB)",
+        "h": "https://www.unilever.com/files/ir-q1-2025-full-announcement.pdf"
+      },
+      {
+        "t": "Q1 2025 Highlights (PDF 261.89 KB)",
+        "h": "https://www.unilever.com/files/ir-q1-2025-highlights.pdf"
+      },
+      {
+        "t": "Q1 2025 Presentation (PDF 1.9 MB)",
+        "h": "https://www.unilever.com/files/ir-q1-2025-results-presentation.pdf"
+      },
+      {
+        "t": "Q1 2025 Webcast Transcript (PDF 244.39 KB)",
+        "h": "https://www.unilever.com/files/q1-2025-video-transcript.pdf"
+      },
+      {
+        "t": "Q4 2024 Full Announcement (PDF 382.63 KB)",
+        "h": "https://www.unilever.com/files/ir-q4-2024-full-announcement.pdf"
+      },
+      {
+        "t": "Q4 2024 Highlights (PDF 116.69 KB)",
+        "h": "https://www.unilever.com/files/ir-q4-2024-highlights.pdf"
+      },
+      {
+        "t": "Q4 2024 Presentation (PDF 2.16 MB)",
+        "h": "https://www.unilever.com/files/ir-q4-2024-results-presentation.pdf"
+      },
+      {
+        "t": "Q4 2024 Webcast Transcript (PDF 294.48 KB)",
+        "h": "https://www.unilever.com/files/ir-q4-2024-video-transcript.pdf"
+      },
+      {
+        "t": "Q3 2024 Full Announcement (PDF 286.1 KB)",
+        "h": "https://www.unilever.com/files/ir-q3-2024-full-announcement.pdf"
+      },
+      {
+        "t": "Q3 2024 Highlights (PDF 192.37 KB)",
+        "h": "https://www.unilever.com/files/ir-q3-2024-highlights.pdf"
+      },
+      {
+        "t": "Q3 2024 Presentation (PDF 1.16 MB)",
+        "h": "https://www.unilever.com/files/ir-q3-2024-results-presentation.pdf"
+      },
+      {
+        "t": "Q3 2024 Webcast Transcript (PDF 217.94 KB)",
+        "h": "https://www.unilever.com/files/unilever-q3-2024-trading-statement-full-transcript.pdf"
+      },
+      {
+        "t": "Q2 2024 Full Announcement (PDF 568.65 KB)",
+        "h": "https://www.unilever.com/files/ir-q2-2024-full-announcement.pdf"
+      },
+      {
+        "t": "Q2 2024 Highlights (PDF 324.46 KB)",
+        "h": "https://www.unilever.com/files/ir-q2-2024-highlights.pdf"
+      },
+      {
+        "t": "Q2 2024 Presentation (PDF 1.57 MB)",
+        "h": "https://www.unilever.com/files/ir-q2-2024-results-presentation.pdf"
+      },
+      {
+        "t": "Q2 2024 Webcast Transcript (PDF 230.55 KB)",
+        "h": "https://www.unilever.com/files/h1-2024-video-transcript.pdf"
+      },
+      {
+        "t": "Q1 2024 Full Announcement (PDF 335.75 KB)",
+        "h": "https://www.unilever.com/files/ir-q1-2024-full-announcement.pdf"
+      },
+      {
+        "t": "Q1 2024 Highlights (PDF 262.55 KB)",
+        "h": "https://www.unilever.com/files/ir-q1-2024-highlights.pdf"
+      },
+      {
+        "t": "Q1 2024 Presentation (PDF 2.23 MB)",
+        "h": "https://www.unilever.com/files/ir-q1-2024-results-presentation.pdf"
+      },
+      {
+        "t": "Q1 2024 Webcast Transcript (PDF 1.1 MB)",
+        "h": "https://www.unilever.com/files/q1-2024-transcript.pdf"
+      }
+    ]
+  },
+  "verify": {
+    "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2027-earnings-press-release.pdf": {
+      "error": "TypeError: Failed to fetch"
+    },
+    "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2027-earnings-press-release.pdf": {
+      "error": "TypeError: Failed to fetch"
+    },
+    "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2026-earnings-press-release.pdf": {
+      "error": "TypeError: Failed to fetch"
+    },
+    "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf": {
+      "error": "TypeError: Failed to fetch"
+    },
+    "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf": {
+      "error": "TypeError: Failed to fetch"
+    },
+    "https://www.unilever.com/files/unilever-q1-2026-full-announcement.pdf": {
+      "error": "TypeError: Failed to fetch"
+    },
+    "https://www.unilever.com/files/unilever-q1-2026-presentation.pdf": {
+      "error": "TypeError: Failed to fetch"
+    },
+    "https://www.unilever.com/files/ir-q4-2025-full-announcement.pdf": {
+      "error": "TypeError: Failed to fetch"
+    },
+    "https://www.unilever.com/files/q4-2025-presentation.pdf": {
+      "error": "TypeError: Failed to fetch"
+    },
+    "https://www.unilever.com/files/q3-2025-full-announcement.pdf": {
+      "error": "TypeError: Failed to fetch"
+    },
+    "https://www.unilever.com/files/ir-q3-2025-presentation.pdf": {
+      "error": "TypeError: Failed to fetch"
+    },
+    "https://isrg.intuitive.com/node/23231/pdf": {
+      "status": 206,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "head": "%PDF-"
+    },
+    "https://isrg.intuitive.com/node/23036/pdf": {
+      "status": 206,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "head": "%PDF-"
+    }
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "ticker": "VLO",
+  "fy": "calendar",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_financials/2022/q1/1Q22-VLO-Earnings-Release.pdf"
+    },
+    "Q2 2022": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_financials/2022/q2/VLO-2Q22-Earnings-Release.pdf"
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_financials/2022/q3/VLO-3Q22-Earnings-Release.pdf"
+    },
+    "Q4 2022": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_financials/2022/q4/VLO-4Q22-Earnings-Release.pdf"
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_financials/2023/q1/VLO-1Q23-Earnings-Release.pdf"
+    },
+    "Q2 2023": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2023/q2/earnings-result/VLO-2Q23-Earnings-Release.pdf"
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2023/q3/earnings-result/VLO-3Q23-Earnings-Release.pdf"
+    },
+    "Q4 2023": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2023/q4/earnings-result/VLO-4Q23-Earnings-Release.pdf"
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2024/q1/earnings-result/VLO-1Q24-Earnings-Release.pdf"
+    },
+    "Q2 2024": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2024/q2/earnings-result/VLO-2Q24-Earnings-Release.pdf"
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2024/q3/earnings-result/VLO-3Q24-Earnings-Release.pdf"
+    },
+    "Q4 2024": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2024/q4/earnings-result/VLO-4Q24-Earnings-Release.pdf"
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2025/q1/earnings-result/VLO-1Q25-Earnings-Release.pdf"
+    },
+    "Q2 2025": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2025/q2/earnings-result/VLO-2Q25-Earnings-Release.pdf"
+    },
+    "Q3 2025": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2025/q3/earnings-result/VLO-3Q25-Earnings-Release.pdf"
+    },
+    "Q4 2025": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2025/q4/earnings-result/VLO-4Q25-Earnings-Release.pdf"
+    },
+    "Q1 2026": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2026/q1/earnings-result/VLO-1Q26-Earnings-Release.pdf"
+    },
+    "Q2 2026": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/587626645/files/doc_earnings/2026/q2/earnings-result/VLO-2Q26-Earnings-Release.pdf"
+    }
+  },
+  "notes": "Valero Energy calendar FY. Hub: investorvalero.com (Q4). PDF host: s23.q4cdn.com/587626645. Filings = FinancialReport DocumentCategory news Earnings Release: newer quarters files/doc_earnings/{year}/q{n}/earnings-result/VLO-{n}Q{yy}-Earnings-Release.pdf; older (thru ~Q1 2023 / 2022) files/doc_financials/{year}/q{n}/\u2026Earnings-Release.pdf. No quarterly earnings slide decks on IR \u2014 Events show Press Release + webcast only; Presentations archive is evergreen Investor Presentation / refining primer / TCFD (not earnings decks). Occasional post-call Guidance PDFs under doc_earnings/.../generic/VLO-Guidance-* exist but are not earnings decks \u2014 leave slides null. Scope Q1 2022\u2192Q2 2026 (0 green / 18 yellow / 0 red); Q3 2026 earnings call listed upcoming. All filings Range-GET verified %PDF. Ticker light: YELLOW. Never SEC HTML (skip cloudfront 10-Q/10-K in feed).",
+  "hosts": [
+    "s23.q4cdn.com",
+    "investorvalero.com"
+  ],
+  "status": {
+    "green": 0,
+    "yellow": 18,
+    "red": 0,
+    "ticker": "yellow"
+  }
+}

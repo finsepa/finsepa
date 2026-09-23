@@ -1,0 +1,90 @@
+{
+  "ticker": "ADP",
+  "fyEnd": "06-30",
+  "irHub": "https://investors.adp.com/financials/quarterly-results/default.aspx",
+  "pdfHost": "s205.q4cdn.com/887941133",
+  "trafficLight": "green",
+  "notes": "ADP June 30 FY (not calendar). Labels = issuer fiscal Q1\u2013Q4 (Q1 ends Sep 30, Q2 Dec 31, Q3 Mar 31, Q4 Jun 30). Hub: investors.adp.com FinancialReport.svc. PDF host: s205.q4cdn.com/887941133. Slides = DocumentCategory presentation (*Earnings-Deck* / *Earnings-Presentation*). Filings = DocumentCategory news (*Earnings-Release*). Scope Q1 2022\u2192Q4 2026 (20 green / 0 yellow / 0 red). Rejected transcript / infographic / 10-Q / 10-K / Cloudfront SEC mirrors. Never SEC HTML.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2022/q1/1Q22-ADP-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2022/q1/1Q22-ADP-Earnings-Release.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2022/q2/ADP-2Q22-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2022/q2/ADP-2Q22-Earnings-Release.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2022/q3/ADP-3Q22-Earnings-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2022/q3/ADP-3Q22-Earnings-Release.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2022/q4/ADP-4Q22-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2022/q4/ADP-4Q22-Earnings-Release.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2023/q1/ADP-1Q23-Earnings-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2023/q1/ADP-1Q23-Earnings-Release.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2023/q2/ADP-2Q23-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2023/q2/ADP-2Q23-Earnings-Release.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2023/q3/ADP-3Q23-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2023/q3/ADP-3Q23-Earnings-Release.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2023/q4/ADP-4Q23-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2023/q4/ADP-4Q23-Earnings-Release.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2024/q1/ADP-1Q24-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2024/q1/ADP-1Q24-Earnings-Release.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2024/q2/ADP-2Q24-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2024/q2/ADP-2Q24-Earnings-Release.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2024/q3/ADP-3Q24-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2024/q3/ADP-3Q24-Earnings-Release.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2024/q4/ADP-4Q24-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2024/q4/ADP-4Q24-Earnings-Release.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2025/q1/ADP-1Q25-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2025/q1/ADP-1Q25-Earnings-Release.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2025/q2/ADP-2Q25-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2025/q2/ADP-2Q25-Earnings-Release.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2025/q3/ADP-3Q25-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2025/q3/ADP-3Q25-Earnings-Release.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2025/q4/ADP-_-4Q25-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2025/q4/ADP-4Q25-Earnings-Release.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2026/q1/ADP-1Q26-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2026/q1/ADP-1Q26-Earnings-Release.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2026/q2/ADP-2Q26-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2026/q2/ADP-2Q26-Earnings-Release.pdf"
+    },
+    "Q3 2026": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2026/q3/ADP-3Q26-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2026/q3/ADP-3Q26-Earnings-Release.pdf"
+    },
+    "Q4 2026": {
+      "slides": "https://s205.q4cdn.com/887941133/files/doc_financials/2026/q4/ADP-4Q26-Earnings-Deck.pdf",
+      "filings": "https://s205.q4cdn.com/887941133/files/doc_financials/2026/q4/ADP-4Q26-Earnings-Release.pdf"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+npm warn exec The following package was not found and will be installed: tsx@4.23.15
+
+=== Q4 2026 (q4-2026) ===
+downloading transcript… https://cdn-dynmedia-1.microsoft.com/is/content/microsoftcorp/TranscriptFY26Q4.docx
+speakers 10 paras 190
+downloading Medius audio… 55b7ccb2-44c5-4ddd-8c69-696af249231f
+hls https://stream.event.microsoft.com/prodwe/Content/HLS/VOD/4921/6388/05a9c1bc-2b47-4f8e-9d81-7f5c2e6d7d4f/01ce826c-7b76-4d47-8b21-75c0c5abd95f/Stream(08)/index.m3u8
+wrote lib/market/fixtures/msft-q4-2026-transcript.json
+
+=== Q3 2026 (q3-2026) ===
+downloading transcript… https://cdn-dynmedia-1.microsoft.com/is/content/microsoftcorp/TranscriptQandAFY26Q3
+speakers 10 paras 176
+downloading Medius audio… 547ca906-a8b4-4f7a-bd53-844a9032fb54
+hls https://stream.event.microsoft.com/prodwe/Content/HLS/VOD/3719/15320/e1aac225-6f00-425f-9c28-de3867d0432b/08c5d43f-97bc-68ee-7869-23692690be7f/Stream(08)/index.m3u8
+wrote lib/market/fixtures/msft-q3-2026-transcript.json
+
+=== Q2 2026 (q2-2026) ===
+downloading transcript… https://cdn-dynmedia-1.microsoft.com/is/content/microsoftcorp/TranscriptQandAFY26q2
+speakers 10 paras 166
+downloading Medius audio… 61d9a257-6b57-4953-98f0-7c49ed2dce32
+hls https://stream.event.microsoft.com/prodwe/Content/HLS/VOD/2393/8080/c28c0752-fa2c-4ddd-8a7f-d6183d9c1c01/08c5d43f-97bc-68ee-7869-23692690be7f/Stream(08)/index.m3u8
+wrote lib/market/fixtures/msft-q2-2026-transcript.json
+
+=== Q1 2026 (q1-2026) ===
+downloading transcript… https://cdn-dynmedia-1.microsoft.com/is/content/microsoftcorp/TranscriptFY26Q1.docx
+speakers 10 paras 168
+downloading Medius audio… 3877d0ae-114a-4e2e-9a17-85f3b7a81502
+hls https://stream.event.microsoft.com/prodwe/Content/HLS/VOD/5503/18564/eff0c4ca-eba6-46ee-a75a-7089259973bf/08c5d43f-97bc-68ee-7869-23692690be7f/Stream(08)/index.m3u8
+wrote lib/market/fixtures/msft-q1-2026-transcript.json
+
+=== Q4 2025 (q4-2025) ===
+downloading transcript… https://cdn-dynmedia-1.microsoft.com/is/content/microsoftcorp/TranscriptQandAFY25q4.docx
+speakers 10 paras 155
+downloading Medius audio… 15ea4a91-4aea-4da4-b94b-77b4613af6f5
+hls https://stream.event.microsoft.com/prodwe/Content/HLS/VOD/15211/13869/b6b9ca1d-3b84-45c7-98ae-193de05c3cbe/08c5d43f-97bc-68ee-7869-23692690be7f/Stream(08)/index.m3u8
+wrote lib/market/fixtures/msft-q4-2025-transcript.json
+
+=== Q3 2025 (q3-2025) ===
+downloading transcript… https://cdn-dynmedia-1.microsoft.com/is/content/microsoftcorp/TranscriptFY25Q3
+speakers 11 paras 157
+Medius unavailable — YouTube fallback… https://www.youtube.com/watch?v=DtSZ5uQvW_8
+wrote lib/market/fixtures/msft-q3-2025-transcript.json
+
+Summary
+┌─────────┬───────────┬────────┐
+│ (index) │ slug      │ status │
+├─────────┼───────────┼────────┤
+│ 0       │ 'q4-2026' │ 'ok'   │
+│ 1       │ 'q3-2026' │ 'ok'   │
+│ 2       │ 'q2-2026' │ 'ok'   │
+│ 3       │ 'q1-2026' │ 'ok'   │
+│ 4       │ 'q4-2025' │ 'ok'   │
+│ 5       │ 'q3-2025' │ 'ok'   │
+└─────────┴───────────┴────────┘

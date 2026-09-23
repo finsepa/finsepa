@@ -1,0 +1,126 @@
+/**
+ * Parker-Hannifin (PH) IR — FY ends 06-30.
+ * Slides = Earnings Presentation; Filings = earnings press PDF (/parker/news/).
+ * Host: d1io3yog0oux5.cloudfront.net. Never conference decks / FLS / SEC HTML.
+ */
+
+export type PhQuarterDocs = {
+  slides: string | null;
+  filings: string | null;
+};
+
+export const PH_FY_END = "06-30";
+
+export const PH_IR_PAGES = [
+  "https://investors.parker.com/",
+  "https://investors.parker.com/financial-information/financial-results",
+  "https://investors.parker.com/news-events/presentations",
+] as const;
+
+/** Catalog Q1 2022 → Q4 2026 (issuer June FY) — green. */
+export const PH_KNOWN_QUARTER_DOCS: Readonly<Record<string, PhQuarterDocs>> = {
+  "Q1 2022": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/21521/pdf/7bd241c1-77e3-4b3a-aba0-cae37cc73ec6.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2021-11-04_Parker_Reports_Fiscal_2022_First_Quarter_40.pdf",
+  },
+  "Q2 2022": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/21525/pdf/Parker_Hannifin_FY22_Q2_Earnings_Presentation_-_February_3%2C_2022.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2022-02-03_Parker_Reports_Fiscal_2022_Second_Quarter_36.pdf",
+  },
+  "Q3 2022": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/21528/pdf/Parker_Hannifin_FY22_Q3_Earnings_Presentation_May_5%2C_2022.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2022-05-05_Parker_Reports_Fiscal_2022_Third_Quarter_27.pdf",
+  },
+  "Q4 2022": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/21529/pdf/Parker_Hannifin_Earnings_Call_Presentation_FY22_Q4.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2022-08-04_Parker_Reports_Fiscal_2022_Fourth_Quarter_and_17.pdf",
+  },
+  "Q1 2023": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/21532/pdf/Parker_Hannifin_Earnings_Slide_Presentation_FY23_Q1.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2022-11-03_Parker_Reports_Fiscal_2023_First_Quarter_6.pdf",
+  },
+  "Q2 2023": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/21899/pdf/Parker_Hannifin_Q2FY23_Earnings_Webcst_Presentation_February_2%2C_2023.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2023-02-02_Parker_Reports_Fiscal_2023_Second_Quarter_424.pdf",
+  },
+  "Q3 2023": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/21902/pdf/Parker_Hannifin_Q3_FY23_Earnings_Call_Presentation.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2023-05-04_Parker_Reports_Fiscal_2023_Third_Quarter_431.pdf",
+  },
+  "Q4 2023": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/21905/pdf/Parker_Hannifin_FY23_Q4_Earnings_Call_and_Webcast_Presentation_FINAL.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2023-08-03_Parker_Reports_Fiscal_2023_Fourth_Quarter_and_434.pdf",
+  },
+  "Q1 2024": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/21965/pdf/Parker+Hannifin+Earnings+Presentation+FY24+Q1+FINAL.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2023-11-02_Parker_Reports_Fiscal_2024_First_Quarter_444.pdf",
+  },
+  "Q2 2024": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/21975/pdf/Parker+Hannifin+Earnings+Presentation+FY24+Q2+FINAL.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2024-02-01_Parker_Reports_Fiscal_2024_Second_Quarter_450.pdf",
+  },
+  "Q3 2024": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/21997/pdf/PH+Fiscal+2024+Q3+Earnings+Presentation.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2024-05-02_Parker_Reports_Fiscal_2024_Third_Quarter_458.pdf",
+  },
+  "Q4 2024": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/22016/pdf/Parker+Hannifin+Earnings+Call+Presentation+FY24+Q4+FINAL.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2024-08-08_Parker_Reports_Fiscal_2024_Fourth_Quarter_and_463.pdf",
+  },
+  "Q1 2025": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/22029/pdf/Parker+Hannifin+Earnings+Presentation+FY25+Q1.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2024-10-31_Parker_Reports_Fiscal_2025_First_Quarter_469.pdf",
+  },
+  "Q2 2025": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/22036/pdf/Parker+Hannifin+Fiscal+2025+2Q+Earnings+Presentation+%28January+30_+2025%29.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2025-01-30_Parker_Reports_Fiscal_2025_Second_Quarter_474.pdf",
+  },
+  "Q3 2025": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/22052/pdf/Parker+Hannifin+Earnings+Call+Presentation+FY25+Q3.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2025-05-01_Parker_Reports_Fiscal_2025_Third_Quarter_483.pdf",
+  },
+  "Q4 2025": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/22060/pdf/Parker+Hannifin+FY25+Q4+Earnings+Presentation.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2025-08-07_Parker_Reports_Fiscal_2025_Fourth_Quarter_and_487.pdf",
+  },
+  "Q1 2026": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/22075/pdf/Parker+Hannifin+Earnings+Presentation+FY26+Q1.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2025-11-06_Parker_Reports_Fiscal_2026_First_Quarter_495.pdf",
+  },
+  "Q2 2026": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/22085/pdf/Parker+Hannifin+FY26+Q2+Earnings+Presentation.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2026-01-29_Parker_Reports_Fiscal_2026_Second_Quarter_499.pdf",
+  },
+  "Q3 2026": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/22097/pdf/Parker+Hannifin+FY26+Q3+Earnings+Presentation.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2026-04-30_Parker_Reports_Fiscal_2026_Third_Quarter_506.pdf",
+  },
+  "Q4 2026": {
+    slides: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/db/2265/22104/pdf/Parker+Hannifin+FY26+Q4+Earnings+Presentation.pdf",
+    filings: "https://d1io3yog0oux5.cloudfront.net/_55d659baa16abc95332b8cf9d2e06a2a/parker/news/2026-08-06_Parker_Reports_Record_Fiscal_2026_Fourth_Quarter_509.pdf",
+  },
+};
+
+export function isPhRejected(href: string, title = ""): boolean {
+  const n = `${decodeURIComponent(href)} ${title}`.toLowerCase();
+  return /sec\.gov|10-?q|10-?k|8-?k|proxy|transcript|fls|non-gaap|reconcil|barclays|laguna|bank of america|morgan stanley|investor presentation|ir day|win_strategy|\.xls|\.xlsx|\.csv(?:$|[?#])/i.test(
+    n,
+  );
+}
+
+export function isPhIrPdf(href: string | null | undefined): boolean {
+  if (!href || isPhRejected(href)) return false;
+  try {
+    const u = new URL(href);
+    const host = u.hostname.toLowerCase();
+    if (host !== "d1io3yog0oux5.cloudfront.net") return false;
+    if (!u.pathname.includes("/parker/")) return false;
+    return /\.pdf(?:$|[?#])/i.test(u.pathname);
+  } catch {
+    return false;
+  }
+}
+
+export function mergePhKnownQuarterDocs(): Map<string, PhQuarterDocs> {
+  return new Map(Object.entries(PH_KNOWN_QUARTER_DOCS));
+}

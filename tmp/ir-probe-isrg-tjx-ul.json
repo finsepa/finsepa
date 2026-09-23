@@ -1,0 +1,737 @@
+{
+  "tjx": {
+    "Q1 2027": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2027-earnings-press-release.pdf"
+    },
+    "Q2 2027": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2027-earnings-press-release.pdf"
+    },
+    "Q1 2026": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2026-earnings-press-release.pdf"
+    },
+    "Q2 2026": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2026-earnings-press-release.pdf"
+    },
+    "Q3 2026": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2026-earnings-press-release.pdf"
+    },
+    "Q4 2026": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2026-earnings-press-release.pdf"
+    },
+    "Q1 2025": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2025-earnings-press-release.pdf"
+    },
+    "Q2 2025": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2025-earnings-press-release.pdf"
+    },
+    "Q3 2025": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2025-earnings-press-release.pdf"
+    },
+    "Q4 2025": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2025-earnings-press-release.pdf"
+    },
+    "Q1 2024": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2024-earnings-press-release.pdf"
+    },
+    "Q2 2024": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2024-earnings-press-release.pdf"
+    },
+    "Q3 2024": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2024-earnings-press-release.pdf"
+    },
+    "Q4 2024": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2024-earnings-press-release.pdf"
+    },
+    "Q1 2023": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2023-earnings-press-release.pdf"
+    },
+    "Q2 2023": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2023-earnings-press-release.pdf"
+    },
+    "Q3 2023": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2023-earnings-press-release.pdf"
+    },
+    "Q4 2023": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2023-earnings-press-release.pdf"
+    },
+    "Q1 2022": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-first-quarter-fiscal-year-2022-earnings-press-release.pdf"
+    },
+    "Q2 2022": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-second-quarter-fiscal-year-2022-earnings-press-release.pdf"
+    },
+    "Q3 2022": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-third-quarter-fiscal-year-2022-earnings-press-release.pdf"
+    },
+    "Q4 2022": {
+      "status": 200,
+      "ct": "application/pdf",
+      "isPdf": true,
+      "bytes": 536,
+      "url": "https://www.tjx.com/docs/default-source/investor-docs/quarterly-results/tjx-fourth-quarter-fiscal-year-2022-earnings-press-release.pdf"
+    }
+  },
+  "ul": {
+    "Q2 2026": {
+      "slides": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf",
+      "filings": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/unilever-q2-2026-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/unilever-q2-2026-results-full-announcement.pdf"
+        }
+      }
+    },
+    "Q1 2026": {
+      "slides": "https://www.unilever.com/files/unilever-q1-2026-presentation.pdf",
+      "filings": "https://www.unilever.com/files/unilever-q1-2026-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/unilever-q1-2026-presentation.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/unilever-q1-2026-presentation.pdf"
+        },
+        "https://www.unilever.com/files/unilever-q1-2026-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/unilever-q1-2026-full-announcement.pdf"
+        }
+      }
+    },
+    "Q4 2025": {
+      "slides": "https://www.unilever.com/files/q4-2025-presentation.pdf",
+      "filings": "https://www.unilever.com/files/ir-q4-2025-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/q4-2025-presentation.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/q4-2025-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q4-2025-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q4-2025-full-announcement.pdf"
+        }
+      }
+    },
+    "Q3 2025": {
+      "slides": "https://www.unilever.com/files/ir-q3-2025-presentation.pdf",
+      "filings": "https://www.unilever.com/files/q3-2025-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/ir-q3-2025-presentation.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q3-2025-presentation.pdf"
+        },
+        "https://www.unilever.com/files/q3-2025-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/q3-2025-full-announcement.pdf"
+        }
+      }
+    },
+    "Q2 2025": {
+      "slides": "https://www.unilever.com/files/ir-q2-2025-presentation.pdf",
+      "filings": "https://www.unilever.com/files/ir-q2-2025-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/ir-q2-2025-presentation.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q2-2025-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q2-2025-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q2-2025-full-announcement.pdf"
+        }
+      }
+    },
+    "Q1 2025": {
+      "slides": "https://www.unilever.com/files/ir-q1-2025-results-presentation.pdf",
+      "filings": "https://www.unilever.com/files/ir-q1-2025-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/ir-q1-2025-results-presentation.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q1-2025-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q1-2025-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q1-2025-full-announcement.pdf"
+        }
+      }
+    },
+    "Q4 2024": {
+      "slides": "https://www.unilever.com/files/ir-q4-2024-results-presentation.pdf",
+      "filings": "https://www.unilever.com/files/ir-q4-2024-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/ir-q4-2024-results-presentation.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q4-2024-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q4-2024-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q4-2024-full-announcement.pdf"
+        }
+      }
+    },
+    "Q3 2024": {
+      "slides": "https://www.unilever.com/files/ir-q3-2024-results-presentation.pdf",
+      "filings": "https://www.unilever.com/files/ir-q3-2024-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/ir-q3-2024-results-presentation.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q3-2024-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q3-2024-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q3-2024-full-announcement.pdf"
+        }
+      }
+    },
+    "Q2 2024": {
+      "slides": "https://www.unilever.com/files/ir-q2-2024-results-presentation.pdf",
+      "filings": "https://www.unilever.com/files/ir-q2-2024-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/ir-q2-2024-results-presentation.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q2-2024-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q2-2024-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q2-2024-full-announcement.pdf"
+        }
+      }
+    },
+    "Q1 2024": {
+      "slides": "https://www.unilever.com/files/ir-q1-2024-results-presentation.pdf",
+      "filings": "https://www.unilever.com/files/ir-q1-2024-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/ir-q1-2024-results-presentation.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q1-2024-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q1-2024-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q1-2024-full-announcement.pdf"
+        }
+      }
+    },
+    "Q4 2023": {
+      "slides": "https://www.unilever.com/files/ir-q4-2023-results-presentation.pdf",
+      "filings": "https://www.unilever.com/files/ir-q4-2023-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/ir-q4-2023-results-presentation.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q4-2023-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q4-2023-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/ir-q4-2023-full-announcement.pdf"
+        }
+      }
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": "https://www.unilever.com/files/6e7c3e28-0eb0-4b59-b958-ed7f3cff1a62/ir-q3-2023-full-announcement.pdf",
+      "probes": {
+        "https://www.unilever.com/files/ir-q3-2023-results-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q3-2023-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/q3-2023-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q3-2023-presentation.pdf"
+        },
+        "https://www.unilever.com/files/6e7c3e28-0eb0-4b59-b958-ed7f3cff1a62/ir-q3-2023-full-announcement.pdf": {
+          "status": 200,
+          "ct": "application/pdf",
+          "isPdf": true,
+          "bytes": 536,
+          "url": "https://www.unilever.com/files/6e7c3e28-0eb0-4b59-b958-ed7f3cff1a62/ir-q3-2023-full-announcement.pdf"
+        }
+      }
+    },
+    "Q2 2023": {
+      "slides": null,
+      "filings": null,
+      "probes": {
+        "https://www.unilever.com/files/ir-q2-2023-results-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q2-2023-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/q2-2023-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q2-2023-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q2-2023-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q2-2023-full-announcement.pdf"
+        },
+        "https://www.unilever.com/files/q2-2023-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q2-2023-full-announcement.pdf"
+        }
+      }
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": null,
+      "probes": {
+        "https://www.unilever.com/files/ir-q1-2023-results-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q1-2023-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/q1-2023-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q1-2023-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q1-2023-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q1-2023-full-announcement.pdf"
+        },
+        "https://www.unilever.com/files/q1-2023-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q1-2023-full-announcement.pdf"
+        }
+      }
+    },
+    "Q4 2022": {
+      "slides": null,
+      "filings": null,
+      "probes": {
+        "https://www.unilever.com/files/ir-q4-2022-results-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q4-2022-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/q4-2022-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q4-2022-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q4-2022-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q4-2022-full-announcement.pdf"
+        },
+        "https://www.unilever.com/files/q4-2022-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q4-2022-full-announcement.pdf"
+        }
+      }
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": null,
+      "probes": {
+        "https://www.unilever.com/files/ir-q3-2022-results-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q3-2022-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/q3-2022-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q3-2022-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q3-2022-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q3-2022-full-announcement.pdf"
+        },
+        "https://www.unilever.com/files/q3-2022-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q3-2022-full-announcement.pdf"
+        }
+      }
+    },
+    "Q2 2022": {
+      "slides": null,
+      "filings": null,
+      "probes": {
+        "https://www.unilever.com/files/ir-q2-2022-results-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q2-2022-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/q2-2022-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q2-2022-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q2-2022-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q2-2022-full-announcement.pdf"
+        },
+        "https://www.unilever.com/files/q2-2022-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q2-2022-full-announcement.pdf"
+        }
+      }
+    },
+    "Q1 2022": {
+      "slides": null,
+      "filings": null,
+      "probes": {
+        "https://www.unilever.com/files/ir-q1-2022-results-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q1-2022-results-presentation.pdf"
+        },
+        "https://www.unilever.com/files/q1-2022-presentation.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q1-2022-presentation.pdf"
+        },
+        "https://www.unilever.com/files/ir-q1-2022-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/ir-q1-2022-full-announcement.pdf"
+        },
+        "https://www.unilever.com/files/q1-2022-full-announcement.pdf": {
+          "status": 404,
+          "ct": "text/plain;charset=UTF-8",
+          "isPdf": false,
+          "bytes": 22,
+          "url": "https://www.unilever.com/files/q1-2022-full-announcement.pdf"
+        }
+      }
+    }
+  },
+  "isrg": {
+    "Q2 2026": {
+      "slides": {
+        "url": "https://isrg.intuitive.com/static-files/76f7007b-e586-4661-82fb-0409f15b83d5",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      },
+      "filings": {
+        "url": "https://isrg.intuitive.com/node/23231/pdf",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      }
+    },
+    "Q1 2026": {
+      "slides": {
+        "url": "https://isrg.intuitive.com/static-files/0526442c-18d2-485f-af74-3faa9c6744c0",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      },
+      "filings": {
+        "url": "https://isrg.intuitive.com/node/23036/pdf",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      }
+    },
+    "Q4 2025": {
+      "slides": null,
+      "filings": {
+        "url": "https://isrg.intuitive.com/node/22616/pdf",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      }
+    },
+    "Q3 2025": {
+      "slides": {
+        "url": "https://isrg.intuitive.com/static-files/7bb532d6-7423-43c8-9681-a4787514cd9c",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      },
+      "filings": {
+        "url": "https://isrg.intuitive.com/node/22381/pdf",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      }
+    },
+    "Q2 2025": {
+      "slides": null,
+      "filings": {
+        "url": "https://isrg.intuitive.com/node/22271/pdf",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      }
+    },
+    "Q1 2025": {
+      "slides": {
+        "url": "https://isrg.intuitive.com/static-files/996d1dcf-346b-47b7-9806-6c2fa91bf6e7",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      },
+      "filings": {
+        "url": "https://isrg.intuitive.com/node/21931/pdf",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      }
+    },
+    "Q4 2024": {
+      "slides": null,
+      "filings": {
+        "url": "https://isrg.intuitive.com/node/21546/pdf",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      }
+    },
+    "Q3 2024": {
+      "slides": {
+        "url": "https://isrg.intuitive.com/static-files/c164a46a-a4ba-4936-b5c2-a6dc8f0f4f90",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      },
+      "filings": null
+    },
+    "Q3 2023": {
+      "slides": {
+        "url": "https://isrg.intuitive.com/static-files/dd0f7e46-db67-4f10-90d9-d826df00554e",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      },
+      "filings": null
+    },
+    "Q2 2023": {
+      "slides": {
+        "url": "https://isrg.intuitive.com/static-files/7cb161c9-d8cc-40ff-89ab-74b148704728",
+        "status": 200,
+        "ct": "application/pdf",
+        "isPdf": true,
+        "bytes": 536
+      },
+      "filings": null
+    }
+  }
+}

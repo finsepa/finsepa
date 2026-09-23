@@ -1,5 +1,7 @@
 /**
- * Import AAPL earnings transcripts + Quartr audio from stockanalysis pages.
+ * BOOTSTRAP ONLY — import AAPL transcripts + audio from stockanalysis (Quartr).
+ * Prefer first-party capture: scripts/aapl-capture-earnings-audio.ts
+ * (Apple Podcasts / Art19 within ~2 weeks). See docs/earnings-transcript-audio.md.
  *
  *   npx tsx scripts/aapl-import-earnings-transcripts.ts
  *   npx tsx scripts/aapl-import-earnings-transcripts.ts --only=q3-2026,q2-2026

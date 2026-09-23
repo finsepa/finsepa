@@ -3,6 +3,7 @@ import type { EarningsTranscript } from "@/lib/market/earnings-transcript-types"
 import { NVDA_EARNINGS_TRANSCRIPTS } from "@/lib/market/nvda-earnings-transcript-fixture";
 import { AAPL_EARNINGS_TRANSCRIPTS } from "@/lib/market/aapl-earnings-transcript-fixture";
 import { GOOGL_EARNINGS_TRANSCRIPTS } from "@/lib/market/googl-earnings-transcript-fixture";
+import { MSFT_EARNINGS_TRANSCRIPTS } from "@/lib/market/msft-earnings-transcript-fixture";
 
 /** Normalize `Q2 2027` / `Q2 FY2027` / `Q2FY2027` → `Q2|2027`. */
 function normalizeQuarterKey(label: string | null | undefined): string | null {
@@ -28,6 +29,7 @@ const BY_TICKER: Record<string, readonly EarningsTranscript[]> = {
   GOOGL: GOOGL_EARNINGS_TRANSCRIPTS,
   // Class C shares share the same Alphabet earnings calls.
   GOOG: GOOGL_EARNINGS_TRANSCRIPTS,
+  MSFT: MSFT_EARNINGS_TRANSCRIPTS,
 };
 
 export function listEarningsTranscripts(ticker: string): readonly EarningsTranscript[] {

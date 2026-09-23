@@ -1,0 +1,18 @@
+HTTP/1.1 206 Partial Content
+Server: keycdn
+Date: Tue, 22 Sep 2026 18:20:06 GMT
+Content-Type: application/pdf
+Content-Length: 8
+Connection: keep-alive
+x-amz-id-2: 4g9j4abBAaztsdhURghMAzk00ABe9s2rOlCstItgocF0ljR3MnY0eDbjan3k5EoIMGBMWeL2iLUxnerjS1PXPcsZ1MeGjtCG
+x-amz-request-id: 2T4FFCQE3ZEED3YV
+Last-Modified: Wed, 29 Jul 2026 20:05:42 GMT
+ETag: "145a80bf790f065bf65037fca4cf7b59"
+Expires: Tue, 22 Sep 2026 19:20:06 GMT
+Cache-Control: max-age=3600
+Content-Range: bytes 0-7/319495
+X-Cache: MISS
+X-Shield: active
+X-Edge-Location: aedu
+Access-Control-Allow-Origin: *
+

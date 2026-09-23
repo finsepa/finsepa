@@ -1,0 +1,78 @@
+{
+  "ticker": "MTSUY",
+  "fy": "03-31",
+  "hosts": [
+    "www.mitsubishicorp.com"
+  ],
+  "notes": "Mitsubishi Corp March FY (FY2022=Apr2022\u2013Mar2023). Labels=issuer FY. Slides=meetings/pdf/YYMMDD/YYYYMMDDe.pdf (Presentation Material). Filings=earnings/pdf/YYYYMMe.pdf (Flash Report / Financial Highlights). Akamai often blocks datacenter IPs; PDFs verified via content fetch. Gaps: Q1\u2013Q2 FY2022 none; Q3\u2013Q4 FY2022 and Q1\u2013Q2 FY2023 slides-only (older flash PDFs not locked). Latest: Q1 FY2026 (Aug 2026).",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q3 2022": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/230203/20230203e.pdf",
+      "filings": null
+    },
+    "Q4 2022": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/230509/20230509e.pdf",
+      "filings": null
+    },
+    "Q1 2023": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/230803/20230803e.pdf",
+      "filings": null
+    },
+    "Q2 2023": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/231102/20231102e.pdf",
+      "filings": null
+    },
+    "Q3 2023": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/240206/20240206e.pdf",
+      "filings": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/pdf/202402e.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/240502/20240502e.pdf",
+      "filings": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/pdf/202405e.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/240801/20240801e.pdf",
+      "filings": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/pdf/202408e.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/241101/20241101e.pdf",
+      "filings": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/pdf/202411e.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/250206/20250206e.pdf",
+      "filings": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/pdf/202502e.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/250502/20250502e.pdf",
+      "filings": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/pdf/202505e.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/250804/20250804e.pdf",
+      "filings": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/pdf/202508e.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/251104/20251104e.pdf",
+      "filings": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/pdf/202511e.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/260205/20260205e.pdf",
+      "filings": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/pdf/202602e.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/260501/20260501e.pdf",
+      "filings": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/pdf/202605e.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://www.mitsubishicorp.com/jp/en/ir/library/meetings/pdf/260803/20260803e.pdf",
+      "filings": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/pdf/202608e.pdf"
+    }
+  }
+}

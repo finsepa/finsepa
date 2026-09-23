@@ -1,0 +1,17 @@
+---
+description: First-party earnings transcript + audio capture (Quartr method, our files)
+globs:
+  - public/earnings-audio/**
+  - lib/market/**transcript*
+  - scripts/*earnings*
+  - scripts/*capture*
+---
+
+# Earnings transcript + audio
+
+Replicate **Quartr’s approach**, not Quartr’s archive: capture issuer-published audio/transcripts with Finsepa tooling and keep our own files for product + future data sales.
+
+- Prefer company IR / Podcasts / YouTube / Q4 webcasts over Stock Analysis or Quartr embeds.
+- Aggregators are bootstrap only when the issuer window already closed.
+- Apple (AAPL): official audio lasts ~2 weeks — use `scripts/aapl-capture-earnings-audio.ts` inside that window; do not scrape Quartr for “first-party.”
+- Full policy: `docs/earnings-transcript-audio.md`

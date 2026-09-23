@@ -1,0 +1,2425 @@
+<!DOCTYPE html>
+
+<html dir="ltr" class="medtronic-com-us-en " lang="en">
+
+<head>
+<!-- begin spin_special_output(head_start) -->
+<script type="text/javascript" src="js/jquery.js" wd_script_id="jquery.js" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg=="></script>
+<style type="text/css" wd_script_id="search_form_style" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg==">
+		.wd_search_form .wd_input_datepicker {
+			margin-right: 2px;
+		}
+		.wd_search_type_checkbox {
+			margin-left: 20px;
+		}
+		</style>
+<script type="text/javascript" src="js/jquery-webdriver.js" wd_script_id="jquery-webdriver.js" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg=="></script>
+<script type="text/javascript" src="js/webdriver.js" wd_script_id="webdriver.js" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg=="></script>
+<script type="text/javascript" wd_script_id="search_form_script" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg==">
+			function wd_toggle_search_form(link, advanced) {
+				var $ = webDriver.jQuery;
+				var $container = $(link).closest(".wd_search_form_container");
+				var basic_form = $container.find(".wd_search_form_basic");
+				var basic_query = basic_form.find('input[name="query"]');
+				var advanced_form = $container.find(".wd_search_form_advanced");
+				var advanced_query = advanced_form.find('input[name="query"]');
+
+				if (advanced) {
+					advanced_query.val(basic_query.val());
+					advanced_form.show();
+					basic_form.hide();
+				} else {
+					basic_query.val(advanced_query.val());
+					basic_form.show();
+					advanced_form.hide();
+				}
+
+				var target_form = advanced ? advanced_form : basic_form;
+				var focus_target = target_form.find('input[name="query"]').filter(":visible:not(:disabled)").get(0);
+				if (!focus_target)
+					focus_target = target_form.find(":input").filter(":visible:not(:disabled)").get(0);
+				if (focus_target)
+					setTimeout(function() { focus_target.focus(); }, 0);
+			}
+
+			function wd_toggle_search_type_checkboxes(radio) {
+				var $ = webDriver.jQuery;
+				var $radio = $(radio);
+				var all = $radio.val() == "All" ? $radio.is(":checked") : !$radio.is(":checked");
+				var $checkboxes = $radio.closest(".wd_form_field").find(".wd_search_type_checkbox");
+				$checkboxes.find('input[type="checkbox"]').prop("disabled", all);
+				$checkboxes.toggle(!all);
+			}
+
+			webDriver.jQuery(function ($) {
+				$('.wd_search_type_radio input[type="radio"]').each(function() {wd_toggle_search_type_checkboxes(this);});
+			});
+		</script>
+<style type="text/css" wd_script_id="featureboxes_style" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg==">
+		.wd_featurebox_icon {
+			display: inline;
+		}
+		.wd_featurebox_icon img {
+			vertical-align: middle;
+		}
+		div.wd_featurebox_group div.wd_tabs_wrapper {
+			border: none;
+			border-bottom: 1px solid #E1E1E1;
+			padding: 0 0 5px 0;
+		}
+		div.wd_featurebox_group div.wd_featurebox {
+			border: none;
+			padding: 8px 0 0 0;
+		}
+		div.wd_featurebox_group li.wd_tab {
+			float: none;
+			color: #666666;
+		}
+		div.wd_featurebox_group li.wd_tab-active {
+			border: none;
+			background-color: transparent;
+			color: #000000;
+			font-weight: bold;
+		}
+		div.wd_featurebox_group li.wd_tab-inactive {
+			cursor: auto;
+		}
+	</style>
+<link href="thirdparty/font-awesome/css/font-awesome.min.css" type="text/css" rel="stylesheet" wd_script_id="font-awesome.min.css">
+<style type="text/css" wd_script_id="template asset_icon_link:base:system style" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg==">
+ul.wd_asset_icon_link_list {
+	margin: 0 1em;
+}
+ul.wd_asset_icon_link_list li.wd_asset_icon_link {
+	margin: 0 0.2em;
+}
+li.wd_asset_icon_link {
+	display: inline;
+	white-space: nowrap;
+}
+li.wd_asset_icon_link .wd_icon {
+	color: #4f5051;
+}
+</style>
+<style type="text/css" wd_script_id="template_list_inline_style" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg==">
+						ul.wd_layout-inline {
+							display: inline-block;
+							list-style: none;
+							padding: 0;
+							margin: 0;
+						}
+						ul.wd_layout-inline li {
+							display: inline-block;
+							padding: 0;
+							margin: 0 0 0 1em;
+						}
+					</style>
+<style type="text/css" wd_script_id="template teaser_list:newsfeed_releases:system style" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg==">
+.wd_newsfeed_releases-teaser .wd_date {
+	font-weight: bold;
+}
+.wd_newsfeed_releases-teaser .wd_title {
+	font-weight: bold;
+}
+.wd_newsfeed_releases-teaser .subscribe_link {
+	margin-bottom: 1em;
+}
+.wd_newsfeed_releases-teaser span.wd_subscribe_email-icon {  
+	font-size: 1.2em; 
+}</style>
+<script type="text/javascript" src="js/wd_scriptloader.js" wd_script_id="wd_scriptloader.js" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg=="></script>
+<script type="text/javascript" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg==">webDriver.push_jQuery();</script>
+<script type="text/javascript" src="js/jquery-ui.js" wd_script_id="jquery-ui.js" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg=="></script>
+<script type="text/javascript" src="js/wd_resize.js" wd_script_id="wd_resize.js" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg=="></script>
+<link href="css/wd_modal.css" type="text/css" rel="stylesheet" wd_script_id="wd_modal.css">
+<link href="css/wd_wcag.css" type="text/css" rel="stylesheet" wd_script_id="wd_wcag.css">
+<script type="text/javascript" wd_script_id="wd_modal_script" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg==">
+(function($) {
+	webDriver.resizeModal = function() {
+		$(this).find(".wd_modal").wd_modal("resize");
+		return false;
+	}
+	
+	var modals = [];
+		
+	function _value(value, base) {
+		if (typeof value == "string" && value.indexOf("%") > 0) {
+			return  base * parseInt(value, 10) / 100;
+		} else {
+			return parseInt(value, 10);
+		}
+	}
+	
+	var wd_modal = function(element, options) {
+		this.init(element, options);
+	};
+	
+	wd_modal.prototype = {
+		init: function(element, options) {
+			var self = this;
+			
+			this.isOpen = false;
+			this.opener = null;
+			
+			this.$element = $(element);
+			this._options = {
+				autoOpen: false,
+				closeExisting: false,
+				closeOnEscape: true,
+				closeOnOverlayClick: true,
+				fadeDuration: null,
+				margin: "10%",
+				padding: 10
+			};
+			
+			this.options(options);
+			
+			this.$overlay = $("<div>").addClass("wd_modal-overlay").attr("wd_resize","resizeModal").appendTo($("body")).hide();
+			this.$outer = $("<div>").addClass("wd_modal-outer").appendTo(this.$overlay);
+			this.$inner = $("<div>").addClass("wd_modal-inner").appendTo(this.$outer).append(this.$element);
+			// Hack because I can't figure out where the extra few pixels at the bottom of the content are coming from
+			this.$inner.css("overflow-y", "hidden");
+			this.$close = $("<a class=\"wd_modal-close fa fa-times\" href=\"#close\" title=\"Close\"><span class=\"wd_sr-only\">Close Dialog<\/span><\/a>")
+					.on("click", function(event) {self.close(); event.preventDefault();})
+					.appendTo(this.$outer);
+			this.$element.addClass("wd_modal");
+			
+			if (this._options.autoOpen)
+				this.open(this._options.closeExisting);
+		},
+		
+		options: function(options) {
+			if (options) {
+				$.extend(this._options, options);
+
+				this._options.fadeDuration = parseInt(this._options.fadeDuration, 10);
+				if (isNaN(this._options.fadeDuration))
+					this._options.fadeDuration = false;
+				
+				if (!$.isArray(this._options.margin))
+					this._options.margin = [this._options.margin];
+				if (this._options.margin.length < 2)
+					this._options.margin[1] = this._options.margin[0];
+				if (this._options.margin.length < 3)
+					this._options.margin[2] = this._options.margin[0];
+				if (this._options.margin.length < 4)
+					this._options.margin[3] = this._options.margin[1];
+				
+				if (!$.isArray(this._options.padding))
+					this._options.padding = [this._options.padding];
+				if (this._options.padding.length < 2)
+					this._options.padding[1] = this._options.padding[0];
+				if (this._options.padding.length < 3)
+					this._options.padding[2] = this._options.padding[0];
+				if (this._options.padding.length < 4)
+					this._options.padding[3] = this._options.padding[1];
+			} else {
+				return this._options;
+			}
+		},
+		
+		reload: function(options) {
+			if (options) {
+				this.options(options);
+			}
+			
+			this.resize();
+		},
+		
+		open: function(closeExisting, now) {
+			if (this.isOpen)
+				return;
+			
+			var self = this;
+			var myCloseExisting = closeExisting;
+			
+			if (!this.opener)
+				this.opener = document.activeElement;
+
+			if (closeExisting && modals.length > 0) {
+				for (var i = modals.length - 1; i >= 0; --i)
+					modals[i].close(true, true);
+			}
+
+			this.$overlay.addClass("wd_modal-current");
+			$("body").append(this.$overlay);
+
+			if (!now && this._options.fadeDuration) {
+				this.$overlay.fadeIn(this._options.fadeDuration, function() {self.open(myCloseExisting, true);});
+			} else {
+				if (modals.length == 0) {
+					$("body").css("overflow","hidden");
+					$(document).on("keydown.wd_modal", function (event) {
+						var current = modals[modals.length - 1];
+						if ((event.which == 27 || event.keyCode == 27) && current._options.closeOnEscape) {
+							current.close();
+							event.stopImmediatePropagation();
+							event.preventDefault();
+						}
+					});
+				}
+
+				if (this._options.closeOnOverlayClick) {
+					this.$overlay.on("click.wd_modal", function (event) {
+						if (event.target == this) {
+							self.close();
+							event.preventDefault();
+						}
+					});
+				}
+
+				modals.push(this);
+				
+				this.$overlay.show();
+				
+				var $focus = this.$element.find(":focusable");
+				if ($focus.length > 0)
+					$focus[0].focus();
+				
+				this.isOpen = true;
+
+				this.$element.trigger("open");
+			}
+		},
+		
+		close: function(skipCurrent, now) {
+			if (!this.isOpen)
+				return;
+			
+			this.$element.trigger("beforeClose");
+			
+			// TODO: allow closing of lower modals
+			modals.pop();
+			
+			if (modals.length == 0) {
+				$("body").css("overflow","");
+				$(document).off("keydown.wd_modal");
+			}
+			
+			this.$overlay.off("click.wd_modal");
+			
+			if (this.opener) {
+				this.opener.focus();
+				this.opener = null;
+			}
+			
+			this.isOpen = false;
+			this.$overlay.removeClass("wd_modal-current").hide();
+			
+			if (!skipCurrent && modals.length > 0)
+				modals[modals.length-1].$overlay.addClass("wd_modal-current");
+			
+			this.$element.trigger("close");
+		},
+		
+		destroy: function() {
+			this.close(false, true);
+			$("body").append(this.$element);
+			this.$overlay.remove();
+		},
+		
+		resize: function() {
+			if (!this.isOpen)
+				return;
+			
+			var self = this;
+			var winWidth = $(window).width();
+			var winHeight = $(window).height();
+			
+			var margin = this._options.margin;
+			var padding = this._options.padding;
+			
+			var width = winWidth - _value(margin[1], winWidth) - _value(margin[3], winWidth) - _value(padding[1], winWidth) - _value(padding[1], winWidth);
+			var height = winHeight - _value(margin[0], winHeight) - _value(margin[2], winHeight) - _value(padding[0], winHeight) - _value(padding[2], winHeight);
+			
+			this.$inner.css("max-width", width);
+			this.$inner.css("max-height", height);
+			
+			$.each(["Top", "Right", "Bottom", "Left"], function(i, v) {
+				self.$outer.css("padding" + v, _value(padding[i])+"px");
+			});
+			
+			var fixed = this.$element.find("[wd_need_fixed_container]").is(":visible");
+			
+			this.$inner.css("width", width);
+			this.$inner.css("height", height);
+
+			webDriver.doResize(this.$inner);
+			
+			if (!fixed) {
+				this.$inner.css("width", "auto");
+				this.$inner.css("height", "auto");
+				if (this.$element.outerHeight() > height)
+					this.$inner.css("height", height);
+				if (this.$element.outerWidth() > width)
+					this.$inner.css("width", width);
+			}
+		}
+	};
+
+	$.fn.wd_modal = function(options) {
+		if (options == "exists") {
+			return !!$(this).data("wd_modal");
+		} else if (typeof options == "string") {
+            var instance = $(this).data("wd_modal");
+			if (!instance)
+				return null;
+			var args = Array.prototype.slice.call(arguments, 1);
+            return instance[options].apply(instance, args);
+        } else {
+            return this.each(function() {
+                var instance = $(this).data("wd_modal");
+                if (instance) {
+                    instance.reload(options);
+                } else {
+                    $(this).data("wd_modal", new wd_modal(this, options));
+                }
+            });
+        }
+    };
+})(webDriver.jQuery);
+</script>
+<script type="text/javascript" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg==">webDriver.pop_jQuery();</script>
+<script type="text/javascript" wd_script_id="subscribe_featurebox_script" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg==">
+			(function($) {
+				webDriver.subscribeClose = function(data) {
+					$(".wd_subscribe_modal").wd_modal("close");
+				};
+			
+				webDriver.subscribeSubmit = function(form, id) {
+					var $modal = $(".wd_subscribe_modal");
+					if ($modal.length == 0) {
+						$modal = $('<div class="wd_subscribe_modal" style="display:none;"></div>');
+						$modal.wd_modal({
+							autoOpen: false,
+						});
+					}
+
+					var my_form = form;
+					var form_data = $(form).serializeArray();
+
+					$modal.html('<div class="wd_loading">Loading...</div>');
+					$modal.show();
+					$modal.wd_modal("open", true);
+
+					$modal.load(
+						"https://news.medtronic.com/email-alerts?ajax=subscribe&id="+id,
+						form_data,
+						function() {
+							disable_submit(my_form, false);
+						}
+					);
+				};
+			})(webDriver.jQuery);
+		</script>
+<script type="text/javascript" wd_script_id="csrfscript" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg==">
+		function fetchCSRFToken() {
+			var currentPageUrl = window.location.href;
+			fetch("verify_token.php", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/x-www-form-urlencoded"
+				},
+				body: "page=" + encodeURIComponent(currentPageUrl)
+			})
+			.then(response => response.text())
+			.then(token => { 
+				PushToken(token,encodeURIComponent(currentPageUrl))
+			});
+		}
+		document.addEventListener("DOMContentLoaded", function() {
+			fetchCSRFToken();
+		});
+		LoadFancyBox();
+		function LoadFancyBox(){
+			setTimeout(function() {
+				if (document.getElementsByClassName("fancybox-content").length > 0) {
+					fetchCSRFToken();
+				}
+			}, 2000);
+		}
+		function PushToken(data){ 
+			const parsedData = (() => { try { return JSON.parse(data); } catch { return null; } })();
+			let token = parsedData ? parsedData.csrf_token : null;
+			let cfid = parsedData ? parsedData.id : null;
+			
+
+			var elements = document.querySelectorAll(".csrf_token");
+
+			elements.forEach(function(element) {
+				element.value = token;
+
+				let existingHiddenInput = element.nextElementSibling; // Check the immediately following sibling
+    			if (cfid && (!existingHiddenInput || !existingHiddenInput.classList.contains("cfid"))) {
+					const hiddenInput = document.createElement("input");
+					hiddenInput.type = "hidden";
+					hiddenInput.name = "cfid"; 
+					hiddenInput.className = "cfid"; 
+					hiddenInput.value = cfid; 	
+					element.insertAdjacentElement("afterend", hiddenInput);
+				}
+			});
+
+		}
+		function set_csrf_loaded() { 
+			var csrfElements = document.getElementsByClassName("csrf_token");
+			var csrfValue = csrfElements[0].value;
+			var token=csrfValue;
+			
+			var tokElements = document.getElementsByClassName("cfid");
+			var tokValue = tokElements[0].value;
+			var cfid=tokValue;
+			
+			if(token!="" && cfid!="") {
+				let verifytok={csrf_token:token,id:cfid};
+				const verifyJson = JSON.stringify(verifytok);
+				PushToken(verifyJson)
+			}
+		
+		}
+	</script>
+<script type="text/javascript" src="js/wd_form.js" wd_script_id="wd_form.js" nonce="NzdkZDQyZWViNDI3OTUzZGQzZTNiNWJlMmFiODBjZjY0YTUzNGFjZg=="></script>
+<link href="css/wd_form.css" type="text/css" rel="stylesheet" wd_script_id="wd_form.css">
+
+<!-- end spin_special_output(head_start) -->
+
+
+	    <!-- OneTrust Cookies Consent Notice PROD start for medtronic.com -->
+    <script type="text/javascript" src="https://cdn.cookielaw.org/consent/7d3bbabe-76bb-430d-a2f3-0d88d8048fc2/OtAutoBlock.js" ></script>
+    <script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js"  type="text/javascript" charset="UTF-8" data-domain-script="7d3bbabe-76bb-430d-a2f3-0d88d8048fc2" ></script>
+    <!-- <script type="text/javascript">
+    function OptanonWrapper() { }
+    </script> -->
+    <!-- OneTrust Cookies Consent Notice PROD end for medtronic.com -->
+    
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<script src="https://assets.adobedtm.com/e5d3245550c3/f220130056f5/launch-8272b5e803f6.min.js"></script>  
+
+<script type="text/javascript">var SITEPATH = "\/us\u002Den";</script>
+
+	
+	
+<link rel="stylesheet" href="./index_room_files/left-to-right.min.fed62e2357b5d97810a116832cde6d7d.css" type="text/css">
+<link rel="stylesheet" href="./index_room_files/global-nav.min.edb008d8f269c685a0f69c5cace33a33.css" type="text/css">		
+<script type="text/javascript" src="./index_room_files/modernizr-2.8.3.min.f5db613597ac637527a29e8fd2e83b39.js"></script>
+<link rel="stylesheet" href="./index_room_files/print.6419672f54489050a939eb095699bbb7.css" type="text/css" media="print">
+
+
+<style id="antiClickjack"></style>
+
+<script type="text/javascript">
+	if (self === top) {
+		var antiClickjack = document.getElementById("antiClickjack");
+		antiClickjack.parentNode.removeChild(antiClickjack);
+	} else {
+		top.location = self.location;
+	}
+</script>	
+
+<!-- <script type="text/javascript" src="./index_room_files/launch-c7f3f5a4c9fc.min.js"></script>
+
+ -->
+<script type="text/javascript">if (typeof _satellite !== "undefined") { _satellite.setCookie("sat_track", "false"); }</script>
+
+
+<link rel="apple-touch-icon-precomposed" href="https://www.medtronic.com/content/dam/medtronic-com/apple-touch-icon-precomposed.png">
+
+
+<link rel="icon" type="image/vnd.microsoft.icon" href="https://www.medtronic.com/content/dam/medtronic-com/favicon.ico">
+<link rel="shortcut icon" type="image/vnd.microsoft.icon" href="https://www.medtronic.com/content/dam/medtronic-com/favicon.ico">
+
+<title>Newsroom | Medtronic</title>
+
+ <meta name="keywords" content="" />
+ <meta name="description" content="" />
+ <meta name="twitter:card" content="summary" />
+ <meta property="og:site_name" content="Medtronic News" />
+ <meta property="og:url" content="https://news.medtronic.com/index.php?s=20303" />
+ <meta property="og:type" content="article" />
+
+<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css" />
+<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick-theme.css" />
+<link rel="stylesheet" type="text/css" href="css/jquery.fancybox.min.css">
+
+<link rel="stylesheet" type="text/css" href="css/footer.css">
+<link rel="stylesheet" type="text/css" href="css/wdcontent.css">
+
+
+
+<link rel="alternate" href="https://news.medtronic.com/press-releases?pagetemplate=rss" type="application/rss+xml" title="Press releases | Medtronic">
+<meta name="google-site-verification" content="LpzHqCe88BVF3k7PXedZbAQePRiDZqvbpiO8_zoX2bI" />
+
+
+<!-- begin spin_special_output(head_end) -->
+<!-- OneTrust Cookies Consent Notice start -->
+<script src="" type="text/javascript" charset="UTF-8"></script>
+<script type="text/javascript">
+	function OptanonWrapper() { }
+</script>
+<!-- OneTrust Cookies Consent Notice end -->
+
+<link rel="canonical" href="https://news.medtronic.com/" />
+<!-- end spin_special_output(head_end) -->
+</head>
+
+
+
+
+<body class="wd_pageid_20303">
+
+<div class="global-wrap">
+
+		
+	<div class="header"><header class="header">
+	
+	<a class="sr-only sr-only-focusable" href="#header-skip" aria-label="Skip to main content">Skip to main content</a>
+
+	<div class="container-fluid">
+
+		
+		<ul class="unstyled header__select list-inline">
+			<i class="fa fa-map-marker" aria-hidden="true"></i>
+			<li class="select-language">
+				
+				<div class="hidden">
+					
+						<a href="https://www.medtronic.com/us-en/index.html" class="hidden" data-locale="en_US">https://www.medtronic.com/us-en/index.html</a>
+					
+				</div>
+			</li>
+
+			
+			<li class="select-country">
+				<select style="width: 100%;" autocomplete="off" name="country" id="headerCountry" aria-label="CountrySelector">
+					<option>Select Country / Region</option>
+					
+						<option value="en_XA">
+							Adriatic
+							
+						</option>
+						<option value="en_SA">
+							Arabia							
+						</option>
+						<option value="es_AR">
+							Argentina
+							
+						</option>
+					
+						<option value="en_XP">
+							Asia-Pacific
+							
+						</option>
+					
+						<option value="en_XB">
+							Australia and New Zealand
+							
+						</option>
+					
+						<option value="en_BD">
+							Bangladesh
+							
+						</option>
+					
+						<option value="fr_BE">
+							Belgique (Belgium)
+							
+								- Français
+						</option>
+					
+						<option value="nl_BE">
+							België (Belgium)
+							
+								- Nederlands
+						</option>
+					
+						<option value="pt_BR">
+							Brasil (Brazil)
+							
+						</option>
+					
+						<option value="bg_BG">
+							Bulgaria
+							
+						</option>
+					
+						<option value="en_CA">
+							Canada
+							
+								- English
+						</option>
+					
+						<option value="fr_CA">
+							Canada
+							
+								- Français
+						</option>
+					
+						<option value="cs_CZ">
+							Česká republika (Czech Republic)
+							
+						</option>
+					
+						<option value="es_CL">
+							Chile
+							
+						</option>
+					
+						<option value="zh_CN">
+							中国 (China)
+							
+						</option>
+					
+						<option value="es_CO">
+							Colombia
+							
+						</option>
+					
+						<option value="es_CR">
+							Costa Rica
+							
+						</option>
+					
+						<option value="sr_RS">
+							Србија (Serbia)
+							
+						</option>
+					
+						<option value="da_DK">
+							Danmark (Denmark)
+							
+						</option>
+					
+						<option value="de_DE">
+							Deutschland (Germany)
+							
+						</option>
+					
+						<option value="es_EC">
+							Ecuador
+							
+						</option>
+					
+						<option value="es_ES">
+							España (Spain)
+							
+						</option>
+					
+						<option value="en_XD">
+							Europe
+							
+						</option>
+					
+						<option value="fr_FR">
+							France
+							
+						</option>
+					
+						<option value="el_GR">
+							Ελλάδα (Greece)
+							
+						</option>
+					
+						<option value="zh_HK">
+							香港特区 (Hong Kong SAR)
+							
+						</option>
+					
+						<option value="en_IN">
+							Indian Subcontinent
+							
+						</option>
+					
+						<option value="en_IE">
+							Ireland
+							
+						</option>
+					
+						<option value="iw_IL">
+							Israel&nbsp;&nbsp;ישראל
+							
+						</option>
+					
+						<option value="it_IT">
+							Italia (Italy)
+							
+						</option>
+					
+						<option value="ja_JP">
+							日本 (Japan)
+							
+						</option>
+					
+						<option value="es_XL">
+							Latinoamérica
+							
+						</option>
+					
+						<option value="hu_HU">
+							Magyarország (Hungary)
+							
+						</option>
+					
+						<option value="es_MX">
+							México (Mexico)
+							
+						</option>
+					
+						<option value="en_ME">
+							Middle East and North Africa
+							
+						</option>
+					
+						<option value="nl_NL">
+							Nederland (Netherlands)
+							
+						</option>
+					
+						<option value="nn_NO">
+							Norge (Norway)
+							
+						</option>
+					
+						<option value="de_AT">
+							Österreich (Austria)
+							
+						</option>
+					
+						<option value="es_PA">
+							Panama
+							
+						</option>
+					
+						<option value="pt_PT">
+							Portugal
+							
+						</option>
+					
+						<option value="es_PY">
+							Paraguay
+							
+						</option>
+					
+						<option value="es_PE">
+							Perú (Peru)
+							
+						</option>
+					
+						<option value="pl_PL">
+							Polska (Poland)
+							
+						</option>
+					
+						<option value="ru_RU">
+							Российская Федерация (Russia)
+							
+						</option>
+					
+						<option value="es_PR">
+							Puerto Rico
+							
+						</option>
+					
+						<option value="ro_RO">
+							Romania
+							
+						</option>
+					
+						<option value="de_CH">
+							Schweiz (Switzerland)
+							
+								- Deutsch
+						</option>
+					
+						<option value="sk_SK">
+							Slovenská republika (Slovak Republic)
+							
+						</option>
+					
+						<option value="en_XS">
+							Southeast Asia
+							
+						</option>
+					
+						<option value="en_ZA">
+							South Africa and Sub-Sahara
+							
+						</option>
+					
+						<option value="ko_KR">
+							대한민국 (South Korea)
+							
+						</option>
+					
+						<option value="fr_CH">
+							Suisse (Switzerland)
+							
+								- Français
+						</option>
+					
+						<option value="sv_FI">
+							Suomi (Finland)
+							
+						</option>
+					
+						<option value="sv_SE">
+							Sverige (Sweden)
+							
+						</option>
+					
+						<option value="zh_TW">
+							台湾地区 (Taiwan)
+							
+						</option>
+					
+						<option value="tr_TR">
+							Türkiye (Turkey)
+							
+						</option>
+					
+						<option value="en_GB">
+							United Kingdom
+							
+						</option>
+					
+						<option value="en_US" selected="">
+							United States
+							
+						</option>
+					
+						<option value="es_UY">
+							Uruguay
+							
+						</option>
+					
+						<option value="uk_UA">
+							Україна (Ukraine)
+							
+						</option>
+					
+				</select>
+			</li>
+			<div class="hidden">
+				
+					<a href="https://adriatic.medtronic.com/xa-en/index.html" class="hidden" data-locale="en_XA">Adriatic</a>
+				
+			
+					<a href="https://www.medtronic.com/en-sa/index.html" class="hidden" data-locale="en_SA">Arabia</a>
+					<a href="https://www.medtronic.com/ar-es/index.html" class="hidden" data-locale="es_AR">Argentina</a>
+				
+			
+				
+					<a href="https://asiapac.medtronic.com/xp-en/index.html" class="hidden" data-locale="en_XP">Asia-Pacific</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/au-en/index.html" class="hidden" data-locale="en_XB">Australia and New Zealand</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/bd-en/index.html?" class="hidden" data-locale="en_BD">Bangladesh</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/be-fr/index.html" class="hidden" data-locale="fr_BE">Belgique (Belgium)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/be-nl/index.html" class="hidden" data-locale="nl_BE">België (Belgium)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/br-pt/index.html?" class="hidden" data-locale="pt_BR">Brasil (Brazil)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/bg-bg/index.html" class="hidden" data-locale="bg_BG">Bulgaria</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/en-ca/index.html" class="hidden" data-locale="en_CA">Canada</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/fr-ca/index.html" class="hidden" data-locale="fr_CA">Canada</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/cz-cs/index.html" class="hidden" data-locale="cs_CZ">Česká republika (Czech Republic)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/cl-es/index.html" class="hidden" data-locale="es_CL">Chile</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/cn-zh/index.html?" class="hidden" data-locale="zh_CN">中国 (China)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/es-co/index.html" class="hidden" data-locale="es_CO">Colombia</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/cr-es/index.html" class="hidden" data-locale="es_CR">Costa Rica</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/rs-sr/index.html" class="hidden" data-locale="sr_RS">Србија (Serbia)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/dk-da/index.html" class="hidden" data-locale="da_DK">Danmark (Denmark)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/de-de/index.html" class="hidden" data-locale="de_DE">Deutschland (Germany)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ec-es/index.html" class="hidden" data-locale="es_EC">Ecuador</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/es-es/index.html" class="hidden" data-locale="es_ES">España (Spain)</a>
+				
+			
+				
+					<a href="https://europe.medtronic.com/xd-en/index.html" class="hidden" data-locale="en_XD">Europe</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/fr-fr/index.html" class="hidden" data-locale="fr_FR">France</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/gr-el/index.html" class="hidden" data-locale="el_GR">Ελλάδα (Greece)</a>
+				
+			
+				
+					<a href="https://global.medtronic.com/xg-en/about/hong-kong.html?" class="hidden" data-locale="zh_HK">香港特区 (Hong Kong SAR)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/in-en/index.html" class="hidden" data-locale="en_IN">Indian Subcontinent</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/en-ie/index.html" class="hidden" data-locale="en_IE">Ireland</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/il-he/index.html" class="hidden" data-locale="iw_IL">Israel&nbsp;&nbsp;ישראל</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/it-it/index.html" class="hidden" data-locale="it_IT">Italia (Italy)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/jp-ja/index.html?" class="hidden" data-locale="ja_JP">日本 (Japan)</a>
+				
+			
+				
+					<a href="https://latinoamerica.medtronic.com/xl-es/index.html" class="hidden" data-locale="es_XL">Latinoamérica</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/hu-hu/index.html" class="hidden" data-locale="hu_HU">Magyarország (Hungary)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/mx-es/index.html" class="hidden" data-locale="es_MX">México (Mexico)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/me-en/index.html" class="hidden" data-locale="en_ME">Middle East and North Africa</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/nl-nl/index.html?" class="hidden" data-locale="nl_NL">Nederland (Netherlands)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/no-nn/index.html" class="hidden" data-locale="nn_NO">Norge (Norway)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/at-de/index.html" class="hidden" data-locale="de_AT">Österreich (Austria)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/pa-es/index.html" class="hidden" data-locale="es_PA">Panama</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/pt-pt/index.html?" class="hidden" data-locale="pt_PT">Portugal</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/py-es/index.html" class="hidden" data-locale="es_PY">Paraguay</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/pe-es/index.html" class="hidden" data-locale="es_PE">Perú (Peru)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/pl-pl/index.html" class="hidden" data-locale="pl_PL">Polska (Poland)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ru-ru/index.html?" class="hidden" data-locale="ru_RU">Российская Федерация (Russia)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/pr-es/index.html" class="hidden" data-locale="es_PR">Puerto Rico</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ro-ro/index.html" class="hidden" data-locale="ro_RO">Romania</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ch-de/index.html" class="hidden" data-locale="de_CH">Schweiz (Switzerland)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/sk-sk/index.html" class="hidden" data-locale="sk_SK">Slovenská republika (Slovak Republic)</a>
+				
+			
+				
+					<a href="https://sea.medtronic.com/xs-en/index.html" class="hidden" data-locale="en_XS">Southeast Asia</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/za-en/index.html" class="hidden" data-locale="en_ZA">South Africa and Sub-Sahara</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/kr-ko/index.html" class="hidden" data-locale="ko_KR">대한민국 (South Korea)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ch-fr/index.html" class="hidden" data-locale="fr_CH">Suisse (Switzerland)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/fi-fi/index.html" class="hidden" data-locale="sv_FI">Suomi (Finland)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/se-sv/index.html" class="hidden" data-locale="sv_SE">Sverige (Sweden)</a>
+				
+			
+				
+					<a href="https://global.medtronic.com/xg-en/about/taiwan.html?" class="hidden" data-locale="zh_TW">台湾地区 (Taiwan)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/tr-tr/index.html?" class="hidden" data-locale="tr_TR">Türkiye (Turkey)</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/uk-en/index.html" class="hidden" data-locale="en_GB">United Kingdom</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/us-en/index.html" class="hidden" data-locale="en_US">United States</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/uy-es/index.html" class="hidden" data-locale="es_UY">Uruguay</a>
+				
+			
+				
+					<a href="https://www.medtronic.com/ua-uk/index.html" class="hidden" data-locale="uk_UA">Україна (Ukraine)</a>
+				
+			</div>
+
+		</ul>
+
+		<a class="header__logo" href="https://www.medtronic.com/en-us/index.html">
+			<img src="images/logo-en-rgb-bl.svg" alt="Medtronic Logo">
+		</a>
+		
+	</div>
+</header>
+		
+		<div class="nav-list-item primary-nav-item">
+
+
+</div>
+
+	
+
+
+
+	<nav class="breadcrumbs">
+	<div class="container-fluid">
+
+		<p>
+			<a href="https://news.medtronic.com/index.php?s=20303">Home</a>
+
+			
+	<span class="divider">
+		<i class="fa fa-chevron-right" aria-hidden="true"></i>	
+	</span>
+	<span class="active">
+	 Home	 </span>
+	
+			<!-- 
+	<span class="divider">
+	<i class="icon shape-mdt-chevron--right" aria-hidden="true">
+	  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7.6 11.9"><path fill="#004B87" d="M1.5 0L.1 1.5 4.6 6 .1 10.4l1.5 1.5 6-5.9-6.1-6z"></path></svg>
+	</i>
+  </span>
+
+			
+		
+			<a href="https://www.medtronic.com/us-en/about.html">About Medtronic</a>
+			
+	<span class="divider">
+	<i class="icon shape-mdt-chevron--right" aria-hidden="true">
+	  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7.6 11.9"><path fill="#004B87" d="M1.5 0L.1 1.5 4.6 6 .1 10.4l1.5 1.5 6-5.9-6.1-6z"></path></svg>
+	</i>
+  </span>
+			<span class="active">Citizenship</span> -->
+		</p>
+	</div>
+</nav>
+
+	<div class="horizontal-inpage section">
+	
+	<nav class="local-nav">
+   <div class="navbar-header">
+	  <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+		 <span class="sr-only">Toggle navigation</span>
+		 <i class="icon shape-mdt-chevron--down" aria-hidden="true">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 7.6 11.9">
+			   <path fill="#e8e8e7" d="M1.5 0L.1 1.5 4.6 6 .1 10.4l1.5 1.5 6-5.9-6.1-6z"></path>
+			</svg>
+		 </i>
+	  </button>
+	  <p class="navbar-brand">Newsroom</p>
+   </div>
+   <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+
+
+	<ul class="wd_nav">
+
+
+
+<li class=" active">
+
+	    	<a href="https://news.medtronic.com/index.php?s=20303" target="_self">Home</a>
+
+	
+	
+</li>
+
+
+
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/press-releases" target="_self">Press releases</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/business-regional-news" target="_self">Business & regional news</a>
+
+	</li>
+
+
+
+
+<li class="dropdown">
+
+			<a data-target="#" href="https://news.medtronic.com/featured-stories" data-toggle="dropdown" role="button" aria-haspopup="true" class="dropdown-toggle" aria-expanded="false">
+               Stories               
+                  <span class="downarrow icon shape-mdt-chevron--down"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 7.5" style="width: 7px;"><path fill="#fff" d="M11.9 1.5L10.5 0 5.9 4.5 1.5 0 .1 1.5l5.9 6 5.9-6z"></path></svg></span>
+               
+        </a>
+
+        <ul class="wd_subnav dropdown-menu">
+
+
+<li class="">
+
+	    	<a href="index.php?s=34141&cat=2" target="_self">Company news</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="health-and-wellness" target="_self">Health & wellness</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="innovation" target="_self">Innovation</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="leadership-perspectives" target="_self">Leadership perspectives</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="making-an-impact" target="_self">Our impact</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="index.php?s=34141" target="_self">See all stories</a>
+
+	</li>
+
+
+</ul>
+
+
+
+    </li>
+
+
+
+
+<li class="dropdown">
+
+			<a data-target="#" href="https://www.medtronic.com/en-us/index.html" data-toggle="dropdown" role="button" aria-haspopup="true" class="dropdown-toggle" aria-expanded="false">
+               Medtronic.com               
+                  <span class="downarrow icon shape-mdt-chevron--down"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 7.5" style="width: 7px;"><path fill="#fff" d="M11.9 1.5L10.5 0 5.9 4.5 1.5 0 .1 1.5l5.9 6 5.9-6z"></path></svg></span>
+               
+        </a>
+
+        <ul class="wd_subnav dropdown-menu">
+
+
+<li class="">
+
+	    	<a href="https://www.medtronic.com/en-us/healthcare-professionals.html" target="_blank">Healthcare Professionals</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://www.medtronic.com/en-us/l/patients.html" target="_blank">Patients & Caregivers</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://www.medtronic.com/en-us/our-company.html" target="_blank">Our Company</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://www.medtronic.com/en-us/our-impact.html" target="_blank">Our Impact</a>
+
+	</li>
+
+
+</ul>
+
+
+
+    </li>
+
+
+
+
+<li class="dropdown">
+
+			<a data-target="#" href="media-kits" data-toggle="dropdown" role="button" aria-haspopup="true" class="dropdown-toggle" aria-expanded="false">
+               Media               
+                  <span class="downarrow icon shape-mdt-chevron--down"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 7.5" style="width: 7px;"><path fill="#fff" d="M11.9 1.5L10.5 0 5.9 4.5 1.5 0 .1 1.5l5.9 6 5.9-6z"></path></svg></span>
+               
+        </a>
+
+        <ul class="wd_subnav dropdown-menu">
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/media-kits" target="_self">Media kits</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/awards" target="_self">Honors & awards</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://www.medtronic.com/en-us/our-company/leadership.html" target="_self">Leadership</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/in-the-news" target="_self">In the news</a>
+
+	</li>
+
+
+
+
+<li class="">
+
+	    	<a href="https://news.medtronic.com/email-alerts" target="_self">Email alerts</a>
+
+	</li>
+
+
+</ul>
+
+
+
+    </li>
+
+
+</ul>
+
+
+
+	<div class="wd_nav-search">
+	<div class="wd_search_form_container"><form name="basic_search" method="get" action="https://news.medtronic.com/index.php?s=20322" class="wd_search_form wd_search_form_basic"><input type="hidden" name="s" value="search_results" /><input type="text" name="query" value="" size="32" placeholder="Search all newsroom stories..." title="Search all newsroom stories..." /> <input type="submit" name="submit" value="Search"></form>
+</div>	</div>
+
+   </div>
+</nav>
+
+</div>
+
+
+ 
+
+
+		 <div id="header-skip" class="wd_sec wd_slideshow">  
+		<div class="wd_featureboxes_top_feature wd_featureboxes-vertical fr-view">
+<div id="wd_featurebox-standard_3538" class="wd_featurebox_container wd_featurebox-standard"><div class="wd_featurebox_title">How heart monitoring and ablation helped one father overcome AFib</div><div class="wd_featurebox"><table width="1158" class="wd_imagetable" border="0" cellpadding="0" cellspacing="0" align="left" style="margin: 0px 0px 0px 0px;" role="presentation"><tr><td><img src="/image/Todd+Jr+and+TR3+1.jpg" border="0" alt="Todd Repass Jr. and Todd Repass III, a Medtronic employee" title="Todd Repass Jr. and Todd Repass III, a Medtronic employee"  /></td></tr></table>
+<p><a class="wd_btn" href="how-heart-monitoring-and-ablation-helped-one-father-overcome-afib-newsroom">Learn more</a></p>
+</div></div></div>
+			</div>
+
+
+	  
+
+
+ 
+
+
+<section class="wd_feat_stories_wrap">
+
+			<!-- resources-->
+		<div class="wd_resources_fb wd_sec tab_open">
+			<div class="wd_container">
+			  <div class="wd_row">
+				<div class="wd_col">
+				  <div class="wd_featureboxes_resources wd_featureboxes-vertical fr-view">
+<div id="wd_featurebox-standard_3514" class="wd_featurebox_container wd_featurebox-standard"><div class="wd_featurebox_title">Media Resources</div><div class="wd_featurebox"><ul class="wd_tab_menu">
+	<li><a href="https://www.medtronic.com/en-us/our-company.html">about medtronic</a></li>
+	<li><a href="https://www.medtronic.com/en-us/our-company/mission.html">mission</a></li>
+	<li><a href="https://www.medtronic.com/en-us/our-company/leadership.html">Leadership</a></li>
+	<li><a href="awards">honors &amp; awards</a></li>
+	<li><a href="in-the-news">in the news</a></li>
+	<li><a href="index.php?s=20300">email alerts&nbsp;</a></li>
+</ul>
+</div></div></div>
+				</div>
+			  </div> 
+
+			  <div class="wd_tab_toggle __close">
+				<!--  <div class="wd_tab_toggle __close"> -->
+				  <i class="fa fa-times" aria-hidden="true"></i>
+				  <i class="fa fa-chevron-down" aria-hidden="true"></i>
+			  </div>
+
+			  <span class="tab_label">
+				  <h4>Media Resources</h4>
+			  </span>
+		  </div>
+		</div>
+		<!-- End resources-->
+		 
+
+	<div class="container">
+		<div class="row">
+			<div class="col-md-12">
+
+			  
+				<!-- featured_stories-->
+		<div class="wd_featured_stories_fb wd_sec">
+			<div class="wd_container">
+			  <div class="wd_row">
+				<div class="wd_col">
+					  <!-- <div class="wd_sec_header">
+						<h2 class="wd_featurebox_title">Featured Stories</h2>
+					</div> -->
+				  <div class="wd_featureboxes_featured_stories wd_featureboxes-vertical fr-view">
+<div id="wd_featurebox-teaser_1385" class="wd_featurebox_container wd_featurebox-teaser"><div class="wd_featurebox_title">Latest stories</div><div class="wd_featurebox">
+<div class="wd_standard-teaser">
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30485" class="itemlink"><a href="from-caregiver-to-engineer-newsroom">From caregiver to engineer</a></a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30485" class="itemlink"><img src="/image/Hero.jpeg" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="making-an-impact">Our Impact</a></li></ul><br clear="all" /></div>
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30491" class="itemlink"><a href="2026-09-01-Medtronic-reports-first-quarter-fiscal-2027-results-delivers-broad-based-portfolio-performance-and-raises-fiscal-2027-guidance">Medtronic reports first quarter fiscal 2027 results; delivers broad-based portfolio performance and raises fiscal 2027 guidance</a></a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30491" class="itemlink"><img src="/image/Geoff+Smile+Earnings-895x600.png" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="press-releases">Corporate</a></li></ul><br clear="all" /></div>
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30489" class="itemlink"><a href="https://www.medtronic.com/en-us/our-company/stories/the-unexpected-evolution-of-surgical-stapling.html">From ants to intelligent tech</a></a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30489" class="itemlink"><img src="/image/MDT_NewsRoom_StoryGrid_Ants.jpg" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="innovation">Innovation</a></li></ul><br clear="all" /></div>
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30488" class="itemlink"><a href="https://www.medtronic.com/en-us/our-company/stories/what-we-re-learning-by-listening-to-hearts-of-the-wild.html">What wild hearts reveal</a></a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30488" class="itemlink"><img src="/image/MDT_NewsRoom_StoryGrid_MDTZoo.jpg" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="making-an-impact">Our Impact</a></li></ul><br clear="all" /></div>
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30487" class="itemlink"><a href="https://www.medtronic.com/en-us/our-company/stories/how-technology-is-changing-surgery-and-patient-care.html">How is technology changing surgery?</a></a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30487" class="itemlink"><img src="/image/MDT_NewsRoom_StoryGrid_UntappedMedSurg.jpg" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="innovation">Innovation</a></li></ul><br clear="all" /></div>
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30486" class="itemlink"><a href="https://www.medtronic.com/en-us/our-company/stories/patrick-s-story-flipping-the-script-on-high-blood-pressure.html">Patrick’s story: Flipping the script on high blood pressure</a></a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30486" class="itemlink"><img src="/image/mdtst-27-obpat-nr-grid-ptlif.jpg" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="making-an-impact">Our Impact</a></li></ul><br clear="all" /></div>
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30484" class="itemlink"><a href="https://news.medtronic.com/for-these-three-interns-the-medtronic-mission-is-personal-newsroom">For these three interns, the Medtronic Mission is personal</a></a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30484" class="itemlink"><img src="/image/Hero+image.png" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="making-an-impact">Our Impact</a></li></ul><br clear="all" /></div>
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30444" class="itemlink"><a href="how-ai-is-changing-the-way-your-doctor-performs-surgery-newsroom">How AI is changing the way your doctor performs surgery</a></a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30444" class="itemlink"><img src="/image/HERO_MDT_Newsroom_AI+and+Surgeons_V2_Lonnie+Hartley.jpg" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="innovation">Innovation</a></li></ul><br clear="all" /></div>
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30477" class="itemlink"><a href="Medtronic-statement-on-unauthorized-system-access">Medtronic statement on unauthorized system access</a></a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30477" class="itemlink"><img src="/image/Medtronic_No_Tagline_Logo9.8.22.v2.jpg" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="company-news">Company News</a></li></ul><br clear="all" /></div>
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30481" class="itemlink"><a href="https://www.medtronic.com/en-us/our-company/stories/how-a-car-battery-shaped-heart-care.html">How a car battery shaped heart care</a></a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30481" class="itemlink"><img src="/image/bb2-grid.jpg" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="innovation">Innovation</a></li></ul><br clear="all" /></div>
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30480" class="itemlink"><a href="https://www.medtronic.com/en-us/our-company/stories/overactive-bladder-what-you-need-to-know.html">What experts really say about overactive bladder</a></a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30480" class="itemlink"><img src="/image/untapped-grid-ep5.jpg" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="innovation">Innovation</a></li></ul><br clear="all" /></div>
+<div class="item"><div class="item_name"><a href="https://news.medtronic.com/index.php?s=34192&item=30479" class="itemlink"><a href="mental-health-matters-at-medtronic-explore-our-employee-benefits-newsroom">
+Mental health matters at Medtronic. Explore our employee benefits.
+</a>
+</a></div><a href="https://news.medtronic.com/index.php?s=34192&item=30479" class="itemlink"><img src="/image/IM+story_mental+health.jpg" style="margin: 0 5px 5px 0;" align="left" border="0"  /></a><ul><li class="wd_category_link"><a href="health-and-wellness">Health &amp; Wellness</a></li></ul><br clear="all" /></div>
+
+</div>
+<p class="more"><a href="https://news.medtronic.com/index.php?s=34192"><span><a href="featured-stories">See all stories</a></span></a></p>
+</div></div></div>
+				</div>
+			  </div> 
+		  </div>
+		</div>
+		<!-- End featured_stories-->
+		 
+
+
+			</div>
+		</div>
+	</div>
+
+</section>
+
+<!-- left-->
+<section class="wd_left_right_fb wd_sec">
+	<div class="container">
+	  <div class="row">
+		<div class="col-lg-6">
+		  <div class="wd_featureboxes_left wd_featureboxes-vertical fr-view">
+<div id="wd_featurebox-teaser_1383" class="wd_featurebox_container wd_featurebox-teaser"><div class="wd_featurebox_title">Press releases</div><div class="wd_featurebox">
+<div class="wd_newsfeed_releases-teaser">
+<div class="subscribe_link"><a href="https://news.medtronic.com/email-alerts"><span class="wd_subscribe_email-icon fa fa-envelope-o"></span></a> <a href="https://news.medtronic.com/email-alerts">Email alerts</a></div>
+
+	
+		<div class="item">
+			<div class="wd_thumbnail"><a href="https://news.medtronic.com/2026-09-16-Medtronic-announces-FDA-clearance-for-LigaSure-TM-RAS-Maryland-instrument-on-the-Hugo-TM-RAS-system"><img src="https://mmx.prnewswire.com/media/MS1989396/Photo-1_Medtronic-Hugo-RAS-system_LigaSure-RAS-instrument_FDA-clearance-ID-f83e27d06e8b.jpg?id=OA2951556&p=thumbnail" alt="" border="0"/></a></div>
+			<div class="wd_date">Sep 16, 2026<ul class="wd_layout-inline wd_asset_icon_link_list"><li class="wd_asset_icon_link"><a href="https://news.medtronic.com/2026-09-16-Medtronic-announces-FDA-clearance-for-LigaSure-TM-RAS-Maryland-instrument-on-the-Hugo-TM-RAS-system#assets_20295_124214-117" target="_blank"><span class="wd_icon fa fa-photo" title="Photos (2)" style="font-size: 1.2em;"></span></a>
+</li></ul></div>
+			<div class="wd_title"><a href="https://news.medtronic.com/2026-09-16-Medtronic-announces-FDA-clearance-for-LigaSure-TM-RAS-Maryland-instrument-on-the-Hugo-TM-RAS-system">Medtronic announces FDA clearance for LigaSure™ RAS Maryland instrument on the Hugo™ RAS system</a></div>
+			<div class="wd_summary"><p>Trusted vessel-sealing technology used in more than 45 million procedures worldwide is now cleared for robotic-assisted surgery in the U.S. GALWAY, Ireland, Sept. 16, 2026 /PRNewswire/ --...</p></div>
+		</div>
+	
+		<div class="item">
+			
+			<div class="wd_date">Sep 14, 2026</div>
+			<div class="wd_title"><a href="https://news.medtronic.com/2026-09-14-Medtronic-Launches-Exchange-Offer-to-Complete-Separation-of-MiniMed-Group,-Inc">Medtronic Launches Exchange Offer to Complete Separation of MiniMed Group, Inc.</a></div>
+			<div class="wd_summary"><p>Medtronic shareholders can exchange their Medtronic ordinary shares for shares of MiniMed Provides Medtronic shareholders with option for a generally tax-free exchange for U.S. federal income tax...</p></div>
+		</div>
+	
+		<div class="item">
+			
+			<div class="wd_date">Sep 4, 2026</div>
+			<div class="wd_title"><a href="https://news.medtronic.com/2026-09-04-Medtronic-executives-to-speak-at-upcoming-investor-conferences">Medtronic executives to speak at upcoming investor conferences</a></div>
+			<div class="wd_summary"><p>Medtronic plc (NYSE:MDT), a global leader in healthcare technology, today announced it will participate in the following investor conferences: 2026 Wells Fargo Healthcare Conference Tuesday,...</p></div>
+		</div>
+	
+
+
+</div>
+<p class="more"><a href="https://news.medtronic.com/press-releases"><span>See more</span></a></p>
+</div></div></div>
+		</div>
+		<div class="col-lg-6">
+		  <div class="wd_featureboxes_in_the_news wd_featureboxes-vertical fr-view">
+<div id="wd_featurebox-teaser_1384" class="wd_featurebox_container wd_featurebox-teaser"><div class="wd_featurebox_title">In the news</div><div class="wd_featurebox">
+<div class="wd_news_headlines-teaser">
+<div class="item"><img src="/file.php/188282/Medtronic_In+the+News.jpg?thumbnail=1" border="0"  /><div class="item_date">Mar 17, 2026</div><div class="item_name"><a href="https://www.axios.com/2026/03/17/colorectal-cancer-deadliest-screening-age-colonoscopy" target="_blank">Colorectal cancer's alarming rise in young adults</a></div><div class="item_summary"><div class="item_publication">Axios</div>Dr. Austin Chiang, chief medical officer for the endoscopy business at Medtronic, shares what patients should know about colorectal cancer and screening.</div></div>
+<div class="item"><img src="/file.php/188294/Adaptive+DBS.jpg?thumbnail=1" border="0"  /><div class="item_date">Mar 2, 2026</div><div class="item_name"><a href="https://www.cnn.com/health/how-a-pacemaker-for-the-brain-could-help-treat-parkinsons-spc" target="_blank">How a pacemaker for the brain could help Parkinson’s patients</a></div><div class="item_summary"><div class="item_publication">CNN</div>Approved by the FDA in 2025, the device adjusts stimulation based on brain signals in real time.</div></div>
+<div class="item"><img src="/file.php/188650/James+and+Caryn+1.jpg?thumbnail=1" border="0"  /><div class="item_date">Feb 14, 2026</div><div class="item_name"><a href="https://people.com/robot-assisted-surgery-prostate-cancer-hugo-exclusive-11901466" target="_blank">Dad Bounces Back from Prostate Cancer Surgery, Thanks to a Robot Named Hugo </a></div><div class="item_summary"><div class="item_publication">People</div>James Choate-Deeds is back to enjoying his favorite hobbies – hockey, skiing, and traveling – after undergoing a robotic-assisted prostatectomy.</div></div>
+
+</div>
+<p class="more"><a href="https://news.medtronic.com/in-the-news"><span>See more</span></a></p>
+</div></div></div>
+		</div>
+		<div class="col-lg-6">
+		  		</div>
+	  </div> 
+  </div>
+</section>
+<!-- End left-->
+ 
+
+<!-- MIDDLE-->
+<section class="wd_middle_fb wd_sec">
+	<div class="container">
+	  <div class="row">
+		<div class="col">
+		  <div class="wd_featureboxes_middle wd_featureboxes-horizontal fr-view">
+<div id="wd_featurebox-subscribe_1" class="wd_featurebox_container wd_featurebox-subscribe"><div class="wd_featurebox_title">Sign up for the latest updates</div><div class="wd_featurebox"><div class="wd_subscribe_featurebox">
+ <form method="POST" class="wd_formbuilder" id="subscribe_form_1" name="formbuilderform" action="https://news.medtronic.com/index.php?s=20303&amp;submitted=1" enctype="multipart/form-data" onsubmit="disable_submit(this, true);var ok = check_required_fields(this,[&quot;subscribe_1[first_name]&quot;,&quot;subscribe_1[last_name]&quot;,&quot;subscribe_1[email]&quot;,&quot;subscribe_1[company]&quot;,&quot;subscribe_1[custom_fields][15092]&quot;],[&quot;subscribe_1[email]&quot;],&quot;#ff0000&quot;,&quot;This field is required&quot;,&quot;This field must contain a valid email address&quot;,&quot;Please fill in all required fields highlighted in red.&quot;,&quot;Please provide a valid email address.&quot;); if (!ok) {disable_submit(this,false); return false;} webDriver.subscribeSubmit(this,1); return false;">
+  <div class="wd_form_header">
+   <div class="wd_form_legend">
+* Required Fields
+   </div>
+  </div>
+   <div class="wd_form_field wd_form_field_pos_right">
+    <div class="wd_form_field_label">
+<label for="formbuilderform_subscribe_1[first_name]">*&nbsp;First Name</label>
+    </div>
+    <div class="wd_form_field_input">
+     <input type="text" name="subscribe_1[first_name]" value="" size="32" id="formbuilderform_subscribe_1[first_name]" />
+    </div>
+   </div>
+   <div class="wd_form_field wd_form_field_pos_right">
+    <div class="wd_form_field_label">
+<label for="formbuilderform_subscribe_1[last_name]">*&nbsp;Last Name</label>
+    </div>
+    <div class="wd_form_field_input">
+     <input type="text" name="subscribe_1[last_name]" value="" size="32" id="formbuilderform_subscribe_1[last_name]" />
+    </div>
+   </div>
+   <div class="wd_form_field wd_form_field_pos_right">
+    <div class="wd_form_field_label">
+<label for="formbuilderform_subscribe_1[email]">*&nbsp;Email</label>
+    </div>
+    <div class="wd_form_field_input">
+     <input type="text" name="subscribe_1[email]" value="" size="32" id="formbuilderform_subscribe_1[email]" />
+    </div>
+   </div>
+   <div class="wd_form_field wd_form_field_pos_right">
+    <div class="wd_form_field_label">
+<label for="formbuilderform_subscribe_1[company]">*&nbsp;Company</label>
+    </div>
+    <div class="wd_form_field_input">
+     <input type="text" name="subscribe_1[company]" value="" size="32" id="formbuilderform_subscribe_1[company]" />
+    </div>
+   </div>
+   <div class="wd_form_field wd_form_field_pos_right">
+    <div class="wd_form_field_label">
+<label for="formbuilderform_subscribe_1[custom_fields][15092]">*&nbsp;Country/Region</label>
+    </div>
+    <div class="wd_form_field_input">
+     <input type="text" name="subscribe_1[custom_fields][15092]" value="" size="32" id="formbuilderform_subscribe_1[custom_fields][15092]" />
+    </div>
+   </div>
+  <div class="wd_form_footer">
+   <div class="wd_form_buttons">
+<input type="submit" class="wd_formbuilder_submit" name="Submit" value="Submit"><input type="hidden" name="csrf_token" class="csrf_token" value=""/>
+   </div>
+  </div>
+ </form>
+</div></div></div></div>
+		</div>
+	  </div> 
+  </div>
+</section>
+<!-- End MIDDLE-->
+ 
+
+<div class="top-disclaimer" style="margin-top:0;">
+ 
+</div>
+
+ 
+
+<!--   -->
+
+<div class="footer">
+
+<footer>
+    <div class="xfpage page basicpage">
+        <div class="root container responsivegrid">
+            <div id="container-f2fbd5333c" class="cmp-container bg-transparent">
+                <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                    <div class="container responsivegrid mdt-container aem-GridColumn aem-GridColumn--default--12">
+                        <div id="container-ca0a6ecab2" class="cmp-container">
+                            <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                                <div
+                                    class="container responsivegrid mdt-footer-sitenav aem-GridColumn aem-GridColumn--default--12"
+                                >
+                                    <div id="container-6d6767f039" class="cmp-container">
+                                        <div class="aem-Grid aem-Grid--12 aem-Grid--default--12 aem-Grid--phone--12">
+                                            <div
+                                                class="container responsivegrid aem-GridColumn--default--none aem-GridColumn--phone--none aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--offset--phone--0 aem-GridColumn--default--3 aem-GridColumn--offset--default--0"
+                                            >
+                                                <div id="container-6c781e91d3" class="cmp-container">
+                                                    <div
+                                                        class="aem-Grid aem-Grid--3 aem-Grid--default--3 aem-Grid--phone--12"
+                                                    >
+                                                        <div
+                                                            class="menulist aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--default--3"
+                                                        >
+                                                            <div class="list vertical-list">
+                                                                <ul>
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/our-company/careers.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Careers</span>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/contact-us.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Contact &amp; Support</span>
+                                                                        </a>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="container responsivegrid aem-GridColumn--default--none aem-GridColumn--phone--none aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--offset--phone--0 aem-GridColumn--default--3 aem-GridColumn--offset--default--0"
+                                            >
+                                                <div id="container-975ffc3827" class="cmp-container">
+                                                    <div
+                                                        class="aem-Grid aem-Grid--3 aem-Grid--default--3 aem-Grid--phone--12"
+                                                    >
+                                                        <div
+                                                            class="menulist aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--default--3"
+                                                        >
+                                                            <div class="list vertical-list">
+                                                                <ul>
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://americas.connect.medtronic.com/apps/portal/login"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                            aria-label="Opens in a new window"
+                                                                        >
+                                                                            <span>Order Products</span>
+
+                                                                            <span class="accessible-message"
+                                                                                >(open in new window)</span
+                                                                            >
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.diabetes.shop/"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                            aria-label="Opens in a new window"
+                                                                        >
+                                                                            <span>Diabetes Supplies</span>
+
+                                                                            <span class="accessible-message"
+                                                                                >(open in new window)</span
+                                                                            >
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://manuals.medtronic.com/manuals/main/region"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                            aria-label="Opens in a new window"
+                                                                        >
+                                                                            <span>Product Manuals</span>
+
+                                                                            <span class="accessible-message"
+                                                                                >(open in new window)</span
+                                                                            >
+                                                                        </a>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="container responsivegrid aem-GridColumn--default--none aem-GridColumn--phone--none aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--offset--phone--0 aem-GridColumn--default--3 aem-GridColumn--offset--default--0"
+                                            >
+                                                <div id="container-f57bc0ea33" class="cmp-container">
+                                                    <div
+                                                        class="aem-Grid aem-Grid--3 aem-Grid--default--3 aem-Grid--phone--12"
+                                                    >
+                                                        <div
+                                                            class="menulist aem-GridColumn--default--none aem-GridColumn aem-GridColumn--phone--3 aem-GridColumn--default--3 aem-GridColumn--offset--default--0"
+                                                        >
+                                                            <div class="list vertical-list">
+                                                                <ul>
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/e/product-security.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Product Security</span>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/our-company/governance/principles-ethics/ca-proposition-65.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span
+                                                                                >Information About Proposition 65 for
+                                                                                California Customers</span
+                                                                            >
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/our-company/governance/principles-ethics/dmca-notification.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span
+                                                                                >Digital Millennium Copyright Act (DMCA)
+                                                                                Notification</span
+                                                                            >
+                                                                        </a>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="container responsivegrid aem-GridColumn--default--none aem-GridColumn--phone--none aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--offset--phone--0 aem-GridColumn--default--3 aem-GridColumn--offset--default--0"
+                                            >
+                                                <div id="container-162f176b7e" class="cmp-container">
+                                                    <div
+                                                        class="aem-Grid aem-Grid--3 aem-Grid--default--3 aem-Grid--phone--12"
+                                                    >
+                                                        <div
+                                                            class="ghost aem-GridColumn--phone--12 aem-GridColumn aem-GridColumn--default--3"
+                                                        ></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    class="container responsivegrid mdt-footer-section aem-GridColumn aem-GridColumn--default--12"
+                                >
+                                    <div id="container-e0210c9184" class="cmp-container">
+                                        <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                                            <div
+                                                class="container responsivegrid mdt-footer-logo aem-GridColumn aem-GridColumn--default--12"
+                                            >
+                                                <div id="container-2abba7075f" class="cmp-container">
+                                                    <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                                                        <div
+                                                            class="footerlogo aem-GridColumn aem-GridColumn--default--12"
+                                                        >
+                                                            <div class="mdt-footer-logo">
+                                                                <span class="icon-medtronic-logo"></span>
+                                                                <span class="logo-help-text"
+                                                                    >Engineering the extraordinary</span
+                                                                >
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div
+                                                class="container responsivegrid footer-social-menu aem-GridColumn aem-GridColumn--default--12"
+                                            >
+                                                <div id="container-814152a6f4" class="cmp-container">
+                                                    <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                                                        <div
+                                                            class="socialchannel aem-GridColumn aem-GridColumn--default--12"
+                                                        >
+                                                            <div class="list list-social-link">
+                                                                <ul class="cmp-list">
+                                                                    <li class="cmp-list__item">
+                                                                        <a
+                                                                            href="https://www.facebook.com/Medtronic"
+                                                                            aria-label="Opens in a new window"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"share-icons":{"dc:description":"Share"}}'
+                                                                            data-action="Share"
+                                                                        >
+                                                                            <article>
+                                                                                <span style="display: none"
+                                                                                    >Facebook</span
+                                                                                >
+                                                                                <span
+                                                                                    class="cmp-list__item-title icon-facebook"
+                                                                                ></span>
+                                                                            </article>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li class="cmp-list__item">
+                                                                        <a
+                                                                            href="https://www.youtube.com/user/MedtronicCorp"
+                                                                            aria-label="Opens in a new window"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"share-icons":{"dc:description":"Share"}}'
+                                                                            data-action="Share"
+                                                                        >
+                                                                            <article>
+                                                                                <span style="display: none"
+                                                                                    >Youtube</span
+                                                                                >
+                                                                                <span
+                                                                                    class="cmp-list__item-title icon-youtube"
+                                                                                ></span>
+                                                                            </article>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li class="cmp-list__item">
+                                                                        <a
+                                                                            href="https://www.linkedin.com/company/medtronic"
+                                                                            aria-label="Opens in a new window"
+                                                                            target="_blank"
+                                                                            rel="noopener"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"share-icons":{"dc:description":"Share"}}'
+                                                                            data-action="Share"
+                                                                        >
+                                                                            <article>
+                                                                                <span style="display: none"
+                                                                                    >Linkedin</span
+                                                                                >
+                                                                                <span
+                                                                                    class="cmp-list__item-title icon-linkedin"
+                                                                                ></span>
+                                                                            </article>
+                                                                        </a>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            class="menulist list list-pipe-separated add-privacy-icon aem-GridColumn aem-GridColumn--default--12"
+                                                        >
+                                                            <div class="list vertical-list">
+                                                                <ul>
+                                                                    <li>
+                                                                        <a
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Your Privacy Choices</span>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/privacy-notice.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Privacy Notice</span>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/terms-of-use.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Terms of Use</span>
+                                                                        </a>
+                                                                    </li>
+
+                                                                    <li>
+                                                                        <a
+                                                                            href="https://www.medtronic.com/en-us/terms-of-use/accessibility-statement.html"
+                                                                            data-cmp-clickable=""
+                                                                            data-cmp-data-layer='{"menu-list":{"dc:description":"Footer Menu Clicks"}}'
+                                                                            data-action="Footer-Menu-Clicks"
+                                                                        >
+                                                                            <span>Accessibility Statement</span>
+                                                                        </a>
+                                                                    </li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="container responsivegrid aem-GridColumn aem-GridColumn--default--12">
+                                    <div id="container-931f6dade5" class="cmp-container">
+                                        <div class="aem-Grid aem-Grid--12 aem-Grid--default--12">
+                                            <div class="footer_copyright aem-GridColumn aem-GridColumn--default--12">
+                                                <div class="mdt-footer-copyright">
+                                                    <div class="mdt-address">
+                                                        <span>Operational Headquarters</span>
+                                                        <span>710 Medtronic Parkway, Minneapolis,</span>
+                                                        <span>MN 55432-5604 USA</span>
+                                                    </div>
+                                                    <div class="cmp-text">
+                                                        <p class="a-code">L001-12022025: 2025-12</p>
+                                                        <p>&copy; 2026 Medtronic</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
+</div>
+
+	
+</div> <!--  Global-wrap END  -->
+
+
+
+	
+<script defer type="text/javascript" src="./index_room_files/clientlib-base.min.b484743158faaaad70fc0abbe2c95300.js"></script>
+	
+<script defer type="text/javascript" src="./index_room_files/cookie-implicit.min.c351a6f9739bff35c34854793d0170f3.js"></script>
+<script defer type="text/javascript" src="./index_room_files/clientlib.min.1d44829d33185741563fd622bb93cd62.js"></script>
+<script defer type="text/javascript" src="./index_room_files/clientlibs.min.f14119d4a162afee5cfd69cc372a398c.js"></script>	   
+	
+<script defer type="text/javascript" src="./index_room_files/global-nav.min.0099f555955b21d6a7840382d3216bdb.js"></script>
+
+
+
+<!-- Fancybox for modal -->
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+<script>
+	//Latest JS needs to be scoped appropriately  
+	var $latest_j = jQuery.noConflict();
+     console.log("Version: "+$latest_j.fn.jquery);
+</script>
+<script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+
+<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+<script type="text/javascript" defer src="js/wd_scripts.js"></script>
+
+<script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+	<script>
+	//Latest JS needs to be scoped appropriately  
+	var $j11 = jQuery.noConflict();
+     console.log("Version: "+$j11.fn.jquery);
+</script>
+	<script type="text/javascript" src="//cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.min.js"></script>
+
+	<script type="text/javascript">
+        $j11(document).on('ready', function () {
+			$j11(".slick-carousel").slick({
+				infinite: true,
+				arrows: true,
+				prevArrow: '<button type="button" class="slick-prev"></button>',
+				nextArrow: '<button type="button" class="slick-next"></button>',
+				slidesToShow: 3,
+				slidesToScroll: 3,
+				responsive: [{
+					breakpoint: 960,
+					settings: {
+						slidesToShow: 2,
+						slidesToScroll: 2,
+						infinite: true
+					}
+				}]
+			});
+
+
+        });
+  </script>
+
+
+<link rel="stylesheet" href="./css/clientlib_style.css">
+
+
+<script type="text/javascript">_satellite.pageBottom();</script>
+<script type="text/javascript">
+$(document).ready(function() {
+	// dataLayer content
+	window.appEventData = window.appEventData || [];
+
+	
+	$(window).load(function() {
+		window.appEventData.push({
+			"event": "Page Loaded",
+			"pageInfo":{
+				"pageName":"Newsroom | Medtronic",
+				"url":"https://news.medtronic.com/",
+				"path":"/",
+				"queryString":"",
+				"referrer":"",
+				"title":"Newsroom | Medtronic",
+				"region":"US"
+			}
+		});
+	})
+	$('.nav-items__level-1--link, .wd_nav > li > a').click(function() {
+		window.appEventData.push({
+			"event": "Menu Click",
+			"eventInfo": {
+				"eventName": $(this).text().trim(),
+				"destinationUrl": $(this).attr('href'),
+				"eventLocation": "Header"
+			}
+		});
+	})
+	$('.single_slider_carousel .item a').click(function() {
+		var num = $(this).parents('.item').index() + 1;
+		var title = $(this).parents('.item').find('h4').text();
+		var url = $(this).attr('href');
+		
+		window.appEventData.push({
+			"event": "HP_Slider Click",
+			"eventInfo": {
+			"eventName": "Slider : "+num+" : "+title,
+				"destinationUrl": url,
+				"eventLocation": "Header"
+			}
+		});
+	})
+	setTimeout(function() {
+		$('.wd_featureboxes_alert .wd_featurebox .wd_image_tbl_pollyf a').click(function() {
+			var title = $(this).parents('.wd_featurebox_container').find('.wd_featurebox_title').text();
+			var url = $(this).attr('href');
+
+			window.appEventData.push({
+				"event": "Leaderboard banner Click",
+				"eventInfo": {
+					"eventName": title,
+					"destinationUrl": url,
+					"eventLocation": "Header"
+				}
+			});
+		})
+	}, 2000);
+	
+	setTimeout(function() {
+		$('.nav-items a:not(.has-submenu)').click(function() {
+			var parent = $(this).parents('.primary-nav-item').find('> a').text().trim();
+			if($(this).hasClass('nav-items__level-3--link')) {
+				parent += ':' + $(this).parents('.secondary-nav-item').find('> a').text().trim();
+			}
+			var title = $(this).text().trim();
+			var url = $(this).attr('href');
+
+			window.appEventData.push({
+			    "event": "Sub Menu Click",
+				"eventInfo": {
+					"eventName": parent+":"+title,
+					"destinationUrl": url,
+					"eventLocation": "Header"
+				}
+			});
+		})
+	}, 2000);
+
+	$('.wd_subnav a').click(function() {
+		var parent = $(this).closest('.dropdown').find('> a').text().trim();
+		var title = $(this).text().trim();
+		var url = $(this).attr('href');
+		
+		window.appEventData.push({
+		    "event": "Sub Menu Click",
+			"eventInfo": {
+				"eventName": parent+":"+title,
+				"destinationUrl": url,
+				"eventLocation": "Header"
+			}
+		});
+	})
+
+	setTimeout(function() {
+		$('.wd_feat_stories_wrap a, .wd_left_right_fb a, .wd_middle_fb a, .wd_bottom_fb a, .wd_main_content a').click(function() {
+			var url =$(this).attr('href');
+			var text;
+			if ($(this).find('img').length) {
+				if ($(this).parents('.wd_image_tbl_pollyf, .wd_featurebox').length) {
+					text = $(this).parents('.wd_featurebox_container').find('.wd_featurebox_title').text();
+				} else {
+					text = $(this).find('img').attr('alt');
+				}
+			} else {
+				text = $(this).text().trim();
+			}
+
+			if (text == undefined) {
+				text = 'No text available.';
+			}
+				
+			window.appEventData.push({
+				"event": "Link Click",
+				"eventInfo": {
+					"eventName": text,
+					"destinationUrl": url,
+					"eventLocation": "Body"
+				}
+			});
+		})
+	}, 2000);
+
+	$('footer a').click(function() {
+		var title = $(this).text().trim();
+		var url = $(this).attr('href');
+
+		window.appEventData.push({
+		    "event": "Footer Link Click",
+		    "eventInfo": {
+		        "eventName": title, 
+		        "destinationUrl": url,
+		        "eventLocation": 'Footer'
+		    }
+		});
+
+	})
+	$('.wd_featurebox-subscribe form').submit(function() {
+		var title = $(this).parents('.wd_featurebox_container').find('.wd_featurebox_title').text();
+		if($(this).find('.wd_form_field_error').length) {
+			var errorMsg = '';
+			var errorValidMsg = '';
+			var noneFilled = 'None of the Fields Filled';
+			var label;
+			$(this).find('.wd_form_field_error').each(function() {
+				label = $(this).parents('.wd_form_field').find('label').text();
+				label = label.replace('*', '').trim();
+				if (!$(this).next().val()) {
+					errorMsg += label + ', ';
+				} else {
+					errorValidMsg += label + ' Not Valid.';
+				}
+			})
+			$(this).find('input[type=text]').each(function() {
+				if ($(this).val()) {
+					noneFilled = '';
+					return false;
+				}
+			})
+			if (noneFilled != '') {
+				errorMsg = noneFilled;
+			} else if (errorMsg != '') {
+				errorMsg = errorMsg.replace(/,\s*$/, "");
+				errorMsg += ' Not Filled. ';
+			}
+
+			errorMsg += errorValidMsg;
+
+			errorMsg = errorMsg.trim();
+
+			window.appEventData.push({
+			    "event": "Form Error",
+			    "eventInfo": {
+			        "errorMessage": errorMsg, 
+			        "formName": title, 
+			        "eventLocation": 'Body'
+			    }
+			});
+		} else {
+
+			window.appEventData.push({
+			    "event": "Form Submit",
+			    "eventInfo": {
+			        "formName": title, 
+			        "eventLocation": 'Body'
+			    }
+			});
+		}
+
+	})
+	$('.wd_subscribe2 form').submit(function() {
+		if($(this).find('.wd_form_field_error').length) {
+			var errorMsg = '';
+			var errorValidMsg = '';
+			var noneFilled = 'None of the Fields Filled';
+			var label;
+			$(this).find('.wd_form_field_error').each(function() {
+				label = $(this).parents('.wd_form_field').find('label').text();
+				label = label.replace('*', '').trim();
+				if ($(this).parents('.wd_form_field').find('div[id*=recaptcha]').length) {
+					label = 'reCAPTCHA';
+				}
+				if (!$(this).next().val()) {
+					errorMsg += label + ', ';
+				} else {
+					errorValidMsg += label + ' Not Valid.';
+				}
+			})
+			$(this).find('input[type=text]').each(function() {
+				if ($(this).val()) {
+					noneFilled = '';
+					return false;
+				}
+			})
+			if (noneFilled != '') {
+				errorMsg = noneFilled;
+			} else if (errorMsg != '') {
+				errorMsg = errorMsg.replace(/,\s*$/, "");
+				errorMsg += ' Not Filled. ';
+			}
+
+			errorMsg += errorValidMsg;
+
+			errorMsg = errorMsg.trim();
+
+			window.appEventData.push({
+			    "event": "Form Error",
+			    "eventInfo": {
+			        "errorMessage": errorMsg, 
+			        "formName": "Email Alerts", 
+			        "eventLocation": 'Body'
+			    }
+			});
+		} else {
+
+			window.appEventData.push({
+			    "event": "Form Submit",
+			    "eventInfo": {
+			        "formName": "Email Alerts", 
+			        "eventLocation": 'Body'
+			    }
+			});
+		}
+
+	})
+
+	$('.twitter-tweet').addClass('wd_social-wrap');
+
+	$('.wd_featureboxes_featured_stories .wd_standard-teaser .item').each(function(){
+		$(this).find('img').parent('.itemlink').addClass('wd_image-link');
+		var hackedLink = $(this).find('.item_name a:nth-child(2)').attr('href');
+		console.log(hackedLink);
+		$(this).find('.itemlink').attr('href',hackedLink);
+		$(this).find('ul').addClass('wd_added-category item_summary');
+		$(this).find('.wd_image-link').insertBefore($(this).find('.item_name'));
+		$(this).find('.wd_added-category').insertBefore($(this).find('.item_name'));
+		$(this).find('.wd_added-category, .item_name').wrapAll('<div class="wd_tile-wrap" />');
+		$(this).find('.wd_tile-wrap').append('<a class="wd_btn-readmore" href="'+hackedLink+'">Read More</a>');
+	});
+
+	
+	//IN THE NEWS FEATUREBOX
+
+	// Wraps date, name, and summary in one div 
+	$('.wd_news_headlines-teaser .item').each(function() { 
+		$(this).find('.item_date, .item_name, .item_summary').wrapAll('<div class="wd_content-wrap"></div>');
+	});
+	
+});
+</script>
+
+<!-- begin spin_special_output(body_end) -->
+<script wd_script_id="piwik_tracking_code"></script>
+<!-- Piwik Tracking Code -->
+<script type="text/plain" class="optanon-category-2">
+  var _paq = _paq || [];
+
+  _paq.push(["setCustomVariable", 1, "Content Type", "Standard", "page"]);
+
+  _paq.push(["setCustomVariable", 3, "Navigation Page", "Home", "page"]);
+
+  _paq.push(["trackPageView"]);
+  _paq.push(["enableLinkTracking"]);
+  (function() {
+    var u="//stats.drivetheweb.com/";
+    _paq.push(["setTrackerUrl", u+"piwik.php"]);
+    _paq.push(["setSiteId", 6065]);
+    var d=document, g=d.createElement("script"), s=d.getElementsByTagName("script")[0];
+    g.type="text/javascript"; g.async=true; g.defer=true; g.src=u+"piwik.js"; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<noscript>
+	<img src="https://stats.drivetheweb.com/piwik.php?idsite=6065&rec=1" style="border:0" alt="" />
+</noscript>
+<!-- End Piwik Tracking Code -->
+		
+<!-- end spin_special_output(body_end) -->
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3f2f4437a2863eb',t:'MTc5MDA5NzM1Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body></html>

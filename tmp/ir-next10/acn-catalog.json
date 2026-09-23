@@ -1,0 +1,88 @@
+{
+  "ticker": "ACN",
+  "fy": "08-31",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2022/q1/q1-fy22-supporting-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2022/q1/q1fy22-earnings-release.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2022/q2/q2-fy22-supporting-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2022/q2/q2fy22-earnings-release.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2022/q3/q3fy22-supporting-material.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2022/q3/q3-fy22-earnings-release.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2022/q4/fourth-quarter-2022-supporting-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2022/q4/accentures-fourth-quarter-fiscal-2022-earnings-release.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2023/q1/first-quarter-2023-supporting-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2023/q1/accentures-first-quarter-fiscal-2023-earnings-release-final.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2023/q2/second-quarter-2023-supporting-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2023/q2/accentures-second-quarter-fiscal-2023-earnings-press-release.pdf"
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2023/q3/accenture-third-quarter-fiscal-2023-earnings-release-final.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2023/q4/supporting-q4fy23-final-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2023/q4/final-q4-fy23-earnings-press-release.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2024/q1/accentures-first-quarter-fiscal-2024-supporting-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2024/q1/accenture-reports-first-quarter-fiscal-2024-results.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2024/q2/accentures-second-quarter-fiscal-2024-supporting-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2024/q2/accenture-reports-second-quarter-fiscal-2024-results.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2024/q3/accentures-third-quarter-fiscal-2024-supporting-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2024/q3/accenture-reports-third-quarter-fiscal-2024-press-release.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2024/q4/accentures-fourth-quarter-fiscal-2024-supporting-materials--.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2024/q4/accenture-reports-fourth-quarter-and-full-year-fiscal-2024-results.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2025/first-quarter-fiscal-2025-supporting-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2025/accentures-first-quarter-fiscal-2025-results.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2025/second-quarter-2025-supporting-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/Accenture-IR-V3/quarterly-earnings/2025/q2fy25/accentures-second-quarter-fiscal-2025-earnings-release.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/Accenture-IR-V3/quarterly-earnings/2025/q3-fy25/acn-third-quarter-2025-supporting-materials.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/Accenture-IR-V3/quarterly-earnings/2025/q3-fy25/acn-third-quarter-fiscal-2025-earnings-release.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/Accenture-IR-V3/quarterly-earnings/2025/q4-fy-25/acn-fourth-quarter-fiscal-2025-earnings-presentation.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/Accenture-IR-V3/quarterly-earnings/2025/q4-fy-25/acn-fourth-quarter-fiscal-2025-earnings-release.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/first-quarter-fiscal-2026-earnings-presentation.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/accentures-first-quarter-fiscal-2026-earnings-press-release.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/second-quarter-fiscal-2026-earnings-presentation.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/accentures-second-quarter-fiscal-2026-earnings-press-release.pdf"
+    },
+    "Q3 2026": {
+      "slides": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/accenture-3q-fy26-earnings-presentation.pdf",
+      "filings": "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/accenture-3q-fy26-earnings-release.pdf"
+    }
+  },
+  "hosts": [
+    "investor.accenture.com"
+  ],
+  "notes": "Accenture plc. FY ends Aug 31. Labels = issuer fiscal Q1–Q4 (Q1 ends Nov 30, Q2 Feb, Q3 May 31, Q4 Aug 31). Scope Q1 2022→Q3 2026 (latest reported). Slides = Earnings Presentation when published, else Supporting Materials; Filings = Earnings Press Release / Results. FY26 + live IR tabs on accenture-v4; FY25 Q2–Q4 use verified Accenture-IR-V3 quarterly-earnings paths (also mirrored on v4). Rejected transcripts, podcasts, infographics (incl. Q3 2023 fy23q3-infographics-supporting-materials — no real slides PDF). Browser Range-verified %PDF 206 for all locked URLs. Never SEC HTML / 10-Q.",
+  "status": "yellow",
+  "verified": "browser-earnings-reports-tabs-2022-2026 + Range-%PDF-all-locked"
+}

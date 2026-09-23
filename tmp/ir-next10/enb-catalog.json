@@ -1,0 +1,88 @@
+{
+  "ticker": "ENB",
+  "fyEnd": "12-31",
+  "irHub": "https://www.enbridge.com/investment-center",
+  "pdfHost": "www.enbridge.com/~/media/Enb/Documents/Investor-Relations/{year}/",
+  "trafficLight": "yellow",
+  "notes": "Enbridge calendar FY (Dec 31). Slides={year}_Q{n}_Earnings_Presentation_Final.pdf on enbridge.com media. Filings=null: earnings news releases are HTML on enbridge.com/media-center and enbridge.mediaroom.com \u2014 no first-party press PDF pattern found (probed News_Release/Press_Release/Earnings_Release variants). Reject Financial_Statements_MDA / Supplemental_Package / Transcript / 10-Q. Scope Q1 2022\u2192Q2 2026. 0 green / 18 yellow / 0 red. All slides Range-GET %PDF. Ticker YELLOW.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2022/2022_Q1_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q2 2022": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2022/2022_Q2_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q3 2022": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2022/2022_Q3_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q4 2022": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2022/2022_Q4_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q1 2023": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2023/2023_Q1_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q2 2023": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2023/2023_Q2_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q3 2023": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2023/2023_Q3_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q4 2023": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2023/2023_Q4_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q1 2024": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2024/2024_Q1_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q2 2024": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2024/2024_Q2_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q3 2024": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2024/2024_Q3_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q4 2024": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2024/2024_Q4_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q1 2025": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2025/2025_Q1_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q2 2025": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2025/2025_Q2_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q3 2025": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2025/2025_Q3_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q4 2025": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2025/2025_Q4_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q1 2026": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2026/2026_Q1_Earnings_Presentation_Final.pdf",
+      "filings": null
+    },
+    "Q2 2026": {
+      "slides": "https://www.enbridge.com/~/media/Enb/Documents/Investor-Relations/2026/2026_Q2_Earnings_Presentation_Final.pdf",
+      "filings": null
+    }
+  },
+  "status": {
+    "green": 0,
+    "yellow": 18,
+    "red": 0,
+    "ticker": "yellow"
+  }
+}

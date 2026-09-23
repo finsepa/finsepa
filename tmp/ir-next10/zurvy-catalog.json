@@ -1,0 +1,88 @@
+{
+  "ticker": "ZURVY",
+  "fy": "calendar",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2022/docs/2022-0512-01.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/investor-relations/docs/results/2022/investor-media-presentation-including-commentary-half-year-results-2022.pdf",
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2022/docs/2022-0811-01.pdf?sc_lang=en"
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2022/docs/2022-1110-01.pdf?sc_lang=en"
+    },
+    "Q4 2022": {
+      "slides": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/investor-relations/docs/results/2023/investor-presentation-including-commentary-annual-results-2022.pdf",
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2023/docs/2023-0209-01.pdf?sc_lang=en"
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2023/docs/2023-0517-01.pdf?sc_lang=en"
+    },
+    "Q2 2023": {
+      "slides": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/investor-relations/docs/results/2023/investor-presentation-including-commentary-half-year-results-2023.pdf",
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2023/docs/2023-0810-01.pdf?sc_lang=en"
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2023/docs/2023-1109-01.pdf?sc_lang=en"
+    },
+    "Q4 2023": {
+      "slides": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/investor-relations/docs/results/2024/investor-presentation-including-commentary-annual-results-2023.pdf",
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2024/docs/2024-0222-01.pdf?sc_lang=en"
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2024/docs/2024-0516-01.pdf?sc_lang=en"
+    },
+    "Q2 2024": {
+      "slides": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/investor-relations/docs/results/2024/investor-media-presentation-including-commentary-half-year-results-2024.pdf",
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2024/docs/2024-0808-01.pdf?sc_lang=en"
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2024/docs/2024-1107-01.pdf?sc_lang=en"
+    },
+    "Q4 2024": {
+      "slides": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/investor-relations/docs/results/2024/q4/investor-media-presentation-including-commentary-annual-results-2024.pdf",
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2025/docs/2025-0220-01.pdf?sc_lang=en"
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2025/docs/2025-0508-01.pdf?sc_lang=en"
+    },
+    "Q2 2025": {
+      "slides": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/investor-relations/docs/results/2025/q2/investor-media-presentation-including-commentary-half-year-results-2025.pdf",
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2025/docs/2025-0807-01.pdf?sc_lang=en"
+    },
+    "Q3 2025": {
+      "slides": null,
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2025/docs/2025-1106-01.pdf?sc_lang=en"
+    },
+    "Q4 2025": {
+      "slides": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/investor-relations/docs/results/2025/q4/investor-media-presentation-including-commentary-annual-results-2025.pdf",
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2026/docs/2026-0219-01.pdf?sc_lang=en"
+    },
+    "Q1 2026": {
+      "slides": null,
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2026/docs/2026-0513-01.pdf?sc_lang=en"
+    },
+    "Q2 2026": {
+      "slides": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/investor-relations/docs/results/2026/q2/investor-media-presentation-including-commentary-half-year-results-2026.pdf",
+      "filings": "https://www.zurich.com/-/media-assets/project/zurich/dotcom/media/news-releases/2026/docs/2026-0806-01.pdf?sc_lang=en"
+    }
+  },
+  "notes": "Zurich Insurance Group ADR (ZURN primary) \u2014 calendar FY. Hub: zurich.com/investor-relations/results-and-reports. PDF hosts: zurich.com/-/media-assets/.../investor-relations/docs/results/ and .../media/news-releases/. Pattern: Q2/HY and Q4/FY publish investor(-media)-presentation-including-commentary-(half-year|annual)-results-{yyyy}.pdf + EN news release; Q1 (3M) and Q3 (9M) are news-release only (no earnings deck) \u2192 yellow. Newer paths use /results/{yyyy}/q{2|4}/. Scope Q1 2022\u2192Q2 2026 (9 green / 9 yellow). Sample %PDF verified. Ticker light: YELLOW. Never SEC HTML.",
+  "hosts": [
+    "www.zurich.com"
+  ],
+  "status": {
+    "green": 9,
+    "yellow": 9,
+    "red": 0,
+    "ticker": "yellow"
+  }
+}

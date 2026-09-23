@@ -1,0 +1,84 @@
+{
+  "ticker": "MPC",
+  "fy": "calendar",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2022/q1/MPC-1Q22-Slides-vFinal.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2022/q1/MPC-Q1-2022-Earnings-Release-vFinal.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2022/q2/MPC-2Q22-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2022/q2/MPC-2Q22-Earnings-Release.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2022/q3/MPC-3Q22-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2022/q3/MPC-3Q22-Press-Release.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2022/q4/MPC-4Q22-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2022/q4/MPC-Q4-2022-Press-Release.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_presentations/2023/MPC-Q1-2023-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_news/2023/MPC-Q1-2023-Press-Release.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2023/q2/MPC-Q2-2023-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2023/q2/MPC-Q2-2023-Press-Release.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2023/q3/MPC-Q3-2023-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2023/q3/MPC-Q3-2023-Press-Release.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2023/q4/MPC-Q4-2023-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_news/2023/Q4/MPC-Q4-2023-Press-Release.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_presentations/2024/04/MPC-1Q24-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_news/2024/04/MPC-Q1-2024-Press-Release.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2024/q2/MPC-2Q24-Slides-vFinal.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2024/q2/MPC-Q2-2024-Earnings-Release.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2024/q3/v2/MPC-3Q24-Earnings-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2024/q3/MPC-3Q24-Earnings-Release.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2024/q4/MPC-Q4-2024-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_news/2025/MPC-Q4-2024-Press-Release.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2025/q1/MPC-1Q25-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2025/q1/MPC-1Q25-Earnings-Release.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_presentations/2025/MPC-Q2-2025-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2025/q2/MPC-Q2-2025-Press-Release.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_presentations/2025/MPC-Q3-2025-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_news/2025/MPC-Q3-2025-Earnings-Release.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2025/q4/06/MPC-4Q-2025-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2025/q4/MPC-4Q-2025-Earnings-Release.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_presentations/2026/06/MPC-1Q-2026-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2026/q1/MPC-1Q-2026-Earnings-Release.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://s2.q4cdn.com/142437514/files/doc_financials/2026/q2/MPC-2Q-2026-Slides.pdf",
+      "filings": "https://s2.q4cdn.com/142437514/files/doc_financials/2026/q2/MPC-2Q-2026-Earnings-Release.pdf"
+    }
+  },
+  "notes": "Marathon Petroleum calendar FY. Hub: ir.marathonpetroleum.com (Cloudflare on HTML/IRData; PressRelease.svc + FinancialReport.svc JSON OK). PDF host: s2.q4cdn.com/142437514. Slides = earnings deck (*Slides*.pdf) under doc_financials/doc_presentations. Filings = PressRelease DocumentPath for 'Reports \u2026 Quarter \u2026 Results' (*Earnings-Release* / *Press-Release*.pdf; sometimes under doc_news). Scope Q1 2022\u2192Q2 2026 (Q3 2026 scheduled Nov 3 2026, no PDFs yet). All catalog PDFs Range-GET verified %PDF. Ticker light: GREEN (18 green / 0 yellow / 0 red quarters). Never SEC HTML.",
+  "hosts": [
+    "s2.q4cdn.com",
+    "ir.marathonpetroleum.com",
+    "www.marathonpetroleum.com"
+  ]
+}

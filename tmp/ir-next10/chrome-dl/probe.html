@@ -1,0 +1,21 @@
+<!doctype html><html><body><pre id=o>loading</pre>
+<script>
+(async()=>{
+  const urls=[
+    "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2026/q3/Q326_Investor_Presentation.pdf",
+    "https://www.scotiabank.com/content/dam/scotiabank/corporate/quarterly-reports/2026/q3/Q326_Quarterly_Press_Release-EN.pdf",
+    "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/accenture-3q-fy26-earnings-presentation.pdf",
+    "https://investor.accenture.com/~/media/Files/A/accenture-v4/investors/earnings-reports/2026/accenture-3q-fy26-earnings-release.pdf"
+  ];
+  const out=[];
+  for (const u of urls){
+    try{
+      const r=await fetch(u,{headers:{Range:"bytes=0-7"},credentials:"omit"});
+      const b=new Uint8Array(await r.arrayBuffer());
+      const magic=String.fromCharCode(...b.slice(0,5));
+      out.push({u,status:r.status,magic,len:b.length,ok:magic.startsWith("%PDF")});
+    }catch(e){out.push({u,err:String(e)});}
+  }
+  document.getElementById("o").textContent=JSON.stringify(out,null,2);
+})();
+</script></body></html>

@@ -1,0 +1,58 @@
+{
+  "https://www.mizuhogroup.com/investors/financial-information/financial-statements-data/data22-1q": {
+    "names": [
+      "data22_1q.pdf",
+      "data22_1q_2.pdf",
+      "data22_1q_3.pdf"
+    ],
+    "pdfs": [
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b972412198043564061a2a_data22_1q.pdf",
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b9724196f70e450ee90b69_data22_1q_2.pdf",
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b97240691d4274c3e7f790_data22_1q_3.pdf",
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68642af5d73ab22bf1f5b5da_meeting21_1_eng.pdf",
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/686532c0579423572a8b32b9_meeting21_2_eng.pdf"
+    ]
+  },
+  "https://www.mizuhogroup.com/investors/financial-information/financial-statements-data/data22-2q": {
+    "names": [
+      "data22_2q.pdf",
+      "data22_2q_2.pdf"
+    ],
+    "pdfs": [
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b972414f37775f7853bdd2_data22_2q.pdf",
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b97241ff6b914fd366beb6_data22_2q_2.pdf"
+    ]
+  },
+  "https://www.mizuhogroup.com/investors/financial-information/financial-statements-data/data22-3q": {
+    "names": [
+      "data22_3q.pdf",
+      "data22_3q_2.pdf",
+      "data22_3q_3.pdf"
+    ],
+    "pdfs": [
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b97241078ac152f856b06c_data22_3q.pdf",
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b9732798d172c6456ee636_data22_3q_2.pdf",
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b9724035f9021a2006e620_data22_3q_3.pdf"
+    ]
+  },
+  "https://www.mizuhogroup.com/investors/financial-information/financial-statements-data/data22": {
+    "names": [
+      "data22_fy.pdf",
+      "data22_fy_2.pdf"
+    ],
+    "pdfs": [
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b9724298f272e00b27c6e7_data22_fy.pdf",
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b9724139eb98580d1e80c8_data22_fy_2.pdf"
+    ]
+  },
+  "https://www.mizuhogroup.com/investors/financial-information/financial-statements-data/data23": {
+    "names": [
+      "data23_fy.pdf",
+      "data23_fy_2.pdf"
+    ],
+    "pdfs": [
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b96fa2ca9a27f3cb0e078b_data23_fy.pdf",
+      "https://cdn.prod.website-files.com/67cb23eaf0c6c4d4080e059a/68b96fa2bcb886caa0f0a734_data23_fy_2.pdf"
+    ]
+  }
+}

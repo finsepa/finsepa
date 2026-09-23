@@ -1,0 +1,411 @@
+{
+  "scope": {
+    "from": "Q1 2022",
+    "to": "Q2 2026",
+    "quarters": [
+      "Q2 2026",
+      "Q1 2026",
+      "Q4 2025",
+      "Q3 2025",
+      "Q2 2025",
+      "Q1 2025",
+      "Q4 2024",
+      "Q3 2024",
+      "Q2 2024",
+      "Q1 2024",
+      "Q4 2023",
+      "Q3 2023",
+      "Q2 2023",
+      "Q1 2023",
+      "Q4 2022",
+      "Q3 2022",
+      "Q2 2022",
+      "Q1 2022"
+    ],
+    "asOf": "2026-09-22",
+    "discoveryOnly": true,
+    "seedFilesUntouched": true
+  },
+  "NET": {
+    "ticker": "NET",
+    "name": "Cloudflare, Inc.",
+    "irPages": [
+      "https://cloudflare.net/",
+      "https://cloudflare.net/financials/quarterly-results/default.aspx",
+      "https://cloudflare.net/events-and-presentations/default.aspx",
+      "https://www.cloudflare.net/feed/FinancialReport.svc/GetFinancialReportList?LanguageId=1&pageSize=-1&excludeSelection=1"
+    ],
+    "fiscalNotes": "Calendar fiscal year (quarters end Mar/Jun/Sep/Dec).",
+    "knownQuarterDocs": {
+      "Q2 2026": {
+        "slides": "https://cloudflare.net/files/doc_financials/2026/q2/Q2-26-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2026/q2/Q2-26-Exhibit-99-1.pdf"
+      },
+      "Q1 2026": {
+        "slides": "https://cloudflare.net/files/doc_financials/2026/q1/Q1-26-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2026/q1/Q1-26-Exhibit-99-1.pdf"
+      },
+      "Q4 2025": {
+        "slides": "https://cloudflare.net/files/doc_financials/2025/q4/Q4-25-Supplemental-Financial-Information_FINAL.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2025/q4/Q4-25-Exhibit-99-1_FINAL.pdf"
+      },
+      "Q3 2025": {
+        "slides": "https://cloudflare.net/files/doc_financials/2025/q3/v2/Q3-25-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2025/q3/v2/Q3-25-Exhibit-99-1_FINAL.pdf"
+      },
+      "Q2 2025": {
+        "slides": "https://cloudflare.net/files/doc_financials/2025/q2/Q2-25-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2025/q2/Q2-25-Exhibit-99-1.pdf"
+      },
+      "Q1 2025": {
+        "slides": "https://cloudflare.net/files/doc_financials/2025/q1/Q1-25-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2025/q1/Q1-25-Exhibit-99-1.pdf"
+      },
+      "Q4 2024": {
+        "slides": "https://cloudflare.net/files/doc_financials/2024/q4/Q4-24-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2024/q4/Q4-24-Exhibit-99-1.pdf"
+      },
+      "Q3 2024": {
+        "slides": "https://cloudflare.net/files/doc_financials/2024/q3/Q3-24-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2024/q3/Q3-24-Exhibit-99-1.pdf"
+      },
+      "Q2 2024": {
+        "slides": "https://cloudflare.net/files/doc_financials/2024/q2/Q2-24-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2024/q2/Q2-24-Exhibit-99-1_final.pdf"
+      },
+      "Q1 2024": {
+        "slides": "https://cloudflare.net/files/doc_financials/2024/q1/Q1-24-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2024/q1/Q1-24-Exhibit-99-1.pdf"
+      },
+      "Q4 2023": {
+        "slides": "https://cloudflare.net/files/doc_financials/2023/q4/Q4-23-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2023/q4/Q4-23-Exhibit-99-1.pdf"
+      },
+      "Q3 2023": {
+        "slides": "https://cloudflare.net/files/doc_financials/2023/q3/Q3-23-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2023/q3/Q3-23-Exhibit-99-1.pdf"
+      },
+      "Q2 2023": {
+        "slides": "https://cloudflare.net/files/doc_financials/2023/q2/Q2-23-Supplemental-Financial-Information_FINAL.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2023/q2/Q2-23-Exhibit-99-1_FINAL.pdf"
+      },
+      "Q1 2023": {
+        "slides": "https://cloudflare.net/files/doc_financials/2023/q1/Q123-Supplemental-Financial-Information_FINAL.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2023/q1/Q123-Exhibit-99-1_FINAL.pdf"
+      },
+      "Q4 2022": {
+        "slides": "https://cloudflare.net/files/doc_financials/2022/q4/Q4'22-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2022/q4/Q4'22-Exhibit-99.1.pdf"
+      },
+      "Q3 2022": {
+        "slides": "https://cloudflare.net/files/doc_financials/2022/q3/Q3'22-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2022/q3/Q3'22-Exhibit-99.1.pdf"
+      },
+      "Q2 2022": {
+        "slides": "https://cloudflare.net/files/doc_financials/2022/q2/Q2'22-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2022/q2/v2/Q2'22-Exhibit-99.1.pdf"
+      },
+      "Q1 2022": {
+        "slides": "https://cloudflare.net/files/doc_financials/2022/q1/Q1'22-Supplemental-Financial-Information.pdf",
+        "filings": "https://cloudflare.net/files/doc_financials/2022/q1/Q1'22-Exhibit-99.1.pdf"
+      }
+    },
+    "quarterLights": {
+      "Q2 2026": "green",
+      "Q1 2026": "green",
+      "Q4 2025": "green",
+      "Q3 2025": "green",
+      "Q2 2025": "green",
+      "Q1 2025": "green",
+      "Q4 2024": "green",
+      "Q3 2024": "green",
+      "Q2 2024": "green",
+      "Q1 2024": "green",
+      "Q4 2023": "green",
+      "Q3 2023": "green",
+      "Q2 2023": "green",
+      "Q1 2023": "green",
+      "Q4 2022": "green",
+      "Q3 2022": "green",
+      "Q2 2022": "green",
+      "Q1 2022": "green"
+    },
+    "trafficLight": "green",
+    "why": "GREEN — every in-scope quarter has distinct Earnings Supplemental (slides) + Exhibit 99.1 release (filings) on cloudflare.net/files. Sample Range bytes=0-8 → %PDF- verified. Rejected transcripts/10-Q/10-K/webcast. Note: occasional separate Investor Presentation (e.g. Q2-2026-Cloudflare-Investor-Presentation.pdf) exists but quarterly vault slot uses Supplemental per IR FinancialReport category.",
+    "counts": {
+      "green": 18,
+      "yellow": 0,
+      "red": 0,
+      "inScope": 18
+    },
+    "cdnAllowlistHints": [
+      "cloudflare.net",
+      "*.cloudflare.net",
+      "path prefix /files/doc_financials/",
+      "optional: *.q4cdn.com if CDN host flips"
+    ],
+    "methodNotes": "Q4 FinancialReport.svc JSON feed enumerates documents; Range-verified sample endpoints.",
+    "rejectedPatterns": [
+      "sec.gov HTML",
+      "transcripts",
+      "10-Q / 10-K",
+      "conference / investor-day decks (non-earnings)",
+      "prepared remarks",
+      "financial tables-only PDFs (when separate from press)"
+    ]
+  },
+  "FTNT": {
+    "ticker": "FTNT",
+    "name": "Fortinet, Inc.",
+    "irPages": [
+      "https://investor.fortinet.com/",
+      "https://investor.fortinet.com/events-and-presentations",
+      "https://investor.fortinet.com/financial-releases"
+    ],
+    "fiscalNotes": "Calendar fiscal year.",
+    "knownQuarterDocs": {
+      "Q2 2026": {
+        "slides": "https://investor.fortinet.com/static-files/657dfcda-7367-4c36-8259-b0b43a535da1",
+        "filings": "https://investor.fortinet.com/static-files/e4ffcc79-194e-4ca3-9a69-8a51bd0a6314"
+      },
+      "Q1 2026": {
+        "slides": "https://investor.fortinet.com/static-files/9dc7117a-d2dc-4d9f-b151-c2eea950a0e4",
+        "filings": "https://investor.fortinet.com/static-files/98008e24-af31-46aa-a962-375e653af2a3"
+      },
+      "Q4 2025": {
+        "slides": "https://investor.fortinet.com/static-files/38d0dd08-09e6-4426-ae20-6e4c0e1ad992",
+        "filings": "https://investor.fortinet.com/static-files/31153c1c-400c-4af8-b978-35d4bece7128"
+      },
+      "Q3 2025": {
+        "slides": "https://investor.fortinet.com/static-files/b9f68751-242f-4090-8434-fa34680302ba",
+        "filings": "https://investor.fortinet.com/static-files/23528d89-ce1c-4251-8ccc-29f34c7cb73d"
+      },
+      "Q2 2025": {
+        "slides": "https://investor.fortinet.com/static-files/be2cd17e-9338-4ad0-8b4a-d2141c8bf8ca",
+        "filings": "https://investor.fortinet.com/static-files/c9e8d750-4437-4ba1-931c-e520f19b1b0e"
+      },
+      "Q1 2025": {
+        "slides": "https://investor.fortinet.com/static-files/4fe7d294-0134-4847-ae4f-a6ebd4914273",
+        "filings": null
+      },
+      "Q4 2024": {
+        "slides": "https://investor.fortinet.com/static-files/037f65fc-0c2b-4f4f-b334-30c58205e0f5",
+        "filings": null
+      },
+      "Q3 2024": {
+        "slides": "https://investor.fortinet.com/static-files/fc1a91b9-2f08-4c61-8d59-5637432d8878",
+        "filings": null
+      },
+      "Q2 2024": {
+        "slides": "https://investor.fortinet.com/static-files/0c273d08-3270-446d-9a3b-17d65d18506a",
+        "filings": "https://investor.fortinet.com/static-files/5e53c743-d9d6-466c-b2ba-38800f47fb13"
+      },
+      "Q1 2024": {
+        "slides": "https://investor.fortinet.com/static-files/a28eeae0-6f81-4ab0-a155-b0de2b73c146",
+        "filings": null
+      },
+      "Q4 2023": {
+        "slides": "https://investor.fortinet.com/static-files/7a458f34-8c89-43e6-b806-0ef941ce54fe",
+        "filings": null
+      },
+      "Q3 2023": {
+        "slides": "https://investor.fortinet.com/static-files/026c2424-7bf8-4766-970d-ab84cbeebec5",
+        "filings": null
+      },
+      "Q2 2023": {
+        "slides": "https://investor.fortinet.com/static-files/10ea2195-7288-4dd1-bc6d-bade629bf26e",
+        "filings": null
+      },
+      "Q1 2023": {
+        "slides": "https://investor.fortinet.com/static-files/f980ac27-60fc-467f-b154-899c2698311b",
+        "filings": null
+      },
+      "Q4 2022": {
+        "slides": "https://investor.fortinet.com/static-files/451e63be-9e73-41ad-a90b-e64490b7c645",
+        "filings": null
+      },
+      "Q3 2022": {
+        "slides": "https://investor.fortinet.com/static-files/da142bc6-5549-4e7b-9a91-8762cebebeb4",
+        "filings": null
+      },
+      "Q2 2022": {
+        "slides": "https://investor.fortinet.com/static-files/70db2f7e-4f0e-4eae-ac79-bd830e8f2b76",
+        "filings": null
+      },
+      "Q1 2022": {
+        "slides": "https://investor.fortinet.com/static-files/fe99200a-14bb-48b5-9204-911b6855efc6",
+        "filings": null
+      }
+    },
+    "quarterLights": {
+      "Q2 2026": "green",
+      "Q1 2026": "green",
+      "Q4 2025": "green",
+      "Q3 2025": "green",
+      "Q2 2025": "green",
+      "Q1 2025": "yellow",
+      "Q4 2024": "yellow",
+      "Q3 2024": "yellow",
+      "Q2 2024": "green",
+      "Q1 2024": "yellow",
+      "Q4 2023": "yellow",
+      "Q3 2023": "yellow",
+      "Q2 2023": "yellow",
+      "Q1 2023": "yellow",
+      "Q4 2022": "yellow",
+      "Q3 2022": "yellow",
+      "Q2 2022": "yellow",
+      "Q1 2022": "yellow"
+    },
+    "trafficLight": "yellow",
+    "why": "YELLOW — slides for all in-scope quarters via static-files UUIDs; filings (EX 99.1) for Q2'26–Q2'25 + Q2'24 8-K. Older press PDFs often absent on IR (HTML news only) — left null. Q3'22 slides + Q2'26 EX 99.1 Range-verified %PDF-. Reject prepared remarks / 10-Q.",
+    "counts": {
+      "green": 6,
+      "yellow": 12,
+      "red": 0,
+      "inScope": 18
+    },
+    "cdnAllowlistHints": [
+      "investor.fortinet.com",
+      "path /static-files/{uuid} (GCS-web style; often no .pdf suffix)",
+      "optional: fortinet.gcs-web.com if host alias needed"
+    ],
+    "methodNotes": "Web search + Range bytes=0-8 verification; IR HTML sometimes 403 from datacenter IPs.",
+    "rejectedPatterns": [
+      "sec.gov HTML",
+      "transcripts",
+      "10-Q / 10-K",
+      "conference / investor-day decks (non-earnings)",
+      "prepared remarks",
+      "financial tables-only PDFs (when separate from press)"
+    ]
+  },
+  "LMT": {
+    "ticker": "LMT",
+    "name": "Lockheed Martin Corporation",
+    "irPages": [
+      "https://investors.lockheedmartin.com/",
+      "https://news.lockheedmartin.com/",
+      "https://www.lockheedmartin.com/investor"
+    ],
+    "fiscalNotes": "Calendar fiscal year; interim periods close on last Sunday of calendar quarter (books/records convention). FY still ends Dec 31.",
+    "knownQuarterDocs": {
+      "Q2 2026": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/183969/2Q-2026-Earnings-Conf-Call-Charts-v2.pdf",
+        "filings": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/183966/download/2Q-2026-Earnings-Release-8-K.pdf"
+      },
+      "Q1 2026": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/183507/download/1Q-2026-Earnings-Conf-Call-Charts.pdf",
+        "filings": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/183506/download/1Q-2026-Earnings-Release-8-K.pdf"
+      },
+      "Q4 2025": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/183154/4Q-2025-Earnings-Conf-Call-Charts.pdf",
+        "filings": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/183163/download/4Q-2025-Earnings-Release-8-K.pdf"
+      },
+      "Q3 2025": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/182881/download/3Q-2025-Earnings-Conf-Call-Charts.pdf",
+        "filings": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/182855/download/3Q-2025-Earnings-Release-8-K.pdf"
+      },
+      "Q2 2025": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/182590/download/2Q-2025-Earnings-Conf-Call-Charts.pdf",
+        "filings": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/182588/download/2Q-2025-Earnings-Release-8-K.pdf"
+      },
+      "Q1 2025": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/182368/download/1Q-2025-Earnings-Conf-Call-Charts.pdf",
+        "filings": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/182366/download/1Q-2025-Earnings-Release-8-K.pdf"
+      },
+      "Q4 2024": {
+        "slides": null,
+        "filings": null
+      },
+      "Q3 2024": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/181866/download/3Q-2024-Earnings-Conf-Call-Charts.pdf",
+        "filings": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/181864/download/3Q-2024-Earnings-Release-8-K.pdf"
+      },
+      "Q2 2024": {
+        "slides": null,
+        "filings": null
+      },
+      "Q1 2024": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/181566/download/1Q-2024-Earnings-Conf-Call-Charts.pdf",
+        "filings": null
+      },
+      "Q4 2023": {
+        "slides": null,
+        "filings": null
+      },
+      "Q3 2023": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/181037/download/LMT-October-2023-Conf-Call-Charts.pdf",
+        "filings": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/181035/download/3Q-2023-Earnings-Release-8-K.pdf"
+      },
+      "Q2 2023": {
+        "slides": null,
+        "filings": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/180844/download/2Q-2023-Earnings-Release-8-K.pdf"
+      },
+      "Q1 2023": {
+        "slides": null,
+        "filings": null
+      },
+      "Q4 2022": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/180579/download/LMT-January-2023-Conf-Call-Charts.pdf",
+        "filings": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/180577/download/4Q-2022-Earnings-Release-8-K.pdf"
+      },
+      "Q3 2022": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/180434/download/2022-Q3-Conf-Call-Charts.pdf",
+        "filings": null
+      },
+      "Q2 2022": {
+        "slides": null,
+        "filings": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/180231/download/2022-Q2-8-K-Press-Release.pdf"
+      },
+      "Q1 2022": {
+        "slides": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/180060/download/LMT%201Q%202022%20Apr%202022%20Conf%20Call%20Webcharts%20FINAL.pdf",
+        "filings": null
+      }
+    },
+    "quarterLights": {
+      "Q2 2026": "green",
+      "Q1 2026": "green",
+      "Q4 2025": "green",
+      "Q3 2025": "green",
+      "Q2 2025": "green",
+      "Q1 2025": "green",
+      "Q4 2024": "red",
+      "Q3 2024": "green",
+      "Q2 2024": "red",
+      "Q1 2024": "yellow",
+      "Q4 2023": "red",
+      "Q3 2023": "green",
+      "Q2 2023": "yellow",
+      "Q1 2023": "red",
+      "Q4 2022": "green",
+      "Q3 2022": "yellow",
+      "Q2 2022": "yellow",
+      "Q1 2022": "yellow"
+    },
+    "trafficLight": "yellow",
+    "why": "YELLOW — MediaRoom Conf-Call-Charts → slides; Earnings-Release-8-K / Press-Release → filings. Q4'25 filings via MediaRoom 183163 Earnings-Release-8-K (also investors.lockheedmartin.com/static-files UUID). Gaps: Q2/Q4'24 both, Q4/Q1'23, Q2'22 slides, Q1/Q3'22 filings. Financial-Tables-only rejected. Alternate: news.lockheedmartin.com?asPDF=1.",
+    "counts": {
+      "green": 9,
+      "yellow": 5,
+      "red": 4,
+      "inScope": 18
+    },
+    "cdnAllowlistHints": [
+      "filecache.mediaroom.com",
+      "path /mr5mr_lockheedmartin/{numericId}/download/{filename}.pdf",
+      "also /mr5mr_lockheedmartin/{numericId}/{filename}.pdf",
+      "investors.lockheedmartin.com/static-files/{uuid}",
+      "news.lockheedmartin.com (?asPDF=1 press PDFs)"
+    ],
+    "methodNotes": "Web search for filecache URLs + WebFetch PDF text confirmation + selective Range checks. Filename pattern evolved (Webcharts FINAL → Conf-Call-Charts → Earnings-Conf-Call-Charts).",
+    "rejectedPatterns": [
+      "sec.gov HTML",
+      "transcripts",
+      "10-Q / 10-K",
+      "conference / investor-day decks (non-earnings)",
+      "prepared remarks",
+      "financial tables-only PDFs (when separate from press)"
+    ]
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "mdt": [
+    {
+      "url": "https://investor.medtronic.com/",
+      "error": "<urlopen error [Errno 8] nodename nor servname provided, or not known>"
+    },
+    {
+      "url": "https://investor.medtronic.com/financials/quarterly-results/default.aspx",
+      "error": "<urlopen error [Errno 8] nodename nor servname provided, or not known>"
+    },
+    {
+      "url": "https://investor.medtronic.com/financials/sec-filings/default.aspx",
+      "error": "<urlopen error [Errno 8] nodename nor servname provided, or not known>"
+    },
+    {
+      "url": "https://www.medtronic.com/us-en/about/investor-relations.html",
+      "final": "https://www.medtronic.com/us-en/about/investor-relations.html",
+      "status": 200,
+      "ctype": "text/html",
+      "len": 1105,
+      "n_pdfs": 0,
+      "pdfs_sample": [],
+      "q4_hosts": [],
+      "static_sample": [],
+      "title": "Incorrect Browser",
+      "saved": "/Users/rakshamann/Desktop/Finsepa/tmp/ir-next10/page-mdt_us_en_about_investor_relations_html.html"
+    },
+    {
+      "url": "https://investorrelations.medtronic.com/",
+      "final": "https://investorrelations.medtronic.com/",
+      "status": 200,
+      "ctype": "text/html; charset=UTF-8",
+      "len": 162844,
+      "n_pdfs": 3,
+      "pdfs_sample": [
+        "https://www.medtronic.com/content/dam/medtronic-wide/public/brand-corporate-assets/resources/2023-inclusion-diversity-equity-report_corpmark_mdt.pdf",
+        "https://www.medtronic.com/content/dam/medtronic-wide/public/brand-corporate-assets/resources/2023-sustainability-report_corpmark_mdt.pdf",
+        "https://www.medtronic.com/content/dam/medtronic-wide/public/brand-corporate-assets/resources/2025-impact-report_corpmark_mdt.pdf"
+      ],
+      "q4_hosts": [],
+      "static_sample": [],
+      "title": "Investor Relations | Medtronic - Overview",
+      "saved": "/Users/rakshamann/Desktop/Finsepa/tmp/ir-next10/page-mdt_.html"
+    }
+  ],
+  "snow": [
+    {
+      "url": "https://investors.snowflake.com/",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://investors.snowflake.com/financials/quarterly-results/default.aspx",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://investors.snowflake.com/overview/default.aspx",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://www.snowflake.com/en/company/investors/",
+      "error": "HTTP Error 404: Not Found"
+    }
+  ],
+  "mtsuy": [
+    {
+      "url": "https://www.mitsubishicorp.com/jp/en/ir/",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://www.mitsubishicorp.com/jp/en/ir/library/",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://www.mitsubishicorp.com/jp/en/ir/library/earnings/",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://www.mitsubishicorp.com/jp/en/ir/finance/",
+      "error": "HTTP Error 403: Forbidden"
+    },
+    {
+      "url": "https://www.mitsubishicorp.com/jp/en/ir/library/presentation/",
+      "error": "HTTP Error 403: Forbidden"
+    }
+  ],
+  "zijmy": [
+    {
+      "url": "https://www.zijinmining.com/investors/",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.zijinmining.com/investors/announcement/",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.zijinmining.com/en/investors/",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.zijinmining.com/en/",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://www.zijinmining.com/",
+      "final": "https://www.zijinmining.com/",
+      "status": 200,
+      "ctype": "text/html; charset=utf-8",
+      "len": 72236,
+      "n_pdfs": 1,
+      "pdfs_sample": [
+        "https://www.zijinmining.com/upload/file/2025/04/25/3091791b98ac4361a5de4a3a393cec49.pdf"
+      ],
+      "q4_hosts": [],
+      "static_sample": [],
+      "title": "Home-Zijin Mining Group Co., Ltd.",
+      "saved": "/Users/rakshamann/Desktop/Finsepa/tmp/ir-next10/page-zijmy_.html"
+    }
+  ]
+}

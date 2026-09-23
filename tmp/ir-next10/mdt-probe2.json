@@ -1,0 +1,71 @@
+{
+  "https://investorrelations.medtronic.com/": {
+    "final": "https://investorrelations.medtronic.com/",
+    "status": 200,
+    "len": 162844,
+    "ctype": "text/html; charset=UTF-8",
+    "n_pdfs": 3,
+    "pdfs": [
+      "https://www.medtronic.com/content/dam/medtronic-wide/public/brand-corporate-assets/resources/2023-inclusion-diversity-equity-report_corpmark_mdt.pdf",
+      "https://www.medtronic.com/content/dam/medtronic-wide/public/brand-corporate-assets/resources/2023-sustainability-report_corpmark_mdt.pdf",
+      "https://www.medtronic.com/content/dam/medtronic-wide/public/brand-corporate-assets/resources/2025-impact-report_corpmark_mdt.pdf"
+    ],
+    "rel": [
+      "https://www.medtronic.com/content/dam/medtronic-wide/public/brand-corporate-assets/resources/2023-inclusion-diversity-equity-report_corpmark_mdt.pdf",
+      "https://www.medtronic.com/content/dam/medtronic-wide/public/brand-corporate-assets/resources/2023-sustainability-report_corpmark_mdt.pdf",
+      "https://www.medtronic.com/content/dam/medtronic-wide/public/brand-corporate-assets/resources/2025-impact-report_corpmark_mdt.pdf",
+      "https://investorrelations.medtronic.com/image/FY27Q1-Earnings-Commentary-FINAL.pdf",
+      "https://investorrelations.medtronic.com/image/FY27Q1-Earnings-Presentation.pdf",
+      "https://investorrelations.medtronic.com/image/FY27Q1-Press+Release-FINAL.pdf",
+      "https://investorrelations.medtronic.com/image/Q1FY27-Financial-Schedules.pdf"
+    ],
+    "q4": [],
+    "feeds": [
+      "https://fonts.googleapis.com/",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures.html",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures/cardiac-rhythm.html",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures/cardiovascular.html",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures/diabetes.html",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures/digestive-gastrointestinal.html",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures/ear-nose-throat.html",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures/gynecological.html",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures/neurological.html",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures/oral-maxillofacial-dental.html",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures/spinal-orthopaedic.html",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures/stroke-care/stroke-product-portfolio.html",
+      "https://www.medtronic.com/us-en/healthcare-professionals/therapies-procedures/urology.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/airway-lung.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/brain.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/diabetes.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/digestive-gastrointestinal.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/ear-nose-throat.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/heart-vascular.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/mouth-dental.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/pain.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/spine-orthopaedic.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/urinary.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/weight-loss-and-obesity.html",
+      "https://www.medtronic.com/us-en/patients/treatments-therapies/womens-health.html"
+    ],
+    "title": "\n\t\tInvestor Relations | Medtronic - Overview\t"
+  },
+  "https://investorrelations.medtronic.com/financials/quarterly-results": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "https://investorrelations.medtronic.com/financials/quarterly-results/default.aspx": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "https://investorrelations.medtronic.com/news-events/events-presentations": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "https://investorrelations.medtronic.com/news-events/press-releases": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "https://investorrelations.medtronic.com/financials/sec-filings/default.aspx": {
+    "error": "HTTP Error 404: Not Found"
+  },
+  "https://investorrelations.medtronic.com/static-files": {
+    "error": "HTTP Error 404: Not Found"
+  }
+}

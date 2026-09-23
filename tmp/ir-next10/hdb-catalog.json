@@ -1,0 +1,95 @@
+{
+  "ticker": "HDB",
+  "fy": "03-31",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2021-2022/quarter-1/press-release-to-announce-financial-results-for-quarter-ended-june-30--2021.pdf"
+    },
+    "Q2 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2022-2023/quarter-1/press-release-to-announce-financial-results-for-quarter-ended-june-30--2022.pdf"
+    },
+    "Q2 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2023": {
+      "slides": null,
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2022-2023/quarter-4/press-release-to-announce-financial-results-for-the-quarter-and-year-ended-march-31--2023.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2023-2024/quarter-1/q1fy24-earnings-presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2023-2024/quarter-1/press-release-to-announce-financial-results-for-the-quarter-ended-june-30--2023.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2023-2024/quarter-2/q2fy24-earnings-presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2023-2024/quarter-2/press-release-to-announce-financial-results-for-the-quarter-and-half-year-ended-september-30--2023.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2023-2024/quarter-3/q3fy24-earnings-presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2023-2024/quarter-3/press-release-to-announce-financial-results-for-the-quarter-and-nine-months-ended-december-31--2023.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2023-2024/quarter-4/q4fy24-earnings-presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2023-2024/quarter-4/press-release-to-announce-financial-results-for-the-quarter-and-year-ended-march-31--2024.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2024-2025/quarter-1/Q1FY25%20Earnings%20Presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2024-2025/quarter-1/press-release-to-announce-financial-results-for-the-quarter-ended-june-30-2024.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2024-2025/quarter-2/Q2FY25-earnings-presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2024-2025/quarter-2/press-release-quarter-and-half-year-ended.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2024-2025/quarter-3/Q3FY25-Earnings-Presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2024-2025/quarter-3/Press-Release-to-announce-Financial-Results-for-the-quarter-and-nine-months-ended-December-31-2024.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2024-2025/quarter-4/q4fy25-earnings-presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/financial-results/2024-2025/quarter-4/press-release-to-announce-financial-results-for-the-quarter-and-year-ended-march-31-2025.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/about-us/financial-results/2025-2026/quarter-1/q1fy26-earnings-presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/about-us/financial-results/2025-2026/quarter-1/press-release-june-2025.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/about-us/financial-results/2025-2026/quarter-2/q2fy26-earnings-presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/about-us/financial-results/2025-2026/quarter-2/press-release-september-2025.pdf"
+    },
+    "Q3 2026": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/about-us/financial-results/2025-2026/quarter-3/Q3FY26-earnings-presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/about-us/financial-results/2025-2026/quarter-3/press-release-december-2025.pdf"
+    },
+    "Q4 2026": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/about-us/financial-results/2025-2026/quarter-4/q4fy26-earnings-presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/about-us/financial-results/2025-2026/quarter-4/press-release-march-2026.pdf"
+    },
+    "Q1 2027": {
+      "slides": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/about-us/financial-results/2026-2027/quarter-1/q1fy27-earnings-presentation.pdf",
+      "filings": "https://www.hdfc.bank.in/content/dam/hdfcbankpws/in/en/pdf/about-us/financial-results/2026-2027/quarter-1/press-release-june-2026.pdf"
+    }
+  },
+  "notes": "HDFC Bank ADR; Indian March FY (fy ends Mar 31). Labels = issuer FY (Q1 2026 = Q1 FY26 = quarter ended Jun 30 2025). Slides = *earnings-presentation*.pdf; Filings = press-release*.pdf. Primary paths: content/dam/hdfcbankpws/.../financial-results/{YYYY-YYYY}/quarter-N/ (about-us/... for FY26+). Hosts www.hdfc.bank.in and www.hdfcbank.com mirror. Q1 2024\u2192Q1 2027 both green. FY22\u2013FY23 mostly null for slides (legacy bbp Q4FY23-Earnings-Presentation.pdf etc. exist but not Range-verified here); some press PDFs only for Q1 2022 / Q1 2023 / Q4 2023. Never transcripts/key-parameters/statutory results PDF as slides. Never SEC HTML.",
+  "hosts": [
+    "www.hdfcbank.com",
+    "www.hdfc.bank.in"
+  ]
+}

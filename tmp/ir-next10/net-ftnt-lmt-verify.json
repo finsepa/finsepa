@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://cloudflare.net/files/doc_financials/2026/q2/Q2-26-Supplemental-Financial-Information.pdf",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.4"
+  },
+  {
+    "url": "https://cloudflare.net/files/doc_financials/2026/q2/Q2-26-Exhibit-99-1.pdf",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.4"
+  },
+  {
+    "url": "https://cloudflare.net/files/doc_financials/2022/q1/Q1'22-Supplemental-Financial-Information.pdf",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.4"
+  },
+  {
+    "url": "https://cloudflare.net/files/doc_financials/2022/q1/Q1'22-Exhibit-99.1.pdf",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.4"
+  },
+  {
+    "url": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/183969/2Q-2026-Earnings-Conf-Call-Charts-v2.pdf",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.5"
+  },
+  {
+    "url": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/183966/download/2Q-2026-Earnings-Release-8-K.pdf",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.6"
+  },
+  {
+    "url": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/182368/download/1Q-2025-Earnings-Conf-Call-Charts.pdf",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.7"
+  },
+  {
+    "url": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/182366/download/1Q-2025-Earnings-Release-8-K.pdf",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.5"
+  },
+  {
+    "url": "https://filecache.mediaroom.com/mr5mr_lockheedmartin/180060/download/LMT%201Q%202022%20Apr%202022%20Conf%20Call%20Webcharts%20FINAL.pdf",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.7"
+  },
+  {
+    "url": "https://investor.fortinet.com/static-files/e4ffcc79-194e-4ca3-9a69-8a51bd0a6314",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.4"
+  },
+  {
+    "url": "https://investor.fortinet.com/static-files/da142bc6-5549-4e7b-9a91-8762cebebeb4",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.7"
+  },
+  {
+    "url": "https://investors.lockheedmartin.com/static-files/04effc35-80e4-4519-9b4b-4385e0d8ab3c",
+    "status": 206,
+    "pdf": true,
+    "magic": "%PDF-1.7"
+  }
+]

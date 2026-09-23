@@ -1,0 +1,59 @@
+{
+  "Q1 2026": {
+    "filings": {
+      "t": "(PDF/537KB)",
+      "h": "https://library.mizuhogroup.com/asset/fea20513-63d3-4eab-b6f9-1f98bdf10e09/fg-data26_1q.pdf",
+      "fname": "fg-data26_1q.pdf"
+    },
+    "other": [
+      {
+        "t": "Capital Ratio (PDF/112KB)",
+        "h": "https://library.mizuhogroup.com/asset/b3a751e0-8f01-4ea5-abea-9b4318516854/fg-data26_1q_3.pdf",
+        "fname": "fg-data26_1q_3.pdf"
+      }
+    ],
+    "slides": {
+      "t": "Summary of Financial Results for FY2026 Q1 (PDF/841KB)",
+      "h": "https://library.mizuhogroup.com/asset/9ff487db-e8c6-49e3-84e7-c94408d171ec/fg-data26_1q_2.pdf",
+      "fname": "fg-data26_1q_2.pdf"
+    }
+  },
+  "Q3 2025": {
+    "filings": {
+      "t": "(PDF/570KB)",
+      "h": "https://library.mizuhogroup.com/asset/aaa1eb27-5544-4bd0-8ec7-56b48a32efcc/data25_3q.pdf",
+      "fname": "data25_3q.pdf"
+    },
+    "other": [
+      {
+        "t": "Capital Ratio (PDF/44KB)",
+        "h": "https://library.mizuhogroup.com/m/73e26e78c5765be/original/data25_3q_3.pdf",
+        "fname": "data25_3q_3.pdf"
+      }
+    ],
+    "slides": {
+      "t": "(PDF/667KB)",
+      "h": "https://library.mizuhogroup.com/m/49d9b9953d3af2d3/original/data25_3q_2.pdf",
+      "fname": "data25_3q_2.pdf"
+    }
+  },
+  "Q4 2025": {
+    "filings": {
+      "t": "(PDF/1,261KB)",
+      "h": "https://library.mizuhogroup.com/asset/8e1911ca-5e38-4c5b-9dbf-43a9d2de3760/data25_fy.pdf",
+      "fname": "data25_fy.pdf"
+    },
+    "slides": {
+      "t": "Summary of Financial Results for FY2025\uff08PDF/1,818KB\uff09",
+      "h": "https://library.mizuhogroup.com/asset/016d3852-3288-4b49-9f3f-40a50e222e50/data25_fy_2.pdf",
+      "fname": "data25_fy_2.pdf"
+    }
+  },
+  "Q2 2024": {
+    "slides": {
+      "t": "(PDF/12,446KB)",
+      "h": "https://library.mizuhogroup.com/asset/1c53d24d-9146-4ad0-ab68-2907806717f0/data24_2q_2.pdf",
+      "fname": "data24_2q_2.pdf"
+    }
+  }
+}

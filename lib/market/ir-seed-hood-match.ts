@@ -1,0 +1,110 @@
+/**
+ * HOOD IR seed — calendar.
+ * Earnings Presentation→slides; Press Release→filings. Never transcript/10-Q/investor-day decks.
+ * Never SEC HTML / transcript / 10-Q / 10-K.
+ */
+
+export type HoodQuarterDocs = {
+  slides: string | null;
+  filings: string | null;
+};
+
+export const HOOD_IR_PAGES = [
+  "https://investors.robinhood.com/financials/quarterly-results",
+] as const;
+
+export const HOOD_KNOWN_QUARTER_DOCS: Readonly<Record<string, HoodQuarterDocs>> = {
+  "Q1 2022": {
+    slides: "https://investors.robinhood.com/static-files/a1fc4524-9493-4c7d-90fc-ba53cbdf8bad",
+    filings: "https://investors.robinhood.com/static-files/ce0d256c-687a-4631-b03d-1de53f5fff67",
+  },
+  "Q2 2022": {
+    slides: "https://investors.robinhood.com/static-files/575bee57-0ea3-47ec-bc02-4bfc215a8d43",
+    filings: "https://investors.robinhood.com/static-files/cb8dfd1b-57cc-4aab-b2bb-8038464bc984",
+  },
+  "Q3 2022": {
+    slides: "https://investors.robinhood.com/static-files/fc8c040f-6805-4f29-ae79-5dbbb84a05ea",
+    filings: "https://investors.robinhood.com/static-files/97338820-6c42-40c4-ae43-188ee19fd4b1",
+  },
+  "Q4 2022": {
+    slides: "https://investors.robinhood.com/static-files/1168ab63-41cc-4c5f-90dd-42da6f37ec6b",
+    filings: "https://investors.robinhood.com/static-files/f214fca7-e17e-46d8-8df5-612c3c1b461b",
+  },
+  "Q1 2023": {
+    slides: "https://investors.robinhood.com/static-files/167148dd-36d8-4ed4-a8b2-a46c9b3636e0",
+    filings: "https://investors.robinhood.com/static-files/727c8727-7232-4d7b-9107-931165fd71ab",
+  },
+  "Q2 2023": {
+    slides: "https://investors.robinhood.com/static-files/3894bb08-1734-4923-b1e4-965c59b617f6",
+    filings: "https://investors.robinhood.com/static-files/57cd5af3-2882-4cef-8909-6dd727b1ff87",
+  },
+  "Q3 2023": {
+    slides: "https://investors.robinhood.com/static-files/133ca00e-ac52-4295-8950-86c18ec73da0",
+    filings: "https://investors.robinhood.com/static-files/a7f26078-7993-4978-80b6-fe934a9a5ebe",
+  },
+  "Q4 2023": {
+    slides: "https://investors.robinhood.com/static-files/34a03fa4-f2d9-441a-806f-292a5576f16a",
+    filings: "https://investors.robinhood.com/static-files/dc449528-946e-49b3-80bf-887e03901fe5",
+  },
+  "Q1 2024": {
+    slides: "https://investors.robinhood.com/static-files/6a60b122-ee83-4155-ae96-bc3ebb627eca",
+    filings: "https://investors.robinhood.com/static-files/03460b57-d447-489f-b612-7af472e55160",
+  },
+  "Q2 2024": {
+    slides: "https://investors.robinhood.com/static-files/95dfdac5-a8df-4115-97c2-d0854c71cf6b",
+    filings: "https://investors.robinhood.com/static-files/5371c19e-4fac-4f68-8ba4-1ccfaddb1f76",
+  },
+  "Q3 2024": {
+    slides: "https://investors.robinhood.com/static-files/ba6de25e-7c61-4140-92cb-fb5a777ce601",
+    filings: "https://investors.robinhood.com/static-files/641e041f-a43a-454b-8ee5-d1848a97a61b",
+  },
+  "Q4 2024": {
+    slides: "https://investors.robinhood.com/static-files/42ec63c5-2eb5-4d25-8030-18da1827ce06",
+    filings: "https://investors.robinhood.com/static-files/7aaec8f2-484e-4160-b0e9-c3016aa4b482",
+  },
+  "Q1 2025": {
+    slides: "https://investors.robinhood.com/static-files/eeb93474-ee4f-47f1-93c3-8d0b33b584e1",
+    filings: "https://investors.robinhood.com/static-files/751d013e-a623-4ca8-a8ce-32a570ac9539",
+  },
+  "Q2 2025": {
+    slides: "https://investors.robinhood.com/static-files/cfd3e27d-e3a1-482d-a64f-81fd2fa30def",
+    filings: "https://investors.robinhood.com/static-files/96125635-9736-40ed-a873-eb0cf735b079",
+  },
+  "Q3 2025": {
+    slides: "https://investors.robinhood.com/static-files/87fc8284-dbd0-401a-bbed-70309a3da391",
+    filings: "https://investors.robinhood.com/static-files/0b1a9484-a168-4c17-962f-2f370840f486",
+  },
+  "Q4 2025": {
+    slides: "https://investors.robinhood.com/static-files/f614a824-52c7-42e3-838e-b1b8f5b05a55",
+    filings: "https://investors.robinhood.com/static-files/b2f8b742-6b7f-430d-9a42-3b06d5040bda",
+  },
+  "Q1 2026": {
+    slides: "https://investors.robinhood.com/static-files/6840cc36-4a2d-46d8-a9c3-0b334da724f8",
+    filings: "https://investors.robinhood.com/static-files/15576d76-2d02-4aea-a40d-48e694c04a4b",
+  },
+  "Q2 2026": {
+    slides: "https://investors.robinhood.com/static-files/f5aa8c24-cd37-4a94-9169-cd04759e02a1",
+    filings: "https://investors.robinhood.com/static-files/2f42ce10-59b7-4880-8371-7d52ede7c22e",
+  }
+};
+
+export function isHoodRejected(href: string, title = ""): boolean {
+  const n = `${decodeURIComponent(href)} ${title}`.toLowerCase();
+  return /sec\.gov|10-?q|10-?k|8-?k|proxy|transcript|webcast|supplement|investor.?day|reconcili|nongaap|\.xls|\.xlsx|\.csv(?:$|[?#])/i.test(n) || /investor.?presentation|monthly.?metrics|say.?q/i.test(n);
+}
+
+export function isHoodIrPdf(href: string | null | undefined): boolean {
+  if (!href || isHoodRejected(href)) return false;
+  try {
+    const u = new URL(href);
+    const host = u.hostname.toLowerCase();
+    if (!(host === "investors.robinhood.com" || host.endsWith(".robinhood.com"))) return false;
+    return /\.pdf(?:$|[?#])/i.test(u.pathname) || /\/static-files\/[a-f0-9-]{36}/i.test(u.pathname);
+  } catch {
+    return false;
+  }
+}
+
+export function mergeHoodKnownQuarterDocs(): Map<string, HoodQuarterDocs> {
+  return new Map(Object.entries(HOOD_KNOWN_QUARTER_DOCS));
+}
