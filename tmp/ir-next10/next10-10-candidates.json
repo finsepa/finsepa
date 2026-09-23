@@ -1,0 +1,77 @@
+{
+  "dedicated": 178,
+  "candidates": [
+    {
+      "ticker": "MSFT",
+      "name": "Microsoft Corporation",
+      "mcap": 3697921753088,
+      "exchange": "US"
+    },
+    {
+      "ticker": "SKHY",
+      "name": "SK Hynix Inc. American Depositary Shares",
+      "mcap": 1342937104384,
+      "exchange": "US"
+    },
+    {
+      "ticker": "ASMLF",
+      "name": "ASML Holding NV",
+      "mcap": 667400601600,
+      "exchange": "US"
+    },
+    {
+      "ticker": "INTC",
+      "name": "Intel Corporation",
+      "mcap": 654736949248,
+      "exchange": "US"
+    },
+    {
+      "ticker": "TCTZF",
+      "name": "Tencent Holdings Ltd",
+      "mcap": 522481172480,
+      "exchange": "US"
+    },
+    {
+      "ticker": "IDCBF",
+      "name": "Industrial and Commercial Bank of China",
+      "mcap": 461684506624,
+      "exchange": "US"
+    },
+    {
+      "ticker": "RHHBF",
+      "name": "Roche Holding AG",
+      "mcap": 361601859584,
+      "exchange": "US"
+    },
+    {
+      "ticker": "RHHVF",
+      "name": "Roche Holding AG Participation",
+      "mcap": 354560835584,
+      "exchange": "US"
+    },
+    {
+      "ticker": "RHHBY",
+      "name": "Roche Holding Ltd ADR",
+      "mcap": 352489209856,
+      "exchange": "US"
+    },
+    {
+      "ticker": "HBCYF",
+      "name": "HSBC Holdings PLC",
+      "mcap": 346494402560,
+      "exchange": "US"
+    },
+    {
+      "ticker": "CICHY",
+      "name": "China Construction Bank Corp",
+      "mcap": 325038473216,
+      "exchange": "US"
+    },
+    {
+      "ticker": "CICHF",
+      "name": "China Construction Bank Corp",
+      "mcap": 316536455168,
+      "exchange": "US"
+    }
+  ]
+}

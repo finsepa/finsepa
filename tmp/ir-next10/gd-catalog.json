@@ -1,0 +1,86 @@
+{
+  "ticker": "GD",
+  "fyEnd": "12-31",
+  "irPages": [
+    "https://investorrelations.gd.com/",
+    "https://investorrelations.gd.com/financial-reports/quarterly-financial-results/default.aspx"
+  ],
+  "pdfHost": "s22.q4cdn.com/891946778",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2022/q1/GD_1Q22_Earnings_Highlights-FINAL.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2022/q1/General-Dynamics-Reports-First-Quarter-2022-Financial-Results.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2022/q2/new/GD_2Q22_Earnings_Highlights-Outlook-Final.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2022/q2/General-Dynamics-Reports-Second-Quarter-2022-Financial-Results.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2022/q3/GD-3Q22-Highlights-Final.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2022/q3/General-Dynamics-Reports-Third-Quarter-2022-Financial-Results.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2022/q4/GD-4Q-and-Full-Year-2022-Highlights-Outlook-Final.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2022/q4/General-Dynamics-Reports-Q4-and-Full-Year-2022-Results-Final.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2023/q1/GD-First-Quarter-2023-Highlights.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2023/q1/GD-Reports-First-Quarter-2023-Financial-Results.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2023/q2/GD-2Q-2023-Highlights-and-Outlook-Final.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2023/q2/GD-Reports-Q2-2023-Results-Final.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2023/q3/GD-3Q-2023-Highlights.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2023/q3/General-Dynamics-Reports-Third-Quarter-2023-Financial-Results.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2023/q4/GD-4Q-and-Full-Year-2023-Highlights-Outlook.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2023/q4/GD-2023-12-31-Exhibit-99-1-Final-as-filed-Milestone-January-23-0439-pm.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2024/q1/GD-1Q-2024-Highlights-Final.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2024/q1/GD-2024-03-31-Exhibit-99-1_04-22-24_03-07pm.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2024/q2/GD-2Q-2024-Highlights-Outlook.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2024/q2/GD-2024_Exhibit-99-1_FINAL.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2024/q3/GD-3Q-2024-Highlights-and-Outlook-Update.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2024/q3/GD-2024-09-29-Exhibit-99-1.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2024/q4/GD-4Q-and-Full-Year-2024-Highlights-Outlook.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2024/q4/GD-4Q-Press-Release.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2025/q1/GD-1Q-2025-Highlights.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2025/q1/GD-2025-03-30-Exhibit-99-1.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_presentations/GD-2Q-2025-Highlights-Outlook.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2025/q2/GD-2025-06-29-Exhibit-99-1.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2025/q3/GD-3Q-2025-Highlights-Outlook.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2025/q3/GD-2025-09-28-Exhibit-99-1.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2025/q4/2025-Highlights-Outlook.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2025/q4/GD-2025-12-31-Exhibit-99-1-Final.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2026/q1/1Q26-Highlights-Final.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2026/q1/GD-2026-04-05-Exhibit-99-1.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://s22.q4cdn.com/891946778/files/doc_financials/2026/q2/2Q26-Highlights-and-Outlook.pdf",
+      "filings": "https://s22.q4cdn.com/891946778/files/doc_financials/2026/q2/GD-2026-07-05-Exhibit-99-1.pdf"
+    }
+  },
+  "trafficLight": "green",
+  "verified": true,
+  "notes": "GD calendar FY (Dec). Q4 Event feed: Slides=Highlights/Presentation; Filings=Press Release / Exhibit 99.1 on s22.q4cdn.com/891946778. Never 10-Q/SEC HTML. Scope Q1 2022→Q2 2026 (18g/0y/0r). Range-GET ok/bad=36/0. api_status=200."
+}

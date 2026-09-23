@@ -170,6 +170,37 @@ import { applyIrSeedCmDocumentUrls } from "@/lib/market/ir-seed-apply-cm";
 import { applyIrSeedSykDocumentUrls } from "@/lib/market/ir-seed-apply-syk";
 import { applyIrSeedEnbDocumentUrls } from "@/lib/market/ir-seed-apply-enb";
 import { applyIrSeedPsxDocumentUrls } from "@/lib/market/ir-seed-apply-psx";
+import { applyIrSeedFcxDocumentUrls } from "@/lib/market/ir-seed-apply-fcx";
+import { applyIrSeedItocyDocumentUrls } from "@/lib/market/ir-seed-apply-itocy";
+import { applyIrSeedMckDocumentUrls } from "@/lib/market/ir-seed-apply-mck";
+import { applyIrSeedAppDocumentUrls } from "@/lib/market/ir-seed-apply-app";
+import { applyIrSeedGskDocumentUrls } from "@/lib/market/ir-seed-apply-gsk";
+import { applyIrSeedAagiyDocumentUrls } from "@/lib/market/ir-seed-apply-aagiy";
+import { applyIrSeedSnyDocumentUrls } from "@/lib/market/ir-seed-apply-sny";
+import { applyIrSeedEqixDocumentUrls } from "@/lib/market/ir-seed-apply-eqix";
+import { applyIrSeedCaixyDocumentUrls } from "@/lib/market/ir-seed-apply-caixy";
+import { applyIrSeedIngDocumentUrls } from "@/lib/market/ir-seed-apply-ing";
+import { applyIrSeedTkomyDocumentUrls } from "@/lib/market/ir-seed-apply-tkomy";
+import { applyIrSeedAemDocumentUrls } from "@/lib/market/ir-seed-apply-aem";
+import { applyIrSeedAbnbDocumentUrls } from "@/lib/market/ir-seed-apply-abnb";
+import { applyIrSeedEqnrDocumentUrls } from "@/lib/market/ir-seed-apply-eqnr";
+import { applyIrSeedSoDocumentUrls } from "@/lib/market/ir-seed-apply-so";
+import { applyIrSeedPwrDocumentUrls } from "@/lib/market/ir-seed-apply-pwr";
+import { applyIrSeedVrtDocumentUrls } from "@/lib/market/ir-seed-apply-vrt";
+import { applyIrSeedIbnDocumentUrls } from "@/lib/market/ir-seed-apply-ibn";
+import { applyIrSeedEnlayDocumentUrls } from "@/lib/market/ir-seed-apply-enlay";
+import { applyIrSeedAtlkyDocumentUrls } from "@/lib/market/ir-seed-apply-atlky";
+import { applyIrSeedCmeDocumentUrls } from "@/lib/market/ir-seed-apply-cme";
+import { applyIrSeedTtDocumentUrls } from "@/lib/market/ir-seed-apply-tt";
+import { applyIrSeedByddyDocumentUrls } from "@/lib/market/ir-seed-apply-byddy";
+import { applyIrSeedUsbDocumentUrls } from "@/lib/market/ir-seed-apply-usb";
+import { applyIrSeedMitsyDocumentUrls } from "@/lib/market/ir-seed-apply-mitsy";
+import { applyIrSeedItubDocumentUrls } from "@/lib/market/ir-seed-apply-itub";
+import { applyIrSeedKkrDocumentUrls } from "@/lib/market/ir-seed-apply-kkr";
+import { applyIrSeedPncDocumentUrls } from "@/lib/market/ir-seed-apply-pnc";
+import { applyIrSeedMgclyDocumentUrls } from "@/lib/market/ir-seed-apply-mgcly";
+import { applyIrSeedPstvyDocumentUrls } from "@/lib/market/ir-seed-apply-pstvy";
+import { applyIrSeedGdDocumentUrls } from "@/lib/market/ir-seed-apply-gd";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 /** Tickers with bespoke IR seed modules (run before universal layers). */
@@ -342,6 +373,37 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
   "SYK",
   "ENB",
   "PSX",
+  "FCX",
+  "ITOCY",
+  "MCK",
+  "APP",
+  "GSK",
+  "AAGIY",
+  "SNY",
+  "EQIX",
+  "CAIXY",
+  "ING",
+  "TKOMY",
+  "AEM",
+  "ABNB",
+  "EQNR",
+  "SO",
+  "PWR",
+  "VRT",
+  "IBN",
+  "ENLAY",
+  "ATLKY",
+  "CME",
+  "TT",
+  "BYDDY",
+  "USB",
+  "MITSY",
+  "ITUB",
+  "KKR",
+  "PNC",
+  "MGCLY",
+  "PSTVY",
+  "GD",
 ]);
 
 export function earningsIrSeedResolutionSource(
@@ -524,6 +586,37 @@ async function applyDedicatedIrSeedDocumentUrls(
   if (t === "SYK") return applyIrSeedSykDocumentUrls(rows, hub);
   if (t === "ENB") return applyIrSeedEnbDocumentUrls(rows, hub);
   if (t === "PSX") return applyIrSeedPsxDocumentUrls(rows, hub);
+  if (t === "FCX") return applyIrSeedFcxDocumentUrls(rows, hub);
+  if (t === "ITOCY") return applyIrSeedItocyDocumentUrls(rows, hub);
+  if (t === "MCK") return applyIrSeedMckDocumentUrls(rows, hub);
+  if (t === "APP") return applyIrSeedAppDocumentUrls(rows, hub);
+  if (t === "GSK") return applyIrSeedGskDocumentUrls(rows, hub);
+  if (t === "AAGIY") return applyIrSeedAagiyDocumentUrls(rows, hub);
+  if (t === "SNY") return applyIrSeedSnyDocumentUrls(rows, hub);
+  if (t === "EQIX") return applyIrSeedEqixDocumentUrls(rows, hub);
+  if (t === "CAIXY") return applyIrSeedCaixyDocumentUrls(rows, hub);
+  if (t === "ING") return applyIrSeedIngDocumentUrls(rows, hub);
+  if (t === "TKOMY") return applyIrSeedTkomyDocumentUrls(rows, hub);
+  if (t === "AEM") return applyIrSeedAemDocumentUrls(rows, hub);
+  if (t === "ABNB") return applyIrSeedAbnbDocumentUrls(rows, hub);
+  if (t === "EQNR") return applyIrSeedEqnrDocumentUrls(rows, hub);
+  if (t === "SO") return applyIrSeedSoDocumentUrls(rows, hub);
+  if (t === "PWR") return applyIrSeedPwrDocumentUrls(rows, hub);
+  if (t === "VRT") return applyIrSeedVrtDocumentUrls(rows, hub);
+  if (t === "IBN") return applyIrSeedIbnDocumentUrls(rows, hub);
+  if (t === "ENLAY") return applyIrSeedEnlayDocumentUrls(rows, hub);
+  if (t === "ATLKY") return applyIrSeedAtlkyDocumentUrls(rows, hub);
+  if (t === "CME") return applyIrSeedCmeDocumentUrls(rows, hub);
+  if (t === "TT") return applyIrSeedTtDocumentUrls(rows, hub);
+  if (t === "BYDDY") return applyIrSeedByddyDocumentUrls(rows, hub);
+  if (t === "USB") return applyIrSeedUsbDocumentUrls(rows, hub);
+  if (t === "MITSY") return applyIrSeedMitsyDocumentUrls(rows, hub);
+  if (t === "ITUB") return applyIrSeedItubDocumentUrls(rows, hub);
+  if (t === "KKR") return applyIrSeedKkrDocumentUrls(rows, hub);
+  if (t === "PNC") return applyIrSeedPncDocumentUrls(rows, hub);
+  if (t === "MGCLY") return applyIrSeedMgclyDocumentUrls(rows, hub);
+  if (t === "PSTVY") return applyIrSeedPstvyDocumentUrls(rows, hub);
+  if (t === "GD") return applyIrSeedGdDocumentUrls(rows, hub);
   if (t === "RACE") {
     return applyIrSeedFerrariPresentationUrls(rows, {
       preview: options?.preview,

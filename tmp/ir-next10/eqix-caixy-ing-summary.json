@@ -1,0 +1,73 @@
+{
+  "asOf": "2026-09-23",
+  "scope": "Q1 2022 through latest reported quarter",
+  "tickers": {
+    "EQIX": {
+      "trafficLight": "green",
+      "quarterCounts": {
+        "green": 18,
+        "yellow": 0,
+        "red": 0
+      },
+      "latestQuarter": "Q2 2026",
+      "pdfHost": "d1io3yog0oux5.cloudfront.net",
+      "irHub": "https://investor.equinix.com/financial-information/financial-results",
+      "verified": {
+        "method": "Range-GET bytes=0-4",
+        "ok": 36,
+        "bad": 0,
+        "quarterCounts": {
+          "green": 18,
+          "yellow": 0,
+          "red": 0
+        }
+      }
+    },
+    "CAIXY": {
+      "trafficLight": "green",
+      "quarterCounts": {
+        "green": 18,
+        "yellow": 0,
+        "red": 0
+      },
+      "latestQuarter": "Q2 2026",
+      "pdfHost": "www.caixabank.com/deployedfiles",
+      "irHub": "https://www.caixabank.com/en/shareholders-investors/economic-financial-information/quarterly-financial-information.html",
+      "verified": {
+        "method": "Range-GET bytes=0-4",
+        "ok": 36,
+        "bad": 0,
+        "quarterCounts": {
+          "green": 18,
+          "yellow": 0,
+          "red": 0
+        }
+      }
+    },
+    "ING": {
+      "trafficLight": "green",
+      "quarterCounts": {
+        "green": 18,
+        "yellow": 0,
+        "red": 0
+      },
+      "latestQuarter": "Q2 2026",
+      "pdfHost": "www.ing.com/binaries/content/assets/documents",
+      "irHub": "https://www.ing.com/investors/financial-performance/quarterly-results",
+      "verified": {
+        "method": "Range-GET bytes=0-4",
+        "ok": 36,
+        "bad": 0,
+        "quarterCounts": {
+          "green": 18,
+          "yellow": 0,
+          "red": 0
+        }
+      }
+    }
+  },
+  "blockers": [
+    "CAIXY ADR in Finsepa top-500 = CaixaBank SA (not Carrefour; Carrefour ADR is typically CRRFY). User prompt Carrefour hint ignored per repo ir-seed-caixy-match.",
+    "EQIX: no FinancialReport.svc JSON feed (404); discovery via press-release detail pages + Cloudfront db/2183 event IDs + Wayback for 2022 news/*.pdf paths."
+  ]
+}

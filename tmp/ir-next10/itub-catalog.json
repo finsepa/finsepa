@@ -1,0 +1,86 @@
+{
+  "ticker": "ITUB",
+  "fyEnd": "12-31",
+  "irPages": [
+    "https://www.itau.com.br/relacoes-com-investidores/en/",
+    "https://www.itau.com.br/relacoes-com-investidores/en/results-and-reports/results-center/"
+  ],
+  "pdfHost": "api.mziq.com",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": "https://api.mziq.com/mzfilemanager/v2/d/42787847-4cf6-4461-94a5-40ed237dca33/b346754e-3a55-895e-3264-8de4d4df4a70?origin=2"
+    },
+    "Q2 2024": {
+      "slides": null,
+      "filings": null
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2024": {
+      "slides": "https://api.mziq.com/mzfilemanager/v2/d/42787847-4cf6-4461-94a5-40ed237dca33/0a80c9bd-28c0-6b98-2c76-88b3a4584a9b?origin=2",
+      "filings": null
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q3 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q1 2026": {
+      "slides": "https://api.mziq.com/mzfilemanager/v2/d/42787847-4cf6-4461-94a5-40ed237dca33/309d095e-23d6-30e1-d944-4db1362c8e0f?origin=2",
+      "filings": "https://api.mziq.com/mzfilemanager/v2/d/42787847-4cf6-4461-94a5-40ed237dca33/4ebfa312-5fe0-7ed3-ecf5-d32284a24472?origin=2"
+    },
+    "Q2 2026": {
+      "slides": "https://api.mziq.com/mzfilemanager/v2/d/42787847-4cf6-4461-94a5-40ed237dca33/a886b521-389e-da70-dbb1-0be7758c8d91?origin=2",
+      "filings": null
+    }
+  },
+  "trafficLight": "yellow",
+  "verified": true,
+  "notes": "Ita\u00fa Unibanco (ITUB) calendar FY. Hub itau.com.br/relacoes-com-investidores (Cloudflare; Results Center needs browser). PDF host api.mziq.com/mzfilemanager/v2/d/42787847-4cf6-4461-94a5-40ed237dca33/{uuid} (mirror itau.com.br/download-file/v2/d/\u2026). Slides=Earnings Review Presentation / Apresenta\u00e7\u00e3o de Resultados PDF; Filings=Press Release on the results of the \u2026 quarter PDF. SEC 6-K exhibits are HTML+JPG \u2014 never locked. Historical UUID discovery incomplete (IR Cloudflare; Wayback/CC unavailable). Verified: Q1 2024 filings; Q4 2024 slides; Q1 2026 both; Q2 2026 slides. Scope Q1 2022\u2192Q2 2026 (1 green / 3 yellow / 14 red). Range-GET %PDF verified on non-null URLs."
+}

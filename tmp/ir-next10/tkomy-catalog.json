@@ -1,0 +1,95 @@
+{
+  "ticker": "TKOMY",
+  "fyEnd": "03-31",
+  "irHub": "https://www.tokiomarinehd.com/en/ir/index.html",
+  "pdfHost": "www.tokiomarinehd.com",
+  "trafficLight": "green",
+  "notes": "Tokio Marine Holdings ADR (TKOMY). March 31 FY; labels = issuer fiscal year (FY2026 Q1 ends Jun 2025). Hub: tokiomarinehd.com/en/ir/event/presentation/{fy}/. Slides=Overview of *Q Results or Tokio_Marine_* Results_Presentation; Filings=*Summary_Report_e.pdf (earnings summary release). Reject conference call scripts, supplemental-only without overview, IR conference / investor day decks. Scope Q1 2022\u2192Q1 2026. Counts green=17 yellow=0 red=0. Never SEC HTML. Range-GET verified %PDF.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2022/k82ffv000000dt7v-att/Overview_of_1Q_FY2022_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2022/k82ffv000000dt7v-att/1Q_FY2022_Summary_Report_e.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2022/k82ffv000000em7i-att/Overview_of_2Q_FY2022_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2022/k82ffv000000em7i-att/2Q_FY2022_Summary_Report_e.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2022/k82ffv000000f61q-att/Overview_of_3Q_FY2022_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2022/k82ffv000000f61q-att/3Q_FY2022_Summary_Report_e.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2022/k82ffv000000fsse-att/Overview_of_4Q_FY2022_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2022/k82ffv000000fsse-att/4Q_FY2022_Summary_Report_e.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2023/k82ffv000000gi37-att/Overview_of_1Q_FY2023_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2023/k82ffv000000gi37-att/1Q_FY2023_Summary_Report_e.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2023/k82ffv000000gvsa-att/Overview_of_2Q_FY2023_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2023/k82ffv000000gvsa-att/2Q_FY2023_Summary_Report_e.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2023/qsbph400000008ko-att/Overview_of_3Q_FY2023_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2023/qsbph400000008ko-att/3Q_FY2023_Summary_Report_e.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2023/qsbph40000002ear-att/Overview_of_4Q_FY2023_Results_E.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2023/qsbph40000002ear-att/4Q_FY2023_Summary_Report_e.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2024/o1ckc90000008g07-att/Overview_of_1Q_FY2024_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2024/o1ckc90000008g07-att/1Q_FY2024_Summary_Report_e.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2024/o1ckc9000000gcm8-att/Overview_of_2Q_FY2024_Results_E.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2024/o1ckc9000000gcm8-att/2Q_FY2024_Summary_Report_e.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2024/o1ckc9000000vk0g-att/Overview_of_3Q_FY2024_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2024/o1ckc9000000vk0g-att/3Q_FY2024_Summary_Report_e.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2024/o1ckc9000001gbyp-att/Overview_of_4Q_FY2024_Results_e_v2.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2024/o1ckc9000001gbyp-att/4Q_FY2024_Summary_Report_e.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2025/o1ckc9000001y39m-att/Overview_of_1Q_FY2025_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2025/o1ckc9000001y39m-att/1Q_FY2025_Summary_Report_e.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2025/fomceq00000006vj-att/Overview_of_2Q_FY2025_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2025/fomceq00000006vj-att/2Q_FY2025_Summary_Report_e.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2025/f5hrqd0000002zat-att/Overview_of_3Q_FY2025_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2025/f5hrqd0000002zat-att/3Q_FY2025_Summary_Report_e.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2025/f5hrqd0000008l5a-att/Tokio_Marine_2025Q4_Results_Presentation_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2025/f5hrqd0000005mbv-att/4Q_FY2025_Summary_Report_e.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://www.tokiomarinehd.com/en/ir/event/presentation/2026/f5hrqd000000a3c1-att/Overview_of_2026_1Q_Results_e.pdf",
+      "filings": "https://www.tokiomarinehd.com/en/ir/event/presentation/2026/f5hrqd000000a3c1-att/1Q_FY2026_Summary_Report_e.pdf"
+    }
+  },
+  "irPages": [
+    "https://www.tokiomarinehd.com/en/ir/index.html",
+    "https://www.tokiomarinehd.com/en/ir/event/presentation/",
+    "https://www.tokiomarinehd.com/en/ir/download/",
+    "https://www.tokiomarinehd.com/en/ir/financial/"
+  ],
+  "verified": {
+    "method": "Range-GET bytes=0-4",
+    "ok": 34,
+    "bad": 0,
+    "quarterCounts": {
+      "green": 17,
+      "yellow": 0,
+      "red": 0
+    },
+    "tickerLight": "green"
+  }
+}

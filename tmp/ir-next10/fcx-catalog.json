@@ -1,0 +1,82 @@
+{
+  "ticker": "FCX",
+  "fyEnd": "12-31",
+  "irHub": "https://investors.fcx.com/",
+  "pdfHost": "s22.q4cdn.com/529358580",
+  "trafficLight": "green",
+  "notes": "Freeport-McMoRan calendar FY. Hub: investors.fcx.com FinancialReport.svc. PDF host: s22.q4cdn.com/529358580. Slides=DocumentCategory presentation (*_CC.pdf). Filings=DocumentCategory news (or file titled News Release; Q4 2022 miscategorized as file). Scope Q1 2022\u2192Q2 2026 (18 green / 0 yellow / 0 red). Rejected 10-Q/10-K. Never SEC HTML. All catalog PDFs Range-GET verified %PDF.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2022/FCX_1Q22_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2022/FCX_220421_1Q_2022_Earnings_Release.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2022/FCX_2Q22_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2022/FCX_220721_2Q_2022_Earnings_Release.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2022/FCX_3Q22_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2022/FCX_221020_3Q_2022_Earnings_Release.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2023/FCX_4Q22_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2023/FCX_230125_4Q_2022_Earnings_Release.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2023/FCX_1Q23_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2023/FCX_230421_1Q_2023_Earnings_Release.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2023/FCX_2Q23_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2023/FCX_230720_2Q_2023_Earnings_Release.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2023/FCX_3Q23_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2023/FCX_231019_3Q_2023_Earnings_Release.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2023/FCX_4Q23_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2024/FCX_240124_4Q_2023_Earnings_Release.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2024/FCX_1Q24_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2024/FCX_240423_1Q_2024_Earnings_Release.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2024/FCX_2Q24_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2024/FCX_240723_2Q_2024_Earnings_Release.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2024/FCX_3Q24_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2024/FCX_241022_3Q_2024_Earnings_Release-docx.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2024/FCX_4Q24_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2025/FCX_250123_4Q_2024_Earnings_Release.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2025/FCX_1Q25_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2025/FCX_250424_1Q_2025_Earnings_Release.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2025/FCX_2Q25_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2025/FCX_250723_2Q_2025_Earnings_Release.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2025/FCX_3Q25_CC_supplementary.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2025/FCX_251023_3Q_2025_Earnings_Release.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2025/FCX_4Q25_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2026/FCX_260122.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2026/FCX_1Q26_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2026/FCX_260423.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://s22.q4cdn.com/529358580/files/doc_presentations/2026/FCX_2Q26_CC.pdf",
+      "filings": "https://s22.q4cdn.com/529358580/files/doc_news/2026/FCX_260723_2Q_2026_Earnings_Release.pdf"
+    }
+  }
+}

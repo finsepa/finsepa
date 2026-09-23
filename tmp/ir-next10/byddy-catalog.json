@@ -1,0 +1,95 @@
+{
+  "ticker": "BYDDY",
+  "fyEnd": "12-31",
+  "irPages": [
+    "https://www.bydglobal.com/cn/investor-relations",
+    "https://www1.hkexnews.hk/search/titlesearch.xhtml?lang=EN&market=SEHK&stockId=2696"
+  ],
+  "pdfHost": "www1.hkexnews.hk",
+  "hosts": [
+    "www1.hkexnews.hk",
+    "www.hkexnews.hk"
+  ],
+  "trafficLight": "yellow",
+  "verified": true,
+  "notes": "BYD Co Ltd ADR (BYDDY) / H-share 01211 calendar FY. bydglobal.com IR is a JS SPA with no direct lockable PDF links (legacy Satellite viewer URLs do not Range-GET as %PDF). No earnings slide decks found. Filings=issuer HKEX results PDFs (stockId 2696): Q1/Q3 FIRST|THIRD QUARTERLY REPORT; Q2 INTERIM RESULTS ANNOUNCEMENT; Q4 ANNUAL RESULTS ANNOUNCEMENT. Prefer results announcement over full interim/annual report body. Never SEC HTML. Scope Q1 2022\u2192Q2 2026 (0 green / 18 yellow / 0 red). Range-GET %PDF verified on locked URLs.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2022/0427/2022042702316.pdf"
+    },
+    "Q2 2022": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2022/0829/2022082901334.pdf"
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2022/1028/2022102801267.pdf"
+    },
+    "Q4 2022": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2023/0328/2023032802287.pdf"
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2023/0427/2023042703863.pdf"
+    },
+    "Q2 2023": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2023/0828/2023082801173.pdf"
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2023/1030/2023103001032.pdf"
+    },
+    "Q4 2023": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2024/0326/2024032602559.pdf"
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2024/0429/2024042903767.pdf"
+    },
+    "Q2 2024": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2024/0828/2024082800846.pdf"
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2024/1030/2024103001350.pdf"
+    },
+    "Q4 2024": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2025/0324/2025032401228.pdf"
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2025/0425/2025042502125.pdf"
+    },
+    "Q2 2025": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2025/0829/2025082902216.pdf"
+    },
+    "Q3 2025": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2025/1030/2025103001667.pdf"
+    },
+    "Q4 2025": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0327/2026032702644.pdf"
+    },
+    "Q1 2026": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0428/2026042803001.pdf"
+    },
+    "Q2 2026": {
+      "slides": null,
+      "filings": "https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0828/2026082801633.pdf"
+    }
+  },
+  "counts": {
+    "green": 0,
+    "yellow": 18,
+    "red": 0
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "ticker": "APP",
+  "fyEnd": "calendar",
+  "irHub": "https://investors.applovin.com/financials/quarterly-results/default.aspx",
+  "pdfHost": "s21.q4cdn.com/165405286",
+  "trafficLight": "green",
+  "notes": "AppLovin. Slides=Financial Update / Earnings Presentation PDF (Q4 CDN mislabels some decks as Transcript) else Shareholder Letter; Filings=Press Release. Never 10-Q/10-K/transcripts. Counts green=18 yellow=0 red=0. Never SEC HTML.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2022/q1/1Q22-Financial-Update-FINAL-2022-05-10.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2022/q1/1Q22_Earnings_Press_Release-v1.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2022/q2/APP_2Q22_FINAL_Shareholder_Letter_v2.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2022/q2/2Q22_Earnings_Press_Release_FINAL.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2022/q3/AppLovin-3Q22-Shareholder-Letter.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2022/q3/3Q22_Earnings_Press_Release.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2022/q4/4Q22-Shareholder-Letter.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2022/q4/4Q22_Earnings_Press_Release.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2023/q1/AppLovin_1Q23_Shareholder_Letter.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2023/q1/1Q23-Earnings-Press-Release.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2023/q2/AppLovin-2Q23-Shareholder-Letter.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2023/q2/2Q23-AppLovin-Earnings-Press-Release.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2023/q3/AppLovin-3Q23-Shareholder-Letter.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2023/q3/3Q23-AppLovin-Earnings-Press-Release.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2023/q4/Q4-2023-AppLovin-Earnings-Presentation.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2023/q4/4Q23-AppLovin-Press-Release.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2024/q1/1Q24-AppLovin-Shareholder-Letter.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2024/q1/1Q24-AppLovin-Press-Release.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2024/q2/2Q24-AppLovin-Shareholder-Letter.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2024/q2/2Q24-AppLovin-Press-Release.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2024/q3/Q3-2024-AppLovin-Earnings-Presentation.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2024/q3/3Q24-AppLovin-Press-Release.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2024/q4/4Q24-AppLovin-Financial-Update.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2024/q4/4Q24-AppLovin-Press-Release.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2025/q1/1Q25-AppLovin-Financial-Update.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2025/q1/1Q25-AppLovin-Press-Release.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2025/q2/2Q25-AppLovin-Financial-Update.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2025/q2/2Q25-AppLovin-Press-Release.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2025/q3/3Q25-AppLovin-Financial-Update.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2025/q3/3Q25-AppLovin-Press-Release.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2025/q4/Financial-Update-Q4-2025.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2025/q4/v2/4Q25-AppLovin-Press-Release.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2026/q1/Financial-Update-Q1-2026.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2026/q1/1Q26-Earnings-Press-Release.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://s21.q4cdn.com/165405286/files/doc_financials/2026/q2/Financial-Update-Q2-2026.pdf",
+      "filings": "https://s21.q4cdn.com/165405286/files/doc_financials/2026/q2/AppLovin-2Q26-Earnings-Press-Release.pdf"
+    }
+  }
+}

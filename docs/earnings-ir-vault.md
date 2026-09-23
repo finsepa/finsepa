@@ -98,9 +98,50 @@ Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-
 
 ## Status snapshot (2026-09-22)
 
-**Goal:** ~500 companies IR coverage. Next-10 #9 in progress (~168 dedicated).
+**Goal:** ~500 companies IR coverage (`EARNINGS_IR_VAULT_COVERAGE_GOAL`). Next-10 #11 wired (~199 dedicated).
 
-Next-10 #9 by mcap — **EQIX, CAIXY, ING, FCX, ITOCY, MCK, APP, GSK, AAGIY, SNY** (discovery rerunning after stalled FCX/ITOCY/MCK agent).
+Next-10 #11 by mcap (after CME on frozen-2026-09-22) — wired: **TT, BYDDY, USB, MITSY, ITUB, KKR, PNC, MGCLY, PSTVY, GD**.
+
+- **TT** (green): Earnings Deck/Presentation + Earnings Release on `s2.q4cdn.com/950394465` Q1’22→Q2’26.
+- **BYDDY** (yellow): filings-only HKEX results on `www1.hkexnews.hk` (bydglobal SPA has no lockable decks).
+- **USB** (green): Earnings Call Presentation + Earnings Release on `s203.q4cdn.com/711684571` Q1’22→Q2’26.
+- **MITSY** (green): March FY; IR Meeting ppt + flash on mitsui.com Q1’22→Q1’27.
+- **ITUB** (yellow): sparse MZ IQ filemanager PDFs (Q1’24 filings, Q4’24 slides, Q1’26 both, Q2’26 slides); rest empty.
+- **KKR** (yellow): Investor Presentation + Earnings Release on ir.kkr.com; slides gaps Q3’22 / Q3’23 / Q4’23.
+- **PNC** (green): Earnings Slides + Earnings Release on CloudFront `/pnc/` Q1’22→Q2’26.
+- **MGCLY** (yellow): Snapshot + press/financial reports on midea.com.cn/content/dam; Q1–Q2’26 empty.
+- **PSTVY** (yellow): Results Presentations (Interim→Q2, Annual→Q4) + reports on psbc.com; Q1/Q3 filings-only.
+- **GD** (green): Highlights/Outlook + Exhibit 99.1 on `s22.q4cdn.com/891946778` Q1’22→Q2’26.
+
+Next-10 #10 by mcap — wired: **IBN, ENLAY, ATLKY, TKOMY, AEM, ABNB, EQNR, SO, PWR, VRT** (CNQ→VRT); plus **CME** (ATLKY-era discovery fill).
+
+Next-10 #10 by mcap — wired: **IBN, ENLAY, ATLKY, TKOMY, AEM, ABNB, EQNR, SO, PWR, VRT** (CNQ→VRT); plus **CME** (ATLKY-era discovery fill).
+
+- **IBN** (green): March FY; Investor Presentation + PR1/Performance Review on icici.bank.in Q1’22→Q2’26.
+- **ENLAY** (yellow): trimestrali *-risultati* + English press on enel.com; Q4’25/Q1’26 slides-only; Q2’26 empty.
+- **ATLKY** (green): handout/presentation + interim report on atlascopcogroup.com Q1’22→Q2’26.
+- **CME** (green): Quarterly Earnings Commentary + Earnings Press Release on `investor.cmegroup.com/static-files` Q1’22→Q2’26.
+- **TKOMY** (green): March FY; Overview/Results Presentation + Summary Report on tokiomarinehd.com Q1’22→Q1’26.
+- **AEM** (yellow): Presentation + news release on ir.agnicoeagle.com Q1’22→Q4’24 (2025+ feed empty).
+- **ABNB** (yellow): Shareholder Letter slides-only on `s26.q4cdn.com/656283129` (HTML press).
+- **EQNR** (green): Sanity CDN presentation + financial statements/review Q1’22→Q2’26.
+- **SO** (green): presentation + press on `s27.q4cdn.com/273397814` Q1’22→Q2’26.
+- **PWR** (yellow): Earnings Deck + press on quantaservices.com; Q1’23 filings-only.
+- **VRT** (yellow): Results Presentation + Earnings Release on `s205.q4cdn.com/554782763`; Q4’24 slides-only (CNQ replacement).
+- **CNQ** (skipped): HTML-only — no lockable PDFs.
+
+Next-10 #9 by mcap — wired: **EQIX, CAIXY, ING, FCX, ITOCY, MCK, APP, GSK, AAGIY, SNY**.
+
+- **EQIX** (green): Earnings Presentation + Press/Financials on Equinix CloudFront Q1’22→Q2’26.
+- **CAIXY** (green): CaixaBank Webcast_*_en + Informe Financiero/IF ENG on caixabank.com Q1’22→Q2’26.
+- **ING** (green): results presentation + press on ing.com Q1’22→Q2’26.
+- **FCX** (green): CC presentation + Earnings Release on `s22.q4cdn.com/529358580` Q1’22→Q2’26 (Q3’25 uses CC_supplementary as slides).
+- **ITOCY** (green): March FY; Business Results Summary (`*_02_e`) + Consolidated FS (`*_01_e`) on itochu.co.jp Q1’22→Q1’27.
+- **MCK** (green): March FY; Presentation + Earnings/Press on `s24.q4cdn.com/128197368` Q1’22→Q1’27.
+- **APP** (green): Earnings Presentation/Shareholder Letter/Financial Update + Press Release on `s21.q4cdn.com/165405286` Q1’22→Q2’26.
+- **GSK** (green): results slides/presentation + announcement on gsk.com/media Q1’22→Q2’26.
+- **AAGIY** (yellow): semi-annual HY→Q2 / FY→Q4 Analyst Presentation + Results Ann on aia.com; Q1/Q3 empty.
+- **SNY** (green): Results Presentation + pressreleases PDF on sanofi.com Q1’22→Q2’26.
 
 Next-10 #8 by mcap — wired: **SBUX, HOOD, AXAHY, ADP, LOW, SPOT, CM, SYK, ENB, PSX**.
 

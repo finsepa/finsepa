@@ -1,0 +1,104 @@
+{
+  "ticker": "VRT",
+  "fyEnd": "12-31",
+  "irPages": [
+    "https://investors.vertiv.com/",
+    "https://investors.vertiv.com/financial-information/quarterly-results",
+    "https://investors.vertiv.com/news-events/press-releases"
+  ],
+  "hosts": [
+    "s205.q4cdn.com",
+    "investors.vertiv.com"
+  ],
+  "trafficLight": "yellow",
+  "notes": "Vertiv Holdings Co (VRT) calendar FY (Dec 31). Hub investors.vertiv.com is Cloudflare-protected; catalog sourced from Q4 FinancialReport.svc JSON (works without browser). PDF host s205.q4cdn.com/554782763/files/doc_financials/{year}/q{n}/ (legacy s23.q4cdn.com/959471387 for some 2025 docs still resolves). Slides=DocumentCategory presentation (*Results-Presentation*.pdf); Filings=DocumentCategory news (*Earnings-Release*.pdf). Q4 2024 press is HTML-only on IR (news-details page) \u2014 filings left null. Never SEC HTML. Scope Q1 2022\u2192Q2 2026 (17 green / 1 yellow / 0 red). Range-GET %PDF verified on all non-null URLs.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2022/q1/Vertiv-First-Quarter-2022-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2022/q1/Vertiv-First-Quarter-2022-Earnings-Release.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2022/q2/Vertiv-Second-Quarter-2022-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2022/q2/Vertiv-Second-Quarter-2022-Earnings-Release.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2022/q3/Vertiv-Third-Quarter-2022-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2022/q3/Vertiv-Third-Quarter-2022-Earnings-Release.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2022/q4/Vertiv-Fourth-Quarter-and-Full-Year-2022-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2022/q4/Vertiv-Fourth-Quarter-and-Full-Year-2022-Earnings-Release.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2023/q1/Vertiv-First-Quarter-2023-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2023/q1/Vertiv-First-Quarter-2023-Earnings-Release.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2023/q2/Vertiv-Second-Quarter-2023-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2023/q2/Vertiv-Second-Quarter-2023-Earnings-Release.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2023/q3/Vertiv-Third-Quarter-2023-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2023/q3/Vertiv-Third-Quarter-2023-Earnings-Release.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2023/q4/Vertiv-Fourth-Quarter-and-Full-Year-2023-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2023/q4/Vertiv-Fourth-Quarter-and-Full-Year-2023-Earnings-Release.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2024/q1/Vertiv-First-Quarter-2024-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2024/q1/Vertiv-First-Quarter-2024-Earnings-Release.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2024/q2/Vertiv-Second-Quarter-2024-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2024/q2/Vertiv-Second-Quarter-2024-Earnings-Release.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2024/q3/Vertiv-Third-Quarter-2024-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2024/q3/Vertiv-Third-Quarter-2024-Earnings-Release.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2024/q4/Vertiv-Fourth-Quarter-2024-Results-Presentation.pdf",
+      "filings": null
+    },
+    "Q1 2025": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2025/q1/Vertiv-First-Quarter-2025-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2025/q1/Vertiv-First-Quarter-2025-Earnings-Release.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2025/q2/Vertiv-Second-Quarter-2025-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2025/q2/Vertiv-Second-Quarter-2025-Earnings-Release.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2025/q3/Vertiv-Third-Quarter-2025-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2025/q3/Vertiv-Third-Quarter-2025-Earnings-Release.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2025/q4/Vertiv_Fourth-Quarter-2025-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2025/q4/Vertiv_Fourth-Quarter-2025-Earnings-Release.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2026/q1/Vertiv-First-Quarter-2026-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2026/q1/Vertiv-First-Quarter-2026-Earnings-Release.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://s205.q4cdn.com/554782763/files/doc_financials/2026/q2/Vertiv-Second-Quarter-2026-Results-Presentation.pdf",
+      "filings": "https://s205.q4cdn.com/554782763/files/doc_financials/2026/q2/Vertiv-Second-Quarter-2026-Earnings-Release.pdf"
+    }
+  },
+  "verified": {
+    "method": "Range-GET bytes=0-4",
+    "ok": 35,
+    "bad": 0,
+    "quarterCounts": {
+      "green": 17,
+      "yellow": 1,
+      "red": 0
+    },
+    "latest": "Q2 2026",
+    "blockers": [
+      "investors.vertiv.com HTML behind Cloudflare (use FinancialReport.svc or q4cdn direct)",
+      "Q4 2024 earnings release published as HTML press page only (no IR PDF in feed)"
+    ]
+  }
+}

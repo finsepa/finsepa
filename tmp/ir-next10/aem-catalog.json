@@ -1,0 +1,74 @@
+{
+  "ticker": "AEM",
+  "fyEnd": "12-31",
+  "irHub": "https://ir.agnicoeagle.com/English/investor-relations/home/default.aspx",
+  "pdfHost": "ir.agnicoeagle.com",
+  "trafficLight": "green",
+  "notes": "Agnico Eagle Mines Ltd (AEM). Calendar FY; quarterly. Hub: ir.agnicoeagle.com FinancialReport.svc (?Year=YYYY). Slides=Presentation PDF (doc_presentations); Filings=News Release PDF (doc_news or quarterly AEM-News-Release). Reject transcript, Quarterly Reports / Financials and Operating Data (not press release). Scope Q1 2022\u2192Q4 2024 via Year=2022\u20132025 API (Q1 2025+ not returned by Year=2025 feed as of discovery \u2014 re-check before seed). Counts green=12 yellow=0 red=0. Never SEC HTML. Range-GET verified %PDF.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2022/Q1-2022-Presentation-FINAL.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_news/news_documents/2022/2022-Q1_AEM-Results-Final-2022.04.28.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2022/Q2-2022-Presentation-Final.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_news/news_documents/2022/2022-Q2_AEM-Results_2022.07.27_Final.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2022/AEM-Q3-2022-Presentation-FINAL.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_news/news_documents/2022/2022-Q3_AEM-Results-2022.10.26.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2023/AEM-Q4-2022-Presentation-Final.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_news/news_documents/2023/2022-Q4_AEM-Results-2023.02.16-FINAL.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2023/AEM-Q1-2023-Results-Presentation-Final.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_news/news_documents/2023/2023-Q1_AEM-Results-Final-2023-04-27.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2023/AEM-Q2-2023-Presentation-Final.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_news/news_documents/2023/2023-Q2_AEM-Results_2023-07-26-Final.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2023/AEM-Q3-2023-Presentation-FINAL.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_news/news_documents/2023/2023-Q3_AEM-Results-Final.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2024/AEM-Q4-2023-Presentation-FINAL.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_news/news_documents/2024/2023-Q4_AEM-Results-Final.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2024/_AEM-Earnings-Presentation-Q1-2024-FINAL.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_financials/quarterly/2024/AEM-News-Release_Q1-2024-FINAL.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2024/_AEM-Earnings-Presentation-Q2-2024-FINAL.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_news/news_documents/2024/_AEM-News-Release-Q2-2024-FINAL.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2024/AEM-Earnings-Presentation-Q3-2024-FINAL.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_news/news_documents/2024/_AEM-News-Release-Q3-2024-FINAL.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://ir.agnicoeagle.com/files/doc_presentations/2025/_AEM-Earnings-Presentation-Q4-2024-FINAL.pdf",
+      "filings": "https://ir.agnicoeagle.com/files/doc_news/news_documents/2025/_AEM-News-Release-Q4-2024-FINAL.pdf"
+    }
+  },
+  "irPages": [
+    "https://ir.agnicoeagle.com/English/investor-relations/home/default.aspx",
+    "https://ir.agnicoeagle.com/English/investor-relations/news-and-events/news-releases/default.aspx",
+    "https://ir.agnicoeagle.com/feed/FinancialReport.svc/GetFinancialReportList?LanguageId=1&ReportTypeId=1&Year=2024"
+  ],
+  "verified": {
+    "method": "Range-GET bytes=0-4",
+    "ok": 24,
+    "bad": 0,
+    "quarterCounts": {
+      "green": 12,
+      "yellow": 0,
+      "red": 0
+    },
+    "tickerLight": "green"
+  }
+}

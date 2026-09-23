@@ -1,0 +1,36 @@
+IR discovery: TT / BYDDY / USB
+Date: 2026-09-23
+Scope: Q1 2022 → latest reported (Q2 2026 for all three)
+Method: Event.svc for TT/USB (Cloudflare IR hubs); HKEX titleSearchServlet stockId=2696 for BYDDY.
+Never SEC HTML. Range GET bytes 0-7 verified %PDF on all locked URLs.
+
+TT (Trane Technologies) — GREEN
+  green=18  yellow=0  red=0
+  pdfHost: s2.q4cdn.com/950394465
+  ir: investors.tranetechnologies.com
+  slides: Earnings Deck/Presentation | filings: Press/Earnings Release
+  latestCovered: Q2 2026
+  catalog: tmp/ir-next10/tt-catalog.json
+
+BYDDY (BYD Co Ltd ADR) — YELLOW
+  green=0  yellow=18  red=0
+  pdfHost: www1.hkexnews.hk (H-share 01211)
+  ir: bydglobal.com/cn/investor-relations (JS SPA; no lockable direct PDFs / Satellite viewer fails Range-%PDF)
+  slides: none (no earnings decks) | filings: Q1/Q3 quarterly report; Q2 interim results announcement; Q4 annual results announcement
+  latestCovered: Q2 2026
+  catalog: tmp/ir-next10/byddy-catalog.json
+  note: filings are issuer HKEX disclosure PDFs (not SEC). Issuer site has no greenable slide+press pair.
+
+USB (U.S. Bancorp) — GREEN
+  green=18  yellow=0  red=0
+  pdfHost: s203.q4cdn.com/711684571
+  ir: ir.usbank.com
+  slides: Earnings Call Presentation | filings: Earnings Release / Press Release
+  latestCovered: Q2 2026
+  catalog: tmp/ir-next10/usb-catalog.json
+
+Summary table
+  ticker  light   g/y/r     host                 latest
+  TT      green   18/0/0    s2.q4cdn.com         Q2 2026
+  BYDDY   yellow  0/18/0    www1.hkexnews.hk     Q2 2026
+  USB     green   18/0/0    s203.q4cdn.com       Q2 2026

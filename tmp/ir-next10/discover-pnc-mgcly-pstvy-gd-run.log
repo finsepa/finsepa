@@ -1,0 +1,114 @@
+
+>>> discover_pnc
+Wrote /Users/rakshamann/Desktop/Finsepa/tmp/ir-next10/pnc-catalog.json light=yellow counts={'green': 17, 'yellow': 1, 'red': 0}
+
+>>> discover_gd
+Wrote /Users/rakshamann/Desktop/Finsepa/tmp/ir-next10/gd-catalog.json light=green counts={'green': 18, 'yellow': 0, 'red': 0}
+
+>>> discover_pstvy
+PSTVY present: 200 43388
+PSTVY announce: 200 31892
+PSTVY reports: 200 32592
+PSTVY announce page 2: 200 31866
+PSTVY announce page 3: 200 31886
+PSTVY announce page 4: 200 31836
+PSTVY announce page 5: 200 31918
+PSTVY announce page 6: 200 31836
+PSTVY announce page 7: 200 32208
+PSTVY announce page 8: 200 31940
+PSTVY announce page 9: 200 32162
+PSTVY announce page 10: 200 32061
+PSTVY announce page 11: 200 32021
+PSTVY reports page 2: 200 32603
+PSTVY reports page 3: 200 32626
+PSTVY VERIFY FAIL Q1 2022 filings: https://www.psbc.com/en/investor_relations/announcement/202204/P020220429658247180648.pdf
+PSTVY VERIFY FAIL Q2 2022 filings: https://www.psbc.com/en/investor_relations/announcement/202209/P020220915344288552050.pdf
+PSTVY VERIFY FAIL Q3 2022 filings: https://www.psbc.com/en/investor_relations/announcement/202304/P020230425351879567222.pdf
+PSTVY VERIFY FAIL Q4 2022 filings: https://www.psbc.com/en/investor_relations/announcement/202304/P020230425349814170031.pdf
+PSTVY VERIFY FAIL Q4 2023 filings: https://www.psbc.com/en/investor_relations/announcement/202404/P020240418319327969537.pdf
+PSTVY VERIFY FAIL Q1 2024 filings: https://www.psbc.com/en/investor_relations/announcement/202404/P020240430411833206822.pdf
+PSTVY VERIFY FAIL Q2 2024 filings: https://www.psbc.com/en/investor_relations/announcement/202409/P020240913266242151379.pdf
+PSTVY VERIFY FAIL Q3 2024 filings: https://www.psbc.com/en/investor_relations/announcement/202410/P020241030634725041318.pdf
+PSTVY VERIFY FAIL Q4 2024 filings: https://www.psbc.com/en/investor_relations/announcement/202503/P020250327809149171009.pdf
+PSTVY VERIFY FAIL Q1 2025 filings: https://www.psbc.com/en/investor_relations/announcement/202504/P020250429627702148715.pdf
+PSTVY VERIFY FAIL Q2 2025 filings: https://www.psbc.com/en/investor_relations/announcement/202509/P020250911241592234226.pdf
+PSTVY VERIFY FAIL Q3 2025 filings: https://www.psbc.com/en/investor_relations/announcement/202510/P020251030622246533848.pdf
+PSTVY VERIFY FAIL Q4 2025 filings: https://www.psbc.com/en/investor_relations/announcement/202604/P020260415322721338496.pdf
+PSTVY VERIFY FAIL Q1 2026 filings: https://www.psbc.com/en/investor_relations/announcement/202604/P020260429622933539310.pdf
+PSTVY VERIFY FAIL Q2 2026 filings: https://www.psbc.com/en/investor_relations/announcement/202609/P020260911315523824589.pdf
+Wrote /Users/rakshamann/Desktop/Finsepa/tmp/ir-next10/pstvy-catalog.json light=yellow counts={'green': 0, 'yellow': 9, 'red': 9}
+
+>>> discover_mgcly
+MGCLY FR: 200 75013
+MGCLY extra https://www.midea.com.cn/zh/Investors/Financial_Reports: 200 76271
+MGCLY extra https://www.midea.com.cn/en/Investors: 200 93292
+FETCH FAIL https://www.midea.com.cn/en/Investors/information_disclosure: [Errno 54] Connection reset by peer
+MGCLY extra https://www.midea.com.cn/en/Investors/information_disclosure: 0 0
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Annual-Report-2021-Q1-2022-Snapshot-April2022-pdf-coredownload-inline-1-.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Annual-Report-2021-Q1-2022-Snapshot-April2022-pdf-coredownload-inline-1-.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q1 2022 slides: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Annual-Report-2021-Q1-2022-Snapshot-April2022-pdf-coredownload-inline-1-.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/投资者关系文件总览/2022Q12022年第一季度报告全文-pdf-coredownload-inline.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/投资者关系文件总览/2022Q12022年第一季度报告全文-pdf-coredownload-inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q1 2022 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/投资者关系文件总览/2022Q12022年第一季度报告全文-pdf-coredownload-inline.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Semi-Annual-Results-2022-Snapshot-October2022-pdf-pdf-coredownload-inline.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Semi-Annual-Results-2022-Snapshot-October2022-pdf-pdf-coredownload-inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q2 2022 slides: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Semi-Annual-Results-2022-Snapshot-October2022-pdf-pdf-coredownload-inline.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/投资者关系文件总览/2022H1美的集团2022年半年度报告-PDF-coredownload-inline.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/投资者关系文件总览/2022H1美的集团2022年半年度报告-PDF-coredownload-inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q2 2022 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/投资者关系文件总览/2022H1美的集团2022年半年度报告-PDF-coredownload-inline.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Q3-Results-2022-Snapshot-November-2022-pdf-coredownload-inline.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Q3-Results-2022-Snapshot-November-2022-pdf-coredownload-inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q3 2022 slides: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Q3-Results-2022-Snapshot-November-2022-pdf-coredownload-inline.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/投资者关系文件总览/2022Q3美的集团2022年第三季度报告-PDF-coredownload-inline.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/投资者关系文件总览/2022Q3美的集团2022年第三季度报告-PDF-coredownload-inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q3 2022 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/投资者关系文件总览/2022Q3美的集团2022年第三季度报告-PDF-coredownload-inline.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Annual-Report-2022-April-2023-pdf-coredownload-inline.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Annual-Report-2022-April-2023-pdf-coredownload-inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q4 2022 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2022/MideaGroup-Annual-Report-2022-April-2023-pdf-coredownload-inline.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/Midea-Group-Q1-Financial-Report.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/Midea-Group-Q1-Financial-Report.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q1 2023 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/Midea-Group-Q1-Financial-Report.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/Midea-Group-Semi-Annual-Report-2023.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/Midea-Group-Semi-Annual-Report-2023.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q2 2023 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/Midea-Group-Semi-Annual-Report-2023.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/Midea-Group-Q3-Financial-Report.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/Midea-Group-Q3-Financial-Report.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q3 2023 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/Midea-Group-Q3-Financial-Report.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/MideaGroup-AnnualReport2023-Snapshot-March2024-pdf-pdf-coredownload-inline.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/MideaGroup-AnnualReport2023-Snapshot-March2024-pdf-pdf-coredownload-inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q4 2023 slides: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/MideaGroup-AnnualReport2023-Snapshot-March2024-pdf-pdf-coredownload-inline.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/MideaGroup-Annual-Report-2023-April-2024-pdf-pdf-coredownload-inline.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/MideaGroup-Annual-Report-2023-April-2024-pdf-pdf-coredownload-inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q4 2023 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2023/MideaGroup-Annual-Report-2023-April-2024-pdf-pdf-coredownload-inline.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/Midea-Group-Q1-Financial-Report-2024.PDF.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/Midea-Group-Q1-Financial-Report-2024.PDF: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q1 2024 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/Midea-Group-Q1-Financial-Report-2024.PDF.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/Midea-Group-Semi-Annual-Financial-Report-2024.PDF.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/Midea-Group-Semi-Annual-Financial-Report-2024.PDF: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q2 2024 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/Midea-Group-Semi-Annual-Financial-Report-2024.PDF.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/Midea-Group-Q3-Financial-Report-2024.PDF.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/Midea-Group-Q3-Financial-Report-2024.PDF: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q3 2024 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/Midea-Group-Q3-Financial-Report-2024.PDF.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/美的集团-2024年年度报告-英文版-.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/美的集团-2024年年度报告-英文版-.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q4 2024 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2024/美的集团-2024年年度报告-英文版-.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2025/美的集团-2025年一季度报告-英文版-.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2025/美的集团-2025年一季度报告-英文版-.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q1 2025 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2025/美的集团-2025年一季度报告-英文版-.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2025/美的集团-2025半年度报告-英文版-.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2025/美的集团-2025半年度报告-英文版-.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q2 2025 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2025/美的集团-2025半年度报告-英文版-.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2025/美的集团-2025年三季度报告-英文版-.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2025/美的集团-2025年三季度报告-英文版-.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q3 2025 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系en/英文财务报告/2025/美的集团-2025年三季度报告-英文版-.pdf.coredownload.inline.pdf
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/2025年度报告.pdf.coredownload.inline.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+  PDF check fail https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/2025年度报告.pdf: 'ascii' codec can't encode characters in position 29-33: ordinal not in range(128)
+MGCLY VERIFY FAIL Q4 2025 filings: https://www.midea.com.cn/content/dam/mideacn-aem/投资者关系/2025年度报告.pdf.coredownload.inline.pdf
+Wrote /Users/rakshamann/Desktop/Finsepa/tmp/ir-next10/mgcly-catalog.json light=red counts={'green': 0, 'yellow': 0, 'red': 18}
+IR discovery: PNC, MGCLY, PSTVY, GD
+============================================================
+PNC: yellow — g/y/r=17/1/0 host=d1io3yog0oux5.cloudfront.net/.../pnc latest=Q2 2026
+GD: green — g/y/r=18/0/0 host=s22.q4cdn.com/891946778 latest=Q2 2026
+PSTVY: yellow — g/y/r=0/9/9 host=www.psbc.com/en/investor_relations latest=Q2 2026
+MGCLY: red — g/y/r=0/0/18 host=www.midea.com.cn/content/dam latest=none
+Wrote /Users/rakshamann/Desktop/Finsepa/tmp/ir-next10/discover-pnc-mgcly-pstvy-gd.log

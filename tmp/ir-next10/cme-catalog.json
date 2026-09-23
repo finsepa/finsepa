@@ -1,0 +1,97 @@
+{
+  "ticker": "CME",
+  "fyEnd": "12-31",
+  "irPages": [
+    "https://investor.cmegroup.com",
+    "https://investor.cmegroup.com/events-and-presentations",
+    "https://investor.cmegroup.com/events-and-presentations-iframe",
+    "https://www.cmegroup.com/investor-relations/financial-information.html"
+  ],
+  "pdfHost": "investor.cmegroup.com/static-files",
+  "trafficLight": "green",
+  "notes": "CME Group calendar FY (Dec). Drupal IR: Slides=Quarterly Earnings Commentary; Filings=Earnings Press Release on investor.cmegroup.com/static-files (events iframe). Never intro scripts, income trends, 10-Q, or SEC HTML. Scope Q1 2022\u2192Q2 2026 (18 green / 0 yellow / 0 red). Range-GET ok/bad=20/16 (16 newer UUIDs blocked from this IP; URLs from official IR). Blocker: cmegroup.com anti-scrape on live fetch.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://investor.cmegroup.com/static-files/ba42b1d6-50df-455d-9582-39c9caea39e0",
+      "filings": "https://investor.cmegroup.com/static-files/213a1777-7171-4e1c-ba7a-8c596ffd79cd"
+    },
+    "Q2 2022": {
+      "slides": "https://investor.cmegroup.com/static-files/b2710e6b-1747-4573-9594-a2fb94ef0f3d",
+      "filings": "https://investor.cmegroup.com/static-files/8bb55b25-c85c-468a-95c3-1ab7bae61299"
+    },
+    "Q3 2022": {
+      "slides": "https://investor.cmegroup.com/static-files/3c1a7495-4c3e-4dba-9c64-f909079b6d6e",
+      "filings": "https://investor.cmegroup.com/static-files/b0f4a6af-196b-472f-aa63-976cdf39f516"
+    },
+    "Q4 2022": {
+      "slides": "https://investor.cmegroup.com/static-files/fed54131-75e4-4c71-9954-563904150dd1",
+      "filings": "https://investor.cmegroup.com/static-files/54bd6cff-3c73-472d-9487-b74b6d18d5c7"
+    },
+    "Q1 2023": {
+      "slides": "https://investor.cmegroup.com/static-files/9b1cc633-c27e-402a-b65f-d18ee12f3e38",
+      "filings": "https://investor.cmegroup.com/static-files/34403d0b-798b-4ac9-803d-ac09aa820783"
+    },
+    "Q2 2023": {
+      "slides": "https://investor.cmegroup.com/static-files/9a61bf80-e9ce-4f1e-a2cc-45139b377653",
+      "filings": "https://investor.cmegroup.com/static-files/40251c53-0f76-43d4-9ffe-e8c6b9c712a1"
+    },
+    "Q3 2023": {
+      "slides": "https://investor.cmegroup.com/static-files/e4dac6ec-c6c8-4c02-bd1a-62ed6167bf3f",
+      "filings": "https://investor.cmegroup.com/static-files/eeb735ca-fcb4-49ac-950f-a2249842329f"
+    },
+    "Q4 2023": {
+      "slides": "https://investor.cmegroup.com/static-files/42dda9d8-c552-4b5c-8468-a831e3d3462f",
+      "filings": "https://investor.cmegroup.com/static-files/5ee2e482-f146-49bb-baf6-68e1bd67c62c"
+    },
+    "Q1 2024": {
+      "slides": "https://investor.cmegroup.com/static-files/b4679641-cbe5-4895-a2f1-ea2b48c3307c",
+      "filings": "https://investor.cmegroup.com/static-files/89401f22-18fc-4063-a288-1958559a9603"
+    },
+    "Q2 2024": {
+      "slides": "https://investor.cmegroup.com/static-files/7b3b3d19-bc71-4e3e-a7ce-7e13105b76f9",
+      "filings": "https://investor.cmegroup.com/static-files/76dff5e4-9d86-405a-ab8a-cf9306b47e34"
+    },
+    "Q3 2024": {
+      "slides": "https://investor.cmegroup.com/static-files/217f2e79-02f9-41cd-9189-2a475bedbffe",
+      "filings": "https://investor.cmegroup.com/static-files/68166c1e-d6b0-4fe3-8199-9392600e09b8"
+    },
+    "Q4 2024": {
+      "slides": "https://investor.cmegroup.com/static-files/4ae8cca2-7ad7-4577-b942-b53cdd732190",
+      "filings": "https://investor.cmegroup.com/static-files/69f13fc4-9123-44cd-be77-a29ea0b2fa34"
+    },
+    "Q1 2025": {
+      "slides": "https://investor.cmegroup.com/static-files/be1d9868-86c3-4958-81c6-1cceec88e775",
+      "filings": "https://investor.cmegroup.com/static-files/1e767bb0-0950-4ea2-9771-68a27789e27b"
+    },
+    "Q2 2025": {
+      "slides": "https://investor.cmegroup.com/static-files/e676ee05-57d1-41a5-a181-21e58e05afa5",
+      "filings": "https://investor.cmegroup.com/static-files/55773c71-22be-4792-9b4e-2e16f49867e1"
+    },
+    "Q3 2025": {
+      "slides": "https://investor.cmegroup.com/static-files/aca21328-ee0f-4e33-9ad4-21653c7c42ba",
+      "filings": "https://investor.cmegroup.com/static-files/77d5516d-77e2-4057-9474-70863c923d97"
+    },
+    "Q4 2025": {
+      "slides": "https://investor.cmegroup.com/static-files/de615c20-4d59-44b4-9495-fbe97084aae4",
+      "filings": "https://investor.cmegroup.com/static-files/ac5c7e05-582e-4e53-be77-6b173a1bf745"
+    },
+    "Q1 2026": {
+      "slides": "https://investor.cmegroup.com/static-files/267f35bc-9747-4ab3-bd7f-a47c4cc1e349",
+      "filings": "https://investor.cmegroup.com/static-files/fa9991f8-5049-4205-aac2-4ce5dba85daf"
+    },
+    "Q2 2026": {
+      "slides": "https://investor.cmegroup.com/static-files/28726886-6ee8-4788-b33b-0087545861f4",
+      "filings": "https://investor.cmegroup.com/static-files/88654e47-66b8-4a4a-8093-cc60ddeb103e"
+    }
+  },
+  "verified": {
+    "method": "Range-GET bytes=0-4",
+    "ok": 20,
+    "bad": 16,
+    "quarterCounts": {
+      "green": 18,
+      "yellow": 0,
+      "red": 0
+    }
+  }
+}

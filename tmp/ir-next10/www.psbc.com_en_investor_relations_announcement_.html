@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"/>
+<title>Announcements_PSBC</title>
+<meta name="SiteName" content="中国邮政储蓄银行" />
+<meta name="SiteDomain" content="www.psbc.com" />
+<meta name="ColumnName" content="Announcements" />
+<meta name="ColumnType" content="Announcements" />
+<meta name="description" content="中国邮政储蓄银行" />
+<script type="text/javascript" src="../../images/jquery.min.js"></script>
+<script type="text/javascript" src="../../images/mobile_v2020.js"></script>
+
+  <link class="stylefile" rel="stylesheet" type="text/css" href="../../images/psbc_en_base_pc_v2020.css" />
+    <link class="stylefile" rel="stylesheet" type="text/css" href="../../images/psbc_en_pc_v2020.css" />
+<link class="stylefile" rel="stylesheet" type="text/css" href="../../images/psbc04_pc_v2020.css">
+    <link class="mobileStyle" rel="stylesheet" type="text/css" href="../../images/psbc_en_base_mobile_v2020.css" />
+    <link class="mobileStyle" rel="stylesheet" type="text/css" href="../../images/psbc_en_mobile_v2020.css" />
+    <link class="mobileStyle" rel="stylesheet" type="text/css" href="../../images/swiper.min_v2020.css">
+    <link class="mobileStyle" rel="stylesheet" type="text/css" href="../../images/psbc04_mobile_v2020.css">
+
+    <script type="text/javascript" src="../../images/jquery.SuperSlide.2.1.1.js"></script>
+    <script type="text/javascript" src="../../images/swiper.min_v2020.js"></script>
+    <script type="text/javascript" src="../../images/respond.src.js"></script>
+
+<script type="text/javascript">
+    var isPC = IsPC(); //获取是否为PC端
+    if (isPC) {
+        //如果是PC端加载PC的js和css
+        $(".mobileStyle").remove();
+        dynamicLoadJs("../../images/psbc_base_pc.js")
+        dynamicLoadJs("../../images/psbc04_pc_v2020.js");
+    } else {
+        //如果是移动端加载移动端的js和css
+        $(".stylefile").remove();
+ dynamicLoadJs('../../images/psbc_en_base_mobile_v2020.js')
+        dynamicLoadJs("../../images/psbc_base_mobile.js")
+        dynamicLoadJs("../../images/psbc04_mobile_v2020.js");
+    }
+</script>
+</head>
+
+<body>
+<!-- header start -->
+<script charset='UTF-8' src="/cn/images/sensorsdata.js"></script>
+<script>
+	var sensors = window['sensorsDataAnalytic201505'];
+  	sensors.use('PageLoad') // 页面加载时长
+  	sensors.use('PageLeave') // 页面浏览时长
+	sensors.init({
+  		server_url: 'https://ibfp.psbc.com/sa?project=portal',
+		is_track_single_page:true, // 单页面配置，默认关闭。开启后自动监听 URL 有变化就会触发 $pageview 事件
+		use_client_time:true, 
+  		send_type:'beacon',
+ 		show_log:false,
+		heatmap: {
+			//是否开启点击图，default 表示开启，自动采集 $WebClick 事件，可以设置 'not_collect' 表示关闭。
+			clickmap:'default',
+			//是否开启触达图，not_collect 表示关闭，不会自动采集 $WebStay 事件，可以设置 'default' 表示开启。
+			scroll_notice_map:'not_collect'
+		}   
+	});
+	sensors.quick('autoTrack');
+</script>
+<div class="psbc_header" style="position:relative;z-index:999;">
+    <div class="psbc_headerCont clear mobileNone">
+        <div class="psbc_headerTop rl clear">
+            <div class="fl">
+                <!-- <a href="" target="_blank">分行机构</a>
+                <a href="" target="_blank">服务网点</a>
+                <a href="http://95580.psbc.com/webchat/index.html" target="_blank">在线客服</a>
+                <a href="" target="_blank">人才招聘</a> -->
+                <a href="javascript:;" id="wza_id">Accessibility services</a>
+                <a class="chinese" href="/cn/">中文版</a>
+                <!-- <a href="#">繁体</a> -->
+            </div>
+            <div class="psbc_header_searchBox rl">
+                <input class="sr_text" type="text" />
+                <input class="sr_btn" type="submit" value="" />
+            </div>
+        </div>
+        <div class="psbc_HeaderNav clear">
+            <div class="psbc_headerL_logo fl">
+                <!-- <a class="enIndexP" href="/en/"><img src="/en/images/psbc_hLogo_v2020.PNG" /></a> -->
+                <a class="enIndexP" href="/en/">
+                    <img src="/cn/images/psbc_hLogo_v2020.PNG" onerror="this.parentElement.parentElement.style.display='none';" />
+                </a>
+            </div>
+            <ul class="psbc_headerR_list rl">
+                 <li class="navItem">
+                        <a class="navTitle" href="/en/"
+                            target="_blank">
+                           Home
+                        </a>
+                    </li>
+                    <li class="navItem">
+                        <a class="navTitle" href="https://www.psbc.com/en/about_psbc/"
+                            target="_blank">
+                            About PSBC
+                        </a>
+                    </li>
+                     <li class="navItem">
+                        <a class="navTitle" href="https://www.psbc.com/en/products_and_services/"
+                            target="_blank">
+                            Products and Services
+                        </a>
+                    </li>
+                     <li class="navItem">
+                        <a class="navTitle" href="https://www.psbc.com/en/investor_relations/"
+                            target="_blank">
+                            Investor Relations
+                        </a>
+                    </li>
+                      <li class="navItem">
+                        <a class="navTitle" href="https://www.psbc.com/en/corporate_culture/"
+                            target="_blank">
+                            Corporate Culture
+                        </a>
+                    </li>
+                     <li class="navItem">
+                        <a class="navTitle" href="https://www.psbc.com/en/FeeRate/"
+                            target="_blank">
+                            Fee Rate
+                        </a>
+                    </li>
+                  
+            </ul>
+        </div>
+    </div>
+    <div class="psbc_headerCont pcNone clear">
+        <a class="headerLogo fl" href="/en/">
+            <!-- <img src="/en/images/psbc_base_logo.png" /> -->
+            <img src="/en/images/psbc_base_logoM.png" />
+        </a>
+        <a class="navMore rl" href="javascript:void (0)">
+            <img src="/cn/images/psbc_base_more_mobilev2020.png" />
+        </a>
+        <a class="navClose rl" href="javascript:void (0)">
+            <img src="/cn/images/psbc_base_navClose_mobileV2020.png" />
+        </a>
+        <div class="navListCont">
+            <div class="navListTop">
+                <div class="psbc_header_searchBox">
+                    <input class="sr_text" type="text" />
+                    <input class="sr_btn" type="submit" value="" />
+                </div>
+            </div>
+            <ul class="navList">
+                    <li>
+                        <div class="navLLnl">
+                            <a class="itemTitle" href="https://www.psbc.com/en/about_psbc/"
+                                target="_blank">
+                                About PSBC
+                            </a> 
+                            <span class="sdIcon"></span>
+                        </div>
+                       
+                        <div class="navSonChns">
+                            <dl>
+                                
+                                    <dd>
+                                        <a href="https://www.psbc.com/en/about_psbc/about_psbc_new/"> 
+                                            About PSBC
+                                        </a>
+                                    </dd>
+                                
+                                    <dd>
+                                        <a href="https://www.psbc.com/en/about_psbc/esg/"> 
+                                            ESG
+                                        </a>
+                                    </dd>
+                                
+                            </dl>
+                        </div>
+                    </li>
+                     <li>
+                        <div class="navLLnl">
+                            <a class="itemTitle" href="https://www.psbc.com/en/products_and_services/"
+                                target="_blank">
+                                Products and Services
+                            </a>
+                            <span class="sdIcon"></span>
+                        </div>
+                        <div class="navSonChns">
+                            <dl>
+                                
+                                    <dd>
+                                        <a href="https://www.psbc.com/en/products_and_services/personal/"> 
+                                            Personal
+                                        </a>
+                                    </dd>
+                                
+                                    <dd>
+                                        <a href="https://www.psbc.com/en/products_and_services/corporate/"> 
+                                            Corporate
+                                        </a>
+                                    </dd>
+                                
+                            </dl>
+                        </div>
+                    </li>
+                     <li>
+                        <div class="navLLnl">
+                            <a class="itemTitle" href="https://www.psbc.com/en/investor_relations/"
+                                target="_blank">
+                                Investor Relations
+                            </a>
+                            <span class="sdIcon"></span>
+                        </div>
+                        <div  class="navSonChns">
+                            <dl>
+                                
+                                    <dd>
+                                        <a href="https://www.psbc.com/en/investor_relations/investment_value/"> 
+                                            Investment Value
+                                        </a>
+                                    </dd>
+                                
+                                    <dd>
+                                        <a href="https://www.psbc.com/en/investor_relations/announcement/"> 
+                                            Announcements
+                                        </a>
+                                    </dd>
+                                
+                                    <dd>
+                                        <a href="https://www.psbc.com/en/investor_relations/corporate_governance/"> 
+                                            Corporate Governance
+                                        </a>
+                                    </dd>
+                                
+                                    <dd>
+                                        <a href="https://www.psbc.com/en/investor_relations/finance/"> 
+                                            Financial Information
+                                        </a>
+                                    </dd>
+                                
+                                    <dd>
+                                        <a href="https://www.psbc.com/en/investor_relations/social_responsibility/"> 
+                                            Corporate Social Responsibility
+                                        </a>
+                                    </dd>
+                                
+                                    <dd>
+                                        <a href="https://www.psbc.com/en/investor_relations/result_Presenta/"> 
+                                            Results Presentations
+                                        </a>
+                                    </dd>
+                                
+                                    <dd>
+                                        <a href="https://www.psbc.com/en/investor_relations/ir_service/"> 
+                                            IR Service
+                                        </a>
+                                    </dd>
+                                
+                            </dl>
+                        </div>
+                    </li>
+                     <li>
+                        <div class="navLLnl">
+                            <a class="itemTitle" href="https://www.psbc.com/en/corporate_culture/"
+                                target="_blank">
+                                Corporate Culture
+                            </a>
+                            <span class="sdIcon"></span>
+                        </div>
+                        <div  class="navSonChns">
+                            <dl>
+                                
+                            </dl>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="navLLnl">
+                            <a class="itemTitle" href="https://www.psbc.com/en/FeeRate/"
+                                target="_blank">
+                                Fee Rate
+                            </a>
+                            <span class="sdIcon"></span>
+                        </div>
+                        <div  class="navSonChns">
+                            <dl>
+                                
+                            </dl>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="navLLnl">
+                            <a class="itemTitle" href="/cn/"
+                                target="_blank">
+                                中文版
+                            </a>
+                            <!-- <span></span> -->
+                        </div>
+                    </li>
+    <li>
+                        <div class="navLLnl">
+                            <a class="itemTitle" href="/cn/fxjg/"
+                                target="_blank">
+                                分行频道
+                            </a>
+                            <!-- <span></span> -->
+                        </div>
+                    </li>
+            </ul>
+          <a class="navDownApp" href="http://phone.psbc.com">Mobile Banking<i></i></a>
+        </div>
+    </div>
+</div>
+<script>
+$(function(){
+
+$('.sr_btn').click(function(){
+    window.location.href = '/cn/common/search/'
+})
+})
+</script>
+<script id="toolbar.js" src="https://www.psbc.com/toolbar/js/toolbar_init.js"></script>
+<!-- header end -->
+<!-- content start -->
+<!-- <div class="psbc_colbanner mobileNone"><img src="./images/P020201212747106443475.png" alt="" /></div> -->
+<div class="psbc_colbanner pcNone"><img src="" alt="" /></div>
+<div class="psbc_layout psbc_location">Your location：<a href="">Home</a> > <a href="../" title="Investor Relations" class="CurrChnlCls">Investor Relations</a>&nbsp;&gt;&nbsp;<a href="./" title="Announcements" class="CurrChnlCls">Announcements</a></div>
+<div class="psbc_layout">
+    <div class="psbc_main_left mobileNone">
+           <div class="nav_title">Investor Relations</div>
+        <div class="nav_list">
+            <ul>
+                
+                <li class="parentLi ">
+                  <!--../investment_value/-->
+                    <a href="../investment_value/" class="parentLiA  ">Investment Value</a>
+                    <ul class="parentFirstUl">
+                      
+                    </ul>
+                </li>
+                
+                <li class="parentLi parentOn">
+                  <!--./-->
+                    <a href="./" class="parentLiA  cur">Announcements</a>
+                    <ul class="parentFirstUl">
+                      
+                    </ul>
+                </li>
+                
+                <li class="parentLi ">
+                  <!--../corporate_governance/-->
+                    <a href="../corporate_governance/" class="parentLiA  ">Corporate Governance</a>
+                    <ul class="parentFirstUl">
+                      
+                      <li>
+                        <a href='../corporate_governance/General_Meeting/'>Shareholders' General Meeting</a>
+                      </li>
+                    
+                      <li>
+                        <a href='../corporate_governance/board_directors/'>Board of Directors</a>
+                      </li>
+                    
+                      <li>
+                        <a href='../corporate_governance/Senior_Management/'>Senior Management</a>
+                      </li>
+                    
+                      <li>
+                        <a href='../corporate_governance/corporate_governance/'>Corporate Governance</a>
+                      </li>
+                    
+                      <li>
+                        <a href='../corporate_governance/regulatory_documents/'>Regulatory Documents</a>
+                      </li>
+                    
+                    </ul>
+                </li>
+                
+                <li class="parentLi ">
+                  <!--../finance/-->
+                    <a href="../finance/" class="parentLiA  ">Financial Information</a>
+                    <ul class="parentFirstUl">
+                      
+                      <li>
+                        <a href='../finance/financial_highlights/'>Financial Highlights</a>
+                      </li>
+                    
+                      <li>
+                        <a href='../finance/financial_reports/'>Financial Reports</a>
+                      </li>
+                    
+                      <li>
+                        <a href='../finance/credit_rating/'>Credit Rating</a>
+                      </li>
+                    
+                    </ul>
+                </li>
+                
+                <li class="parentLi ">
+                  <!--../social_responsibility/-->
+                    <a href="../social_responsibility/" class="parentLiA  ">Corporate Social Responsibility</a>
+                    <ul class="parentFirstUl">
+                      
+                      <li>
+                        <a href='../social_responsibility/RulesandRegulations/'>Rules and Regulations</a>
+                      </li>
+                    
+                    </ul>
+                </li>
+                
+                <li class="parentLi ">
+                  <!--../result_Presenta/-->
+                    <a href="../result_Presenta/" class="parentLiA  ">Results Presentations</a>
+                    <ul class="parentFirstUl">
+                      
+                    </ul>
+                </li>
+                
+                <li class="parentLi ">
+                  <!--../ir_service/-->
+                    <a href="../ir_service/" class="parentLiA  ">IR Service</a>
+                    <ul class="parentFirstUl">
+                      
+                      <li>
+                        <a href='../ir_service/invca/'>Investor Calendar</a>
+                      </li>
+                    
+                      <li>
+                        <a href='../ir_service/faqs/'>FAQs</a>
+                      </li>
+                    
+                      <li>
+                        <a href='../ir_service/rocc/'>Receiption of Corporate Communications</a>
+                      </li>
+                    
+                      <li>
+                        <a href='../ir_service/ircon/'>IR Contact</a>
+                      </li>
+                    
+                    </ul>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+    <div class="psbc_main_left pcNone">
+        <div class="nav_title active">Investor Relations<i></i></div>
+        <div class="nav_list">
+            <ul>
+                
+                <li class="">
+                    <a href="../investment_value/">Investment Value</a>
+                </li>
+                
+                <li class="cur">
+                    <a href="./">Announcements</a>
+                </li>
+                
+                <li class="">
+                    <a href="../corporate_governance/">Corporate Governance</a>
+                </li>
+                
+                <li class="">
+                    <a href="../finance/">Financial Information</a>
+                </li>
+                
+                <li class="">
+                    <a href="../social_responsibility/">Corporate Social Responsibility</a>
+                </li>
+                
+                <li class="">
+                    <a href="../result_Presenta/">Results Presentations</a>
+                </li>
+                
+                <li class="">
+                    <a href="../ir_service/">IR Service</a>
+                </li>
+                
+            </ul>
+        </div>
+    </div>
+    <div class="psbc_main_right">
+        <div class="col_title">Announcements</div>
+        <div class="col_list"  style="text-transform: uppercase;">
+            <ul>
+                
+                <li>
+                    <span>2026-09-16</span>
+                    <a href="./202609/t20260916_463072.html" target="_blank" title="ANNOUNCEMENT ON APPOINTMENT AND RETIREMENT OF DIRECTORS">ANNOUNCEMENT ON APPOINTMENT AND RETIREMENT OF DIRECTORS</a>
+                </li>
+                
+                <li>
+                    <span>2026-09-16</span>
+                    <a href="./202609/t20260916_463073.html" target="_blank" title="LIST OF DIRECTORS AND THEIR ROLE AND FUNCTION">LIST OF DIRECTORS AND THEIR ROLE AND FUNCTION</a>
+                </li>
+                
+                <li>
+                    <span>2026-09-11</span>
+                    <a href="./202609/t20260911_461522.html" target="_blank" title="2026 Interim Report">2026 Interim Report</a>
+                </li>
+                
+                <li>
+                    <span>2026-09-03</span>
+                    <a href="./202609/t20260903_458914.html" target="_blank" title="Monthly Return of Equity Issuer on Movements in Securities for the month ended August 31, 2026">Monthly Return of Equity Issuer on Movements in Securities for the month ended August 31, 2026</a>
+                </li>
+                
+                <li>
+                    <span>2026-08-28</span>
+                    <a href="./202608/t20260828_456913.html" target="_blank" title="INTERIM RESULTS ANNOUNCEMENT FOR THE SIX MONTHS ENDED JUNE 30, 2026">INTERIM RESULTS ANNOUNCEMENT FOR THE SIX MONTHS ENDED JUNE 30, 2026</a>
+                </li>
+                
+                <li>
+                    <span>2026-08-28</span>
+                    <a href="./202608/t20260828_456904.html" target="_blank" title="Interim Dividend for the Six Months Ended 30 June 2026">Interim Dividend for the Six Months Ended 30 June 2026</a>
+                </li>
+                
+                <li>
+                    <span>2026-08-18</span>
+                    <a href="./202608/t20260818_453042.html" target="_blank" title="NOTICE OF BOARD MEETING">NOTICE OF BOARD MEETING</a>
+                </li>
+                
+                <li>
+                    <span>2026-08-05</span>
+                    <a href="./202608/t20260805_449944.html" target="_blank" title="Monthly Return of Equity Issuer on Movements in Securities for the month ended July 31, 2026">Monthly Return of Equity Issuer on Movements in Securities for the month ended July 31, 2026</a>
+                </li>
+                
+                <li>
+                    <span>2026-07-14</span>
+                    <a href="./202607/t20260714_441182.html" target="_blank" title="Final Dividends for the Year Ended 31 December 2025 (Updated)">Final Dividends for the Year Ended 31 December 2025 (Updated)</a>
+                </li>
+                
+                <li>
+                    <span>2026-07-14</span>
+                    <a href="./202607/t20260714_441181.html" target="_blank" title="DIVIDEND CURRENCY ELECTION FORM FOR 2025 FINAL DIVIDEND">DIVIDEND CURRENCY ELECTION FORM FOR 2025 FINAL DIVIDEND</a>
+                </li>
+                
+            </ul>
+        </div>
+        <div class="page">
+    <div class="page_nr1">
+         <div class="page_nr2">
+    <script language="javascript">
+        //createPageHTML(72, 0, "index", "html");
+        var countPage = 72//共多少页
+        var currentPage =  0;//所在页从0开始
+        if(currentPage > 0){
+            currentPage = countPage - 0 ;
+        }
+        //var headPage = "index"+"."+"html";//首页
+        //var tailPage = "index_" + (countPage-1) + ".html"//尾页
+        
+        var prevPage = countPage - (currentPage-1)//上一页
+        var nextPage = countPage - (currentPage+1)//下一页
+        
+        //console.log(currentPage)
+
+        //document.write("共"+countPage+"页&nbsp;&nbsp;");
+        //设置上一页代码
+        if(countPage>1&&currentPage!=0&&currentPage!=1)
+            document.write("<a class='next' href=\"index"+"_" + prevPage + "."+"html\" target=\"_self\">Prev</a>");
+        else if(countPage>1&&currentPage!=0&&currentPage==1)
+            document.write("<a class='next' href=\"index.html\" target=\"_self\">Prev</a>");
+        else
+            document.write("");
+
+        //循环
+        //var num = 5;
+        //for(var i=0+(currentPage-1-(currentPage-1)%num) ; i<=(num+(currentPage-1-(currentPage-1)%num))&&(i<countPage) ; i++){
+
+        var num = 5;
+        var startPage=currentPage-2;
+        if(startPage<0) startPage=0;
+        var endpage=startPage+num;
+        if(endpage>countPage)endpage=countPage;
+
+        startPage=endpage-5;
+        if(startPage<0) startPage=0;
+
+        for(var i=startPage; i<endpage ; i++){
+
+            if(currentPage==i)
+                document.write("<a class='current'>"+(i+1)+"</a>");
+            else if(i==0){
+                document.write("<a class='' href=\"index.html\" target=\"_self\">"+1+"</a>");
+            }else
+                document.write("<a class='' href=\"index"+"_" + (countPage-i) + "."+"html\" target=\"_self\">"+(i+1)+"</a>");
+        }
+
+        //设置下一页代码
+        if(countPage>1&&currentPage!=(countPage-1))
+            document.write("<a class='next' href=\"index"+"_" + nextPage + "."+"html\" target=\"_self\">Next</a>");
+        else
+            document.write("");
+
+        //跳转页面
+        document.write("<div class='clearMobile pcNone'></div><div class='page_txt'> <span>" + countPage + "</span> Page</div><div class='page_txt'>Jump to</div><input type='text' id='num' value="+(currentPage+1)+" /><div class='page_txt'>页</div>"+"<button onClick=javascript:toPage() id='go'>Go</button>");
+
+        function toPage(){
+            var _num = document.getElementById("num").value;
+            if(_num > 1){
+                _num = countPage - _num + 2;
+            }
+            var str = "index"+"_"+(_num-1)+"."+"html";
+            var url = location.href.substring(0,location.href.lastIndexOf("/")+1);
+            if(_num<=1||_num==null)
+                location.href = url+"index"+"."+"html";
+            else if(_num>countPage)
+                alert("本频道最多"+countPage+"页");
+            else
+                location.href = url+str;
+        }
+    </script>
+            <div style="clear:both;"></div>
+          </div>
+     </div>
+</div>
+    </div>
+</div>
+<!-- content end -->
+<!-- page start -->
+<style>
+.gaba_box{width:231px;float:left;/*margin:0 auto; padding:20px 0;*/padding-left:5px; display:block; margin-top:-0px; border:0px solid #333;}
+.gaba_a{display:inline-block;text-decoration:none;height:20px;line-height:20px;}
+.gaba_p{float:left;height:20px;line-height:20px!important;margin: 0px 0px 0px 5px; color:#ffffff;font-size:14px;}
+
+.kexin_box{width: 110px;padding-left:5px; float:left; /*width:108px; padding-left:114px;  margin:0 auto; padding:20px 0; */ margin-top:-10px;display:inline-block; border:0px solid #333;}
+.kexin_box img{width: 104px;height:37px;float: left;/*padding-right: 56px;*/}
+
+.psbc_footer {
+
+    height: 195px;
+    background: #5ea875;
+    overflow: hidden;
+    font-family: 'HelveticaNeue';
+}
+.footer_Mes{ margin-top:0px; }
+@media screen and (max-width:750px){
+
+.psbc_footer{
+  /*height:8.2rem;*/
+  height:9.0rem;
+}
+
+.gaba_box{width: 4.60rem;border: 0px solid #333;/*margin:0 auto; padding:20px 0;*/padding-left:5px;float:none; /*float:left;*/display:block; clear:both;margin-top:0px!important; margin-left:auto;margin-right:auto;}
+.gaba_a{display:block;text-decoration:none;height:20px;line-height:20px;}
+.gaba_p{margin-top:0rem!important; float:left;height:20px;line-height:0.4rem;margin: 0px 0px 0px 5px; color:#ffffff;font-size:0.26rem!important;}  
+
+.kexin_box {text-align:center; width: 1.8rem;float:none; padding-left:0px; border: 0px solid #333;display:block; font-size:medium!important; margin-left:auto;margin-right:auto;}
+.kexin_box div { font-size:medium!important;}
+.kexin_box span { font-size:medium!important;}
+.kexin_box img{display:block!important;width: 1.8rem;height:0.60rem;border: 0px solid #333;  margin-left:auto;margin-right:auto;}
+
+}	
+</style>
+
+
+
+<div class="psbc_footer">
+    <div class="psbc_footerCont clear">
+        <div class="footer_tel fl">
+            <!-- <img src="/cn/images/psbc_en_base_footerIcon.png" /> -->
+            <img src="/en/images/psbc_en_base_footerIcon2.png" />
+            <!-- <p>
+                <span>Credit Card Service</span>
+                <span class="tel">400-88-95580</span>
+            </p> -->
+        </div>
+        <div class="footer_Mes fl">
+            <p>
+                <a href="https://www.psbc.com/en/sitemapen/" target="_blank">Site Map</a>|
+               <!--<a href="https://www.psbc.com/en/linken/" target="_blank">Links</a>|-->
+                <a href="https://www.psbc.com/en/contactusen/" target="_blank">Contact Us</a>
+            </p>
+            <p class="bqsm">
+                <span>
+                    <i>Copyright(C)2024 psbc.com </i>
+                    <i>All Rights Reserved</i>
+                </span>
+                <span>中国邮政储蓄银行 版权所有 <a target="_blank" href="https://beian.miit.gov.cn">京ICP备07021605号</a></span>
+            </p>
+			
+			<div class="gaba_box">
+		 		   <a target="_blank" href="http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11040102700173" class="gaba_a" style=""><img src="/en/images/psbc_guohui.png" style="float:left;" /><p class="gaba_p" style="">京公网安备 11040102700173号</p></a>
+		    </div>
+
+
+                        <div class="kexin_box">
+				<!--可信网站LOGO安装开始-->
+                                   <script id="kXScript" type="text/javascript" src="https://kxlogo.knet.cn/seallogo.dll?sn=e13030611010039406xj0y000000&h=37"></script>
+                                <!--可信网站LOGO安装结束-->  
+		        </div>
+                          <div class="kexin_box">
+
+                        <div>
+                              <!--部署CFCA 站点认证开始-->
+                               <a target="_blank" href="https://evwebverify.cfca.com.cn/WebVerify/webVerifyServlet?domain=www.psbc.com" ><img src="https://www.psbc.com/cn/images/zdrz.png" style="float:left;" upload="true" /></a>
+                             <!--部署CFCA 站点认证结束-->
+                          </div>
+		  </div>
+
+        </div>
+        <div class="footer_ewm rl clear">
+            <span class="fl">
+                <img src="/cn/images/psbc_base_ewmApp_07.png" />
+                Mobile Bank
+            </span>
+            <span class="rl">
+                <img src="/en/images/psbc_base_ewmWx_09.png" />
+                Wechat
+            </span>
+        </div>
+    </div>
+</div>
+<script id="_trs_ta_js" src="https://s.psbc.com/c/js/ta.js?mpid=3" async="async" defer="defer"></script>
+<!-- page end -->
+</body>
+</html>

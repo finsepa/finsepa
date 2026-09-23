@@ -1,0 +1,23 @@
+{
+  "ticker": "CNQ",
+  "fyEnd": "12-31",
+  "irPages": [
+    "https://www.cnrl.com/investors/",
+    "https://www.cnrl.com/investors/news-releases/",
+    "https://www.cnrl.com/news-releases/"
+  ],
+  "pdfHost": "www.cnrl.com/wp-content/uploads",
+  "trafficLight": "red",
+  "notes": "Canadian Natural Resources calendar FY. WP REST (`news_release` CPT) lists quarterly results at cnrl.com/news-releases/, but article HTML is press-only (no .pdf hrefs on spot-checked Q2 2024 / Q2 2026). Events page has ad-hoc corp presentations, not a consistent Q1 2022\u2192 deck/release matrix. Filings=null until CNRL links PDF press packs. Catalog empty (0/0/0). Never SEC HTML / SEDAR PDFs.",
+  "quarters": {},
+  "verified": {
+    "method": "Range-GET bytes=0-4",
+    "ok": 0,
+    "bad": 0,
+    "quarterCounts": {
+      "green": 0,
+      "yellow": 0,
+      "red": 0
+    }
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "ticker": "ABNB",
+  "fyEnd": "12-31",
+  "irHub": "https://investors.airbnb.com/financials/quarterly-results/default.aspx",
+  "pdfHost": "s26.q4cdn.com/656283129",
+  "trafficLight": "yellow",
+  "notes": "Airbnb Inc (ABNB). Calendar FY; quarterly. Hub: investors.airbnb.com FinancialReport.svc (?Year=YYYY). Slides=Shareholder Letter PDF on s26.q4cdn.com/656283129/files/doc_financials/{year}/q{n}/. Filings=null: Press Release is HTML news-details only (no first-party earnings-release PDF). Scope Q1 2022\u2192Q2 2026. Ticker yellow (slides-only all quarters). Reject transcript, 10-Q/10-K SEC mirror PDFs. Never SEC HTML as filings slot. Range-GET verified %PDF on slides.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2022/q1/Airbnb_Q1-2022-Shareholder-Letter_Final.pdf",
+      "filings": null
+    },
+    "Q2 2022": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2022/q2/Airbnb_Q2-2022-Shareholder-Letter_Final.pdf",
+      "filings": null
+    },
+    "Q3 2022": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2022/q3/Airbnb_Q3-2022-Shareholder-Letter_Final.pdf",
+      "filings": null
+    },
+    "Q4 2022": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2022/q4/Airbnb_Q4-2022-Shareholder-Letter_Final.pdf",
+      "filings": null
+    },
+    "Q1 2023": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2023/q1/Airbnb_Q1-2023-Shareholder-Letter_Final.pdf",
+      "filings": null
+    },
+    "Q2 2023": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2023/q2/Airbnb_Q2-2023-Shareholder-Letter_Final.pdf",
+      "filings": null
+    },
+    "Q3 2023": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2023/q3/Airbnb_Q3-2023-Shareholder-Letter_Final.pdf",
+      "filings": null
+    },
+    "Q4 2023": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2023/q4/Airbnb_Q4-2023-Shareholder-Letter_Final.pdf",
+      "filings": null
+    },
+    "Q1 2024": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2024/q1/Airbnb_Q1-2024-Shareholder-Letter_Final-1.pdf",
+      "filings": null
+    },
+    "Q2 2024": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2024/q2/Airbnb_Q2-2024-Shareholder-Letter_Final.pdf",
+      "filings": null
+    },
+    "Q3 2024": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2024/q3/Airbnb_Q3-2024-Shareholder-Letter_Final.pdf",
+      "filings": null
+    },
+    "Q4 2024": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2024/q4/Airbnb_Q4-2024-Shareholder-Letter_Final.pdf",
+      "filings": null
+    },
+    "Q1 2025": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2025/q1/Airbnb_Q1-2025-Shareholder-Letter.pdf",
+      "filings": null
+    },
+    "Q2 2025": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2025/q2/Airbnb_Q2-2025-Shareholder-Letter.pdf",
+      "filings": null
+    },
+    "Q3 2025": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2025/q3/v2/Airbnb_Q3-2025-Shareholder-Letter.pdf",
+      "filings": null
+    },
+    "Q4 2025": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2025/q4/Airbnb_Q4-2025-Shareholder-Letter-Final.pdf",
+      "filings": null
+    },
+    "Q1 2026": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2026/q1/Airbnb_Q1-2026-Shareholder-Letter-FINAL.pdf",
+      "filings": null
+    },
+    "Q2 2026": {
+      "slides": "https://s26.q4cdn.com/656283129/files/doc_financials/2026/q2/v2/Airbnb-Q2-2026-Shareholder-Letter.pdf",
+      "filings": null
+    }
+  },
+  "irPages": [
+    "https://investors.airbnb.com/",
+    "https://investors.airbnb.com/financials/quarterly-results/default.aspx",
+    "https://investors.airbnb.com/financials/default.aspx",
+    "https://investors.airbnb.com/news-events/events/default.aspx"
+  ],
+  "verified": {
+    "method": "Range-GET bytes=0-4",
+    "ok": 18,
+    "bad": 0,
+    "quarterCounts": {
+      "green": 0,
+      "yellow": 18,
+      "red": 0
+    },
+    "tickerLight": "yellow"
+  }
+}

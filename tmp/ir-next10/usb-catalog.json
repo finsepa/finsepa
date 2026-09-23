@@ -1,0 +1,95 @@
+{
+  "ticker": "USB",
+  "fyEnd": "12-31",
+  "irPages": [
+    "https://ir.usbank.com/",
+    "https://ir.usbank.com/financials/quarterly-results/default.aspx",
+    "https://ir.usbank.com/news-events/events-presentations/default.aspx"
+  ],
+  "pdfHost": "s203.q4cdn.com",
+  "hosts": [
+    "s203.q4cdn.com"
+  ],
+  "trafficLight": "green",
+  "verified": true,
+  "notes": "U.S. Bancorp (USB) calendar FY. Catalog from Event.svc GetEventList (IR Cloudflare). PDF host s203.q4cdn.com/711684571. Slides=Earnings Call Presentation (fallback Earnings Supplement); Filings=Earnings Release / Press Release. Never SEC HTML. Scope Q1 2022\u2192Q2 2026 (18 green / 0 yellow / 0 red). Range-GET %PDF verified.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2022/04/1q22_earnings_call_presentation_-_final.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2022/04/usb_1q22_earnings_release_and_consolidated_financial_schedules.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2022/07/2q22_earnings_call_presentation_-_final.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2022/07/usb_2q22_earnings_release_and_consolidated_financial_schedules.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2022/10/3q22_earnings_call_presentation_-_final.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2022/10/USB-3Q22-Earnings-Release-and-Consolidated-Financial-Schedules.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2023/01/4q22_earnings_call_presentation_-_final.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2023/01/usb_4q22_earnings_release_and_consolidated_financial_schedules.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2023/04/1q23_earnings_call_presentation.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2023/04/usb_1q23_earnings_release_and_consolidated_financial_schedules.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2023/07/USB-2Q23-Earnings-Call-Presentation.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2023/07/usb_2q23_earnings_release_and_consolidated_financial_schedules.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2023/10/3q23_earnings_call_presentation_final.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2023/10/usb_3q23_earnings_release_and_consolidated_financial_schedules.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_financials/2023/Q4/q4_2023_earnings_call_presentation.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_financials/2023/Q4/q4_2023_earnings_release.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2024/Apr/17/1Q24-Earnings-Call-Presentation-Final.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2024/Apr/17/Q1-2024-Earnings-Release.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_financials/2024/q2/2Q24-Earnings-Call-Presentation.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_financials/2024/q2/Press-Release-2Q24.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2024/Oct/16/3Q24-Earnings-Call-Presentation.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2024/Oct/16/Press-Release-3Q24.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2025/Jan/16/Earnings-Call-Presentation-4Q24.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2025/Jan/16/4Q24-Earnings-Release-4Q24.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2025/Apr/16/Earnings-Call-Presentation-1Q25.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2025/Apr/16/1Q25-Earnings-Release.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2025/Jul/17/2Q25-Earnings-Call-Presentation.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2025/Jul/17/2Q25-Earnings-Release.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2025/Oct/16/Earnings-Call-Presentation-3Q25.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2025/Oct/16/3Q25-Earnings-Release.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2026/Jan/20/4Q25-Earnings-Call-Presentation.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2026/Jan/20/4Q25-Earnings-Release.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2026/Apr/16/EarningsCallPresentation1Q26_vF.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2026/Apr/16/1Q26EarningsRelease.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://s203.q4cdn.com/711684571/files/doc_events/2026/Jul/16/EarningsCallPresentation2Q26vF.pdf",
+      "filings": "https://s203.q4cdn.com/711684571/files/doc_events/2026/Jul/16/2Q26EarningsRelease.pdf"
+    }
+  },
+  "counts": {
+    "green": 18,
+    "yellow": 0,
+    "red": 0
+  }
+}

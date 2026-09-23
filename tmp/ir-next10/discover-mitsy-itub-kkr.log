@@ -1,0 +1,13 @@
+IR discovery summary — MITSY / ITUB / KKR
+Date: 2026-09-23
+Scope: Q1 2022 → latest reported; first-party IR PDFs only; no SEC HTML.
+
+MITSY: trafficLight=green  green=21 yellow=0 red=0  pdfHost=www.mitsui.com  latestQuarterInScope=Q1 2027  latestWithPdf=Q1 2027
+ITUB: trafficLight=yellow  green=1 yellow=3 red=14  pdfHost=api.mziq.com  latestQuarterInScope=Q2 2026  latestWithPdf=Q2 2026
+KKR: trafficLight=yellow  green=15 yellow=3 red=0  pdfHost=ir.kkr.com  latestQuarterInScope=Q2 2026  latestWithPdf=Q2 2026
+
+MITSY (Mitsui & Co ADR): www.mitsui.com — March FY. Slides=en_*_ppt.pdf, Filings=en_*_ta.pdf flash. Full green Q1 2022→Q1 2027.
+ITUB (Itaú Unibanco): api.mziq.com company 42787847… — Cloudflare IR; SEC exhibits HTML+JPG. Sparse UUID discovery; only 4 quarters partially locked. Browser needed for Downloads center fill.
+KKR: ir.kkr.com (EQS CMS tools.cms-eqs.com/fcf5b4). Filings=Earnings Release; Slides=post-earnings Investor Presentation. Yellow gaps Q3 2022 / Q3 2023 / Q4 2023 slides.
+
+Artifacts: tmp/ir-next10/{mitsy,itub,kkr}-catalog.json

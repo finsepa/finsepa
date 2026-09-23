@@ -1,0 +1,13 @@
+IR discovery: PNC, MGCLY, PSTVY, GD
+============================================================
+PNC: green — g/y/r=18/0/0 host=d1io3yog0oux5.cloudfront.net/.../pnc latest=Q2 2026
+MGCLY: yellow — g/y/r=4/12/2 host=www.midea.com.cn/content/dam latest=Q4 2025
+PSTVY: yellow — g/y/r=9/9/0 host=www.psbc.com/en/investor_relations latest=Q2 2026
+GD: green — g/y/r=18/0/0 host=s22.q4cdn.com/891946778 latest=Q2 2026
+
+Notes:
+- PNC: Earnings Slides + Earnings Release on Stockpr CloudFront; Q4=Fiscal Year Ended modules.
+- MGCLY: English snapshots/reports on midea.com.cn; early-2022 Chinese 全文 for filings; Q1–Q2 2026 not on issuer dam yet.
+- PSTVY: Results Presentations (H1→Q2, FY→Q4) + quarterly/interim/annual report PDFs on psbc.com; Q1/Q3 filings-only.
+- GD: Highlights presentation + Exhibit 99.1 / press PDF via Q4 Event feed on s22.q4cdn.com/891946778.
+- No sec.gov / SEC HTML locked. All catalog PDFs Range-GET verified %PDF.

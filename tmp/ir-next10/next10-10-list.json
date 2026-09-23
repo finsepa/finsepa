@@ -1,0 +1,16 @@
+{
+  "batch": 10,
+  "tickers": [
+    "IBN",
+    "ENLAY",
+    "ATLKY",
+    "TKOMY",
+    "AEM",
+    "ABNB",
+    "EQNR",
+    "CNQ",
+    "SO",
+    "PWR"
+  ],
+  "note": "After SNY on frozen-2026-09-22 top500; skipped GLAXF(dup GSK), GPMXY\u2192PWR"
+}

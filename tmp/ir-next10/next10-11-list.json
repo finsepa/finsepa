@@ -1,0 +1,16 @@
+{
+  "batch": 11,
+  "tickers": [
+    "TT",
+    "BYDDY",
+    "USB",
+    "MITSY",
+    "ITUB",
+    "KKR",
+    "PNC",
+    "MGCLY",
+    "PSTVY",
+    "GD"
+  ],
+  "note": "After CME on frozen-2026-09-22 top500; CNQ still skipped"
+}

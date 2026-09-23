@@ -1,0 +1,68 @@
+
+=== EQIX [green] host=d1io3yog0oux5.cloudfront.net ===
+  green  Q1 2022: slides=OK, filings=OK
+  green  Q2 2022: slides=OK, filings=OK
+  green  Q3 2022: slides=OK, filings=OK
+  green  Q4 2022: slides=OK, filings=OK
+  green  Q1 2023: slides=OK, filings=OK
+  green  Q2 2023: slides=OK, filings=OK
+  green  Q3 2023: slides=OK, filings=OK
+  green  Q4 2023: slides=OK, filings=OK
+  green  Q1 2024: slides=OK, filings=OK
+  green  Q2 2024: slides=OK, filings=OK
+  green  Q3 2024: slides=OK, filings=OK
+  green  Q4 2024: slides=OK, filings=OK
+  green  Q1 2025: slides=OK, filings=OK
+  green  Q2 2025: slides=OK, filings=OK
+  green  Q3 2025: slides=OK, filings=OK
+  green  Q4 2025: slides=OK, filings=OK
+  green  Q1 2026: slides=OK, filings=OK
+  green  Q2 2026: slides=OK, filings=OK
+  verified ok=36 bad=0
+
+=== CAIXY [green] host=www.caixabank.com/deployedfiles ===
+  green  Q1 2022: slides=OK, filings=OK
+  green  Q2 2022: slides=OK, filings=OK
+  green  Q3 2022: slides=OK, filings=OK
+  green  Q4 2022: slides=OK, filings=OK
+  green  Q1 2023: slides=OK, filings=OK
+  green  Q2 2023: slides=OK, filings=OK
+  green  Q3 2023: slides=OK, filings=OK
+  green  Q4 2023: slides=OK, filings=OK
+  green  Q1 2024: slides=OK, filings=OK
+  green  Q2 2024: slides=OK, filings=OK
+  green  Q3 2024: slides=OK, filings=OK
+  green  Q4 2024: slides=OK, filings=OK
+  green  Q1 2025: slides=OK, filings=OK
+  green  Q2 2025: slides=OK, filings=OK
+  green  Q3 2025: slides=OK, filings=OK
+  green  Q4 2025: slides=OK, filings=OK
+  green  Q1 2026: slides=OK, filings=OK
+  green  Q2 2026: slides=OK, filings=OK
+  verified ok=36 bad=0
+
+=== ING [green] host=www.ing.com/binaries/content/assets/documents ===
+  green  Q1 2022: slides=OK, filings=OK
+  green  Q2 2022: slides=OK, filings=OK
+  green  Q3 2022: slides=OK, filings=OK
+  green  Q4 2022: slides=OK, filings=OK
+  green  Q1 2023: slides=OK, filings=OK
+  green  Q2 2023: slides=OK, filings=OK
+  green  Q3 2023: slides=OK, filings=OK
+  green  Q4 2023: slides=OK, filings=OK
+  green  Q1 2024: slides=OK, filings=OK
+  green  Q2 2024: slides=OK, filings=OK
+  green  Q3 2024: slides=OK, filings=OK
+  green  Q4 2024: slides=OK, filings=OK
+  green  Q1 2025: slides=OK, filings=OK
+  green  Q2 2025: slides=OK, filings=OK
+  green  Q3 2025: slides=OK, filings=OK
+  green  Q4 2025: slides=OK, filings=OK
+  green  Q1 2026: slides=OK, filings=OK
+  green  Q2 2026: slides=OK, filings=OK
+  verified ok=36 bad=0
+
+=== SUMMARY ===
+GREEN EQIX: light=green pdf_ok=36 pdf_bad=0 host=d1io3yog0oux5.cloudfront.net
+GREEN CAIXY: light=green pdf_ok=36 pdf_bad=0 host=www.caixabank.com/deployedfiles
+GREEN ING: light=green pdf_ok=36 pdf_bad=0 host=www.ing.com/binaries/content/assets/documents

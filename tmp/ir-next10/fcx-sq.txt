@@ -1,0 +1,1174 @@
+<!DOCTYPE HTML>
+<html class="StudioLegacy Legacy" xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head><title>
+	Page Not Found
+</title><meta content="text/html; charset=UTF-8" http-equiv="Content-type" /><meta content="RevealTrans(Duration=0,Transition=0)" http-equiv="Page-Enter" /><meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible" /><meta content="width=device-width, initial-scale=1" name="viewport" /><meta content="default-src &#39;self&#39; https://freeport2017ir.q4web.com https://*.q4inc.com https://*.q4cdn.com; img-src &#39;self&#39; https://freeport2017ir.q4web.com https://p.typekit.net https://cdn.userway.org https://*.q4inc.com https://*.q4cdn.com https://mms.businesswire.com https://cts.businesswire.com https://www.businesswire.com https://ml.globenewswire.com https://www.globenewswire.com; form-action &#39;self&#39; https://*.q4inc.com https://*.q4cdn.com; style-src &#39;self&#39; https://freeport2017ir.q4web.com https://cdn.userway.org https://*.q4inc.com https://*.q4cdn.com https://printjs-4de6.kxcdn.com https://cdnjs.cloudflare.com https://fonts.googleapis.com &#39;unsafe-inline&#39;; font-src &#39;self&#39; https://freeport2017ir.q4web.com https://*.q4inc.com https://use.typekit.net https://*.q4cdn.com https://fonts.gstatic.com https://cdnjs.cloudflare.com https://d1azc1qln24ryf.cloudfront.net https://cdn.icomoon.io; frame-src &#39;self&#39; https://freeport2017ir.q4web.com https://www.google.com https://*.q4inc.com https://*.q4cdn.com https://static.addtoany.com; connect-src &#39;self&#39; https://freeport2017ir.q4web.com https://*.q4inc.com https://api.userway.org https://cdn.userway.org https://*.q4cdn.com https://freeport2017ir.studio.q4api.com https://cdn77.api.userway.org https://www.google-analytics.com; script-src &#39;self&#39; &#39;unsafe-eval&#39; https://freeport2017ir.q4web.com https://www.gstatic.com https://www.google.com https://use.typekit.net https://*.q4inc.com https://*.q4cdn.com https://widgets.q4app.com https://q4implementation.s3.amazonaws.com https://static.addtoany.com https://stackpath.bootstrapcdn.com https://cdnjs.cloudflare.com https://code.highcharts.com https://cdn.userway.org https://www.google-analytics.com https://www.googletagmanager.com https://static.cloudflareinsights.com &#39;unsafe-inline&#39;; object-src &#39;self&#39; https://*.q4inc.com https://*.q4cdn.com; base-uri &#39;self&#39; https://*.q4inc.com https://*.q4cdn.com; report-to default" http-equiv="Content-Security-Policy" /><link type="text/css" rel="stylesheet" media="all" href="//s22.q4cdn.com/529358580/files/css/jquery-ui.css" />
+<link type="image/x-icon" rel="icon" media="" href="//s22.q4cdn.com/529358580/files/favicon.ico" />
+<link type="image/x-icon" rel="shortcut icon" media="" href="//s22.q4cdn.com/529358580/files/favicon.ico" />
+<link rel="stylesheet" media="print" href="//s22.q4cdn.com/529358580/files/css/print.css" />
+<!--[if lte IE 8]>
+<link id="respond-proxy" rel="respond-proxy" media="screen" href="//s22.q4cdn.com/529358580/files/js/respond-proxy.html" />
+<link id="respond-redirect" rel="respond-redirect" media="screen" href="https://investors.fcx.com/js/respond.proxy.gif" />
+<![endif]-->
+
+<link id="htmlGlobalLinkCss" type="text/css" rel="stylesheet" media="all" href="//s22.q4cdn.com/529358580/files/css/global.css?v=37803" /><link id="htmlClientLinkCss" type="text/css" rel="stylesheet" media="all" href="//s22.q4cdn.com/529358580/files/css/client.css?v=37648" /><link id="htmlLinkPrintCss" type="text/css" rel="stylesheet" media="print" href="//s22.q4cdn.com/529358580/files/css/print.css" /><link id="htmlLinkEvergreenCss" type="text/css" rel="stylesheet" media="all" href="/css/evergreen/dist/default/evergreen.1.0.0.min.css" /><link type="text/css" rel="stylesheet" href="/GlobalBranding.ashx" /><script type="text/javascript" src="/js/module/widgets/dist/dependencies/evergreen.core.1.0.0.min.js"></script>
+<script type="text/javascript" src="/js/module/widgets/dist/dependencies/evergreen.app.1.0.0.min.js"></script>
+<script type="text/javascript" src="/js/module/widgets/dist/latest/evergreen.q4Api.min.js"></script>
+<script type="text/javascript" src="/js/module/widgets/dist/latest/evergreen.q4Pager.min.js"></script>
+<script type="text/javascript" src="/js/module/widgets/dist/latest/evergreen.q4Slideshow.min.js"></script>
+<script type="text/javascript" src="/js/module/widgets/dist/latest/evergreen.q4MultiSecFilings.min.js"></script>
+<script type="text/javascript" src="/js/typescript/dist/index.js"></script>
+<script type="text/javascript" src="/js/typescript/dist/q4CookieConsent/index.js"></script>
+<script type="text/javascript" src="//s22.q4cdn.com/529358580/files/js/q4core-semi-min.js"></script>
+<script type="text/javascript" src="//s22.q4cdn.com/529358580/files/js/q4.app.1.0.0.min.js"></script>
+<script type="text/javascript" src="//widgets.q4app.com/widgets/q4.api.1.12.9.min.js"></script>
+<script type="text/javascript" src="https://use.typekit.net/tgl4luk.js"></script>
+<!--[if lte IE 8]>
+<script type="text/javascript" src="https://investors.fcx.com/js/respond.proxy.js"></script>
+<![endif]-->
+
+<script type="text/javascript">function GetGlobalBrandingOptions(){ return '{"dateFormat":{"moment":{"date":"MMMM D, YYYY","time":"h:mm A"},"datePicker":{"date":"MM d, yy"}}}'; }
+</script><script type="text/javascript">var q4SnowplowLib_ipLocStorageKey = 'q4spisp';
+
+(function () {
+  Q4Blizzard.initProps({
+    appId: "Q4WebFreeport2017ir",
+    collectorUrl: "https://" + window.location.hostname + "/x0k461",
+    cookieName: "__uxq412__",
+    organizationId: "f5824e39-40cb-46eb-871e-dbaf9a8fc5a3",
+    postPath: "/e6c1b/xc9",
+    productVersion: "5.188.0.4",
+    enableDOMListener: "False"
+  });
+
+  window.addEventListener("load", () => {
+    Q4Tracker.init("True");
+  });
+})();</script><script type="text/javascript">var trackingCodes = [{qualifier: 'V4Client', trackingCode: 'G-H1GSTT009T'}];
+
+if (trackingCodes.length) {
+  (function (i, s, o, g, r, a, m) {
+    i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+      (i[r].q = i[r].q || []).push(arguments)
+    }, i[r].l = 1 * new Date(); a = s.createElement(o),
+      m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+  })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+}
+
+(function ($) {
+  const initialisedV4Codes = [];
+
+  function initGaTracking(isp, org) {
+    if (!trackingCodes.length) return;
+
+    isp = isp || '(not set)';
+    org = org || '(not set)';
+    $.each(trackingCodes, function (i, data) {
+      if (data.qualifier === "Q4") {
+        ga('create', data.trackingCode, 'auto'); // Q4 tracker
+        ga('set', { 'dimension1': isp });
+        ga('set', { 'dimension2': org });
+        ga('set', 'anonymizeIp', true);
+        ga('send', 'pageview', { 'page': location.pathname + location.search + location.hash }); // send pageview to Q4 tracker
+      } else if (data.qualifier === 'V4Client') {
+        // This is to prevent a script tag from being added more than once
+        if (initialisedV4Codes.indexOf(data.trackingCode) === -1) {
+          // Add gtag script to DOM
+          const gtagScriptTag = document.createElement("script");
+          gtagScriptTag.async = true;
+          gtagScriptTag.src = "https://www.googletagmanager.com/gtag/js?id=" + data.trackingCode;
+          document.head.appendChild(gtagScriptTag);
+
+          // Instance this gtag
+          window.dataLayer = window.dataLayer || [];
+          function gtag() {
+            dataLayer.push(arguments);
+          }
+          const secureCookieTag = 'SameSite=None;Secure';
+          gtag("js", new Date());
+          gtag('set', { cookie_flags: secureCookieTag });
+          gtag("config", data.trackingCode, { anonymize_ip: true });
+          initialisedV4Codes.push(data.trackingCode);
+        }
+      } else {
+        ga('create', data.trackingCode, 'auto', { 'name': data.qualifier }); // Client tracker
+        ga(data.qualifier + '.set', 'anonymizeIp', true);
+        ga(data.qualifier + '.send', 'pageview', { 'page': location.pathname + location.search + location.hash }); // send pageview to Client tracker
+      }
+    });
+  }
+  initGaTracking();
+
+})(jQuery || $tudio);</script></head>
+<body style="margin: 0px" class="BodyBackground">
+    <div id="pageClass" class="PageDefault SectionHome PagePageNotFound LayoutThreeColumnLayout">
+        <div class="PageDefaultInner">
+            <div id="litPageDiv" class="PageNotFoundContainer PagePageNotFound SectionPageNotFound ParentSection_Home">
+                <form action="/PageNotFound.aspx" method="post" id="Form1">
+<div class="aspNetHidden">
+<input type="hidden" name="__EVENTTARGET" id="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" id="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+var theForm = document.forms['Form1'];
+if (!theForm) {
+    theForm = document.Form1;
+}
+function __doPostBack(eventTarget, eventArgument) {
+    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
+        theForm.__EVENTTARGET.value = eventTarget;
+        theForm.__EVENTARGUMENT.value = eventArgument;
+        theForm.submit();
+    }
+}
+//]]>
+</script>
+
+
+<script src="/WebResource.axd?d=pynGkmcFUV13He1Qd6_TZDSH1oVlXKNmZSXd3zYZ2Gq6ERm6jivSb4ijerOGYkuGRtePZg2&amp;t=638901346312636832" type="text/javascript"></script>
+
+
+<script type="text/javascript">
+//<![CDATA[
+function GetViewType(){ return '2'; }
+function GetRevisionNumber(){ return '1'; }
+function GetLanguageId(){ return '1'; }
+function GetVersionNumber(){ return '5.188.0.4'; }
+function GetPoweredBy(){return 'q4inc';}
+function GetConsentProvider(){ return 'none'; }
+function GetViewDate(){{ return ''; }}
+function GetSignature(){{ return ''; }}
+//]]>
+</script>
+
+<script src="/WebResource.axd?d=x2nkrMJGXkMELz33nwnakMh5buNcZ-t3T4nCU0ZQt96Kk4JDhdv7pdb3Agzis1zDln1EUlimtVH-8O9nKu6Z_e6vBso1&amp;t=638901346312636832" type="text/javascript"></script>
+<script type="text/javascript">
+//<![CDATA[
+function WebForm_OnSubmit() {
+if (typeof(ValidatorOnSubmit) == "function" && ValidatorOnSubmit() == false) return false;
+return true;
+}
+//]]>
+</script>
+
+                    
+<div class="layout layout--one-column">
+<div class="layout_inner">
+        <div class="layout_header">
+            <div class="pane pane--header clearfix">
+                <div class="pane_inner clearfix"><span class='HeaderPaneDiv'><span class='HeaderPaneDiv1'><div id="_ctrl0_ctl06_divModuleContainer" class="module module-embed module-skip" data-workflow-id="f8dab7e8-4a83-4332-a730-f64fb5fafe4f">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <a class="module-skip_link" href="#maincontent">Skip to main content</a>
+        </div>
+    </div>
+</div></span><span class='HeaderPaneDiv2'><div id="_ctrl0_ctl09_divModuleContainer" class="module module-embed hidden" data-workflow-id="7708f4d0-94ce-48fe-bf16-26ea693f5abd">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <script>
+    try {
+        Typekit.load({
+            async: false
+        });
+    } catch (e) {}
+</script>
+        </div>
+    </div>
+</div></span><span class='HeaderPaneDiv3'><div id="_ctrl0_ctl12_divModuleContainer" class="module module-embed module-logo " data-workflow-id="7119d40c-adb5-4b28-a13f-152853481fda">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <a href="http://fcx.com/"><img src="//s22.q4cdn.com/529358580/files/images/logo.png" alt="freeport"></a>
+        </div>
+    </div>
+</div></span><span class='HeaderPaneDiv4'><div id="_ctrl0_ctl15_divModuleContainer" class="module module-embed" data-workflow-id="a054a7db-1376-4a95-abd5-670a5129990b">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <div class="module module-stock-header module-stock-header--up stock-widget"></div> 
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.0.3/mustache.min.js"></script> -->
+<script src="https://widgets.q4app.com/widgets/q4.stockQuote.1.0.11.min.js"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script> -->
+
+<script>
+    $('.stock-widget').stockQuote({
+       changeCls: ['down', 'up'],
+       stock: ['NYSE:FCX'],
+       stockTpl: (
+        '{{#.}}' +
+        ' <div class="module_container module_container--outer"> ' +
+            ' <div class="module_container--inner-wrap"> ' +
+                ' <div class="module_container module_container--inner"> ' +
+                    // ' <a class="stock-page" href="/investors/stock-and-dividend-information/stock-quote/default.aspx"></a> ' +
+                    // ' <a class="stock-copper-link stock-page" href="https://www.fcx.com/about/copper-at-a-glance"></a> ' +
+                        ' <span  class="module-stock-header_description1">NYSE: FCX</span> ' +
+                        ' <span class="module-stock-header_stock-price">{{tradePrice}}</span> ' +
+                            ' <span class="module-stock-header_change module-stock-header_{{uod}}"> ' +
+                                ' <span class="module-stock-header_indicator">{{uodSymbol}}</span>{{change}} ' +
+                            ' </span> ' +
+                ' </div> ' +
+           '  </div> ' +
+        ' </div> ' +
+        '{{/.}}'
+       ),
+        beforeRender: function(e, data) {
+            var date = new Date(data.items[0].tradeDate + ' ' + data.items[0].tradeTime);
+            var formattedDate = moment(date).format("MMM DD, 	YYYY hh:mm A");
+            data.items[0].tradeDate = formattedDate;
+            
+            data.items[0].percChange = Math.abs(data.items[0].percChange).toString();
+        }
+    });
+</script>
+
+        </div>
+    </div>
+</div></span><span class='HeaderPaneDiv5'><div id="_ctrl0_ctl18_divModuleContainer" class="module module-search top-search" role="search" data-workflow-id="c9e5c212-4332-47ea-ad6b-ca2abac7791a">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <span id="_ctrl0_ctl18_lblSearchText" class="module-search_text"></span>
+            <input name="_ctrl0$ctl18$txtSearchInput" type="text" maxlength="256" id="_ctrl0_ctl18_txtSearchInput" class="module_input module-search_input" aria-label="Search query" placeholder="Search" value="" onkeypress="javascript:var key; if (window.event) { key = window.event.keyCode; } else if (e) { key = e.which; } else { return true; } if (key == 13) __doPostBack(&#39;_ctrl0$ctl18$btnSearch&#39;, &#39;&#39;); " />
+            <input type="submit" name="_ctrl0$ctl18$btnSearch" value="Search" id="_ctrl0_ctl18_btnSearch" class="module_button module-search_button" />
+            
+        </div>
+    </div>
+</div></span><span class='HeaderPaneDiv6'><div id="_ctrl0_ctl21_divModuleContainer" class="module module-html module-menu-toggle" data-workflow-id="51704dfa-59af-470f-9e25-227f7b1e59cd">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <div class="shell open">
+   <div class="line"></div>
+   <div class="line"></div>
+   <div class="line"></div>
+</div>
+        </div>
+    </div>
+</div></span><span class='HeaderPaneDiv7'><nav aria-label="Web Menu" class="nav nav--main"><ul class="level1">
+	<li class="has-children"><a href="http://www.fcx.com/about" aria-label="About Us">About Us</a><ul class="level2">
+		<li><a href="http://www.fcx.com/about" aria-label="Overview within the About Us section">Overview</a></li><li><a href="http://www.fcx.com/about/history" aria-label="History within the About Us section">History</a></li><li><a href="https://fcx.com/about/america_copper_champion" target="_blank" aria-label="Freeport: America&#39;s Copper Champion ™ within the About Us section">Freeport: America&#39;s Copper Champion ™</a></li><li><a href="http://www.fcx.com/about/copper-at-a-glance" aria-label="Copper at a Glance within the About Us section">Copper at a Glance</a></li><li class="has-children"><a href="http://www.fcx.com/about/corporate-governance" aria-label="Corporate Governance within the About Us section">Corporate Governance</a><ul class="level3">
+			<li><a href="http://www.fcx.com/about/board-of-directors" aria-label="Board of Directors within the Corporate Governance section">Board of Directors</a></li><li><a href="https://www.fcx.com/about/leadership" aria-label="Leadership within the Corporate Governance section">Leadership</a></li><li><a href="http://www.fcx.com/about/officers" aria-label="Executive Officers within the Corporate Governance section">Executive Officers</a></li><li><a href="http://www.fcx.com/about/board-advisors" aria-label="Board Advisors within the Corporate Governance section">Board Advisors</a></li><li><a href="http://www.fcx.com/about/our-view-on-governance" aria-label="Governance Documents within the Corporate Governance section">Governance Documents</a></li><li><a href="http://www.fcx.com/about/board-committees" aria-label="Board Committees within the Corporate Governance section">Board Committees</a></li><li><a href="http://www.fcx.com/about/contact-the-board" aria-label="Contact the Board within the Corporate Governance section">Contact the Board</a></li>
+		</ul></li><li><a href="http://www.fcx.com/about/multimedia-library" aria-label="Multimedia Library within the About Us section">Multimedia Library</a></li>
+	</ul></li><li class="has-children"><a href="http://www.fcx.com/operations" aria-label="Operations">Operations</a><ul class="level2">
+		<li class="has-children"><a href="http://www.fcx.com/operations/north-america" aria-label="United States within the Operations section">United States</a><ul class="level3">
+			<li><a href="http://www.fcx.com/operations/north-america#morenci_link" aria-label="Morenci within the United States section">Morenci</a></li><li><a href="http://www.fcx.com/operations/north-america#bagdad_link" aria-label="Bagdad within the United States section">Bagdad</a></li><li><a href="http://www.fcx.com/operations/north-america#sierrita_link" aria-label="Sierrita within the United States section">Sierrita</a></li><li><a href="http://www.fcx.com/operations/north-america#miami_link" aria-label="Miami within the United States section">Miami</a></li><li><a href="http://www.fcx.com/operations/north-america#safford_link" aria-label="Safford/Lone Star within the United States section">Safford/Lone Star</a></li><li><a href="http://www.fcx.com/operations/north-america#chino_link" aria-label="Chino within the United States section">Chino</a></li><li><a href="http://www.fcx.com/operations/north-america#tyrone_link" aria-label="Tyrone within the United States section">Tyrone</a></li><li><a href="http://www.fcx.com/operations/north-america#henderson_link" aria-label="Henderson within the United States section">Henderson</a></li><li><a href="http://www.fcx.com/operations/north-america#climax_link" aria-label="Climax within the United States section">Climax</a></li>
+		</ul></li><li class="has-children"><a href="http://www.fcx.com/operations/south-america" aria-label="South America within the Operations section">South America</a><ul class="level3">
+			<li><a href="http://www.fcx.com/operations/south-america#cerro_verde_link" aria-label="Cerro Verde within the South America section">Cerro Verde</a></li><li><a href="http://www.fcx.com/operations/south-america#el_abra_link" aria-label="El Abra within the South America section">El Abra</a></li>
+		</ul></li><li class="has-children"><a href="http://www.fcx.com/operations/indonesia" aria-label="Indonesia within the Operations section">Indonesia</a><ul class="level3">
+			<li><a href="http://www.fcx.com/operations/indonesia#grasberg_link" aria-label="Grasberg within the Indonesia section">Grasberg</a></li>
+		</ul></li>
+	</ul></li><li class="has-children"><a href="https://investors.fcx.com/investors/default.aspx" aria-label="Investors">Investors</a><ul class="level2">
+		<li><a href="https://investors.fcx.com/investors/news-releases/default.aspx" aria-label="News Releases within the Investors section">News Releases</a></li><li><a href="https://investors.fcx.com/investors/presentations/default.aspx" aria-label="Presentations within the Investors section">Presentations</a></li><li class="has-children"><a href="https://investors.fcx.com/investors/stock-and-dividend-information/stock-quote/default.aspx" aria-label="Stock &amp; Dividend Information within the Investors section">Stock &amp; Dividend Information</a><ul class="level3">
+			<li><a href="https://investors.fcx.com/investors/stock-and-dividend-information/stock-quote/default.aspx" aria-label="Stock Quote within the Stock &amp; Dividend Information section">Stock Quote</a></li><li><a href="https://investors.fcx.com/investors/stock-and-dividend-information/dividend-history/default.aspx" aria-label="Dividend History within the Stock &amp; Dividend Information section">Dividend History</a></li>
+		</ul></li><li class="has-children"><a href="https://investors.fcx.com/investors/financial-information/annual-reports-and-proxy/default.aspx" aria-label="Financial Information within the Investors section">Financial Information</a><ul class="level3">
+			<li><a href="https://investors.fcx.com/investors/financial-information/annual-reports-and-proxy/default.aspx" aria-label="Annual Reports &amp; Proxy within the Financial Information section">Annual Reports &amp; Proxy</a></li><li><a href="https://investors.fcx.com/investors/financial-information/sec-filings/default.aspx" aria-label="SEC Filings within the Financial Information section">SEC Filings</a></li><li><a href="https://investors.fcx.com/investors/financial-information/quarterly-earnings-reports/default.aspx" aria-label="Quarterly Earnings Reports within the Financial Information section">Quarterly Earnings Reports</a></li>
+		</ul></li><li class="has-children"><a href="https://investors.fcx.com/investors/investor-resources/shareholder-faqs/default.aspx" aria-label="Investor Resources within the Investors section">Investor Resources</a><ul class="level3">
+			<li><a href="https://investors.fcx.com/investors/investor-resources/shareholder-faqs/default.aspx" aria-label="Shareholder FAQs within the Investor Resources section">Shareholder FAQs</a></li><li><a href="https://investors.fcx.com/investors/investor-resources/set-email-alerts/default.aspx" aria-label="Set Email Alerts within the Investor Resources section">Set Email Alerts</a></li><li><a href="https://investors.fcx.com/investors/investor-resources/request-information/default.aspx" aria-label="Request Information within the Investor Resources section">Request Information</a></li><li><a href="https://investors.fcx.com/investors/investor-resources/rss-feeds/default.aspx" aria-label="RSS Feeds within the Investor Resources section">RSS Feeds</a></li>
+		</ul></li>
+	</ul></li><li class="has-children"><a href="http://www.fcx.com/sustainability" aria-label="Sustainability">Sustainability</a><ul class="level2">
+		<li><a href="https://www.fcx.com/sustainability/approach" aria-label="Our Strategy within the Sustainability section">Our Strategy</a></li><li class="has-children"><a href="https://www.fcx.com/sustainability/governance" aria-label="Governance within the Sustainability section">Governance</a><ul class="level3">
+			<li><a href="https://www.fcx.com/sustainability/governance#governance" aria-label="Governance within the Governance section">Governance</a></li><li><a href="https://www.fcx.com/sustainability/governance#policies" aria-label="Business Conduct within the Governance section">Business Conduct</a></li><li class="has-children"><a href="https://www.fcx.com/sustainability/governance#humanrights" aria-label="Human Rights within the Governance section">Human Rights</a><ul class="level4">
+				<li><a href="https://www.fcx.com/sustainability/governance/embedding-respect" aria-label="Embedding Respect and Due Diligence within the Human Rights section">Embedding Respect and Due Diligence</a></li><li><a href="https://www.fcx.com/sustainability/governance/security-human-rights" aria-label="Security and Human Rights Training within the Human Rights section">Security and Human Rights Training</a></li><li><a href="https://fcx.com/sites/fcx/files/documents/sustainability/UK_Modern_Slavery_Act_Statement_2025.pdf" target="_blank" aria-label="2025 UK Modern Slavery Act Statement within the Human Rights section">2025 UK Modern Slavery Act Statement</a></li>
+			</ul></li><li><a href="https://www.fcx.com/sustainability/governance#responsiblevaluechains" aria-label="Responsible Value Chains within the Governance section">Responsible Value Chains</a></li>
+		</ul></li><li class="has-children"><a href="https://www.fcx.com/sustainability/people" aria-label="People within the Sustainability section">People</a><ul class="level3">
+			<li><a href="https://www.fcx.com/sustainability/people#hs" aria-label="Health, Safety and Well-Being within the People section">Health, Safety and Well-Being</a></li><li><a href="https://www.fcx.com/sustainability/people#workforce" aria-label="Workforce within the People section">Workforce</a></li><li class="has-children"><a href="https://www.fcx.com/sustainability/people#comm" aria-label="Communities and Indigenous Peoples within the People section">Communities and Indigenous Peoples</a><ul class="level4">
+				<li><a href="https://www.freeportinmycommunity.com/" aria-label="Freeport in My Community within the Communities and Indigenous Peoples section">Freeport in My Community</a></li>
+			</ul></li><li class="has-children"><a href="https://www.fcx.com/sustainability/people#economic" aria-label="Economic Contributions within the People section">Economic Contributions</a><ul class="level4">
+				<li><a href="https://www.fcx.com/sustainability/people/economic-impact" aria-label="Economic Impact within the Economic Contributions section">Economic Impact</a></li>
+			</ul></li>
+		</ul></li><li class="has-children"><a href="https://www.fcx.com/sustainability/environment" aria-label="Environment within the Sustainability section">Environment</a><ul class="level3">
+			<li><a href="https://www.fcx.com/sustainability/environment#climate" aria-label="Climate within the Environment section">Climate</a></li><li><a href="https://www.fcx.com/sustainability/environment#water" aria-label="Water Stewardship within the Environment section">Water Stewardship</a></li><li><a href="https://www.fcx.com/sustainability/environment#nature" aria-label="Nature within the Environment section">Nature</a></li><li><a href="https://www.fcx.com/sustainability/environment#Biodiversity" aria-label="Biodiversity within the Environment section">Biodiversity</a></li><li class="has-children"><a href="https://www.fcx.com/sustainability/tailings-manage" aria-label="Tailings Management within the Environment section">Tailings Management</a><ul class="level4">
+				<li class="has-children"><a href="https://www.fcx.com/sustainability/tailings-americas" aria-label="Tailings – Americas within the Tailings Management section">Tailings – Americas</a><ul class="level5">
+					<li><a href="https://www.fcx.com/sustainability/tailings-americas#disclosures" aria-label="TSF Disclosures and Independent Verification within the Tailings – Americas section">TSF Disclosures and Independent Verification</a></li>
+				</ul></li><li class="has-children"><a href="https://www.fcx.com/sustainability/tailings-indonesia" aria-label="Tailings – Indonesia within the Tailings Management section">Tailings – Indonesia</a><ul class="level5">
+					<li><a href="https://www.fcx.com/sustainability/environment/ptfi-external-audits" aria-label="PTFI External Audits within the Tailings – Indonesia section">PTFI External Audits</a></li>
+				</ul></li>
+			</ul></li><li><a href="https://www.fcx.com/sustainability/environment#waste" aria-label="Non-Mineral Waste Management within the Environment section">Non-Mineral Waste Management</a></li><li><a href="https://www.fcx.com/sustainability/environment#mine" aria-label="Mine Closure and Reclamation within the Environment section">Mine Closure and Reclamation</a></li>
+		</ul></li><li><a href="https://www.fcx.com/sustainability/reports-and-documents" aria-label="Reports and Documents within the Sustainability section">Reports and Documents</a></li><li><a href="https://www.fcx.com/sustainability/coppermark" aria-label="The Copper Mark within the Sustainability section">The Copper Mark</a></li>
+	</ul></li><li><a href="http://www.fcx.com/careers" aria-label="Careers">Careers</a></li><li><a href="https://fcx.com/freeport-features?year=2021" target="_blank" aria-label="Features">Features</a></li>
+</ul></nav></span><span class='HeaderPaneDiv2'><div id="_ctrl0_ctl69_divModuleContainer" class="module module-embed" data-workflow-id="3a0fa50c-f474-4702-b21e-9738927c9de5">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            
+<script>
+     if (location.href.indexOf('/investors/news-releases/news-release-details/2018/Freeport-McMoRan-Reports-Fourth-Quarter-and-Year-Ended-December31-2017-Results') > -1){
+          window.location = "https://investors.fcx.com/investors/news-releases/news-release-details/2018/Freeport-McMoRan-Reports-Fourth-Quarter-and-Year-Ended-December31-2017-Results/";
+     }
+</script>
+        </div>
+    </div>
+</div></span></span></div>
+            </div>
+            <div class="pane pane--navigation clearfix">
+                <div class="pane_inner"><span class='NavigationPaneDiv8'><div id="_ctrl0_ctl27_divModuleContainer" class="module module-search module-search-mobile clearfix" role="search" data-workflow-id="a0abd708-fa3c-4e72-a9d2-232df0c51b15">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <span id="_ctrl0_ctl27_lblSearchText" class="module-search_text"></span>
+            <input name="_ctrl0$ctl27$txtSearchInput" type="text" maxlength="256" id="_ctrl0_ctl27_txtSearchInput" class="module_input module-search_input" aria-label="Search query" placeholder="Search" value="" onkeypress="javascript:var key; if (window.event) { key = window.event.keyCode; } else if (e) { key = e.which; } else { return true; } if (key == 13) __doPostBack(&#39;_ctrl0$ctl27$btnSearch&#39;, &#39;&#39;); " />
+            <input type="submit" name="_ctrl0$ctl27$btnSearch" value="Search" id="_ctrl0_ctl27_btnSearch" class="module_button module-search_button" />
+            
+        </div>
+    </div>
+</div></span><span class='NavigationPaneDiv9'><nav aria-label="Web Menu" class="module_mobile-nav list--no-style"><ul class="level1">
+	<li class="has-children"><a href="http://www.fcx.com/about" aria-label="About Us">About Us</a><ul class="level2">
+		<li><a href="http://www.fcx.com/about" aria-label="Overview within the About Us section">Overview</a></li><li><a href="http://www.fcx.com/about/history" aria-label="History within the About Us section">History</a></li><li><a href="https://fcx.com/about/america_copper_champion" target="_blank" aria-label="Freeport: America&#39;s Copper Champion ™ within the About Us section">Freeport: America&#39;s Copper Champion ™</a></li><li><a href="http://www.fcx.com/about/copper-at-a-glance" aria-label="Copper at a Glance within the About Us section">Copper at a Glance</a></li><li class="has-children"><a href="http://www.fcx.com/about/corporate-governance" aria-label="Corporate Governance within the About Us section">Corporate Governance</a><ul class="level3">
+			<li><a href="http://www.fcx.com/about/board-of-directors" aria-label="Board of Directors within the Corporate Governance section">Board of Directors</a></li><li><a href="https://www.fcx.com/about/leadership" aria-label="Leadership within the Corporate Governance section">Leadership</a></li><li><a href="http://www.fcx.com/about/officers" aria-label="Executive Officers within the Corporate Governance section">Executive Officers</a></li><li><a href="http://www.fcx.com/about/board-advisors" aria-label="Board Advisors within the Corporate Governance section">Board Advisors</a></li><li><a href="http://www.fcx.com/about/our-view-on-governance" aria-label="Governance Documents within the Corporate Governance section">Governance Documents</a></li><li><a href="http://www.fcx.com/about/board-committees" aria-label="Board Committees within the Corporate Governance section">Board Committees</a></li><li><a href="http://www.fcx.com/about/contact-the-board" aria-label="Contact the Board within the Corporate Governance section">Contact the Board</a></li>
+		</ul></li><li><a href="http://www.fcx.com/about/multimedia-library" aria-label="Multimedia Library within the About Us section">Multimedia Library</a></li>
+	</ul></li><li class="has-children"><a href="http://www.fcx.com/operations" aria-label="Operations">Operations</a><ul class="level2">
+		<li class="has-children"><a href="http://www.fcx.com/operations/north-america" aria-label="United States within the Operations section">United States</a><ul class="level3">
+			<li><a href="http://www.fcx.com/operations/north-america#morenci_link" aria-label="Morenci within the United States section">Morenci</a></li><li><a href="http://www.fcx.com/operations/north-america#bagdad_link" aria-label="Bagdad within the United States section">Bagdad</a></li><li><a href="http://www.fcx.com/operations/north-america#sierrita_link" aria-label="Sierrita within the United States section">Sierrita</a></li><li><a href="http://www.fcx.com/operations/north-america#miami_link" aria-label="Miami within the United States section">Miami</a></li><li><a href="http://www.fcx.com/operations/north-america#safford_link" aria-label="Safford/Lone Star within the United States section">Safford/Lone Star</a></li><li><a href="http://www.fcx.com/operations/north-america#chino_link" aria-label="Chino within the United States section">Chino</a></li><li><a href="http://www.fcx.com/operations/north-america#tyrone_link" aria-label="Tyrone within the United States section">Tyrone</a></li><li><a href="http://www.fcx.com/operations/north-america#henderson_link" aria-label="Henderson within the United States section">Henderson</a></li><li><a href="http://www.fcx.com/operations/north-america#climax_link" aria-label="Climax within the United States section">Climax</a></li>
+		</ul></li><li class="has-children"><a href="http://www.fcx.com/operations/south-america" aria-label="South America within the Operations section">South America</a><ul class="level3">
+			<li><a href="http://www.fcx.com/operations/south-america#cerro_verde_link" aria-label="Cerro Verde within the South America section">Cerro Verde</a></li><li><a href="http://www.fcx.com/operations/south-america#el_abra_link" aria-label="El Abra within the South America section">El Abra</a></li>
+		</ul></li><li class="has-children"><a href="http://www.fcx.com/operations/indonesia" aria-label="Indonesia within the Operations section">Indonesia</a><ul class="level3">
+			<li><a href="http://www.fcx.com/operations/indonesia#grasberg_link" aria-label="Grasberg within the Indonesia section">Grasberg</a></li>
+		</ul></li>
+	</ul></li><li class="has-children"><a href="https://investors.fcx.com/investors/default.aspx" aria-label="Investors">Investors</a><ul class="level2">
+		<li><a href="https://investors.fcx.com/investors/news-releases/default.aspx" aria-label="News Releases within the Investors section">News Releases</a></li><li><a href="https://investors.fcx.com/investors/presentations/default.aspx" aria-label="Presentations within the Investors section">Presentations</a></li><li class="has-children"><a href="https://investors.fcx.com/investors/stock-and-dividend-information/stock-quote/default.aspx" aria-label="Stock &amp; Dividend Information within the Investors section">Stock &amp; Dividend Information</a><ul class="level3">
+			<li><a href="https://investors.fcx.com/investors/stock-and-dividend-information/stock-quote/default.aspx" aria-label="Stock Quote within the Stock &amp; Dividend Information section">Stock Quote</a></li><li><a href="https://investors.fcx.com/investors/stock-and-dividend-information/dividend-history/default.aspx" aria-label="Dividend History within the Stock &amp; Dividend Information section">Dividend History</a></li>
+		</ul></li><li class="has-children"><a href="https://investors.fcx.com/investors/financial-information/annual-reports-and-proxy/default.aspx" aria-label="Financial Information within the Investors section">Financial Information</a><ul class="level3">
+			<li><a href="https://investors.fcx.com/investors/financial-information/annual-reports-and-proxy/default.aspx" aria-label="Annual Reports &amp; Proxy within the Financial Information section">Annual Reports &amp; Proxy</a></li><li><a href="https://investors.fcx.com/investors/financial-information/sec-filings/default.aspx" aria-label="SEC Filings within the Financial Information section">SEC Filings</a></li><li><a href="https://investors.fcx.com/investors/financial-information/quarterly-earnings-reports/default.aspx" aria-label="Quarterly Earnings Reports within the Financial Information section">Quarterly Earnings Reports</a></li>
+		</ul></li><li class="has-children"><a href="https://investors.fcx.com/investors/investor-resources/shareholder-faqs/default.aspx" aria-label="Investor Resources within the Investors section">Investor Resources</a><ul class="level3">
+			<li><a href="https://investors.fcx.com/investors/investor-resources/shareholder-faqs/default.aspx" aria-label="Shareholder FAQs within the Investor Resources section">Shareholder FAQs</a></li><li><a href="https://investors.fcx.com/investors/investor-resources/set-email-alerts/default.aspx" aria-label="Set Email Alerts within the Investor Resources section">Set Email Alerts</a></li><li><a href="https://investors.fcx.com/investors/investor-resources/request-information/default.aspx" aria-label="Request Information within the Investor Resources section">Request Information</a></li><li><a href="https://investors.fcx.com/investors/investor-resources/rss-feeds/default.aspx" aria-label="RSS Feeds within the Investor Resources section">RSS Feeds</a></li>
+		</ul></li>
+	</ul></li><li class="has-children"><a href="http://www.fcx.com/sustainability" aria-label="Sustainability">Sustainability</a><ul class="level2">
+		<li><a href="https://www.fcx.com/sustainability/approach" aria-label="Our Strategy within the Sustainability section">Our Strategy</a></li><li class="has-children"><a href="https://www.fcx.com/sustainability/governance" aria-label="Governance within the Sustainability section">Governance</a><ul class="level3">
+			<li><a href="https://www.fcx.com/sustainability/governance#governance" aria-label="Governance within the Governance section">Governance</a></li><li><a href="https://www.fcx.com/sustainability/governance#policies" aria-label="Business Conduct within the Governance section">Business Conduct</a></li><li class="has-children"><a href="https://www.fcx.com/sustainability/governance#humanrights" aria-label="Human Rights within the Governance section">Human Rights</a><ul class="level4">
+				<li><a href="https://www.fcx.com/sustainability/governance/embedding-respect" aria-label="Embedding Respect and Due Diligence within the Human Rights section">Embedding Respect and Due Diligence</a></li><li><a href="https://www.fcx.com/sustainability/governance/security-human-rights" aria-label="Security and Human Rights Training within the Human Rights section">Security and Human Rights Training</a></li><li><a href="https://fcx.com/sites/fcx/files/documents/sustainability/UK_Modern_Slavery_Act_Statement_2025.pdf" target="_blank" aria-label="2025 UK Modern Slavery Act Statement within the Human Rights section">2025 UK Modern Slavery Act Statement</a></li>
+			</ul></li><li><a href="https://www.fcx.com/sustainability/governance#responsiblevaluechains" aria-label="Responsible Value Chains within the Governance section">Responsible Value Chains</a></li>
+		</ul></li><li class="has-children"><a href="https://www.fcx.com/sustainability/people" aria-label="People within the Sustainability section">People</a><ul class="level3">
+			<li><a href="https://www.fcx.com/sustainability/people#hs" aria-label="Health, Safety and Well-Being within the People section">Health, Safety and Well-Being</a></li><li><a href="https://www.fcx.com/sustainability/people#workforce" aria-label="Workforce within the People section">Workforce</a></li><li class="has-children"><a href="https://www.fcx.com/sustainability/people#comm" aria-label="Communities and Indigenous Peoples within the People section">Communities and Indigenous Peoples</a><ul class="level4">
+				<li><a href="https://www.freeportinmycommunity.com/" aria-label="Freeport in My Community within the Communities and Indigenous Peoples section">Freeport in My Community</a></li>
+			</ul></li><li class="has-children"><a href="https://www.fcx.com/sustainability/people#economic" aria-label="Economic Contributions within the People section">Economic Contributions</a><ul class="level4">
+				<li><a href="https://www.fcx.com/sustainability/people/economic-impact" aria-label="Economic Impact within the Economic Contributions section">Economic Impact</a></li>
+			</ul></li>
+		</ul></li><li class="has-children"><a href="https://www.fcx.com/sustainability/environment" aria-label="Environment within the Sustainability section">Environment</a><ul class="level3">
+			<li><a href="https://www.fcx.com/sustainability/environment#climate" aria-label="Climate within the Environment section">Climate</a></li><li><a href="https://www.fcx.com/sustainability/environment#water" aria-label="Water Stewardship within the Environment section">Water Stewardship</a></li><li><a href="https://www.fcx.com/sustainability/environment#nature" aria-label="Nature within the Environment section">Nature</a></li><li><a href="https://www.fcx.com/sustainability/environment#Biodiversity" aria-label="Biodiversity within the Environment section">Biodiversity</a></li><li class="has-children"><a href="https://www.fcx.com/sustainability/tailings-manage" aria-label="Tailings Management within the Environment section">Tailings Management</a><ul class="level4">
+				<li class="has-children"><a href="https://www.fcx.com/sustainability/tailings-americas" aria-label="Tailings – Americas within the Tailings Management section">Tailings – Americas</a><ul class="level5">
+					<li><a href="https://www.fcx.com/sustainability/tailings-americas#disclosures" aria-label="TSF Disclosures and Independent Verification within the Tailings – Americas section">TSF Disclosures and Independent Verification</a></li>
+				</ul></li><li class="has-children"><a href="https://www.fcx.com/sustainability/tailings-indonesia" aria-label="Tailings – Indonesia within the Tailings Management section">Tailings – Indonesia</a><ul class="level5">
+					<li><a href="https://www.fcx.com/sustainability/environment/ptfi-external-audits" aria-label="PTFI External Audits within the Tailings – Indonesia section">PTFI External Audits</a></li>
+				</ul></li>
+			</ul></li><li><a href="https://www.fcx.com/sustainability/environment#waste" aria-label="Non-Mineral Waste Management within the Environment section">Non-Mineral Waste Management</a></li><li><a href="https://www.fcx.com/sustainability/environment#mine" aria-label="Mine Closure and Reclamation within the Environment section">Mine Closure and Reclamation</a></li>
+		</ul></li><li><a href="https://www.fcx.com/sustainability/reports-and-documents" aria-label="Reports and Documents within the Sustainability section">Reports and Documents</a></li><li><a href="https://www.fcx.com/sustainability/coppermark" aria-label="The Copper Mark within the Sustainability section">The Copper Mark</a></li>
+	</ul></li><li><a href="http://www.fcx.com/careers" aria-label="Careers">Careers</a></li><li><a href="https://fcx.com/freeport-features?year=2021" target="_blank" aria-label="Features">Features</a></li>
+</ul></nav></span></div>
+            </div>
+            <div class="pane pane--banner ">
+                <div class="pane_inner"><span class='HeaderPane2Div10'><div id="_ctrl0_ctl33_divModuleContainer" class="module module-page-title" data-workflow-id="f3242b60-f64a-4ce6-8acc-e54475f2a8c6">
+    <div class="module_container module_container--outer">
+        <div class="module_container module_container--inner">
+            <h1 class="module_title">Page Not Found</h1>
+            <div class="scroll-to-button">
+				<a class="scroll-to" href="#maincontent"><img src="/files/design/svg/page-scroll-down.png"></a>
+			</div>
+        </div>
+    </div>
+</div>
+</span></div>
+            </div>            
+        </div>
+        <div class="layout_content" id="maincontent">
+            <div class="pane pane--breadcrumb clearfix">
+                <div class="pane_inner"></div>
+            </div>
+            <div class="pane pane--left grid">
+                <div class="pane_inner"><span class='LeftPaneDiv'></span></div>
+            </div>
+            <div class="pane pane--content">
+                <div class="pane_inner"><span class='ContentPaneDiv'><span class='ContentPaneDiv1'><div id="_ctrl0_ctl66_divModuleContainer" class="module module-html module-sitemap container950" data-workflow-id="6d5b9971-74f9-4581-9c21-3f414af3f237">
+    <div class="module_container module_container--outer">
+        <h2 id="_ctrl0_ctl66_lblTitle" class="module_title"><span id="_ctrl0_ctl66_lblModuleTitle" class="ModuleTitle">Site Map</span></h2>
+        <div class="module_container module_container--inner">
+            <p>We're sorry, but there is no page on the site that matches your entry. It is possible you typed the address incorrectly, or the page may no longer exist. You may wish to try another entry or choose from the links below, which we hope will help you find what you are looking for.</p>
+<p>If you believe that this page should exist, please send an email to <a href="/cdn-cgi/l/email-protection#0c7f797c7c637e784c7d3865626f226f6361"><span class="__cf_email__" data-cfemail="d6a5a3a6a6b9a4a296a7e2bfb8b5f8b5b9bb">[email&#160;protected]</span></a> explaining the page you were trying to access.</p>
+<p>Thanks for your patience, understanding, and help.</p>
+
+
+<p>We're sorry, but there is no page on the site that matches your entry. It is possible you typed the address incorrectly, or the page may no longer exist. You may wish to try another entry or choose from the links below, which we hope will help you find what you are looking for.</p>
+<p>If you believe that this page should exist, please send an email to <a href="/cdn-cgi/l/email-protection#f784828787988583b786c39e9994d994989a"><span class="__cf_email__" data-cfemail="7e0d0b0e0e110c0a3e0f4a17101d501d1113">[email&#160;protected]</span></a> explaining the page you were trying to access.</p>
+<p>Thanks for your patience, understanding, and help.</p>
+
+
+<div class="sitemap">
+<div class="sitemap-box-menu sitemap-box-menu-main sitemap-box">
+<div class="content">
+<ul class="sitemap-menu">
+	<li class="first leaf"><a data-drupal-link-system-path="<front>" href="https://fcx.com/">HOME</a></li>
+	<li class="expanded"><a data-drupal-link-system-path="node/43" href="https://fcx.com/about">ABOUT US</a>
+	<ul class="sitemap-menu">
+		<li class="first leaf"><a data-drupal-link-system-path="node/43" href="https://fcx.com/about">OVERVIEW</a></li>
+		<li class="leaf"><a data-drupal-link-system-path="node/42" href="https://fcx.com/about/history">HISTORY</a></li>
+		<li class="leaf"><a data-drupal-link-system-path="node/8" href="https://fcx.com/about/copper-at-a-glance">COPPER AT A GLANCE</a></li>
+		<li class="expanded"><a data-drupal-link-system-path="node/14" href="https://fcx.com/about/corporate-governance">CORPORATE GOVERNANCE</a>
+		<ul class="sitemap-menu">
+			<li class="first leaf"><a data-drupal-link-system-path="node/46" href="https://fcx.com/about/board-of-directors">Board of Directors</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/47" href="https://fcx.com/about/officers">Executive Officers</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/48" href="https://fcx.com/about/board-advisors">Board Advisors</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/45" href="https://fcx.com/about/our-view-on-governance#governance-documents">Governance Documents</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/131" href="https://fcx.com/about/board-committees">Board Committees and Charters</a></li>
+			<li class="last leaf"><a data-drupal-link-system-path="node/51" href="https://fcx.com/about/contact-the-board">Contact the Board</a></li>
+		</ul>
+		</li>
+		<li class="last leaf"><a data-drupal-link-system-path="node/130" href="https://fcx.com/about/multimedia-library">MULTIMEDIA LIBRARY</a></li>
+	</ul>
+	</li>
+	<li class="expanded"><a data-drupal-link-system-path="node/33" href="https://fcx.com/operations">OPERATIONS</a>
+	<ul class="sitemap-menu">
+		<li class="first expanded"><a data-drupal-link-system-path="node/90" href="https://fcx.com/operations/north-america">NORTH AMERICA</a>
+		<ul class="sitemap-menu">
+			<li class="first leaf"><a data-drupal-link-system-path="node/90" href="https://fcx.com/operations/north-america#morenci_link">Morenci</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/90" href="https://fcx.com/operations/north-america#bagdad_link">Bagdad</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/90" href="https://fcx.com/operations/north-america#sierrita_link">Sierrita</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/90" href="https://fcx.com/operations/north-america#miami_link">Miami</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/90" href="https://fcx.com/operations/north-america#safford_link">Safford</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/90" href="https://fcx.com/operations/north-america#chino_link">Chino</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/90" href="https://fcx.com/operations/north-america#tyrone_link">Tyrone</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/90" href="https://fcx.com/operations/north-america#henderson_link">Henderson</a></li>
+			<li class="last leaf"><a data-drupal-link-system-path="node/90" href="https://fcx.com/operations/north-america#climax_link">Climax</a></li>
+		</ul>
+		</li>
+		<li class="expanded"><a data-drupal-link-system-path="node/91" href="https://fcx.com/operations/south-america">SOUTH AMERICA</a>
+		<ul class="sitemap-menu">
+			<li class="first leaf"><a data-drupal-link-system-path="node/91" href="https://fcx.com/operations/south-america#cerro_verde_link">Cerro Verde</a></li>
+			<li class="last leaf"><a data-drupal-link-system-path="node/91" href="https://fcx.com/operations/south-america#el_abra_link">El Abra</a></li>
+		</ul>
+		</li>
+		<li class="last expanded"><a data-drupal-link-system-path="node/92" href="https://fcx.com/operations/indonesia">INDONESIA</a>
+		<ul class="sitemap-menu">
+			<li class="first last leaf"><a data-drupal-link-system-path="node/92" href="https://fcx.com/operations/indonesia#grasberg_link">Grasberg</a></li>
+		</ul>
+		</li>
+	</ul>
+	</li>
+	<li class="expanded"><a href="http://investors.fcx.com/investors/default.aspx" target="_blank">INVESTORS</a>
+	<ul class="sitemap-menu">
+		<li class="first leaf"><a href="http://investors.fcx.com/investors/news-releases/default.aspx" target="_blank">NEWS RELEASES</a></li>
+		<li class="leaf"><a href="http://investors.fcx.com/investors/presentations/default.aspx" target="_blank">PRESENTATIONS</a></li>
+		<li class="expanded"><a href="http://investors.fcx.com/investors/stock-and-dividend-information/stock-quote/default.aspx" target="_blank">STOCK &amp; DIVIDEND INFORMATION</a>
+		<ul class="sitemap-menu">
+			<li class="first leaf"><a href="http://investors.fcx.com/investors/stock-and-dividend-information/stock-quote/default.aspx" target="_blank">Stock Quote</a></li>
+			<li class="first leaf"><a href="http://investors.fcx.com/investors/stock-and-dividend-information/dividend-history/default.aspx" target="_blank">Dividend History</a></li>
+		</ul>
+		</li>
+		<li class="expanded"><a href="http://investors.fcx.com/investors/financial-information/annual-reports-and-proxy/default.aspx" target="_blank">FINANCIAL INFORMATION</a>
+		<ul class="sitemap-menu">
+			<li class="first leaf"><a href="http://investors.fcx.com/investors/financial-information/annual-reports-and-proxy/default.aspx" target="_blank">Annual Reports &amp; Proxy</a></li>
+			<li class="leaf"><a href="http://investors.fcx.com/investors/financial-information/sec-filings/default.aspx" target="_blank">SEC Filings</a></li>
+			<li class="leaf"><a href="http://investors.fcx.com/investors/financial-information/quarterly-earnings-reports/default.aspx" target="_blank">Quarterly Earnings Reports</a></li>
+		</ul>
+		</li>
+		<li class="leaf"><a href="http://investors.fcx.com/investors/investor-resources/shareholder-faqs/default.aspx" target="_blank">INVESTOR RESOURCES </a>
+		<ul class="sitemap-menu">
+			<li class="first leaf"><a href="http://investors.fcx.com/investors/investor-resources/shareholder-faqs/default.aspx" target="_blank">Shareholder FAQs</a></li>
+			<li class="first leaf"><a href="http://investors.fcx.com/investors/investor-resources/set-email-alerts/default.aspx" target="_blank">Set Email Alerts</a></li>
+			<li class="first leaf"><a href="http://investors.fcx.com/investors/investor-resources/request-information/default.aspx" target="_blank">Request Information</a></li>
+			<li class="first leaf"><a href="http://investors.fcx.com/investors/investor-resources/rss-feeds/default.aspx" target="_blank">RSS Feeds</a></li>
+		</ul>
+		</li>
+	</ul>
+	</li>
+	<li class="expanded"><a data-drupal-link-system-path="node/27" href="https://fcx.com/sustainability">SUSTAINABILITY</a>
+	<ul class="sitemap-menu">
+		<li class="first expanded"><a data-drupal-link-system-path="node/52" href="https://fcx.com/sustainability/approach">OUR APPROACH</a>
+		<ul class="sitemap-menu">
+			<li class="first expanded"><a data-drupal-link-system-path="node/52" href="https://fcx.com/sustainability/approach#stakeholders">To Our Stakeholders</a></li>
+			<li class="first expanded"><a data-drupal-link-system-path="node/52" href="https://fcx.com/sustainability/approach#business-ethics">Business Ethics</a>
+			<ul class="sitemap-menu">
+				<li class="first leaf"><a data-drupal-link-system-path="node/140" href="https://fcx.com/sustainability/approach/principles-of-business-conduct">Principles of Business Conduct</a></li>
+				<li class="leaf"><a data-drupal-link-system-path="node/58" href="https://fcx.com/sustainability/approach/policies">Policies</a></li>
+				<li class="leaf"><a data-drupal-link-system-path="node/141" href="https://fcx.com/sustainability/approach/governance">Governance</a></li>
+				<li class="last leaf"><a data-drupal-link-system-path="node/142" href="https://fcx.com/sustainability/approach/transparency-of-government-payments">Transparency of Government Payments</a></li>
+			</ul>
+			</li>
+			<li class="leaf"><a data-drupal-link-system-path="node/52" href="https://fcx.com/sustainability/approach#stakeholder-engagement">Stakeholder Engagement</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/52" href="https://fcx.com/sustainability/approach#risk-register">Sustainable Development Risk Register</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/52" href="https://fcx.com/sustainability/approach#sustainability-focus">Sustainability&nbsp;Focus Areas</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/52" href="https://fcx.com/sustainability/approach#product-stewardship">Product Stewardship</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/52" href="https://fcx.com/sustainability/approach#performance-targets">Performance Targets</a></li>
+			<li class="last leaf"><a data-drupal-link-system-path="node/52" href="https://fcx.com/sustainability/approach#external-initiatives">External Initiatives</a></li>
+		</ul>
+		</li>
+		<li class="expanded"><a data-drupal-link-system-path="node/53" href="https://fcx.com/sustainability/workforce">WORKFORCE</a>
+		<ul class="sitemap-menu">
+			<li class="first leaf"><a data-drupal-link-system-path="node/53" href="https://fcx.com/sustainability/workforce#safety-health">Safety and Health</a>
+			<ul>
+				<li class="first leaf"><a href="https://fcx.com/sustainability/workforce/fatality-prevention">Fatality Prevention</a></li>
+			</ul>
+			</li>
+			<li class="leaf"><a data-drupal-link-system-path="node/53" href="https://fcx.com/sustainability/workforce#local-hiring">Local Hiring and Skills Development</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/53" href="https://fcx.com/sustainability/workforce#diversity">Diversity</a></li>
+			<li class="last leaf"><a data-drupal-link-system-path="node/53" href="https://fcx.com/sustainability/workforce#labor-relations">Labor Relations</a></li>
+		</ul>
+		</li>
+		<li class="expanded"><a data-drupal-link-system-path="node/54" href="https://fcx.com/sustainability/human-rights">HUMAN RIGHTS</a>
+		<ul class="sitemap-menu">
+			<li class="first leaf"><a data-drupal-link-system-path="node/54" href="https://fcx.com/sustainability/human-rights#recent-activity">Recent Activity</a>
+			<ul>
+				<li class="first leaf"><a href="https://fcx.com/sustainability/human-rights/cerro-verde-hria">Cerro Verde HRIA</a></li>
+			</ul>
+			</li>
+			<li class="leaf"><a data-drupal-link-system-path="node/54" href="https://fcx.com/sustainability/human-rights#ungp-implementation">UNGP Implementation</a>
+			<ul>
+				<li class="leaf"><a href="https://fcx.com/sustainability/human-rights/policy-commitment">Policy Commitment</a></li>
+				<li class="leaf"><a href="https://fcx.com/sustainability/human-rights/embedding-respect">Embedding Respect</a></li>
+				<li class="leaf"><a href="https://fcx.com/sustainability/human-rights/defining-reporting-focus">Defining Reporting Focus</a></li>
+				<li class="leaf"><a href="https://fcx.com/sustainability/human-rights/management-of-salient-issues">Management of Salient Issues</a></li>
+			</ul>
+			</li>
+			<li class="last leaf"><a data-drupal-link-system-path="node/54" href="https://fcx.com/sustainability/human-rights#voluntary-principles">Voluntary Principles</a></li>
+			<li class="last leaf"><a href="https://fcx.com/sites/fcx/files/documents/sustainability/uk_modern_slavery_act_statement_2016.pdf" target="_blank">2016 UK Modern Slavery Act Statement</a></li>
+		</ul>
+		</li>
+		<li class="expanded"><a data-drupal-link-system-path="node/55" href="https://fcx.com/sustainability/communities">COMMUNITIES</a>
+		<ul class="sitemap-menu">
+			<li class="first leaf"><a data-drupal-link-system-path="node/55" href="https://fcx.com/sustainability/communities#assessing-managing-impacts">Assessing and Managing Impacts</a>
+			<ul>
+				<li class="first leaf"><a href="https://fcx.com/sustainability/communities/grievance-management-systems">Grievance Management Systems</a></li>
+			</ul>
+			</li>
+			<li class="leaf"><a data-drupal-link-system-path="node/55" href="https://fcx.com/sustainability/communities#indigenous-peoples">Indigenous Peoples</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/55" href="https://fcx.com/sustainability/communities#land-use-customary-rights">Land Use and Customary Rights</a></li>
+		<li class="leaf"><a data-drupal-link-system-path="node/55" href="https://fcx.com/sustainability/communities#community-investment">Community Investment</a>
+		<ul>
+			<li class="leaf"><a href="https://fcx.com/sustainability/communities/community-investment/north-america">North America</a></li>
+			<li class="leaf"><a href="https://fcx.com/sustainability/communities/community-investment/south-america">South America</a></li>
+			<li class="leaf"><a href="https://fcx.com/sustainability/communities/community-investment/indonesia">Indonesia</a></li>
+		</ul>
+		</li>
+		<li class="leaf"><a data-drupal-link-system-path="node/55" href="https://fcx.com/sustainability/communities#economic-impacts">Economic Impacts</a>
+		<ul>
+			<li class="leaf"><a href="https://fcx.com/sustainability/communities/economic-impacts/north-america">North America</a></li>
+			<li class="leaf"><a href="https://fcx.com/sustainability/communities/economic-impacts/south-america">South America</a></li>
+			<li class="leaf"><a href="https://fcx.com/sustainability/communities/economic-impacts/indonesia">Indonesia</a></li>
+		</ul>
+		</li>
+		<li class="leaf"><a data-drupal-link-system-path="node/55" href="https://fcx.com/sustainability/communities#public-health">Public Health</a></li>
+		<li class="leaf"><a data-drupal-link-system-path="node/55" href="https://fcx.com/sustainability/communities#artisanal-mining">Artisanal Mining</a></li>
+		<li class="last leaf"><a href="http://www.freeportinmycommunity.com/" target="_blank">Freeport in My Community</a></li>
+	</ul>
+	</li>
+	<li class="expanded"><a data-drupal-link-system-path="node/56" href="https://fcx.com/sustainability/environment">ENVIRONMENT</a>
+	<ul class="sitemap-menu">
+		<li class="first expanded"><a data-drupal-link-system-path="node/56" href="https://fcx.com/sustainability/environment#water-supply-and-management">Water Supply and Management</a></li>
+		<li class="leaf"><a data-drupal-link-system-path="node/56" href="https://fcx.com/sustainability/environment#climate">Climate-Related Impacts and Opportunities</a></li>
+		<li class="expanded"><a data-drupal-link-system-path="node/56" href="https://fcx.com/sustainability/environment#tailings">Tailings</a>
+		<ul class="sitemap-menu">
+			<li class="first last leaf"><a data-drupal-link-system-path="node/160" href="https://fcx.com/sustainability/environment/tailings/controlled-riverine-tailings-management">Controlled Riverine Tailings Management</a></li>
+		</ul>
+		</li>
+		<li class="leaf"><a data-drupal-link-system-path="node/56" href="https://fcx.com/sustainability/environment#reclamation">Reclamation</a></li>
+		<li class="leaf"><a data-drupal-link-system-path="node/56" href="https://fcx.com/sustainability/environment#Biodiversity">Biodiversity</a>
+		<ul>
+			<li class="leaf"><a href="https://fcx.com/sustainability/environment/biodiversity/indonesia">Indonesia</a></li>
+		</ul>
+		</li>
+		<li class="last leaf"><a data-drupal-link-system-path="node/56" href="https://fcx.com/sustainability/environment#non-mineral-waste-and-recyclable-material">Non-Mineral Waste and Recyclable Material</a></li>
+	</ul>
+	</li>
+	<li class="last expanded"><a data-drupal-link-system-path="node/57" href="https://fcx.com/sustainability/reports-and-documents">REPORTS AND DOCUMENTS</a>
+	<ul class="sitemap-menu">
+		<li class="first leaf"><a href="https://fcx.com/sites/fcx/files/documents/sustainability/wtsd_2016.pdf" target="_blank">Working Toward Sustainable Development</a></li>
+		<li class="leaf"><a href="https://fcx.com/sites/fcx/files/documents/sustainability/vol_principle_2016.pdf" target="_blank">Voluntary Principles on Security &amp; Human Rights</a></li>
+		<li class="leaf"><a href="https://fcx.com/sites/fcx/files/documents/sustainability/2017_cdp_info_req.pdf" target="_blank">CDP Climate Change Information Request</a></li>
+		<li class="last leaf"><a href="https://fcx.com/sites/fcx/files/documents/sustainability/program_response_water_2017.pdf" target="_blank">CDP Water Information Request</a></li>
+	</ul>
+	</li>
+</ul>
+
+<ul>
+	<li class="leaf"><a data-drupal-link-system-path="node/9" href="https://fcx.com/careers">CAREERS</a></li>
+	<li class="last leaf"><a data-drupal-link-system-path="node/26" href="https://fcx.com/suppliers/overview">SUPPLIERS</a>
+	<ul class="sitemap-menu">
+		<li class="first leaf"><a data-drupal-link-system-path="node/25" href="https://fcx.com/suppliers/tools-for-suppliers#contactgsc">Contact GSC</a>
+		<ul class="sitemap-menu">
+			<li class="first last leaf"><a data-drupal-link-system-path="node/28" href="https://fcx.com/suppliers/contact-supplier-help-desk">Contact Supplier &amp; Help Desk</a></li>
+		</ul>
+		</li>
+		<li class="leaf"><a data-drupal-link-system-path="node/25" href="https://fcx.com/suppliers/tools-for-suppliers#hourglass">Hourglass Approach</a></li>
+		<li class="leaf"><a data-drupal-link-system-path="node/25" href="https://fcx.com/suppliers/tools-for-suppliers#vendorinfo">Vendor Information</a>
+		<ul class="sitemap-menu">
+			<li class="first leaf"><a data-drupal-link-system-path="node/29" href="https://fcx.com/suppliers/commodity-management">Commodity Management</a></li>
+			<li class="first leaf"><a data-drupal-link-system-path="node/24" href="https://fcx.com/suppliers/vendor-requirements">Vendor Requirements</a></li>
+			<li class="first leaf"><a data-drupal-link-system-path="node/30" href="https://fcx.com/suppliers/freeport-compliance-exchange">Freeport Compliance eXchange (FCeX)</a></li>
+			<li class="first leaf"><a data-drupal-link-system-path="node/31" href="https://fcx.com/suppliers/ebusiness-information">eBusiness Information</a></li>
+			<li class="leaf"><a data-drupal-link-system-path="node/32" href="https://fcx.com/suppliers/contract-requirements">Contract Requirements</a></li>
+		</ul>
+		</li>
+		<li class="leaf"><a data-drupal-link-system-path="node/39" href="https://fcx.com/suppliers/payment-process">Payment Information</a>
+		<ul class="sitemap-menu">
+			<li class="last leaf"><a href="https://fcx.com/suppliers/payment-process">Payment Process</a></li>
+			<li class="last leaf"><a data-drupal-link-system-path="node/40" href="https://fcx.com/suppliers/electronic-invoice-payment-requirement">Electronic Invoice Payment Requirement</a></li>
+		</ul>
+		</li>
+		<li class="leaf"><a href="https://service.ariba.com/Supplier.aw/1461743/aw?awh=r&amp;awssk=ptgTcl1A&amp;dard=1" target="_blank">Ariba Supplier Network</a></li>
+		<li class="leaf"><a data-drupal-link-system-path="node/25" href="https://fcx.com/suppliers/tools-for-suppliers#equip">Sales of Equipment &amp; Materials</a></li>
+		<li class="leaf"><a data-drupal-link-system-path="node/25" href="https://fcx.com/suppliers/tools-for-suppliers#terms">Terms and Conditions</a>
+		<ul class="sitemap-menu">
+			<li class="first leaf"><a href="https://fcx.com/suppliers/tools-for-suppliers#terms">General Terms and Conditions</a></li>
+			<li class="last leaf"><a href="https://fcx.com/suppliers/tools-for-suppliers#terms">Service Order Terms and Conditions</a></li>
+			<li class="last leaf"><a href="https://fcx.com/suppliers/tools-for-suppliers#terms">South America - Terminos y Condiciones Generales Orden de Servicio Sudamerica</a></li>
+			<li class="last leaf"><a href="https://fcx.com/suppliers/tools-for-suppliers#terms">Indonesia - Terms and Conditions</a></li>
+		</ul>
+		</li>
+		<li class="last leaf"><a data-drupal-link-system-path="node/25" href="https://fcx.com/suppliers/tools-for-suppliers#policy">Policy Documents</a></li>
+	</ul>
+	</li>
+</ul>
+</li></ul></div>
+</div>
+</div>
+        </div>
+    </div>
+</div></span></span></div>
+            </div>
+            <div class="pane pane--right">
+                <div class="pane_inner"><span class='RightPaneDiv'></span></div>
+            </div>
+        </div>
+        <div class="layout_footer" role="contentinfo">
+            <div class="pane pane--footer grid--no-gutter">
+                <div class="pane_inner"><span class='FooterPaneDiv'></span></div>
+            </div>
+            <div class="pane pane--footer2 grid--no-gutter">
+                <div class="pane_inner"><span class='FooterPane2Div12'><div id="_ctrl0_ctl36_divModuleContainer" class="module module-subscribe footer-email-alerts module-subscribe--fancy clearfix grid_col grid_col--7-of-10 grid_col--lc-1-of-1" data-workflow-id="70d69105-aeac-4298-80ab-7143875ffe54">
+    <div class="module_container module_container--outer">
+        <h2 id="_ctrl0_ctl36_lblTitle" class="module_title">
+            <span id="_ctrl0_ctl36_lblModuleTitle" class="ModuleTitle">Email Alerts</span><span id="_ctrl0_ctl36_lblHelpPage"></span>
+        </h2>
+        <div class="module_container module_container--inner">
+            <div class="module_introduction"><span id="_ctrl0_ctl36_lblIntroText" class="IntroText"><p>To receive notifications via email, enter your email address and select at least one subscription below. After submitting your information, you will receive an email. You must click the link in the email to activate your subscription. You can sign up for additional subscriptions at any time.</p></span></div>
+            <div id="_ctrl0_ctl36_validationsummary" class="module_error-container" style="display:none;">
+
+</div>
+            <table class="module-subscribe_table module-subscribe_form" title="Fill out the following information to sign up for email alerts">
+                
+                
+                <tr id="_ctrl0_ctl36_rowEmailAddress" class="module-subscribe_table-input module-subscribe_email">
+	<td id="_ctrl0_ctl36_ctl02">
+                        <label for="_ctrl0_ctl36_txtEmail" id="_ctrl0_ctl36_lblEmailAddressText">Email Address</label>
+                        <span id="_ctrl0_ctl36_lblRequiredEmailAddress" class="module_required">*</span>
+                        <input name="_ctrl0$ctl36$txtEmail" type="text" maxlength="128" id="_ctrl0_ctl36_txtEmail" class="module_input" placeholder="email@example.com" />
+                        <span id="_ctrl0_ctl36_reqvalEmailValidator1" style="display:none;"></span>
+                    </td>
+</tr>
+
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+            </table>
+            <table id="_ctrl0_ctl36_tableMailingLists" class="module-subscribe_table module-subscribe_mailing-list" title="Select from the following mailing lists to sign up for email alerts">
+	<tr id="_ctrl0_ctl36_rowMailingListLabel" class="module-subscribe_table-input module-subscribe_list-header">
+		<td id="_ctrl0_ctl36_ctl17">
+                        <label for="_ctrl0_ctl36_chkLists" id="_ctrl0_ctl36_lblMailingListsText" class="MailingListsHeading">Mailing Lists</label>
+                        <span id="_ctrl0_ctl36_lblRequiredMailingLists" class="module_required">*</span>
+                    </td>
+	</tr>
+	<tr id="_ctrl0_ctl36_rowMailingLists" class="module-subscribe_table-input module-subscribe_list">
+		<td id="_ctrl0_ctl36_ctl18">
+                        <table id="_ctrl0_ctl36_chkLists">
+			<tr>
+				<td><input id="_ctrl0_ctl36_chkLists_0" type="checkbox" name="_ctrl0$ctl36$chkLists$0" value="31" /><label for="_ctrl0_ctl36_chkLists_0">News Releases</label></td>
+			</tr><tr>
+				<td><input id="_ctrl0_ctl36_chkLists_1" type="checkbox" name="_ctrl0$ctl36$chkLists$1" value="33" /><label for="_ctrl0_ctl36_chkLists_1">SEC Filings</label></td>
+			</tr><tr>
+				<td><input id="_ctrl0_ctl36_chkLists_2" type="checkbox" name="_ctrl0$ctl36$chkLists$2" value="35" /><label for="_ctrl0_ctl36_chkLists_2">Events</label></td>
+			</tr>
+		</table>
+                        
+                        <span id="_ctrl0_ctl36_cusvalMailingListsValidator" style="display:none;"></span>
+                    </td>
+	</tr>
+</table>
+
+            <p class="module_required-text"><span>*</span> Required</p>
+            <div class="module_actions">
+                <div id="_ctrl0_ctl36_recaptcha_divModuleContainer" class="RecaptchaContainer">
+    <input type="hidden" name="_ctrl0$ctl36$recaptcha$hdnCaptchaToken" id="_ctrl0_ctl36_recaptcha_hdnCaptchaToken" />
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="text/javascript">
+        function onLoad__ctrl0_ctl36_recaptcha() {
+            grecaptcha.render('_ctrl0_ctl36_btnSubmit', {
+                'sitekey': '6LcKf8wZAAAAADYEeFvKUvdj80FVct5G98mSJ29W',
+                'callback': 'onSubmit__ctrl0_ctl36_recaptcha',
+                'size': 'invisible'
+            });
+            // Prevent immediate postback: ASP.NET adds onclick (Page_ClientValidate + __doPostBack) to the button.
+            // Only the reCAPTCHA callback should trigger postback, after the challenge is completed.
+            var btn = document.getElementById('_ctrl0_ctl36_btnSubmit');
+            if (btn) btn.removeAttribute('onclick');
+        }
+
+        function onSubmit__ctrl0_ctl36_recaptcha(token) {
+            var captchaTokenField = document.getElementById('_ctrl0_ctl36_recaptcha_hdnCaptchaToken');
+
+            captchaTokenField.value = token;
+            __doPostBack('_ctrl0$ctl36$btnSubmit', "");
+        }
+    </script>
+
+    <script src="https://www.google.com/recaptcha/api.js?onload=onLoad__ctrl0_ctl36_recaptcha&render=explicit" async defer></script>
+
+    <style>
+        .grecaptcha-badge {
+            display: none !important;
+        }
+    </style>
+</div>
+                <span id="_ctrl0_ctl36_cusvalRecaptcha" style="display:none;"></span>
+                <input type="submit" name="_ctrl0$ctl36$btnSubmit" value="Submit" onclick="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;_ctrl0$ctl36$btnSubmit&quot;, &quot;&quot;, true, &quot;3dc33117-82fd-422d-95d6-748044dd651a&quot;, &quot;&quot;, false, false))" id="_ctrl0_ctl36_btnSubmit" class="button module-subscribe_submit-button" data-email-alert-subscribe-btn="true" />
+            </div>
+        </div>
+    </div>
+</div>
+<div id="_ctrl0_ctl36_divEditSubscriberConfirmation" class="module module-subscribe module_confirmation-container" style="DISPLAY:none;">
+    <div class="module_container module_container--outer">
+        <h2 class="module_title">Email Alert Sign Up Confirmation</h2>
+        <div class="module_container module_container--inner">
+            
+        </div>
+    </div>
+</div><span id="_ctrl0_ctl36_ctl19" style="display:none;"></span></span><span class='FooterPane2Div13'><div id="_ctrl0_ctl39_divModuleContainer" class="module module-html contact-investor list--no-style grid_col grid_col--3-of-10 grid_col--lc-1-of-1" data-workflow-id="41009c47-ef72-4a46-9d6d-1c1cf2ffa191">
+    <div class="module_container module_container--outer">
+        <h2 id="_ctrl0_ctl39_lblTitle" class="module_title"><span id="_ctrl0_ctl39_lblModuleTitle" class="ModuleTitle">Contact Investor Relations</span></h2>
+        <div class="module_container module_container--inner">
+            <ul class="person-info">
+    <li class="name">David Joint</li>
+    <li class="function">Vice President -<br> Investor Relations</li>  
+</ul>
+<ul class="contact-info">
+    <li class="mail"><a href="/cdn-cgi/l/email-protection#2e475c6e484347004d4143"><span class="__cf_email__" data-cfemail="0a63784a6c676324696567">[email&#160;protected]</span></a></li>
+    <li class="telephone"><a href="tel:602.366.8400">602.366.8400</a></li>
+</ul>
+        </div>
+    </div>
+</div></span></div>
+            </div>
+            <div class="pane pane--credits">
+                <div class="pane_inner"><span class='Q4FooterDiv14'><div id="_ctrl0_ctl42_divModuleContainer" class="module module-html suppliers" data-workflow-id="49205209-5613-4f03-a67d-d8af932d4f93">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <div class="footer-suppliers">
+  <div class="footer-suppliers__inner">
+    
+    <div class="footer-suppliers__icon">
+      <!-- Replace with your SVG/icon -->
+      <img src="//s22.q4cdn.com/529358580/files/images/suppliers-img.png" alt="Suppliers Icon">
+    </div>
+
+    <div class="footer-suppliers__title">
+      SUPPLIERS
+    </div>
+
+    <div class="footer-suppliers__nav -quick-links">
+      <a href="https://fcx.com/suppliers/overview">OVERVIEW</a>
+      <a href="https://fcx.com/suppliers/overview#contactgsc">CONTACT GSC</a>
+      <a href="https://fcx.com/suppliers/overview">TOOLS FOR SUPPLIERS</a>
+      <a href="https://fcx.com/sites/fcx/files/documents/policies/bpcc_eng.pdf">BUSINESS PARTNER CODE OF CONDUCT</a>
+    </div>
+
+  </div>
+</div>
+        </div>
+    </div>
+</div></span><span class='Q4FooterDiv15'><div id="_ctrl0_ctl45_RightBlock" class="hidden"></div>
+<div id="_ctrl0_ctl45_divModuleContainer" class="footer -quick-links list--no-style" data-workflow-id="b7f787be-f8a0-4b6b-bd46-f440ac7bffc4">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <ul id="_ctrl0_ctl45_qlList" class="footer -quick-links list--no-style">
+                
+                        <li id="_ctrl0_ctl45_QuickLinkList_ctl00_liQuickLink" class="QuickLinkRow">
+                            
+                            
+                            <a href="https://fcx.com/site-map" id="_ctrl0_ctl45_QuickLinkList_ctl00_link" class="module-links_list-item-link" target="_blank">Sitemap</a>
+                            
+                        </li>
+                    
+                        <li id="_ctrl0_ctl45_QuickLinkList_ctl01_liQuickLink" class="QuickLinkRowAlt">
+                            
+                            
+                            <a href="https://fcx.com/contact" id="_ctrl0_ctl45_QuickLinkList_ctl01_link" class="module-links_list-item-link" target="_blank">Contact</a>
+                            
+                        </li>
+                    
+                        <li id="_ctrl0_ctl45_QuickLinkList_ctl02_liQuickLink" class="QuickLinkRow">
+                            
+                            
+                            <a href="https://fcx.com/suppliers/overview" id="_ctrl0_ctl45_QuickLinkList_ctl02_link" class="module-links_list-item-link" target="_blank">Suppliers</a>
+                            
+                        </li>
+                    
+                        <li id="_ctrl0_ctl45_QuickLinkList_ctl03_liQuickLink" class="QuickLinkRowAlt">
+                            
+                            
+                            <a href="https://fcx.com/terms-and-conditions" id="_ctrl0_ctl45_QuickLinkList_ctl03_link" class="module-links_list-item-link" target="_blank">Terms of Use</a>
+                            
+                        </li>
+                    
+                        <li id="_ctrl0_ctl45_QuickLinkList_ctl04_liQuickLink" class="QuickLinkRow">
+                            
+                            
+                            <a href="https://fcx.com/freeport-mcmoran-online-privacy-notice" id="_ctrl0_ctl45_QuickLinkList_ctl04_link" class="module-links_list-item-link" target="_blank">Privacy Policy</a>
+                            
+                        </li>
+                    
+                        <li id="_ctrl0_ctl45_QuickLinkList_ctl05_liQuickLink" class="QuickLinkRowAlt">
+                            
+                            
+                            <a href="https://fcx.com/cautionary-statement-regarding-forward-looking-statements" id="_ctrl0_ctl45_QuickLinkList_ctl05_link" class="module-links_list-item-link" target="_blank">Cautionary Statement</a>
+                            
+                        </li>
+                    
+            </ul>
+        </div>
+    </div>
+</div></span><span class='Q4FooterDiv16'><div id="_ctrl0_ctl48_divModuleContainer" class="module module-html module-footer-socials" data-workflow-id="0b8805f3-b96a-4b87-9d5c-b533a97180cb">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <div class="module-footer-socials_boxes">
+    <div class="grid grid_col grid_col-1-of-2 footer-social-links-box">
+        <div class="logos-container social-links">
+            <h2>Social</h2>
+            <div>
+                <ul>
+                    <li>
+                        <a href="https://www.linkedin.com/company/freeport-mcmoran-inc/"><img class="socialMediaIcons" src="//s22.q4cdn.com/529358580/files/design/icons/linkedin.png"></a>
+                    </li>
+                    <li>
+                        <a href="https://www.facebook.com/FreeportFCX/?eid=ARCm9-jnY5saqi8CIweItp7KgAxhWMhZfMhNvHAwHockhPvkUccZZxF8ITdmTJO0Ab1TIj0zGRtqUZF3"><img class="socialMediaIcons" src="//s22.q4cdn.com/529358580/files/design/icons/facebook.png"></a>
+                    </li>
+                    <li>
+                        <a href="https://www.instagram.com/freeportfcx/"><img class="socialMediaIcons" src="//s22.q4cdn.com/529358580/files/images/2023/Ig-Logo.png" style="width: 45px; height: 45px;"></a>
+                    </li>
+                    <li>
+                        <a href="https://www.youtube.com/@freeportfcx"><img class="socialMediaIcons" src="//s22.q4cdn.com/529358580/files/images/2023/youtube100px.png" style="width: 60px; height: auto;"></a>
+                    </li>
+                    <li>
+                        <a href="https://twitter.com/FM_FCX"><img class="socialMediaIcons" src="//s22.q4cdn.com/529358580/files/design/icons/x-logo-prev-twitter.png"></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="grid grid_col grid_col-1-of-2 footer-logos-box">
+        <div class="logos-container recognition">
+            <h2>Recognition</h2>
+            <div>
+                <ul class="recognition-list">
+                    <li>
+                        <img src="//s22.q4cdn.com/529358580/files/images/2023/forbes-logo-1.png" alt="Forbes Logo" style="width: 140px;">
+                    </li>
+
+                    <li>
+                        <img src="//s22.q4cdn.com/529358580/files/images/2023/2026-JUST-Seal-white-144H.png" alt="Just Logo">
+                    </li>
+
+                    <li>
+                        <img src="//s22.q4cdn.com/529358580/files/images/logo/070126-top-1.png" alt="U.S. News">
+                    </li>
+
+                    <li>
+                        <img src="//s22.q4cdn.com/529358580/files/images/2026/time-best-company-2026-footer.png" alt="TIME">
+                    </li>
+                    
+                    <!-- <li>
+                        <img src="//s22.q4cdn.com/529358580/files/images/2023/01/100BestCorporateCitizens_Logo2022_119px-cropped.png" alt="100 best corporate citizens 2022 3bl" style="width: 120px; margin-bottom: 20px">
+                    </li> -->
+                    <!-- <li>
+                        <img src="//s22.q4cdn.com/529358580/files/images/2023/01/Newsweek-Most-Responsible-Companies_120px-h.png" alt="america's most responsible companies 2022 newsweek" style="width: 98px;">
+                    </li> -->
+                    <!-- 
+                    <li>
+                        <img src="//s22.q4cdn.com/529358580/files/images/2023/02/copper-mark_logo_homepg-118.png" alt="the world's most admired companies 2022 Fortune" style="width: 118px;">
+                    </li> -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div><style></style>
+        </div>
+    </div>
+</div></span><span class='Q4FooterDiv17'><div id="_ctrl0_ctl51_divModuleContainer" class="module module-html footer-logo" data-workflow-id="ff80e410-cd76-40c4-b98c-03a8936a2afb">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <img src="//s22.q4cdn.com/529358580/files/images/footer-logo.svg" alt="Freeport McMoRan Inc logo">
+        </div>
+    </div>
+</div></span><span class='Q4FooterDiv18'><div id="_ctrl0_ctl54_divModuleContainer" class="module module-html" data-workflow-id="5ac344eb-9fb8-45d2-af5e-b108aec752d1">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <a href="#section-title" class="scrollToBelowBanner"><img alt="" src="//s22.q4cdn.com/529358580/files/design/top-icon.png"></a>
+        </div>
+    </div>
+</div></span><span class='Q4FooterDiv19'><div id="_ctrl0_ctl57_divModuleContainer" class="module module-embed footer-copyright" data-workflow-id="a0d5d951-376a-452a-95a1-d5c2e1b7f0a3">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            © <span class="copyright_year"></span> Freeport-McMoRan
+
+                
+        </div>
+    </div>
+</div></span><span class='Q4FooterDiv20'><div id="_ctrl0_ctl60_divModuleContainer" class="module module-embed hidden" data-workflow-id="d7fb0f25-3010-4bad-ad47-10cef83a58b8">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+
+    var q4App = $.extend(q4Defaults, {
+        mobileMenuToggle: function(triggerClass, layoutClass) {
+            $(triggerClass).click(function() {
+                $(layoutClass).toggleClass('js-mobile-menu-expanded');
+    
+                if ($(triggerClass).find(".shell").hasClass("open")) {
+                    $(triggerClass).find(".shell").removeClass("open").addClass("close");
+    
+                } else {
+                    $(triggerClass).find(".shell").removeClass("close").addClass("open");
+                }
+            });
+        },
+        search_toggle: function() {
+            $('.top-search .module-search_button').click(function() {
+                $(this).closest('.top-search').find('.module-search_input').toggleClass('show');
+            });
+        },
+        mobileMenuExpander: function(navClass) {
+            $(navClass).find('.level1  .has-children > a').append('<span class="expander"><span class="expand"><i class="q4-icon_drop-arrow"></i></span><span class="collapse"><i class="q4-icon_chevron-up"></i></span></span>');
+            $(navClass).find('li.has-children > a').click(function(e) {
+                $(this).closest('li').find(">ul").slideDown().closest('li').toggleClass('opened').siblings().find("ul").slideUp();
+                if (!$(this).hasClass('click')) {
+                    e.preventDefault();
+                    $(this).addClass('click');
+                }
+            });
+        },
+        back_to_top_page: function() {
+            var inst = this;
+            var height = $('.layout_header').height() - $('.pane--header').height();
+            $(window).scroll(function() {
+                $(this).scrollTop() > height ? $('.scrollToBelowBanner').addClass('js--active') :  $('.scrollToBelowBanner').removeClass('js--active');
+    
+            });
+            $('.scrollToBelowBanner').on('click', function(e) {
+                e.preventDefault();
+                $('html, body').animate({scrollTop: $('.layout_header').height() - $('.pane--header').height() }, 'slow');
+            })
+        },
+        onSubmit: function(selector) {
+            var $search = $(selector);
+            $search.on('click', 'input:submit', function() {
+                if (!$(this).closest(selector).find('input:text').val().length) {
+                    return false;
+                    e.preventDefault();
+                }else{
+                        var searchVal = $(this).closest(selector).find('input:text').val();
+                        location.href = 'https://fcx.com/fcx_search?keys=' + searchVal;
+                        return false;
+                        e.preventDefault();
+                    }
+            });
+        },
+        bannerScroll: function() {
+            $('.scroll-to').click(function(e){
+                e.preventDefault();
+                $('html, body').animate({scrollTop: $('#maincontent').offset().top - $('.pane--header').height() }, 'slow');
+    
+            });
+        },
+        mobileTapSupport: function (selector) {
+            var ua = navigator.userAgent.toLowerCase();
+            var isAndroid = ua.indexOf("android") > -1; //&& ua.indexOf("mobile");
+            if (isAndroid) {
+                $(selector).on('click', 'li.has-children > a', function (e) {
+                    var $this = $(this),
+                        $parent = $this.parent();
+                    if (!$parent.hasClass('sfHover')) {
+                        e.preventDefault();
+                        $parent.siblings().removeClass('sfHover');
+                        $parent.addClass('sfHover');
+                    }
+                });
+                $('body').on('click', function(e){
+                    if(!$(e.target).closest(selector).length){
+                        $(selector).find('.sfHover').removeClass('sfHover');
+                    }
+                });                
+            }
+        },
+        init: function() {
+            var app = this;
+    
+            app.cleanUp();
+            // app.unWrapLink('a.module-stock-header_stock-price');
+            app.submitOnEnter('.module-unsubscribe');
+            app.submitOnEnter('.module-search');
+            app.onSubmit('.module-search');
+            app.validateSubmit('.module-search');
+            // app.superfish($('.nav--main'), {
+            //     cssArrows: false
+            // });
+            app.mobileMenuToggle('.module-menu-toggle', '.layout');
+            app.mobileMenuExpander('.module_mobile-nav');
+            app.cleanQuickLinks($('.module-links'));
+            app.copyright($('.copyright_year'));
+            app.docTracking();
+            // app.fancySignup();
+            app.resetDate(['.nav a[href*="s3.q4web.com"]:not([href$=".pdf"])']);
+            app.previewToolbar();
+            app.search_toggle();
+            app.superfish($('.nav--main .level1'), {
+                delay: 1000	, 
+                animation: {opacity: 'show', height: "show"}, 
+                animationOut:{opacity: 'hide', height: "hide"},
+                dropShadows: false, 
+                speed:'fast', 
+                autoArrows:  false 
+            });
+            app.back_to_top_page();
+            app.bannerScroll();
+            app.mobileTapSupport($('.nav--main'));
+        }
+    });
+    
+    q4App.init();
+    
+    $(window).on('load', function() {
+        var sectionLinkArr = [];
+        if($('.faq-link').length) {
+            $('.faq-link').each(function() {
+                sectionLinkArr.push($(this).attr('name'));
+            });
+            var linkHref = window.location.href.split('#faq=');
+            if(sectionLinkArr.indexOf(linkHref[1]) > -1) {
+                $('[name*="'+linkHref[1]+'"]').parent().removeClass('js--hidden');
+                q4App.scrollTo($('[name="'+linkHref[1]+'"]').closest('.module_item'));
+            }
+        }
+    });
+</script>
+        </div>
+    </div>
+</div></span><span class='Q4FooterDiv21'><div id="_ctrl0_ctl63_divModuleContainer" class="module module-embed hidden" data-workflow-id="7e4bfd6c-9856-438d-86a9-ffb2f0a43d7e">
+    <div class="module_container module_container--outer">
+        
+        <div class="module_container module_container--inner">
+            <!-- <script>
+    (function () {
+        var s = document.createElement("script");
+        s.setAttribute("data-account", "ADD1fW8JQ1");
+        s.setAttribute("src", "https://cdn.userway.org/widget.js");
+        document.body.appendChild(s);
+    })();
+</script> -->
+
+<script>(function(d){var s = d.createElement("script");s.setAttribute("data-account", "ADD1fW8JQ1");s.setAttribute("src", "https://cdn.userway.org/widget.js");(d.body || d.head).appendChild(s);})(document)</script><noscript>Please ensure Javascript is enabled for purposes of <a href="https://userway.org">website accessibility</a></noscript>
+        </div>
+    </div>
+</div></span></div>
+            </div>
+        </div>
+    </div>
+</div>
+                    <input type="hidden" name="__antiCSRF" id="__antiCSRF" value="" />
+                
+<script type="text/javascript">
+//<![CDATA[
+var Page_ValidationSummaries =  new Array(document.getElementById("_ctrl0_ctl36_validationsummary"));
+var Page_Validators =  new Array(document.getElementById("_ctrl0_ctl36_reqvalEmailValidator1"), document.getElementById("_ctrl0_ctl36_cusvalMailingListsValidator"), document.getElementById("_ctrl0_ctl36_cusvalRecaptcha"), document.getElementById("_ctrl0_ctl36_ctl19"));
+//]]>
+</script>
+
+<script type="text/javascript">
+//<![CDATA[
+var _ctrl0_ctl36_validationsummary = document.all ? document.all["_ctrl0_ctl36_validationsummary"] : document.getElementById("_ctrl0_ctl36_validationsummary");
+_ctrl0_ctl36_validationsummary.displaymode = "List";
+_ctrl0_ctl36_validationsummary.validationGroup = "3dc33117-82fd-422d-95d6-748044dd651a";
+var _ctrl0_ctl36_reqvalEmailValidator1 = document.all ? document.all["_ctrl0_ctl36_reqvalEmailValidator1"] : document.getElementById("_ctrl0_ctl36_reqvalEmailValidator1");
+_ctrl0_ctl36_reqvalEmailValidator1.controltovalidate = "_ctrl0_ctl36_txtEmail";
+_ctrl0_ctl36_reqvalEmailValidator1.errormessage = "Email address is required.";
+_ctrl0_ctl36_reqvalEmailValidator1.display = "None";
+_ctrl0_ctl36_reqvalEmailValidator1.validationGroup = "3dc33117-82fd-422d-95d6-748044dd651a";
+_ctrl0_ctl36_reqvalEmailValidator1.evaluationfunction = "RequiredFieldValidatorEvaluateIsValid";
+_ctrl0_ctl36_reqvalEmailValidator1.initialvalue = "";
+var _ctrl0_ctl36_cusvalMailingListsValidator = document.all ? document.all["_ctrl0_ctl36_cusvalMailingListsValidator"] : document.getElementById("_ctrl0_ctl36_cusvalMailingListsValidator");
+_ctrl0_ctl36_cusvalMailingListsValidator.errormessage = "Mailing list selection is required.";
+_ctrl0_ctl36_cusvalMailingListsValidator.display = "None";
+_ctrl0_ctl36_cusvalMailingListsValidator.validationGroup = "3dc33117-82fd-422d-95d6-748044dd651a";
+_ctrl0_ctl36_cusvalMailingListsValidator.evaluationfunction = "CustomValidatorEvaluateIsValid";
+var _ctrl0_ctl36_cusvalRecaptcha = document.all ? document.all["_ctrl0_ctl36_cusvalRecaptcha"] : document.getElementById("_ctrl0_ctl36_cusvalRecaptcha");
+_ctrl0_ctl36_cusvalRecaptcha.errormessage = "The captcha test has failed. Please try again.";
+_ctrl0_ctl36_cusvalRecaptcha.display = "None";
+_ctrl0_ctl36_cusvalRecaptcha.validationGroup = "3dc33117-82fd-422d-95d6-748044dd651a";
+_ctrl0_ctl36_cusvalRecaptcha.evaluationfunction = "CustomValidatorEvaluateIsValid";
+var _ctrl0_ctl36_ctl19 = document.all ? document.all["_ctrl0_ctl36_ctl19"] : document.getElementById("_ctrl0_ctl36_ctl19");
+_ctrl0_ctl36_ctl19.controltovalidate = "_ctrl0_ctl36_txtEmail";
+_ctrl0_ctl36_ctl19.errormessage = "Email Address is invalid.";
+_ctrl0_ctl36_ctl19.display = "None";
+_ctrl0_ctl36_ctl19.validationGroup = "3dc33117-82fd-422d-95d6-748044dd651a";
+//]]>
+</script>
+
+<div class="aspNetHidden">
+
+	<input type="hidden" name="__SCROLLPOSITIONX" id="__SCROLLPOSITIONX" value="0" />
+	<input type="hidden" name="__SCROLLPOSITIONY" id="__SCROLLPOSITIONY" value="0" />
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+
+var Page_ValidationActive = false;
+if (typeof(ValidatorOnLoad) == "function") {
+    ValidatorOnLoad();
+}
+
+function ValidatorOnSubmit() {
+    if (Page_ValidationActive) {
+        return ValidatorCommonOnSubmit();
+    }
+    else {
+        return true;
+    }
+}
+        
+theForm.oldSubmit = theForm.submit;
+theForm.submit = WebForm_SaveScrollPositionSubmit;
+
+theForm.oldOnSubmit = theForm.onsubmit;
+theForm.onsubmit = WebForm_SaveScrollPositionOnSubmit;
+//]]>
+</script>
+</form>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="/js/anti-csrf.js">
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3f762c2cbc7a6ab',t:'MTc5MDE0MzgyMQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

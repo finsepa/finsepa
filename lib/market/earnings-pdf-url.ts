@@ -68,6 +68,13 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
     ) {
       return true;
     }
+    // MZ IQ filemanager (Itaú / ITUB) — PDF bytes, no `.pdf` suffix.
+    if (
+      (u.hostname === "api.mziq.com" || u.hostname.endsWith(".mziq.com")) &&
+      /\/mzfilemanager\/v2\/d\/[a-f0-9-]{36}\/[a-f0-9-]{36}\/?$/i.test(u.pathname)
+    ) {
+      return true;
+    }
     return /\.pdf(?:$|[?#])/i.test(u.pathname) || /\.pdf(?:$|[?#])/i.test(t);
   } catch {
     if (/investors\.micron\.com\/static-files\//i.test(t)) return false;
@@ -81,7 +88,8 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
       /cdn\.builder\.io\/o\/assets%2F2e5c7fb020194c1a8ee80f743d0b923e%2F[^?\s]+[^#]*alt=media/i.test(t) ||
       /investors\.danaher\.com\/[^?\s]+Danaher-Reports[^?\s]*\?[^#]*asPDF/i.test(t) ||
       /invest\.bnpparibas\/en\/document\/\dq\d{2}-(slides|pr)/i.test(t) ||
-      /globenewswire\.com\/Resource\/Download\/[a-f0-9-]{36}/i.test(t)
+      /globenewswire\.com\/Resource\/Download\/[a-f0-9-]{36}/i.test(t) ||
+      /mziq\.com\/mzfilemanager\/v2\/d\/[a-f0-9-]{36}\/[a-f0-9-]{36}/i.test(t)
     );
   }
 }

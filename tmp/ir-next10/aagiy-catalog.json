@@ -1,0 +1,82 @@
+{
+  "ticker": "AAGIY",
+  "fyEnd": "calendar (HK insurer; semi-annual HY/FY)",
+  "irHub": "https://www.aia.com/en/investor-relations/overview/results-presentations",
+  "pdfHost": "www.aia.com/content/dam/group-wise/en/docs/investor-relations",
+  "trafficLight": "yellow",
+  "notes": "AIA Group Ltd ADR. Semi-annual only: HY\u2192Q2, FY\u2192Q4; Q1/Q3 empty (new-business highlights not full earnings). Slides=Analyst Presentation; Filings=Results Ann (Eng). Ignore transcripts/annual reports/Q1-Q3 highlights. Counts green=9 yellow=0 red=9. Never SEC HTML.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2022": {
+      "slides": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2022/AIA%20Group%201H%202022%20Analyst%20Presentation%20Final.pdf",
+      "filings": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2022/AIA%20Group%202022%20Interim%20Results%20Ann%20(Eng).pdf"
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2022": {
+      "slides": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2023/AIA%20Group%20FY%202022%20Analyst%20Presentation%20Final.pdf",
+      "filings": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2023/AIA%20Group%202022%20Annual%20Results%20Ann%20(Eng).pdf"
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2023": {
+      "slides": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2023/AIA%20Group%201H%202023%20Analyst%20Presentation%20Final.pdf",
+      "filings": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2023/AIA%20Group%202023%20Interim%20Results%20Ann%20(Eng).pdf"
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2023": {
+      "slides": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2024/AIA%20Group%20FY%202023%20Analyst%20Presentation%20Final.pdf",
+      "filings": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2024/AIA%20Group%202023%20Annual%20Results%20Ann%20(Eng).pdf"
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2024": {
+      "slides": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2024/AIA%20Group%201H%202024%20Analyst%20Presentation%20Final.pdf",
+      "filings": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2024/AIA%20Group%202024%20Interim%20Results%20Ann%20(Eng).pdf"
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2024": {
+      "slides": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2025/AIA%20Group%202024%20Annual%20Results%20Analyst%20Presentation%20(Final).pdf",
+      "filings": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2025/AIA%20Group%202024%20Annual%20Results%20Ann%20(Eng).pdf"
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2025": {
+      "slides": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2025/AIA%20Group%202025%20Interim%20Results%20Analyst%20Presentation%20(Final).pdf",
+      "filings": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2025/AIA%20Group%202025%20Interim%20Results%20Ann%20(Eng).pdf"
+    },
+    "Q3 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2025": {
+      "slides": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2026/AIA%20Group%20FY%202025%20Analyst%20Presentation%20Final.pdf",
+      "filings": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2026/AIA%20Group%202025%20Annual%20Results%20Ann%20(Eng).pdf"
+    },
+    "Q1 2026": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2026": {
+      "slides": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2026/AIA%20Group%202026%20Interim%20Results%20Analyst%20Presentation%20Final.pdf",
+      "filings": "https://www.aia.com/content/dam/group-wise/en/docs/investor-relations/2026/AIA%20Group%202026%20Interim%20Results%20Ann_Eng.pdf"
+    }
+  }
+}

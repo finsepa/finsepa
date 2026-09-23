@@ -1,0 +1,99 @@
+{
+  "ticker": "MITSY",
+  "fyEnd": "03-31",
+  "irPages": [
+    "https://www.mitsui.com/jp/en/ir/",
+    "https://www.mitsui.com/jp/en/ir/library/meeting/",
+    "https://www.mitsui.com/jp/en/ir/library/meeting/2027/index.html"
+  ],
+  "pdfHost": "www.mitsui.com",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/__icsFiles/afieldfile/2022/08/08/en_223_1q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/__icsFiles/afieldfile/2021/08/03/en_223_1q_ta.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/__icsFiles/afieldfile/2021/11/19/en_223_2q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/__icsFiles/afieldfile/2021/11/02/en_223_2q_ta.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_223_3q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_223_3q_ta.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_223_4q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_223_4q_ta.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_233_1q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_233_1q_ta.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_233_2q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_233_2q_ta.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_233_3q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_233_3q_ta.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_233_4q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_233_4q_ta.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_243_1q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_243_1q_ta.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_243_2q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_243_2q_ta.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_243_3q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_243_3q_ta.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_243_4q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_243_4q_ta.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_253_1q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_253_1q_ta.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_253_2q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_253_2q_ta.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_253_3q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_253_3q_ta.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_253_4q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_253_4q_ta.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_263_1q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_263_1q_ta.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_263_2q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_263_2q_ta.pdf"
+    },
+    "Q3 2026": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_263_3q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_263_3q_ta.pdf"
+    },
+    "Q4 2026": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_263_4q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_263_4q_ta.pdf"
+    },
+    "Q1 2027": {
+      "slides": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_273_1q_ppt.pdf",
+      "filings": "https://www.mitsui.com/jp/en/ir/library/meeting/pdf/en_273_1q_ta.pdf"
+    }
+  },
+  "trafficLight": "green",
+  "verified": true,
+  "notes": "Mitsui & Co (MITSY ADR; TSE 8031) March FY. Finsepa labels=issuer FY (FY ending Mar 2027 \u2192 Q1 2027). Hub mitsui.com/jp/en/ir/library/meeting/{fy}/. Slides=IR Meeting Presentation (en_{YY}3_{n}q_ppt.pdf); Filings=Q Flash Report / Consolidated Financial Results (en_{YY}3_{n}q_ta.pdf). Q1\u2013Q2 2022 under __icsFiles/afieldfile paths. Scope Q1 2022\u2192Q1 2027 (21 green / 0 yellow / 0 red). Rejected narration/Q&A/risk/dividend/share-repurchase/chukei plan decks. Never SEC HTML. All URLs Range-GET verified %PDF."
+}
