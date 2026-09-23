@@ -20,5 +20,6 @@ export const PRO_PLAN_CARD_FEATURES = [
   "Public shareable portfolios",
   "Portfolio insights and dividends",
   "Activities alerts",
+  "Transcripts, Slides and Reports",
   "Priority support",
 ] as const;

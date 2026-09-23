@@ -1,0 +1,36 @@
+IR discovery: NTTYY / HWM / MAR / XIACY
+Date: 2026-09-23
+Scope: Q1 2022 → latest reported
+Method: NTT financial presentation hub + URL pattern; HWM WP media API; Marriott gcs-web browser scrape; Xiaomi ir.mi.com browser scrape.
+Never SEC HTML. Range GET bytes 0-7 verified %PDF on all locked URLs.
+
+NTTYY — GREEN
+  green=17  yellow=0  red=0
+  pdfHost: group.ntt
+  latestCovered: Q1 2026
+  catalog: tmp/ir-next10/nttyy-catalog.json
+
+HWM — GREEN
+  green=18  yellow=0  red=0
+  pdfHost: www.howmet.com
+  latestCovered: Q2 2026
+  catalog: tmp/ir-next10/hwm-catalog.json
+
+MAR — YELLOW
+  green=0  yellow=18  red=0
+  pdfHost: marriott.gcs-web.com
+  latestCovered: Q2 2026
+  catalog: tmp/ir-next10/mar-catalog.json
+
+XIACY — GREEN
+  green=18  yellow=0  red=0
+  pdfHost: ir.mi.com
+  latestCovered: Q2 2026
+  catalog: tmp/ir-next10/xiacy-catalog.json
+
+Summary table
+  ticker  light   g/y/r     host                 latest
+  NTTYY   green   17/0/0      group.ntt            Q1 2026
+  HWM     green   18/0/0      howmet.com           Q2 2026
+  MAR     yellow  0/18/0      marriott.gcs-web.com Q2 2026
+  XIACY   green   18/0/0      ir.mi.com            Q2 2026

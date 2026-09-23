@@ -712,6 +712,69 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
   ) {
     return true;
   }
+  // NTT (NTTYY) IR library presentations + kessan results releases.
+  if (
+    (h === "group.ntt" || h.endsWith(".ntt")) &&
+    parsed.pathname.includes("/en/ir/library/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Howmet Aerospace (HWM) WordPress VIP earnings presentation + results press.
+  if (
+    (h === "www.howmet.com" || h.endsWith(".howmet.com")) &&
+    parsed.pathname.includes("/wp-content/uploads/sites/3/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Marriott (MAR) GCS static-files press releases (filings-only; no decks).
+  if (
+    (h === "marriott.gcs-web.com" || h.endsWith(".marriott.com")) &&
+    /\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Xiaomi (XIACY) IR static-files + nasdaq_kms encrypted PDFs.
+  if (
+    (h === "ir.mi.com" || h.endsWith(".mi.com")) &&
+    (/\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname) ||
+      (parsed.pathname.includes("/system/files-encrypted/") && /\.pdf(?:$|[?#])/i.test(parsed.pathname)))
+  ) {
+    return true;
+  }
+  // Sany Heavy (SNHIY) SSE cninfo / East Money PDF mirrors + HKEX English results.
+  if (
+    ((h === "static.cninfo.com.cn" || h.endsWith(".cninfo.com.cn")) &&
+      /\.pdf(?:$|[?#])/i.test(parsed.pathname)) ||
+    ((h === "pdf.dfcfw.com" || h.endsWith(".dfcfw.com")) &&
+      /\.pdf(?:$|[?#])/i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Constellation Energy (CEG) GCS static-files + /node/N/pdf press.
+  if (
+    (h === "investors.constellationenergy.com" || h.endsWith(".constellationenergy.com")) &&
+    (/\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname) ||
+      /\/node\/\d+\/pdf\/?$/i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Murata (MRAAY) Sitecore ashx presentation + financial results.
+  if (
+    (h === "corporate.murata.com" || h.endsWith(".murata.com")) &&
+    /-(?:e-speach|e-fls)\.ashx(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // MercadoLibre (MELI) CMS document PDFs (Letters + Financial Results).
+  if (
+    (h === "http2.mlstatic.com" || h.endsWith(".mlstatic.com")) &&
+    parsed.pathname.includes("/ml-cms-backend/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
   // AXA (AXAHY) Prismic CDN results presentations + press.
   if (
     (h === "www-axa-com.cdn.prismic.io" || h.endsWith(".prismic.io")) &&

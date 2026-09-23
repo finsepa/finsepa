@@ -201,6 +201,16 @@ import { applyIrSeedPncDocumentUrls } from "@/lib/market/ir-seed-apply-pnc";
 import { applyIrSeedMgclyDocumentUrls } from "@/lib/market/ir-seed-apply-mgcly";
 import { applyIrSeedPstvyDocumentUrls } from "@/lib/market/ir-seed-apply-pstvy";
 import { applyIrSeedGdDocumentUrls } from "@/lib/market/ir-seed-apply-gd";
+import { applyIrSeedNttyyDocumentUrls } from "@/lib/market/ir-seed-apply-nttyy";
+import { applyIrSeedHwmDocumentUrls } from "@/lib/market/ir-seed-apply-hwm";
+import { applyIrSeedMarDocumentUrls } from "@/lib/market/ir-seed-apply-mar";
+import { applyIrSeedXiacyDocumentUrls } from "@/lib/market/ir-seed-apply-xiacy";
+import { applyIrSeedHcaDocumentUrls } from "@/lib/market/ir-seed-apply-hca";
+import { applyIrSeedSnhiyDocumentUrls } from "@/lib/market/ir-seed-apply-snhiy";
+import { applyIrSeedDukDocumentUrls } from "@/lib/market/ir-seed-apply-duk";
+import { applyIrSeedCegDocumentUrls } from "@/lib/market/ir-seed-apply-ceg";
+import { applyIrSeedMraayDocumentUrls } from "@/lib/market/ir-seed-apply-mraay";
+import { applyIrSeedMeliDocumentUrls } from "@/lib/market/ir-seed-apply-meli";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 /** Tickers with bespoke IR seed modules (run before universal layers). */
@@ -404,6 +414,16 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
   "MGCLY",
   "PSTVY",
   "GD",
+  "NTTYY",
+  "HWM",
+  "MAR",
+  "XIACY",
+  "HCA",
+  "SNHIY",
+  "DUK",
+  "CEG",
+  "MRAAY",
+  "MELI",
 ]);
 
 export function earningsIrSeedResolutionSource(
@@ -617,6 +637,16 @@ async function applyDedicatedIrSeedDocumentUrls(
   if (t === "MGCLY") return applyIrSeedMgclyDocumentUrls(rows, hub);
   if (t === "PSTVY") return applyIrSeedPstvyDocumentUrls(rows, hub);
   if (t === "GD") return applyIrSeedGdDocumentUrls(rows, hub);
+  if (t === "NTTYY") return applyIrSeedNttyyDocumentUrls(rows, hub);
+  if (t === "HWM") return applyIrSeedHwmDocumentUrls(rows, hub);
+  if (t === "MAR") return applyIrSeedMarDocumentUrls(rows, hub);
+  if (t === "XIACY") return applyIrSeedXiacyDocumentUrls(rows, hub);
+  if (t === "HCA") return applyIrSeedHcaDocumentUrls(rows, hub);
+  if (t === "SNHIY") return applyIrSeedSnhiyDocumentUrls(rows, hub);
+  if (t === "DUK") return applyIrSeedDukDocumentUrls(rows, hub);
+  if (t === "CEG") return applyIrSeedCegDocumentUrls(rows, hub);
+  if (t === "MRAAY") return applyIrSeedMraayDocumentUrls(rows, hub);
+  if (t === "MELI") return applyIrSeedMeliDocumentUrls(rows, hub);
   if (t === "RACE") {
     return applyIrSeedFerrariPresentationUrls(rows, {
       preview: options?.preview,

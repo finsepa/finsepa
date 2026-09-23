@@ -1,0 +1,36 @@
+# IR vault discovery — CEG, MRAAY, MELI
+Date: 2026-09-23
+Scope: Q1 2022 → latest reported quarter. Catalogs only (no match/apply/allowlist/tests/docs).
+Verify: Range GET bytes 0-7 == %PDF. Never SEC HTML.
+
+## CEG (Constellation Energy)
+- trafficLight: yellow
+- counts: 16 green / 2 yellow / 0 red
+- pdfHost: investors.constellationenergy.com
+- latest: Q2 2026
+- verified: True
+- IR: investors.constellationenergy.com (static-files UUID + /node/N/pdf)
+- Notes: Slides=Earnings Call Presentation; Filings=Earnings Release/Press. Q4'24/Q4'25 filings-only (no quarterly deck). Q4'23 slides=2024 Business Outlook deck.
+
+## MRAAY (Murata Manufacturing ADR)
+- trafficLight: green
+- counts: 21 green / 0 yellow / 0 red
+- pdfHost: corporate.murata.com
+- latest: Q1 2027
+- verified: True
+- IR: corporate.murata.com (March FY; *-e-speach.ashx slides / *-e-fls.ashx filings)
+
+## MELI (MercadoLibre)
+- trafficLight: yellow
+- counts: 6 green / 10 yellow / 2 red
+- pdfHost: http2.mlstatic.com
+- latest: Q2 2026
+- verified: True
+- IR: investor.mercadolibre.com → http2.mlstatic.com/ml-cms-backend
+- API: /api/components?type=tableRow&subType=press-releases
+- Notes: Slides=Letter to Shareholders (Q2'22–Q3'23 only). Filings=Reports * Financial Results or MELI_Qn_YYYY_Press_Release. Q4'25/Q1'26 empty (no results PDFs on IR). No quarterly decks in Documents Archive.
+
+## Files
+- tmp/ir-next10/ceg-catalog.json
+- tmp/ir-next10/mraay-catalog.json
+- tmp/ir-next10/meli-catalog.json

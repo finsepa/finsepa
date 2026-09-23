@@ -1,0 +1,83 @@
+{
+  "ticker": "NTTYY",
+  "fyEnd": "03-31",
+  "irPages": [
+    "https://group.ntt/en/ir/",
+    "https://group.ntt/en/ir/library/presentation/financial/",
+    "https://group.ntt/en/ir/library/results/"
+  ],
+  "pdfHost": "group.ntt",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2022/220808e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2022/pdf/fy2022q1kessan0808e.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2022/221108e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2022/pdf/fy2022q2kessan1108e.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2022/230209e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2022/pdf/fy2022q3kessan0209e.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2022/230512e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2022/pdf/fy2022q4kessan0512e.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2023/230809e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2023/pdf/fy2023q1kessan0809e.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2023/231107e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2023/pdf/fy2023q2kessan1107e.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2023/240208e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2023/pdf/fy2023q3kessan0208e.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2023/240510e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2023/pdf/fy2023q4kessan0510e.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2024/240807e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2024/pdf/fy2024q1kessan0807e.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2024/241107e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2024/pdf/fy2024q2kessan1107e.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2024/250207e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2024/pdf/fy2024q3kessan0207e.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2024/250509e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2024/pdf/fy2024q4kessan0509e.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2025/250806e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2025/pdf/fy2025q1kessan0806e.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2025/251104e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2025/pdf/fy2025q2kessan1104e.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2025/260205e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2025/pdf/fy2025q3kessan0205e.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2025/260508e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2025/pdf/fy2025q4kessan0508e.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://group.ntt/en/ir/library/presentation/2026/260806e.pdf",
+      "filings": "https://group.ntt/en/ir/library/results/2026/pdf/fy2026q1kessan0806e.pdf"
+    }
+  },
+  "trafficLight": "green",
+  "verified": true,
+  "notes": "NTT ADR (NTTYY; TSE 9432) March FY. Finsepa labels = NTT FY tag (FY2026 = year ending Mar 2027). Hub group.ntt/en/ir/library. Slides=`/en/ir/library/presentation/{fy}/{yymmdd}e.pdf` (earnings presentation); Filings=`/en/ir/library/results/{fy}/pdf/fy{fy}q{n}kessan{mmdd}e.pdf` (Financial Results Release). Prefer English (`e.pdf`). Never SEC HTML. Scope Q1 2022\u2192Q1 2026 (17 green / 0 yellow / 0 red). Range-GET %PDF verified on locked URLs."
+}

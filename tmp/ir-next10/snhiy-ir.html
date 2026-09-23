@@ -1,0 +1,124 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link id="linkId" rel="shortcut icon"
+          href="https://www.valueonline.cn/laws/static/images/favicon.ico" type="image/x-icon" />
+    <title>三一重工 - 投资者关系</title>
+    <style>
+        html{
+            height: 100%;
+        }
+        body{
+            margin: 0px !important;
+            overflow: hidden;
+            height: 100%;
+        }
+        #sharewaf_box{
+            display: none;
+        }
+    </style>
+    <script type="text/javascript">
+        try {
+            window.addEventListener('message',function(e){
+                messageEvent(e)
+            });
+            function messageEvent(e){
+                try {
+                    window[e.data['func']].apply(e.target,e.data['param'])
+                }catch (e){
+
+                }
+            }
+            window['openLocalUrl']=function(url){
+                window.location.href = url;
+            }
+        }catch (e){
+            console.log(e)
+        }
+
+    </script>
+</head>
+<body>
+<div id="" class="panel-body no-padding tab-pane" style="height: 100%;overflow: hidden;width: 100%;min-width: 1280px;" >
+    
+        
+            <iframe loading="eager" importance="high" fetchpriority="high"  width="100%" frameborder="0" marginwidth="0"
+                marginheight="0" allowfullscreen="true" allowTransparency="true" id="irmCompanyIndexIframe"
+                src="https://mf.valueonline.cn/ui/irh/index?access_token=011eddc0-e1e8-4867-9fe6-c8e0245c952c&tenant_info=pcTGp5lcXoUGjJOQfH5UF6OlSnq1b71Co73vcifbitwx9LNs_NRHpmpnNlGPonkaGXRokd_v0G3VsFECq9DIYfYlUaKZvNPedCbanxlMfpA8PS3qs7jmW1Qb-ZY0KT3Q844t1VJ4CLQ6SAgydVdgZFpAHfcD_OQ8YbPoAKqhTacce-vXYTydhCrrrMh_IF2LG-WnJOT8PUQdvqU_C6HORE7UJv2u5kaQHAhcKjzAkpZKOn1hARZs43PS-9SRNjl0dCWyEhzuTvO5310DKIXbLk8_MuU3FNfaoikE2VGOeLpdelgq1jBzok3cDc0pxujPZiiMrASud9433Qboko4xU71Q_zd7viUUxuyQHNmikOp_BRLfgrePjXeytvA5BP7lCCOIuzBaTt2uq-2vRLAZHrLnjbytVi_qCUnU5NgWjHVmRIESQvnxnWVqxHFi-twebZdHp5s9lq1_FiXYTaUVrqF9YAwOio2U1h1gbMmTPSTRmwjI9NEhZhp7OuBqf2AJmm98Fe586V3X4da8Gv2Y9tTPbaKNYG5V4cYDhaBv2zf93UENPsTizFlAU3kuAYmT_Vv4Wgb4IK7GyLXQikbH7Q==&source=yd&loading=1&companyCodeValue=600031"
+                style="display:block;border:0;height: 100vh;" ></iframe>
+        
+        
+    
+</div>
+</body>
+<script type="text/javascript">
+    function getHTTPObject() {
+        if (typeof XMLHttpRequest == 'undefined') {
+            XMLHttpRequest = function () {
+                try { return new ActiveXObject('Msxml2.XMLHTTP.6.0');}
+                catch (e) {}
+                try { return new ActiveXObject('Msxml2.XMLHTTP.3.0');}
+                catch (e) {}
+                try { return new ActiveXObject('Msxml2.XMLHTTP');}
+                catch (e) {}
+                return false;
+            }
+        }
+        return new XMLHttpRequest();
+    }
+
+    function getTodayDate() {
+        var date = new Date();
+        var year = date.getFullYear();
+        var month = date.getMonth() + 1;
+        var day = date.getDate();
+
+        month = month < 10 ? '0' + month : month;
+        day = day < 10 ? '0' + day : day;
+
+        return '' + year + month + day;
+    }
+
+
+    window.onload = function() {
+        var osViewPath = 'https://oss.valueonline.cn/';
+        var langvalue = ''
+        var companyCode = '600031'
+        var xhr_20220913 ;
+        try {
+            var t = getTodayDate();
+            var url1 = osViewPath + "cloud-irh-bucket/public/icon/"+companyCode + "_01.ico?t="+t;
+            xhr_20220913 = getHTTPObject();
+            xhr_20220913.open("GET",url1,true)
+            xhr_20220913.send()
+            // if(x.status === 200){
+            //     var d1 = document.getElementById("linkId");
+            //     if(d1 != null && d1 != undefined){
+            //         d1.setAttribute("href",url1);
+            //     }
+            // }
+        }catch (e){
+            console.log(e)
+        }
+        xhr_20220913.onreadystatechange = function (){
+            if(xhr_20220913.readyState === 4 && xhr_20220913.status === 200){
+                var d1 = document.getElementById("linkId");
+                if(d1 != null && d1 != undefined){
+                    d1.setAttribute("href",url1);
+                }
+            }
+        }
+    };
+
+
+
+</script>
+</html>
+
+

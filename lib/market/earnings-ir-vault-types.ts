@@ -189,6 +189,16 @@ export const EARNINGS_IR_VAULT_IR_PDF_ONLY_TICKERS = new Set([
   "MGCLY",
   "PSTVY",
   "GD",
+  "NTTYY",
+  "HWM",
+  "MAR",
+  "XIACY",
+  "HCA",
+  "SNHIY",
+  "DUK",
+  "CEG",
+  "MRAAY",
+  "MELI",
 ]);
 
 export type EarningsIrVaultDocStatus = "locked" | "found" | "missing";

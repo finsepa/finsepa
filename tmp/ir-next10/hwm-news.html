@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+	<!-- OneTrust Cookies Consent Notice start for howmet.com -->
+	<script type="text/javascript" src="https://cdn.cookielaw.org/consent/821caf2c-bd5d-4e4e-8b64-181e0912b589/OtAutoBlock.js"></script>
+	<script src="https://cdn.cookielaw.org/scripttemplates/otSDKStub.js" type="text/javascript" charset="UTF-8" data-domain-script="821caf2c-bd5d-4e4e-8b64-181e0912b589"></script>
+
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="profile" href="https://gmpg.org/xfn/11">
+	<meta name="google-site-verification" content="TekaMiiDcIzeyjee8HLeeTA5l6yWDiJjDBGMtexzEhs" />
+
+	
+	<script type="text/javascript">
+		var pdfPath = "https://www.howmet.com/wp-content/themes/howmet";
+
+		// Numeric OneTrust consent group IDs (tenant uses 1,2,3,4).
+		var strOneTrustClosedCookieName    = "OptanonAlertBoxClosed";
+		var strOneTrustStrictlyNecessaryID = "1";
+		var strOneTrustPerformanceID       = "2";
+		var strOneTrustFunctionalID        = "3";
+		var strOneTrustTargetingID         = "4";
+
+		// Track consent status (kept for backward-compat; OneTrust sets these via the optanon-category-* blocks below).
+		var boolCookieConsentArray = {};
+		boolCookieConsentArray[strOneTrustClosedCookieName]    = false;
+		boolCookieConsentArray[strOneTrustStrictlyNecessaryID] = false;
+		boolCookieConsentArray[strOneTrustPerformanceID]       = false;
+		boolCookieConsentArray[strOneTrustFunctionalID]        = false;
+		boolCookieConsentArray[strOneTrustTargetingID]         = false;
+
+		// Control if banner should slide page down.
+		var boolOneTrustSlidePageDown = true;
+
+		// Define variable to be used across functions.
+		var topMargin = 0;
+
+		// Function that gracefully slides down the html body.
+		function pushPageDown() {
+			document.body.style.display = "block";
+
+			var elemOptAnonBanner   = document.getElementById('onetrust-banner-sdk');
+			var btnAcceptCookies    = document.getElementById("onetrust-accept-btn-handler");
+			var btnOptBannerLinkTxt = document.getElementById("ot-banner-policy-link");
+
+			// Set site primary colors.
+			if ( undefined !== btnOptBannerLinkTxt ) {
+				btnOptBannerLinkTxt.style.color = "#00AFBA";
+			}
+			if ( undefined !== btnAcceptCookies ) {
+				btnAcceptCookies.style.backgroundColor = "#00AFBA";
+				btnAcceptCookies.style.borderColor = "#00AFBA";
+			}
+
+			if ( undefined !== elemOptAnonBanner ) {
+				elemOptAnonBanner.style.position = "fixed";
+				elemOptAnonBanner.style.top = "0px";
+
+				elemOptAnonBanner.style.transition = "all 1000ms ease-out";
+				elemOptAnonBanner.style.webkitTransition = "all 850ms ease-out";
+				elemOptAnonBanner.style.mozTransition = "all 1000ms ease-out";
+				elemOptAnonBanner.style.msTransition = "all 1000ms ease-out";
+				elemOptAnonBanner.style.OTransition = "all 1000ms ease-out";
+			}
+
+			if ( undefined !== elemOptAnonBanner && null !== elemOptAnonBanner && boolOneTrustSlidePageDown ) {
+				document.body.style.transition = "all 1000ms ease-out";
+				document.body.style.webkitTransition = "all 850ms ease-out";
+				document.body.style.mozTransition = "all 1000ms ease-out";
+				document.body.style.msTransition = "all 1000ms ease-out";
+				document.body.style.OTransition = "all 1000ms ease-out";
+
+				var elemHeader = document.getElementsByTagName("header");
+				if ( undefined !== elemHeader && elemHeader.length > 0 ) {
+					for ( var i = 0; i < elemHeader.length; i++ ) {
+						if ( window.getComputedStyle(elemHeader[i], null).getPropertyValue("position") != "relative" ) {
+							elemHeader[i].style.transition = "all 1000ms ease-out";
+							elemHeader[i].style.webkitTransition = "all 850ms ease-out";
+							elemHeader[i].style.mozTransition = "all 1000ms ease-out";
+							elemHeader[i].style.msTransition = "all 1000ms ease-out";
+							elemHeader[i].style.OTransition = "all 1000ms ease-out";
+						}
+					}
+				}
+			}
+		}
+
+		// Function to get cookies by name.
+		function getCookie(name) {
+			var value = "; " + document.cookie;
+			var parts = value.split("; " + name + "=");
+			if (parts.length == 2) {
+				return true;
+			}
+		}
+
+		// Function to get cookie value by name.
+		function getCookieValue(name) {
+			const value = `; ${document.cookie}`;
+			const parts = value.split(`; ${name}=`);
+			if (parts.length === 2) return parts.pop().split(';').shift();
+		}
+
+		/**
+		 * Get the OneTrust active groups variable across tenant variants.
+		 * Your tenant uses window.OnetrustActiveGroups (lowercase "t").
+		 */
+		function otGetActiveGroups() {
+			return (
+				window.OnetrustActiveGroups ??
+				window.OneTrustActiveGroups ??
+				window.OptanonActiveGroups ??
+				null
+			);
+		}
+
+		/**
+		 * Check if a OneTrust group is active.
+		 * Supports:
+		 * - Array form: [1,2,3,4] or ["1","2","3","4"]
+		 * - String form: ",1,2,3,4," (and your tenant also includes BG* tokens)
+		 */
+		function otHasConsent(groupNum) {
+			const g = otGetActiveGroups();
+
+			if (Array.isArray(g)) {
+				return g.map(String).includes(String(groupNum));
+			}
+			if (typeof g === 'string') {
+				return g.indexOf(',' + groupNum + ',') !== -1;
+			}
+			return false;
+		}
+
+		/**
+		 * Release external scripts blocked by the MU-plugin by host substring.
+		 * MU-plugin converts vendor scripts to:
+		 *   <script type="text/plain" class="... optanon-category-X ..." data-src="...">
+		 *
+		 * We release by host substring to avoid any dependency on class assignment edge-cases.
+		 * This implementation replaces the blocked tag in-place (most reliable execution).
+		 */
+		function releaseBlockedScriptsByHost(hostSubstring) {
+			var selector = 'script[data-src*="' + hostSubstring + '"]';
+
+			Array.from(document.querySelectorAll(selector)).forEach(function (blockedTag) {
+				var src = blockedTag.getAttribute('data-src');
+				if (!src) return;
+
+				// Prevent double execution.
+				if (document.querySelector('script[src="' + src + '"]')) {
+					blockedTag.remove();
+					return;
+				}
+
+				// Create a real script in the SAME location and preserve identifiers.
+				var s = document.createElement('script');
+
+				if (blockedTag.id) {
+					s.id = blockedTag.id;
+				}
+				if (blockedTag.className) {
+					s.className = blockedTag.className; // keep optanon-category-* (harmless post-consent)
+				}
+
+				// Deterministic execution: run as soon as it finishes downloading, in insertion order.
+				s.async = false;
+				s.src = src;
+
+				// Replace the blocked tag in-place.
+				blockedTag.parentNode.insertBefore(s, blockedTag);
+				blockedTag.remove();
+			});
+		}
+
+		// Run all releases for consented categories.
+		function runConsentReleases() {
+			// Performance (2): Jetpack stats + Parse.ly
+			if (otHasConsent(2)) {
+				releaseBlockedScriptsByHost('stats.wp.com');
+				releaseBlockedScriptsByHost('pixel.wp.com');
+				releaseBlockedScriptsByHost('cdn.parsely.com');
+			}
+
+			// Targeting (4): ShareThis
+			if (otHasConsent(4)) {
+				releaseBlockedScriptsByHost('platform-api.sharethis.com');
+			}
+		}
+
+		// OneTrust wrapper runs on load and on consent changes (depending on tenant behavior).
+		function OptanonWrapper() {
+			runConsentReleases();
+
+			// Run again after OneTrust updates state (common race).
+			if (typeof queueMicrotask === 'function') {
+				queueMicrotask(runConsentReleases);
+			} else {
+				setTimeout(runConsentReleases, 0);
+			}
+
+			requestAnimationFrame(runConsentReleases);
+
+			setTimeout(runConsentReleases, 50);
+			setTimeout(runConsentReleases, 250);
+			setTimeout(runConsentReleases, 1000);
+		}
+
+		/**
+		 * Hook OneTrust consent UI buttons to ensure releases happen immediately after user action,
+		 * even if OneTrust doesn't re-fire OptanonWrapper in this tenant.
+		 */
+		function hookOneTrustButtons() {
+			var ids = [
+				'onetrust-accept-btn-handler', // Accept All
+				'onetrust-pc-btn-handler',     // Save Preferences
+				'onetrust-reject-all-handler'  // Reject All (optional)
+			];
+
+			ids.forEach(function (id) {
+				var btn = document.getElementById(id);
+				if (!btn) return;
+
+				// Avoid double-binding
+				if (btn.getAttribute('data-howmet-hooked') === '1') return;
+				btn.setAttribute('data-howmet-hooked', '1');
+
+				btn.addEventListener('click', function () {
+					// Consent state updates async; run a few times.
+					setTimeout(runConsentReleases, 50);
+					setTimeout(runConsentReleases, 250);
+					setTimeout(runConsentReleases, 1000);
+				});
+			});
+		}
+
+		// Backstops: run on DOM ready + full load, and hook OneTrust buttons.
+		document.addEventListener('DOMContentLoaded', function () {
+			runConsentReleases();
+			hookOneTrustButtons();
+			setTimeout(hookOneTrustButtons, 250);
+			setTimeout(hookOneTrustButtons, 1000);
+		});
+
+		window.addEventListener('load', function () {
+			runConsentReleases();
+			hookOneTrustButtons();
+		});
+
+		// MutationObserver: release if blocked tags are injected after consent (footer/late enqueue).
+		if ('MutationObserver' in window) {
+			new MutationObserver(function () {
+				runConsentReleases();
+				hookOneTrustButtons();
+			}).observe(document.documentElement, { childList: true, subtree: true });
+		}
+
+		// Function to check if a specific OneTrust cookie group has been set (your existing approach).
+		function OneTrustAcceptanceCheck(strCheckID) {
+			return boolCookieConsentArray[strCheckID];
+		}
+	</script>
+
+	<!-- OneTrust Cookies Consent Notice end for howmet.com -->
+
+	<script type="text/plain" class="optanon-category-1">
+		boolCookieConsentArray[strOneTrustStrictlyNecessaryID] = true;
+	</script>
+	<script type="text/plain" class="optanon-category-2">
+		boolCookieConsentArray[strOneTrustPerformanceID] = true;
+	</script>
+	<script type="text/plain" class="optanon-category-3">
+		boolCookieConsentArray[strOneTrustFunctionalID] = true;
+	</script>
+	<script type="text/plain" class="optanon-category-4">
+		boolCookieConsentArray[strOneTrustTargetingID] = true;
+	</script>
+
+	<meta name='robots' content='noindex, follow' />
+
+	<!-- This site is optimized with the Yoast SEO Premium plugin v28.5 (Yoast SEO v28.5) - https://yoast.com/product/yoast-seo-premium-wordpress/ -->
+	<title>News Archives | Howmet</title>
+	<meta property="og:locale" content="en_US" />
+	<meta property="og:type" content="article" />
+	<meta property="og:title" content="News Archives" />
+	<meta property="og:url" content="https://www.howmet.com/category/news/" />
+	<meta property="og:site_name" content="Howmet" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<script type="application/ld+json" class="yoast-schema-graph">{"@context":"https:\/\/schema.org","@graph":[{"@type":"CollectionPage","@id":"https:\/\/www.howmet.com\/category\/news\/","url":"https:\/\/www.howmet.com\/category\/news\/","name":"News Archives | Howmet","isPartOf":{"@id":"https:\/\/www.howmet.com\/#website"},"breadcrumb":{"@id":"https:\/\/www.howmet.com\/category\/news\/#breadcrumb"},"inLanguage":"en-US"},{"@type":"BreadcrumbList","@id":"https:\/\/www.howmet.com\/category\/news\/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.howmet.com\/"},{"@type":"ListItem","position":2,"name":"News"}]},{"@type":"WebSite","@id":"https:\/\/www.howmet.com\/#website","url":"https:\/\/www.howmet.com\/","name":"Howmet Aerospace","description":"","publisher":{"@id":"https:\/\/www.howmet.com\/#organization"},"potentialAction":[{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https:\/\/www.howmet.com\/?s={search_term_string}"},"query-input":{"@type":"PropertyValueSpecification","valueRequired":true,"valueName":"search_term_string"}}],"inLanguage":"en-US"},{"@type":"Organization","@id":"https:\/\/www.howmet.com\/#organization","name":"Howmet Aerospace","url":"https:\/\/www.howmet.com\/","logo":{"@type":"ImageObject","inLanguage":"en-US","@id":"https:\/\/www.howmet.com\/#\/schema\/logo\/image\/","url":"https:\/\/www.howmet.com\/wp-content\/uploads\/sites\/3\/2023\/05\/logo.svg","contentUrl":"https:\/\/www.howmet.com\/wp-content\/uploads\/sites\/3\/2023\/05\/logo.svg","caption":"Howmet Aerospace"},"image":{"@id":"https:\/\/www.howmet.com\/#\/schema\/logo\/image\/"}}]}</script>
+	<!-- / Yoast SEO Premium plugin. -->
+
+
+<link rel='dns-prefetch' href='//platform-api.sharethis.com' />
+<link rel='dns-prefetch' href='//cdn.jsdelivr.net' />
+<style id='wp-img-auto-sizes-contain-inline-css'>
+img:is([sizes=auto i],[sizes^="auto," i]){contain-intrinsic-size:3000px 1500px}
+/*# sourceURL=wp-img-auto-sizes-contain-inline-css */
+</style>
+<style id='wp-block-library-inline-css'>
+:root{--wp-block-synced-color:#7a00df;--wp-block-synced-color--rgb:122,0,223;--wp-bound-block-color:var(--wp-block-synced-color);--wp-editor-canvas-background:#ddd;--wp-admin-theme-color:#007cba;--wp-admin-theme-color--rgb:0,124,186;--wp-admin-theme-color-darker-10:#006ba1;--wp-admin-theme-color-darker-10--rgb:0,107,160.5;--wp-admin-theme-color-darker-20:#005a87;--wp-admin-theme-color-darker-20--rgb:0,90,135;--wp-admin-border-width-focus:2px}@media (min-resolution:192dpi){:root{--wp-admin-border-width-focus:1.5px}}.wp-element-button{cursor:pointer}:root .has-very-light-gray-background-color{background-color:#eee}:root .has-very-dark-gray-background-color{background-color:#313131}:root .has-very-light-gray-color{color:#eee}:root .has-very-dark-gray-color{color:#313131}:root .has-vivid-green-cyan-to-vivid-cyan-blue-gradient-background{background:linear-gradient(135deg,#00d084,#0693e3)}:root .has-purple-crush-gradient-background{background:linear-gradient(135deg,#34e2e4,#4721fb 50%,#ab1dfe)}:root .has-hazy-dawn-gradient-background{background:linear-gradient(135deg,#faaca8,#dad0ec)}:root .has-subdued-olive-gradient-background{background:linear-gradient(135deg,#fafae1,#67a671)}:root .has-atomic-cream-gradient-background{background:linear-gradient(135deg,#fdd79a,#004a59)}:root .has-nightshade-gradient-background{background:linear-gradient(135deg,#330968,#31cdcf)}:root .has-midnight-gradient-background{background:linear-gradient(135deg,#020381,#2874fc)}:root{--wp--preset--font-size--normal:16px;--wp--preset--font-size--huge:42px}.has-regular-font-size{font-size:1em}.has-larger-font-size{font-size:2.625em}.has-normal-font-size{font-size:var(--wp--preset--font-size--normal)}.has-huge-font-size{font-size:var(--wp--preset--font-size--huge)}.has-text-align-center{text-align:center}.has-text-align-left{text-align:left}.has-text-align-right{text-align:right}.has-fit-text{white-space:nowrap!important}#end-resizable-editor-section{display:none}.aligncenter{clear:both}.items-justified-left{justify-content:flex-start}.items-justified-center{justify-content:center}.items-justified-right{justify-content:flex-end}.items-justified-space-between{justify-content:space-between}.screen-reader-text{border:0;clip-path:inset(50%);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px;word-wrap:normal!important}.screen-reader-text:focus{background-color:#ddd;clip-path:none;color:#444;display:block;font-size:1em;height:auto;left:5px;line-height:normal;padding:15px 23px 14px;text-decoration:none;top:5px;width:auto;z-index:100000}html :where(.has-border-color){border-style:solid}html :where([style*=border-top-color]){border-top-style:solid}html :where([style*=border-right-color]){border-right-style:solid}html :where([style*=border-bottom-color]){border-bottom-style:solid}html :where([style*=border-left-color]){border-left-style:solid}html :where([style*=border-width]){border-style:solid}html :where([style*=border-top-width]){border-top-style:solid}html :where([style*=border-right-width]){border-right-style:solid}html :where([style*=border-bottom-width]){border-bottom-style:solid}html :where([style*=border-left-width]){border-left-style:solid}html :where(img[class*=wp-image-]){height:auto;max-width:100%}:where(figure){margin:0 0 1em}html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:var(--wp-admin--admin-bar--height,0px)}@media screen and (max-width:600px){html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:0px}}
+
+/*# sourceURL=wp-block-library-inline-css */
+</style>
+<style id='classic-theme-styles-inline-css'>
+/*! This file is auto-generated */
+.wp-block-button__link{color:#fff;background-color:#32373c;border-radius:9999px;box-shadow:none;text-decoration:none;padding:calc(.667em + 2px) calc(1.333em + 2px);font-size:1.125em}.wp-block-file__button{background:#32373c;color:#fff;text-decoration:none}
+/*# sourceURL=/wp-includes/css/classic-themes.min.css */
+</style>
+<style id='global-styles-inline-css'>
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgb(6,147,227) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgb(252,185,0) 0%,rgb(255,105,0) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgb(255,105,0) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgb(255, 255, 255), 6px 6px rgb(0, 0, 0);--wp--preset--shadow--crisp: 6px 6px 0px rgb(0, 0, 0);}:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}:where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}:where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+/*# sourceURL=global-styles-inline-css */
+</style>
+
+<link rel='stylesheet' id='all-css-6' href='https://www.howmet.com/_static/??-eJx1j00KAjEMRi9kzXQh4kLceQFP0OnEaSH9oUkYvL0dRVDUXXjwvUdgqcaXLJgFKukcM0MoS0LpuCFUHSl68PyBzRNvO97ADwMH11BCZPO4zKgipfNVk9Sw3Ai/xhIw4SsDjhmFYdRIEyQX899YUpJIMc/qqDbsCW4eUpmUuu4SBc/kZn5/5doejml1ntLR7g+DHezODncT8mX0' type='text/css' media='all' />
+<script class="optanon-category-4" type="text/plain" data-src="//platform-api.sharethis.com/js/sharethis.js?ver=2.3.12#property=64742970d8c6d2001a06c49d&amp;product=inline-buttons&amp;source=sharethis-share-buttons-wordpress" id="share-this-share-buttons-mu-js"></script>
+<script src="https://www.howmet.com/wp-includes/js/jquery/jquery.min.js?ver=3.7.1" id="jquery-core-js"></script>
+<script src="https://www.howmet.com/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1" id="jquery-migrate-js"></script>
+<link rel="https://api.w.org/" href="https://www.howmet.com/wp-json/" /><link rel="alternate" title="JSON" type="application/json" href="https://www.howmet.com/wp-json/wp/v2/categories/4" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://www.howmet.com/xmlrpc.php?rsd" />
+	<style>img#wpstats{display:none}</style>
+					<!-- Google Tag Manager -->
+			<script type="text/javascript">
+				var dotcomCounter = 0;
+				var slug = "";
+				var slugPath = "";
+				var language = "en";
+				var gtmContentArea = "";
+				var cg_n = "";
+				// Get URL Query Param.
+				const queryString = window.location.search;
+				const urlParams = new URLSearchParams(queryString);
+				entries = urlParams.entries();
+				let queryStr = '';
+				for (const entry of entries) {
+					queryStr += `'${entry[0]}':'${entry[1]}',`;
+				}
+				if (undefined !== queryStr && '' !== queryStr) {
+					queryStr = queryStr.slice(0, -1);
+					queryStr = "{" + queryStr + "}";
+				}
+				// Get dot-com-counter;
+				if (-1 === document.cookie.indexOf('dotcom-page-counter=') || '-1' === document.cookie.indexOf('dotcom-page-counter=')) {
+					dotcomCounter = 0;
+				} else {
+					name = 'dotcom-page-counter';
+					const value = `; ${document.cookie}`;
+					const parts = value.split(`; ${name}=`);
+					if (parts.length === 2) {
+						var cookieValue = parts.pop().split(';').shift();
+						dotcomCounter = cookieValue;
+					}
+				}
+				jgtmID = 'GTM-N8C6LMM';
+				dataLayer = [{
+					'gCountry': 'global',
+					'gLanguage': language,
+					'cg_n': cg_n,
+					'gPageContext': '',
+					'analyticsCallback': function() {
+						window._googleTagManagerHasLoaded = true;
+					},
+					'gaAcomTracker': 'UA-147401582-1',
+					'gaExtraProperty1': '',
+					'DotcomPageCounter': parseInt(dotcomCounter) + 1
+				}];
+				dataLayer.push({
+					'gtmLanguage': language,
+					'gtmSite': 'global',
+					'gtmSubSite': '',
+					'gtmContentArea': gtmContentArea,
+					'gtmFile': slug,
+					'gtmQueryString': queryStr,
+					//'gtmServerPath': '/global/en/news/news_releases.asp',
+					'gtmServerPath': slugPath,
+					'gtmClientPath': slugPath
+				});
+				console.log("dataLayer", dataLayer);
+			</script>
+			<script type="text/plain" class="optanon-category-2">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+				new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+				j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+				'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+				})(window,document,'script','dataLayer', jgtmID);</script>
+			<!-- End Google Tag Manager -->
+			</script>
+<link rel="icon" href="https://www.howmet.com/wp-content/uploads/sites/3/2023/05/fav-icon.png?w=32" sizes="32x32" />
+<link rel="icon" href="https://www.howmet.com/wp-content/uploads/sites/3/2023/05/fav-icon.png?w=145" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://www.howmet.com/wp-content/uploads/sites/3/2023/05/fav-icon.png?w=145" />
+<meta name="msapplication-TileImage" content="https://www.howmet.com/wp-content/uploads/sites/3/2023/05/fav-icon.png?w=145" />
+		<style id="wp-custom-css">
+			.howmet-board-committee-members-block span.designation {
+    color: black;
+    cursor: text;
+}
+.release-pages .entry-content.release-removeBr > p > br {
+    display: none;
+}
+
+.release-pages .entry-content.release-removeBr > p > strong:nth-child(1) + br, .release-pages .entry-content.release-removeBr > p > strong:nth-child(1) + br + br, .release-pages .entry-content.release-removeBr > p > strong:nth-child(1) + br + br + br, .release-pages .entry-content.release-removeBr > p > strong:nth-child(1) + br + br + br + br, .release-pages .entry-content.release-removeBr > p > strong:nth-child(1) + br + br + br + br + br, .release-pages .entry-content.release-removeBr > p > strong:nth-child(1) + br + br + br + br + br + br {
+    display: block;
+}
+
+/* .page-id-15642 .entry-content .ot-form-wrapper.full-row{padding: 0;}
+.page-id-15642 ul.breadcrumb{margin-bottom: 0 !important;} */
+.page-id-15642 ul.breadcrumb li.language-picker.breadcrumb-dropdown{display:none}
+
+.hw-pdf-table.custome-table td,.hw-pdf-table.custome-table table {
+	    border: 1px solid #ddd;
+}
+.wp-block-table.hw-pdf-table tr:hover {
+    background-color: inherit;
+}
+
+.accordion-sections .accordion-items table {
+	    border-collapse: collapse;
+}
+.accordion-sections .accordion-items table td,
+.accordion-sections .accordion-items table th {
+	border: 1px solid;
+}
+.accordion-sections>h1, .accordion-sections>h2, .accordion-sections>h3, .accordion-sections>h5, .accordion-sections>h6 {
+    max-width: 970px;
+	    margin: 0 auto;
+	padding: 0 15px;
+}
+
+.page-id-16095 h3, .page-id-16095 p.accordion-header, .page-id-16095 .wp-block-table {
+text-align:right;
+}
+
+.page-id-16095 .wp-block-table {
+
+direction:rtl;
+	
+}
+
+.page-id-16095 p.accordion-header::before, .page-id-16095 p.accordion-header::after{
+left: 20px;
+}
+
+.page-id-3110 .related_documents__boxes p {
+
+	line-height: 0px;
+}
+
+.page-id-3110 .related_documents__boxes li {
+
+	padding-top: 10px;
+}
+
+/* Styleing for the HP Video Block */
+			.home_hero_coverblock h1 {
+font-size:52px;line-height:62px;}
+
+.home_hero_coverblock {max-width:100% !important;}
+
+.page-id-9 .hero-banner__header {
+    position: absolute;
+    z-index: 4;
+    color: #000;
+    max-width: 37%;
+    top: 50%;
+    transform: translateY(-50%);
+	padding-left: 60px;}
+
+.page-id-9 .wp-block-cover__background {background: linear-gradient(90deg, rgba(0,0,0,0.8239670868347339) 9%, rgba(255,255,255,0) 100%)!important;}
+
+.home_hero_coverblock h1, .home_hero_coverblock p  {max-width:605px;}
+
+@media only screen (min-width: 280px){
+	.page-id-9 .wp-block-cover__video-background.intrinsic-ignore, .page-id-9 .has-text-align-center.has-text-color.has-medium-font-size, .page-id-9 .wp-block-cover__background.has-background-dim, .page-id-9 .wp-block-cover__inner-container.is-layout-constrained.wp-block-cover-is-layout-constrained, .page-id-9 .wp-block-cover__background.has-background-dim span{
+	height: auto;
+	width: 100vw;
+	background: none;
+	 }
+	.page-id-8 .wp-block-cover.alignfull.is-light{
+  
+  min-height: 50vh;
+		width: 100%;
+}
+}
+
+@media screen and (max-width:499px) {
+		.page-id-9 .hero-banner__header {
+    position: absolute;
+    z-index: 4;
+    color: #000;
+    max-width: 100%;
+    top: 75%;
+    transform: translateY(-50%);
+	padding-left: 0px;}
+}
+	
+@media screen and (max-width:1199px) {
+			.home_hero_coverblock h1 {
+				font-size:28px !important;
+				line-height:38px;}
+	
+	.home_hero_coverblock p {font-size:15px;margin-top:0px;}
+	
+	.page-id-9 .wp-block-cover__inner-container .is-layout-constrained .wp-block-cover-is-layout-constrained{
+	 height: 58vh !important;
+	 width: 100%;
+	 }
+	
+	
+}
+@media screen and (max-width: 767px){
+	.page-id-9 .wp-block-cover__video-background.intrinsic-ignore, .page-id-9 .has-text-align-center.has-text-color.has-medium-font-size, .page-id-9 .wp-block-cover__background.has-background-dim, .page-id-9 .wp-block-cover__background.has-background-dim span, .page-id-9 .wp-block-cover__inner-container.is-layout-constrained.wp-block-cover-is-layout-constrained,{
+	height: auto;
+	width: 100%;
+	background: none;
+	 }
+	.page-id-9 .wp-block-cover.alignfull.is-light {
+
+   max-height: 50vh !important;
+	 width: 100%;
+}
+	.hero-banner__header {
+		top:72%;
+	}
+	.home_hero_coverblock h1, .home_hero_coverblock p  {padding-left:0px;max-width:347px;margin-bottom:20px}
+	
+	.home_hero_coverblock h1 {
+font-size:28px !important;text-align:center;line-height:38px;max-width:100%;}
+	
+	.home_hero_coverblock p {text-align:center;font-size:15px;margin-top:0px;max-width:100%;}
+	
+	.page-id-9 .wp-block-cover__background {background: linear-gradient(90deg, rgba(0,0,0,0.8239670868347339) 100%, rgba(255,255,255,0) 100%)!important;}
+	
+	.page-id-9 .hero-banner__header {
+    position: absolute;
+    z-index: 4;
+    color: #000;
+    max-width: 100%;
+    top: 75%;
+    transform: translateY(-50%);
+		padding-left:0px;
+	;}
+}
+
+
+@media only screen and (min-width: 1200px){
+	.page-id-9 .wp-block-cover__video-background.intrinsic-ignore, .page-id-9 .has-text-align-center.has-text-color.has-medium-font-size, .page-id-9 .wp-block-cover__background.has-background-dim, .page-id-9 .wp-block-cover.alignfull.is-light, .page-id-9 .wp-block-cover__background.has-background-dim span, .page-id-9 .wp-block-cover__inner-container.is-layout-constrained.wp-block-cover-is-layout-constrained{
+	height: 81vh;
+	width: 100vw;
+	background: none;
+	 }
+}
+
+.page-id-16715 .hero-slider {
+margin-bottom:0px;
+}
+
+.page-id-16715 .slick-list, .page-id-16715 .hero-slider__bg img {
+	height:454.594px
+}
+
+.quality_certifications_hero .hero-banner__header .container {
+	max-width:1040px;
+}
+
+.page-id-16715 .slide-info-title {
+        font-size: 64px;
+        line-height: 81px;
+        margin: 20px 0 0 0;
+        font-weight: 300;
+
+    }
+
+ @media screen and (max-width:1199px){
+	 .page-id-16715 .slide-info-title {
+		 				font-size: 34px;
+            line-height: 47px;
+		  text-align:center;
+	 }         
+	 
+	
+        }
+
+@media screen and (max-width:767px) {
+		 .page-id-16715 .slide-info-title {
+		 				margin-top:83px;
+	 }  
+	
+	.page-id-16715 .hero-slider__bg img {
+	height:234px
+}
+}
+
+/* Audit Committee List */
+.page-id-4816 .audit_list .wp-block-list {
+	list-style:lower-alpha;
+	margin-bottom:0px;
+}
+
+.qrsn_hero {
+	height:350px;
+}
+
+.qrsn_hero img {
+	margin-top:0px !important;
+}
+
+.q4default span.prnews_span {
+	font-size:17px !important;
+	font-weight:300 !important;
+	font-family:"Open sans" !important;
+	color:#282828 !important;
+	font-style:normal !important;
+}
+
+/* .page-id-63 .entry-content>*:not([class^=wp-block-howmet]):not(.full-row):not(.breadcrumb):not(.wp-block-separator), .entry-content>.howmet-buttons, .entry-content>.howmet-lists-block {
+max-width:1070px;} */
+
+.page-id-63 p {
+margin-bottom:20px;}
+
+.page-id-63 .small_text {
+	line-height:18px;
+}
+
+/* Investors Page Annual Report */
+.normal_container .container {
+	max-width: 970px !important;
+	margin-left:0px !important;
+}
+
+.notice_margin {
+margin-bottom: 10px !important;
+}
+
+/*Investor Page */
+.page-id-3546 .card-box-v1__box {
+	height:567px;
+}
+
+.PRN_ImbeddedAssetReference {
+display:none;
+}
+
+/* #post-22345 .entry-content>*:not([class^=wp-block-howmet]):not(.full-row):not(.breadcrumb):not(.wp-block-separator), .entry-content>.howmet-buttons, .entry-content>.howmet-lists-block {
+	max-width:1320px;
+} */
+
+.padding_indent {
+	text-indent: 50px !important;
+}
+
+.page-id-1130 .entry-content .teams-container-section,.page-id-1128 .entry-content .teams-container-section,.page-id-1126 .entry-content .teams-container-section  {
+max-width:1320px !important;
+}
+
+.howmet-product-article img,{
+	width:216px !important;
+	height:180px !important;
+}
+
+.tax-product_category .category-body img {
+	max-width:940px !important;
+	max-height:416px !important;
+	object-fit:cover;
+}
+
+/*HFS Product Page*/
+.post-1345 .category-detail-wrap {
+	height:300px !important;
+}
+
+.post-1345 .wp-block-howmet-product-categories .category-wrap .category-tile .featured-image img {
+	object-fit:contain !important;
+}
+.no_style {
+list-style:none;
+}
+
+.earning-item .btn-main {
+	display:block;
+}
+
+.location-list-item.with-icon img {
+height:20px;
+}
+
+		</style>
+		</head>
+
+<body class="archive category category-news category-4 wp-custom-logo wp-theme-howmet">
+			<!-- Google Tag Manager (noscript) -->
+			<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-N8C6LMM" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+			<!-- End Google Tag Manager (noscript) -->
+		<div id="page" class="site-page">
+	<a class="skip-link screen-reader-text" href="#primary">Skip to content</a>
+
+	<header id="masthead" class="howmet-header site-header u-bg-white">
+		<div class="header-inner">
+			<div class="site-branding">
+				<a href="https://www.howmet.com/" class="custom-logo-link" rel="home"><img src="https://www.howmet.com/wp-content/uploads/sites/3/2023/05/logo.svg" class="custom-logo" alt="Howmet" decoding="async" /></a>					<p class="site-title"><a class="u-primary-text-color" href="https://www.howmet.com/" rel="home">Howmet</a></p>
+								</div><!-- .site-branding -->
+			<nav id="site-navigation" class="main-navigation">
+				<div class="howmet-menu">
+					<div class="menu-header-container"><ul id="primary-menu" class="menu"><li id="menu-item-148" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-148"><a href="https://www.howmet.com/">Howmet Aerospace Inc.</a></li>
+<li id="menu-item-140" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-140"><a href="https://www.howmet.com/about-us/">About Us</a>
+<ul class="sub-menu">
+	<li id="menu-item-142" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-142"><a href="https://www.howmet.com/leadership/">Leadership</a></li>
+	<li id="menu-item-143" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-143"><a href="https://www.howmet.com/our-fundamentals/">Our Fundamentals</a>
+	<ul class="sub-menu">
+		<li id="menu-item-150" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-150"><a href="https://www.howmet.com/ethics/">Ethics and Compliance</a></li>
+		<li id="menu-item-149" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-149"><a href="https://www.howmet.com/environmental-social-governance/">Environmental, Social and Governance</a></li>
+	</ul>
+</li>
+	<li id="menu-item-16771" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-16771"><a href="https://www.howmet.com/quality-assurance/">Quality Assurance</a></li>
+	<li id="menu-item-151" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-151"><a href="https://www.howmet.com/foundation/">Howmet Aerospace Foundation</a></li>
+</ul>
+</li>
+<li id="menu-item-152" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-152"><a href="https://www.howmet.com/markets-and-product-lines/">Markets &amp; Product Lines</a>
+<ul class="sub-menu">
+	<li id="menu-item-153" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-153"><a href="https://www.howmet.com/aerospace/">Aerospace</a></li>
+	<li id="menu-item-154" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-154"><a href="https://www.howmet.com/defense/">Defense and Space</a></li>
+	<li id="menu-item-155" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-155"><a href="https://www.howmet.com/commercial-transportation/">Commercial Transportation</a></li>
+</ul>
+</li>
+<li id="menu-item-156" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-156"><a href="https://www.howmet.com/joinus/">Join Us</a>
+<ul class="sub-menu">
+	<li id="menu-item-157" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-157"><a href="https://www.howmet.com/diversity-equity-inclusion/">Diversity, Equity &amp; Inclusion</a></li>
+	<li id="menu-item-158" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-158"><a href="https://www.howmet.com/application/">How We Hire</a></li>
+	<li id="menu-item-159" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-159"><a href="https://www.howmet.com/recruitment-fraud-warning/">Recruitment Fraud Warning</a></li>
+</ul>
+</li>
+<li id="menu-item-3809" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-3809"><a href="https://www.howmet.com/investors/">Investors</a>
+<ul class="sub-menu">
+	<li id="menu-item-161" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-161"><a href="https://www.howmet.com/annualmeeting/">Annual Meeting</a></li>
+	<li id="menu-item-3814" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3814"><a href="https://www.howmet.com/stock-information/">Stock Information</a></li>
+	<li id="menu-item-163" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-163"><a href="https://www.howmet.com/dividend-information/">Dividend Information</a></li>
+	<li id="menu-item-13007" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children menu-item-13007"><a href="/events-calendar/">Events and Presentations</a>
+	<ul class="sub-menu">
+		<li id="menu-item-4804" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4804"><a href="https://www.howmet.com/events-calendar/">Events Calendar</a></li>
+		<li id="menu-item-13006" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-13006"><a href="https://www.howmet.com/hwm-investorday-2020/">2020 Investor Day</a></li>
+		<li id="menu-item-4801" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4801"><a href="https://www.howmet.com/technology-day-2022/">2022 Technology Day</a></li>
+		<li id="menu-item-22790" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-22790"><a href="https://www.howmet.com/technology-markets-day-2026/">2026 Technology and Markets Day</a></li>
+	</ul>
+</li>
+	<li id="menu-item-4802" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4802"><a href="https://www.howmet.com/events/earnings/">Earnings</a></li>
+	<li id="menu-item-169" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-169"><a href="https://www.howmet.com/annualreport/">Annual Report</a></li>
+	<li id="menu-item-170" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-170"><a href="https://www.howmet.com/investors/financial-releases/">Financial Releases</a></li>
+	<li id="menu-item-171" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-171"><a href="https://www.howmet.com/corporate-governance/">Corporate Governance</a>
+	<ul class="sub-menu">
+		<li id="menu-item-172" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-172"><a href="https://www.howmet.com/ceo-cfo-certifications/">CEO / CFO Certifications</a></li>
+		<li id="menu-item-173" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-173"><a href="https://www.howmet.com/leadership/">Leadership</a></li>
+		<li id="menu-item-174" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-174"><a href="https://www.howmet.com/board-committees/">Board Committees</a></li>
+	</ul>
+</li>
+	<li id="menu-item-176" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-176"><a href="https://www.howmet.com/sec-filings/">SEC Filings</a></li>
+	<li id="menu-item-177" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-177"><a href="https://www.howmet.com/shareholder-information/">Shareholder Information</a>
+	<ul class="sub-menu">
+		<li id="menu-item-178" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-178"><a href="https://www.howmet.com/investor-faq/">FAQs</a></li>
+	</ul>
+</li>
+	<li id="menu-item-181" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-181"><a href="https://www.howmet.com/esg-report/">Environmental, Social and Governance Report</a></li>
+	<li id="menu-item-3816" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-3816"><a href="https://www.howmet.com/contact-investor-relations/">Contact Investor Relations</a>
+	<ul class="sub-menu">
+		<li id="menu-item-3819" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3819"><a href="https://www.howmet.com/request-printed-materials/">Request for Printed Materials</a></li>
+		<li id="menu-item-3820" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3820"><a href="https://www.howmet.com/investors/email-unsubscribe/">Unsubscribe to Email Alerts</a></li>
+		<li id="menu-item-186" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-186"><a href="https://www.howmet.com/contact-directors/">Contact Directors</a></li>
+	</ul>
+</li>
+</ul>
+</li>
+<li id="menu-item-187" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-187"><a href="https://www.howmet.com/newsroom/">News</a>
+<ul class="sub-menu">
+	<li id="menu-item-188" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-188"><a href="https://www.howmet.com/news-releases/">Press Releases</a></li>
+	<li id="menu-item-4803" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-4803"><a href="https://www.howmet.com/media-contacts/">Media Contacts</a></li>
+</ul>
+</li>
+<li id="menu-item-190" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-190"><a href="https://www.howmet.com/contact/">Contact</a>
+<ul class="sub-menu">
+	<li id="menu-item-191" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-191"><a href="https://www.howmet.com/locations/">Locations</a>
+	<ul class="sub-menu">
+		<li id="menu-item-6646" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-6646"><a href="https://www.howmet.com/hes-quality-certification/">Engine Products Certifications</a></li>
+		<li id="menu-item-193" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-193"><a href="https://www.howmet.com/hfs-quality-certification/">Fastening Systems Certifications</a></li>
+		<li id="menu-item-16779" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-16779"><a href="https://www.howmet.com/hss-quality-certification/">Engineered Structures Certifications</a></li>
+		<li id="menu-item-16778" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-16778"><a href="https://www.howmet.com/hws-quality-certification/">Forged Wheels Certifications</a></li>
+	</ul>
+</li>
+	<li id="menu-item-194" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-194"><a href="https://www.howmet.com/supplier-information/">Supplier Information</a>
+	<ul class="sub-menu">
+		<li id="menu-item-195" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-195"><a href="https://www.howmet.com/supplier-continuity/">Supplier Continuity</a></li>
+		<li id="menu-item-196" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-196"><a href="https://www.howmet.com/supplier-standards/">Supplier Code of Conduct</a></li>
+		<li id="menu-item-197" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-197"><a href="https://www.howmet.com/supplier-sustainability/">Supplier Sustainability</a></li>
+		<li id="menu-item-17849" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-17849"><a href="https://www.howmet.com/bu-supplier-information/">Business Unit Supplier Information</a></li>
+		<li id="menu-item-199" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-199"><a href="https://www.howmet.com/supplier-terms-conditions/">Supplier Terms and Conditions</a></li>
+		<li id="menu-item-200" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-200"><a href="https://www.howmet.com/carriers/">Howmet Aerospace Carriers</a></li>
+	</ul>
+</li>
+</ul>
+</li>
+</ul></div>				</div>
+				<div class="header-sidebar">
+					<div class="icons">
+						<i class="lang-icon"></i>
+													<i class="search-icon"></i>
+												</div>
+					<div class="modal">
+						<div class="search-modal">
+							<form role="search" method="get" class="search-form" action="https://www.howmet.com/search/">
+	<label>
+		<span class="screen-reader-text">Search for:</span>
+		<input type="search" class="search-field" placeholder="Search" value="" name="s" />
+	</label>
+	<input type="submit" class="search-submit" value="Search" />
+</form>
+							<i class="close-icon"></i>
+						</div>
+						<div class="lang-modal">
+							<i class="lang-icon"></i>
+							<select id="locations-select" class="form-control location-selector">
+								<option selected="">Global Locations</option>
+																			<option value="https://www.howmet.com/australia/">Australia</option>
+																						<option value="https://www.howmet.com/canada/">Canada</option>
+																						<option value="https://www.howmet.com/china/">China</option>
+																						<option value="https://www.howmet.com/czech-republic/">Czech Republic</option>
+																						<option value="https://www.howmet.com/france/">France</option>
+																						<option value="https://www.howmet.com/germany/">Germany</option>
+																						<option value="https://www.howmet.com/hungary/">Hungary</option>
+																						<option value="https://www.howmet.com/ireland/">Ireland</option>
+																						<option value="https://www.howmet.com/japan/">Japan</option>
+																						<option value="https://www.howmet.com/mexico/">Mexico</option>
+																						<option value="https://www.howmet.com/morocco/">Morocco</option>
+																						<option value="https://www.howmet.com/netherlands/">Netherlands</option>
+																						<option value="https://www.howmet.com/united-kingdom/">United Kingdom</option>
+																						<option value="https://www.howmet.com/united-states/">United States</option>
+																		</select>
+							<i class="close-icon"></i>
+							<i class="close-icon-res"></i>
+						</div>
+						<i class="lang-res"></i>
+					</div>
+				</div>
+				<button class="menu-toggle " aria-label="Menu" aria-controls="primary-menu" aria-expanded="false"></button>
+			</nav><!-- #site-navigation -->
+		</div>
+	</header><!-- #masthead -->
+	
+	<main id="primary" class="site-main howmet-main u-padding-t80 u-bg-lightgray">
+		<div class="container">
+			<section class="no-results not-found howmet-post-article">
+			<header class="page-header">
+			<h1 class="page-title">Nothing Found</h1>
+		</header><!-- .page-header -->
+		<div class="page-content">
+		
+			<p>It seems we can&rsquo;t find what you&rsquo;re looking for. Perhaps searching can help.</p>
+			<form role="search" method="get" class="search-form" action="https://www.howmet.com/search/">
+	<label>
+		<span class="screen-reader-text">Search for:</span>
+		<input type="search" class="search-field" placeholder="Search" value="" name="s" />
+	</label>
+	<input type="submit" class="search-submit" value="Search" />
+</form>
+	</div><!-- .page-content -->
+</section><!-- .no-results -->
+		</div>
+	</main><!-- #main -->
+
+
+<footer id="colophon" class="site-footer">
+	<div class="footer-row footer-top">
+		<div class="menu-footer-container"><ul id="secondary" class="menu"><li id="menu-item-202" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-202"><a href="https://www.howmet.com/about-us/">About Us</a>
+<ul class="sub-menu">
+	<li id="menu-item-203" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-203"><a href="https://www.howmet.com/leadership/">Leadership</a></li>
+	<li id="menu-item-204" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-204"><a href="https://www.howmet.com/our-fundamentals/">Our Fundamentals</a></li>
+	<li id="menu-item-16770" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-16770"><a href="https://www.howmet.com/quality-assurance/">Quality Assurance</a></li>
+	<li id="menu-item-205" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-205"><a href="https://www.howmet.com/foundation/">Howmet Aerospace Foundation</a></li>
+</ul>
+</li>
+<li id="menu-item-206" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-206"><a href="https://www.howmet.com/markets-and-product-lines/">Markets &amp; Product Lines</a>
+<ul class="sub-menu">
+	<li id="menu-item-207" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-207"><a href="https://www.howmet.com/aerospace/">Aerospace</a></li>
+	<li id="menu-item-208" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-208"><a href="https://www.howmet.com/defense/">Defense and Space</a></li>
+	<li id="menu-item-209" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-209"><a href="https://www.howmet.com/commercial-transportation/">Commercial Transportation</a></li>
+</ul>
+</li>
+<li id="menu-item-3802" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-3802"><a href="https://www.howmet.com/investors/">Investors</a>
+<ul class="sub-menu">
+	<li id="menu-item-211" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-211"><a href="https://www.howmet.com/annualmeeting/">Annual Meeting</a></li>
+	<li id="menu-item-3803" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3803"><a href="https://www.howmet.com/stock-information/">Stock Information</a></li>
+	<li id="menu-item-213" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-213"><a href="https://www.howmet.com/dividend-information/">Dividend Information</a></li>
+	<li id="menu-item-13005" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-13005"><a href="/events-calendar/">Events and Presentations</a></li>
+	<li id="menu-item-216" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-216"><a href="https://www.howmet.com/investors/financial-releases/">Financial Releases</a></li>
+	<li id="menu-item-217" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-217"><a href="https://www.howmet.com/corporate-governance/">Corporate Governance</a></li>
+	<li id="menu-item-219" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-219"><a href="https://www.howmet.com/sec-filings/">SEC Filings</a></li>
+	<li id="menu-item-220" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-220"><a href="https://www.howmet.com/shareholder-information/">Shareholder Information</a></li>
+	<li id="menu-item-221" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-221"><a href="https://www.howmet.com/esg-report/">Environmental, Social and Governance Report</a></li>
+	<li id="menu-item-3804" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3804"><a href="https://www.howmet.com/contact-investor-relations/">Contact Investor Relations</a></li>
+</ul>
+</li>
+<li id="menu-item-223" class="no-children menu-item menu-item-type-post_type menu-item-object-page menu-item-has-children menu-item-223"><a href="https://www.howmet.com/joinus/">Join Us</a>
+<ul class="sub-menu">
+	<li id="menu-item-224" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-224"><a href="https://www.howmet.com/newsroom/">News</a></li>
+	<li id="menu-item-225" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-225"><a href="https://www.howmet.com/contact/">Contact</a></li>
+</ul>
+</li>
+</ul></div>	</div>
+	<div class="footer-row footer-bottom">
+		<div class="legal">
+			<div class="menu-footer-copyright-container"><ul id="footer-copyright" class="menu"><li id="menu-item-236" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-236"><a href="https://www.howmet.com/privacy/">Data Collection and Privacy Notice</a></li>
+<li id="menu-item-3696" class="optanon-toggle-display menu-item menu-item-type-custom menu-item-object-custom menu-item-3696"><a href="#">Cookie Settings</a></li>
+<li id="menu-item-238" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-238"><a href="https://www.howmet.com/legal-notices/">Legal Notices</a></li>
+<li id="menu-item-239" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-239"><a href="https://www.howmet.com/integrity-line/">Integrity Line</a></li>
+<li id="menu-item-240" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-240"><a href="https://www.howmet.com/site-map/">Sitemap</a></li>
+<li id="menu-item-241" class="non-click-link menu-item menu-item-type-custom menu-item-object-custom menu-item-241"><a>Copyright © 2026 Howmet Aerospace</a></li>
+<li id="menu-item-242" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-home menu-item-242"><a href="https://www.howmet.com">Howmet.com</a></li>
+</ul></div>		</div>
+					<div class="social">
+				<ul>
+											<li class="twitter">
+							<a target="_blank" href="https://twitter.com/howmetaerospace" aria-label="Twitter"></a>
+						</li>
+																<li class="facebook">
+							<a target="_blank" href="https://www.facebook.com/Howmetaerospace/" aria-label="Facebook"></a>
+						</li>
+																<li class="linkedin">
+							<a target="_blank" href="https://www.linkedin.com/company/howmet-aerospace/" aria-label="Linkedin"></a>
+						</li>
+																<li class="instagram">
+							<a target="_blank" href="https://www.instagram.com/howmetaerospace/" aria-label="Instagram"></a>
+						</li>
+														</ul>
+			</div>
+			</div>
+</footer><!-- #colophon -->
+</div><!-- #page -->
+
+<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/wp-*.php","/wp-admin/*","/wp-content/uploads/sites/3/*","/wp-content/*","/wp-content/plugins/*","/wp-content/themes/howmet/*","/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+		<script type="text/javascript" id="flying-scripts">
+			const loadScriptsTimer = setTimeout(loadScripts, 5 * 1000);
+			const userInteractionEvents = ["mouseover", "keydown", "touchstart", "touchmove", "wheel"];
+			userInteractionEvents.forEach(function(event) {
+				window.addEventListener(event, triggerScriptLoader, {
+					passive: !0
+				})
+			});
+
+			function triggerScriptLoader() {
+				loadScripts();
+				clearTimeout(loadScriptsTimer);
+				userInteractionEvents.forEach(function(event) {
+					window.removeEventListener(event, triggerScriptLoader, {
+						passive: !0
+					})
+				})
+			}
+
+			function loadScripts() {
+				document.querySelectorAll("script[data-type='lazy']").forEach(function(elem) {
+					elem.setAttribute("src", elem.getAttribute("data-src"))
+				})
+			}
+		</script>
+		<script id="main-js-js-extra">
+var siteConfig = {"ajaxUrl":"https://www.howmet.com/wp-admin/admin-ajax.php","ajax_nonce":"9c1e0be2bf"};
+//# sourceURL=main-js-js-extra
+</script>
+<script src="https://www.howmet.com/wp-content/themes/howmet/assets/build/main.js?ver=1787931573" id="main-js-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/add-to-calendar-button@2?ver=1.0" id="ics-js-js"></script>
+<script id="howmet-investor-toolkit-view-script-js-extra">
+var toolkitConfig = {"ajaxUrl":"https://www.howmet.com/wp-admin/admin-ajax.php","toolkitNonce":"bcf109bb9f","themePath":"https://www.howmet.com/wp-content/themes/howmet"};
+//# sourceURL=howmet-investor-toolkit-view-script-js-extra
+</script>
+<script src="https://www.howmet.com/wp-content/themes/howmet/assets/build/js/blocks/investor-toolkit/view.js?ver=291631244cd2f04d486c" id="howmet-investor-toolkit-view-script-js" defer data-wp-strategy="defer"></script>
+<script class="optanon-category-2" type="text/plain" id="jetpack-stats-js-before">
+_stq = window._stq || [];
+_stq.push([ "view", {"v":"ext","blog":"217183860","post":"0","tz":"-4","srv":"www.howmet.com","arch_cat":"news","arch_results":"0","hp":"vip","j":"1:16.1.3"} ]);
+_stq.push([ "clickTrackerInit", "217183860", "0" ]);
+//# sourceURL=jetpack-stats-js-before
+</script>
+<script data-src="https://stats.wp.com/e-202639.js" id="jetpack-stats-js" defer data-wp-strategy="defer" fetchpriority="low"></script>
+		<script type="text/javascript" language="javascript">
+			var salesForce = document.getElementsByClassName('salesforce').length;
+			var captchaField = document.getElementsByClassName('google-captcha').length;
+
+			if( salesForce > 0 && captchaField > 0 ) {
+				var submit1 = document.getElementById("Submit1");
+				if( submit1 ) {
+					document.getElementById("Submit1").disabled = "disabled";
+				}	
+			}
+			function disableBtn() {
+				alert( 'Recaptcha Verification Timed out !\nPlease complete it again.' );
+				document.getElementById("Submit1").disabled = "disabled";
+			}
+			function enableBtn() {
+				document.getElementById("Submit1").disabled = false;
+			}
+
+			function initFormRecaptch() {
+				var siteKeyHidden = document.getElementById('form_sitekey');
+				var captchaKey = '';
+				if( siteKeyHidden ) {
+					captchaKey = siteKeyHidden.value;
+				}
+				var script = document.createElement('script');
+				script.type = 'text/javascript';
+				script.src = 'https://www.google.com/recaptcha/api.js';
+				document.body.appendChild(script);
+				if( document.getElementById('captcha-field') ) {
+					var captchaInt = setInterval(() => {
+						if( 'undefined' !== typeof(grecaptcha) ) {
+						captchaContainer = grecaptcha.render('captcha-field', {
+							'sitekey' : captchaKey,
+							'callback' : enableBtn,
+							'expired-callback' : disableBtn,
+						});
+						jQuery('.recaptcha-onetrust-placeholder').remove();
+						clearInterval( captchaInt );
+					}
+					}, 200);
+				}
+			}
+
+			jQuery( document ).ready(function() {
+				function checkOneTrustCookies() {
+					let isEnabled = false;
+					if (typeof getCookieValue === "function") { 
+						const cookieVal = getCookieValue('OptanonConsent');
+						if( "" !== cookieVal && 'undefined' !== typeof(cookieVal) ) {
+							const cookieArray = cookieVal.split('&');
+							var findCookies = cookieArray.filter(s => s.includes('groups='));
+							var cookiesFinalVal = findCookies[0];
+							if( cookiesFinalVal.includes("3:1") || cookiesFinalVal.includes("3%3A1") ) {
+								isEnabled = true;
+							}
+						}
+					}
+					return isEnabled;
+				}
+				if( ! checkOneTrustCookies() ) {
+					jQuery(".recaptcha-onetrust-placeholder").show();
+				}
+			});
+		</script>
+		<script type="text/plain" class="optanon-category-3">
+			initFormRecaptch();
+		</script>
+		<script type="text/javascript">
+	// toogle popup on click of accept link.
+	jQuery(document).on('click', '.onetrust-placeholder .optanon-toggle, .optanon-toggle-display a', function(e) {
+		if ('undefined' !== typeof(Optanon)) {
+			e.preventDefault();
+			Optanon.ToggleInfoDisplay();
+		}
+	});
+</script>
+</body>
+
+</html>

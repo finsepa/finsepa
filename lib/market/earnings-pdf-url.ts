@@ -7,7 +7,9 @@ function isGcsNodePdfPath(host: string, pathname: string): boolean {
     h !== "investor.sandisk.com" &&
     h !== "sandisk.gcs-web.com" &&
     h !== "isrg.intuitive.com" &&
-    h !== "isrg.gcs-web.com"
+    h !== "isrg.gcs-web.com" &&
+    h !== "investors.constellationenergy.com" &&
+    !h.endsWith(".constellationenergy.com")
   ) {
     return false;
   }
@@ -75,6 +77,13 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
     ) {
       return true;
     }
+    // Murata (MRAAY) Sitecore media ashx — Presentation (*-e-speach.ashx) + Financial Results (*-e-fls.ashx).
+    if (
+      (u.hostname === "corporate.murata.com" || u.hostname.endsWith(".murata.com")) &&
+      /-(?:e-speach|e-fls)\.ashx(?:$|[?#])/i.test(u.pathname)
+    ) {
+      return true;
+    }
     return /\.pdf(?:$|[?#])/i.test(u.pathname) || /\.pdf(?:$|[?#])/i.test(t);
   } catch {
     if (/investors\.micron\.com\/static-files\//i.test(t)) return false;
@@ -89,7 +98,9 @@ export function isDirectEarningsPdfUrl(href: string | null | undefined): boolean
       /investors\.danaher\.com\/[^?\s]+Danaher-Reports[^?\s]*\?[^#]*asPDF/i.test(t) ||
       /invest\.bnpparibas\/en\/document\/\dq\d{2}-(slides|pr)/i.test(t) ||
       /globenewswire\.com\/Resource\/Download\/[a-f0-9-]{36}/i.test(t) ||
-      /mziq\.com\/mzfilemanager\/v2\/d\/[a-f0-9-]{36}\/[a-f0-9-]{36}/i.test(t)
+      /mziq\.com\/mzfilemanager\/v2\/d\/[a-f0-9-]{36}\/[a-f0-9-]{36}/i.test(t) ||
+      /murata\.com\/[^?\s]+-(?:e-speach|e-fls)\.ashx/i.test(t) ||
+      /constellationenergy\.com\/node\/\d+\/pdf/i.test(t)
     );
   }
 }

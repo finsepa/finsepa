@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FileSearch, FileText, Presentation } from "@/lib/icons";
 
+import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import {
   EarningsPdfPreviewModal,
   type EarningsDocumentPreviewTab,
@@ -75,9 +76,10 @@ type Props = {
 
 /**
  * Slides (Company IR) + Reports (HIGH SEC 8-K / 10-Q/10-K) + curated transcript fixtures.
- * Does not show empty actions. Vault IR filings are preserved in the payload but are not a v1 action.
+ * Free: open same modals with Pro blur gate (all quarters, incl. latest). Pro: full access.
  */
 export function EarningsReportRowActions({ row, listingTicker }: Props) {
+  const plan = usePlanAccessOptional();
   const released = row.reported;
   const slidesUrl = slidesUrlForRow(listingTicker, row);
   const eightKUrl = previewable(row.eightKUrl) ? row.eightKUrl : null;
@@ -91,6 +93,9 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
   const showReportsPair = released && eightKUrl && form10Url;
   const showReportSingle = released && !showReportsPair && (eightKUrl != null || form10Url != null);
   const showTranscript = transcript != null;
+
+  /** Free: every Transcript / Slides / Reports open is soft-gated (incl. latest). */
+  const proGate = plan?.isPro !== true;
 
   if (!showSlides && !showReportsPair && !showReportSingle && !showTranscript) return null;
 
@@ -112,11 +117,13 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
         sourceUrl={preview?.url ?? null}
         tabs={preview?.tabs}
         onClose={() => setPreview(null)}
+        proGate={proGate}
       />
       <EarningsTranscriptModal
         open={transcriptOpen != null}
         transcript={transcriptOpen}
         onClose={() => setTranscriptOpen(null)}
+        proGate={proGate}
       />
       <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2">
         {showTranscript ? (

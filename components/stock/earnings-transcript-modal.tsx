@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
+import { EarningsProDocGateOverlay } from "@/components/stock/earnings-pro-doc-gate-overlay";
 import { AppModalOverlay, APP_MODAL_DIALOG_ENTER_CLASS } from "@/components/ui/app-modal-overlay";
 import {
   APP_MODAL_SHELL_OUTER_CLASS,
@@ -31,6 +32,8 @@ type Props = {
   open: boolean;
   transcript: EarningsTranscript | null;
   onClose: () => void;
+  /** Free: blur transcript + player + Pro → View plans. */
+  proGate?: boolean;
 };
 
 function speakerInitials(name: string): string {
@@ -321,7 +324,7 @@ function formatClock(sec: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-export function EarningsTranscriptModal({ open, transcript, onClose }: Props) {
+export function EarningsTranscriptModal({ open, transcript, onClose, proGate = false }: Props) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [playing, setPlaying] = useState(false);
@@ -375,6 +378,12 @@ export function EarningsTranscriptModal({ open, transcript, onClose }: Props) {
       setHoverSeekRatio(null);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !proGate) return;
+    audioRef.current?.pause();
+    setPlaying(false);
+  }, [open, proGate]);
 
   useEffect(() => {
     if (!open || !syncHighlight) return;
@@ -525,7 +534,11 @@ export function EarningsTranscriptModal({ open, transcript, onClose }: Props) {
               </div>
             }
             headerClassName="px-4 py-3 sm:px-5"
-            bodyClassName="earnings-transcript-scroll min-h-0 flex-1 overflow-y-auto bg-surface-muted px-3 py-3 sm:px-4 sm:py-4"
+            bodyClassName={
+              proGate
+                ? "earnings-transcript-scroll relative min-h-0 flex-1 overflow-hidden bg-surface-muted px-3 py-3 sm:px-4 sm:py-4"
+                : "earnings-transcript-scroll relative min-h-0 flex-1 overflow-y-auto bg-surface-muted px-3 py-3 sm:px-4 sm:py-4"
+            }
             cardClassName="min-h-0 overflow-hidden"
           >
             {audioUrl ? (
@@ -556,7 +569,10 @@ export function EarningsTranscriptModal({ open, transcript, onClose }: Props) {
             ) : null}
 
             <div
-              className="mx-auto flex w-full max-w-[720px] flex-col gap-3 pb-2"
+              className={cn(
+                "mx-auto flex w-full max-w-[720px] flex-col gap-3 pb-2",
+                proGate && "pointer-events-none select-none blur-[5px] brightness-[0.94]",
+              )}
               onPointerLeave={() => setHoverWordSec(null)}
             >
               {audioUrl && audioError ? (
@@ -566,7 +582,7 @@ export function EarningsTranscriptModal({ open, transcript, onClose }: Props) {
                   script), then refresh.
                 </p>
               ) : null}
-              {transcript.paragraphs.map((p, i) => {
+              {transcript.paragraphs.slice(0, proGate ? 3 : undefined).map((p, i) => {
                 const speaker = speakersById.get(p.speakerId);
                 if (!speaker) return null;
                 const state: CardState =
@@ -600,6 +616,7 @@ export function EarningsTranscriptModal({ open, transcript, onClose }: Props) {
                 );
               })}
             </div>
+            <EarningsProDocGateOverlay active={proGate} />
           </AppModalShell>
         </div>
 
@@ -608,9 +625,10 @@ export function EarningsTranscriptModal({ open, transcript, onClose }: Props) {
             className={cn(
               APP_MODAL_DIALOG_ENTER_CLASS,
               APP_MODAL_SHELL_OUTER_CLASS,
-              "w-full shrink-0",
+              "relative w-full shrink-0 overflow-hidden",
             )}
           >
+            <EarningsProDocGateOverlay active={proGate} />
             <div className="flex items-center gap-3 px-4 pt-3.5 pb-1.5 sm:px-5">
               <CompanyLogo
                 name={transcript.companyName}

@@ -98,7 +98,20 @@ Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-
 
 ## Status snapshot (2026-09-22)
 
-**Goal:** ~500 companies IR coverage (`EARNINGS_IR_VAULT_COVERAGE_GOAL`). Next-10 #11 wired (~199 dedicated).
+**Goal:** ~500 companies IR coverage (`EARNINGS_IR_VAULT_COVERAGE_GOAL`). Next-10 #12 wired (~209 dedicated).
+
+Next-10 #12 by mcap (after GD on frozen-2026-09-22) — wired: **CEG, MRAAY, MELI, HCA, SNHIY, DUK, NTTYY, HWM, MAR, XIACY**.
+
+- **CEG** (yellow): Earnings Call Presentation + Release on investors.constellationenergy.com; Q4’24/Q4’25 filings-only.
+- **MRAAY** (green): March FY; *-e-speach.ashx + *-e-fls.ashx on corporate.murata.com Q1’22→Q1’27.
+- **MELI** (yellow): Letters (Q2’22–Q3’23) + Financial Results on http2.mlstatic.com; Q4’25/Q1’26 empty.
+- **HCA** (yellow): filings-only press on `s23.q4cdn.com/949900249` (no quarterly decks).
+- **SNHIY** (yellow): filings-only cninfo/dfcfw + HKEX English from Q4’25 (no decks).
+- **DUK** (green): Earnings Presentation + Release on `s201.q4cdn.com/583395453` Q1’22→Q2’26.
+- **NTTYY** (green): March FY; presentation + kessan release on group.ntt Q1’22→Q1’26.
+- **HWM** (green): Earnings Presentation + Results press on howmet.com Q1’22→Q2’26.
+- **MAR** (yellow): filings-only Press Release+Tables on `marriott.gcs-web.com/static-files` (no decks).
+- **XIACY** (green): Presentation + EN announcement on ir.mi.com Q1’22→Q2’26.
 
 Next-10 #11 by mcap (after CME on frozen-2026-09-22) — wired: **TT, BYDDY, USB, MITSY, ITUB, KKR, PNC, MGCLY, PSTVY, GD**.
 

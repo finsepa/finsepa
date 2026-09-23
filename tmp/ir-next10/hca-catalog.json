@@ -1,0 +1,87 @@
+{
+  "ticker": "HCA",
+  "fyEnd": "12-31",
+  "irPages": [
+    "https://investor.hcahealthcare.com/",
+    "https://investor.hcahealthcare.com/financials/quarterly-results/default.aspx",
+    "https://investor.hcahealthcare.com/events-and-presentations/default.aspx"
+  ],
+  "pdfHost": "s23.q4cdn.com/949900249",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2022/q1/PR_HCA-Reports-1Q-2022-Results.pdf"
+    },
+    "Q2 2022": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2022/q2/PR_HCA-Reports-2Q-2022-Results.pdf"
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2022/q3/PR_HCA-Reports-3Q-2022-Results.pdf"
+    },
+    "Q4 2022": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2022/q4/PR_HCA-Reports-4Q-2022-Results.pdf"
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2023/q1/PR_HCA-Reports-1Q-Results.pdf"
+    },
+    "Q2 2023": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2023/q2/PR_HCA_Reports_2Q_2023_Results.pdf"
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2023/q3/PR_HCA-Reports-3Q-2023-Results.pdf"
+    },
+    "Q4 2023": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2023/q4/FINAL-PR_HCA-Reports-4Q-2023-Results.pdf"
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2024/q1/FINAL-PR_HCA-Reports-1Q-2024-Results.pdf"
+    },
+    "Q2 2024": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2024/q2/FINAL-PR_HCA-Reports-2Q-2024-Results.pdf"
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2024/q3/FINAL-PR_HCA-Reports-3Q-2024-Results.pdf"
+    },
+    "Q4 2024": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2024/q4/FINAL-PR_HCA-Reports-4Q-2024-Results.pdf"
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2025/q1/FINAL-PR_HCA-Reports-1Q-2025-Results.pdf"
+    },
+    "Q2 2025": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2025/q2/FINAL-PR_HCA-Reports-2Q-2025-Results.pdf"
+    },
+    "Q3 2025": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2025/q3/FINAL-PR_HCA-Reports-3Q-2025-Results.pdf"
+    },
+    "Q4 2025": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2025/q4/FINAL-PR_HCA-Reports-4Q-2025-Results.pdf"
+    },
+    "Q1 2026": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/doc_financials/2026/q1/FINAL-PR_HCA-Reports-1Q-2026-Results.pdf"
+    },
+    "Q2 2026": {
+      "slides": null,
+      "filings": "https://s23.q4cdn.com/949900249/files/content_files/FINAL-PR_HCA-Reports-2Q-2026-Results.pdf"
+    }
+  },
+  "trafficLight": "yellow",
+  "verified": true,
+  "notes": "HCA Healthcare calendar FY. Filings-only: earnings press release PDFs on q4cdn (PR_/FINAL-PR_HCA-Reports-*Results); Q2 2026 under content_files/. No quarterly earnings slide decks on IR (earnings events are webcast-only; Archived Presentations are Investor Day / conference updates \u2014 not locked as slides). Reject 10-Q Financial Statement cloudfront/UUID PDFs. Never SEC HTML. Scope Q1 2022\u2192Q2 2026 (0 green / 18 yellow / 0 red). Range-GET %PDF verified."
+}

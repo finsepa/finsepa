@@ -1,0 +1,18 @@
+discover-hca-snhiy-duk.log
+Date: 2026-09-23
+Batch: next-10 #12 (HCA, SNHIY, DUK)
+Method: Q4 FinancialReport.svc + IR quarterly pages (HCA/DUK); Sany via cninfo/HKEX/pdf.dfcfw mirrors. Range-GET bytes 0-7 %PDF verified. Catalogs only — no match/apply/allowlist/tests/docs.
+
+HCA: trafficLight=yellow  g/y/r=0/18/0  pdfHost=s23.q4cdn.com/949900249  latest=Q2 2026
+  notes: HCA Healthcare calendar FY. Filings-only: earnings press release PDFs on q4cdn (PR_/FINAL-PR_HCA-Reports-*Results); Q2 2026 under content_files/. No quarterly earnings slide decks on IR (earnings events are webcast-only; Archived Presentations are Investor Day / conference updates — not locked as slides). Reject 10-Q Financial Statement cloudfront/UUID PDFs. Never SEC HTML. Scope Q1 2022→Q2 2026 (0 green / 18 yellow / 0 red). Range-GET %PDF verified.
+
+SNHIY: trafficLight=yellow  g/y/r=0/18/0  pdfHost=pdf.dfcfw.com / static.cninfo.com.cn / www1.hkexnews.hk  latest=Q2 2026
+  notes: Sany Heavy Industry ADR (SNHIY) / A-share 600031 / H-share 6031 (listed HKEX 2025-10-28). Calendar FY. No first-party earnings slide decks (sany.com.cn/en/relation + valueonline IRH SPA). Filings: English HKEX results for Q4'25–Q2'26; earlier SSE designated disclosure PDFs via static.cninfo.com.cn or pdf.dfcfw.com mirrors. Prefer full 季度/半年度/年度报告 over 摘要. Never SEC HTML. Scope Q1 2022→Q2 2026 (0 green / 18 yellow / 0 red). Range-GET %PDF verified.
+
+DUK: trafficLight=green  g/y/r=18/0/0  pdfHost=s201.q4cdn.com/583395453  latest=Q2 2026
+  notes: Duke Energy calendar utility FY. Slides=Earnings Presentation (w/ Reg-G); Filings=Earnings Release. q4 FinancialReport.svc on s201.q4cdn.com/583395453; Q1–Q2'22 also under doc_presentation/doc_events. Reject Non-GAAP-only / 10-Q cloudfront. Never SEC HTML. Scope Q1 2022→Q2 2026 (18 green / 0 yellow / 0 red). Range-GET %PDF verified.
+
+Summary:
+  HCA    yellow   0/18/0  latest=Q2 2026  host=s23.q4cdn.com/949900249
+  SNHIY  yellow   0/18/0  latest=Q2 2026  host=pdf.dfcfw.com / static.cninfo.com.cn / www1.hkexnews.hk
+  DUK    green    18/0/0  latest=Q2 2026  host=s201.q4cdn.com/583395453

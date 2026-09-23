@@ -1,0 +1,16 @@
+{
+  "batch": 12,
+  "tickers": [
+    "CEG",
+    "MRAAY",
+    "MELI",
+    "HCA",
+    "SNHIY",
+    "DUK",
+    "NTTYY",
+    "HWM",
+    "MAR",
+    "XIACY"
+  ],
+  "note": "After GD on frozen-2026-09-22 top500"
+}
