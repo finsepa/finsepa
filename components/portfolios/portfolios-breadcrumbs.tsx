@@ -16,7 +16,7 @@ export function PortfoliosBreadcrumbs({ currentLabel }: { currentLabel?: string 
   return (
     <nav
       aria-label="Breadcrumb"
-      className="flex min-w-0 items-center px-4 py-3 text-[14px] text-fg-muted max-md:border-b-0 md:border-b md:border-stroke-shell sm:px-9"
+      className="sticky top-0 z-50 flex min-w-0 items-center px-4 py-3 text-[14px] text-fg-muted max-md:relative max-md:border-b-0 md:border-b md:border-stroke-shell md:bg-panel sm:px-9"
     >
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
         <Link href="/portfolios" className={`shrink-0 ${breadcrumbLinkClass}`}>

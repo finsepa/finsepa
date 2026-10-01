@@ -1,7 +1,6 @@
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { portfolioSymbolMatchesAssetRoute } from "@/lib/portfolio/portfolio-asset-route-match";
-import { replayPortfolioLedger } from "@/lib/portfolio/ledger/portfolio-ledger-engine";
-import { migratePortfolioTransactionSequences } from "@/lib/portfolio/ledger/portfolio-ledger-migrate";
+import { replayDisplayLedgerPerPortfolio } from "@/lib/portfolio/ledger/portfolio-ledger-multi";
 
 /**
  * Realized equity P/L from sells on or before {@link asOfYmd} (inclusive).
@@ -10,8 +9,7 @@ export function cumulativeRealizedGainUsdUpTo(
   transactions: PortfolioTransaction[],
   asOfYmd: string,
 ): number {
-  const { transactions: migrated } = migratePortfolioTransactionSequences(transactions);
-  return replayPortfolioLedger(migrated, { mode: "display", asOfYmd }).realizedGainUsd;
+  return replayDisplayLedgerPerPortfolio(transactions, asOfYmd).realizedGainUsd;
 }
 
 /**
@@ -19,8 +17,7 @@ export function cumulativeRealizedGainUsdUpTo(
  * Matches the same buy/sell replay as {@link replayTradeTransactionsToHoldings}.
  */
 export function cumulativeRealizedGainUsd(transactions: PortfolioTransaction[]): number {
-  const { transactions: migrated } = migratePortfolioTransactionSequences(transactions);
-  return replayPortfolioLedger(migrated, { mode: "display" }).realizedGainUsd;
+  return replayDisplayLedgerPerPortfolio(transactions).realizedGainUsd;
 }
 
 /**
@@ -46,8 +43,7 @@ export function cumulativeRealizedStatsForAsset(
       t.kind === "trade" &&
       portfolioSymbolMatchesAssetRoute({ holdingSymbol: t.symbol, routeKey: key, kind: assetKind }),
   );
-  const { transactions: migrated } = migratePortfolioTransactionSequences(filtered);
-  const r = replayPortfolioLedger(migrated, { mode: "display" });
+  const r = replayDisplayLedgerPerPortfolio(filtered);
   return {
     realizedGainUsd: r.realizedGainUsd,
     realizedCostBasisUsd: r.realizedCostBasisUsd,

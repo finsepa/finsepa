@@ -1,0 +1,18 @@
+# IR vault discovery — DASH, CDNS, EPD
+Date: 2026-09-23
+Scope: Q1 2022 → latest reported quarter (Q2 2026). Catalogs only (no match/apply/allowlist/tests/docs).
+Verify: Range GET bytes 0-7 == %PDF (DASH/CDNS live q4cdn). EPD live Akamai/CF often blocks bare curl — slides/filings confirmed via WebFetch PDF text + Wayback captures where available. Never SEC HTML.
+
+DASH: trafficLight=yellow  green=8 yellow=10 red=0  irHost=s22.q4cdn.com/280253921  latest=Q2 2026
+  notes: DoorDash calendar FY. Slides=Shareholder Letter (Ex.99.2); Filings=Earnings Press Release on s22.q4cdn.com/280253921/files/doc_financials. Q1–Q2 2022 slides-only (no press PDF on CDN). Q1–Q3 2024, Q1–Q3 2025, Q1–Q2 2026 filings-only (letter PDF not on current CDN filename paths; CDX/archive sparse after 2023). Reject Financials/Financial-Statements / transcripts / 10-Q. Scope: 8g / 10y / 0r. Never SEC HTML. Range-GET %PDF verified.
+
+CDNS: trafficLight=green  green=18 yellow=0 red=0  irHost=s206.q4cdn.com/597110084  latest=Q2 2026
+  notes: Cadence Design Systems calendar FY. Slides=CFO Commentary; Filings=Financial Schedules / Earnings Tables on s206.q4cdn.com/597110084 (BusinessWire earnings press is HTML — IR tables locked as filings package). Patterns: early `{n}q{yy}-cfo-commentary.pdf` + `{n}q{yy}-earnings-tables.pdf`; later `Q{n}-YYYY-CFO-Commentary-*.pdf` + `Q{n}{yy}-Earnings-Tables-for-Web.pdf`. Reject prepared-remarks / 10-Q / Proxy. Scope: 18g / 0y / 0r. Never SEC HTML. Range-GET %PDF verified.
+
+EPD: trafficLight=yellow  green=12 yellow=6 red=0  irHost=ir.enterpriseproducts.com  latest=Q2 2026
+  notes: Enterprise Products Partners calendar FY. Slides=Earnings Support Slides on ir.enterpriseproducts.com/static-files (UUIDs from Wayback presentations archive + current IR). Filings=earnings press /node/N/pdf. Missing lockable press PDFs (left null): Q1 2022, Q3 2022, Q2 2023, Q3 2023, Q1 2024, Q3 2024 (HTML newsroom only). Reject Investor Deck / SFD xlsx / 10-Q. Scope: 12g / 6y / 0r. Never SEC HTML. Live Range-GET often Akamai-denied; content verified via WebFetch PDF text / Wayback.
+
+Summary:
+  DASH   yellow   8/10/0  latest=Q2 2026  host=s22.q4cdn.com/280253921
+  CDNS   green    18/0/0  latest=Q2 2026  host=s206.q4cdn.com/597110084
+  EPD    yellow   12/6/0  latest=Q2 2026  host=ir.enterpriseproducts.com

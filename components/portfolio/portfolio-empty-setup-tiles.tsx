@@ -1,21 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Landmark, Layers2, LineChart, Pencil, Upload, Wallet } from "@/lib/icons";
+import { Landmark, Layers2, Pencil, Upload, Wallet } from "@/lib/icons";
 
 import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import { portfolioIsDemo } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+import { Empty, EmptyContent, EmptyTitle } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 
 type SetupTile = {
@@ -29,7 +22,7 @@ type SetupTile = {
 };
 
 const setupTileButtonClass = cn(
-  "flex w-full items-center gap-3 rounded-[10px] p-3 text-left",
+  "flex w-full items-center gap-3 rounded-[10px] text-left",
   whiteSurfaceButtonChromeClass,
   "transition-colors duration-100 hover:bg-surface-muted dark:hover:bg-dropdown-item-hover",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
@@ -130,25 +123,19 @@ export function PortfolioEmptySetupTiles({ className }: { className?: string }) 
   ];
 
   return (
-    <Empty
-      variant="card"
-      className={cn(
-        "min-h-[min(50vh,440px)] items-stretch justify-start px-4 py-10 text-left sm:px-6 sm:py-12",
-        className,
-      )}
-    >
-      <EmptyHeader className="mx-auto w-full max-w-lg items-center text-center">
-        <EmptyMedia variant="icon">
-          <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-        </EmptyMedia>
-        <EmptyTitle>Add your investments</EmptyTitle>
-        <EmptyDescription>
-          You can securely connect a brokerage or exchange, or add transactions manually.
-        </EmptyDescription>
-      </EmptyHeader>
-
-      <EmptyContent className="mx-auto mt-8 w-full max-w-lg">
-        <div className="flex w-full flex-col gap-3">
+    <Empty variant="card" className={cn("relative flex-1 overflow-hidden px-4 py-10 sm:px-6 sm:py-12", className)}>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, color-mix(in srgb, var(--fs-fg-muted) 7%, transparent) 1px, transparent 1.4px)",
+          backgroundSize: "14px 14px",
+        }}
+      />
+      <EmptyContent className="relative mt-0 w-full max-w-lg items-stretch text-left">
+        <EmptyTitle className="mb-2">Add your investments</EmptyTitle>
+        <div className="flex w-full flex-col" style={{ gap: 12 }}>
           {tiles.map((tile) => {
             const isDisabled = Boolean(tile.disabled);
 
@@ -157,6 +144,7 @@ export function PortfolioEmptySetupTiles({ className }: { className?: string }) 
                 <div
                   key={tile.id}
                   className={cn(setupTileButtonClass, "cursor-not-allowed select-none opacity-55 hover:bg-button dark:hover:bg-button")}
+                  style={{ padding: 12 }}
                   aria-disabled="true"
                   title="Coming soon"
                 >
@@ -171,6 +159,7 @@ export function PortfolioEmptySetupTiles({ className }: { className?: string }) 
                 type="button"
                 onClick={tile.onClick}
                 className={setupTileButtonClass}
+                style={{ padding: 12 }}
               >
                 <SetupTileContent tile={tile} />
               </button>

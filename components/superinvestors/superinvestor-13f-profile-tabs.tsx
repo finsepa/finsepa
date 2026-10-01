@@ -11,15 +11,16 @@ import type { Berkshire13fComparisonPayload, SuperinvestorTransactionsPayload } 
 
 const FULL_HISTORY_SEARCH_DEBOUNCE_MS = 500;
 
-type ProfileTab = "holdings" | "performance" | "activity";
+type ProfileTab = "holdings" | "activity";
 
-const BASE_TAB_OPTIONS: readonly UnderlineTabOption<ProfileTab>[] = [
+const TAB_OPTIONS: readonly UnderlineTabOption<ProfileTab>[] = [
   { value: "holdings", label: "Holdings" },
   { value: "activity", label: "Activity" },
 ];
 
+/** Legacy `?tab=performance` links land on Holdings; the chart now sits above the tabs. */
 function parseProfileTab(raw: string | null): ProfileTab | null {
-  if (raw === "holdings" || raw === "performance" || raw === "activity") return raw;
+  if (raw === "holdings" || raw === "activity") return raw;
   return null;
 }
 
@@ -52,10 +53,7 @@ export function Superinvestor13fProfileTabs({
   const searchParams = useSearchParams();
   const showPerformance = isSuperinvestorPerformanceEnabled(profileSlug);
   const initialTab = parseProfileTab(searchParams.get("tab"));
-  const [tab, setTabState] = useState<ProfileTab>(() => {
-    if (initialTab === "performance" && !showPerformance) return "holdings";
-    return initialTab ?? "holdings";
-  });
+  const [tab, setTabState] = useState<ProfileTab>(initialTab ?? "holdings");
   const [txCompanySearch, setTxCompanySearch] = useState("");
   const [fullHistory, setFullHistory] = useState<SuperinvestorTransactionsPayload | null>(null);
   const [txHistoryLoading, setTxHistoryLoading] = useState(false);
@@ -73,20 +71,7 @@ export function Superinvestor13fProfileTabs({
     [pathname, router, searchParams],
   );
 
-  const tabOptions = useMemo((): readonly UnderlineTabOption<ProfileTab>[] => {
-    if (!showPerformance) return BASE_TAB_OPTIONS;
-    return [
-      { value: "holdings", label: "Holdings" },
-      { value: "performance", label: "Performance" },
-      { value: "activity", label: "Activity" },
-    ];
-  }, [showPerformance]);
-
   const debouncedCompanySearch = useDebouncedValue(txCompanySearch, FULL_HISTORY_SEARCH_DEBOUNCE_MS);
-
-  useEffect(() => {
-    if (tab === "performance" && !showPerformance) setTab("holdings");
-  }, [tab, showPerformance]);
 
   useEffect(() => {
     setFullHistory(null);
@@ -143,8 +128,13 @@ export function Superinvestor13fProfileTabs({
 
   return (
     <div className="mt-5">
+      {showPerformance ? (
+        <div className="mb-8">
+          <SuperinvestorPerformanceChart profileSlug={profileSlug} />
+        </div>
+      ) : null}
       <UnderlineTabs<ProfileTab>
-        tabs={tabOptions}
+        tabs={TAB_OPTIONS}
         active={tab}
         onChange={setTab}
         ariaLabel="Portfolio view"
@@ -169,8 +159,6 @@ export function Superinvestor13fProfileTabs({
             totalPages={holdingsTotalPages}
           />
         </>
-      ) : tab === "performance" && showPerformance ? (
-        <SuperinvestorPerformanceChart profileSlug={profileSlug} />
       ) : (
         <SuperinvestorTransactionsTable
           data={activityData}

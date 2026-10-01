@@ -1,0 +1,18 @@
+discover-mco-ups-baesy.log
+Date: 2026-09-23
+Batch: MCO, UPS, BAESY
+Method: MCO Q4 FinancialReport+Event.svc feeds (s203.q4cdn.com/694693571); UPS investors.ups.com financial-results HTML scrape; BAESY browser scrape investors.baesystems.com/results-centre year tabs + archive.org CDX. Range-GET bytes 0-7 %PDF verified (MCO/UPS curl; BAESY via Wayback for Q2'22–Q2'25 + Q4'24 slides; Q4'25/Q2'26 live IR PDF hrefs — Incapsula 403 on headless Range-GET). Catalogs only — no match/apply/allowlist.
+
+MCO: trafficLight=green  g/y/r=18/0/0  irHost=s203.q4cdn.com/694693571  latest=Q2 2026
+  notes: Moody's Corporation calendar FY. Slides=Earnings Presentation/Webcast/Supplemental Presentation; Filings=Earnings Release on q4cdn doc_financials. Scope: 18g / 0y / 0r. Never SEC HTML.
+
+UPS: trafficLight=green  g/y/r=18/0/0  irHost=investors.ups.com/_assets  latest=Q2 2026
+  notes: United Parcel Service calendar FY. Slides=Earnings/Webcast Deck; Filings=UPS Releases news PDF. Scope: 18g / 0y / 0r. Never SEC HTML.
+
+BAESY: trafficLight=yellow  g/y/r=7/2/9  irHost=investors.baesystems.com/dam  latest=Q2 2026
+  notes: BAE Systems plc ADR. UK half-year: HY→Q2 / Preliminary→Q4; Q1/Q3 empty by design. Slides=presentation/Interims-slides; Filings=half-year report or preliminary announcement. Q2/Q4 2023 slides null (transcript-only on IR). Reject trading statements/transcripts/annual report. Scope: 7g / 2y / 9r. Never SEC HTML.
+
+Summary:
+  MCO    green    18/0/0  latest=Q2 2026  host=s203.q4cdn.com/694693571
+  UPS    green    18/0/0  latest=Q2 2026  host=investors.ups.com/_assets
+  BAESY  yellow   7/2/9  latest=Q2 2026  host=investors.baesystems.com/dam

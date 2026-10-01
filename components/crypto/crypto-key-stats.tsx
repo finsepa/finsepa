@@ -58,7 +58,6 @@ function CryptoKeyStatsInner({ row }: { row: CryptoAssetRow }) {
         <Card title="General">
           <StatRow label="Market Cap" value={usdFigure(row.marketCap || "—")} />
           <StatRow label="Fully Diluted Market Cap" value={usdFigure(row.fullyDilutedMarketCap)} />
-          <StatRow label="ATH Market Cap" value={usdFigure(row.athMarketCap)} />
         </Card>
 
         <Card title="Supply">

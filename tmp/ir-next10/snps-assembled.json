@@ -1,0 +1,192 @@
+{
+  "Q1 2022": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q1/4wkhxHbednErVd2k-m5gqkpmrqPCVBM5l.pdf",
+    "filings": null,
+    "debug": {
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q1/form10q-q1-2022.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q1/4wkhxHbednErVd2k-m5gqkpmrqPCVBM5l.pdf",
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q1/aart-q122_prepared-remarks.pdf"
+    }
+  },
+  "Q2 2022": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q2/MoxJjwpQ4d5blm-lfFpbZwOZqUNd7-(1).pdf",
+    "filings": null,
+    "debug": {
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q2/form10q-q2-2022.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q2/MoxJjwpQ4d5blm-lfFpbZwOZqUNd7-(1).pdf",
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q2/aart-q222_prepared-remarks.pdf"
+    }
+  },
+  "Q3 2022": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q3/kcGj3A4Nb7IjVv-JXd2F1B17KL6xs.pdf",
+    "filings": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q3/2022-08-17-Synopsys-Posts-Financial-Results-for-Third-Quarter-Fiscal-Year-2022.pdf",
+    "debug": {
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q3/form10q-q3-2022.pdf",
+      "press_pdf": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q3/2022-08-17-Synopsys-Posts-Financial-Results-for-Third-Quarter-Fiscal-Year-2022.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q3/kcGj3A4Nb7IjVv-JXd2F1B17KL6xs.pdf",
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q3/aart-q322_prepared-remarks.pdf"
+    }
+  },
+  "Q4 2022": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q4/corporate-overview-investor-q4-2022-final.pdf",
+    "filings": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q4/2022-11-30-Synopsys-Posts-Financial-Results-for-Fourth-Quarter-and-Fiscal-Year-2022.pdf",
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q4/aart-q422_prepared-remarks.pdf",
+      "overview": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q4/corporate-overview-investor-q4-2022-final.pdf",
+      "press_pdf": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q4/2022-11-30-Synopsys-Posts-Financial-Results-for-Fourth-Quarter-and-Fiscal-Year-2022.pdf",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2022/q4/form10k-2022.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_downloads/2023/01/2023-01-20-Q422_FinancialSupplement_Final_New-Links.pdf"
+    }
+  },
+  "Q1 2023": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_financials/2023/q1/2023-02-17-Q123_FinancialSupplement.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_financials/2023/q1/2023-02-15_SNPS_Q123_Prepared_Remarks.pdf",
+      "press_html": "https://investor.synopsys.com/news/news-details/2023/Synopsys-Posts-Financial-Results-for-First-Quarter-Fiscal-Year-2023/default.aspx",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2023/q1/e4b28709-c5bd-434e-90e9-64a9e43e489b.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_financials/2023/q1/2023-02-17-Q123_FinancialSupplement.pdf"
+    }
+  },
+  "Q2 2023": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_financials/2023/q2/Synopsys-Q2-FY2023-Financial-Supplement.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_financials/2023/q2/2023-05-17_SNPS_Q223_Prepared_Remarks.pdf",
+      "press_html": "https://investor.synopsys.com/news/news-details/2023/Synopsys-Posts-Financial-Results-for-Second-Quarter-Fiscal-Year-2023/default.aspx",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2023/q2/1bbe5c6d-919d-40e6-9cb5-a4c82729d777.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_financials/2023/q2/Synopsys-Q2-FY2023-Financial-Supplement.pdf"
+    }
+  },
+  "Q3 2023": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_earnings/2023/q3/supplemental-info/Synopsys-Q3-FY2023-Financial-Supplement-UPDATED.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2023/q3/transcript/2023-08-16_SNPS_Q323_Prepared_Remarks.pdf",
+      "press_html": "https://investor.synopsys.com/news/news-details/2023/Synopsys-Posts-Financial-Results-for-Third-Quarter-Fiscal-Year-2023/default.aspx",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2023/q3/c53dc7c2-5148-4d45-b723-49a7eefddf5a.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_earnings/2023/q3/supplemental-info/Synopsys-Q3-FY2023-Financial-Supplement-UPDATED.pdf"
+    }
+  },
+  "Q4 2023": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_earnings/2023/q4/supplemental-info/Synopsys-Q4-FY2023-Financial-Supplement.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2023/q4/transcript/2023_SNPS_Q323_Prepared_Remarks.pdf",
+      "press_html": "https://investor.synopsys.com/news/news-details/2023/Synopsys-Posts-Financial-Results-for-Fourth-Quarter-and-Fiscal-Year-2023/default.aspx",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2023/q4/bafe7900-ebaf-4ae1-8a99-579158b10cb9.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_earnings/2023/q4/supplemental-info/Synopsys-Q4-FY2023-Financial-Supplement.pdf"
+    }
+  },
+  "Q1 2024": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_earnings/2024/q1/supplemental-info/Synopsys-Q1-FY2024-Financial-Supplement-UPDATED.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2024/q1/transcript/SNPS_Q124_Prepared_Remarks.pdf",
+      "press_html": "http://investor.synopsys.com/news/news-details/2024/Synopsys-Posts-Financial-Results-for-First-Quarter-Fiscal-Year-2024",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2024/q1/25c0355c-4481-4d98-8fa3-6cf1dbacb404.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_earnings/2024/q1/supplemental-info/Synopsys-Q1-FY2024-Financial-Supplement-UPDATED.pdf"
+    }
+  },
+  "Q2 2024": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_earnings/2024/q2/supplemental-info/Synopsys-Q2-FY2024-Financial-Supplement-UPDATED.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2024/q2/transcript/SNPS_Q224_Prepared_Remarks.pdf",
+      "press_html": "http://investor.synopsys.com/news/news-details/2024/Synopsys-Posts-Financial-Results-for-Second-Quarter-Fiscal-Year-2024",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2024/q2/98d557bc-670e-46fe-8237-2cea247fd682.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_earnings/2024/q2/supplemental-info/Synopsys-Q2-FY2024-Financial-Supplement-UPDATED.pdf"
+    }
+  },
+  "Q3 2024": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_financials/2024/q3/2024-08-23-Synopsys-Q3-FY2024-Financial-Supplement-Final.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2024/q3/transcript/SNPS_Q324_Prepared_Remarks.pdf",
+      "press_html": "http://investor.synopsys.com/news/news-details/2024/Synopsys-Posts-Financial-Results-for-Third-Quarter-Fiscal-Year-2024",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2024/q3/synopsys-10q.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_financials/2024/q3/2024-08-23-Synopsys-Q3-FY2024-Financial-Supplement-Final.pdf"
+    }
+  },
+  "Q4 2024": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_financials/2024/q4/2024-12-04-Synopsys-Q4-FY2024-Financial-Supplement_Final.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2024/q4/transcript/SNPS_Q424_Prepared_Remarks.pdf",
+      "press_html": "http://investor.synopsys.com/news/news-details/2024/Synopsys-Posts-Financial-Results-for-Fourth-Quarter-and-Fiscal-Year-2024",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2024/q4/SNPS-10K-Q4-2024.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_financials/2024/q4/2024-12-04-Synopsys-Q4-FY2024-Financial-Supplement_Final.pdf"
+    }
+  },
+  "Q1 2025": {
+    "slides": null,
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2025/q1/supplemental-info/Synopsys-Q1-FY2025-Financial-Supplement-UPDATED.pdf",
+      "press_html": "http://investor.synopsys.com/news/news-details/2025/Synopsys-Posts-Financial-Results-for-First-Quarter-Fiscal-Year-2025",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2025/q1/3ef82c65-582b-4668-aedf-445dec74b208.pdf"
+    }
+  },
+  "Q2 2025": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_earnings/2025/q2/supplemental-info/Synopsys-Q2-FY2025-Financial-Supplement-UPDATED.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2025/q2/transcript/SNPS_Q225_Prepared_Remarks.pdf",
+      "press_html": "http://investor.synopsys.com/news/news-details/2025/Synopsys-Posts-Financial-Results-for-Second-Quarter-Fiscal-Year-2025",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2025/q2/11d6f5fc-4edf-4b35-b1cf-2f2e312a57d3.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_earnings/2025/q2/supplemental-info/Synopsys-Q2-FY2025-Financial-Supplement-UPDATED.pdf"
+    }
+  },
+  "Q3 2025": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_earnings/2025/q3/supplemental-info/Synopsys-Q3-FY2025-Financial-Supplement-UPDATED.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2025/q3/transcript/SNPS_Q325_Prepared_Remarks.pdf",
+      "press_html": "http://investor.synopsys.com/news/news-details/2025/Synopsys-Posts-Financial-Results-for-Third-Quarter-Fiscal-Year-2025",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2025/q3/9593ba9c-0689-4002-9a97-7545fff4384e.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_earnings/2025/q3/supplemental-info/Synopsys-Q3-FY2025-Financial-Supplement-UPDATED.pdf"
+    }
+  },
+  "Q4 2025": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_earnings/2025/q4/presentation/InvestorOverviewPresentationFinal-Q4.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2025/q4/transcript/SNPS_Q425_Prepared_Remarks.pdf",
+      "overview": "https://s201.q4cdn.com/778493406/files/doc_earnings/2025/q4/presentation/InvestorOverviewPresentationFinal-Q4.pdf",
+      "press_html": "https://investor.synopsys.com/news/news-details/2025/Synopsys-Posts-Financial-Results-for-Fourth-Quarter-and-Fiscal-Year-2025/default.aspx",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2025/q4/cb4c09c0-5b5a-4b6f-870f-0e69ec26a5ae.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_earnings/2025/q4/supplemental-info/Synopsys-Q4-FY2025-Financial-Supplement.pdf"
+    }
+  },
+  "Q1 2026": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_earnings/2026/q1/supplemental-info/Synopsys-Q1-FY2026-Financial-Supplement.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2026/q1/transcript/SNPS_Q126_Prepared_Remarks.pdf",
+      "press_html": "https://investor.synopsys.com/news/news-details/2026/Synopsys-Posts-Financial-Results-for-First-Quarter-Fiscal-Year-2026/default.aspx",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2026/q1/d407c94c-f09e-4f49-aafc-5262f4d9e092.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_earnings/2026/q1/supplemental-info/Synopsys-Q1-FY2026-Financial-Supplement.pdf"
+    }
+  },
+  "Q2 2026": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_earnings/2026/q2/supplemental-info/Synopsys-Q2-FY2026-Financial-Supplement.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2026/q2/transcript/SNPS_Q226_Prepared_Remarks.pdf",
+      "press_html": "https://investor.synopsys.com/news/news-details/2026/Synopsys-Posts-Financial-Results-for-Second-Quarter-Fiscal-Year-2026/default.aspx",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_earnings/2026/q2/supplemental-info/Synopsys-Q2-FY2026-Financial-Supplement.pdf",
+      "sec_form": "https://d18rn0p25nwr6d.cloudfront.net/CIK-0000883241/c1040a5b-9818-4156-93e8-e04028a8cc66.pdf"
+    }
+  },
+  "Q3 2026": {
+    "slides": "https://s201.q4cdn.com/778493406/files/doc_earnings/2026/q3/presentation/2026-08-26-Q326-Investor-Overview.pdf",
+    "filings": null,
+    "debug": {
+      "remarks": "https://s201.q4cdn.com/778493406/files/doc_earnings/2026/q3/transcript/SNPS_Q326_Prepared_Remarks.pdf",
+      "overview": "https://s201.q4cdn.com/778493406/files/doc_earnings/2026/q3/presentation/2026-08-26-Q326-Investor-Overview.pdf",
+      "press_html": "https://investor.synopsys.com/news/news-details/2026/Synopsys-Posts-Financial-Results-for-Third-Quarter-Fiscal-Year-2026/default.aspx",
+      "sec_form": "https://s201.q4cdn.com/778493406/files/doc_financials/2026/q3/dfedf891-0fe0-4931-b9ad-42132297b184.pdf",
+      "supplement": "https://s201.q4cdn.com/778493406/files/doc_earnings/2026/q3/supplemental-info/Synopsys-Q3-FY2026-Financial-Supplement-Updated.pdf"
+    }
+  }
+}

@@ -52,8 +52,8 @@ export async function loadAgentPortfolioWorkspace(
   userId: string,
 ): Promise<
   | { ok: true; workspace: AgentPortfolioWorkspace }
-  | { ok: false; error: string; openInApp: "/portfolio" }
-  | { ok: true; empty: true; openInApp: "/portfolio"; note: string }
+  | { ok: false; error: string; openInApp: "/home" }
+  | { ok: true; empty: true; openInApp: "/home"; note: string }
 > {
   const supabase = await getSupabaseServerClient();
   const { data, error } = await supabase
@@ -63,20 +63,20 @@ export async function loadAgentPortfolioWorkspace(
     .maybeSingle();
 
   if (error) {
-    return { ok: false, error: "Could not load portfolio workspace.", openInApp: "/portfolio" };
+    return { ok: false, error: "Could not load portfolio workspace.", openInApp: "/home" };
   }
   if (!data?.state) {
     return {
       ok: true,
       empty: true,
-      openInApp: "/portfolio",
+      openInApp: "/home",
       note: "No saved portfolio workspace yet.",
     };
   }
 
   const state = parsePersistedPortfolioUnknown(data.state);
   if (!state) {
-    return { ok: false, error: "Portfolio data is invalid.", openInApp: "/portfolio" };
+    return { ok: false, error: "Portfolio data is invalid.", openInApp: "/home" };
   }
 
   return {
@@ -198,7 +198,7 @@ export function buildAgentPortfolioList(args: { workspace: AgentPortfolioWorkspa
   return {
     ok: true as const,
     updatedAt,
-    openInApp: "/portfolio" as const,
+    openInApp: "/home" as const,
     portfolioCount: portfolios.length,
     selectedPortfolioId: selected?.id ?? state.selectedPortfolioId ?? null,
     selectedPortfolioName: selected?.name ?? null,
@@ -218,7 +218,7 @@ export function buildAgentPortfolioConcentration(args: {
 }) {
   const slice = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioQuery);
   if (!slice) {
-    return { ok: false as const, error: "Portfolio not found.", openInApp: "/portfolio" as const };
+    return { ok: false as const, error: "Portfolio not found.", openInApp: "/home" as const };
   }
 
   const topN = Math.min(Math.max(args.topN ?? 5, 1), 20);
@@ -253,7 +253,7 @@ export function buildAgentPortfolioConcentration(args: {
 
   return {
     ok: true as const,
-    openInApp: "/portfolio" as const,
+    openInApp: "/home" as const,
     portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
     totals: {
       netWorthUsd: round2(normalizeUsdForDisplay(netWorth)),
@@ -287,13 +287,13 @@ export function buildAgentPortfolioHoldingsCompare(args: {
 }) {
   const sliceA = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioA);
   if (!sliceA) {
-    return { ok: false as const, error: "Portfolio A not found.", openInApp: "/portfolio" as const };
+    return { ok: false as const, error: "Portfolio A not found.", openInApp: "/home" as const };
   }
 
   const wantB = Boolean(args.portfolioB?.trim());
   const sliceB = wantB ? resolveAgentPortfolioSlice(args.workspace.state, args.portfolioB) : null;
   if (wantB && !sliceB) {
-    return { ok: false as const, error: "Portfolio B not found.", openInApp: "/portfolio" as const };
+    return { ok: false as const, error: "Portfolio B not found.", openInApp: "/home" as const };
   }
 
   const setA = new Set(sliceA.holdings.map((h) => h.symbol.trim().toUpperCase()).filter(Boolean));
@@ -336,7 +336,7 @@ export function buildAgentPortfolioHoldingsCompare(args: {
 
   return {
     ok: true as const,
-    openInApp: "/portfolio" as const,
+    openInApp: "/home" as const,
     portfolioA: {
       id: sliceA.portfolio.id,
       name: sliceA.portfolio.name,
@@ -367,12 +367,12 @@ export function buildAgentPortfolioHolding(args: {
 }) {
   const slice = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioQuery);
   if (!slice) {
-    return { ok: false as const, error: "Portfolio not found.", openInApp: "/portfolio" as const };
+    return { ok: false as const, error: "Portfolio not found.", openInApp: "/home" as const };
   }
 
   const sym = args.symbol.trim().toUpperCase();
   if (!sym) {
-    return { ok: false as const, error: "Symbol required.", openInApp: "/portfolio" as const };
+    return { ok: false as const, error: "Symbol required.", openInApp: "/home" as const };
   }
 
   const cashUsd = normalizeUsdForDisplay(netCashUsd(slice.transactions));
@@ -392,7 +392,7 @@ export function buildAgentPortfolioHolding(args: {
     return {
       ok: false as const,
       error: `No holding matching "${sym}" in ${slice.portfolio.name}.`,
-      openInApp: "/portfolio" as const,
+      openInApp: "/home" as const,
       portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
       suggestions: candidates,
     };
@@ -405,7 +405,7 @@ export function buildAgentPortfolioHolding(args: {
 
   return {
     ok: true as const,
-    openInApp: "/portfolio" as const,
+    openInApp: "/home" as const,
     portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
     holding: serialized,
     tradeCount,
@@ -424,7 +424,7 @@ export function buildAgentPortfolioActivityDigest(args: {
 }) {
   const slice = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioQuery);
   if (!slice) {
-    return { ok: false as const, error: "Portfolio not found.", openInApp: "/portfolio" as const };
+    return { ok: false as const, error: "Portfolio not found.", openInApp: "/home" as const };
   }
 
   const limit = Math.min(Math.max(args.limit ?? 20, 1), 50);
@@ -451,7 +451,7 @@ export function buildAgentPortfolioActivityDigest(args: {
 
   return {
     ok: true as const,
-    openInApp: "/portfolio" as const,
+    openInApp: "/home" as const,
     portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
     totals: {
       transactionCount: txs.length,
@@ -478,7 +478,7 @@ export function buildAgentPortfolioSummary(args: {
     return {
       ok: true as const,
       updatedAt,
-      openInApp: "/portfolio" as const,
+      openInApp: "/home" as const,
       portfolios: catalog,
       note: "No portfolios in workspace.",
     };
@@ -514,7 +514,7 @@ export function buildAgentPortfolioSummary(args: {
   return {
     ok: true as const,
     updatedAt,
-    openInApp: "/portfolio" as const,
+    openInApp: "/home" as const,
     portfolios: catalog,
     selected: {
       id: portfolio.id,
@@ -555,7 +555,7 @@ export function buildAgentPortfolioCash(args: {
 }) {
   const slice = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioQuery);
   if (!slice) {
-    return { ok: false as const, error: "Portfolio not found.", openInApp: "/portfolio" as const };
+    return { ok: false as const, error: "Portfolio not found.", openInApp: "/home" as const };
   }
   const limit = Math.min(Math.max(args.limit ?? 30, 1), 80);
   const cashUsd = round2(normalizeUsdForDisplay(netCashUsd(slice.transactions)));
@@ -571,7 +571,7 @@ export function buildAgentPortfolioCash(args: {
 
   return {
     ok: true as const,
-    openInApp: "/portfolio" as const,
+    openInApp: "/home" as const,
     portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
     cashUsd,
     movements: cashRows,
@@ -588,7 +588,7 @@ export function buildAgentPortfolioTransactions(args: {
 }) {
   const slice = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioQuery);
   if (!slice) {
-    return { ok: false as const, error: "Portfolio not found.", openInApp: "/portfolio" as const };
+    return { ok: false as const, error: "Portfolio not found.", openInApp: "/home" as const };
   }
   const limit = Math.min(Math.max(args.limit ?? 40, 1), 100);
   const kind = args.kind ?? "all";
@@ -600,7 +600,7 @@ export function buildAgentPortfolioTransactions(args: {
 
   return {
     ok: true as const,
-    openInApp: "/portfolio" as const,
+    openInApp: "/home" as const,
     portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
     filter: { kind, symbol: sym },
     count: rows.length,
@@ -628,7 +628,7 @@ export function buildAgentPortfolioAllocation(args: {
 }) {
   const slice = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioQuery);
   if (!slice) {
-    return { ok: false as const, error: "Portfolio not found.", openInApp: "/portfolio" as const };
+    return { ok: false as const, error: "Portfolio not found.", openInApp: "/home" as const };
   }
   const rows = buildPortfolioAllocationRows(slice.holdings, slice.transactions);
   const cashUsd = round2(normalizeUsdForDisplay(netCashUsd(slice.transactions)));
@@ -636,7 +636,7 @@ export function buildAgentPortfolioAllocation(args: {
 
   return {
     ok: true as const,
-    openInApp: "/portfolio" as const,
+    openInApp: "/home" as const,
     portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
     equityMarketValueUsd: equityUsd,
     cashUsd,
@@ -656,7 +656,7 @@ export function buildAgentPortfolioIncome(args: {
 }) {
   const slice = resolveAgentPortfolioSlice(args.workspace.state, args.portfolioQuery);
   if (!slice) {
-    return { ok: false as const, error: "Portfolio not found.", openInApp: "/portfolio" as const };
+    return { ok: false as const, error: "Portfolio not found.", openInApp: "/home" as const };
   }
   const limit = Math.min(Math.max(args.limit ?? 40, 1), 80);
   const income = slice.transactions.filter((t) => t.kind === "income");
@@ -668,7 +668,7 @@ export function buildAgentPortfolioIncome(args: {
 
   return {
     ok: true as const,
-    openInApp: "/portfolio" as const,
+    openInApp: "/home" as const,
     portfolio: { id: slice.portfolio.id, name: slice.portfolio.name },
     totals: {
       recordedIncomeUsd: incomeTotalUsd,

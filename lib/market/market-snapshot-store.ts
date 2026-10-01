@@ -11,6 +11,8 @@ import {
   type CryptoDerivedMetricsSnapshot,
 } from "@/lib/screener/eod-derived-metrics";
 import { CRYPTO_SCREENER_ALL, CRYPTO_SCREENER_PAGE2, CRYPTO_TOP10 } from "@/lib/market/crypto-meta";
+import type { IndexCardData } from "@/lib/screener/indices-today";
+import { indexCardsHaveAnyPrice } from "@/lib/screener/screener-index-card-fallbacks";
 
 import { MARKET_SNAPSHOT_KEY, type MarketSnapshotKey } from "@/lib/market/market-snapshot-keys";
 
@@ -39,6 +41,15 @@ function isUsableCryptoPage2Payload(payload: unknown): boolean {
     if (typeof p === "number" && Number.isFinite(p) && p > 0) ok += 1;
   }
   return ok >= Math.ceil(CRYPTO_SCREENER_PAGE2.length * CRYPTO_HUB_MIN_FILL_RATIO);
+}
+
+function isUsableIndicesTabPayload(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  const indices = (payload as { indices?: Record<string, { price?: number | null } | null> }).indices;
+  if (!indices || typeof indices !== "object") return false;
+  return Object.values(indices).some(
+    (row) => typeof row?.price === "number" && Number.isFinite(row.price) && row.price > 0,
+  );
 }
 
 export type MarketSnapshotRow = {
@@ -170,37 +181,46 @@ export async function readMarketSnapshotRow(key: MarketSnapshotKey): Promise<Mar
   return data as MarketSnapshotRow;
 }
 
+/** Why a payload must not be stored (or treated as fresh) for `key`; null when it is usable. */
+function marketSnapshotPayloadRejectReason(key: MarketSnapshotKey, payload: unknown): string | null {
+  // `data` is jsonb NOT NULL — bare null/undefined becomes a Postgres 23502.
+  if (payload === null || payload === undefined) return "empty_payload";
+
+  // Never let cron overwrite a healthy weekend hub with a sparse EODHD batch.
+  if (key === MARKET_SNAPSHOT_KEY.cryptoTab && !isUsableCryptoTabPayload(payload)) {
+    return "unusable_crypto_tab";
+  }
+  if (key === MARKET_SNAPSHOT_KEY.cryptoPage2 && !isUsableCryptoPage2Payload(payload)) {
+    return "unusable_crypto_page2";
+  }
+  if (key === MARKET_SNAPSHOT_KEY.indicesTab && !isUsableIndicesTabPayload(payload)) {
+    return "unusable_indices_tab";
+  }
+  if (
+    key === MARKET_SNAPSHOT_KEY.indexCards &&
+    !indexCardsHaveAnyPrice(Array.isArray(payload) ? (payload as IndexCardData[]) : null)
+  ) {
+    return "unusable_index_cards";
+  }
+  if (
+    key === MARKET_SNAPSHOT_KEY.cryptoDerived &&
+    !isUsableCryptoDerivedHub(
+      payload as Record<string, CryptoDerivedMetricsSnapshot | null | undefined>,
+      CRYPTO_SCREENER_ALL.map((c) => c.symbol),
+    )
+  ) {
+    return "unusable_crypto_derived";
+  }
+  return null;
+}
+
 export async function upsertMarketSnapshot(
   key: MarketSnapshotKey,
   segment: string,
   payload: unknown,
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
-  // `data` is jsonb NOT NULL — bare null/undefined becomes a Postgres 23502.
-  if (payload === null || payload === undefined) {
-    return { ok: false, reason: "empty_payload" };
-  }
-
-  // Never let cron overwrite a healthy weekend hub with a sparse EODHD batch.
-  if (key === MARKET_SNAPSHOT_KEY.cryptoTab) {
-    if (!isUsableCryptoTabPayload(payload)) {
-      return { ok: false, reason: "unusable_crypto_tab" };
-    }
-  }
-  if (key === MARKET_SNAPSHOT_KEY.cryptoPage2) {
-    if (!isUsableCryptoPage2Payload(payload)) {
-      return { ok: false, reason: "unusable_crypto_page2" };
-    }
-  }
-  if (key === MARKET_SNAPSHOT_KEY.cryptoDerived) {
-    if (
-      !isUsableCryptoDerivedHub(
-        payload as Record<string, CryptoDerivedMetricsSnapshot | null | undefined>,
-        CRYPTO_SCREENER_ALL.map((c) => c.symbol),
-      )
-    ) {
-      return { ok: false, reason: "unusable_crypto_derived" };
-    }
-  }
+  const rejectReason = marketSnapshotPayloadRejectReason(key, payload);
+  if (rejectReason) return { ok: false, reason: rejectReason };
 
   const admin = getSupabaseAdminClient();
   if (!admin) return { ok: false, reason: "no_supabase_admin" };
@@ -226,6 +246,7 @@ export async function marketSnapshotKeyIsFresh(
 ): Promise<boolean> {
   const row = await readMarketSnapshotRow(key);
   if (!row || row.segment !== segment) return false;
+  if (marketSnapshotPayloadRejectReason(key, row.data)) return false;
   const updated = Date.parse(row.updated_at);
   if (!Number.isFinite(updated)) return false;
   return Date.now() - updated < maxAgeMs;

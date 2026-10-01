@@ -1,7 +1,9 @@
 import type { PortfolioEarningsDateEntry } from "@/lib/portfolio/portfolio-earnings-dates";
 
-type PortfolioEarningsDatesPayload = {
+export type PortfolioEarningsDatesPayload = {
   bySymbol: Record<string, PortfolioEarningsDateEntry>;
+  /** Server could not resolve every symbol — undated entries are unknown, retry later. */
+  incomplete?: boolean;
 };
 
 type CacheEntry = {
@@ -66,7 +68,23 @@ async function fetchPortfolioEarningsDatesJson(
   return {
     bySymbol:
       json.bySymbol && typeof json.bySymbol === "object" ? json.bySymbol : {},
+    incomplete: json.incomplete === true,
   };
+}
+
+/** Memory hits first, then the fresh payload; flags `incomplete` when any symbol is still unresolved. */
+function mergeWithMemory(
+  symbolsKey: string,
+  payload: PortfolioEarningsDatesPayload | null,
+): PortfolioEarningsDatesPayload {
+  const bySymbol: Record<string, PortfolioEarningsDateEntry> = {};
+  let incomplete = payload == null || payload.incomplete === true;
+  for (const symbol of symbolsKey.split(",").filter(Boolean)) {
+    const entry = readSymbol(symbol) ?? payload?.bySymbol[symbol];
+    if (entry) bySymbol[symbol] = entry;
+    else incomplete = true;
+  }
+  return { bySymbol, incomplete };
 }
 
 /**
@@ -87,8 +105,7 @@ export async function fetchPortfolioEarningsDatesClient(
   );
   const pending = inflight.get(missingKey);
   if (pending) {
-    await pending;
-    return readSymbols(symbolsKey);
+    return mergeWithMemory(symbolsKey, await pending);
   }
 
   const request = fetchPortfolioEarningsDatesJson(missingKey)
@@ -96,9 +113,11 @@ export async function fetchPortfolioEarningsDatesClient(
       if (!payload) return null;
       const at = Date.now();
       for (const [symbol, entry] of Object.entries(payload.bySymbol)) {
+        // An undated entry from a partial response means "unknown", not "no earnings" — don't pin it.
+        if (payload.incomplete && !entry.notApplicable && !entry.earningsDateYmd) continue;
         memory.set(cacheKey(symbol), { at, entry });
       }
-      return readSymbols(symbolsKey) ?? payload;
+      return payload;
     })
     .catch(() => null);
 
@@ -106,5 +125,5 @@ export async function fetchPortfolioEarningsDatesClient(
   void request.finally(() => {
     if (inflight.get(missingKey) === request) inflight.delete(missingKey);
   });
-  return request;
+  return mergeWithMemory(symbolsKey, await request);
 }

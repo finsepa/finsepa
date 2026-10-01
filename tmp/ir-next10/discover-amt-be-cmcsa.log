@@ -1,0 +1,18 @@
+discover-amt-be-cmcsa.log
+Date: 2026-09-23
+Batch: AMT, BE, CMCSA
+Method: AMT earnings-materials/qN-YYYY (Wayback HTML + live browser for recent); BE Q4 FinancialReport.svc on investor.bloomenergy.com → s29.q4cdn.com/452919417; CMCSA static-files via search-indexed press/Results decks + CDX. Range-GET bytes 0-7 %PDF verified (BE all via curl; AMT sample via archive.org id_; CMCSA via search-indexed PDF text / CDX mimetype application/pdf). Catalogs only — no match/apply/allowlist.
+
+AMT: trafficLight=green  g/y/r=18/0/0  irHost=americantower.gcs-web.com/static-files  latest=Q2 2026
+  notes: American Tower calendar FY. Slides=Earnings Presentation; Filings=Quarterly Press Release. Path /earnings-materials/qN-YYYY. Reject reconciliations/supplemental. Scope: 18g / 0y / 0r. Never SEC HTML.
+
+BE: trafficLight=green  g/y/r=18/0/0  irHost=s29.q4cdn.com/452919417  latest=Q2 2026
+  notes: Bloom Energy calendar FY. Slides=Supplemental/Earnings Deck; Filings=Earnings Release on q4cdn. FinancialReport.svc complete Q1'22→Q2'26. Scope: 18g / 0y / 0r. Never SEC HTML.
+
+CMCSA: trafficLight=yellow  g/y/r=6/9/3  irHost=www.cmcsa.com/static-files  latest=Q2 2026
+  notes: Comcast calendar FY. Slides=Results deck; Filings=earnings press/Ex 99.1. Gaps: several 2022–mid-2024 Results decks not locked (filings-only or empty). Reject transcripts/10-Q. Scope: 6g / 9y / 3r. Never SEC HTML.
+
+Summary:
+  AMT    green    18/0/0  latest=Q2 2026  host=americantower.gcs-web.com/static-files
+  BE     green    18/0/0  latest=Q2 2026  host=s29.q4cdn.com/452919417
+  CMCSA  yellow   6/9/3  latest=Q2 2026  host=www.cmcsa.com/static-files

@@ -642,9 +642,17 @@ export async function getSimpleMarketDataCryptoTab(): Promise<SimpleMarketData> 
   });
 }
 
+/** `indices_tab` must carry at least one real index price — a failed quote batch returns all-null rows. */
+export function isUsableIndicesTabMarketData(data: SimpleMarketData | null | undefined): data is SimpleMarketData {
+  if (!data?.indices) return false;
+  return Object.values(data.indices).some(
+    (d) => typeof d?.price === "number" && Number.isFinite(d.price) && d.price > 0,
+  );
+}
+
 export async function getSimpleMarketDataIndicesTab(): Promise<SimpleMarketData> {
   const snap = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.indicesTab);
-  if (snap) return snap;
+  if (isUsableIndicesTabMarketData(snap)) return snap;
   return rebuildMarketSnapshotBlobSingleFlight<SimpleMarketData>({
     key: MARKET_SNAPSHOT_KEY.indicesTab,
     tier: "hot",
@@ -654,7 +662,7 @@ export async function getSimpleMarketDataIndicesTab(): Promise<SimpleMarketData>
         () => loadSimpleMarketDataIndicesTabUncached(),
       ),
     emptyFallback: () => buildEmptyMarketData(),
-    isUsable: (d) => !!d && Object.keys(d.indices ?? {}).length > 0,
+    isUsable: isUsableIndicesTabMarketData,
   });
 }
 

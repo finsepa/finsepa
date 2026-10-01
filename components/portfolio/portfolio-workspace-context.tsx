@@ -26,6 +26,8 @@ export type PortfolioWorkspaceContextValue = {
   setPortfolioGoal: (portfolioId: string, goal: PortfolioGoal | null) => void;
   addTransaction: (portfolioId: string, transaction: PortfolioTransaction) => void;
   openEditPortfolio: (id: string) => void;
+  /** Opens the delete confirmation for a portfolio; does not delete immediately. */
+  openDeletePortfolio: (id: string) => void;
   openCreatePortfolio: () => void;
   openCreateCombinedPortfolio: () => void;
   openConnectBrokerage: () => void;
@@ -97,6 +99,11 @@ export type PortfolioWorkspaceContextValue = {
    * refresh quotes in the background (Yahoo/Google-style progressive portfolio).
    */
   portfolioDisplayReady: boolean;
+  /**
+   * True once holdings carry session or live marks (or the first quote pass settled).
+   * Before that, `marketPrice` may still be the trade fill price.
+   */
+  holdingsLiveMarked: boolean;
   /** True after local bootstrap and/or server merge — portfolio list is trustworthy. */
   portfolioListReady: boolean;
 };

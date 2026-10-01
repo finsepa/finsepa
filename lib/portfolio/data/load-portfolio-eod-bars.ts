@@ -10,21 +10,81 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
+import { REVALIDATE_WARM } from "@/lib/data/cache-policy";
 import { fetchEodhdCryptoDailyBars, toEodhdCryptoSymbol } from "@/lib/market/eodhd-crypto";
 import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { fetchEodhdEodDaily } from "@/lib/market/eodhd-eod";
 import { fetchEodhdEodDailyRetry } from "@/lib/market/eodhd-eod-retry";
 import { toEodhdSymbol } from "@/lib/market/eodhd-symbol";
+import { isUsEquityExchangeHolidayYmd } from "@/lib/market/us-equity-exchange-holidays";
 import { portfolioEodBarsCacheKey } from "@/lib/portfolio/data/portfolio-eod-bars-cache-key";
+import { nyCalendarYmd, previousNyTradingDayYmd } from "@/lib/screener/screener-us-market-cache";
 
 export { PORTFOLIO_EOD_GRANULARITY, portfolioEodBarsCacheKey } from "@/lib/portfolio/data/portfolio-eod-bars-cache-key";
 
 /**
- * Freshness: {@link REVALIDATE_HOT} (60s) — same tier as `getStockPerformance` on Overview.
- * Does not lengthen beyond existing Portfolio price caches; collapses identical EODHD GETs.
+ * Equity daily bars only change when a new session's bar is published, so the cache key carries
+ * {@link latestPublishedUsEodYmd} and the TTL only guards late publishes / provider corrections.
  */
-const REVALIDATE_PORTFOLIO_EOD_BARS = REVALIDATE_HOT;
+const REVALIDATE_EQUITY_EOD_BARS = 60 * 60;
+/** Crypto's current-day bar keeps moving (24/7 market). */
+const REVALIDATE_CRYPTO_EOD_BARS = REVALIDATE_WARM;
+
+/** EODHD publishes US EOD bars shortly after the 16:00 ET close; allow an hour of slack. */
+const US_EOD_PUBLISH_LAG_MS = 60 * 60 * 1000;
+const US_REGULAR_CLOSE_MINUTES = 16 * 60;
+
+function nyWeekdayAndMinutes(now: Date): { weekday: string; minutes: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(now);
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0) % 24;
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+  return { weekday: parts.find((p) => p.type === "weekday")?.value ?? "", minutes: hour * 60 + minute };
+}
+
+/** Latest US trading day whose daily bar should already be published (America/New_York). */
+function latestPublishedUsEodYmd(now: Date): string {
+  const lagged = new Date(now.getTime() - US_EOD_PUBLISH_LAG_MS);
+  const ymd = nyCalendarYmd(lagged);
+  const { weekday, minutes } = nyWeekdayAndMinutes(lagged);
+  const tradingDay = weekday !== "Sat" && weekday !== "Sun" && !isUsEquityExchangeHolidayYmd(ymd);
+  if (tradingDay && minutes >= US_REGULAR_CLOSE_MINUTES) return ymd;
+  return previousNyTradingDayYmd(lagged);
+}
+
+/** Thrown inside cached loaders so empty / budget-blocked responses are never stored. */
+class EmptyEodBarsError extends Error {}
+
+function throwIfEmpty(bars: EodhdDailyBar[]): EodhdDailyBar[] {
+  if (bars.length === 0) throw new EmptyEodBarsError();
+  return bars;
+}
+
+/** Short per-isolate memory of empty series (delisted / custom symbols) so they don't refetch every view. */
+const EMPTY_BARS_TTL_MS = 10 * 60 * 1000;
+const emptyBarsUntil = new Map<string, number>();
+
+async function emptyOnMiss(key: string, run: () => Promise<EodhdDailyBar[]>): Promise<EodhdDailyBar[]> {
+  const until = emptyBarsUntil.get(key);
+  if (until != null) {
+    if (until > Date.now()) return [];
+    emptyBarsUntil.delete(key);
+  }
+  try {
+    return await run();
+  } catch (e) {
+    if (e instanceof EmptyEodBarsError) {
+      emptyBarsUntil.set(key, Date.now() + EMPTY_BARS_TTL_MS);
+      return [];
+    }
+    throw e;
+  }
+}
 
 function normalizePortfolioSymbol(symbol: string): string {
   return symbol.trim().toUpperCase();
@@ -61,15 +121,16 @@ async function fetchCryptoBarsUncached(
 const getCachedEquityBars = unstable_cache(
   async (
     _cacheKey: string,
+    _publishedEodYmd: string,
     providerSymbol: string,
     fromYmd: string,
     toYmd: string,
     retryFlag: "0" | "1",
   ): Promise<EodhdDailyBar[]> => {
-    return fetchEquityBarsUncached(providerSymbol, fromYmd, toYmd, retryFlag === "1");
+    return throwIfEmpty(await fetchEquityBarsUncached(providerSymbol, fromYmd, toYmd, retryFlag === "1"));
   },
-  ["portfolio-eod-equity-bars-v1"],
-  { revalidate: REVALIDATE_PORTFOLIO_EOD_BARS },
+  ["portfolio-eod-equity-bars-v2"],
+  { revalidate: REVALIDATE_EQUITY_EOD_BARS },
 );
 
 const getCachedCryptoBars = unstable_cache(
@@ -79,10 +140,10 @@ const getCachedCryptoBars = unstable_cache(
     fromYmd: string,
     toYmd: string,
   ): Promise<EodhdDailyBar[]> => {
-    return fetchCryptoBarsUncached(providerSymbol, fromYmd, toYmd);
+    return throwIfEmpty(await fetchCryptoBarsUncached(providerSymbol, fromYmd, toYmd));
   },
-  ["portfolio-eod-crypto-bars-v1"],
-  { revalidate: REVALIDATE_PORTFOLIO_EOD_BARS },
+  ["portfolio-eod-crypto-bars-v2"],
+  { revalidate: REVALIDATE_CRYPTO_EOD_BARS },
 );
 
 /** In-flight coalesce for identical keys in one isolate (parallel Promise.all / routes). */
@@ -131,7 +192,9 @@ export async function loadPortfolioSymbolEodBars(
       toYmd,
       retry: false,
     });
-    return withInflight(cacheKey, () => getCachedCryptoBars(cacheKey, cryptoPair, fromYmd, toYmd));
+    return withInflight(cacheKey, () =>
+      emptyOnMiss(cacheKey, () => getCachedCryptoBars(cacheKey, cryptoPair, fromYmd, toYmd)),
+    );
   }
 
   const providerSymbol = toEodhdSymbol(sym);
@@ -142,8 +205,12 @@ export async function loadPortfolioSymbolEodBars(
     toYmd,
     retry,
   });
-  return withInflight(cacheKey, () =>
-    getCachedEquityBars(cacheKey, providerSymbol, fromYmd, toYmd, retry ? "1" : "0"),
+  const publishedEodYmd = latestPublishedUsEodYmd(new Date());
+  const epochKey = `${cacheKey}|${publishedEodYmd}`;
+  return withInflight(epochKey, () =>
+    emptyOnMiss(epochKey, () =>
+      getCachedEquityBars(cacheKey, publishedEodYmd, providerSymbol, fromYmd, toYmd, retry ? "1" : "0"),
+    ),
   );
 }
 

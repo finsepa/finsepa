@@ -11,7 +11,7 @@ export const PATH_AUTH_CALLBACK = "/auth/callback";
 export const PATH_AUTH_RESET_PASSWORD = "/auth/reset-password";
 
 /** Default destination after sign-in (protected product entry) */
-export const PATH_APP_ENTRY = "/screener";
+export const PATH_APP_ENTRY = "/home";
 
 /** Query flag on `/login` after an explicit sign-out. */
 export const LOGIN_SIGNED_OUT_VALUE = "1";
@@ -36,6 +36,7 @@ export const PATH_ACCOUNT_PLANS = "/account/plans";
 export const PATH_ACCOUNT_BILLING = "/account?tab=billing";
 
 export function isProtectedPath(pathname: string): boolean {
+  if (pathname === "/home" || pathname.startsWith("/home/")) return true;
   if (pathname === "/screener" || pathname.startsWith("/screener/")) return true;
   if (pathname === "/crypto" || pathname.startsWith("/crypto/")) return true;
   if (pathname.startsWith("/stock/")) return true;

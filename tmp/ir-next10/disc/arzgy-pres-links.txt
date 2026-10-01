@@ -1,0 +1,6 @@
+/doc/jcr:04c63ae5-8c6e-4798-be33-60aa911f7adc/Generali%201H26_presentation.pdf/lang:en/Generali_1H26_presentation.pdf
+/doc/jcr:5522ef03-3685-4bb3-b4e5-9d6060823d8c/Conference%20Call%20Transcript%20FY%202025.pdf/lang:en/Conference_Call_Transcript_FY_2025.pdf
+/doc/jcr:72997b15-9217-4c80-a775-6329c207d1f1/Generali_FY25_presentation.pdf/lang:en/Generali_FY25_presentation.pdf
+/doc/jcr:7d407c02-fdc2-4581-b4d6-0e2f2aea11a6/Exploring_Generali_Finance_.pdf/lang:en/Exploring_Generali_Finance_.pdf
+/doc/jcr:7d619bbc-814e-4aba-9f4d-c2f6443c14fa/Exploring_Generali-Deep_Dive_on_Germany_.pdf/lang:en/Exploring_Generali-Deep_Dive_on_Germany_.pdf
+/doc/jcr:dee88c73-0d40-4df4-9424-96d442aff817/Transcript%201H26.pdf/lang:en/Transcript_1H26.pdf

@@ -40,7 +40,7 @@ export function portfolioHoldingAssetHref(
   opts?: { tab?: PortfolioHoldingAssetLinkTab },
 ): string | null {
   const s = symbol.trim().toUpperCase();
-  if (!s) return "/portfolio";
+  if (!s) return "/home";
   if (isCustomPortfolioSymbol(s)) return null;
   const base = cryptoRouteBase(s);
   const tabQuery = opts?.tab === "holdings" ? "?tab=holdings" : "";

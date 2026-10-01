@@ -112,7 +112,7 @@ export function parseAgentTickerToken(raw: string): AgentTickerRef | null {
     return {
       kind: "stock",
       symbol: "USD",
-      href: "/portfolio",
+      href: "/home",
       logoUrl: "",
     };
   }

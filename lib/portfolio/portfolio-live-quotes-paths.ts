@@ -45,8 +45,11 @@ export function portfolioPathnameUsesEagerLiveQuotes(pathname: string): boolean 
 /**
  * Continuous ledger heal (`/api/portfolio/stock-splits`) is Portfolio-path only.
  * Top-bar totals do not depend on it — running on Screener/hubs wastes BothCloses credits.
+ * Home overview (`/home`) loads every portfolio, so it would heal all of them per visit;
+ * single-portfolio `/home/[id]` still heals.
  */
 export function portfolioPathnameAllowsStockSplitsHeal(pathname: string): boolean {
+  if (pathname === "/home") return false;
   return portfolioPathnameUsesEagerLiveQuotes(pathname);
 }
 

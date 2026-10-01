@@ -35,7 +35,7 @@ function readRaw(raw: string): string[] {
 }
 
 /**
- * Guest with no storage key yet → Buffett + Terry Smith.
+ * Guest with no storage key yet → Bill Ackman + Buffett.
  * Explicit empty `hrefs: []` is respected (user cleared Following).
  */
 export function readSuperinvestorFollowLocal(userId: string | null = null): string[] {

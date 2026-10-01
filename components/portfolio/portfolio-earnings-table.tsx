@@ -17,7 +17,6 @@ import {
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
 import { SkeletonBox } from "@/components/markets/skeleton";
-import { EarningsCountdownBars } from "@/components/stock/earnings-countdown-bars";
 import {
   normalizePortfolioFiscalQuarter,
   type PortfolioEarningsDateEntry,
@@ -92,7 +91,7 @@ function DaysLeftCell({
   daysLeft,
   loading,
   align = "left",
-  /** Mobile omits countdown bars and uses “N day(s) left” text. */
+  /** Mobile uses “N day(s) left” text. */
   compact = false,
 }: {
   daysLeft: number | null;
@@ -105,16 +104,8 @@ function DaysLeftCell({
       return <SkeletonBox className="h-4 w-20 rounded" aria-hidden />;
     }
     return (
-      <div
-        className={cn("flex items-center gap-2.5", align === "right" && "justify-end")}
-        aria-hidden
-      >
+      <div className={cn("flex items-center", align === "right" && "justify-end")} aria-hidden>
         <SkeletonBox className="h-4 w-7 rounded" />
-        <div className="flex items-center gap-1">
-          {Array.from({ length: 12 }).map((_, index) => (
-            <SkeletonBox key={index} className="h-3 w-[3px] rounded-[1px]" />
-          ))}
-        </div>
       </div>
     );
   }
@@ -129,16 +120,10 @@ function DaysLeftCell({
     );
   }
   return (
-    <div
-      className={cn(
-        "inline-flex items-center gap-2.5",
-        align === "right" && "justify-end",
-      )}
-    >
-      <span className="inline-block w-7 shrink-0 text-center font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-fg">
+    <div className={cn("flex items-center", align === "right" && "justify-end")}>
+      <span className="font-['Inter'] text-[14px] font-medium leading-5 tabular-nums text-fg">
         {formatDaysLeftLabel(daysLeft)}
       </span>
-      <EarningsCountdownBars daysLeft={daysLeft} />
     </div>
   );
 }

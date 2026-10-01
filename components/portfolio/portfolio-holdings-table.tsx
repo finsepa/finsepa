@@ -1,10 +1,10 @@
 "use client";
 
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp } from "@/lib/icons";
-import { Fragment, memo, startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ArrowDown, ArrowUp } from "@/lib/icons";
+import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import type { CompanyPick } from "@/components/charting/company-picker";
@@ -23,10 +23,10 @@ import {
 } from "@/components/screener/screener-table-scroll";
 import { AllocationWeightValue } from "@/components/portfolio/allocation-weight-pie";
 import { HoldingRowActionsMenu } from "@/components/portfolio/holding-row-actions-menu";
-import { PortfolioHoldingTransactionsPanel } from "@/components/portfolio/portfolio-holding-transactions-panel";
 import { ChangeCaretIcon } from "@/components/screener/change-pct";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
 import { RemoveAssetModal } from "@/components/portfolio/remove-asset-modal";
+import { PortfolioAssetPositionModal } from "@/components/portfolio/portfolio-asset-position-modal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import {
   portfolioHoldingAssetHref,
@@ -55,42 +55,14 @@ const EM_DASH = "\u2014";
 const HOLDING_COMPANY_NAME_CLASS =
   "truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline group-hover/row:underline";
 
-/** Desktop holdings columns — expand + asset + numerics (+ actions). Fluid so card 8px inset isn’t clipped. */
-const HOLDINGS_GRID_BASE =
-  "grid w-full min-w-0 items-center gap-x-2 grid-cols-[40px_minmax(0,2.2fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,0.85fr)]";
-const HOLDINGS_GRID_WITH_ACTIONS =
-  "grid w-full min-w-0 items-center gap-x-2 grid-cols-[40px_minmax(0,2.2fr)_minmax(0,0.9fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,0.85fr)_52px]";
-
-/** Expand/collapse control for inline transaction history. */
-function PortfolioHoldingExpandButton({
-  expanded,
-  onToggle,
-}: {
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      data-holding-expand
-      aria-label={expanded ? "Collapse transactions" : "Show transactions"}
-      aria-expanded={expanded}
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggle();
-      }}
-      className={cn(
-        "inline-flex h-7 w-7 items-center justify-center rounded-full border border-transparent bg-transparent text-fg",
-        "transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
-        expanded && "bg-surface-muted",
-      )}
-    >
-      {expanded ?
-        <ChevronUp className="h-4 w-4" strokeWidth={2} aria-hidden />
-      : <ChevronDown className="h-4 w-4" strokeWidth={2} aria-hidden />}
-    </button>
-  );
-}
+/** Desktop holdings columns — asset + numerics (+ actions). Fluid so card 8px inset isn’t clipped. */
+const HOLDINGS_GRID_CLASS = "grid w-full min-w-0 items-center gap-x-2";
+const HOLDINGS_GRID_COLUMNS = "minmax(0,2.2fr) minmax(0,0.9fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,0.85fr)";
+/** Inline so the layout never depends on an arbitrary Tailwind class being generated. */
+const HOLDINGS_GRID_STYLE_BASE: CSSProperties = { gridTemplateColumns: HOLDINGS_GRID_COLUMNS };
+const HOLDINGS_GRID_STYLE_WITH_ACTIONS: CSSProperties = {
+  gridTemplateColumns: `${HOLDINGS_GRID_COLUMNS} 52px`,
+};
 
 function holdingToCompanyPick(h: PortfolioHolding): CompanyPick {
   const cryptoKey = cryptoRouteBase(h.symbol);
@@ -351,17 +323,27 @@ function PortfolioHoldingsTableInner({
 
   const [removeTarget, setRemoveTarget] = useState<PortfolioHolding | null>(null);
   const [openActionsHoldingId, setOpenActionsHoldingId] = useState<string | null>(null);
-  const [expandedHoldingId, setExpandedHoldingId] = useState<string | null>(null);
+  const [positionHoldingId, setPositionHoldingId] = useState<string | null>(null);
   const [sort, setSort] = useState<{ key: HoldingsSortKey; dir: "asc" | "desc" }>({
     key: "weight",
     dir: "desc",
   });
   const resolvedCompanyNames = usePortfolioHoldingDisplayNames(holdings);
   const router = useRouter();
+  const pathname = usePathname();
 
-  const toggleExpandedHolding = useCallback((holdingId: string) => {
-    setExpandedHoldingId((cur) => (cur === holdingId ? null : holdingId));
-  }, []);
+  const opensPositionModal = assetLinkTab === "holdings";
+  const openHolding = useCallback(
+    (holding: PortfolioHolding, assetHref: string) => {
+      if (opensPositionModal) setPositionHoldingId(holding.id);
+      else router.push(assetHref);
+    },
+    [opensPositionModal, router],
+  );
+  const closePositionModal = useCallback(() => setPositionHoldingId(null), []);
+  const positionHolding = positionHoldingId
+    ? (holdings.find((h) => h.id === positionHoldingId) ?? null)
+    : null;
 
   const onSort = useCallback((key: HoldingsSortKey) => {
     setSort((s) =>
@@ -369,7 +351,8 @@ function PortfolioHoldingsTableInner({
     );
   }, []);
 
-  const holdingsGridClass = selectedPortfolioReadOnly ? HOLDINGS_GRID_BASE : HOLDINGS_GRID_WITH_ACTIONS;
+  const holdingsGridClass = HOLDINGS_GRID_CLASS;
+  const holdingsGridStyle = selectedPortfolioReadOnly ? HOLDINGS_GRID_STYLE_BASE : HOLDINGS_GRID_STYLE_WITH_ACTIONS;
 
   const confirmRemoveAsset = useCallback(() => {
     if (!selectedPortfolioId || !removeTarget) return;
@@ -435,6 +418,16 @@ function PortfolioHoldingsTableInner({
         onClose={() => setRemoveTarget(null)}
         onConfirmRemove={confirmRemoveAsset}
       />
+      <PortfolioAssetPositionModal
+        holding={positionHolding}
+        holdings={holdings}
+        transactions={transactions}
+        companyName={positionHolding ? portfolioHoldingDisplayName(positionHolding, resolvedCompanyNames) : ""}
+        caption={positionHolding ? portfolioAssetSymbolCaption(positionHolding.symbol) : ""}
+        logoUrl={positionHolding ? displayLogoUrlForPortfolioSymbol(positionHolding.symbol) : ""}
+        assetHref={positionHolding ? portfolioHoldingAssetHref(positionHolding.symbol, { tab: "holdings" }) : null}
+        onClose={closePositionModal}
+      />
       <div className={cn("w-full max-md:pb-4 sm:pb-2", className)}>
       <div className="sm:hidden">
         <div>
@@ -484,7 +477,14 @@ function PortfolioHoldingsTableInner({
                 <div
                   className="group relative flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-surface px-4 py-3 transition-colors duration-75 hover:bg-table-row-hover sm:py-4"
                 >
-                  {assetHref ? (
+                  {assetHref && opensPositionModal ? (
+                    <button
+                      type="button"
+                      onClick={() => setPositionHoldingId(h.id)}
+                      className="absolute inset-0 z-0 cursor-pointer rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
+                      aria-label={`Open ${companyName}`}
+                    />
+                  ) : assetHref ? (
                     <Link
                       href={assetHref}
                       className="absolute inset-0 z-0 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
@@ -541,8 +541,8 @@ function PortfolioHoldingsTableInner({
                     holdingsGridClass,
                     "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted",
                   )}
+                  style={holdingsGridStyle}
                 >
-                  <div aria-hidden />
                   <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Asset</div>
                   <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Price</div>
                   <HoldingsSortHeader
@@ -589,150 +589,124 @@ function PortfolioHoldingsTableInner({
               const logo = displayLogoUrlForPortfolioSymbol(h.symbol);
               const caption = portfolioAssetSymbolCaption(h.symbol);
               const companyName = portfolioHoldingDisplayName(h, resolvedCompanyNames);
-              const expanded = expandedHoldingId === h.id;
 
               return (
-                <Fragment key={h.id}>
-                  <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
-                    <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                <div key={h.id} className={SCREENER_TABLE_DATA_ROW_CLASS}>
+                  <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+                    <div
+                      className={cn(
+                        holdingsGridClass,
+                        "min-h-[56px] text-[14px] font-normal leading-5",
+                        SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+                        assetHref && "cursor-pointer",
+                      )}
+                      style={holdingsGridStyle}
+                      onClick={
+                        assetHref
+                          ? (e) => {
+                              if ((e.target as HTMLElement).closest("[data-holding-actions]")) return;
+                              openHolding(h, assetHref);
+                            }
+                          : undefined
+                      }
+                      onKeyDown={
+                        assetHref
+                          ? (e) => {
+                              if (e.key !== "Enter" && e.key !== " ") return;
+                              e.preventDefault();
+                              openHolding(h, assetHref);
+                            }
+                          : undefined
+                      }
+                      tabIndex={assetHref ? 0 : undefined}
+                      role={assetHref ? "link" : undefined}
+                      aria-label={assetHref ? `Open ${companyName}` : undefined}
+                    >
                       <div
                         className={cn(
-                          holdingsGridClass,
-                          "min-h-[56px] text-[14px] font-normal leading-5",
-                          SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
-                          assetHref && !expanded && "cursor-pointer",
+                          "relative z-[1] flex min-w-0 max-w-full items-center gap-3 pr-2",
+                          TABLE_START_ALIGNED_PAD_CLASS,
                         )}
-                        onClick={
-                          assetHref
-                            ? (e) => {
-                                if ((e.target as HTMLElement).closest("[data-holding-actions]")) return;
-                                if ((e.target as HTMLElement).closest("[data-holding-expand]")) return;
-                                if ((e.target as HTMLElement).closest("[data-holding-expanded-panel]"))
-                                  return;
-                                router.push(assetHref);
-                              }
-                            : undefined
-                        }
-                        onKeyDown={
-                          assetHref
-                            ? (e) => {
-                                if (e.key !== "Enter" && e.key !== " ") return;
-                                e.preventDefault();
-                                router.push(assetHref);
-                              }
-                            : undefined
-                        }
-                        tabIndex={assetHref && !expanded ? 0 : undefined}
-                        role={assetHref && !expanded ? "link" : undefined}
-                        aria-label={assetHref && !expanded ? `Open ${companyName}` : undefined}
                       >
-                        <div
-                          className="relative z-[2] flex items-center justify-center"
-                          onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
-                        >
-                          <PortfolioHoldingExpandButton
-                            expanded={expanded}
-                            onToggle={() => toggleExpandedHolding(h.id)}
-                          />
-                        </div>
-                        <div
-                          className={cn(
-                            "relative z-[1] flex min-w-0 max-w-full items-center gap-3 pr-2",
-                            TABLE_START_ALIGNED_PAD_CLASS,
-                          )}
-                        >
-                          <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
-                          <div className="min-w-0 text-left">
-                            <div className={HOLDING_COMPANY_NAME_CLASS}>{caption}</div>
-                            <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
-                              {companyName}
-                            </div>
+                        <CompanyLogo name={companyName} logoUrl={logo} symbol={h.symbol} />
+                        <div className="min-w-0 text-left">
+                          <div className={HOLDING_COMPANY_NAME_CLASS}>{caption}</div>
+                          <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">
+                            {companyName}
                           </div>
                         </div>
-                        <div
-                          className={cn(
-                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
-                            TABLE_END_ALIGNED_PAD_CLASS,
-                          )}
-                        >
-                          {formatPortfolioUsdPerUnit(h.marketPrice)}
-                        </div>
-                        <div
-                          className={cn(
-                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right",
-                            TABLE_END_ALIGNED_PAD_CLASS,
-                          )}
-                        >
-                          <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
-                            {usd0.format(h.currentValue)}
-                          </div>
-                          <div className="text-[12px] font-normal leading-4 tabular-nums text-fg-muted">
-                            {formatSharesWithUnit(h.shares, h.symbol)}
-                          </div>
-                        </div>
-                        <div
-                          className={cn(
-                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
-                            TABLE_END_ALIGNED_PAD_CLASS,
-                          )}
-                        >
-                          {formatPortfolioUsdPerUnit(h.avgPrice)}
-                        </div>
-                        <div
-                          className={cn(
-                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right",
-                            TABLE_END_ALIGNED_PAD_CLASS,
-                          )}
-                        >
-                          <PortfolioPnlBreakdownTooltip
-                            totalUsd={totalUsd}
-                            unrealizedUsd={unrealizedUsd}
-                            unrealizedPct={unrealizedPct}
-                            realizedUsd={realizedUsd}
-                          />
-                        </div>
-                        <div
-                          className={cn(
-                            "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
-                            TABLE_END_ALIGNED_PAD_CLASS,
-                          )}
-                        >
-                          <AllocationWeightValue pct={weightPct} label={pct.format(weightPct)} />
-                        </div>
-                        {!selectedPortfolioReadOnly ? (
-                          <div
-                            className={cn("relative z-[2] flex justify-end", TABLE_END_ALIGNED_PAD_CLASS)}
-                            data-holding-actions
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <HoldingRowActionsMenu
-                              holding={h}
-                              isOpen={openActionsHoldingId === h.id}
-                              onOpenChange={(open) => setOpenActionsHoldingId(open ? h.id : null)}
-                              onAddTransactions={(row) =>
-                                openNewTransactionWithPreset(holdingToCompanyPick(row))
-                              }
-                              onRemoveAsset={setRemoveTarget}
-                            />
-                          </div>
-                        ) : null}
                       </div>
+                      <div
+                        className={cn(
+                          "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
+                          TABLE_END_ALIGNED_PAD_CLASS,
+                        )}
+                      >
+                        {formatPortfolioUsdPerUnit(h.marketPrice)}
+                      </div>
+                      <div
+                        className={cn(
+                          "relative z-[1] min-w-0 w-full whitespace-nowrap text-right",
+                          TABLE_END_ALIGNED_PAD_CLASS,
+                        )}
+                      >
+                        <div className="font-['Inter'] text-[14px] font-semibold leading-5 tabular-nums text-fg">
+                          {usd0.format(h.currentValue)}
+                        </div>
+                        <div className="text-[12px] font-normal leading-4 tabular-nums text-fg-muted">
+                          {formatSharesWithUnit(h.shares, h.symbol)}
+                        </div>
+                      </div>
+                      <div
+                        className={cn(
+                          "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
+                          TABLE_END_ALIGNED_PAD_CLASS,
+                        )}
+                      >
+                        {formatPortfolioUsdPerUnit(h.avgPrice)}
+                      </div>
+                      <div
+                        className={cn(
+                          "relative z-[1] min-w-0 w-full whitespace-nowrap text-right",
+                          TABLE_END_ALIGNED_PAD_CLASS,
+                        )}
+                      >
+                        <PortfolioPnlBreakdownTooltip
+                          totalUsd={totalUsd}
+                          unrealizedUsd={unrealizedUsd}
+                          unrealizedPct={unrealizedPct}
+                          realizedUsd={realizedUsd}
+                        />
+                      </div>
+                      <div
+                        className={cn(
+                          "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
+                          TABLE_END_ALIGNED_PAD_CLASS,
+                        )}
+                      >
+                        <AllocationWeightValue pct={weightPct} label={pct.format(weightPct)} />
+                      </div>
+                      {!selectedPortfolioReadOnly ? (
+                        <div
+                          className={cn("relative z-[2] flex justify-end", TABLE_END_ALIGNED_PAD_CLASS)}
+                          data-holding-actions
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <HoldingRowActionsMenu
+                            holding={h}
+                            isOpen={openActionsHoldingId === h.id}
+                            onOpenChange={(open) => setOpenActionsHoldingId(open ? h.id : null)}
+                            onAddTransactions={(row) =>
+                              openNewTransactionWithPreset(holdingToCompanyPick(row))
+                            }
+                            onRemoveAsset={setRemoveTarget}
+                          />
+                        </div>
+                      ) : null}
                     </div>
-                    {!expanded ? (
-                      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
-                    ) : null}
                   </div>
-                  {expanded ? (
-                    <div className="min-w-0 max-w-full overflow-hidden border-y border-solid border-table-row-stroke bg-surface">
-                      <PortfolioHoldingTransactionsPanel
-                        holding={h}
-                        transactions={transactions}
-                        resolvedCompanyNames={resolvedCompanyNames}
-                      />
-                    </div>
-                  ) : null}
-                </Fragment>
+                  <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+                </div>
               );
             })}
 
@@ -744,17 +718,17 @@ function PortfolioHoldingsTableInner({
                     "min-h-[56px] cursor-pointer text-[14px] font-normal leading-5",
                     SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
                   )}
-                  onClick={() => router.push("/portfolio?tab=cash")}
+                  style={holdingsGridStyle}
+                  onClick={() => router.push(`${pathname}?tab=cash`)}
                   onKeyDown={(e) => {
                     if (e.key !== "Enter" && e.key !== " ") return;
                     e.preventDefault();
-                    router.push("/portfolio?tab=cash");
+                    router.push(`${pathname}?tab=cash`);
                   }}
                   tabIndex={0}
                   role="link"
                   aria-label="Open cash"
                 >
-                  <div aria-hidden />
                   <div
                     className={cn(
                       "relative z-[1] flex min-w-0 max-w-full items-center gap-3 pr-2",

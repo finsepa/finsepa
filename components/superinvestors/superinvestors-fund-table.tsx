@@ -193,7 +193,7 @@ function FundSortHeader({
 
 function SuperinvestorsFundTableInner({ rows }: { rows: SuperinvestorsFundRowModel[] }) {
   const [sort, setSort] = useState<{ key: SuperinvestorsSortKey; dir: "asc" | "desc" }>({
-    key: "size",
+    key: "performance",
     dir: "desc",
   });
 

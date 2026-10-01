@@ -125,6 +125,10 @@ import {
 } from "@/lib/portfolio/portfolio-live-quotes-paths";
 import { portfolioLedgerFingerprint, portfolioWorkspacePersistFingerprint } from "@/lib/portfolio/portfolio-ledger-fingerprint";
 import {
+  isStockSplitsHealFingerprintChecked,
+  markStockSplitsHealFingerprintChecked,
+} from "@/lib/portfolio/stock-splits-heal-fingerprint";
+import {
   portfolioQuoteSessionIsFresh,
   portfolioSliceHasSessionMarks,
   PORTFOLIO_QUOTE_SESSION_TTL_MS,
@@ -486,6 +490,14 @@ export function PortfolioWorkspaceProvider({
 
   const setSelectedPortfolioId = useCallback<Dispatch<SetStateAction<string | null>>>(
     (action) => {
+      /** On `/home/[id]` the URL owns the selection — navigate and let that page adopt it. */
+      if (typeof action === "string" && typeof window !== "undefined") {
+        const urlId = /^\/home\/([^/?#]+)/.exec(window.location.pathname)?.[1];
+        if (urlId && urlId !== action && isFreePortfolioAccessible(action)) {
+          router.push(`/home/${action}`);
+          return;
+        }
+      }
       setSelectedPortfolioState((prev) => {
         const next = typeof action === "function" ? (action as (p: string | null) => string | null)(prev) : action;
         if (next != null && plan?.isFree && !isFreePortfolioAccessible(next)) {
@@ -517,7 +529,7 @@ export function PortfolioWorkspaceProvider({
         return next;
       });
     },
-    [userId, plan, isFreePortfolioAccessible, portfolios, openUpgradePlans],
+    [userId, plan, isFreePortfolioAccessible, portfolios, openUpgradePlans, router],
   );
 
   const [editPortfolioOpen, setEditPortfolioOpen] = useState(false);
@@ -550,6 +562,7 @@ export function PortfolioWorkspaceProvider({
    * {@link portfolioDisplayReady} unlocks as soon as the ledger hydrates.
    */
   const [holdingsMarkToMarketReady, setHoldingsMarkToMarketReady] = useState(true);
+  const [holdingsLiveMarked, setHoldingsLiveMarked] = useState(false);
   const holdingsQuoteRefreshGenRef = useRef(0);
   const appliedLedgerFingerprintRef = useRef<string | null>(null);
   /** Server `portfolio_workspace.updated_at` from last successful GET/PUT (optimistic concurrency). */
@@ -666,6 +679,7 @@ export function PortfolioWorkspaceProvider({
     ) => {
       if (!Object.values(slice).some((h) => h.length > 0)) {
         setHoldingsMarkToMarketReady(true);
+        setHoldingsLiveMarked(true);
         return;
       }
 
@@ -714,6 +728,7 @@ export function PortfolioWorkspaceProvider({
           }
           if (holdingsQuoteRefreshGenRef.current === refreshGen) {
             setHoldingsMarkToMarketReady(true);
+            setHoldingsLiveMarked(true);
           }
         }
       })();
@@ -753,6 +768,7 @@ export function PortfolioWorkspaceProvider({
       const paintSessionMarks = () => {
         if (session?.prices && Object.keys(session.prices).length) {
           applySessionMarksToHoldings(rebuilt, session.prices);
+          setHoldingsLiveMarked(true);
         }
       };
 
@@ -1642,6 +1658,10 @@ export function PortfolioWorkspaceProvider({
 
       const fp = `continuous-v3|${ledgerTxFingerprint(txs)}`;
       if (stockSplitsFpRef.current.get(portfolioId) === fp) return;
+      if (isStockSplitsHealFingerprintChecked(portfolioId, fp)) {
+        stockSplitsFpRef.current.set(portfolioId, fp);
+        return;
+      }
 
       stockSplitsInFlightRef.current.add(portfolioId);
       try {
@@ -1671,13 +1691,16 @@ export function PortfolioWorkspaceProvider({
         // No repair needed — remember this ledger shape so we don't poll again every effect.
         if (pricesRestored === 0 && splitsRemoved === 0) {
           stockSplitsFpRef.current.set(portfolioId, fp);
+          markStockSplitsHealFingerprintChecked(portfolioId, fp);
           return;
         }
 
         // Bypass strict mutation validation (orphan sells etc. already in display ledger).
         const tagged = tagLegacyAnomalySells(nextRaw, portfolioId);
         const { transactions: migrated } = migratePortfolioTransactionSequences(tagged.transactions);
-        stockSplitsFpRef.current.set(portfolioId, `continuous-v3|${ledgerTxFingerprint(migrated)}`);
+        const migratedFp = `continuous-v3|${ledgerTxFingerprint(migrated)}`;
+        stockSplitsFpRef.current.set(portfolioId, migratedFp);
+        markStockSplitsHealFingerprintChecked(portfolioId, migratedFp);
         setTransactionsByPortfolioId((prev) => ({ ...prev, [portfolioId]: migrated }));
         const rebuilt = replayTradeTransactionsToHoldings(migrated);
         const quoted = await refreshHoldingMarketPrices(rebuilt);
@@ -1979,6 +2002,12 @@ export function PortfolioWorkspaceProvider({
     },
     [plan, isFreePortfolioAccessible, portfolios, openUpgradePlans],
   );
+
+  const openDeletePortfolio = useCallback((id: string) => {
+    setEditPortfolioOpen(false);
+    setEditPortfolioId(null);
+    setDeletePortfolioConfirmId(id);
+  }, []);
 
   const openCreatePortfolio = useCallback(() => {
     if (plan?.isFree && !plan.canCreatePortfolio) {
@@ -2422,7 +2451,7 @@ export function PortfolioWorkspaceProvider({
         toast.success(
           <span>
             Portfolio{" "}
-            <a href="/portfolio" className="font-semibold underline underline-offset-2">
+            <a href={`/home/${portfolioId}`} className="font-semibold underline underline-offset-2">
               &ldquo;{displayName}&rdquo;
             </a>{" "}
             connected
@@ -2921,6 +2950,7 @@ export function PortfolioWorkspaceProvider({
       setPortfolioGoal,
       addTransaction,
       openEditPortfolio,
+      openDeletePortfolio,
       openCreatePortfolio,
       openCreateCombinedPortfolio,
       openConnectBrokerage,
@@ -2950,6 +2980,7 @@ export function PortfolioWorkspaceProvider({
       removePortfolioTransactions,
       restorePortfolioTransaction,
       portfolioDisplayReady,
+      holdingsLiveMarked,
       portfolioListReady,
     }),
     [
@@ -2968,6 +2999,7 @@ export function PortfolioWorkspaceProvider({
       removePortfolioTransactions,
       restorePortfolioTransaction,
       openEditPortfolio,
+      openDeletePortfolio,
       openCreatePortfolio,
       openCreateCombinedPortfolio,
       openConnectBrokerage,
@@ -2991,6 +3023,7 @@ export function PortfolioWorkspaceProvider({
       openEditTransaction,
       closeEditTransaction,
       portfolioDisplayReady,
+      holdingsLiveMarked,
       portfolioListReady,
       setSelectedPortfolioId,
       isFreePortfolioAccessible,
@@ -3254,11 +3287,12 @@ export function PortfolioWorkspaceProvider({
             setSelectedPortfolioState(id);
             saveLastSelectedPortfolioId(userId, id);
             setCreatePortfolioOpen(false);
+            router.push(`/home/${id}`);
             toast.success(
               <span>
                 Portfolio{" "}
                 <a
-                  href="/portfolio"
+                  href={`/home/${id}`}
                   className="font-semibold underline underline-offset-2"
                 >
                   &ldquo;{t}&rdquo;
@@ -3294,8 +3328,10 @@ export function PortfolioWorkspaceProvider({
                 combinedFrom: [...sourceIds],
               },
             ]);
-            setSelectedPortfolioId(id);
+            setSelectedPortfolioState(id);
+            saveLastSelectedPortfolioId(userId, id);
             setCreateCombinedOpen(false);
+            router.push(`/home/${id}`);
             toast.success(`Combined portfolio "${t}" created.`, {
               description: `Merges ${sourceIds.length} portfolios`,
             });

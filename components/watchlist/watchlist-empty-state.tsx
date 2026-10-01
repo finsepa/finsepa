@@ -1,10 +1,8 @@
-import { Star } from "@/lib/icons";
-
+import { WatchlistEmptyIllustration } from "@/components/portfolio-home/portfolio-empty-illustration";
 import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
@@ -22,9 +20,7 @@ export function WatchlistEmptyState({
       className={cn(variant === "card" && "min-h-[min(50vh,400px)]", className)}
     >
       <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <Star className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-        </EmptyMedia>
+        <WatchlistEmptyIllustration className="mb-6" />
         <EmptyTitle>No saved assets yet</EmptyTitle>
         <EmptyDescription className={variant === "plain" ? "max-w-[260px]" : "max-w-sm"}>
           Star symbols from any page to add them to this watchlist.

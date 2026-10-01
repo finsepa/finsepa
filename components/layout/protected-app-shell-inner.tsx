@@ -202,7 +202,7 @@ export function ProtectedAppShellInner({
   platformTrialDaysLeft = null,
   isPro = false,
   initialSidebarCollapsed = false,
-  initialWatchlistRailCollapsed = true,
+  initialWatchlistRailCollapsed = false,
   mobileTopbarVariant,
 }: {
   children: ReactNode;

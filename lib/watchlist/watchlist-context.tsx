@@ -177,6 +177,8 @@ type WatchlistContextValue = {
   activeTickerSections: Record<string, string>;
   serverListWarning: string | null;
   storageHydrated: boolean;
+  /** True once the server list has been fetched (or failed / signed out) — the cache alone may be empty. */
+  serverSynced: boolean;
 };
 
 const WatchlistContext = createContext<WatchlistContextValue | null>(null);
@@ -192,6 +194,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   const [watchedTickers, setWatchedTickers] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [serverSynced, setServerSynced] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [serverListWarning, setServerListWarning] = useState<string | null>(null);
   const [collections, setCollections] = useState<WatchlistCollectionsSnapshot>(
@@ -630,6 +633,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           source: "localStorage_bootstrap",
         });
         setHydrated(true);
+        setServerSynced(true);
         setLoaded(true);
         return;
       }
@@ -739,6 +743,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       } finally {
         if (!cancelled) {
           setHydrated(true);
+          setServerSynced(true);
           setLoaded(true);
         }
       }
@@ -785,6 +790,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
           source: "localStorage_bootstrap",
         });
           setHydrated(true);
+          setServerSynced(true);
           setLoaded(true);
         })();
       }
@@ -1586,6 +1592,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       activeTickerSections: active.tickerSections,
       serverListWarning,
       storageHydrated: hydrated,
+      serverSynced,
     }),
     [
       watched,
@@ -1611,6 +1618,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
       active.tickerSections,
       serverListWarning,
       hydrated,
+      serverSynced,
     ],
   );
 

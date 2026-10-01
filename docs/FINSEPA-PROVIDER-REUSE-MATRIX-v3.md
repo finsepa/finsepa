@@ -420,7 +420,7 @@ Explanation: `load-portfolio-eod-bars.ts` documents identical `(symbol, from, to
 
 ### Shared Cache Layers
 
-- `unstable_cache` — portfolio equity `["portfolio-eod-equity-bars-v1"]`, crypto `["portfolio-eod-crypto-bars-v1"]`, **60s**
+- `unstable_cache` — portfolio equity `["portfolio-eod-equity-bars-v2"]` keyed by latest published US EOD day, **3600s**; crypto `["portfolio-eod-crypto-bars-v2"]`, **300s**; empty responses are not cached
 - In-flight dedupe — `Map<string, Promise>` in `load-portfolio-eod-bars.ts`
 - `unstable_cache` — `["stock-performance-v8-annual-year-fallback"]` + ticker, **60s**
 - `unstable_cache` — `["stock-chart-points-v34-ws-minute-only"]` + `(ticker, range, series)`, **60s**
@@ -436,8 +436,8 @@ Explanation: `load-portfolio-eod-bars.ts` documents identical `(symbol, from, to
 
 | Layer | Key | TTL |
 |-------|-----|-----|
-| Portfolio equity | tag `["portfolio-eod-equity-bars-v1"]` + args `(cacheKey, providerSymbol, fromYmd, toYmd, retryFlag)` | **60s** |
-| Portfolio crypto | tag `["portfolio-eod-crypto-bars-v1"]` + same arg shape | **60s** |
+| Portfolio equity | tag `["portfolio-eod-equity-bars-v2"]` + args `(cacheKey, publishedEodYmd, providerSymbol, fromYmd, toYmd, retryFlag)` | **3600s** (key flips ~1h after each US close) |
+| Portfolio crypto | tag `["portfolio-eod-crypto-bars-v2"]` + args `(cacheKey, providerSymbol, fromYmd, toYmd)` | **300s** |
 | Explicit cache key string | `portfolio-eod-bars-v1\|{equity\|crypto}\|{providerSymbol}\|{fromYmd}\|{toYmd}\|{r0\|r1}\|d` | part of unstable_cache args |
 | Stock performance | `["stock-performance-v8-annual-year-fallback"]` + ticker | **60s** |
 | Stock chart | `["stock-chart-points-v34-ws-minute-only"]` + `(ticker, range, series)` | **60s** |

@@ -47,6 +47,7 @@ export function PublicPortfolioViewProvider({
       setPortfolioGoal: noop,
       addTransaction: noop,
       openEditPortfolio: noop,
+      openDeletePortfolio: noop,
       openCreatePortfolio: noop,
       openCreateCombinedPortfolio: noop,
       openConnectBrokerage: noop,
@@ -76,6 +77,7 @@ export function PublicPortfolioViewProvider({
       removePortfolioTransactions: noopAsync,
       restorePortfolioTransaction: noopAsync,
       portfolioDisplayReady: true,
+      holdingsLiveMarked: true,
       portfolioListReady: true,
     };
   }, [holdings, normalizedTx, portfolioName]);

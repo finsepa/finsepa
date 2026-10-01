@@ -625,7 +625,7 @@ function ReportsHeaderRow() {
             1D change
           </div>
           <div className={cn(reportsHeaderNumClass, "whitespace-nowrap")}>
-            <span className="sr-only">Document actions</span>
+            Reports
           </div>
         </div>
       </div>

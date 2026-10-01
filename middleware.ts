@@ -86,6 +86,8 @@ export async function middleware(request: NextRequest) {
   const isActivateSubscriptionPath = path === PATH_ACTIVATE_SUBSCRIPTION || path.startsWith(`${PATH_ACTIVATE_SUBSCRIPTION}/`);
 
   const isProtectedPath =
+    path === "/home" ||
+    path.startsWith("/home/") ||
     path === "/screener" ||
     path.startsWith("/screener/") ||
     path === "/news" ||
@@ -181,6 +183,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/home",
+    "/home/:path*",
     "/screener",
     "/screener/:path*",
     "/news/:path*",

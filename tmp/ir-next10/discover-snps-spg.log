@@ -1,0 +1,15 @@
+discover-snps-spg.log
+Date: 2026-09-23
+Batch: SNPS, SPG
+Method: SNPS via investor.synopsys.com FinancialReport.svc feed (s201.q4cdn.com/778493406); path-first classify (Q1'25 title swap). SPG via browser scrape investors.simon.com/financial-information/quarterly-results (static-files supplemental + news-release PDF Version /node/N/pdf); Akamai blocks CLI. Range-GET bytes 0-7 %PDF verified (SNPS curl; SPG in-browser XHR samples across Q1'22–Q2'26). Catalogs only — no match/apply/allowlist.
+
+SNPS: trafficLight=yellow  g/y/r=2/17/0  irHost=s201.q4cdn.com/778493406  latest=Q3 2026
+  notes: Synopsys Oct 31 FY — use issuer fiscal labels (not calendar). Slides=Corporate/Investor Overview when present else Financial Supplement; Filings=Press Release PDF (only Q3–Q4 2022 on CDN; later HTML news-details → null). Reject remarks/10-Q/10-K. Scope: 2g / 17y / 0r. Never SEC HTML.
+
+SPG: trafficLight=green  g/y/r=18/0/0  irHost=investors.simon.com  latest=Q2 2026
+  notes: Simon Property Group calendar FY. Slides=Supplemental Information static-files; Filings=Press PDF Version /node/N/pdf (distinct URLs/sizes). Reject 10-Q/10-K. Scope: 18g / 0y / 0r. Never SEC HTML.
+
+Summary:
+  SNPS  yellow   2/17/0  latest=Q3 2026  host=s201.q4cdn.com/778493406
+  SPG   green    18/0/0  latest=Q2 2026  host=investors.simon.com
+

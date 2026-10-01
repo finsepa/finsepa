@@ -1,0 +1,110 @@
+/**
+ * ARZGY IR seed — 12-31.
+ * Assicurazioni Generali ADR. Calendar FY but half-year European reporting: 1H→Q2, FY/YE→Q4; Q1/Q3 empty by design (occasional 1Q press e.g. 1Q26 not locked — no decks). Slides=Presentation of Results on generali.com/doc/jcr; Filings=Consolidated Results press PDF. Reject transcripts/deep-dives/Investor Day/comparatives. Never SEC HTML. Scope: 9g / 0y / 9r.
+ * Never SEC HTML / transcript / 10-Q / 10-K.
+ */
+
+export type ArzgyQuarterDocs = {
+  slides: string | null;
+  filings: string | null;
+};
+
+export const ARZGY_IR_PAGES = [
+  "https://www.generali.com/investors/reports-and-presentations/report-archive",
+] as const;
+
+export const ARZGY_KNOWN_QUARTER_DOCS: Readonly<Record<string, ArzgyQuarterDocs>> = {
+  "Q1 2022": {
+    slides: null,
+    filings: null,
+  },
+  "Q2 2022": {
+    slides: "https://www.generali.com/doc/jcr:f659f183-a990-4493-be26-8864bd356dc2/Generali%201H22%20Results%20presentation.pdf/lang:en/Generali_1H22_Results_presentation.pdf",
+    filings: "https://www.generali.com/doc/jcr:4aff4320-131f-49ff-b156-00a9c54fe080/PR_Generali%20Group%20HY2022%20Results%20_DEF.pdf/lang:en/PR_Generali_Group_HY2022_Results__DEF.pdf",
+  },
+  "Q3 2022": {
+    slides: null,
+    filings: null,
+  },
+  "Q4 2022": {
+    slides: "https://www.generali.com/doc/jcr:c8771dae-6e87-466a-8af1-af97a147a0c3/Generali%202022%20Results_presentation.pdf/lang:en/Generali_2022_Results_presentation.pdf",
+    filings: "https://www.generali.com/doc/jcr:76592065-7ecf-4288-a4b8-41d0ea2a7151/03.14%20PR_Generali%20consolidated%20results%2031%20dec.2022_def_.pdf/lang:en/03.14_PR_Generali_consolidated_results_31_dec.2022_def_.pdf",
+  },
+  "Q1 2023": {
+    slides: null,
+    filings: null,
+  },
+  "Q2 2023": {
+    slides: "https://www.generali.com/doc/jcr:d447236f-dfe8-49c8-a961-c87d9e9735fe/Generali%201H23%20Results%20presentation_.pdf/lang:en/Generali_1H23_Results_presentation_.pdf",
+    filings: "https://www.generali.com/doc/jcr:18ba26c2-5ea6-4c7f-8593-a1979c517993/08.09%20PR_Generali%20Group%20HY2023%20Results%20def.pdf/lang:en/08.09_PR_Generali_Group_HY2023_Results_def.pdf",
+  },
+  "Q3 2023": {
+    slides: null,
+    filings: null,
+  },
+  "Q4 2023": {
+    slides: "https://www.generali.com/doc/jcr:e13aeb11-b93a-4f64-bad9-12e52f75c056/Generali_2023%20Results%20presentation%20and%20commentary.pdf/lang:en/Generali_2023_Results_presentation_and_commentary.pdf",
+    filings: "https://www.generali.com/doc/jcr:fb6c310f-ad47-46d5-9255-84ae36407f2a/03.12_PR_Generali%20consolidated%20results%2031%20dec%202023.pdf/lang:en/03.12_PR_Generali_consolidated_results_31_dec_2023.pdf",
+  },
+  "Q1 2024": {
+    slides: null,
+    filings: null,
+  },
+  "Q2 2024": {
+    slides: "https://www.generali.com/doc/jcr:67a7449e-438d-485b-a02b-62c3c0c3d2cb/Generali%201H24%20Results%20presentation%20and%20slide%20commentary.pdf/lang:en/Generali_1H24_Results_presentation_and_slide_commentary.pdf",
+    filings: "https://www.generali.com/doc/jcr:6053c4b3-24a8-45e3-986a-f0e5f7294570/08.09%20PR_Generali%20Group%20HY2024%20Results_def.pdf/lang:en/08.09_PR_Generali_Group_HY2024_Results_def.pdf",
+  },
+  "Q3 2024": {
+    slides: null,
+    filings: null,
+  },
+  "Q4 2024": {
+    slides: "https://www.generali.com/doc/jcr:a0bc24bd-89f3-4d8f-adaf-44313dff5ddb/Generali%20FY24%20presentation%20with%20commentary_.pdf/lang:en/Generali_FY24_presentation_with_commentary_.pdf",
+    filings: "https://www.generali.com/doc/jcr:69aa7673-1600-4d92-b710-d61f6e716536/03.12%20PR_Generali%20Consolidated%20Results%202024_def.pdf/lang:en/03.12_PR_Generali_Consolidated_Results_2024_def.pdf",
+  },
+  "Q1 2025": {
+    slides: null,
+    filings: null,
+  },
+  "Q2 2025": {
+    slides: "https://www.generali.com/doc/jcr:f21cfbe3-92b7-4bd2-b6fd-d8f74c68a507/Generali%201H25%20presentation%20with%20commentary.pdf/lang:en/Generali_1H25_presentation_with_commentary.pdf",
+    filings: "https://www.generali.com/doc/jcr:a37f79ab-a0b0-4779-a32a-79c9df4cd66a/08.06%20PR_Generali%20Group%20HY2025%20Results_def.pdf/lang:en/08.06_PR_Generali_Group_HY2025_Results_def.pdf",
+  },
+  "Q3 2025": {
+    slides: null,
+    filings: null,
+  },
+  "Q4 2025": {
+    slides: "https://www.generali.com/doc/jcr:72997b15-9217-4c80-a775-6329c207d1f1/Generali_FY25_presentation.pdf/lang:en/Generali_FY25_presentation.pdf",
+    filings: "https://www.generali.com/doc/jcr:b2b5f8a5-caa1-4153-bd44-a504ab8b8a9c/03.12%20PR_Generali%20Consolidated%20Results%202025_def-.pdf/lang:en/03.12_PR_Generali_Consolidated_Results_2025_def-.pdf",
+  },
+  "Q1 2026": {
+    slides: null,
+    filings: null,
+  },
+  "Q2 2026": {
+    slides: "https://www.generali.com/doc/jcr:04c63ae5-8c6e-4798-be33-60aa911f7adc/Generali%201H26_presentation.pdf/lang:en/Generali_1H26_presentation.pdf",
+    filings: "https://www.generali.com/doc/jcr:ea1a9348-6936-4696-802d-acb7b01f4159/08.06%20PR_Generali%20Consolidated%20Results%201H2026_def.pdf/lang:en/08.06_PR_Generali_Consolidated_Results_1H2026_def.pdf",
+  },
+};
+
+export function isArzgyRejected(href: string, title = ""): boolean {
+  const n = `${decodeURIComponent(href)} ${title}`.toLowerCase();
+  return /sec\.gov|\b10-?q\b|\b10-?k\b|\b8-?k\b|proxy|transcript|webcast|investor.?day|reconcili|nongaap|\.xls|\.xlsx|\.csv(?:$|[?#])|sustainab|xbrl/i.test(n);
+}
+
+export function isArzgyIrPdf(href: string | null | undefined): boolean {
+  if (!href || isArzgyRejected(href)) return false;
+  try {
+    const u = new URL(href);
+    const host = u.hostname.toLowerCase();
+    if (!(host === "www.generali.com" || host === "generali.com" || host.endsWith(".generali.com"))) return false;
+    return /\.pdf(?:$|[?#])/i.test(u.pathname) || /\.pdf(?:$|[?#])/i.test(href);
+  } catch {
+    return false;
+  }
+}
+
+export function mergeArzgyKnownQuarterDocs(): Map<string, ArzgyQuarterDocs> {
+  return new Map(Object.entries(ARZGY_KNOWN_QUARTER_DOCS));
+}

@@ -1,0 +1,87 @@
+{
+  "ticker": "BAESY",
+  "irHost": "investors.baesystems.com/dam",
+  "fyEnd": "12-31",
+  "latestLabel": "Q2 2026",
+  "trafficLight": "yellow",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2022": {
+      "slides": "https://investors.baesystems.com/dam/jcr:ee62985b-fbca-46a4-b8b2-b2d5454a887d/2022-half-year-results-presentation.pdf",
+      "filings": "https://investors.baesystems.com/dam/jcr:5b3a13e8-9051-420b-870e-b5846c764080/2022-half-year-results-announcement.pdf"
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2022": {
+      "slides": "https://investors.baesystems.com/dam/jcr:93fa8deb-93d7-4da5-a2db-523073cbd891/2022-preliminary-results-presentation.pdf",
+      "filings": "https://investors.baesystems.com/dam/jcr:91a19b02-37d9-4d67-95f1-a156abc548b8/fy22-preliminary-announcement-final.pdf"
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2023": {
+      "slides": null,
+      "filings": "https://investors.baesystems.com/dam/jcr:45afd055-399e-42b9-91db-ca07a4ef3fb3/2023-half-year-results-announcement.pdf"
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2023": {
+      "slides": null,
+      "filings": "https://investors.baesystems.com/dam/jcr:f12aba66-a573-4ee0-8be5-12f6bfb5d7fc/2023-full-year-results-announcement.pdf"
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2024": {
+      "slides": "https://investors.baesystems.com/dam/jcr:9b102c0d-8130-41d0-a051-00f2402418a9/hy24-results-presentation.pdf",
+      "filings": "https://investors.baesystems.com/dam/jcr:a02e71fc-5906-4d10-80c5-2ddbbceb11ae/fy24-half-yearly-report.pdf"
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2024": {
+      "slides": "https://investors.baesystems.com/dam/jcr:d15e7ae1-9f7b-4aff-9e00-638ba185b27f/BAES_PRELIMS2024.pdf",
+      "filings": "https://investors.baesystems.com/dam/jcr:83a66d00-5f12-4f18-86fa-dff0b15540a6/FY24-Preliminary-Announcement-FINAL.pdf"
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2025": {
+      "slides": "https://investors.baesystems.com/dam/jcr:78164bbc-7f74-4f4f-9704-a4f43b11ad41/HY25-Interims-slides.pdf",
+      "filings": "https://investors.baesystems.com/dam/jcr:970e569f-037d-40db-946a-deeb631fe45a/HY-2025-Half-Yearly-Report.pdf"
+    },
+    "Q3 2025": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2025": {
+      "slides": "https://investors.baesystems.com/dam/jcr:e040c94a-9e71-4046-a9f7-2cf4b161a982/FY-2025-Presentation.2026-02-18-09-49-19.pdf",
+      "filings": "https://investors.baesystems.com/dam/jcr:430d3195-c990-4bd5-ac85-ec5588380dbf/FY-2025-Preliminary-Results-Announcements-FINAL.2026-02-18-09-10-25.pdf"
+    },
+    "Q1 2026": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2026": {
+      "slides": "https://investors.baesystems.com/dam/jcr:f36a49fa-fc05-48b2-85c1-626d32880ec6/BAE-Systems-HY26-results-presentation-final.25e80daa23ac96034d19e1022eaf7520.pdf",
+      "filings": "https://investors.baesystems.com/dam/jcr:f84dc82f-4530-419c-b993-74ebb562bf97/HY-2026-Half-Yearly-Report-Final.04078ad460b3959f428f65bc388abb6f.pdf"
+    }
+  },
+  "notes": "BAE Systems plc ADR (UK). Calendar FY half-year: HY\u2192Q2 / Preliminary/FY\u2192Q4; Q1/Q3 empty by design. Slides=results presentation / Interims-slides / PRELIMS deck; Filings=half-year report or preliminary announcement on investors.baesystems.com/dam. Q2/Q4 2023 slides null (IR only offers presentation-transcript PDFs \u2014 rejected). Reject trading statements / annual report / Capital Markets Day / audio. Scope: 7 g / 2 y / 9 r. Never SEC HTML.",
+  "counts": {
+    "green": 7,
+    "yellow": 2,
+    "red": 9
+  }
+}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { CACHE_CONTROL_PRIVATE_WARM_CHART } from "@/lib/data/cache-policy";
+import { CACHE_CONTROL_PRIVATE_NO_STORE, CACHE_CONTROL_PRIVATE_WARM_CHART } from "@/lib/data/cache-policy";
 import {
   buildPortfolioEarningsDatesFromCalendar,
   PORTFOLIO_EARNINGS_DATES_MAX_SYMBOLS,
@@ -32,12 +32,14 @@ export async function POST(request: Request) {
       ...new Set(raw.map((s) => s.trim().toUpperCase()).filter(Boolean)),
     ].slice(0, PORTFOLIO_EARNINGS_DATES_MAX_SYMBOLS);
 
-    const bySymbol = await buildPortfolioEarningsDatesFromCalendar(symbols);
+    const { bySymbol, incomplete } = await buildPortfolioEarningsDatesFromCalendar(symbols);
 
     return NextResponse.json(
-      { bySymbol },
+      { bySymbol, incomplete },
       {
-        headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_WARM_CHART },
+        headers: {
+          "Cache-Control": incomplete ? CACHE_CONTROL_PRIVATE_NO_STORE : CACHE_CONTROL_PRIVATE_WARM_CHART,
+        },
       },
     );
   } catch (e) {

@@ -3,13 +3,14 @@
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { FinsepaLogo } from "@/components/brand/finsepa-logo";
+import { OverlayScrollArea } from "@/components/design-system/overlay-scroll-area";
 import { DWELL_TOOLTIP_DELAY_MS } from "@/components/layout/topbar-delayed-tooltip";
 import { tooltipDwellSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import {
-  protectedPortfolioItem,
+  protectedPortfolioHomeItem,
   protectedCalendarItems,
   protectedCommunityItems,
   protectedDataItems,
@@ -17,7 +18,6 @@ import {
   protectedNavItemIsActive,
   type ProtectedNavItem,
 } from "@/components/layout/protected-nav-config";
-import { SidebarMobileAppNav } from "@/components/layout/sidebar-mobile-app-nav";
 import {
   SIDEBAR_CONTENT_MOTION_CLASS,
   SIDEBAR_OUTER_COLLAPSED_PX,
@@ -25,7 +25,10 @@ import {
   SIDEBAR_WIDTH_MOTION_CLASS,
   useSidebarLayout,
 } from "@/components/layout/sidebar-layout-context";
+import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
+import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { requestAgentHomeIfAlreadyThere } from "@/lib/agents/agent-home-nav";
+import { ChevronDown } from "@/lib/icons";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { cn } from "@/lib/utils";
 
@@ -150,7 +153,20 @@ function CollapsedRailTooltip({
   );
 }
 
-function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: string; collapsed: boolean }) {
+function SidebarRow({
+  item,
+  pathname,
+  collapsed,
+  activeOverride,
+  trailing,
+}: {
+  item: NavItem;
+  pathname: string;
+  collapsed: boolean;
+  activeOverride?: boolean;
+  /** Control drawn over the row's right edge (outside the link, so it gets its own click). */
+  trailing?: React.ReactNode;
+}) {
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
     setHasMounted(true);
@@ -158,14 +174,15 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
 
   // Defer active styling until after mount so SSR and the first client paint match when
   // `usePathname()` differs (rewrites / soft routing). Avoids Link className hydration errors.
-  const isActive = hasMounted && protectedNavItemIsActive(item, pathname);
+  const isActive = hasMounted && (activeOverride ?? protectedNavItemIsActive(item, pathname));
+  const showTrailing = trailing != null && !collapsed;
   const Icon = item.icon;
   const tooltipLabel = item.available ? item.label : `${item.label} (Soon)`;
 
   const rowClass = cn(
     "flex h-9 shrink-0 items-center gap-2 overflow-hidden rounded-lg py-2 text-sm font-medium leading-5",
     SIDEBAR_CONTENT_MOTION_CLASS,
-    collapsed ? "w-[calc(100%+5px)] -mr-[5px] pl-4 pr-[11px]" : "w-full px-4",
+    collapsed ? "w-[calc(100%+5px)] -mr-[5px] pl-4 pr-[11px]" : showTrailing ? "w-full pl-4 pr-9" : "w-full px-4",
     item.available ? "text-fg" : "cursor-not-allowed text-fg-subtle select-none",
     item.available &&
       (isActive
@@ -226,8 +243,112 @@ function SidebarRow({ item, pathname, collapsed }: { item: NavItem; pathname: st
 
   return (
     <CollapsedRailTooltip label={tooltipLabel} enabled={collapsed}>
-      {content}
+      {showTrailing ? (
+        <div className="relative w-full">
+          {content}
+          {trailing}
+        </div>
+      ) : (
+        content
+      )}
     </CollapsedRailTooltip>
+  );
+}
+
+const HOME_PORTFOLIOS_OPEN_KEY = "finsepa.sidebar.homePortfoliosOpen";
+const HOME_PORTFOLIOS_OPEN_EVENT = "finsepa:sidebar-home-portfolios-open";
+
+function readHomePortfoliosOpen(): boolean {
+  try {
+    return localStorage.getItem(HOME_PORTFOLIOS_OPEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeHomePortfoliosOpen(open: boolean) {
+  try {
+    localStorage.setItem(HOME_PORTFOLIOS_OPEN_KEY, open ? "1" : "0");
+  } catch {
+    /* private mode */
+  }
+  window.dispatchEvent(new Event(HOME_PORTFOLIOS_OPEN_EVENT));
+}
+
+function subscribeHomePortfoliosOpen(onChange: () => void) {
+  window.addEventListener(HOME_PORTFOLIOS_OPEN_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(HOME_PORTFOLIOS_OPEN_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+function portfolioHomeHref(id: string): string {
+  return `/home/${id}`;
+}
+
+/** Home row + caret that expands the user's portfolios underneath (each opens `/home/[id]`). */
+function SidebarHomeGroup({ pathname, collapsed }: { pathname: string; collapsed: boolean }) {
+  const { portfolios } = usePortfolioWorkspace();
+  const open = useSyncExternalStore(subscribeHomePortfoliosOpen, readHomePortfoliosOpen, () => false);
+  const toggle = useCallback(() => writeHomePortfoliosOpen(!readHomePortfoliosOpen()), []);
+
+  const showChildren = open && !collapsed && portfolios.length > 0;
+  const activeChildId = portfolios.find((p) => pathname === portfolioHomeHref(p.id))?.id ?? null;
+  const homeActive = pathname === "/home" || (activeChildId != null && !showChildren);
+
+  return (
+    <div className="w-full">
+      <SidebarRow
+        item={protectedPortfolioHomeItem}
+        pathname={pathname}
+        collapsed={collapsed}
+        activeOverride={homeActive}
+        trailing={
+          portfolios.length > 0 ? (
+            <button
+              type="button"
+              onClick={toggle}
+              aria-expanded={open}
+              aria-label={open ? "Hide portfolios" : "Show portfolios"}
+              className="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-black/5 hover:text-fg dark:hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
+            >
+              <ChevronDown
+                className="size-4 transition-transform duration-200 motion-reduce:transition-none"
+                style={{ transform: open ? "rotate(180deg)" : undefined }}
+                strokeWidth={2}
+                aria-hidden
+              />
+            </button>
+          ) : null
+        }
+      />
+      {showChildren ? (
+        <ul className="m-0 mt-0.5 flex list-none flex-col gap-0.5 p-0">
+          {portfolios.map((p) => {
+            const active = p.id === activeChildId;
+            return (
+              <li key={p.id}>
+                <Link
+                  prefetch={false}
+                  href={portfolioHomeHref(p.id)}
+                  className={cn(
+                    "flex h-8 w-full items-center gap-2 overflow-hidden rounded-lg pl-11 pr-3 text-sm font-medium leading-5 text-fg",
+                    active
+                      ? "bg-[var(--fs-sidebar-nav-active)]"
+                      : "opacity-70 hover:bg-[var(--fs-sidebar-nav-active)]/70 dark:hover:bg-[var(--fs-sidebar-nav-active)] dark:hover:opacity-100",
+                  )}
+                >
+                  <PortfolioListLogo portfolio={p} className="h-5 w-5 rounded-md" />
+                  <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 
@@ -360,7 +481,7 @@ function SidebarChromeHeader() {
     >
       <Link
         href={PATH_APP_ENTRY}
-        aria-label="Finsepa home — Screener"
+        aria-label="Finsepa home — Home"
         className="absolute top-1/2 h-8 w-8 -translate-y-1/2 rounded-md text-fg outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
         style={{ left: leftPx }}
       >
@@ -374,15 +495,8 @@ export function Sidebar() {
   const pathname = usePathname();
   const { collapsed } = useSidebarLayout();
 
-  return (
-    <aside
-      suppressHydrationWarning
-      className={cn(
-        "flex h-full min-h-0 shrink-0 flex-col bg-nav max-md:rounded-[4px] max-md:py-2 md:rounded-none md:pb-2 md:pt-[var(--shell-desktop-padding-top)]",
-        SIDEBAR_WIDTH_MOTION_CLASS,
-        collapsed ? "w-full overflow-visible" : "w-[240px] overflow-y-auto overflow-x-hidden",
-      )}
-    >
+  const content = (
+    <>
       <SidebarChromeHeader />
 
       <div
@@ -395,14 +509,32 @@ export function Sidebar() {
         )}
       >
         <div className={cn("space-y-0.5", collapsed && "flex flex-col items-center")}>
-          <SidebarRow item={protectedPortfolioItem} pathname={pathname} collapsed={collapsed} />
+          <SidebarHomeGroup pathname={pathname} collapsed={collapsed} />
         </div>
         <SidebarSection title="Markets" items={protectedMarketItems} pathname={pathname} collapsed={collapsed} />
         <SidebarSection title="Calendar" items={protectedCalendarItems} pathname={pathname} collapsed={collapsed} />
         <SidebarSection title="Data" items={protectedDataItems} pathname={pathname} collapsed={collapsed} />
         <SidebarSection title="Community" items={protectedCommunityItems} pathname={pathname} collapsed={collapsed} />
-        <SidebarMobileAppNav />
       </div>
+    </>
+  );
+
+  return (
+    <aside
+      suppressHydrationWarning
+      className={cn(
+        "flex h-full min-h-0 shrink-0 flex-col bg-nav max-md:rounded-[4px] max-md:py-2 md:rounded-none md:pb-2 md:pt-[var(--shell-desktop-padding-top)]",
+        SIDEBAR_WIDTH_MOTION_CLASS,
+        collapsed ? "w-full overflow-visible" : "w-[240px] overflow-hidden",
+      )}
+    >
+      {collapsed ? (
+        content
+      ) : (
+        <OverlayScrollArea className="flex-1" viewportClassName="flex flex-1 flex-col overflow-x-hidden">
+          {content}
+        </OverlayScrollArea>
+      )}
     </aside>
   );
 }

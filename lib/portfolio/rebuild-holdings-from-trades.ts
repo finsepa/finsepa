@@ -1,30 +1,25 @@
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { fetchPortfolioLivePricesClient } from "@/lib/portfolio/client-symbol-quotes";
 import { applyLivePricesToHoldings } from "@/lib/portfolio/apply-live-prices-to-holdings";
-import { replayPortfolioLedger } from "@/lib/portfolio/ledger/portfolio-ledger-engine";
-import { migratePortfolioTransactionSequences } from "@/lib/portfolio/ledger/portfolio-ledger-migrate";
+import { replayDisplayLedgerPerPortfolio } from "@/lib/portfolio/ledger/portfolio-ledger-multi";
 
 /**
  * Replays `kind === "trade"` rows in canonical chronological order into a holdings list.
  * Uses fill `price` as provisional `marketPrice` until refreshed via quotes.
  * Display mode preserves legacy soft handling for tagged anomalies.
+ * Multi-portfolio ledgers replay per `portfolioId` and merge by symbol.
  */
 export function replayTradeTransactionsToHoldingsUpTo(
   transactions: PortfolioTransaction[],
   asOfYmd: string,
 ): PortfolioHolding[] {
-  const { transactions: migrated } = migratePortfolioTransactionSequences(transactions);
-  return replayPortfolioLedger(migrated, {
-    mode: "display",
-    asOfYmd,
-  }).holdings;
+  return replayDisplayLedgerPerPortfolio(transactions, asOfYmd).holdings;
 }
 
 export function replayTradeTransactionsToHoldings(
   transactions: PortfolioTransaction[],
 ): PortfolioHolding[] {
-  const { transactions: migrated } = migratePortfolioTransactionSequences(transactions);
-  return replayPortfolioLedger(migrated, { mode: "display" }).holdings;
+  return replayDisplayLedgerPerPortfolio(transactions).holdings;
 }
 
 /** Fetch last price per symbol and refresh `marketPrice` / `currentValue`. */

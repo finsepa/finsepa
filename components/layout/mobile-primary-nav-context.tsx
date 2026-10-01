@@ -28,7 +28,7 @@ export function MobilePrimaryNavProvider({ children }: { children: ReactNode }) 
 
   const mobileTopbarTitle = useMemo(() => {
     if (displayTab === urlTab) return mobileTopbarTitleFromPathname(pathname);
-    if (displayTab === "portfolio") return "Portfolio";
+    if (displayTab === "portfolio") return "Home";
     if (displayTab === "watchlist") return "Watchlist";
     if (displayTab === "more") return "More";
     return "Markets";

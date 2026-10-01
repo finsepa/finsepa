@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Briefcase } from "@/lib/icons";
+import { Briefcase, Layers2, Plus } from "@/lib/icons";
 
 import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 
@@ -12,9 +12,11 @@ import {
 import {
   topbarSquircleActiveClass,
   topbarSquircleIconClass,
+  topbarSquircleTextButtonClass,
 } from "@/components/design-system/topbar-control-classes";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+import { portfolioIsDemo } from "@/components/portfolio/portfolio-types";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import {
@@ -23,7 +25,7 @@ import {
 } from "@/lib/lottie/portfolio-menu-animations";
 import { cn } from "@/lib/utils";
 
-type CreateItemId = "createPortfolio" | "createCombined";
+type CreateItemId = "createPortfolio" | "createCombined" | "createDemo";
 
 /**
  * Portfolio toolbar control — Create New / Create Combined (moved out of the + quick-add menu).
@@ -31,12 +33,19 @@ type CreateItemId = "createPortfolio" | "createCombined";
  */
 export function PortfolioCreateMenu({
   "aria-label": ariaLabel = "Create portfolio",
+  variant = "default",
 }: {
   "aria-label"?: string;
+  /**
+   * `text` — bordered `+ Create` text button for section headers (e.g. Home → My portfolios).
+   * `button` — primary “+ Add” for empty states; menu opens centered below.
+   */
+  variant?: "default" | "text" | "button";
 }) {
   const [open, setOpen] = useState(false);
   const [playingId, setPlayingId] = useState<CreateItemId | null>(null);
-  const { portfolios, openCreatePortfolio, openCreateCombinedPortfolio } = usePortfolioWorkspace();
+  const { portfolios, openCreatePortfolio, openCreateCombinedPortfolio, openTryDemoPortfolio } =
+    usePortfolioWorkspace();
   const plan = usePlanAccessOptional();
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
@@ -74,6 +83,10 @@ export function PortfolioCreateMenu({
           ? "Combined portfolios are available on Pro only"
           : undefined,
     },
+    // At most one demo portfolio — offer it again only after it was deleted.
+    ...(portfolios.some(portfolioIsDemo)
+      ? []
+      : [{ id: "createDemo" as const, label: "Create Demo Portfolio", disabled: false }]),
   ];
 
   useEffect(() => {
@@ -100,6 +113,7 @@ export function PortfolioCreateMenu({
 
   function runItem(id: CreateItemId) {
     if (id === "createPortfolio") openCreatePortfolio();
+    else if (id === "createDemo") openTryDemoPortfolio();
     else openCreateCombinedPortfolio();
   }
 
@@ -112,26 +126,55 @@ export function PortfolioCreateMenu({
         aria-haspopup="menu"
         aria-label={ariaLabel}
         onClick={() => setOpen((v) => !v)}
-        className={cn(
-          topbarSquircleIconClass,
-          "justify-center hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
-          open && topbarSquircleActiveClass,
-        )}
+        className={
+          variant === "button"
+            ? cn(
+                "inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] border border-transparent bg-fg px-4 text-sm font-semibold text-surface",
+                "fs-primary-button-gradient-stroke shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-12))] transition-opacity hover:opacity-90",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:ring-offset-2",
+                open && "opacity-90",
+              )
+            : variant === "text"
+              ? cn(
+                  topbarSquircleTextButtonClass,
+                  "justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
+                  open && topbarSquircleActiveClass,
+                )
+              : cn(
+                  topbarSquircleIconClass,
+                  "justify-center hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
+                  open && topbarSquircleActiveClass,
+                )
+        }
       >
-        <Briefcase className="h-5 w-5" strokeWidth={2} aria-hidden />
+        {variant === "button" ? (
+          <>
+            <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+            Add
+          </>
+        ) : variant === "text" ? (
+          <>
+            <Plus className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+            Create
+          </>
+        ) : (
+          <Briefcase className="h-5 w-5" strokeWidth={2} aria-hidden />
+        )}
       </button>
 
       <TopbarDropdownPortal
         open={open}
         anchorRef={rootRef}
         ref={menuPortalRef}
+        align={variant === "button" ? "center" : "trailing"}
         className="w-max min-w-[260px] max-w-[min(calc(100vw-2rem),320px)]"
       >
         <div
           role="menu"
           className={cn(
             dropdownMenuPanelClassName(),
-            "origin-top-right [animation:quick-add-dropdown-in_220ms_ease-out_both] motion-reduce:[animation:none]",
+            variant === "button" ? "origin-top" : "origin-top-right",
+            "[animation:quick-add-dropdown-in_220ms_ease-out_both] motion-reduce:[animation:none]",
           )}
         >
           {items.map((item) => {
@@ -158,14 +201,18 @@ export function PortfolioCreateMenu({
                   item.disabled ? "cursor-not-allowed opacity-40 hover:bg-surface" : null,
                 )}
               >
-                <DropdownMenuLottieIcon
-                  animationData={
-                    item.id === "createPortfolio" ?
-                      createPortfolioMenuIconAnimation
-                    : createCombinedPortfolioMenuIconAnimation
-                  }
-                  playing={playing}
-                />
+                {item.id === "createDemo" ? (
+                  <Layers2 className="size-4 shrink-0" strokeWidth={2} aria-hidden />
+                ) : (
+                  <DropdownMenuLottieIcon
+                    animationData={
+                      item.id === "createPortfolio" ?
+                        createPortfolioMenuIconAnimation
+                      : createCombinedPortfolioMenuIconAnimation
+                    }
+                    playing={playing}
+                  />
+                )}
                 <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
                 {item.showProBadge ? (
                   <ProFeatureBadge

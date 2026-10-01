@@ -35,7 +35,7 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="hidden min-w-0 items-center justify-between gap-3 px-4 py-3 text-[14px] text-fg-muted md:flex md:border-b md:border-stroke-shell sm:px-9"
+      className="sticky top-0 z-50 hidden min-w-0 items-center justify-between gap-3 px-4 py-3 text-[14px] text-fg-muted md:flex md:border-b md:border-stroke-shell md:bg-panel sm:px-9"
     >
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
       <Link

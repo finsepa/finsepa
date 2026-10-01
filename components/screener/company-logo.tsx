@@ -10,7 +10,9 @@ import { useClientMounted, useLogoDevTheme } from "@/lib/theme/use-logo-dev-them
 import { cn } from "@/lib/utils";
 import { logoColors } from "./data";
 
-const LOGO_INSET_TICKERS = new Set(["AAPL", "GOOGL", "GOOG", "MSFT", "MU"]);
+const LOGO_INSET_TICKERS = new Set(["AAPL", "GOOGL", "GOOG", "MSFT", "MU", "GLXY"]);
+/** Edge-to-edge marks (circle / square fills the canvas) — larger inset so the tile corners don't clip them. */
+const LOGO_MEDIUM_INSET_TICKERS = new Set(["GOOGL", "GOOG", "MSFT", "MU", "GLXY"]);
 
 /** Per-ticker tile background (brand color behind transparent / white marks). */
 const LOGO_TILE_BG: Partial<Record<string, string>> = {
@@ -55,7 +57,7 @@ function brandLogoInsetClass(
 ): string {
   const sym = symbol?.trim().toUpperCase();
   if (!sym || !LOGO_INSET_TICKERS.has(sym)) return "";
-  const mediumInset = sym === "GOOGL" || sym === "GOOG" || sym === "MSFT" || sym === "MU";
+  const mediumInset = LOGO_MEDIUM_INSET_TICKERS.has(sym);
   switch (size) {
     case "lg":
       return mediumInset ? "p-1.5" : "p-2";

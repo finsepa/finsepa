@@ -43,6 +43,7 @@ import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-s
 import { PortfolioPendingBrokerageSyncButton } from "@/components/portfolio/portfolio-pending-brokerage-sync-button";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadcrumbs";
+import { PortfolioHomeBreadcrumbs } from "@/components/portfolio-home/portfolio-home-breadcrumbs";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import {
@@ -169,8 +170,10 @@ export function PortfolioPageView({
   transactions,
   readOnly = false,
   showPortfoliosBreadcrumb = false,
+  showAccountsBreadcrumb = false,
   tabBasePath = "/portfolio",
   publicListingId,
+  onSelectPortfolio,
 }: {
   portfolioName: string;
   holdings: PortfolioHolding[];
@@ -178,9 +181,13 @@ export function PortfolioPageView({
   readOnly?: boolean;
   /** `Portfolios / {name}` for community read-only detail. */
   showPortfoliosBreadcrumb?: boolean;
+  /** `Overview / {name}` for Portfolio home nested account overview. */
+  showAccountsBreadcrumb?: boolean;
   tabBasePath?: string;
   /** Community listing id — dividend schedule uses listing API. */
   publicListingId?: string;
+  /** Called after the title/toolbar picker changes portfolio (e.g. navigate `/home/[id]`). */
+  onSelectPortfolio?: (portfolioId: string) => void;
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -434,8 +441,8 @@ export function PortfolioPageView({
         >
           <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
         </button>
-        {!ledgerActionsLocked && !showDemoBanner ? (
-          <PortfolioQuickAddMenu aria-label="Portfolio quick add" />
+        {!ledgerActionsLocked && !showDemoBanner && !showEmptySetupTiles ? (
+          <PortfolioQuickAddMenu variant="primary" showDesktopLabel aria-label="Add transaction" />
         ) : null}
       </>
     );
@@ -444,14 +451,15 @@ export function PortfolioPageView({
     return (
       <PortfolioPageLoadingShell
         publicView={readOnly}
-        showPortfoliosBreadcrumb={showPortfoliosBreadcrumb}
+        showPortfoliosBreadcrumb={showPortfoliosBreadcrumb || showAccountsBreadcrumb}
       />
     );
   }
 
   return (
-    <div className="relative flex min-h-full min-w-0 flex-col md:overflow-x-hidden">
+    <div className="relative flex min-h-full min-w-0 flex-col md:overflow-x-clip">
       {showPortfoliosBreadcrumb ? <PortfoliosBreadcrumbs currentLabel={portfolioName} /> : null}
+      {showAccountsBreadcrumb ? <PortfolioHomeBreadcrumbs currentLabel={portfolioName} /> : null}
       <div className="relative flex min-h-full min-w-0 flex-1 flex-col px-4 py-4 max-md:overflow-visible md:overflow-x-hidden sm:px-9 sm:py-6">
       <AssetPageTopLoader />
       <div className="mb-5 hidden shrink-0 flex-col gap-2 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -467,10 +475,14 @@ export function PortfolioPageView({
                 <h1 className="min-w-0 truncate text-2xl font-semibold tracking-tight text-fg">
                   {portfolioName}
                 </h1>
-                {selectedPortfolio ? (
+                {!showAccountsBreadcrumb && selectedPortfolio ? (
                   <PortfolioPublicBadge privacy={selectedPortfolio.privacy} />
                 ) : null}
-                <TransactionPortfolioField variant="titleGhost" compactMenuAlign="leading" />
+                <TransactionPortfolioField
+                  variant="titleGhost"
+                  compactMenuAlign="leading"
+                  onSelectPortfolio={onSelectPortfolio}
+                />
               </div>
             )}
           </div>

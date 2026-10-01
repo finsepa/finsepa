@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Layers2, Plus } from "@/lib/icons";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -33,10 +32,10 @@ import {
 } from "@/components/ui/empty";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { formatPortfolioOperationLabel } from "@/components/layout/cash-direction-select";
-import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
+import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { portfolioSharesUnitTicker } from "@/lib/portfolio/custom-asset-symbol";
 import { formatPortfolioUsdPerUnit } from "@/lib/portfolio/format-portfolio-usd-unit";
-import { netCashUsd, totalNetWorth } from "@/lib/portfolio/overview-metrics";
+import { netCashUsd } from "@/lib/portfolio/overview-metrics";
 import { portfolioSymbolMatchesAssetRoute } from "@/lib/portfolio/portfolio-asset-route-match";
 import {
   cumulativeRealizedGainUsdForAsset,
@@ -133,7 +132,6 @@ export function AssetPortfolioHoldingsTab({
   } = usePortfolioWorkspace();
 
   const route = routeKey.trim().toUpperCase();
-  const [holdingsChartRange, setHoldingsChartRange] = useState<StockChartRange>("1Y");
 
   const portfolioTabs = useMemo((): TabSwitcherOption<string>[] => {
     return portfolios.map((p) => ({ value: p.id, label: p.name }));
@@ -163,52 +161,6 @@ export function AssetPortfolioHoldingsTab({
     }
     return null;
   }, [holdings, route, assetKind]);
-
-  const cashUsd = useMemo(() => netCashUsd(transactions), [transactions]);
-  const netWorth = useMemo(() => totalNetWorth(holdings, cashUsd), [holdings, cashUsd]);
-  const allocationDenomUsd = useMemo(() => {
-    const equity = holdings.reduce((s, h) => s + h.currentValue, 0);
-    const denom = equity + Math.max(0, cashUsd);
-    return denom > 0 ? denom : 0;
-  }, [holdings, cashUsd]);
-
-  const tradeRows = useMemo(() => {
-    const out = transactions.filter(
-      (t) =>
-        t.kind === "trade" &&
-        portfolioSymbolMatchesAssetRoute({ holdingSymbol: t.symbol, routeKey: route, kind: assetKind }),
-    );
-    return [...out].sort((a, b) => {
-      if (a.date !== b.date) return b.date.localeCompare(a.date);
-      return 0;
-    });
-  }, [transactions, route, assetKind]);
-
-  const tradeMarkersForChart = useMemo(() => {
-    const chronological = [...tradeRows].sort((a, b) => a.date.localeCompare(b.date));
-    return chronological
-      .map((t) => {
-        const op = t.operation.toLowerCase();
-        if (op === "buy") return { date: t.date, side: "buy" as const };
-        if (op === "sell") return { date: t.date, side: "sell" as const };
-        return null;
-      })
-      .filter((x): x is { date: string; side: "buy" | "sell" } => x != null);
-  }, [tradeRows]);
-
-  const tradeTooltipItems = useMemo((): HoldingsTradeTooltipItem[] => {
-    const out = new Map<string, string[]>();
-    for (const t of tradeRows) {
-      const op = t.operation.toLowerCase();
-      if (op !== "buy" && op !== "sell") continue;
-      const lines = out.get(t.date) ?? [];
-      lines.push(
-        `${formatPortfolioOperationLabel(t.operation)} · ${formatSharesDisplay(t.shares)} @ ${formatPortfolioUsdPerUnit(t.price)}`,
-      );
-      out.set(t.date, lines);
-    }
-    return [...out.entries()].map(([date, lines]) => ({ date, lines }));
-  }, [tradeRows]);
 
   if (!portfolioDisplayReady) {
     return (
@@ -306,6 +258,86 @@ export function AssetPortfolioHoldingsTab({
     );
   }
 
+  return (
+    <AssetPositionDetail
+      assetKind={assetKind}
+      routeKey={route}
+      holding={holding}
+      holdings={holdings}
+      transactions={transactions}
+      titleSlot={portfolioTitleSlot}
+      onChartDisplayChange={onChartDisplayChange}
+    />
+  );
+}
+
+/** Chart + My positions + Transactions for one holding (asset Portfolio tab and portfolio asset modal). */
+export function AssetPositionDetail({
+  assetKind,
+  routeKey,
+  holding,
+  holdings,
+  transactions,
+  titleSlot,
+  onChartDisplayChange,
+}: {
+  assetKind: "stock" | "crypto";
+  routeKey: string;
+  holding: PortfolioHolding;
+  /** All holdings in the portfolio (for "Share in portfolio"). */
+  holdings: PortfolioHolding[];
+  transactions: PortfolioTransaction[];
+  titleSlot?: ReactNode;
+  onChartDisplayChange?: (s: ChartDisplayState) => void;
+}) {
+  const route = routeKey.trim().toUpperCase();
+  const [holdingsChartRange, setHoldingsChartRange] = useState<StockChartRange>("1Y");
+
+  const allocationDenomUsd = useMemo(() => {
+    const cashUsd = netCashUsd(transactions);
+    const equity = holdings.reduce((s, h) => s + h.currentValue, 0);
+    const denom = equity + Math.max(0, cashUsd);
+    return denom > 0 ? denom : 0;
+  }, [holdings, transactions]);
+
+  const tradeRows = useMemo(() => {
+    const out = transactions.filter(
+      (t) =>
+        t.kind === "trade" &&
+        portfolioSymbolMatchesAssetRoute({ holdingSymbol: t.symbol, routeKey: route, kind: assetKind }),
+    );
+    return [...out].sort((a, b) => {
+      if (a.date !== b.date) return b.date.localeCompare(a.date);
+      return 0;
+    });
+  }, [transactions, route, assetKind]);
+
+  const tradeMarkersForChart = useMemo(() => {
+    const chronological = [...tradeRows].sort((a, b) => a.date.localeCompare(b.date));
+    return chronological
+      .map((t) => {
+        const op = t.operation.toLowerCase();
+        if (op === "buy") return { date: t.date, side: "buy" as const };
+        if (op === "sell") return { date: t.date, side: "sell" as const };
+        return null;
+      })
+      .filter((x): x is { date: string; side: "buy" | "sell" } => x != null);
+  }, [tradeRows]);
+
+  const tradeTooltipItems = useMemo((): HoldingsTradeTooltipItem[] => {
+    const out = new Map<string, string[]>();
+    for (const t of tradeRows) {
+      const op = t.operation.toLowerCase();
+      if (op !== "buy" && op !== "sell") continue;
+      const lines = out.get(t.date) ?? [];
+      lines.push(
+        `${formatPortfolioOperationLabel(t.operation)} · ${formatSharesDisplay(t.shares)} @ ${formatPortfolioUsdPerUnit(t.price)}`,
+      );
+      out.set(t.date, lines);
+    }
+    return [...out.entries()].map(([date, lines]) => ({ date, lines }));
+  }, [tradeRows]);
+
   const retUsd = holding.currentValue - holding.costBasis;
   const retPct = holding.costBasis > 0 ? ((holding.currentValue - holding.costBasis) / holding.costBasis) * 100 : 0;
   const weightPctRaw = allocationDenomUsd > 0 ? (holding.currentValue / allocationDenomUsd) * 100 : 0;
@@ -335,7 +367,7 @@ export function AssetPortfolioHoldingsTab({
         <ChartControls
           activeRange={holdingsChartRange}
           onRangeChange={setHoldingsChartRange}
-          titleSlot={portfolioTitleSlot}
+          titleSlot={titleSlot}
         >
           <div className="overflow-visible rounded-[12px] bg-panel">
             <PriceChart

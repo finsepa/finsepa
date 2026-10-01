@@ -1,0 +1,113 @@
+/**
+ * EPD IR seed — 12-31.
+ * Enterprise Products Partners calendar FY. Slides=Earnings Support Slides on ir.enterpriseproducts.com/static-files; Filings=earnings press via /node/N/pdf. Several mid-history press PDFs not located on IR (Q1/Q3 2022, Q2/Q3 2023, Q1/Q3 2024) — left null (HTML newsroom only). Reject Investor Deck / SFD xlsx / 10-Q. Live Akamai often blocks bare curl; PDFs verified via Wayback id_ Range-GET %PDF and/or WebFetch PDF text. Scope: 12g / 6y / 0r. Never SEC HTML.
+ * Never SEC HTML / transcript / 10-Q / 10-K.
+ */
+
+export type EpdQuarterDocs = {
+  slides: string | null;
+  filings: string | null;
+};
+
+export const EPD_IR_PAGES = [
+  "https://ir.enterpriseproducts.com/financials/quarterly-results/default.aspx",
+] as const;
+
+export const EPD_KNOWN_QUARTER_DOCS: Readonly<Record<string, EpdQuarterDocs>> = {
+  "Q1 2022": {
+    slides: "https://ir.enterpriseproducts.com/static-files/65355070-63b3-4361-94cc-05045a267d2b",
+    filings: null,
+  },
+  "Q2 2022": {
+    slides: "https://ir.enterpriseproducts.com/static-files/2e923a89-27b8-4c95-9d52-e2b1617259a7",
+    filings: "https://ir.enterpriseproducts.com/node/42286/pdf",
+  },
+  "Q3 2022": {
+    slides: "https://ir.enterpriseproducts.com/static-files/ff088b72-6930-452a-b73e-6e8513731923",
+    filings: null,
+  },
+  "Q4 2022": {
+    slides: "https://ir.enterpriseproducts.com/static-files/c14d6eb4-9405-48ee-97c6-0273b6b9596f",
+    filings: "https://ir.enterpriseproducts.com/node/42756/pdf",
+  },
+  "Q1 2023": {
+    slides: "https://ir.enterpriseproducts.com/static-files/0c2bae2c-2e48-4aac-8527-10306e962dd8",
+    filings: "https://ir.enterpriseproducts.com/node/43031/pdf",
+  },
+  "Q2 2023": {
+    slides: "https://ir.enterpriseproducts.com/static-files/a8e81efb-1cd8-468e-8ca4-528178b764d5",
+    filings: null,
+  },
+  "Q3 2023": {
+    slides: "https://ir.enterpriseproducts.com/static-files/9e0fa5fa-499b-4458-89f7-d7614404bcc4",
+    filings: null,
+  },
+  "Q4 2023": {
+    slides: "https://ir.enterpriseproducts.com/static-files/0fbf9e1a-0185-44db-83b4-30d07227f7d3",
+    filings: "https://ir.enterpriseproducts.com/node/43526/pdf",
+  },
+  "Q1 2024": {
+    slides: "https://ir.enterpriseproducts.com/static-files/2b9cc401-3d6a-44c5-ad40-53de18496d1c",
+    filings: null,
+  },
+  "Q2 2024": {
+    slides: "https://ir.enterpriseproducts.com/static-files/bb3968b3-f192-4783-a2f0-60cee2e7520c",
+    filings: "https://ir.enterpriseproducts.com/node/44006/pdf",
+  },
+  "Q3 2024": {
+    slides: "https://ir.enterpriseproducts.com/static-files/940ba4b3-0aa8-466b-8b99-b38e35b6731d",
+    filings: null,
+  },
+  "Q4 2024": {
+    slides: "https://ir.enterpriseproducts.com/static-files/6fccf0ed-5273-484e-b5ec-9af6f1d721fe",
+    filings: "https://ir.enterpriseproducts.com/node/44281/pdf",
+  },
+  "Q1 2025": {
+    slides: "https://ir.enterpriseproducts.com/static-files/3380cca9-8eb7-47ea-8440-35f7c89b12b8",
+    filings: "https://ir.enterpriseproducts.com/node/44546/pdf",
+  },
+  "Q2 2025": {
+    slides: "https://ir.enterpriseproducts.com/static-files/7ac8ca55-a691-4f5e-9bf7-b37e5cd235e1",
+    filings: "https://ir.enterpriseproducts.com/node/44681/pdf",
+  },
+  "Q3 2025": {
+    slides: "https://ir.enterpriseproducts.com/static-files/aafb8b1f-6add-4375-95b1-5e0fa748253c",
+    filings: "https://ir.enterpriseproducts.com/node/44786/pdf",
+  },
+  "Q4 2025": {
+    slides: "https://ir.enterpriseproducts.com/static-files/86eea3fe-c774-42a9-9a33-747f8cde4290",
+    filings: "https://ir.enterpriseproducts.com/node/44951/pdf",
+  },
+  "Q1 2026": {
+    slides: "https://ir.enterpriseproducts.com/static-files/1e66ea12-b3af-48f0-91ae-6b12fe4213d5",
+    filings: "https://ir.enterpriseproducts.com/node/45216/pdf",
+  },
+  "Q2 2026": {
+    slides: "https://ir.enterpriseproducts.com/static-files/956fc3a4-c3c5-49bb-a750-daddc722b4c5",
+    filings: "https://ir.enterpriseproducts.com/node/45311/pdf",
+  },
+};
+
+export function isEpdRejected(href: string, title = ""): boolean {
+  const n = `${decodeURIComponent(href)} ${title}`.toLowerCase();
+  return /sec\.gov|\b10-?q\b|\b10-?k\b|\b8-?k\b|proxy|transcript|webcast|investor.?day|reconcili|nongaap|\.xls|\.xlsx|\.csv(?:$|[?#])|sustainab|xbrl/i.test(n);
+}
+
+export function isEpdIrPdf(href: string | null | undefined): boolean {
+  if (!href || isEpdRejected(href)) return false;
+  try {
+    const u = new URL(href);
+    const host = u.hostname.toLowerCase();
+    if (!(host === "ir.enterpriseproducts.com" || host.endsWith(".enterpriseproducts.com"))) return false;
+    return (
+      /\/static-files\/[a-f0-9-]{36}/i.test(u.pathname) ||
+      /\/node\/\d+\/pdf\/?$/i.test(u.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function mergeEpdKnownQuarterDocs(): Map<string, EpdQuarterDocs> {
+  return new Map(Object.entries(EPD_KNOWN_QUARTER_DOCS));
+}

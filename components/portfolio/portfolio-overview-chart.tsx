@@ -1097,6 +1097,23 @@ function PortfolioChartSettingsButton({
 
 export type PortfolioChartMetricMode = "value" | "profit" | "return" | "drawdown";
 
+/** Window profit for the active chart range (last history point). */
+export type PortfolioChartPeriodSnapshot = {
+  profitUsd: number | null;
+  returnPct: number | null;
+  /** Net worth over the range, downsampled — for a collapsed-chart sparkline. */
+  values: number[];
+};
+
+const PERIOD_SNAPSHOT_MAX_VALUES = 80;
+
+function downsampleValues(points: PortfolioValueHistoryPoint[]): number[] {
+  const finite = points.map((p) => p.value).filter((v) => Number.isFinite(v));
+  if (finite.length <= PERIOD_SNAPSHOT_MAX_VALUES) return finite;
+  const step = (finite.length - 1) / (PERIOD_SNAPSHOT_MAX_VALUES - 1);
+  return Array.from({ length: PERIOD_SNAPSHOT_MAX_VALUES }, (_, i) => finite[Math.round(i * step)]!);
+}
+
 type MetricMode = PortfolioChartMetricMode;
 
 /** Metrics plotted in % (Return, Drawdowns) share the percent axis/tooltip format. */
@@ -3653,13 +3670,22 @@ export function PortfolioValueHistoryChartPane({
 function PortfolioOverviewChartInner({
   transactions,
   benchmarkInvestedUsd = null,
+  onPeriodSnapshot,
+  hideChrome = false,
+  fixedRange = null,
 }: {
   transactions: PortfolioTransaction[];
   /** Current open equity cost basis; aligns benchmark $ line with “invested” under Total value. */
   benchmarkInvestedUsd?: number | null;
+  /** Latest point’s window profit / return for the selected chart range. */
+  onPeriodSnapshot?: (snap: PortfolioChartPeriodSnapshot | null) => void;
+  /** Hide title, settings, and range controls (e.g. Portfolio home all-time chart). */
+  hideChrome?: boolean;
+  /** Lock the chart to a single range (no range picker). */
+  fixedRange?: PortfolioChartRange | null;
 }) {
   const metric: PortfolioChartMetricMode = "value";
-  const [range, setRange] = useState<PortfolioChartRange>("1y");
+  const [range, setRange] = useState<PortfolioChartRange>(fixedRange ?? "1y");
   const [points, setPoints] = useState<PortfolioValueHistoryPoint[]>([]);
   const [loading, setLoading] = useState(() => transactions.length > 0);
   const [error, setError] = useState<string | null>(null);
@@ -3670,6 +3696,10 @@ function PortfolioOverviewChartInner({
   const [compareNasdaq, setCompareNasdaq] = useState(false);
   const [spyPoints, setSpyPoints] = useState<StockChartPoint[] | null>(null);
   const [nasdaqPoints, setNasdaqPoints] = useState<StockChartPoint[] | null>(null);
+
+  useEffect(() => {
+    if (fixedRange != null && range !== fixedRange) setRange(fixedRange);
+  }, [fixedRange, range]);
 
   const canLoad = transactions.length > 0;
   const chartSettingsProps = {
@@ -3749,6 +3779,7 @@ function PortfolioOverviewChartInner({
 
   /** Mobile range row omits YTD — match asset `ChartControls`. */
   useEffect(() => {
+    if (fixedRange != null) return;
     const mq = window.matchMedia("(max-width: 639px)");
     const syncMobileRange = () => {
       if (mq.matches && range === "ytd") {
@@ -3758,7 +3789,7 @@ function PortfolioOverviewChartInner({
     syncMobileRange();
     mq.addEventListener("change", syncMobileRange);
     return () => mq.removeEventListener("change", syncMobileRange);
-  }, [range, applyRange]);
+  }, [range, applyRange, fixedRange]);
 
   const fetchSpy = compareSpy && canLoad;
   const fetchNasdaq = compareNasdaq && canLoad;
@@ -3792,38 +3823,65 @@ function PortfolioOverviewChartInner({
     return () => ac.abort();
   }, [fetchNasdaq, range, canLoad, coverFromYmd]);
 
+  useEffect(() => {
+    if (!onPeriodSnapshot) return;
+    if (loading || points.length === 0) {
+      onPeriodSnapshot(null);
+      return;
+    }
+    const last = points[points.length - 1]!;
+    onPeriodSnapshot({
+      profitUsd: Number.isFinite(last.profit) ? last.profit : null,
+      returnPct:
+        last.returnPct != null && Number.isFinite(last.returnPct) ? last.returnPct : null,
+      values: downsampleValues(points),
+    });
+  }, [points, loading, onPeriodSnapshot]);
+
   return (
-    <section className="relative z-10 mb-6 w-full min-w-0 max-md:mb-4">
-      {/* Mobile: title + settings above chart. */}
-      <div className="mb-2 flex w-full min-w-0 items-center justify-between gap-2 sm:hidden">
-        <h2 className={cn("min-w-0 shrink", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Total value</h2>
-        <div className="shrink-0">
-          <PortfolioChartSettingsButton {...chartSettingsProps} />
-        </div>
-      </div>
-
-      {/* Desktop: title + settings + range. */}
-      <div className="mb-0 hidden sm:mb-4 sm:block">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-          <h2 className={cn("min-w-0 shrink-0", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Total value</h2>
-
-          <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-2">
-            <div className="hidden shrink-0 sm:block">
+    <section
+      className={cn(
+        "relative z-10 w-full min-w-0",
+        hideChrome ? "mb-0 max-md:mb-0" : "mb-6 max-md:mb-4",
+      )}
+    >
+      {!hideChrome ? (
+        <>
+          {/* Mobile: title + settings above chart. */}
+          <div className="mb-2 flex w-full min-w-0 items-center justify-between gap-2 sm:hidden">
+            <h2 className={cn("min-w-0 shrink", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
+              Total value
+            </h2>
+            <div className="shrink-0">
               <PortfolioChartSettingsButton {...chartSettingsProps} />
             </div>
-            <div className="shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
-              <SegmentedControl
-                options={PORTFOLIO_CHART_RANGE_LABELS}
-                value={range}
-                onChange={applyRange}
-                size="sm"
-                aria-label="Chart time range"
-                className="min-w-min flex-nowrap"
-              />
+          </div>
+
+          {/* Desktop: title + settings + range. */}
+          <div className="mb-0 hidden sm:mb-4 sm:block">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+              <h2 className={cn("min-w-0 shrink-0", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
+                Total value
+              </h2>
+              <div className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:flex-row sm:flex-nowrap sm:items-center sm:justify-end sm:gap-2">
+                <div className="hidden shrink-0 sm:block">
+                  <PortfolioChartSettingsButton {...chartSettingsProps} />
+                </div>
+                <div className="shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
+                  <SegmentedControl
+                    options={PORTFOLIO_CHART_RANGE_LABELS}
+                    value={range}
+                    onChange={applyRange}
+                    size="sm"
+                    aria-label="Chart time range"
+                    className="min-w-min flex-nowrap"
+                  />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      ) : null}
 
       <div className="w-full min-w-0">
         {!canLoad ? (
@@ -3872,17 +3930,19 @@ function PortfolioOverviewChartInner({
       </div>
 
       {/* Mobile range under chart — omit YTD like asset pages. */}
-      <div className="mt-3 w-full min-w-0 pt-0.5 sm:hidden">
-        <SegmentedControl
-          options={PORTFOLIO_CHART_MOBILE_RANGE_LABELS}
-          value={range === "ytd" ? "6m" : range}
-          onChange={applyRange}
-          size="sm"
-          fullWidth
-          aria-label="Chart time range"
-          className="min-w-0 flex-1"
-        />
-      </div>
+      {!hideChrome ? (
+        <div className="mt-3 w-full min-w-0 pt-0.5 sm:hidden">
+          <SegmentedControl
+            options={PORTFOLIO_CHART_MOBILE_RANGE_LABELS}
+            value={range === "ytd" ? "6m" : range}
+            onChange={applyRange}
+            size="sm"
+            fullWidth
+            aria-label="Chart time range"
+            className="min-w-0 flex-1"
+          />
+        </div>
+      ) : null}
     </section>
   );
 }

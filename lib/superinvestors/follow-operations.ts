@@ -55,16 +55,25 @@ export async function listSuperinvestorFollowsForUser(
 }
 
 /**
- * For brand-new accounts with an empty Following list, seed Buffett + Terry Smith.
+ * For brand-new accounts with an empty Following list, seed Bill Ackman + Buffett (same as iOS).
  * Does not re-seed older accounts that cleared their follows.
+ *
+ * `resolveUserCreatedAt` is lazy: JWT-claims users carry no `created_at`, so the Auth
+ * lookup only happens when the list is empty.
  */
 export async function ensureDefaultSuperinvestorFollows(
   supabase: SupabaseClient,
   userId: string,
-  userCreatedAt: string | null | undefined,
+  resolveUserCreatedAt: () => Promise<string | null | undefined>,
 ): Promise<SuperinvestorFollowRow[]> {
   const existing = await listSuperinvestorFollowsForUser(supabase, userId);
   if (existing.length > 0) return existing;
+  let userCreatedAt: string | null | undefined = null;
+  try {
+    userCreatedAt = await resolveUserCreatedAt();
+  } catch {
+    return existing;
+  }
   if (!isWithinNewAccountFollowSeedWindow(userCreatedAt)) return existing;
 
   const paths = defaultSuperinvestorFollowPaths();

@@ -1,0 +1,94 @@
+{
+  "ticker": "HPE",
+  "fyEnd": "10-31",
+  "irHost": "investors.hpe.com",
+  "irPages": [
+    "https://investors.hpe.com/financial/quarterly-results"
+  ],
+  "pdfHost": "investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents",
+  "hosts": [
+    "investors.hpe.com"
+  ],
+  "trafficLight": "green",
+  "verified": true,
+  "latestLabel": "Q3 2026",
+  "notes": "Hewlett Packard Enterprise. Oct 31 FY. Slides=*earnings-presentation*; Filings=*earnings-press-release*/*press-release* on investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q{N}-{YYYY}/. Reject transcripts/quarterly-results tables/salient/summary. Scope Q1 2022\u2192Q3 2026 (19 green / 0 yellow / 0 red). Range-GET %PDF verified. Never SEC HTML.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q1-2022/q1-2022-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q1-2022/q1-2022-press-release.pdf"
+    },
+    "Q2 2022": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q2-2022/q2-2022-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q2-2022/q2-2022-press-release.pdf"
+    },
+    "Q3 2022": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q3-2022/q3-2022-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q3-2022/q3-2022-press-release.pdf"
+    },
+    "Q4 2022": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q4-2022/q4-2022-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q4-2022/q4-2022-press-release.pdf"
+    },
+    "Q1 2023": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q1-2023/q1-2023-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q1-2023/q1-2023-press-release.pdf"
+    },
+    "Q2 2023": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q2-2023/q2-2023-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q2-2023/q2-2023-earnings-press-release-v1.pdf"
+    },
+    "Q3 2023": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q3-2023/q3-2023-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q3-2023/q3-2023-earnings-press-release.pdf"
+    },
+    "Q4 2023": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q4-2023/q4-2023-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q4-2023/q4-2023-earnings-press-release.pdf"
+    },
+    "Q1 2024": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q1-2024/q1-2024-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q1-2024/q1-2024-earnings-press-release.pdf"
+    },
+    "Q2 2024": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q2-2024/q2-2024-earnings--presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q2-2024/q2-2024-earnings-press-release.pdf"
+    },
+    "Q3 2024": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q3-2024/q3fy24-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q3-2024/q3-2024-press-release.pdf"
+    },
+    "Q4 2024": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q4-2024/hpe-q4-24-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q4-2024/hpe-q4-24-earnings-press-release.pdf"
+    },
+    "Q1 2025": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q1-2025/hpe-q1-fy25-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q1-2025/hpe-q1-2025-press-release.pdf"
+    },
+    "Q2 2025": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q2-2025/q2-2025-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q2-2025/q2-2025-earnings-press-release.pdf"
+    },
+    "Q3 2025": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q3-2025/q3-2025-earning-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q3-2025/q3-2025-earnings-press-release.pdf"
+    },
+    "Q4 2025": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q4-2025/q4-2025-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q4-2025/q4-2025-earnings-press-release.pdf"
+    },
+    "Q1 2026": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q1-2026/q1-2026-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q1-2026/q1-2026-earnings-press-release.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q2-2026/q2-2026-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q2-2026/q2-2026-earnings-press-release.pdf"
+    },
+    "Q3 2026": {
+      "slides": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q3-2026/q3-2026-earnings-presentation.pdf",
+      "filings": "https://investors.hpe.com/~/media/Files/H/HP-Enterprise-IR/documents/q3-2026/q3-2026-earnings-press-release.pdf"
+    }
+  }
+}

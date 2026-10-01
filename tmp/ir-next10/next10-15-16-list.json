@@ -1,0 +1,34 @@
+{
+  "batch": "15-16",
+  "tickers": [
+    "DASH",
+    "CDNS",
+    "EPD",
+    "WM",
+    "MRSH",
+    "REGN",
+    "ANZGY",
+    "HPE",
+    "WUXAY",
+    "AMT",
+    "BE",
+    "CMCSA",
+    "MCO",
+    "UPS",
+    "BAESY",
+    "CTAS",
+    "SU",
+    "ARZGY",
+    "SNPS",
+    "SPG"
+  ],
+  "batch15": ["DASH", "CDNS", "EPD", "WM", "MRSH", "REGN", "ANZGY", "HPE", "WUXAY", "AMT"],
+  "batch16": ["BE", "CMCSA", "MCO", "UPS", "BAESY", "CTAS", "SU", "ARZGY", "SNPS", "SPG"],
+  "skipped": [
+    {
+      "ticker": "INTU",
+      "reason": "Already dedicated IR seed"
+    }
+  ],
+  "note": "After BN on frozen-2026-09-22 top500; next 20 unseeded (INTU already seeded, not in list)"
+}

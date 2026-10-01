@@ -7,7 +7,7 @@ import {
   Globe01,
   Globe04,
   Grid01,
-  PieChart01,
+  Home01,
   Rows01,
   Users01,
   type AppIcon,
@@ -29,11 +29,11 @@ export type ProtectedNavItem = {
   activePathPrefixes?: readonly string[];
 };
 
-/** Top of sidebar (same destination as top-bar portfolio control). */
-export const protectedPortfolioItem: ProtectedNavItem = {
-  label: "My Portfolio",
-  icon: PieChart01,
-  href: "/portfolio",
+/** Post-signup home — net worth overview; each portfolio opens at `/home/[id]` (legacy `/portfolio` redirects there). */
+export const protectedPortfolioHomeItem: ProtectedNavItem = {
+  label: "Home",
+  icon: Home01,
+  href: "/home",
   available: true,
   activePathPrefix: true,
 };
@@ -162,6 +162,9 @@ export type MobilePrimaryNavTab = "markets" | "portfolio" | "watchlist" | "more"
 
 /** Which bottom-nav pill is active for the current route (used to sync optimistic mobile tab UI). */
 export function mobilePrimaryNavTabFromPathname(pathname: string): MobilePrimaryNavTab {
+  if (pathname === "/home" || pathname.startsWith("/home/")) {
+    return "portfolio";
+  }
   if (pathname === "/portfolio" || pathname.startsWith("/portfolio/")) {
     return "portfolio";
   }
@@ -176,7 +179,7 @@ export function mobilePrimaryNavTabFromPathname(pathname: string): MobilePrimary
 /** Large mobile top-bar title (Linear-style) for the current primary section. */
 export function mobileTopbarTitleFromPathname(pathname: string): string {
   const tab = mobilePrimaryNavTabFromPathname(pathname);
-  if (tab === "portfolio") return "Portfolio";
+  if (tab === "portfolio") return "Home";
   if (tab === "watchlist") return "Watchlist";
   if (tab === "more") {
     const active = protectedMobileMoreNavItems.find((item) => protectedNavItemIsActive(item, pathname));

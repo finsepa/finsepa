@@ -5,7 +5,11 @@ import { PortfolioPublicBadge } from "@/components/portfolio/portfolio-privacy-s
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 
 export function isPortfolioWorkspaceRoute(pathname: string): boolean {
-  return pathname === "/portfolio" || pathname.startsWith("/portfolio/");
+  return (
+    pathname === "/portfolio" ||
+    pathname.startsWith("/portfolio/") ||
+    /^\/home\/[^/]+/.test(pathname)
+  );
 }
 
 /** Mobile top bar: portfolio name and switcher (replaces section title on `/portfolio`). */

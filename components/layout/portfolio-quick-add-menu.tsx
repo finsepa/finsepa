@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Plus, X } from "@/lib/icons";
+import { MoreHorizontal, Plus, X } from "@/lib/icons";
 
 import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 
@@ -14,6 +14,10 @@ import {
   topbarSquircleIconClass,
   topbarSquircleTextButtonClass,
 } from "@/components/design-system/topbar-control-classes";
+import {
+  primaryButtonGradientStrokeClass,
+  whiteSurfaceButtonShadowClass,
+} from "@/components/design-system/secondary-button-styles";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -30,27 +34,45 @@ import {
   importTransactionsMenuIconAnimation,
   newTradeMenuIconAnimation,
 } from "@/lib/lottie/quick-add-menu-animations";
-import {
-  createCombinedPortfolioMenuIconAnimation,
-  createPortfolioMenuIconAnimation,
-} from "@/lib/lottie/portfolio-menu-animations";
+import { deleteMenuIconAnimation, renameMenuIconAnimation } from "@/lib/lottie/watchlist-menu-animations";
 import { cn } from "@/lib/utils";
 
 type ActivityItemId = "trade" | "cash" | "connectBrokerage" | "import";
-type PortfolioItemId = "createPortfolio" | "createCombined";
-type QuickAddItemId = ActivityItemId | PortfolioItemId;
+type ManageItemId = "edit" | "delete";
+
+const PRIMARY_TRIGGER_CLASS = `flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-stroke-muted bg-fg text-surface ${whiteSurfaceButtonShadowClass} ${primaryButtonGradientStrokeClass} transition-opacity duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15`;
+const GHOST_TRIGGER_CLASS =
+  "flex size-7 shrink-0 items-center justify-center rounded-[8px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15";
 
 /**
- * (+) quick menu — Portfolio page header: activity actions + create portfolio options.
+ * (+) quick menu — transaction actions for the selected portfolio; creating portfolios lives in
+ * {@link PortfolioCreateMenu}.
  */
 export function PortfolioQuickAddMenu({
   triggerClassName,
+  variant = "default",
   showDesktopLabel = false,
   desktopLabel = "Add",
   "aria-label": ariaLabel = "Quick add",
   dwellTooltipLabel,
+  portfolioId,
+  manageActions = false,
+  onOpenChange,
 }: {
+  /** Target this portfolio instead of the current selection (selects it when the menu opens). */
+  portfolioId?: string;
+  /**
+   * Row “…” menu: adds Edit / Delete below the transaction actions (only those for demo books)
+   * and swaps the (+) trigger for a “…” icon. Requires `portfolioId`.
+   */
+  manageActions?: boolean;
+  onOpenChange?: (open: boolean) => void;
   triggerClassName?: string;
+  /**
+   * `primary` — inverted fill (black on light / white on dark), like primary CTAs.
+   * `ghost` — small borderless icon button for inline row actions.
+   */
+  variant?: "default" | "primary" | "ghost";
   /** Icon + label on `md+` (top bar); mobile stays icon-only. */
   showDesktopLabel?: boolean;
   desktopLabel?: string;
@@ -59,24 +81,27 @@ export function PortfolioQuickAddMenu({
   dwellTooltipLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [playingId, setPlayingId] = useState<QuickAddItemId | null>(null);
+  const [playingId, setPlayingId] = useState<ActivityItemId | ManageItemId | null>(null);
   const {
     portfolios,
+    openEditPortfolio,
+    openDeletePortfolio,
     openNewTransaction,
     openAddCash,
     openConnectBrokerageToSelected,
     openImportTransactions,
-    openCreatePortfolio,
-    openCreateCombinedPortfolio,
     selectedPortfolioReadOnly,
     selectedPortfolioId,
+    setSelectedPortfolioId,
+    isFreePortfolioAccessible,
   } = usePortfolioWorkspace();
   const plan = usePlanAccessOptional();
   const rootRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
 
   const selectedPortfolio = portfolios.find((p) => p.id === selectedPortfolioId) ?? null;
-  const selectedPortfolioName = selectedPortfolio?.name.trim() || null;
+  /** Row menus (e.g. Home list) name the portfolio they act on; page menus already show it in the title. */
+  const menuPortfolioLabel = portfolioId != null ? selectedPortfolio?.name.trim() || null : null;
   const canConnectBrokerage = plan?.canConnectBrokerage !== false;
   const connectBrokerageDisabled =
     selectedPortfolioId == null ||
@@ -84,11 +109,6 @@ export function PortfolioQuickAddMenu({
     portfolioIsCombined(selectedPortfolio) ||
     portfolioIsDemo(selectedPortfolio) ||
     portfolioIsLiveBrokerage(selectedPortfolio);
-
-  const hasEnoughSourcesForCombined = portfolios.filter((p) => p.kind !== "combined").length >= 2;
-  const createPortfolioProLocked = Boolean(plan?.isFree && !plan.canCreatePortfolio);
-  const createCombinedProLocked = Boolean(plan && !plan.canCreateCombinedPortfolio);
-  const createCombinedDisabled = !hasEnoughSourcesForCombined;
 
   const activityItems: Array<{
     id: ActivityItemId;
@@ -130,38 +150,19 @@ export function PortfolioQuickAddMenu({
     },
   ];
 
-  const portfolioItems: Array<{
-    id: PortfolioItemId;
-    label: string;
-    disabled: boolean;
-    title?: string;
-    showProBadge?: boolean;
-  }> = [
-    {
-      id: "createPortfolio",
-      label: "Create New Portfolio",
-      disabled: false,
-      showProBadge: createPortfolioProLocked,
-      title: createPortfolioProLocked
-        ? "Free includes 1 manual portfolio — upgrade to Pro to add more"
-        : undefined,
-    },
-    {
-      id: "createCombined",
-      label: "Create Combined Portfolio",
-      disabled: createCombinedDisabled,
-      showProBadge: createCombinedProLocked,
-      title: createCombinedDisabled
-        ? "Create at least two portfolios to combine them"
-        : createCombinedProLocked
-          ? "Combined portfolios are available on Pro only"
-          : undefined,
-    },
-  ];
-
   useEffect(() => {
     if (!open) setPlayingId(null);
-  }, [open]);
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
+
+  function toggleOpen() {
+    if (!open && portfolioId != null && portfolioId !== selectedPortfolioId) {
+      setSelectedPortfolioId(portfolioId);
+      /** Free-locked books: the setter shows the upgrade prompt and keeps the old selection. */
+      if (plan?.isFree && !isFreePortfolioAccessible(portfolioId)) return;
+    }
+    setOpen((v) => !v);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -182,17 +183,50 @@ export function PortfolioQuickAddMenu({
   }, [open]);
 
   const tooltipEnabled = Boolean(dwellTooltipLabel);
+  const targetPortfolio =
+    portfolioId != null ? (portfolios.find((p) => p.id === portfolioId) ?? null) : null;
+  const showActivityItems = !manageActions || !portfolioIsDemo(targetPortfolio);
 
-  function runItem(id: QuickAddItemId) {
+  function renderManageItem(id: ManageItemId) {
+    const isDelete = id === "delete";
+    return (
+      <button
+        key={id}
+        type="button"
+        role="menuitem"
+        onMouseEnter={() => setPlayingId(id)}
+        onMouseLeave={() => setPlayingId(null)}
+        onFocus={() => setPlayingId(id)}
+        onBlur={() => setPlayingId(null)}
+        onClick={() => {
+          if (portfolioId == null) return;
+          setOpen(false);
+          if (isDelete) openDeletePortfolio(portfolioId);
+          else openEditPortfolio(portfolioId);
+        }}
+        className={cn(
+          dropdownMenuPlainItemClassName(),
+          "font-medium whitespace-nowrap",
+          isDelete ? "text-down hover:bg-down-soft hover:text-down" : null,
+        )}
+      >
+        <DropdownMenuLottieIcon
+          animationData={isDelete ? deleteMenuIconAnimation : renameMenuIconAnimation}
+          playing={playingId === id}
+        />
+        <span className="min-w-0 flex-1 truncate text-left">{isDelete ? "Delete" : "Edit"}</span>
+      </button>
+    );
+  }
+
+  function runItem(id: ActivityItemId) {
     if (id === "trade") openNewTransaction();
     else if (id === "cash") openAddCash();
     else if (id === "connectBrokerage") void openConnectBrokerageToSelected();
-    else if (id === "import") openImportTransactions();
-    else if (id === "createPortfolio") openCreatePortfolio();
-    else openCreateCombinedPortfolio();
+    else openImportTransactions();
   }
 
-  function itemIcon(id: QuickAddItemId) {
+  function itemIcon(id: ActivityItemId) {
     const playing = playingId === id;
     if (id === "trade") {
       return <DropdownMenuLottieIcon animationData={newTradeMenuIconAnimation} playing={playing} />;
@@ -205,31 +239,12 @@ export function PortfolioQuickAddMenu({
         <DropdownMenuLottieIcon animationData={connectBrokerageMenuIconAnimation} playing={playing} />
       );
     }
-    if (id === "import") {
-      return (
-        <DropdownMenuLottieIcon animationData={importTransactionsMenuIconAnimation} playing={playing} />
-      );
-    }
-    if (id === "createPortfolio") {
-      return (
-        <DropdownMenuLottieIcon animationData={createPortfolioMenuIconAnimation} playing={playing} />
-      );
-    }
     return (
-      <DropdownMenuLottieIcon
-        animationData={createCombinedPortfolioMenuIconAnimation}
-        playing={playing}
-      />
+      <DropdownMenuLottieIcon animationData={importTransactionsMenuIconAnimation} playing={playing} />
     );
   }
 
-  function renderItem(item: {
-    id: QuickAddItemId;
-    label: string;
-    disabled: boolean;
-    title?: string;
-    showProBadge?: boolean;
-  }) {
+  function renderItem(item: (typeof activityItems)[number]) {
     const { id, label, disabled, title, showProBadge } = item;
     /** Pro-gated rows stay interactive so Free users can open View Plans. */
     const hardDisabled = disabled && !showProBadge;
@@ -257,28 +272,31 @@ export function PortfolioQuickAddMenu({
       >
         {itemIcon(id)}
         <span className="min-w-0 flex-1 truncate text-left">{label}</span>
-        {showProBadge ? (
-          <ProFeatureBadge
-            label={
-              id === "createCombined"
-                ? "Combined portfolios are available on Pro only"
-                : id === "createPortfolio"
-                  ? "Free includes 1 manual portfolio — upgrade to Pro to add more"
-                  : "Brokerage sync is available on Pro only"
-            }
-          />
-        ) : null}
+        {showProBadge ? <ProFeatureBadge label="Brokerage sync is available on Pro only" /> : null}
       </button>
     );
   }
 
   const resolvedTriggerChrome =
     triggerClassName ??
-    (showDesktopLabel
-      ? `${topbarSquircleTextButtonClass} justify-center w-9 gap-0 px-0 md:w-auto md:gap-1.5 md:px-3.5`
-      : `${topbarSquircleIconClass} justify-center`);
+    (variant === "primary"
+      ? showDesktopLabel
+        ? PRIMARY_TRIGGER_CLASS.replace("w-9", "w-auto")
+        : PRIMARY_TRIGGER_CLASS
+      : variant === "ghost"
+        ? GHOST_TRIGGER_CLASS
+        : showDesktopLabel
+          ? `${topbarSquircleTextButtonClass} justify-center w-9 gap-0 px-0 md:w-auto md:gap-1.5 md:px-3.5`
+          : `${topbarSquircleIconClass} justify-center`);
+  const openTriggerClass =
+    variant === "primary" ? "opacity-90"
+    : variant === "ghost" ? "bg-surface-muted text-fg"
+    : topbarSquircleActiveClass;
+  const primaryWithLabel = variant === "primary" && showDesktopLabel;
+  const iconSizeStyle =
+    variant === "ghost" || primaryWithLabel ? { width: 16, height: 16 } : undefined;
   const triggerClassNameResolved = open
-    ? `quick-add-trigger ${resolvedTriggerChrome} ${topbarSquircleActiveClass}`
+    ? `quick-add-trigger ${resolvedTriggerChrome} ${openTriggerClass}`
     : `quick-add-trigger ${resolvedTriggerChrome}`;
 
   const trigger = (
@@ -289,14 +307,21 @@ export function PortfolioQuickAddMenu({
       aria-haspopup="menu"
       aria-label={ariaLabel}
       suppressHydrationWarning
-      onClick={() => setOpen((v) => !v)}
+      onClick={toggleOpen}
       className={triggerClassNameResolved}
+      style={primaryWithLabel ? { gap: 6, paddingLeft: 12, paddingRight: 14 } : undefined}
     >
-      <span className="quick-add-trigger-icons" aria-hidden>
-        <Plus strokeWidth={2} className="h-5 w-5 quick-add-trigger-plus" />
-        <X strokeWidth={2} className="h-5 w-5 quick-add-trigger-close" />
-      </span>
-      {showDesktopLabel ? (
+      {manageActions ? (
+        <MoreHorizontal strokeWidth={2} className="h-5 w-5" style={iconSizeStyle} aria-hidden />
+      ) : (
+        <span className="quick-add-trigger-icons" style={iconSizeStyle} aria-hidden>
+          <Plus strokeWidth={2} className="h-5 w-5 quick-add-trigger-plus" style={iconSizeStyle} />
+          <X strokeWidth={2} className="h-5 w-5 quick-add-trigger-close" style={iconSizeStyle} />
+        </span>
+      )}
+      {primaryWithLabel ? (
+        <span className="text-[13px] font-semibold leading-5">{desktopLabel}</span>
+      ) : showDesktopLabel ? (
         <span className="hidden text-[13px] font-medium leading-5 md:inline">{desktopLabel}</span>
       ) : null}
     </button>
@@ -319,24 +344,30 @@ export function PortfolioQuickAddMenu({
         open={open}
         anchorRef={rootRef}
         ref={menuPortalRef}
+        align={variant === "ghost" ? "auto" : "trailing"}
         className="w-max min-w-[260px] max-w-[min(calc(100vw-2rem),320px)]"
       >
         <div
           role="menu"
           className={cn(
             dropdownMenuPanelClassName(),
-            "origin-top-right [animation:quick-add-dropdown-in_220ms_ease-out_both] motion-reduce:[animation:none]",
+            variant === "ghost" ? "origin-top-left" : "origin-top-right",
+            "[animation:quick-add-dropdown-in_220ms_ease-out_both] motion-reduce:[animation:none]",
           )}
         >
-          {selectedPortfolioName ? (
-            <div className="px-3 py-1.5 text-xs font-medium leading-4 text-fg-muted">
-              {selectedPortfolioName}
-            </div>
+          {menuPortfolioLabel ? (
+            <div className="px-3 py-1.5 text-xs font-medium leading-4 text-fg-muted">{menuPortfolioLabel}</div>
           ) : null}
-          {activityItems.map(renderItem)}
-          <div className="my-1 border-t border-dropdown-divider" role="separator" />
-          <div className="px-3 py-1.5 text-xs font-medium leading-4 text-fg-muted">Portfolios</div>
-          {portfolioItems.map(renderItem)}
+          {showActivityItems ? activityItems.map(renderItem) : null}
+          {manageActions ? (
+            <>
+              {showActivityItems ? (
+                <div role="separator" aria-hidden className="-mx-1 my-0.5 h-px shrink-0 bg-stroke" />
+              ) : null}
+              {renderManageItem("edit")}
+              {renderManageItem("delete")}
+            </>
+          ) : null}
         </div>
       </TopbarDropdownPortal>
     </div>

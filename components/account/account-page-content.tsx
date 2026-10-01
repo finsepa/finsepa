@@ -22,10 +22,9 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { CreditCard } from "@/lib/icons";
+import { PaymentsEmptyIllustration } from "@/components/portfolio-home/portfolio-empty-illustration";
 import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import {
   openStripeBillingPortalWithToast,
@@ -371,7 +370,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     year: "numeric",
                   })}`
                 : "Next payment date will appear soon."
-      : "No upcoming payment on Free.";
+      : "No upcoming payments";
 
   return (
     <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
@@ -715,9 +714,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                 <div className={cn(paymentHistoryTableChromeClass, "mt-5")}>
                   <Empty variant="plain" className="min-h-0 py-8">
                     <EmptyHeader>
-                      <EmptyMedia variant="icon">
-                        <CreditCard className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-                      </EmptyMedia>
+                      <PaymentsEmptyIllustration className="mb-6" />
                       <EmptyTitle>No payments yet</EmptyTitle>
                       <EmptyDescription>
                         Your payment history will appear here once your first charge is processed.

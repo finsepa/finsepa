@@ -1,18 +1,14 @@
 "use client";
 
-import { memo, useEffect, useMemo, useState, Suspense } from "react";
+import { useMemo, useState, Suspense } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Briefcase } from "@/lib/icons";
 import { TOPBAR_SHOW_NOTIFICATIONS } from "@/lib/features/topbar-flags";
-import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
-import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import { netCashUsd, normalizeUsdForDisplay, totalNetWorth } from "@/lib/portfolio/overview-metrics";
 import { TopbarDelayedTooltip } from "./topbar-delayed-tooltip";
 import { TopbarSearch } from "./topbar-search";
 import { NotificationsPanelModal } from "./notifications-panel-modal";
 import { useNotificationsClient } from "@/lib/notifications/use-notifications-client";
+import { TopbarMobileAppButton } from "./topbar-mobile-app-button";
 import { TopbarUpgradeButton } from "./topbar-upgrade-button";
 import { TopbarUserMenu } from "./topbar-user-menu";
 import { MobileAssetTopbarChrome } from "./mobile-asset-topbar-chrome";
@@ -33,7 +29,6 @@ import {
 import {
   topbarSquircleActiveClass,
   topbarSquircleIconClass,
-  topbarSquircleSplitShellClass,
 } from "@/components/design-system/topbar-control-classes";
 import { parseMobileAssetTopbarRoute } from "@/lib/layout/mobile-asset-topbar-route";
 import { isScreenerRoute } from "@/lib/layout/is-screener-route";
@@ -53,71 +48,6 @@ const TopbarNotificationsLottieIcon = dynamic(
     loading: () => <span className="inline-flex h-5 w-5 shrink-0" aria-hidden />,
   },
 );
-
-const usdTopbar = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-const TopbarPortfolioBlock = memo(function TopbarPortfolioBlock() {
-  const {
-    selectedPortfolioId,
-    holdingsByPortfolioId,
-    transactionsByPortfolioId,
-    portfolioDisplayReady,
-  } = usePortfolioWorkspace();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  /** Same as Portfolio → Overview “Value”: equity market value + net cash. */
-  const total = useMemo(() => {
-    if (selectedPortfolioId == null) return 0;
-    const holdings = holdingsByPortfolioId[selectedPortfolioId] ?? [];
-    const transactions = transactionsByPortfolioId[selectedPortfolioId] ?? [];
-    const cash = netCashUsd(transactions);
-    return totalNetWorth(holdings, cash);
-  }, [selectedPortfolioId, holdingsByPortfolioId, transactionsByPortfolioId]);
-
-  const displayTotal = normalizeUsdForDisplay(total);
-  const amountClass = displayTotal < 0 ? "text-down" : "text-fg";
-
-  const ready = mounted && portfolioDisplayReady;
-  const balanceLabel = ready ? `Portfolio, ${usdTopbar.format(displayTotal)}` : "Portfolio, loading";
-
-  // Parent wraps this in `hidden sm:flex` — keep a single stable shell (no cn / no flex+hidden fight).
-  return (
-    <TopbarDelayedTooltip label="My Portfolio" className="inline-flex min-w-0 shrink-0">
-      <div suppressHydrationWarning className={topbarSquircleSplitShellClass}>
-        <Link
-          href="/portfolio"
-          prefetch={false}
-          aria-busy={!ready}
-          aria-label={balanceLabel}
-          suppressHydrationWarning
-          className="flex min-w-0 max-w-none items-center gap-2 rounded-l-[10px] border-r border-stroke-muted px-3 text-sm font-medium tabular-nums text-fg transition-colors hover:bg-surface-muted dark:border-[rgb(78_78_78/0.5)] dark:hover:bg-dropdown-item-hover"
-        >
-          <Briefcase className="h-5 w-5 shrink-0 text-icon" aria-hidden />
-          {ready ? (
-            <span className={`min-w-0 truncate ${amountClass}`} suppressHydrationWarning>
-              {usdTopbar.format(displayTotal)}
-            </span>
-          ) : (
-            <span
-              className="inline-block h-[18px] min-w-[4.75rem] shrink-0 animate-pulse rounded-md bg-stroke"
-              aria-hidden
-            />
-          )}
-        </Link>
-        <TransactionPortfolioField variant="compact" compactMenuAlign="trailing" />
-      </div>
-    </TopbarDelayedTooltip>
-  );
-});
 
 export function Topbar({
   userId,
@@ -210,6 +140,8 @@ export function Topbar({
             mobileAssetRoute ? "hidden md:flex" : "max-md:ml-auto",
           )}
         >
+          <TopbarUpgradeButton userId={userId} platformTrialDaysLeft={platformTrialDaysLeft} isPro={isPro} />
+
           {TOPBAR_SHOW_NOTIFICATIONS ? (
             <TopbarDelayedTooltip label="Notifications" className="inline-flex shrink-0" enabled={!notificationsOpen}>
               <button
@@ -241,11 +173,7 @@ export function Topbar({
             </TopbarDelayedTooltip>
           ) : null}
 
-          <div className="hidden sm:flex sm:shrink-0">
-            <TopbarPortfolioBlock />
-          </div>
-
-          <TopbarUpgradeButton userId={userId} platformTrialDaysLeft={platformTrialDaysLeft} isPro={isPro} />
+          <TopbarMobileAppButton />
 
           <TopbarUserMenu
             userId={userId}

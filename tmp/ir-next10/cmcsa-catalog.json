@@ -1,0 +1,87 @@
+{
+  "ticker": "CMCSA",
+  "irHost": "www.cmcsa.com/static-files",
+  "fyEnd": "12-31",
+  "latestLabel": "Q2 2026",
+  "trafficLight": "yellow",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": "https://www.cmcsa.com/static-files/da54a399-e14e-4635-9a16-19b337a2cabf"
+    },
+    "Q2 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": "https://www.cmcsa.com/static-files/8ac7af56-300f-40c6-b89d-f50ec6974e08"
+    },
+    "Q4 2022": {
+      "slides": null,
+      "filings": "https://www.cmcsa.com/static-files/564f8423-ccdf-45d7-b2c7-8e31212b04d3"
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2023": {
+      "slides": null,
+      "filings": "https://www.cmcsa.com/static-files/27be77bb-3773-4dc7-b1f8-2098a3b0a2f0"
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": "https://www.cmcsa.com/static-files/a504b8b6-b81f-467c-bb3a-5548fb7a38ee"
+    },
+    "Q4 2023": {
+      "slides": "https://www.cmcsa.com/static-files/ffb577b2-8a64-4c30-95c9-a12f604aaa3b",
+      "filings": null
+    },
+    "Q1 2024": {
+      "slides": "https://www.cmcsa.com/static-files/610c5eee-3829-4cea-8a4c-c601c59bd7f1",
+      "filings": null
+    },
+    "Q2 2024": {
+      "slides": null,
+      "filings": null
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": "https://www.cmcsa.com/static-files/3fac14b3-42f9-44ac-ac77-d9b5fdada211"
+    },
+    "Q4 2024": {
+      "slides": "https://www.cmcsa.com/static-files/64e663a4-1784-4b7e-94e3-1ec3cae98015",
+      "filings": "https://www.cmcsa.com/static-files/9cd62cea-91c4-4ad7-a7dc-7eeaaa576c42"
+    },
+    "Q1 2025": {
+      "slides": "https://www.cmcsa.com/static-files/ce929fe6-52c8-4117-8c54-9d3c50c86bf8",
+      "filings": "https://www.cmcsa.com/static-files/7f0f826a-6462-426b-a767-cb3170d7cdf0"
+    },
+    "Q2 2025": {
+      "slides": null,
+      "filings": "https://www.cmcsa.com/static-files/a72e47ea-b75b-4b80-a5e0-8e8f5e00092e"
+    },
+    "Q3 2025": {
+      "slides": "https://www.cmcsa.com/static-files/6624bc9f-8c67-424f-be37-244065f21680",
+      "filings": "https://www.cmcsa.com/static-files/a7ebdbb7-2aa4-4eb2-8e3f-c2d1394592b2"
+    },
+    "Q4 2025": {
+      "slides": "https://www.cmcsa.com/static-files/b40b8cef-831e-4b0f-bf7f-7f02223f8a13",
+      "filings": "https://www.cmcsa.com/static-files/2445b35f-2af9-4ec0-adfa-6f5a89582bc0"
+    },
+    "Q1 2026": {
+      "slides": "https://www.cmcsa.com/static-files/d62ea722-6b4f-455d-9eb0-e70b98f254d4",
+      "filings": "https://www.cmcsa.com/static-files/a2249d91-66e3-4b6d-a71e-29dea0d4e81c"
+    },
+    "Q2 2026": {
+      "slides": "https://www.cmcsa.com/static-files/d5fa8e08-3100-4965-bbff-2391ffc4fd34",
+      "filings": "https://www.cmcsa.com/static-files/9ca0b7e1-e289-495a-8709-f6af42e173b2"
+    }
+  },
+  "counts": {
+    "green": 6,
+    "yellow": 9,
+    "red": 3
+  },
+  "notes": "Comcast calendar FY. Slides=N Quarter [and Full Year] Results deck; Filings=COMCAST REPORTS / Ex. 99.1 press PDF on www.cmcsa.com/static-files. Older decks (2022\u2013mid-2024) partially unindexed \u2014 left null where no lockable Results presentation found. Reject transcripts/10-Q/trending schedules/investor-day. Never SEC HTML. Scope Q1 2022\u2192Q2 2026."
+}

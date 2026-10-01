@@ -8,7 +8,7 @@ import {
 import { SCREENER_INDEX_CARDS_LRU_MAX } from "@/lib/cache/screener-client-cache-limits";
 import type { IndexCardData } from "@/lib/screener/indices-today";
 
-const STORAGE_KEY = "finsepa:screener:index-cards:v2-lru";
+const STORAGE_KEY = "finsepa:screener:index-cards:v3-lru";
 const CARDS_KEY = "cards";
 
 const inflight = new Map<string, Promise<IndexCardData[]>>();

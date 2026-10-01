@@ -98,7 +98,30 @@ Add a ticker here when you redo it the right way (`lib/market/earnings-ir-vault-
 
 ## Status snapshot (2026-09-22)
 
-**Goal:** ~500 companies IR coverage (`EARNINGS_IR_VAULT_COVERAGE_GOAL`). Next-10 #14 wired (~229 dedicated).
+**Goal:** ~500 companies IR coverage (`EARNINGS_IR_VAULT_COVERAGE_GOAL`). Next-20 #15–16 wired (~249 dedicated).
+
+Next-20 #15–16 by mcap (after BN on frozen-2026-09-22) — list: **DASH, CDNS, EPD, WM, MRSH, REGN, ANZGY, HPE, WUXAY, AMT, BE, CMCSA, MCO, UPS, BAESY, CTAS, SU, ARZGY, SNPS, SPG** (INTU already seeded). Wired: all 20.
+
+- **DASH** (yellow): Shareholder Letter + Earnings Press on `s22.q4cdn.com/280253921`; many early quarters letter-only / press gaps.
+- **CDNS** (green): CFO Commentary + Earnings Tables on `s206.q4cdn.com/597110084` Q1’22→Q2’26.
+- **EPD** (yellow): Earnings Support Slides + press `/node/N/pdf` on ir.enterpriseproducts.com; several mid-history press null.
+- **WM** (yellow): filings-only News Release PDFs on investors.wm.com/static-files (no quarterly earnings decks).
+- **MRSH** (yellow): Investor Presentation + News Release on marsh.com content/dam; slides solid from Q1’24.
+- **REGN** (green): Corporate Presentation + press `/node/N/pdf` on investor.regeneron.com Q1’22→Q2’26.
+- **ANZGY** (yellow): Sept FY half-year 1H→Q2 / FY→Q4 on anz.com; Q1/Q3 empty by design.
+- **HPE** (green): Oct 31 FY; presentation + press on investors.hpe.com Q1’22→Q3’26.
+- **WUXAY** (green): presentation + EN report on officialsite-static.wuxiapptec.com Q1’22→Q2’26.
+- **AMT** (green): Earnings Presentation + Quarterly Press on americantower.gcs-web.com Q1’22→Q2’26.
+- **BE** (green): Supplemental + Earnings Release on `s29.q4cdn.com/452919417` Q1’22→Q2’26.
+- **CMCSA** (yellow): Results deck + press on www.cmcsa.com/static-files; early slides sparse / some red.
+- **SNPS** (yellow): Oct FY; overview/supplement on `s201.q4cdn.com/778493406`; press mostly missing.
+- **SPG** (green): supplemental static-files + press `/node/N/pdf` on investors.simon.com Q1’22→Q2’26.
+- **MCO** (green): webcast + earnings release on `s203.q4cdn.com/694693571` Q1’22→Q2’26.
+- **UPS** (green): webcast deck + news release on investors.ups.com/_assets Q1’22→Q2’26.
+- **BAESY** (yellow): UK half-year HY→Q2 / prelim→Q4 on investors.baesystems.com; Q1/Q3 empty; Q2/Q4’23 slides null.
+- **CTAS** (yellow): May 31 FY filings-only revenue/earnings releases on cintas.com (no decks).
+- **SU** (yellow): Quarterly Report PDFs on suncor.com media path Q1’23→Q2’26; Investor Presentation currently live for Q2’26 only; 2022 red.
+- **ARZGY** (yellow): Generali half-year 1H→Q2 / FY→Q4 on generali.com; Q1/Q3 empty by design.
 
 Next-10 #14 by mcap (after WBKCY on frozen-2026-09-22) — wired: **LITE, MMM, LYG, BCMXY, EMR, NABZY, GLNCY, MHVIY, BCS, BN** (NPPXF skipped → same IR as NTTYY).
 

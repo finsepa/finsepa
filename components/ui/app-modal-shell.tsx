@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { X } from "@/lib/icons";
 
 import { APP_MODAL_DIALOG_ENTER_CLASS } from "@/components/ui/app-modal-overlay";
@@ -121,6 +121,7 @@ type AppModalShellProps = {
   bodyScroll?: boolean;
   /** Skip the inner white card — children render directly under the header. */
   bareBody?: boolean;
+  style?: CSSProperties;
 };
 
 export function AppModalShell({
@@ -141,12 +142,14 @@ export function AppModalShell({
   cardClassName,
   bodyScroll = true,
   bareBody = false,
+  style,
 }: AppModalShellProps) {
   const showDefaultHeader = header == null && (title != null || (showClose && onClose != null));
 
   return (
     <div
       className={cn(APP_MODAL_DIALOG_ENTER_CLASS, APP_MODAL_SHELL_OUTER_CLASS, maxWidthClass, className)}
+      style={style}
       onMouseDown={(e) => e.stopPropagation()}
     >
       <div

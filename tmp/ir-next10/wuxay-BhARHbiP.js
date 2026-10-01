@@ -1,0 +1,1 @@
+import{u as o,c as t,a as r,o as a}from"./ruXfovmV.js";import p from"./D2-xa6_I.js";import"./CJUmutJW.js";import"./BsFIP8P9.js";const d={__name:"[id]",setup(c){const e=o();return(s,i)=>(a(),t(p,{key:r(e).params.id,t:r(e).query.t,code:r(e).params.id,preview:r(e).query.preview},null,8,["t","code","preview"]))}};export{d as default};

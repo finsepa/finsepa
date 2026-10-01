@@ -53,7 +53,7 @@ function persistWatchlistRailCollapsedPreference(value: boolean) {
 
 export function WatchlistRailLayoutProvider({
   children,
-  initialCollapsed = true,
+  initialCollapsed = false,
 }: {
   children: ReactNode;
   /** From server cookie so SSR and the first client render agree (avoids hydration mismatch). */

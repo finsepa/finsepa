@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChartPieSlice, Globe, Star } from "@phosphor-icons/react";
+import { Globe, House, Star } from "@phosphor-icons/react";
 
 import { ChevronsUpDownIcon } from "@/components/chevrons-up-down-icon";
 import {
@@ -104,7 +104,7 @@ type LinkTabConfig = {
 
 const LINK_TABS: LinkTabConfig[] = [
   { id: "markets", label: "Market", href: "/screener", Icon: Globe },
-  { id: "portfolio", label: "Portfolio", href: "/portfolio", Icon: ChartPieSlice },
+  { id: "portfolio", label: "Home", href: "/home", Icon: House },
   { id: "watchlist", label: "Watchlist", href: "/watchlist", Icon: Star },
 ];
 

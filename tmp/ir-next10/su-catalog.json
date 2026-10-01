@@ -1,0 +1,81 @@
+{
+  "ticker": "SU",
+  "fyEnd": "12-31",
+  "irPage": "https://www.suncor.com/en-ca/investors/financial-reports-and-guidance",
+  "irHost": "www.suncor.com/-/media/project/suncor/files/investor-centre",
+  "notes": "Suncor Energy calendar FY. Slides=Investor Presentation under investor-relations-presentations-{Y} (only Q2'26 currently live on IR; older decks rotated off). Filings=Quarterly Report PDF under quarterly-reports-{Y}. Q1–Q4'22 quarterly PDFs not on current media path (red). Reject transcripts/webcast/Investor Day/proxy/guidance/XBRL. Scope: 1g / 13y / 4r. HEAD-verified in-browser. Never SEC HTML.",
+  "quarters": {
+    "Q1 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q2 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q3 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q4 2022": {
+      "slides": null,
+      "filings": null
+    },
+    "Q1 2023": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2023/2023-q1-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q2 2023": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2023/2023-q2-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q3 2023": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2023/2023-q3-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q4 2023": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2023/2023-q4-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q1 2024": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2024/2024-q1-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q2 2024": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2024/2024-q2-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q3 2024": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2024/2024-q3-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q4 2024": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2024/2024-q4-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q1 2025": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2025/2025-q1-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q2 2025": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2025/2025-q2-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q3 2025": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2025/2025-q3-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q4 2025": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2025/2025-q4-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q1 2026": {
+      "slides": null,
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2026/2026-q1-suncor-energy-quarterly-report-en.pdf"
+    },
+    "Q2 2026": {
+      "slides": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/investor-relations-presentations-2026/2026-q2-suncor-energy-investor-presentation-en.pdf",
+      "filings": "https://www.suncor.com/-/media/project/suncor/files/investor-centre/quarterly-reports-2026/2026-q2-suncor-energy-quarterly-report-en.pdf"
+    }
+  }
+}

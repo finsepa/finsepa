@@ -5,7 +5,10 @@ import {
   withScreenerUsMarketCache,
 } from "@/lib/screener/screener-us-market-cache";
 import type { IndexCardData } from "@/lib/screener/indices-today";
-import { withIndexCardLocalFallbacks } from "@/lib/screener/screener-index-card-fallbacks";
+import {
+  indexCardsHaveAnyPrice,
+  withIndexCardLocalFallbacks,
+} from "@/lib/screener/screener-index-card-fallbacks";
 import {
   getSimpleIndicesDerived,
   getSimpleMarketDataIndicesTab,
@@ -191,21 +194,26 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
   const ix = data.indices;
   const frozen = epoch.mode === "frozen";
 
+  /** Last EOD close (+ 1D vs the prior close) when the realtime/frozen quote came back empty. */
+  function derivedCloseQuote(eodhdSymbol: string): { price: number | null; changePercent1D: number | null } {
+    const closes = (indicesDerived[eodhdSymbol]?.last5DailyCloses ?? []).filter((v) => Number.isFinite(v));
+    const last = closes.length ? closes[closes.length - 1]! : null;
+    const prev = closes.length >= 2 ? closes[closes.length - 2]! : null;
+    return { price: last, changePercent1D: compute1d(last, prev) };
+  }
+
   function indexLiveOrClose(
     eodhdSymbol: string,
     intradayLast: number | null,
   ): { price: number | null; changePercent1D: number | null } {
     const quote = ix[eodhdSymbol];
-    if (frozen) {
-      const price = quote?.price ?? null;
-      return {
-        price,
-        changePercent1D:
-          quote?.changePercent1D ?? compute1d(price, quote?.previousClose ?? null),
-      };
-    }
-    const price =
-      intradayLast != null && Number.isFinite(intradayLast) ? intradayLast : (quote?.price ?? null);
+    const quotePrice = quote?.price != null && Number.isFinite(quote.price) ? quote.price : null;
+    const price = frozen
+      ? quotePrice
+      : intradayLast != null && Number.isFinite(intradayLast)
+        ? intradayLast
+        : quotePrice;
+    if (price == null) return derivedCloseQuote(eodhdSymbol);
     return {
       price,
       changePercent1D:
@@ -290,14 +298,14 @@ async function loadSimpleIndexCardsUncached(): Promise<IndexCardData[]> {
 
 export async function getSimpleIndexCards(): Promise<IndexCardData[]> {
   const fromSnapshot = await readMarketSnapshot<IndexCardData[]>(MARKET_SNAPSHOT_KEY.indexCards);
-  if (fromSnapshot?.length) return fromSnapshot;
+  if (indexCardsHaveAnyPrice(fromSnapshot)) return fromSnapshot!;
   return rebuildMarketSnapshotBlobSingleFlight<IndexCardData[]>({
     key: MARKET_SNAPSHOT_KEY.indexCards,
     tier: "hot",
     loadUncached: () =>
-      withScreenerUsMarketCache("simple-index-cards-v10-frozen-close", () => loadSimpleIndexCardsUncached()),
+      withScreenerUsMarketCache("simple-index-cards-v11-derived-close", () => loadSimpleIndexCardsUncached()),
     emptyFallback: () => [],
-    isUsable: (cards) => Array.isArray(cards) && cards.length > 0,
+    isUsable: indexCardsHaveAnyPrice,
   });
 }
 

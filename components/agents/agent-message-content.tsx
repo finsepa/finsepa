@@ -44,13 +44,14 @@ const INLINE_TICKERS_RE =
 const PLAIN_SECTION_RE = /^[A-Za-z0-9][A-Za-z0-9 &'().:\-]{0,60}$/;
 
 const APP_PATH_SPLIT_RE =
-  /(\*\*[^*]+\*\*|\/(?:watchlist|portfolio|portfolios|news|screener|earnings|macro|agents|heatmap|heatmaps|economy|crypto|stock|charting|comparison|superinvestors|account)(?:\/[A-Za-z0-9._~%+-]*)*)/g;
+  /(\*\*[^*]+\*\*|\/(?:home|watchlist|portfolio|portfolios|news|screener|earnings|macro|agents|heatmap|heatmaps|economy|crypto|stock|charting|comparison|superinvestors|account)(?:\/[A-Za-z0-9._~%+-]*)*)/g;
 
 const APP_PATH_TEST_RE =
-  /^\/(?:watchlist|portfolio|portfolios|news|screener|earnings|macro|agents|heatmap|heatmaps|economy|crypto|stock|charting|comparison|superinvestors|account)(?:\/[A-Za-z0-9._~%+-]*)*$/;
+  /^\/(?:home|watchlist|portfolio|portfolios|news|screener|earnings|macro|agents|heatmap|heatmaps|economy|crypto|stock|charting|comparison|superinvestors|account)(?:\/[A-Za-z0-9._~%+-]*)*$/;
 
 const APP_PATH_LABELS: Record<string, string> = {
   "/watchlist": "Watchlist",
+  "/home": "Home",
   "/portfolio": "Portfolio",
   "/portfolios": "Portfolios",
   "/news": "News",
@@ -374,7 +375,7 @@ function extractAppPath(href: string): string | null {
   const cleaned = href.trim().replace(/^sandbox:/i, "");
   if (APP_PATH_TEST_RE.test(cleaned)) return cleaned;
   const m = cleaned.match(
-    /(\/(?:watchlist|portfolio|portfolios|news|screener|earnings|macro|agents|heatmap|heatmaps|economy|crypto|stock|charting|comparison|superinvestors|account)(?:\/[A-Za-z0-9._~%+-]*)*)/,
+    /(\/(?:home|watchlist|portfolio|portfolios|news|screener|earnings|macro|agents|heatmap|heatmaps|economy|crypto|stock|charting|comparison|superinvestors|account)(?:\/[A-Za-z0-9._~%+-]*)*)/,
   );
   return m?.[1] ?? null;
 }

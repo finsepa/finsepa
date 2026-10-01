@@ -183,18 +183,20 @@ function WatchlistRailRow({
               <RailChange value={row.pct1d} />
             </span>
             <div className="absolute inset-0 hidden items-center justify-end gap-0.5 group-hover:flex">
-              <button
-                type="button"
-                aria-label={`Remove ${symbolLabel} from watchlist`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onRemove(row.storageKey);
-                }}
-                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-fg-subtle outline-none hover:bg-surface-hover hover:text-fg-muted focus-visible:ring-2 focus-visible:ring-fg/10"
-              >
-                <X className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
+              <TopbarDelayedTooltip label="Remove from watchlist" className="inline-flex shrink-0">
+                <button
+                  type="button"
+                  aria-label={`Remove ${symbolLabel} from watchlist`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onRemove(row.storageKey);
+                  }}
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-fg-subtle outline-none hover:bg-surface-hover hover:text-fg-muted focus-visible:ring-2 focus-visible:ring-fg/10"
+                >
+                  <X className="h-3.5 w-3.5" strokeWidth={2} />
+                </button>
+              </TopbarDelayedTooltip>
               <span
                 className="flex h-5 w-5 shrink-0 cursor-grab items-center justify-center text-fg-muted active:cursor-grabbing"
                 aria-hidden
@@ -293,7 +295,8 @@ function WatchlistRailSkeleton() {
   );
 }
 
-function WatchlistRailScrollContent({
+/** Rail list body — sections (collapse / rename / reorder), drag-and-drop rows, hover remove. Also used on Home. */
+export function WatchlistRailScrollContent({
   showLoadingState,
   empty,
   error,
@@ -424,6 +427,16 @@ function WatchlistRailToggle({
   );
 }
 
+/** Home has its own in-page watchlist column; the user's portfolio pages (`/home/[id]`, `/portfolio`) show none. */
+function isPortfolioHomePage(pathname: string): boolean {
+  return (
+    pathname === "/home" ||
+    pathname.startsWith("/home/") ||
+    pathname === "/portfolio" ||
+    pathname.startsWith("/portfolio/")
+  );
+}
+
 function isFullWatchlistPage(pathname: string): boolean {
   return pathname === "/watchlist" || pathname.startsWith("/watchlist/");
 }
@@ -458,6 +471,7 @@ export function WatchlistRail() {
     moveActiveWatchlistItem,
     removeFromActiveWatchlist,
     storageHydrated,
+    serverSynced,
   } = useWatchlist();
 
   const freeWatchlistCountBadge =
@@ -471,10 +485,11 @@ export function WatchlistRail() {
     activeSections,
     activeTickerSections,
   );
-  const showLoadingState = !mounted || !storageHydrated;
+  const showLoadingState =
+    !mounted || !storageHydrated || (!serverSynced && watchedTickers.length === 0);
   const showRailContent = mounted && storageHydrated;
 
-  if (isFullWatchlistPage(pathname)) {
+  if (isFullWatchlistPage(pathname) || isPortfolioHomePage(pathname)) {
     return null;
   }
 

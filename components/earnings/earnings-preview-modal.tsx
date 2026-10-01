@@ -48,7 +48,8 @@ export function EarningsPreviewModal({
   const shell = (
       <AppModalShell
         titleId="earnings-preview-title"
-        maxWidthClass="w-full max-w-[min(960px,calc(100vw-2rem))]"
+        maxWidthClass="w-full"
+        style={{ maxWidth: "min(1180px, calc(100vw - 2rem))" }}
         maxHeightClass="max-h-[min(90vh,880px)]"
         header={
           <div className="flex w-full items-center gap-3">
@@ -67,7 +68,7 @@ export function EarningsPreviewModal({
                   </span>
                   {item.screenerRank != null ? <ScreenerRankBadge rank={item.screenerRank} /> : null}
                 </span>
-                <span className="min-w-0 truncate text-[14px] leading-5 text-fg-muted underline-offset-2 decoration-fg-muted group-hover:underline">
+                <span className="min-w-0 truncate text-[14px] leading-5 text-fg-muted">
                   {item.companyName}
                 </span>
               </span>

@@ -15,8 +15,15 @@ export async function GET(request: Request) {
   try {
     const user = await requireAuthUserFromRequest(request);
     const supabase = await getSupabaseClientForRequest(request);
+    const resolveUserCreatedAt = async () => {
+      if (user.created_at) return user.created_at;
+      const authHeader = request.headers.get("authorization");
+      const bearer = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+      const { data } = bearer ? await supabase.auth.getUser(bearer) : await supabase.auth.getUser();
+      return data.user?.created_at ?? null;
+    };
     try {
-      const items = await ensureDefaultSuperinvestorFollows(supabase, user.id, user.created_at);
+      const items = await ensureDefaultSuperinvestorFollows(supabase, user.id, resolveUserCreatedAt);
       return NextResponse.json({ items });
     } catch (dbErr) {
       console.error("[superinvestor-follows GET] list failed", dbErr);

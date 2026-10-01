@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, ChevronLeft, Settings, X } from "@/lib/icons";
+import { ChevronLeft, Settings, X } from "@/lib/icons";
 
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
@@ -17,9 +17,9 @@ import {
   Empty,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { NotificationsEmptyIllustration } from "@/components/portfolio-home/portfolio-empty-illustration";
 import { EarningsNotificationCard } from "@/components/layout/earnings-notification-card";
 import { SuperinvestorActivityNotificationCard } from "@/components/layout/superinvestor-activity-notification-card";
 import { Spinner } from "@/components/ui/spinner";
@@ -531,9 +531,7 @@ export function NotificationsPanelModal({
             ) : items.length === 0 ? (
               <Empty variant="plain" className="min-h-0 flex-1 justify-center py-12">
                 <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <Bell className="h-6 w-6" strokeWidth={1.75} aria-hidden />
-                  </EmptyMedia>
+                  <NotificationsEmptyIllustration className="mb-6" />
                   <EmptyTitle>No notifications yet</EmptyTitle>
                   <EmptyDescription className="max-w-[260px]">
                     Alerts for watchlist earnings, slides, SEC reports, and followed

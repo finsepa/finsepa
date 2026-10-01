@@ -1,0 +1,18 @@
+discover-anzgy-hpe-wuxay.log
+Date: 2026-09-23
+Batch: ANZGY, HPE, WUXAY
+Method: ANZ shareholder centre results-announcement + investor-presentations HTML scrape; HPE investors.hpe.com/financial/quarterly-results media paths; WuXi /api/ymkd/v1/irMaterial (en) + officialsite-static upload resolve. Range-GET bytes 0-7 %PDF verified. Catalogs only — no match/apply/allowlist.
+
+ANZGY: trafficLight=yellow  g/y/r=9/0/10  irHost=www.anz.com  latest=Q3 2026
+  notes: ANZ Group Holdings ADR. Sept FY half-year 1H→Q2 / FY→Q4 on anz.com/content/dam/anzcom/shareholder; Q1/Q3 empty by design. Slides=investor discussion pack / presentation+IDP; Filings=media/news release. Never SEC HTML.
+
+HPE: trafficLight=green  g/y/r=19/0/0  irHost=investors.hpe.com  latest=Q3 2026
+  notes: Hewlett Packard Enterprise Oct 31 FY. Slides=earnings presentation; Filings=earnings press release on ~/media/Files/H/HP-Enterprise-IR/documents/q{N}-{YYYY}/. Reject transcripts/tables. Never SEC HTML.
+
+WUXAY: trafficLight=green  g/y/r=18/0/0  irHost=officialsite-static.wuxiapptec.com  latest=Q2 2026
+  notes: WuXi AppTec ADR calendar FY. Slides=Results Presentation; Filings=EN results announcement (else quarterly/interim/annual report) via irMaterial API. Reject Investor Day/JPM. Never SEC HTML.
+
+Summary:
+  ANZGY  yellow   9/0/10  latest=Q3 2026  host=www.anz.com
+  HPE    green    19/0/0  latest=Q3 2026  host=investors.hpe.com
+  WUXAY  green    18/0/0  latest=Q2 2026  host=officialsite-static.wuxiapptec.com

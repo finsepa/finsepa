@@ -31,7 +31,8 @@ export function AssetPageTopLoader() {
     pathname.startsWith("/index/") ||
     pathname.startsWith("/currency/") ||
     pathname.startsWith("/charting") ||
-    pathname.startsWith("/portfolio");
+    pathname.startsWith("/portfolio") ||
+    /^\/home\/[^/]+/.test(pathname);
 
   useEffect(() => {
     if (!isAssetPath) {

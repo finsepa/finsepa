@@ -911,6 +911,156 @@ export function isIrPdfProxyUrlAllowed(url: string): boolean {
   ) {
     return true;
   }
+  // ANZ (ANZGY) shareholder results presentation + media release.
+  if (
+    (h === "www.anz.com" || h.endsWith(".anz.com")) &&
+    parsed.pathname.includes("/content/dam/anzcom/shareholder/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // HPE IR media files earnings presentation + press release.
+  if (
+    (h === "investors.hpe.com" || h.endsWith(".hpe.com")) &&
+    /hp-enterprise-ir/i.test(parsed.pathname) &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // WuXi AppTec (WUXAY) static upload presentation + EN report.
+  if (
+    (h === "officialsite-static.wuxiapptec.com" || h.endsWith(".wuxiapptec.com")) &&
+    parsed.pathname.includes("/upload/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Synopsys (SNPS) q4cdn investor overview / financial supplement (+ sparse press).
+  if (
+    (h === "s201.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/778493406/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Simon Property (SPG) GCS supplemental static-files + /node/N/pdf press.
+  if (
+    (h === "investors.simon.com" || h.endsWith(".simon.com")) &&
+    (/\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname) ||
+      /\/node\/\d+\/pdf\/?$/i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Moody's (MCO) q4cdn earnings webcast + release.
+  if (
+    (h === "s203.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/694693571/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // UPS IR _assets webcast deck + news release.
+  if (
+    (h === "investors.ups.com" || h.endsWith(".ups.com")) &&
+    parsed.pathname.includes("/_assets/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // BAE Systems (BAESY) results presentation + announcement (half-year).
+  if (
+    (h === "investors.baesystems.com" || h.endsWith(".baesystems.com")) &&
+    parsed.pathname.includes("/dam/jcr:") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // DoorDash (DASH) q4cdn shareholder letter + earnings press.
+  if (
+    (h === "s22.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/280253921/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Cadence (CDNS) q4cdn CFO commentary + earnings tables.
+  if (
+    (h === "s206.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/597110084/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Enterprise Products (EPD) GCS static-files slides + /node/N/pdf press.
+  if (
+    (h === "ir.enterpriseproducts.com" || h.endsWith(".enterpriseproducts.com")) &&
+    (/\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname) ||
+      /\/node\/\d+\/pdf\/?$/i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // American Tower (AMT) GCS static-files presentation + press.
+  if (
+    (h === "americantower.gcs-web.com" || h.endsWith(".americantower.com")) &&
+    /\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Bloom Energy (BE) q4cdn supplemental + earnings release.
+  if (
+    (h === "s29.q4cdn.com" || h.endsWith(".q4cdn.com")) &&
+    parsed.pathname.includes("/452919417/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Cintas (CTAS) filings-only quarterly earnings releases.
+  if (
+    (h === "cintas.com" || h.endsWith(".cintas.com")) &&
+    parsed.pathname.includes("/docs/default-source/investor-relations/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Generali (ARZGY) half-year results presentation + press.
+  if (
+    (h === "generali.com" || h.endsWith(".generali.com")) &&
+    parsed.pathname.includes("/doc/jcr:") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Waste Management (WM) GCS news-release static-files (filings-only).
+  if (
+    (h === "investors.wm.com" || h.endsWith(".wm.com")) &&
+    /\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Marsh (MRSH) content/dam investor presentation + news release.
+  if (
+    (h === "marsh.com" || h.endsWith(".marsh.com")) &&
+    parsed.pathname.includes("/content/dam/mmc-web/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
+  // Regeneron (REGN) GCS corporate presentation + /node/N/pdf press.
+  if (
+    (h === "investor.regeneron.com" || h.endsWith(".regeneron.com")) &&
+    (/\/static-files\/[a-f0-9-]{36}/i.test(parsed.pathname) ||
+      /\/node\/\d+\/pdf\/?$/i.test(parsed.pathname))
+  ) {
+    return true;
+  }
+  // Suncor (SU) investor-centre quarterly report + investor presentation.
+  if (
+    (h === "suncor.com" || h.endsWith(".suncor.com")) &&
+    parsed.pathname.includes("/-/media/project/suncor/files/investor-centre/") &&
+    /\.pdf(?:$|[?#])/i.test(parsed.pathname)
+  ) {
+    return true;
+  }
   // Murata (MRAAY) Sitecore ashx presentation + financial results.
   if (
     (h === "corporate.murata.com" || h.endsWith(".murata.com")) &&

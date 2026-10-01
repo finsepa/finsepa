@@ -63,11 +63,14 @@ export function TransactionPortfolioField({
   portfoliosOnly = false,
   /** Add Cash / New Transaction: demo books are view-only — omit from picker. */
   excludeDemoPortfolios = false,
+  /** Extra hook after a portfolio row is chosen (e.g. navigate `/home/[id]`). */
+  onSelectPortfolio,
 }: {
   variant?: Variant;
   compactMenuAlign?: CompactMenuAlign;
   portfoliosOnly?: boolean;
   excludeDemoPortfolios?: boolean;
+  onSelectPortfolio?: (portfolioId: string) => void;
 }) {
   const {
     portfolios,
@@ -151,10 +154,12 @@ export function TransactionPortfolioField({
 
   const chevronClass =
     variant === "toolbar" ? "h-4 w-4 shrink-0 text-icon" : "h-5 w-5 shrink-0 text-icon";
+  /** Page title switcher: creating lives in the toolbar’s create menu, so the list is portfolios only. */
+  const isTitleSwitcher = variant === "titleGhost";
 
   const menuPanel = (
     <>
-      {pickerPortfolios.length > 0 ? (
+      {pickerPortfolios.length > 0 && !isTitleSwitcher ? (
         <div className="px-3 py-1.5 text-xs font-medium leading-4 text-fg-muted">My portfolios</div>
       ) : null}
       {pickerPortfolios.map((p) => {
@@ -194,6 +199,7 @@ export function TransactionPortfolioField({
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedPortfolioId(p.id);
+                onSelectPortfolio?.(p.id);
                 setOpen(false);
               }}
               className={cn(
@@ -267,7 +273,7 @@ export function TransactionPortfolioField({
           </div>
         );
       })}
-      {!portfoliosOnly ? (
+      {!portfoliosOnly && !isTitleSwitcher ? (
         <>
           <div
             role="separator"

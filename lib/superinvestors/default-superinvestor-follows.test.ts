@@ -4,10 +4,10 @@ import { describe, it } from "node:test";
 import { defaultSuperinvestorFollowPaths } from "./default-superinvestor-follows.ts";
 
 describe("defaultSuperinvestorFollowPaths", () => {
-  it("includes Warren Buffett and Terry Smith profile paths", () => {
+  it("matches iOS defaults: Bill Ackman and Warren Buffett", () => {
     assert.deepEqual(defaultSuperinvestorFollowPaths(), [
+      "/superinvestors/bill-ackman",
       "/superinvestors/berkshire-hathaway",
-      "/superinvestors/terry-smith",
     ]);
   });
 });

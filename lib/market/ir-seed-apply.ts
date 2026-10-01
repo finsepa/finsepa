@@ -231,6 +231,26 @@ import { applyIrSeedBnDocumentUrls } from "@/lib/market/ir-seed-apply-bn";
 import { applyIrSeedLiteDocumentUrls } from "@/lib/market/ir-seed-apply-lite";
 import { applyIrSeedMmmDocumentUrls } from "@/lib/market/ir-seed-apply-mmm";
 import { applyIrSeedLygDocumentUrls } from "@/lib/market/ir-seed-apply-lyg";
+import { applyIrSeedAnzgyDocumentUrls } from "@/lib/market/ir-seed-apply-anzgy";
+import { applyIrSeedHpeDocumentUrls } from "@/lib/market/ir-seed-apply-hpe";
+import { applyIrSeedWuxayDocumentUrls } from "@/lib/market/ir-seed-apply-wuxay";
+import { applyIrSeedSnpsDocumentUrls } from "@/lib/market/ir-seed-apply-snps";
+import { applyIrSeedSpgDocumentUrls } from "@/lib/market/ir-seed-apply-spg";
+import { applyIrSeedMcoDocumentUrls } from "@/lib/market/ir-seed-apply-mco";
+import { applyIrSeedUpsDocumentUrls } from "@/lib/market/ir-seed-apply-ups";
+import { applyIrSeedBaesyDocumentUrls } from "@/lib/market/ir-seed-apply-baesy";
+import { applyIrSeedDashDocumentUrls } from "@/lib/market/ir-seed-apply-dash";
+import { applyIrSeedCdnsDocumentUrls } from "@/lib/market/ir-seed-apply-cdns";
+import { applyIrSeedEpdDocumentUrls } from "@/lib/market/ir-seed-apply-epd";
+import { applyIrSeedAmtDocumentUrls } from "@/lib/market/ir-seed-apply-amt";
+import { applyIrSeedBeDocumentUrls } from "@/lib/market/ir-seed-apply-be";
+import { applyIrSeedCmcsaDocumentUrls } from "@/lib/market/ir-seed-apply-cmcsa";
+import { applyIrSeedCtasDocumentUrls } from "@/lib/market/ir-seed-apply-ctas";
+import { applyIrSeedArzgyDocumentUrls } from "@/lib/market/ir-seed-apply-arzgy";
+import { applyIrSeedWmDocumentUrls } from "@/lib/market/ir-seed-apply-wm";
+import { applyIrSeedMrshDocumentUrls } from "@/lib/market/ir-seed-apply-mrsh";
+import { applyIrSeedRegnDocumentUrls } from "@/lib/market/ir-seed-apply-regn";
+import { applyIrSeedSuDocumentUrls } from "@/lib/market/ir-seed-apply-su";
 import type { StockEarningsDocumentHub, StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 
 /** Tickers with bespoke IR seed modules (run before universal layers). */
@@ -464,6 +484,26 @@ const DEDICATED_IR_SEED_TICKERS = new Set([
   "LITE",
   "MMM",
   "LYG",
+  "ANZGY",
+  "HPE",
+  "WUXAY",
+  "SNPS",
+  "SPG",
+  "MCO",
+  "UPS",
+  "BAESY",
+  "DASH",
+  "CDNS",
+  "EPD",
+  "AMT",
+  "BE",
+  "CMCSA",
+  "CTAS",
+  "ARZGY",
+  "WM",
+  "MRSH",
+  "REGN",
+  "SU",
 ]);
 
 export function earningsIrSeedResolutionSource(
@@ -707,6 +747,26 @@ async function applyDedicatedIrSeedDocumentUrls(
   if (t === "LITE") return applyIrSeedLiteDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
   if (t === "MMM") return applyIrSeedMmmDocumentUrls(rows, hub);
   if (t === "LYG") return applyIrSeedLygDocumentUrls(rows, hub);
+  if (t === "ANZGY") return applyIrSeedAnzgyDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "HPE") return applyIrSeedHpeDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "WUXAY") return applyIrSeedWuxayDocumentUrls(rows, hub);
+  if (t === "SNPS") return applyIrSeedSnpsDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "SPG") return applyIrSeedSpgDocumentUrls(rows, hub);
+  if (t === "MCO") return applyIrSeedMcoDocumentUrls(rows, hub);
+  if (t === "UPS") return applyIrSeedUpsDocumentUrls(rows, hub);
+  if (t === "BAESY") return applyIrSeedBaesyDocumentUrls(rows, hub);
+  if (t === "DASH") return applyIrSeedDashDocumentUrls(rows, hub);
+  if (t === "CDNS") return applyIrSeedCdnsDocumentUrls(rows, hub);
+  if (t === "EPD") return applyIrSeedEpdDocumentUrls(rows, hub);
+  if (t === "AMT") return applyIrSeedAmtDocumentUrls(rows, hub);
+  if (t === "BE") return applyIrSeedBeDocumentUrls(rows, hub);
+  if (t === "CMCSA") return applyIrSeedCmcsaDocumentUrls(rows, hub);
+  if (t === "CTAS") return applyIrSeedCtasDocumentUrls(rows, hub, { fyEndMonthDay: options?.fyEndMonthDay });
+  if (t === "ARZGY") return applyIrSeedArzgyDocumentUrls(rows, hub);
+  if (t === "WM") return applyIrSeedWmDocumentUrls(rows, hub);
+  if (t === "MRSH") return applyIrSeedMrshDocumentUrls(rows, hub);
+  if (t === "REGN") return applyIrSeedRegnDocumentUrls(rows, hub);
+  if (t === "SU") return applyIrSeedSuDocumentUrls(rows, hub);
   if (t === "RACE") {
     return applyIrSeedFerrariPresentationUrls(rows, {
       preview: options?.preview,

@@ -13,7 +13,13 @@ function isGcsNodePdfPath(host: string, pathname: string): boolean {
     h !== "investors.datadoghq.com" &&
     !h.endsWith(".datadoghq.com") &&
     h !== "investors.monsterbevcorp.com" &&
-    !h.endsWith(".monsterbevcorp.com")
+    !h.endsWith(".monsterbevcorp.com") &&
+    h !== "investors.simon.com" &&
+    !h.endsWith(".simon.com") &&
+    h !== "ir.enterpriseproducts.com" &&
+    !h.endsWith(".enterpriseproducts.com") &&
+    h !== "investor.regeneron.com" &&
+    !h.endsWith(".regeneron.com")
   ) {
     return false;
   }

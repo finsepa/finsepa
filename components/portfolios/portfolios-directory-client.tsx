@@ -329,15 +329,15 @@ export function PortfoliosDirectoryClient() {
           </EmptyMedia>
           <EmptyTitle>No public portfolios yet</EmptyTitle>
           <EmptyDescription className="max-w-md">
-            When someone sets a portfolio to Public, it will appear here for everyone signed in. Open My Portfolio, edit
-            the portfolio, choose Public, and save — your snapshot updates automatically.
+            When someone sets a portfolio to Public, it will appear here for everyone signed in. Open one of your
+            portfolios from Home, edit it, choose Public, and save — your snapshot updates automatically.
           </EmptyDescription>
         </EmptyHeader>
         <Link
-          href="/portfolio"
+          href="/home"
           className="mt-8 text-sm font-medium text-accent transition-colors hover:text-accent-hover hover:underline"
         >
-          Go to My Portfolio
+          Go to Home
         </Link>
       </Empty>
       </div>

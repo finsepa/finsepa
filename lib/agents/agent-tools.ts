@@ -394,7 +394,7 @@ export function createCheapAgentTools(userId: string) {
       execute: async () => ({
         links: [
           { label: "Watchlist", path: "/watchlist" },
-          { label: "Portfolio", path: "/portfolio" },
+          { label: "Home (net worth + portfolios)", path: "/home" },
           { label: "Portfolios directory", path: "/portfolios" },
           { label: "Charting", path: "/charting" },
           { label: "Comparison", path: "/comparison" },
@@ -408,7 +408,7 @@ export function createCheapAgentTools(userId: string) {
           { label: "Agent", path: "/agents" },
           { label: "Account", path: "/account" },
         ],
-        note: "Use bare paths in replies (e.g. /portfolio). Prefer these over inventing URLs.",
+        note: "Use bare paths in replies (e.g. /home). Prefer these over inventing URLs.",
       }),
     }),
   };

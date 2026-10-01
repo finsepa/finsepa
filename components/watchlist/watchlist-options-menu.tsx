@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, ChevronDown, Lock } from "@/lib/icons";
+import { Check, ChevronDown, Lock, MoreHorizontal } from "@/lib/icons";
 
 import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 
@@ -52,13 +52,18 @@ export type WatchlistOptionsMenuProps = {
   onRename: (name: string) => void;
   onDelete: () => void | Promise<void>;
   onSwitch: (id: string) => void;
-  /** `page-icon` = options button beside page title (chevrons toggle, same as portfolio switcher). */
-  variant: "page-icon" | "rail-title";
+  /**
+   * `page-icon` = options button beside page title (chevrons toggle, same as portfolio switcher).
+   * `more-icon` = ghost “…” button with actions only (no list switcher); menu opens aligned to the trailing edge.
+   */
+  variant: "page-icon" | "rail-title" | "more-icon";
   className?: string;
   /** When false, menu toggle is ignored (avoids SSR/localStorage races without `disabled` on the button). */
   ready?: boolean;
   /** Free plan: e.g. `1/15` shown next to the rail title. */
   countBadge?: string | null;
+  /** `rail-title` only: overrides the title trigger typography (e.g. section-heading size on Home). */
+  titleClassName?: string;
 };
 
 export function WatchlistOptionsMenu({
@@ -74,6 +79,7 @@ export function WatchlistOptionsMenu({
   className,
   ready = true,
   countBadge = null,
+  titleClassName,
 }: WatchlistOptionsMenuProps) {
   const plan = usePlanAccessOptional();
   const router = useRouter();
@@ -205,6 +211,8 @@ export function WatchlistOptionsMenu({
   const createEnabled = createValue.trim().length > 0;
   const createSectionEnabled = createSectionValue.trim().length > 0;
 
+  const showSwitcher = variant !== "more-icon";
+
   const toggleMenu = () => {
     if (!ready) return;
     setMenuOpen((v) => !v);
@@ -224,6 +232,17 @@ export function WatchlistOptionsMenu({
           >
             <ChevronsUpDownIcon ref={chevronsRef} className="h-5 w-5 shrink-0" />
           </button>
+        ) : variant === "more-icon" ? (
+          <button
+            type="button"
+            aria-label="Watchlist options"
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            onClick={toggleMenu}
+            className={cn(titleGhostTriggerClass, "h-8 w-8", menuOpen && "bg-surface-muted text-fg")}
+          >
+            <MoreHorizontal className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+          </button>
         ) : (
           <button
             type="button"
@@ -231,7 +250,10 @@ export function WatchlistOptionsMenu({
             aria-expanded={menuOpen}
             aria-haspopup="menu"
             onClick={toggleMenu}
-            className="flex min-w-0 flex-1 items-center gap-0.5 truncate pl-1 text-sm font-semibold leading-5 text-fg-muted transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:rounded-[6px]"
+            className={cn(
+              "flex min-w-0 flex-1 items-center gap-0.5 truncate pl-1 text-sm font-semibold leading-5 text-fg-muted transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:rounded-[6px]",
+              titleClassName,
+            )}
           >
             <span className="truncate" suppressHydrationWarning>
               {name}
@@ -259,11 +281,11 @@ export function WatchlistOptionsMenu({
             open={menuOpen}
             anchorRef={containerRef}
             ref={menuPortalRef}
-            align="leading"
+            align={variant === "more-icon" ? "trailing" : "leading"}
             className="w-max min-w-[13rem]"
           >
             <div className={dropdownMenuPanelClassName()} role="menu">
-              {watchlists.map((list) => {
+              {(showSwitcher ? watchlists : []).map((list) => {
                 const isActive = list.id === activeWatchlistId;
                 const isLockedOnFree =
                   plan?.isFree === true &&
@@ -300,7 +322,9 @@ export function WatchlistOptionsMenu({
                   </button>
                 );
               })}
-              <div role="separator" aria-hidden className="-mx-1 my-0.5 h-px shrink-0 bg-stroke" />
+              {showSwitcher ? (
+                <div role="separator" aria-hidden className="-mx-1 my-0.5 h-px shrink-0 bg-stroke" />
+              ) : null}
               <button
                 type="button"
                 role="menuitem"
@@ -335,6 +359,7 @@ export function WatchlistOptionsMenu({
                   <span>Add New Section</span>
                 </button>
               ) : null}
+              <div role="separator" aria-hidden className="-mx-1 my-0.5 h-px shrink-0 bg-stroke" />
               <button
                 type="button"
                 role="menuitem"

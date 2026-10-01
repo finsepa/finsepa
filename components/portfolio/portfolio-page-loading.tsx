@@ -114,7 +114,7 @@ function PortfolioChartControlsSkeleton() {
 function PortfolioHoldingsSubTabsSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn("flex gap-1", className)} aria-hidden>
-      {["Assets", "Earnings", "Allocation", "Slices"].map((label, i) => (
+      {["Assets", "Earnings", "Allocation"].map((label, i) => (
         <Pulse
           key={label}
           className={cn("h-8 rounded-lg", i === 0 ? "w-[4.25rem] bg-skeleton" : "w-[4.75rem] bg-skeleton")}
