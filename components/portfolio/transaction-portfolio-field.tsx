@@ -273,7 +273,7 @@ export function TransactionPortfolioField({
           </div>
         );
       })}
-      {!portfoliosOnly && !isTitleSwitcher ? (
+      {!portfoliosOnly && !isTitleSwitcher && variant !== "field" ? (
         <>
           <div
             role="separator"

@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type Ref } from "react";
 
 import { ChangeCaretIcon } from "@/components/screener/change-pct";
-import { CompanyLogo } from "@/components/screener/company-logo";
 import { FadeIn } from "@/components/markets/skeleton";
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { IndexCardData } from "@/lib/screener/indices-today";
@@ -29,8 +28,6 @@ type IndexEntry = {
   positive: boolean;
   neutral: boolean;
   href: string | null;
-  logoSymbol: string | null;
-  logoUrl: string;
 };
 
 /** Non-index tile appended after the index strip (e.g. BTC on Home). */
@@ -39,8 +36,6 @@ export type IndexCardExtra = {
   price: number | null;
   changePercent1D: number | null;
   href: string | null;
-  logoSymbol?: string;
-  logoUrl?: string;
 };
 
 function formatIndexValue(price: number | null): string {
@@ -62,14 +57,12 @@ function toEntry(
   price: number | null,
   pct: number | null,
   href: string | null,
-  logoSymbol: string | null = null,
-  logoUrl = "",
 ): IndexEntry {
   const value = formatIndexValue(price);
   const change = formatChangePercent(pct);
   const neutral = change === "—" || value === "—";
   const positive = !neutral && (pct ?? 0) >= 0;
-  return { name, value, change, positive, neutral, href, logoSymbol, logoUrl };
+  return { name, value, change, positive, neutral, href };
 }
 
 function entriesFromCards(cards: IndexCardData[], extras: readonly IndexCardExtra[]): IndexEntry[] {
@@ -78,20 +71,9 @@ function entriesFromCards(cards: IndexCardData[], extras: readonly IndexCardExtr
   const indexEntries = SCREENER_INDEX_CARD_LABELS.map((name) => {
     const c = byName.get(name);
     const symbol = MARKET_INDICES_TODAY.find((row) => row.name === name)?.eodhdSymbol;
-    return toEntry(
-      name,
-      c?.price ?? null,
-      c?.changePercent1D ?? null,
-      symbol ? indexAssetHref(symbol) : null,
-      symbol ?? null,
-    );
+    return toEntry(name, c?.price ?? null, c?.changePercent1D ?? null, symbol ? indexAssetHref(symbol) : null);
   });
-  return [
-    ...indexEntries,
-    ...extras.map((x) =>
-      toEntry(x.name, x.price, x.changePercent1D, x.href, x.logoSymbol ?? null, x.logoUrl ?? ""),
-    ),
-  ];
+  return [...indexEntries, ...extras.map((x) => toEntry(x.name, x.price, x.changePercent1D, x.href))];
 }
 
 export const INDEX_CARDS_GRID_CLASS =
@@ -126,7 +108,7 @@ export function IndexCards({
   gridClassName = INDEX_CARDS_GRID_CLASS,
   gridStyle,
   cardStyle,
-  showLogos = false,
+  scrollRef,
 }: {
   initialCards?: IndexCardData[];
   /** From SSR stocks payload — live 15m slot or frozen last regular session. */
@@ -138,8 +120,8 @@ export function IndexCards({
   gridStyle?: CSSProperties;
   /** Per-card overrides (e.g. tighter row gap on Home). */
   cardStyle?: CSSProperties;
-  /** Small index / asset mark at the right of the name row. */
-  showLogos?: boolean;
+  /** Horizontal scroll track (e.g. for prev/next arrow buttons). */
+  scrollRef?: Ref<HTMLDivElement>;
 }) {
   const [cards, setCards] = useState<IndexCardData[]>(() => seedIndexCards(initialCards));
 
@@ -185,24 +167,14 @@ export function IndexCards({
 
   return (
     <div className={outerClassName}>
-      <div className={scrollClassName} aria-label="Market indices">
+      <div ref={scrollRef} className={scrollClassName} aria-label="Market indices">
         <div className={gridClassName} style={gridStyle}>
-        {entries.map(({ name, value, change, positive, neutral, href, logoSymbol, logoUrl }) => {
-          const nameLabel = (
-            <p className="w-full truncate text-left text-[14px] font-medium leading-5 text-fg-muted group-hover:underline group-hover:underline-offset-2">
-              {name}
-            </p>
-          );
+        {entries.map(({ name, value, change, positive, neutral, href }) => {
           const body = (
             <>
-              {showLogos && logoSymbol ? (
-                <div className="flex w-full min-w-0 items-center justify-between gap-2">
-                  {nameLabel}
-                  <CompanyLogo name={name} symbol={logoSymbol} logoUrl={logoUrl} size="xs" />
-                </div>
-              ) : (
-                nameLabel
-              )}
+              <p className="w-full truncate text-left text-[14px] font-medium leading-5 text-fg-muted group-hover:underline group-hover:underline-offset-2">
+                {name}
+              </p>
               <FadeIn show={fadeIn}>
                 <p
                   className="w-full truncate text-left text-[15px] font-bold leading-5 tabular-nums text-fg sm:text-base sm:leading-6"

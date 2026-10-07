@@ -55,6 +55,11 @@ export type PortfolioEntry = {
   combinedFrom?: string[];
   /** Present when portfolio was created via Connect brokerage. */
   snaptrade?: PortfolioSnaptradeLink;
+  /**
+   * Position from the last saved Manage portfolios order. The array order is what renders;
+   * this only marks a custom order so the persist fingerprint picks reorders up.
+   */
+  sortOrder?: number;
 };
 
 export function portfolioIsCombined(p: PortfolioEntry | null | undefined): boolean {
@@ -121,6 +126,7 @@ export function normalizePortfolioEntry(p: {
   isDemo?: unknown;
   combinedFrom?: unknown;
   snaptrade?: unknown;
+  sortOrder?: unknown;
 }): PortfolioEntry {
   const privacy: PortfolioPrivacy = p.privacy === "public" ? "public" : "private";
   const isDemo = p.isDemo === true || p.kind === "demo";
@@ -134,6 +140,7 @@ export function normalizePortfolioEntry(p: {
     name,
     privacy: isDemo ? "private" : privacy,
     ...(isDemo ? { isDemo: true, kind: "demo" as const } : {}),
+    ...(typeof p.sortOrder === "number" && Number.isFinite(p.sortOrder) ? { sortOrder: p.sortOrder } : {}),
   };
 
   const snaptrade = normalizePortfolioSnaptradeLink(p.snaptrade);

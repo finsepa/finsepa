@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { IndexCardSkeleton } from "@/components/markets/markets-skeletons";
+import { CarouselArrowButton } from "@/components/portfolio-home/upcoming-earnings-carousel";
 import {
   INDEX_CARDS_SCROLL_CLASS,
   IndexCards,
   type IndexCardExtra,
 } from "@/components/screener/index-cards";
-import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import type { IndexCardData } from "@/lib/screener/indices-today";
 import { fetchScreenerIndexCardsCached } from "@/lib/screener/screener-index-cards-cache";
 import { SCREENER_INDEX_CARD_LABELS } from "@/lib/screener/screener-index-card-fallbacks";
@@ -33,8 +33,6 @@ const HOME_TILES_SCROLL_CLASS = cn(
 const BTC_TILE_NAME = "Bitcoin";
 const BTC_ENRICH_TICKER = "BTC-USD";
 const BTC_HREF = "/crypto/BTC";
-const BTC_LOGO_SYMBOL = "BTC";
-const BTC_LOGO_URL = getCryptoLogoUrl(BTC_LOGO_SYMBOL);
 
 type EnrichCryptoRow = { symbol?: string; price?: number | null; pct1d?: number | null };
 
@@ -59,6 +57,34 @@ async function fetchBtcQuote(): Promise<{ price: number | null; pct1d: number | 
 export function HomeMarketTiles() {
   const [cards, setCards] = useState<IndexCardData[] | null>(null);
   const [btc, setBtc] = useState<{ price: number | null; pct1d: number | null } | null>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+  const loaded = cards != null && btc != null;
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!loaded || !el) return;
+    const update = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      setCanPrev(el.scrollLeft > 2);
+      setCanNext(max > 2 && el.scrollLeft < max - 2);
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, [loaded]);
+
+  const scrollByPage = (dir: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollBy({ left: el.clientWidth * 0.9 * dir, behavior: "smooth" });
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -88,14 +114,12 @@ export function HomeMarketTiles() {
         price: btc?.price ?? null,
         changePercent1D: btc?.pct1d ?? null,
         href: BTC_HREF,
-        logoSymbol: BTC_LOGO_SYMBOL,
-        logoUrl: BTC_LOGO_URL,
       },
     ],
     [btc],
   );
 
-  if (cards == null || btc == null) {
+  if (!loaded) {
     return (
       <div className={HOME_TILES_OUTER_CLASS} aria-busy="true">
         <div className={HOME_TILES_SCROLL_CLASS}>
@@ -110,15 +134,23 @@ export function HomeMarketTiles() {
   }
 
   return (
-    <IndexCards
-      initialCards={cards}
-      extraCards={extraCards}
-      outerClassName={HOME_TILES_OUTER_CLASS}
-      scrollClassName={HOME_TILES_SCROLL_CLASS}
-      gridClassName={HOME_TILES_GRID_CLASS}
-      gridStyle={HOME_TILES_GRID_STYLE}
-      cardStyle={HOME_TILE_CARD_STYLE}
-      showLogos
-    />
+    <div className="relative">
+      <IndexCards
+        initialCards={cards}
+        extraCards={extraCards}
+        outerClassName={HOME_TILES_OUTER_CLASS}
+        scrollClassName={HOME_TILES_SCROLL_CLASS}
+        gridClassName={HOME_TILES_GRID_CLASS}
+        gridStyle={HOME_TILES_GRID_STYLE}
+        cardStyle={HOME_TILE_CARD_STYLE}
+        scrollRef={scrollerRef}
+      />
+      {canPrev ? (
+        <CarouselArrowButton direction="prev" label="Previous market tiles" onClick={() => scrollByPage(-1)} />
+      ) : null}
+      {canNext ? (
+        <CarouselArrowButton direction="next" label="Next market tiles" onClick={() => scrollByPage(1)} />
+      ) : null}
+    </div>
   );
 }

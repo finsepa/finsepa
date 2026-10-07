@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { format, isValid, parseISO } from "date-fns";
+import { differenceInCalendarDays, format, isValid, parseISO } from "date-fns";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Search, UserRound } from "@/lib/icons";
 
@@ -29,6 +29,7 @@ type SuperinvestorListRow = {
   displayName: string;
   avatarSrc: string | null;
   filingDate: string | null;
+  bookReturnPct1y: number | null;
 };
 
 type FollowedCard = {
@@ -37,78 +38,117 @@ type FollowedCard = {
   avatarSrc: string;
   latestUpdateDisplay: string;
   filingDateYmd: string;
+  return1yPct: number | null;
+  isNew: boolean;
 };
 
+/** 13F deadlines bunch filings together; two weeks keeps "New" meaningful. */
+const NEW_FILING_DAYS = 14;
+
+/** `Aug 14` in the current year; older filings keep the year. */
 function formatLatestUpdate(ymd: string | null): string {
   if (!ymd?.trim()) return "—";
   const d = parseISO(ymd.trim());
   if (!isValid(d)) return "—";
-  return format(d, "MMM d, yyyy");
+  return format(d, d.getFullYear() === new Date().getFullYear() ? "MMM d" : "MMM d, yyyy");
 }
 
-const AVATAR_HEIGHT_PX = 104;
-const AVATAR_STYLE = { height: AVATAR_HEIGHT_PX } as const;
+function isRecentFiling(ymd: string | null): boolean {
+  if (!ymd?.trim()) return false;
+  const d = parseISO(ymd.trim());
+  if (!isValid(d)) return false;
+  const days = differenceInCalendarDays(new Date(), d);
+  return days >= 0 && days <= NEW_FILING_DAYS;
+}
 
-function FundCardAvatar({ src, name }: { src: string; name: string }) {
+function formatSignedPct(value: number): string {
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  return `${sign}${Math.abs(value).toFixed(1)}%`;
+}
+
+const TILE_HEIGHT_PX = 160;
+const TILE_STYLE = { height: TILE_HEIGHT_PX } as const;
+/** Inline so the scrim never depends on generated utility classes; dark in both themes since text sits on the photo. */
+const SCRIM_STYLE = {
+  backgroundImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 45%, rgba(0,0,0,0.85) 100%)",
+  textShadow: "0 1px 2px rgba(0,0,0,0.45)",
+} as const;
+const RETURN_PILL_STYLE = { backgroundColor: "rgba(0,0,0,0.55)", textShadow: "none" } as const;
+const NEW_PILL_STYLE = { backgroundColor: "var(--color-accent)" } as const;
+
+function FundCardPhoto({ src, name }: { src: string; name: string }) {
   const [failed, setFailed] = useState(false);
   const trimmed = src.trim();
   if (!trimmed || failed) {
     return (
-      <span
-        className="flex w-full shrink-0 items-center justify-center rounded-[10px] border border-stroke-muted bg-surface-muted text-fg-muted"
-        aria-hidden
-        style={AVATAR_STYLE}
-      >
-        <UserRound className="size-7" strokeWidth={1.75} />
+      <span className="absolute inset-0 flex items-start justify-center bg-surface-muted pt-10 text-fg-muted" aria-hidden>
+        <UserRound className="size-8" strokeWidth={1.75} />
       </span>
     );
   }
   return (
-    <span className="relative block w-full shrink-0 overflow-hidden rounded-[10px] border border-stroke-muted bg-surface-muted" style={AVATAR_STYLE}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars */}
-      <img
-        src={trimmed}
-        alt={name}
-        height={AVATAR_HEIGHT_PX}
-        className="h-full w-full object-cover"
-        style={{ objectPosition: "center 25%" }}
-        onError={() => setFailed(true)}
-      />
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars
+    <img
+      src={trimmed}
+      alt=""
+      aria-hidden
+      title={name}
+      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+      style={{ objectPosition: "center 25%" }}
+      onError={() => setFailed(true)}
+    />
   );
 }
 
+/** Photo tile — name, filing date and 1Y return sit on a bottom scrim (stays dark in both themes). */
 function FollowedCardView({ card }: { card: FollowedCard }) {
+  const returnLabel = card.return1yPct != null ? `${formatSignedPct(card.return1yPct)} (1Y)` : "";
   return (
     <Link
       href={card.href}
+      aria-label={`${card.displayName}, ${card.isNew ? "new filing, " : ""}reported ${card.latestUpdateDisplay}${returnLabel ? `, ${returnLabel}` : ""}`}
       className={cn(
-        "group flex h-full w-full min-w-0 flex-col p-3 no-underline transition-colors",
+        "group relative block w-full min-w-0 overflow-hidden bg-surface-muted no-underline",
         MOBILE_ELEVATED_CARD_CLASS,
-        "hover:bg-surface-muted/60",
       )}
+      style={TILE_STYLE}
     >
-      <FundCardAvatar src={card.avatarSrc} name={card.displayName} />
-      <div className="mt-8 min-w-0 space-y-0.5">
-        <p className="truncate text-[13px] font-semibold leading-4 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
+      <FundCardPhoto src={card.avatarSrc} name={card.displayName} />
+      {card.isNew ? (
+        <span
+          className="absolute left-2 top-2 rounded-full px-1.5 py-0.5 text-[11px] font-medium leading-3 text-white"
+          style={NEW_PILL_STYLE}
+        >
+          New
+        </span>
+      ) : null}
+      <span className="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 px-2 pb-2 pt-10" style={SCRIM_STYLE}>
+        <span className="line-clamp-2 text-[13px] font-semibold leading-4 text-white underline-offset-2 group-hover:underline">
           {card.displayName}
-        </p>
-        <p className="truncate text-[12px] leading-4 text-fg-muted">{card.latestUpdateDisplay}</p>
-      </div>
+        </span>
+        <span className="flex min-w-0 items-center justify-between gap-1">
+          <span className="truncate text-[11px] font-medium leading-4 text-white" style={{ opacity: 0.85 }}>
+            {card.latestUpdateDisplay}
+          </span>
+          {card.return1yPct != null ? (
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-semibold leading-3 tabular-nums",
+                card.return1yPct >= 0 ? "text-up" : "text-down",
+              )}
+              style={RETURN_PILL_STYLE}
+            >
+              {formatSignedPct(card.return1yPct)}
+            </span>
+          ) : null}
+        </span>
+      </span>
     </Link>
   );
 }
 
 function FollowedCardSkeleton() {
-  return (
-    <div className={cn("flex w-full min-w-0 flex-col p-3", MOBILE_ELEVATED_CARD_CLASS)}>
-      <div className="w-full shrink-0 animate-pulse rounded-[10px] bg-stroke" style={AVATAR_STYLE} />
-      <div className="mt-8 space-y-1">
-        <div className="h-3.5 w-16 animate-pulse rounded bg-stroke" />
-        <div className="h-3 w-16 animate-pulse rounded bg-stroke" />
-      </div>
-    </div>
-  );
+  return <div className="w-full min-w-0 animate-pulse rounded-2xl bg-stroke" style={TILE_STYLE} />;
 }
 
 /**
@@ -141,6 +181,8 @@ export function FollowedSuperinvestorsCarousel({ className }: { className?: stri
             displayName: typeof r.displayName === "string" ? r.displayName : "",
             avatarSrc: typeof r.avatarSrc === "string" ? r.avatarSrc : null,
             filingDate: typeof r.filingDate === "string" ? r.filingDate : null,
+            bookReturnPct1y:
+              typeof r.bookReturnPct1y === "number" && Number.isFinite(r.bookReturnPct1y) ? r.bookReturnPct1y : null,
           })),
         );
         setListLoading(false);
@@ -167,6 +209,8 @@ export function FollowedSuperinvestorsCarousel({ className }: { className?: stri
         avatarSrc: row.avatarSrc ?? "",
         latestUpdateDisplay: formatLatestUpdate(row.filingDate),
         filingDateYmd: row.filingDate?.trim() ?? "",
+        return1yPct: row.bookReturnPct1y,
+        isNew: isRecentFiling(row.filingDate),
       });
     }
     out.sort((a, b) => {
@@ -232,9 +276,9 @@ export function FollowedSuperinvestorsCarousel({ className }: { className?: stri
   const showEmpty = followReady && !listLoading && cards.length === 0;
 
   return (
-    <section ref={sectionRef} className={cn("min-w-0", className)} aria-label="Latest superinvestor updates">
+    <section ref={sectionRef} className={cn("min-w-0", className)} aria-label="Superinvestor updates">
       <div className="mb-5 flex items-center justify-between gap-2">
-        <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Latest superinvestor updates</h2>
+        <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Superinvestor updates</h2>
         {showArrows ? (
           <div className="flex items-center gap-0.5">
             <button

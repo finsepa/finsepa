@@ -48,6 +48,45 @@ export const Flag01: AppIcon = ({
     }),
   );
 
+/** Briefcase with a cog badge (Hugeicons NewJob) — Create portfolio, same glyph as iOS. */
+export const BriefcaseCog: AppIcon = ({
+  size = 24,
+  color = "currentColor",
+  strokeWidth = 2,
+  ...props
+}) =>
+  createElement(
+    "svg",
+    {
+      viewBox: "0 0 24 24",
+      fill: "none",
+      width: size,
+      height: size,
+      color,
+      "aria-hidden": true,
+      ...props,
+    },
+    createElement("path", {
+      d: "M17.5 13L18.7503 14.1518L20.4372 14.0855L20.6658 15.7839L22 16.8342L21.1 18.2845L21.4572 19.9599L19.8497 20.4834L19.0628 22L17.5 21.3518L15.9372 22L15.1503 20.4834L13.5428 19.9599L13.9 18.2845L13 16.8342L14.3342 15.7839L14.5628 14.0855L16.2497 14.1518L17.5 13Z",
+      stroke: "currentColor",
+      strokeWidth,
+      strokeLinejoin: "round",
+    }),
+    createElement("path", {
+      d: "M21 10.5V8C21 6.89543 20.1046 6 19 6H4C2.89543 6 2 6.89543 2 8V19C2 20.1046 2.89543 21 4 21H10.5",
+      stroke: "currentColor",
+      strokeWidth,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+    }),
+    createElement("path", {
+      d: "M15.5 5.5L14.7072 2.72528C14.5846 2.29598 14.1922 2 13.7457 2H9.2543C8.80782 2 8.41544 2.29598 8.29278 2.72528L7.5 5.5",
+      stroke: "currentColor",
+      strokeWidth,
+      strokeLinejoin: "round",
+    }),
+  );
+
 /** Party popper — goal-hit cells in the My Goal results table. */
 export const Confetti: AppIcon = ({
   size = 24,

@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { MOBILE_ELEVATED_CARD_CLASS, STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
-import { SegmentedControl } from "@/components/design-system/segmented-control";
 import {
   whiteSurfaceButtonBorderClass,
   whiteSurfaceButtonShadowClass,
@@ -13,7 +12,7 @@ import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspac
 import { portfolioPageSearchHref } from "@/components/portfolio/portfolio-page-tabs";
 import { portfolioIsCombined } from "@/components/portfolio/portfolio-types";
 import { EarningsPreviewModal } from "@/components/earnings/earnings-preview-modal";
-import { EarningsEmptyIllustration } from "@/components/portfolio-home/portfolio-empty-illustration";
+import { EarningsEmptyIllustration, PaymentsEmptyIllustration } from "@/components/portfolio-home/portfolio-empty-illustration";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Spinner } from "@/components/ui/spinner";
@@ -21,7 +20,7 @@ import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { portfolioHoldingAssetHref } from "@/lib/crypto/crypto-picker-universe";
 import { isCustomPortfolioSymbol } from "@/lib/portfolio/custom-asset-symbol";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
-import { Calendar, ChevronLeft, ChevronRight, Coins } from "@/lib/icons";
+import { ChevronLeft, ChevronRight } from "@/lib/icons";
 import {
   fetchPortfolioEarningsDatesClient,
   portfolioEarningsSymbolsKey,
@@ -56,21 +55,6 @@ export function cardsPerRowForWidth(widthPx: number): number {
   const even = fit - (fit % 2);
   return Math.min(MAX_CARDS_PER_ROW, Math.max(MIN_CARDS_PER_ROW, even));
 }
-
-type UpcomingEventsMode = "earnings" | "dividends";
-
-const MODE_OPTIONS = [
-  {
-    value: "earnings" as const,
-    label: <Calendar className="size-4" strokeWidth={2} aria-hidden />,
-    "aria-label": "Upcoming earnings",
-  },
-  {
-    value: "dividends" as const,
-    label: <Coins className="size-4" strokeWidth={2} aria-hidden />,
-    "aria-label": "Upcoming dividends",
-  },
-];
 
 export type UpcomingEarningsSourceItem = {
   symbol: string;
@@ -180,15 +164,33 @@ function buildDividendCards(
   return cards;
 }
 
-function dividendDateLabel(card: UpcomingDividendCard): string {
-  if (card.daysLeft === 0) return "Today";
-  if (card.daysLeft === 1) return "Tomorrow";
-  const [y, m, d] = card.paymentDateYmd.split("-").map(Number);
-  return new Date(Date.UTC(y!, m! - 1, d!)).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
+function utcDateFromYmd(ymd: string): Date | null {
+  const [y, m, d] = ymd.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+function shortDateLabel(ymd: string, daysLeft: number): string {
+  if (daysLeft === 0) return "Today";
+  if (daysLeft === 1) return "Tomorrow";
+  const date = utcDateFromYmd(ymd);
+  return date ? date.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" }) : ymd;
+}
+
+/** Tile eyebrow: `Today`, the weekday within the coming week, else the month — cards run past this week. */
+function dayTileEyebrow(ymd: string, daysLeft: number): string {
+  if (daysLeft === 0) return "Today";
+  const date = utcDateFromYmd(ymd);
+  if (!date) return "";
+  return date.toLocaleDateString("en-US", {
+    ...(daysLeft < 7 ? { weekday: "short" } : { month: "short" }),
     timeZone: "UTC",
   });
+}
+
+function dayTileNumber(ymd: string): string {
+  const date = utcDateFromYmd(ymd);
+  return date ? String(date.getUTCDate()) : "—";
 }
 
 function formatDividendUsd(value: number): string {
@@ -233,10 +235,35 @@ function useUpcomingDividends(symbolsKey: string, enabled: boolean) {
   };
 }
 
-function earningsDateLabel(card: UpcomingEarningsCard): string {
-  if (card.daysLeft === 0) return "Today";
-  if (card.daysLeft === 1) return "Tomorrow";
-  return card.earningsDateDisplay;
+/** Equities held in any non-combined portfolio (combined books would double count). */
+function useHeldEquities() {
+  const { portfolios, holdingsByPortfolioId, portfolioDisplayReady } = usePortfolioWorkspace();
+
+  return useMemo(() => {
+    const sources = new Map<string, UpcomingEarningsSourceItem>();
+    /** Symbol → the portfolio holding the largest position in it. */
+    const holder = new Map<string, { id: string; value: number }>();
+    const sharesHeldBySymbol = new Map<string, number>();
+    for (const p of portfolios) {
+      if (portfolioIsCombined(p)) continue;
+      for (const h of holdingsByPortfolioId[p.id] ?? []) {
+        const key = h.symbol.trim().toUpperCase();
+        if (!key || !(h.shares > 0)) continue;
+        sharesHeldBySymbol.set(key, (sharesHeldBySymbol.get(key) ?? 0) + h.shares);
+        const prev = holder.get(key);
+        if (!prev || h.currentValue > prev.value) holder.set(key, { id: p.id, value: h.currentValue });
+        if (sources.has(key)) continue;
+        if (key === "USD" || isSupportedCryptoAssetSymbol(key) || isCustomPortfolioSymbol(key)) continue;
+        sources.set(key, { symbol: key, name: h.name || key, logoUrl: displayLogoUrlForPortfolioSymbol(key) });
+      }
+    }
+    return {
+      sources: [...sources.values()],
+      holderPortfolioIdBySymbol: new Map([...holder].map(([k, v]) => [k, v.id])),
+      sharesHeldBySymbol,
+      ready: portfolioDisplayReady,
+    };
+  }, [portfolios, holdingsByPortfolioId, portfolioDisplayReady]);
 }
 
 function earningsPreviewItemFromCard(card: UpcomingEarningsCard): EarningsCalendarItem {
@@ -251,6 +278,53 @@ function earningsPreviewItemFromCard(card: UpcomingEarningsCard): EarningsCalend
   };
 }
 
+const DAY_TILE_CLASS = cn(
+  "group flex h-full w-full min-w-0 flex-col items-center gap-2 px-1 py-3 text-center transition-colors",
+  MOBILE_ELEVATED_CARD_CLASS,
+);
+
+/** Earnings-calendar day look: eyebrow · day number · logo · ticker (· detail). */
+function DayTileContent({
+  ymd,
+  daysLeft,
+  todayClassName,
+  name,
+  logoUrl,
+  symbol,
+  detail,
+}: {
+  ymd: string;
+  daysLeft: number;
+  todayClassName: string;
+  name: string;
+  logoUrl: string;
+  symbol: string;
+  detail?: string;
+}) {
+  return (
+    <>
+      <span
+        className={cn(
+          "truncate text-[12px] font-medium leading-4",
+          daysLeft === 0 ? todayClassName : "text-fg-muted",
+        )}
+      >
+        {dayTileEyebrow(ymd, daysLeft)}
+      </span>
+      <span className="text-[20px] font-semibold leading-6 tabular-nums text-fg">{dayTileNumber(ymd)}</span>
+      <CompanyLogo name={name} logoUrl={logoUrl} symbol={symbol} size="md" className="h-8 w-8 shrink-0 rounded-[10px]" />
+      <span className="w-full min-w-0 space-y-0.5">
+        <span className="block truncate text-[13px] font-semibold leading-4 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
+          {symbol}
+        </span>
+        {detail ? (
+          <span className="block truncate text-[12px] leading-4 tabular-nums text-fg-muted">{detail}</span>
+        ) : null}
+      </span>
+    </>
+  );
+}
+
 function EarningsCard({
   card,
   onOpen,
@@ -258,59 +332,39 @@ function EarningsCard({
   card: UpcomingEarningsCard;
   onOpen: (card: UpcomingEarningsCard) => void;
 }) {
+  const label = card.daysLeft > 1 ? card.earningsDateDisplay : shortDateLabel(card.earningsDateYmd, card.daysLeft);
   return (
     <button
       type="button"
       onClick={() => onOpen(card)}
-      aria-label={`${card.symbol} earnings ${earningsDateLabel(card)}`}
-      className={cn(
-        "group flex h-full w-full min-w-0 cursor-pointer flex-col p-3 text-left transition-colors",
-        MOBILE_ELEVATED_CARD_CLASS,
-        "hover:bg-surface-muted/60",
-      )}
+      aria-label={`${card.symbol} earnings ${label}`}
+      className={cn(DAY_TILE_CLASS, "cursor-pointer hover:bg-surface-muted/60")}
     >
-      <CompanyLogo
+      <DayTileContent
+        ymd={card.earningsDateYmd}
+        daysLeft={card.daysLeft}
+        todayClassName="text-down"
         name={card.name}
         logoUrl={card.logoUrl}
         symbol={card.symbol}
-        size="40"
-        className="h-9 w-9 shrink-0 rounded-[10px]"
       />
-      <div className="mt-8 min-w-0 space-y-0.5">
-        <p className="truncate text-[13px] font-semibold leading-4 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
-          {card.symbol}
-        </p>
-        <p className="truncate text-[12px] leading-4 text-fg-muted">{earningsDateLabel(card)}</p>
-      </div>
     </button>
   );
 }
 
 function DividendCard({ card }: { card: UpcomingDividendCard }) {
-  const label = dividendDateLabel(card);
-  const className = cn(
-    "group flex h-full w-full min-w-0 flex-col p-3 text-left transition-colors",
-    MOBILE_ELEVATED_CARD_CLASS,
-    card.href && "hover:bg-surface-muted/60",
-  );
+  const label = shortDateLabel(card.paymentDateYmd, card.daysLeft);
+  const className = cn(DAY_TILE_CLASS, card.href && "hover:bg-surface-muted/60");
   const content = (
-    <>
-      <CompanyLogo
-        name={card.name}
-        logoUrl={card.logoUrl}
-        symbol={card.symbol}
-        size="40"
-        className="h-9 w-9 shrink-0 rounded-[10px]"
-      />
-      <div className="mt-8 min-w-0 space-y-0.5">
-        <p className="truncate text-[13px] font-semibold leading-4 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
-          {card.symbol}
-        </p>
-        <p className="truncate text-[12px] leading-4 tabular-nums text-fg-muted">
-          {label} · {formatDividendUsd(card.receiveUsd)}
-        </p>
-      </div>
-    </>
+    <DayTileContent
+      ymd={card.paymentDateYmd}
+      daysLeft={card.daysLeft}
+      todayClassName="text-up"
+      name={card.name}
+      logoUrl={card.logoUrl}
+      symbol={card.symbol}
+      detail={formatDividendUsd(card.receiveUsd)}
+    />
   );
   const ariaLabel = `${card.symbol} dividend ${formatDividendUsd(card.receiveUsd)} to receive, ${card.estimated ? "estimated " : ""}paid ${label}`;
   return card.href ? (
@@ -324,7 +378,7 @@ function DividendCard({ card }: { card: UpcomingDividendCard }) {
   );
 }
 
-function CarouselArrowButton({
+export function CarouselArrowButton({
   direction,
   label,
   onClick,
@@ -356,20 +410,135 @@ function CarouselArrowButton({
   );
 }
 
-function EarningsCardSkeleton() {
+function DayTileSkeleton({ withDetail }: { withDetail: boolean }) {
   return (
-    <div className={cn("flex w-full min-w-0 flex-col p-3", MOBILE_ELEVATED_CARD_CLASS)}>
-      <div className="h-9 w-9 animate-pulse rounded-[10px] bg-stroke" />
-      <div className="mt-8 space-y-1">
-        <div className="h-3.5 w-10 animate-pulse rounded bg-stroke" />
-        <div className="h-3 w-16 animate-pulse rounded bg-stroke" />
-      </div>
+    <div className={cn("flex w-full min-w-0 flex-col items-center gap-2 px-1 py-3", MOBILE_ELEVATED_CARD_CLASS)}>
+      <div className="h-3 w-7 animate-pulse rounded bg-stroke" />
+      <div className="h-5 w-6 animate-pulse rounded bg-stroke" />
+      <div className="h-8 w-8 animate-pulse rounded-[10px] bg-stroke" />
+      <div className="h-3.5 w-10 animate-pulse rounded bg-stroke" />
+      {withDetail ? <div className="h-3 w-12 animate-pulse rounded bg-stroke" /> : null}
     </div>
   );
 }
 
+type EventsSectionStatus = "loading" | "empty" | "ready";
+
+/** Home section shell: heading, paged carousel of day tiles, skeleton and empty states. */
+function UpcomingEventsSection({
+  title,
+  noun,
+  className,
+  status,
+  items,
+  skeletonWithDetail = false,
+  emptyIllustration,
+  emptyTitle,
+  emptyDescription,
+  children,
+}: {
+  title: string;
+  /** Arrow labels: "Previous {noun}" / "Next {noun}". */
+  noun: string;
+  className?: string;
+  status: EventsSectionStatus;
+  items: readonly { key: string; node: ReactNode }[];
+  skeletonWithDetail?: boolean;
+  emptyIllustration: ReactNode;
+  emptyTitle: string;
+  emptyDescription: string;
+  children?: ReactNode;
+}) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [cardsPerRow, setCardsPerRow] = useState(MAX_CARDS_PER_ROW);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const measure = () => setCardsPerRow(cardsPerRowForWidth(el.clientWidth));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const update = () => {
+      const max = el.scrollWidth - el.clientWidth;
+      setCanPrev(el.scrollLeft > 2);
+      setCanNext(max > 2 && el.scrollLeft < max - 2);
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  }, [status, items.length]);
+
+  const scrollByPage = (dir: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollBy({ left: el.clientWidth * 0.9 * dir, behavior: "smooth" });
+  };
+
+  const cardFlexBasis = cardFlex(cardsPerRow);
+
+  return (
+    <section ref={sectionRef} className={cn("min-w-0", className)} aria-label={title}>
+      <h2 className={cn(STOCK_OVERVIEW_SECTION_HEADING_CLASS, "mb-5 min-w-0 truncate")}>{title}</h2>
+
+      {status === "loading" ? (
+        <div className="flex w-full min-w-0 gap-3 overflow-hidden">
+          {Array.from({ length: cardsPerRow }).map((_, i) => (
+            <div key={i} className="min-w-0" style={{ flex: cardFlexBasis }}>
+              <DayTileSkeleton withDetail={skeletonWithDetail} />
+            </div>
+          ))}
+        </div>
+      ) : status === "empty" ? (
+        <Empty variant="card">
+          <EmptyHeader>
+            {emptyIllustration}
+            <EmptyTitle>{emptyTitle}</EmptyTitle>
+            <EmptyDescription className="max-w-sm">{emptyDescription}</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      ) : (
+        <div className="relative">
+          <div
+            ref={scrollerRef}
+            className="mobile-scroll-x flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {items.map((item) => (
+              <div key={item.key} className="min-w-0 snap-start" style={{ flex: cardFlexBasis }}>
+                {item.node}
+              </div>
+            ))}
+          </div>
+          {canPrev ? (
+            <CarouselArrowButton direction="prev" label={`Previous ${noun}`} onClick={() => scrollByPage(-1)} />
+          ) : null}
+          {canNext ? (
+            <CarouselArrowButton direction="next" label={`Next ${noun}`} onClick={() => scrollByPage(1)} />
+          ) : null}
+        </div>
+      )}
+
+      {children}
+    </section>
+  );
+}
+
 /**
- * Upcoming earnings / dividends cards — watchlist by default, or pass `sourceItems` (e.g. portfolio holdings).
+ * Upcoming earnings cards — watchlist + held stocks by default, or pass `sourceItems` (e.g. portfolio holdings).
  */
 export function UpcomingEarningsCarousel({
   className,
@@ -386,38 +555,16 @@ export function UpcomingEarningsCarousel({
   const useWatchlist = sourceItems == null;
   const { stocks, loading: watchlistLoading, ready: watchlistReady } =
     useWatchlistEnrichedItems({ enabled: useWatchlist });
-  const sectionRef = useRef<HTMLElement>(null);
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [cardsPerRow, setCardsPerRow] = useState(MAX_CARDS_PER_ROW);
   const [bySymbol, setBySymbol] = useState<Record<string, PortfolioEarningsDateEntry>>({});
   const [datesLoading, setDatesLoading] = useState(false);
   const [datesFailed, setDatesFailed] = useState(false);
   const [datesSettledKey, setDatesSettledKey] = useState<string | null>(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
   const [previewItem, setPreviewItem] = useState<EarningsCalendarItem | null>(null);
-  const [mode, setMode] = useState<UpcomingEventsMode>("earnings");
-  const isDividends = mode === "dividends";
 
   const { watchlists, serverSynced: watchlistServerSynced } = useWatchlistClient();
-  const { portfolios, holdingsByPortfolioId, portfolioDisplayReady } = usePortfolioWorkspace();
+  const held = useHeldEquities();
 
-  /** Equities held in any non-combined portfolio (combined books would double count). */
-  const heldEquitySources = useMemo((): UpcomingEarningsSourceItem[] => {
-    const byKey = new Map<string, UpcomingEarningsSourceItem>();
-    for (const p of portfolios) {
-      if (portfolioIsCombined(p)) continue;
-      for (const h of holdingsByPortfolioId[p.id] ?? []) {
-        const key = h.symbol.trim().toUpperCase();
-        if (!key || !(h.shares > 0) || byKey.has(key)) continue;
-        if (key === "USD" || isSupportedCryptoAssetSymbol(key) || isCustomPortfolioSymbol(key)) continue;
-        byKey.set(key, { symbol: key, name: h.name || key, logoUrl: displayLogoUrlForPortfolioSymbol(key) });
-      }
-    }
-    return [...byKey.values()];
-  }, [portfolios, holdingsByPortfolioId]);
-
-  /** Earnings: stocks from every watchlist plus every portfolio; the active list's enriched rows win on identity. */
+  /** Stocks from every watchlist plus every portfolio; the active list's enriched rows win on identity. */
   const sources = useMemo((): UpcomingEarningsSourceItem[] => {
     if (sourceItems != null) {
       return sourceItems.map((r) => ({
@@ -438,9 +585,9 @@ export function UpcomingEarningsCarousel({
       if (r.kind !== "stock") continue;
       add({ symbol: r.symbol, name: r.name, logoUrl: r.logoUrl || displayLogoUrlForPortfolioSymbol(r.symbol), href: r.href || null });
     }
-    for (const h of heldEquitySources) add(h);
+    for (const h of held.sources) add(h);
     return [...byKey.values()];
-  }, [sourceItems, stocks, watchlists, heldEquitySources]);
+  }, [sourceItems, stocks, watchlists, held.sources]);
 
   const stockSymbols = useMemo(
     () => sources.map((r) => r.symbol.trim().toUpperCase()).filter(Boolean),
@@ -449,11 +596,10 @@ export function UpcomingEarningsCarousel({
   const symbolsKey = useMemo(() => portfolioEarningsSymbolsKey(stockSymbols), [stockSymbols]);
   const noSymbols = stockSymbols.length === 0;
   /** Wait for watchlists + holdings so the symbol set is fetched once, not re-requested as each source lands. */
-  const earningsSourcesReady =
-    !useWatchlist || (watchlistReady && watchlistServerSynced && portfolioDisplayReady);
+  const sourcesReady = !useWatchlist || (watchlistReady && watchlistServerSynced && held.ready);
 
   useEffect(() => {
-    if (!earningsSourcesReady) return;
+    if (!sourcesReady) return;
     if (!symbolsKey) {
       setBySymbol({});
       setDatesLoading(false);
@@ -485,201 +631,34 @@ export function UpcomingEarningsCarousel({
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [earningsSourcesReady, symbolsKey]);
+  }, [sourcesReady, symbolsKey]);
 
   const cards = useMemo(() => buildCards(sources, bySymbol), [sources, bySymbol]);
-  /** Dividends come from holdings only — you only receive them on shares you own. */
-  const heldDividendSources = heldEquitySources;
-  const dividendSymbolsKey = useMemo(
-    () => portfolioEarningsSymbolsKey(heldDividendSources.map((s) => s.symbol)),
-    [heldDividendSources],
-  );
-  const dividends = useUpcomingDividends(dividendSymbolsKey, isDividends);
-  /** Symbol → the (non-combined) portfolio holding the largest position in it. */
-  const holderPortfolioIdBySymbol = useMemo(() => {
-    const best = new Map<string, { id: string; value: number }>();
-    for (const p of portfolios) {
-      if (portfolioIsCombined(p)) continue;
-      for (const h of holdingsByPortfolioId[p.id] ?? []) {
-        const key = h.symbol.trim().toUpperCase();
-        if (!key || h.shares <= 0) continue;
-        const prev = best.get(key);
-        if (!prev || h.currentValue > prev.value) best.set(key, { id: p.id, value: h.currentValue });
-      }
-    }
-    return new Map([...best].map(([k, v]) => [k, v.id]));
-  }, [portfolios, holdingsByPortfolioId]);
-  /** Symbol → total shares across non-combined portfolios (combined books would double count). */
-  const sharesHeldBySymbol = useMemo(() => {
-    const out = new Map<string, number>();
-    for (const p of portfolios) {
-      if (portfolioIsCombined(p)) continue;
-      for (const h of holdingsByPortfolioId[p.id] ?? []) {
-        const key = h.symbol.trim().toUpperCase();
-        if (!key || !(h.shares > 0)) continue;
-        out.set(key, (out.get(key) ?? 0) + h.shares);
-      }
-    }
-    return out;
-  }, [portfolios, holdingsByPortfolioId]);
-  const dividendCards = useMemo(
-    () =>
-      isDividends
-        ? buildDividendCards(heldDividendSources, dividends.rows ?? [], holderPortfolioIdBySymbol, sharesHeldBySymbol)
-        : [],
-    [isDividends, heldDividendSources, dividends.rows, holderPortfolioIdBySymbol, sharesHeldBySymbol],
-  );
-  const visibleCount = isDividends ? dividendCards.length : cards.length;
-
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const measure = () => setCardsPerRow(cardsPerRowForWidth(el.clientWidth));
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const cardFlexBasis = cardFlex(cardsPerRow);
-
-  const updateScrollState = () => {
-    const el = scrollerRef.current;
-    if (!el) {
-      setCanPrev(false);
-      setCanNext(false);
-      return;
-    }
-    const max = el.scrollWidth - el.clientWidth;
-    setCanPrev(el.scrollLeft > 2);
-    setCanNext(max > 2 && el.scrollLeft < max - 2);
-  };
-
-  useEffect(() => {
-    updateScrollState();
-    const el = scrollerRef.current;
-    if (!el) return;
-    const onScroll = () => updateScrollState();
-    el.addEventListener("scroll", onScroll, { passive: true });
-    const ro = new ResizeObserver(() => updateScrollState());
-    ro.observe(el);
-    return () => {
-      el.removeEventListener("scroll", onScroll);
-      ro.disconnect();
-    };
-  }, [visibleCount]);
-
-  useEffect(() => {
-    scrollerRef.current?.scrollTo({ left: 0 });
-  }, [mode]);
-
-  const scrollByPage = (dir: 1 | -1) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollBy({ left: el.clientWidth * 0.9 * dir, behavior: "smooth" });
-  };
-
-  const sourcesReady = isDividends ? portfolioDisplayReady : earningsSourcesReady;
-  const sourcesLoading = isDividends ? false : useWatchlist ? watchlistLoading && noSymbols : false;
-  const sourcesEmpty = isDividends ? heldDividendSources.length === 0 : noSymbols;
-
-  const modeLoading = isDividends ? dividends.loading : datesLoading || datesSettledKey !== symbolsKey;
-  const modeFailed = isDividends ? dividends.failed : datesFailed;
-  const showSkeleton =
-    (!sourcesReady || sourcesLoading || modeLoading) && visibleCount === 0 && !sourcesEmpty;
-  const showEmpty = sourcesReady && !modeLoading && (sourcesEmpty || visibleCount === 0);
+  const loading = datesLoading || datesSettledKey !== symbolsKey;
+  const sourcesLoading = useWatchlist && watchlistLoading && noSymbols;
+  const status: EventsSectionStatus =
+    (!sourcesReady || sourcesLoading || loading) && cards.length === 0 && !noSymbols
+      ? "loading"
+      : sourcesReady && !loading && (noSymbols || cards.length === 0)
+        ? "empty"
+        : "ready";
+  const failed = !noSymbols && datesFailed;
 
   return (
-    <section
-      ref={sectionRef}
-      className={cn("min-w-0", className)}
-      aria-label={isDividends ? "Upcoming dividends" : "Upcoming earnings"}
+    <UpcomingEventsSection
+      title="Upcoming earnings"
+      noun="earnings"
+      className={className}
+      status={status}
+      items={cards.map((card) => ({
+        key: card.symbol,
+        node: <EarningsCard card={card} onOpen={(c) => setPreviewItem(earningsPreviewItemFromCard(c))} />,
+      }))}
+      emptyIllustration={<EarningsEmptyIllustration className="mb-4" />}
+      emptyTitle={failed ? "Couldn’t load earnings dates" : "No upcoming earnings"}
+      emptyDescription={noSymbols ? emptyNoSymbols : failed ? "Refresh to try again." : emptyNoDates}
     >
-      <div className="mb-5 flex items-center justify-between gap-2">
-        <h2 className={cn(STOCK_OVERVIEW_SECTION_HEADING_CLASS, "min-w-0 truncate")}>
-          {isDividends ? "Upcoming dividends" : "Upcoming earnings"}
-        </h2>
-        <div className="flex shrink-0 items-center gap-2">
-          <SegmentedControl
-            aria-label="Upcoming event type"
-            options={MODE_OPTIONS}
-            value={mode}
-            onChange={setMode}
-            size="sm"
-          />
-        </div>
-      </div>
-
-      {showSkeleton ? (
-        <div className="flex w-full min-w-0 gap-3 overflow-hidden">
-          {Array.from({ length: cardsPerRow }).map((_, i) => (
-            <div key={i} className="min-w-0" style={{ flex: cardFlexBasis }}>
-              <EarningsCardSkeleton />
-            </div>
-          ))}
-        </div>
-      ) : showEmpty ? (
-        <Empty variant="card">
-          <EmptyHeader>
-            <EarningsEmptyIllustration className="mb-4" />
-            <EmptyTitle>
-              {!sourcesEmpty && modeFailed
-                ? isDividends
-                  ? "Couldn’t load dividends"
-                  : "Couldn’t load earnings dates"
-                : isDividends
-                  ? "No upcoming dividends"
-                  : "No upcoming earnings"}
-            </EmptyTitle>
-            <EmptyDescription className="max-w-sm">
-              {sourcesEmpty
-                ? isDividends
-                  ? "Add stocks to a portfolio to see upcoming dividends."
-                  : emptyNoSymbols
-                : modeFailed
-                  ? "Refresh to try again."
-                  : isDividends
-                    ? "No upcoming dividends for your holdings."
-                    : emptyNoDates}
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <div className="relative">
-          <div
-            ref={scrollerRef}
-            className="mobile-scroll-x flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {isDividends
-              ? dividendCards.map((card) => (
-                  <div key={card.symbol} className="min-w-0 snap-start" style={{ flex: cardFlexBasis }}>
-                    <DividendCard card={card} />
-                  </div>
-                ))
-              : cards.map((card) => (
-                  <div key={card.symbol} className="min-w-0 snap-start" style={{ flex: cardFlexBasis }}>
-                    <EarningsCard card={card} onOpen={(c) => setPreviewItem(earningsPreviewItemFromCard(c))} />
-                  </div>
-                ))}
-          </div>
-          {canPrev ? (
-            <CarouselArrowButton
-              direction="prev"
-              label={isDividends ? "Previous dividends" : "Previous earnings"}
-              onClick={() => scrollByPage(-1)}
-            />
-          ) : null}
-          {canNext ? (
-            <CarouselArrowButton
-              direction="next"
-              label={isDividends ? "Next dividends" : "Next earnings"}
-              onClick={() => scrollByPage(1)}
-            />
-          ) : null}
-        </div>
-      )}
-
-      {!isDividends && datesLoading && cards.length > 0 ? (
+      {datesLoading && cards.length > 0 ? (
         <div className="mt-2 flex items-center gap-2 text-[11px] text-fg-muted">
           <Spinner className="size-3 text-[#71717A]" />
           Updating dates…
@@ -687,6 +666,46 @@ export function UpcomingEarningsCarousel({
       ) : null}
 
       <EarningsPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />
-    </section>
+    </UpcomingEventsSection>
+  );
+}
+
+/** Next dividend payout per stock held across the user's portfolios (not the watchlist). */
+export function UpcomingDividendsCarousel({ className }: { className?: string }) {
+  const held = useHeldEquities();
+  const symbolsKey = useMemo(() => portfolioEarningsSymbolsKey(held.sources.map((s) => s.symbol)), [held.sources]);
+  const dividends = useUpcomingDividends(symbolsKey, held.ready);
+  const cards = useMemo(
+    () =>
+      buildDividendCards(held.sources, dividends.rows ?? [], held.holderPortfolioIdBySymbol, held.sharesHeldBySymbol),
+    [held, dividends.rows],
+  );
+  const noSymbols = held.sources.length === 0;
+  const status: EventsSectionStatus =
+    (!held.ready || dividends.loading) && cards.length === 0 && !noSymbols
+      ? "loading"
+      : held.ready && !dividends.loading && (noSymbols || cards.length === 0)
+        ? "empty"
+        : "ready";
+  const failed = !noSymbols && dividends.failed;
+
+  return (
+    <UpcomingEventsSection
+      title="Upcoming dividends"
+      noun="dividends"
+      className={className}
+      status={status}
+      items={cards.map((card) => ({ key: card.symbol, node: <DividendCard card={card} /> }))}
+      skeletonWithDetail
+      emptyIllustration={<PaymentsEmptyIllustration className="mb-4" />}
+      emptyTitle={failed ? "Couldn’t load dividends" : "No upcoming dividends"}
+      emptyDescription={
+        noSymbols
+          ? "Add stocks to a portfolio to see upcoming dividends."
+          : failed
+            ? "Refresh to try again."
+            : "No upcoming dividends for your holdings."
+      }
+    />
   );
 }

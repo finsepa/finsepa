@@ -57,6 +57,8 @@ export type PortfolioWorkspaceContextValue = {
   openSnaptradeSyncModal: (portfolioId: string) => void;
   /** Updates visibility for a portfolio and syncs the public listing (same behavior as Edit → Save). */
   updatePortfolioPrivacy: (portfolioId: string, nextPrivacy: PortfolioPrivacy) => void;
+  /** Manage portfolios → Save: list order (Home + pickers). */
+  savePortfolioOrder: (order: readonly string[]) => void;
   /**
    * True when the selected portfolio is read-only for ledger edits: combined aggregate, demo sample,
    * or a Free offline/brokerage freeze (no trades / imports / sync). Rename/delete in Edit still allowed.

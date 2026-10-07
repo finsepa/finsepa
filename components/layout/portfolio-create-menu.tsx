@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Briefcase, Layers2, Plus } from "@/lib/icons";
 
 import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
@@ -34,8 +34,16 @@ type CreateItemId = "createPortfolio" | "createCombined" | "createDemo";
 export function PortfolioCreateMenu({
   "aria-label": ariaLabel = "Create portfolio",
   variant = "default",
+  label,
+  icon,
+  align,
 }: {
   "aria-label"?: string;
+  /** Overrides the `text` / `button` caption (“Create” / “Add”). */
+  label?: string;
+  /** Overrides the leading `+` on `text` / `button`. */
+  icon?: ReactNode;
+  align?: "leading" | "trailing" | "center";
   /**
    * `text` — bordered `+ Create` text button for section headers (e.g. Home → My portfolios).
    * `button` — primary “+ Add” for empty states; menu opens centered below.
@@ -149,13 +157,13 @@ export function PortfolioCreateMenu({
       >
         {variant === "button" ? (
           <>
-            <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-            Add
+            {icon ?? <Plus className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />}
+            {label ?? "Add"}
           </>
         ) : variant === "text" ? (
           <>
-            <Plus className="size-4 shrink-0" strokeWidth={2} aria-hidden />
-            Create
+            {icon ?? <Plus className="size-4 shrink-0" strokeWidth={2} aria-hidden />}
+            {label ?? "Create"}
           </>
         ) : (
           <Briefcase className="h-5 w-5" strokeWidth={2} aria-hidden />
@@ -166,16 +174,12 @@ export function PortfolioCreateMenu({
         open={open}
         anchorRef={rootRef}
         ref={menuPortalRef}
-        align={variant === "button" ? "center" : "trailing"}
+        align={align ?? (variant === "button" ? "center" : "trailing")}
         className="w-max min-w-[260px] max-w-[min(calc(100vw-2rem),320px)]"
       >
         <div
           role="menu"
-          className={cn(
-            dropdownMenuPanelClassName(),
-            variant === "button" ? "origin-top" : "origin-top-right",
-            "[animation:quick-add-dropdown-in_220ms_ease-out_both] motion-reduce:[animation:none]",
-          )}
+          className={dropdownMenuPanelClassName()}
         >
           {items.map((item) => {
             const playing = playingId === item.id;

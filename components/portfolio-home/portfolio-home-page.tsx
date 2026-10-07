@@ -21,14 +21,16 @@ import { ChangeCaretIcon } from "@/components/screener/change-pct";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { PortfolioListLogo } from "@/components/portfolio/portfolio-brokerage-logo";
 import { BiggestContributors } from "@/components/portfolio-home/biggest-contributors";
-import { PortfolioCreateMenu } from "@/components/layout/portfolio-create-menu";
-import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
+import { PortfolioCreateMenu } from "@/components/layout/portfolio-create-menu";import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
 import { FollowedSuperinvestorsCarousel } from "@/components/portfolio-home/followed-superinvestors-carousel";
 import { HomeMarketTiles } from "@/components/portfolio-home/home-market-tiles";
 import { UsMarketsSessionLabel } from "@/components/screener/us-markets-session-label";
 import { WatchlistRailScrollContent } from "@/components/layout/watchlist-rail";
 import { OverlayScrollArea } from "@/components/design-system/overlay-scroll-area";
-import { UpcomingEarningsCarousel } from "@/components/portfolio-home/upcoming-earnings-carousel";
+import {
+  UpcomingDividendsCarousel,
+  UpcomingEarningsCarousel,
+} from "@/components/portfolio-home/upcoming-earnings-carousel";
 import { WATCHLIST_PANEL_WIDTH_PX } from "@/components/layout/watchlist-rail-layout-context";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import {
@@ -58,7 +60,9 @@ import {
 import { lifetimeEquityProfitUsd } from "@/lib/portfolio/realized-pnl-from-trades";
 import { useWatchlistEnrichedItems } from "@/lib/watchlist/use-watchlist-enriched-items";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
-import { ChevronDown, Maximize2 } from "@/lib/icons";
+import { ChevronDown, Maximize2, Settings } from "@/lib/icons";
+import { ManagePortfoliosModal } from "@/components/portfolio-home/manage-portfolios-modal";
+import { topbarSquircleActiveClass, topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { ChartEmptyIllustration, PortfolioEmptyIllustration } from "@/components/portfolio-home/portfolio-empty-illustration";
 import {
   Empty,
@@ -357,6 +361,7 @@ export function PortfolioHomePage() {
   const [chartRange, setChartRange] = useState<PortfolioChartRange>("all");
   const [periodSnap, setPeriodSnap] = useState<PortfolioChartPeriodSnapshot | null>(null);
   const [chartCollapsed, setChartCollapsed] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   /** Off until the first toggle so a remembered collapsed state doesn't animate on load. */
   const [animateCollapse, setAnimateCollapse] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
@@ -390,11 +395,8 @@ export function PortfolioHomePage() {
       ? `${countManualPortfoliosForFreeQuota(portfolios) + demoSlot}/${(plan.maxRealPortfolios ?? FREE_MAX_REAL_PORTFOLIOS) + demoSlot}`
       : null;
 
-  /** Includes the demo portfolio. Combined portfolios hold merged copies of their sources — skip them to avoid double counting. */
-  const netWorthPortfolios = useMemo(
-    () => portfolios.filter((p) => !portfolioIsCombined(p)),
-    [portfolios],
-  );
+  /** Includes the demo portfolio; skips combined views (double counting). */
+  const netWorthPortfolios = useMemo(() => portfolios.filter((p) => !portfolioIsCombined(p)), [portfolios]);
 
   const aggregateTransactions = useMemo(() => {
     const out: PortfolioTransaction[] = [];
@@ -595,8 +597,20 @@ export function PortfolioHomePage() {
                 </span>
               ) : null}
             </div>
-            {ready && netWorthPortfolios.length > 0 ? (
-              <PortfolioCreateMenu variant="text" aria-label="Create portfolio" />
+            {ready && portfolios.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setManageOpen(true)}
+                aria-label="Manage portfolios"
+                title="Manage portfolios"
+                className={cn(
+                  topbarSquircleIconClass,
+                  "shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
+                  manageOpen && topbarSquircleActiveClass,
+                )}
+              >
+                <Settings className="size-4" strokeWidth={2} aria-hidden />
+              </button>
             ) : null}
           </div>
           {!valuesReady ? (
@@ -633,6 +647,8 @@ export function PortfolioHomePage() {
           )}
         </section>
 
+        <ManagePortfoliosModal open={manageOpen} onClose={() => setManageOpen(false)} />
+
         <BiggestContributors
           holdings={aggregateHoldings}
           transactions={aggregateTransactions}
@@ -640,6 +656,7 @@ export function PortfolioHomePage() {
         />
 
         <UpcomingEarningsCarousel />
+        <UpcomingDividendsCarousel />
         <FollowedSuperinvestorsCarousel />
       </div>
 

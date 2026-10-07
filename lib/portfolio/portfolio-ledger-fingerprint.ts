@@ -45,6 +45,8 @@ export function portfolioWorkspacePersistFingerprint(saved: PersistedPortfolioSt
         p.isDemo === true ? "1" : "0",
         [...(p.combinedFrom ?? [])].sort().join(","),
         snap,
+        // Appended only when set so fingerprints of existing workspaces stay unchanged.
+        ...(p.sortOrder != null ? [`o${p.sortOrder}`] : []),
       ].join(":");
     })
     .sort()

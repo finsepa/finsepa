@@ -2761,6 +2761,16 @@ export function PortfolioWorkspaceProvider({
   ]);
   const closeImportTransactions = useCallback(() => setImportTransactionsOpen(false), []);
 
+  const savePortfolioOrder = useCallback((order: readonly string[]) => {
+    const rank = new Map(order.map((id, i) => [id, i]));
+    setPortfolios((prev) =>
+      prev
+        .map((p, i) => ({ p, key: rank.get(p.id) ?? order.length + i }))
+        .sort((a, b) => a.key - b.key)
+        .map(({ p }, sortOrder): PortfolioEntry => ({ ...p, sortOrder })),
+    );
+  }, []);
+
   const updatePortfolioPrivacy = useCallback(
     (portfolioId: string, nextPrivacy: PortfolioPrivacy) => {
       const entry = portfolios.find((x) => x.id === portfolioId);
@@ -2961,6 +2971,7 @@ export function PortfolioWorkspaceProvider({
       openSnaptradeSyncModal,
       resyncLinkedPortfolio,
       updatePortfolioPrivacy,
+      savePortfolioOrder,
       selectedPortfolioReadOnly,
       newTransactionOpen,
       openNewTransaction,
@@ -3010,6 +3021,7 @@ export function PortfolioWorkspaceProvider({
       openSnaptradeSyncModal,
       resyncLinkedPortfolio,
       updatePortfolioPrivacy,
+      savePortfolioOrder,
       selectedPortfolioReadOnly,
       newTransactionOpen,
       openNewTransaction,

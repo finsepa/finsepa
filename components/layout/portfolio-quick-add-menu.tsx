@@ -25,6 +25,8 @@ import {
   portfolioIsCombined,
   portfolioIsDemo,
   portfolioIsLiveBrokerage,
+  portfolioIsOfflineBrokerage,
+  type PortfolioEntry,
 } from "@/components/portfolio/portfolio-types";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
@@ -43,6 +45,16 @@ type ManageItemId = "edit" | "delete";
 const PRIMARY_TRIGGER_CLASS = `flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-stroke-muted bg-fg text-surface ${whiteSurfaceButtonShadowClass} ${primaryButtonGradientStrokeClass} transition-opacity duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15`;
 const GHOST_TRIGGER_CLASS =
   "flex size-7 shrink-0 items-center justify-center rounded-[8px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15";
+
+/** Same rules as the workspace's read-only flag, so every listed book has working actions. */
+export function portfolioAcceptsTransactions(p: PortfolioEntry, isFreePlan: boolean): boolean {
+  return (
+    !portfolioIsCombined(p) &&
+    !portfolioIsDemo(p) &&
+    !portfolioIsOfflineBrokerage(p) &&
+    !(isFreePlan && p.snaptrade)
+  );
+}
 
 /**
  * (+) quick menu — transaction actions for the selected portfolio; creating portfolios lives in

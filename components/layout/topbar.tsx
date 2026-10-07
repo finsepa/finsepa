@@ -8,6 +8,7 @@ import { TopbarDelayedTooltip } from "./topbar-delayed-tooltip";
 import { TopbarSearch } from "./topbar-search";
 import { NotificationsPanelModal } from "./notifications-panel-modal";
 import { useNotificationsClient } from "@/lib/notifications/use-notifications-client";
+import { TopbarAddMenu } from "./topbar-add-menu";
 import { TopbarMobileAppButton } from "./topbar-mobile-app-button";
 import { TopbarUpgradeButton } from "./topbar-upgrade-button";
 import { TopbarUserMenu } from "./topbar-user-menu";
@@ -142,6 +143,9 @@ export function Topbar({
         >
           <TopbarUpgradeButton userId={userId} platformTrialDaysLeft={platformTrialDaysLeft} isPro={isPro} />
 
+          <div className="hidden shrink-0 md:flex">
+            <TopbarAddMenu />
+          </div>
           {TOPBAR_SHOW_NOTIFICATIONS ? (
             <TopbarDelayedTooltip label="Notifications" className="inline-flex shrink-0" enabled={!notificationsOpen}>
               <button

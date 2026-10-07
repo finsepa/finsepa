@@ -1038,7 +1038,6 @@ export function MarketsSection({
           <IndexCards
             initialCards={activePayload.indexCards}
             marketCacheSegment={activePayload.companiesMarketCacheSegment}
-            showLogos
           />
           {!isStocksDrill ? (
             <div className="mb-5 min-w-0 w-full max-w-full max-md:mb-4">

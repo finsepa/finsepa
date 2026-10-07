@@ -8,7 +8,6 @@ import { topbarSquircleIconClass } from "@/components/design-system/topbar-contr
 
 import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
-import { PortfolioQuickAddMenu } from "@/components/layout/portfolio-quick-add-menu";
 import { PortfolioAllocationView } from "@/components/portfolio/portfolio-allocation-view";
 import { PortfolioEarningsTable } from "@/components/portfolio/portfolio-earnings-table";
 import { PortfolioEmptySetupTiles } from "@/components/portfolio/portfolio-empty-setup-tiles";
@@ -441,9 +440,6 @@ export function PortfolioPageView({
         >
           <Pencil className="h-5 w-5" strokeWidth={2} aria-hidden />
         </button>
-        {!ledgerActionsLocked && !showDemoBanner && !showEmptySetupTiles ? (
-          <PortfolioQuickAddMenu variant="primary" showDesktopLabel aria-label="Add transaction" />
-        ) : null}
       </>
     );
 

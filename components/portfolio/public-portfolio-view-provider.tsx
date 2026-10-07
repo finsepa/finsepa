@@ -58,6 +58,7 @@ export function PublicPortfolioViewProvider({
       openSnaptradeSyncModal: noop,
       resyncLinkedPortfolio: async () => {},
       updatePortfolioPrivacy: noop,
+      savePortfolioOrder: noop,
       selectedPortfolioReadOnly: true,
       newTransactionOpen: false,
       openNewTransaction: noop,
