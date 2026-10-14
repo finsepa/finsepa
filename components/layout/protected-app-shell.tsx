@@ -8,6 +8,7 @@ import { PATH_LOGIN } from "@/lib/auth/routes";
 import { scheduleWelcomeTrialStartEmailFromHeaders } from "@/lib/auth/welcome-trial-start-on-login";
 import { avatarUrlFromUser, displayNameFromUser, initialsFromUser } from "@/lib/auth/user-display";
 import { FreePlanLimitsIntroModal } from "@/components/account/free-plan-modals";
+import { GoogleAnalyticsSignUp } from "@/components/analytics/google-analytics-sign-up";
 import { PlanAccessProvider } from "@/components/account/plan-access-provider";
 import { ProtectedAppShellInner } from "@/components/layout/protected-app-shell-inner";
 import { AuthSessionUrlBootstrap } from "@/components/onboarding/onboarding-auth-bootstrap";
@@ -135,6 +136,7 @@ export async function ProtectedAppShell({
           mobileTopbarVariant={mobileTopbarVariant}
         >
           <AuthSessionUrlBootstrap />
+          <GoogleAnalyticsSignUp userId={user.id} createdAt={user.created_at} />
           <FreePlanLimitsIntroModal />
           {children}
         </ProtectedAppShellInner>

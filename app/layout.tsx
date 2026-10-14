@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { SupabaseBrowserEnvProvider } from "@/components/supabase/supabase-browser-env-provider";
 import { AuthTokenLandingBootstrap } from "@/components/auth/auth-token-landing-bootstrap";
 import { ThemeProvider } from "@/components/theme/theme-provider";
@@ -53,6 +54,9 @@ export default function RootLayout({
 
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <GoogleAnalytics />
+      </head>
       <body className="flex min-h-full flex-col">
         <ThemeProvider>
           <SupabaseBrowserEnvProvider url={supabaseUrl} anonKey={supabaseAnonKey}>
