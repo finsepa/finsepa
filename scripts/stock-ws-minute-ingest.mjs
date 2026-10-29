@@ -41,6 +41,11 @@ const INCLUDE_US_QUOTE = process.env.STOCK_WS_US_QUOTE !== "0";
 const REST_POLL_MS = Number(process.env.STOCK_WS_REST_POLL_MS ?? 20_000);
 const REST_POLL_BATCH = Number(process.env.STOCK_WS_REST_POLL_BATCH ?? 4);
 const WS_STALE_MS = Number(process.env.STOCK_WS_STALE_MS ?? 90_000);
+/**
+ * Regular session only: an authorized trades socket with zero messages this long is a zombie (it stayed
+ * "authorized" for weeks with no data while REST fallback burned ~25k EODHD credits/day). Force reconnect.
+ */
+const WS_DEAD_MS = Number(process.env.STOCK_WS_DEAD_MS ?? 180_000);
 const STATIC_TICKERS = (process.env.STOCK_WS_TICKERS ?? "")
   .split(",")
   .map((s) => normalizeStockTicker(s))
@@ -588,6 +593,7 @@ function attachWsHandlers(ws, source, onAuthorized) {
 let localSubscribed = new Set();
 let watchPoll = null;
 let tradesAuthorized = false;
+let tradesAuthorizedAtMs = 0;
 let quoteAuthorized = false;
 
 const stopWatchPoll = () => {
@@ -674,6 +680,7 @@ function connectWs() {
     "ws-trade",
     () => {
       tradesAuthorized = true;
+      tradesAuthorizedAtMs = Date.now();
     },
     () => {
       tradesAuthorized = false;
@@ -862,6 +869,19 @@ setInterval(() => {
 setInterval(() => {
   void restPollTick();
 }, REST_POLL_MS);
+
+setInterval(() => {
+  if (getUsEquityMarketSession() !== "regular") return;
+  if (!tradesWs || !tradesAuthorized || subscribedSymbols.size === 0) return;
+  const silentSinceMs = Math.max(lastWsActivityMs, tradesAuthorizedAtMs);
+  if (Date.now() - silentSinceMs < WS_DEAD_MS) return;
+  log("websocket watchdog: no trades while authorized — forcing reconnect", {
+    silentForMs: Date.now() - silentSinceMs,
+    subscribed: subscribedSymbols.size,
+  });
+  // `close` handler resets state and reconnects (re-subscribes on authorize).
+  tradesWs.terminate();
+}, 60_000);
 
 setInterval(() => {
   const snap = writeController.snapshotHealth();
