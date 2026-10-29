@@ -48,6 +48,7 @@ import { MARKET_SNAPSHOT_KEY } from "@/lib/market/market-snapshot-keys";
 import { readMarketSnapshot, readMarketSnapshotSlow } from "@/lib/market/market-snapshot-store";
 import { rebuildMarketSnapshotBlobSingleFlight, readMarketBlobForRebuild } from "@/lib/market/market-snapshot-rebuild";
 import { readCryptoDerivedSnapshot, upsertCryptoDerivedSnapshot, isUsableCryptoDerivedSnapshot } from "@/lib/market/crypto-derived-snapshot";
+import { readUsQuotesBulkMap, usQuotesBulkKey, usQuotesBulkReadEnabled } from "@/lib/market/us-quotes-bulk";
 import { mergeCryptoQuoteMaps } from "@/lib/market/merge-crypto-quotes";
 import { resolveCryptoMarketCapUsd } from "@/lib/market/crypto-mcap-fallback";
 import {
@@ -382,11 +383,23 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
   }
 
   try {
+    const bulk = usStocksNeeded && usQuotesBulkReadEnabled("batch") ? await readUsQuotesBulkMap() : null;
+    const bulkPayload = (t: string): EodhdRealtimePayload | undefined => {
+      const q = bulk?.get(usQuotesBulkKey(t));
+      if (!q) return undefined;
+      return {
+        close: q.price,
+        previousClose: q.previousClose ?? undefined,
+        change_p: q.changePct ?? undefined,
+        timestamp: q.tsSec ?? undefined,
+      };
+    };
+
     const symbolList: string[] = [];
     if (includeTop10Stocks) {
-      symbolList.push(...TOP10_TICKERS.map((t) => toEodhdUsSymbol(t)));
+      symbolList.push(...TOP10_TICKERS.filter((t) => !bulkPayload(t)).map((t) => toEodhdUsSymbol(t)));
     }
-    symbolList.push(...page2Tickers.map((t) => toEodhdUsSymbol(t)));
+    symbolList.push(...page2Tickers.filter((t) => !bulkPayload(t)).map((t) => toEodhdUsSymbol(t)));
     const cryptoMetas = includeCrypto ? cryptoMetasForBatch(cryptoBatch) : [];
     const cryptoSymbols = includeCrypto ? cryptoRealtimeRequestSymbols(cryptoMetas) : [];
     if (includeIndices) {
@@ -404,6 +417,7 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
     for (const t of TOP10_TICKERS) {
       const sym = toEodhdUsSymbol(t).toUpperCase();
       const payload =
+        bulkPayload(t) ??
         map.get(sym) ??
         // Some EODHD realtime responses return `code` without exchange suffix (e.g. `AAPL`).
         map.get(sym.replace(/\.US$/i, "")) ??
@@ -415,6 +429,7 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
     for (const t of page2Tickers) {
       const sym = toEodhdUsSymbol(t).toUpperCase();
       const payload =
+        bulkPayload(t) ??
         map.get(sym) ??
         map.get(sym.replace(/\.US$/i, "")) ??
         map.get(sym.replace(/\.US$/i, "").replace(/\./g, "-"));
@@ -540,10 +555,36 @@ export async function getSimpleMarketDataForWatchlistStocks(stockTickers: string
   const fromSnapshot = await readMarketSnapshot<SimpleMarketData>(MARKET_SNAPSHOT_KEY.stocksAllPages);
   if (fromSnapshot && normalized.length) {
     const sliced = sliceSimpleMarketDataForStockTickers(fromSnapshot, normalized);
-    const missing = stockTickersMissingFromMarketSlice(sliced, normalized);
+    let missing = stockTickersMissingFromMarketSlice(sliced, normalized);
     if (!missing.length) return sliced;
 
     const top10Set = new Set<string>(TOP10_TICKERS);
+    if (usQuotesBulkReadEnabled("watchlist")) {
+      const bulk = await readUsQuotesBulkMap();
+      if (bulk) {
+        const stillMissing: string[] = [];
+        for (const tk of missing) {
+          const q = bulk.get(usQuotesBulkKey(tk));
+          if (!q) {
+            stillMissing.push(tk);
+            continue;
+          }
+          const datum: SimpleMarketDatum = {
+            price: q.price,
+            previousClose: q.previousClose,
+            changePercent1D: q.changePct,
+          };
+          if (top10Set.has(tk)) {
+            sliced.stocks[tk as Top10Ticker] = datum;
+          } else {
+            sliced.extraScreenerStocks[tk] = datum;
+            sliced.screenerStocksPage2Tickers.push(tk);
+          }
+        }
+        missing = stillMissing;
+        if (!missing.length) return sliced;
+      }
+    }
     const includeTop10Stocks = missing.some((t) => top10Set.has(t));
     const page2Tickers = missing.filter((t) => !top10Set.has(t));
     const tickersKey = missing.join(",");

@@ -9,7 +9,8 @@ import { TOP10_TICKERS } from "@/lib/screener/top10-config";
 
 /**
  * Bulk delayed quotes for every US exchange-listed ticker (EODHD `real-time?ex=US`, ~12.7k rows, 100 credits)
- * stored as `us_quotes_bulk`. Phase 1: written by cron behind `FINSEPA_BULK_QUOTES=1`; nothing reads it yet.
+ * stored as `us_quotes_bulk`. Written by cron behind `FINSEPA_BULK_QUOTES=1`; read only by readers enabled in
+ * `FINSEPA_BULK_QUOTES_READ`.
  * OTC names (foreign ADR lines) are not in this feed.
  */
 
@@ -34,6 +35,21 @@ const SLOT_MINUTES = 15;
 
 export function usQuotesBulkEnabled(): boolean {
   return process.env.FINSEPA_BULK_QUOTES === "1";
+}
+
+/**
+ * Phase 2 readers, comma-separated in `FINSEPA_BULK_QUOTES_READ` (all off by default):
+ * - `watchlist` — fill watchlist tickers missing from `stocks_all_pages` before calling EODHD.
+ * - `batch` — `loadSimpleMarketDataBatch` takes US stock quotes from the bulk list, EODHD only for the rest.
+ */
+export type UsQuotesBulkReader = "watchlist" | "batch";
+
+export function usQuotesBulkReadEnabled(reader: UsQuotesBulkReader): boolean {
+  const raw = process.env.FINSEPA_BULK_QUOTES_READ ?? "";
+  return raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .includes(reader);
 }
 
 function num(v: unknown): number | null {
@@ -102,6 +118,64 @@ function bulkRejectReason(rows: UsQuotesBulkRow[], session: string, nowSec: numb
     if (nowSec - newest > MAX_SENTINEL_AGE_SEC) return "stale_sentinels";
   }
   return null;
+}
+
+export type UsBulkQuote = {
+  price: number;
+  previousClose: number | null;
+  changePct: number | null;
+  tsSec: number | null;
+};
+
+/** Rows older than this are dead listings (ABBNY still carries a May-2023 print in the feed). */
+const MAX_ROW_AGE_SEC = 4 * 24 * 60 * 60;
+/** During US sessions the list refreshes every 15m; older means cron stopped — readers fall back. */
+const MAX_SNAPSHOT_AGE_SESSION_MS = 45 * 60 * 1000;
+/** Closed (overnight / weekend / holiday): last session's list is still the right close. */
+const MAX_SNAPSHOT_AGE_CLOSED_MS = 4 * 24 * 60 * 60 * 1000;
+const READ_TTL_MS = 60_000;
+
+let readCache: { at: number; map: Map<string, UsBulkQuote> | null } | null = null;
+let readInflight: Promise<Map<string, UsBulkQuote> | null> | null = null;
+
+/** `BRK.B` / `brk-b.us` → `BRK-B` (bulk feed spelling). */
+export function usQuotesBulkKey(ticker: string): string {
+  return ticker.trim().toUpperCase().replace(/\.US$/, "").replace(/\./g, "-");
+}
+
+async function loadUsQuotesBulkMap(): Promise<Map<string, UsBulkQuote> | null> {
+  const row = await readMarketSnapshotRow(MARKET_SNAPSHOT_KEY.usQuotesBulk);
+  if (!row?.data) return null;
+  const updatedMs = Date.parse(row.updated_at);
+  const maxAge =
+    getUsEquityMarketSession(new Date()) === "closed" ? MAX_SNAPSHOT_AGE_CLOSED_MS : MAX_SNAPSHOT_AGE_SESSION_MS;
+  if (!Number.isFinite(updatedMs) || Date.now() - updatedMs > maxAge) return null;
+
+  const snap = row.data as UsQuotesBulkSnapshot;
+  const nowSec = Date.now() / 1000;
+  const map = new Map<string, UsBulkQuote>();
+  for (const [ticker, close, prev, changePct, , tsSec] of snap.rows ?? []) {
+    if (!(close > 0) || tsSec == null || nowSec - tsSec > MAX_ROW_AGE_SEC) continue;
+    const pct = changePct ?? (prev != null && prev > 0 ? ((close - prev) / prev) * 100 : null);
+    map.set(ticker, { price: close, previousClose: prev, changePct: pct, tsSec });
+  }
+  return map.size ? map : null;
+}
+
+/** Fresh bulk quotes keyed by {@link usQuotesBulkKey}; null when the list is missing or stale (callers fall back). */
+export async function readUsQuotesBulkMap(): Promise<Map<string, UsBulkQuote> | null> {
+  if (readCache && Date.now() - readCache.at < READ_TTL_MS) return readCache.map;
+  if (readInflight) return readInflight;
+  readInflight = loadUsQuotesBulkMap()
+    .catch(() => null)
+    .then((map) => {
+      readCache = { at: Date.now(), map };
+      return map;
+    })
+    .finally(() => {
+      readInflight = null;
+    });
+  return readInflight;
 }
 
 /**
