@@ -60,13 +60,45 @@ function fetchSymbolViaSharedBatch(symbol: string): Promise<EodhdRealtimePayload
   });
 }
 
-const getCachedRealtimeQuote = unstable_cache(
-  async (symbol: string): Promise<EodhdRealtimePayload | null> => {
-    return fetchSymbolViaSharedBatch(symbol);
+const REALTIME_QUOTE_MISSING = "EODHD_REALTIME_QUOTE_MISSING";
+/** Missing quotes retry after this instead of on every call (delisted / bad tickers). */
+const MISSING_QUOTE_BACKOFF_MS = 60_000;
+const missingQuoteAt = new Map<string, number>();
+
+function hasUsableClose(payload: EodhdRealtimePayload): boolean {
+  const close = Number(payload.close);
+  return Number.isFinite(close) && close > 0;
+}
+
+/**
+ * Empty / NA payloads are never stored: a cached null (e.g. written while the daily quota was exhausted)
+ * was served for every TOP10 symbol on every cron refresh, leaving the screener's largest names blank.
+ */
+const getCachedRealtimeQuoteNonEmpty = unstable_cache(
+  async (symbol: string): Promise<EodhdRealtimePayload> => {
+    const payload = await fetchSymbolViaSharedBatch(symbol);
+    if (!payload || !hasUsableClose(payload)) throw new Error(REALTIME_QUOTE_MISSING);
+    return payload;
   },
-  ["eodhd-realtime-quote-v1"],
+  ["eodhd-realtime-quote-v2-no-empty"],
   { revalidate: REVALIDATE_BATCH_REALTIME_QUOTES },
 );
+
+async function getCachedRealtimeQuote(symbol: string): Promise<EodhdRealtimePayload | null> {
+  const missedAt = missingQuoteAt.get(symbol);
+  if (missedAt != null && Date.now() - missedAt < MISSING_QUOTE_BACKOFF_MS) return null;
+  try {
+    const payload = await getCachedRealtimeQuoteNonEmpty(symbol);
+    missingQuoteAt.delete(symbol);
+    return payload;
+  } catch (e) {
+    if (e instanceof Error && e.message === REALTIME_QUOTE_MISSING) {
+      missingQuoteAt.set(symbol, Date.now());
+      return null;
+    }
+    throw e;
+  }
+}
 
 const inflight = new Map<string, Promise<EodhdRealtimePayload | null>>();
 

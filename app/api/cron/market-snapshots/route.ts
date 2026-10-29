@@ -7,6 +7,7 @@ import {
   ingestMarketSnapshots,
 } from "@/lib/market/market-snapshot-ingest";
 import { pickProcessEnv } from "@/lib/env/pick-process-env";
+import { ingestUsQuotesBulk } from "@/lib/market/us-quotes-bulk";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -42,8 +43,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ at: new Date().toISOString(), force, cryptoHot, cryptoDerived });
     }
 
-    const [market, hub] = await Promise.all([ingestMarketSnapshots(), ingestHubSnapshots()]);
-    return NextResponse.json({ at: new Date().toISOString(), market, hub });
+    const [market, hub, usQuotesBulk] = await Promise.all([
+      ingestMarketSnapshots(),
+      ingestHubSnapshots(),
+      ingestUsQuotesBulk(),
+    ]);
+    return NextResponse.json({ at: new Date().toISOString(), market, hub, usQuotesBulk });
   } catch (e) {
     const message = e instanceof Error ? e.message : "ingest_failed";
     console.error("[cron/market-snapshots]", message);

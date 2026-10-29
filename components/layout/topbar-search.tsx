@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import dynamic from "next/dynamic";
 import { Search, X } from "@/lib/icons";
 
 import { textInputActiveRingClassName, textInputShellClassName } from "@/components/design-system/text-input-styles";
@@ -11,7 +12,19 @@ import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal
 import { OPEN_SEARCH_EVENT } from "@/components/search/search-modal";
 import { SearchPanelResults } from "@/components/search/search-panel-results";
 import { useSearchPanel } from "@/components/search/use-search-panel";
+import { prefetchSearchDirectory } from "@/lib/search/use-search-directory";
 import { cn } from "@/lib/utils";
+
+const loadGlobalSearchDialog = () => import("@/components/search/global-search-dialog");
+/** Desktop search dialog — code-split so the top bar bundle stays small; warmed on pill hover. */
+const GlobalSearchDialog = dynamic(() => loadGlobalSearchDialog().then((m) => m.GlobalSearchDialog), {
+  ssr: false,
+});
+
+function prefetchGlobalSearch(): void {
+  void loadGlobalSearchDialog();
+  prefetchSearchDirectory();
+}
 
 /** Full width in the top bar on mobile; fixed pill width on desktop. */
 const SEARCH_PANEL_WIDTH_CLASS =
@@ -38,6 +51,8 @@ const SEARCH_CLOSE_RESERVE_PX = 40;
 
 export function TopbarSearch() {
   const [open, setOpen] = useState(false);
+  /** Desktop: full search dialog instead of the inline dropdown (mobile keeps the inline panel). */
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [portalMounted, setPortalMounted] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -55,6 +70,10 @@ export function TopbarSearch() {
   }, [panel.inputRef]);
 
   const activateSearch = useCallback(() => {
+    if (!window.matchMedia(MOBILE_MAX_WIDTH_MQ).matches) {
+      setDialogOpen(true);
+      return;
+    }
     focusSearchInput();
     setOpen(true);
   }, [focusSearchInput]);
@@ -141,6 +160,7 @@ export function TopbarSearch() {
         )}
         style={motionStyle}
         onPointerDown={handleSearchShellPointerDown}
+        onPointerEnter={prefetchGlobalSearch}
       >
         <span
           className="pointer-events-none absolute top-1/2 z-10 flex h-5 w-5 items-center justify-center text-icon motion-reduce:transition-none"
@@ -274,9 +294,10 @@ export function TopbarSearch() {
   return (
     <>
       {dismissBackdrop}
-      <TopbarDelayedTooltip label="Search" enabled={!open} className="flex min-w-0 w-full">
+      <TopbarDelayedTooltip label="Search" enabled={!open && !dialogOpen} className="flex min-w-0 w-full">
         {searchControl}
       </TopbarDelayedTooltip>
+      {dialogOpen ? <GlobalSearchDialog onClose={() => setDialogOpen(false)} /> : null}
     </>
   );
 }

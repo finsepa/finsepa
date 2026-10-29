@@ -30,11 +30,12 @@ const calendarPresets: Partial<Record<string, string>> = {
   dropdowns: "relative z-[2] flex items-center justify-center gap-2",
   /** Wrapper for custom {@link FinsepaCalendarDropdown} (Finsepa listbox — no native `<select>` chrome). */
   dropdown_root: "relative inline-flex shrink-0",
-  nav: "absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1 px-0.5",
+  /** Above the full-width caption row (z-1) so the arrows receive clicks; gaps stay click-through for dropdowns. */
+  nav: "pointer-events-none absolute inset-x-0 top-0 z-[2] flex w-full items-center justify-between gap-1 px-0.5",
   button_previous:
-    "inline-flex size-9 items-center justify-center rounded-md border border-transparent bg-transparent text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40",
+    "pointer-events-auto inline-flex size-9 items-center justify-center rounded-md border border-transparent bg-transparent text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40",
   button_next:
-    "inline-flex size-9 items-center justify-center rounded-md border border-transparent bg-transparent text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40",
+    "pointer-events-auto inline-flex size-9 items-center justify-center rounded-md border border-transparent bg-transparent text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40",
   caption_label: "select-none text-sm font-medium text-fg",
   month_grid: "mx-auto w-full border-collapse",
   weekday: "w-9 p-0 text-center text-[0.8rem] font-normal text-fg-muted",
@@ -228,12 +229,17 @@ function FinsepaCalendarDropdown({
   );
 }
 
+/** `accent` = blue ring (forms). `neutral` = filled fg/surface pill, no blue (browse calendars). */
+export type CalendarSelectedTone = "accent" | "neutral";
+
 function CalendarDayButton({
   className,
   day,
   modifiers,
+  selectedTone = "accent",
   ...props
-}: React.ComponentProps<typeof DayButton>) {
+}: React.ComponentProps<typeof DayButton> & { selectedTone?: CalendarSelectedTone }) {
+  const neutral = selectedTone === "neutral";
   const ref = React.useRef<HTMLButtonElement>(null);
   React.useEffect(() => {
     if (modifiers.focused) ref.current?.focus();
@@ -249,7 +255,10 @@ function CalendarDayButton({
         modifiers.today && !modifiers.selected && "bg-surface-muted font-medium",
         modifiers.outside && !modifiers.selected && "text-fg-subtle opacity-80 hover:bg-canvas hover:opacity-100",
         modifiers.selected &&
+          !neutral &&
           "bg-surface font-semibold text-fg shadow-[inset_0_0_0_2px_var(--fs-accent)] hover:bg-[#EFF6FF] hover:text-fg hover:shadow-[inset_0_0_0_2px_var(--fs-accent-hover)]",
+        modifiers.selected && neutral && "!bg-fg font-semibold !text-surface hover:!bg-fg hover:!text-surface",
+        neutral && !modifiers.selected && !modifiers.disabled && "cursor-pointer hover:bg-fg/10",
         modifiers.disabled && "pointer-events-none opacity-40",
         className,
       )}
@@ -264,7 +273,19 @@ export type CalendarProps = React.ComponentProps<typeof DayPicker> & {
    * Hides the decorative chevron and widens triggers to the grid.
    */
   captionDropdownStretch?: boolean;
+  /** Selected-day look; `neutral` also drops react-day-picker's blue today/selected colors. */
+  selectedTone?: CalendarSelectedTone;
 };
+
+function NeutralCalendarDayButton(props: React.ComponentProps<typeof DayButton>) {
+  return <CalendarDayButton {...props} selectedTone="neutral" />;
+}
+
+const NEUTRAL_RDP_VARS = {
+  "--rdp-accent-color": "var(--fs-fg)",
+  "--rdp-today-color": "var(--fs-fg)",
+  "--rdp-selected-border": "none",
+} as React.CSSProperties;
 
 /**
  * shadcn/ui-style calendar (Popover + DayPicker): default nav bar, caption label, custom day button.
@@ -279,6 +300,8 @@ export function Calendar({
   formatters,
   components,
   captionDropdownStretch = false,
+  selectedTone = "accent",
+  style,
   ...props
 }: CalendarProps) {
   const usesYearDropdown =
@@ -291,6 +314,7 @@ export function Calendar({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn("group/calendar", className)}
+      style={selectedTone === "neutral" ? { ...NEUTRAL_RDP_VARS, ...style } : style}
       captionLayout={captionLayout}
       reverseYears={reverseYearsEffective}
       formatters={{
@@ -312,7 +336,7 @@ export function Calendar({
           }
           return <ChevronDown className={c} aria-hidden />;
         },
-        DayButton: CalendarDayButton,
+        DayButton: selectedTone === "neutral" ? NeutralCalendarDayButton : CalendarDayButton,
         ...components,
         Dropdown: (dropdownProps) => (
           <FinsepaCalendarDropdown {...dropdownProps} stretch={captionDropdownStretch} />

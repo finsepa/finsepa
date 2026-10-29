@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, LayoutList } from "@/lib/icons";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock } from "@/lib/icons";
 
 import { EarningsListSeeMoreMenu } from "@/components/earnings/earnings-list-see-more-menu";
 import {
@@ -54,19 +54,21 @@ import {
 import {
   addDaysUtc,
   formatWeekMonthYearLabelFromYmds,
+  mondayOfWeekUtc,
   toYmdUtc,
 } from "@/lib/market/utc-calendar-dates";
 import { formatEconomyLongDateUtc } from "@/lib/market/economy-format-display";
 import { prefetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-client";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { SegmentedControl, whiteSurfaceButtonChromeClass } from "@/components/design-system";
+import { Calendar } from "@/components/ui/calendar";
 import { PillSwitch } from "@/components/ui/pill-switch";
 import { cn } from "@/lib/utils";
 
 /** Icon size inside 24px timing bars. */
 const EARNINGS_CALENDAR_TIMING_ICON_PX = 16;
 
-/** Max companies shown per day in list view before "See more". */
+/** Rows shown before "See more" when the day payload only carries bucket previews (no full `listItems`). */
 const EARNINGS_LIST_PREVIEW_COUNT = 10;
 
 function splitEarningsDayListForView(day: EarningsDayColumn): {
@@ -75,17 +77,10 @@ function splitEarningsDayListForView(day: EarningsDayColumn): {
   preloadedOverflow?: EarningsCalendarItem[];
 } {
   const items = sortEarningsCalendarItemsByMarketCap(earningsDayListItems(day));
+  // Day view is a single table: show the whole day when the server sent the full list.
+  if (day.listItems?.length) return { visibleItems: items, overflowCount: 0 };
+
   const visibleItems = items.slice(0, EARNINGS_LIST_PREVIEW_COUNT);
-
-  if (day.listItems?.length) {
-    const overflowItems = items.slice(EARNINGS_LIST_PREVIEW_COUNT);
-    return {
-      visibleItems,
-      overflowCount: overflowItems.length,
-      preloadedOverflow: overflowItems.length > 0 ? overflowItems : undefined,
-    };
-  }
-
   const bucketOverflow =
     day.beforeMarket.overflowCount + day.afterMarket.overflowCount + day.timeTbd.overflowCount;
   const inlineOverflow = items.slice(EARNINGS_LIST_PREVIEW_COUNT);
@@ -639,6 +634,54 @@ function formatWeekRangeLabel(weekMondayYmd: string): string {
   return `${fmt(addDaysUtc(monday, -1))} – ${fmt(addDaysUtc(monday, 5))}`;
 }
 
+const DAY_MS = 86_400_000;
+
+function ymdNoonUtcMs(ymd: string): number {
+  return Date.parse(`${ymd}T12:00:00.000Z`);
+}
+
+function isWeekdayYmd(ymd: string): boolean {
+  const dow = new Date(ymdNoonUtcMs(ymd)).getUTCDay();
+  return dow >= 1 && dow <= 5;
+}
+
+function weekMondayYmdOf(ymd: string): string {
+  return toYmdUtc(mondayOfWeekUtc(new Date(ymdNoonUtcMs(ymd))));
+}
+
+/** Today when it is a weekday in that week, otherwise the week's Monday. */
+function defaultDayForWeek(weekMondayYmd: string, todayYmd: string): string {
+  return isWeekdayYmd(todayYmd) && weekMondayYmdOf(todayYmd) === weekMondayYmd ? todayYmd : weekMondayYmd;
+}
+
+/** Next / previous Mon–Fri day (earnings data has no weekends). */
+function stepWeekdayYmd(ymd: string, direction: 1 | -1): string {
+  let ms = ymdNoonUtcMs(ymd);
+  do {
+    ms += direction * DAY_MS;
+  } while (!isWeekdayYmd(toYmdUtc(new Date(ms))));
+  return toYmdUtc(new Date(ms));
+}
+
+/** Day picker works in local dates; earnings days are UTC `YYYY-MM-DD` keys. */
+function ymdToLocalDate(ymd: string): Date {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(y!, m! - 1, d!);
+}
+
+function localDateToYmd(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatDayHeading(ymd: string): string {
+  return new Date(ymdNoonUtcMs(ymd)).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 type WeekDayDateStub = {
   date: string;
   weekdayLabel: string;
@@ -709,6 +752,82 @@ function EarningsWeekGridSkeleton({
         </div>
       </div>
     </div>
+  );
+}
+
+/** Day view renders this many rows, then "Show more" reveals the next page. */
+const EARNINGS_DAY_TABLE_PAGE_SIZE = 50;
+
+const EARNINGS_PANEL_CARD_CLASS =
+  "rounded-2xl border border-stroke-subtle bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]";
+
+/** Day view — one table for the selected day. */
+function EarningsDayTable({
+  day,
+  isToday,
+  weekMondayYmd,
+  allowedScopeKeys,
+  onOpen,
+}: {
+  day: EarningsDayColumn;
+  isToday: boolean;
+  weekMondayYmd: string;
+  allowedScopeKeys: ReadonlySet<string> | null;
+  onOpen: (item: EarningsCalendarItem) => void;
+}) {
+  const { visibleItems, overflowCount, preloadedOverflow } = splitEarningsDayListForView(day);
+  const [rowLimit, setRowLimit] = useState(EARNINGS_DAY_TABLE_PAGE_SIZE);
+  if (visibleItems.length === 0 && overflowCount === 0) {
+    return (
+      <div className={cn(EARNINGS_PANEL_CARD_CLASS, "px-4 py-12 text-center text-sm text-fg-muted")}>
+        No scheduled earnings
+      </div>
+    );
+  }
+  const shownItems = visibleItems.slice(0, rowLimit);
+  const hiddenCount = visibleItems.length - shownItems.length;
+  return (
+    <ScreenerTableScroll>
+      <EarningsListDayHeader dateYmd={day.date} isToday={isToday} />
+      {shownItems.map((item, index) => (
+        <EarningsListRow
+          key={`${item.ticker}:${item.reportDate}`}
+          item={item}
+          estRevenueDisplay={item.estRevenueDisplay}
+          estEpsDisplay={item.estEpsDisplay}
+          showDivider={index < shownItems.length - 1 || hiddenCount > 0 || overflowCount > 0}
+          onOpen={onOpen}
+        />
+      ))}
+      {hiddenCount > 0 ? (
+        <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+          <button
+            type="button"
+            onClick={() => setRowLimit((n) => n + EARNINGS_DAY_TABLE_PAGE_SIZE)}
+            className={cn(
+              "flex min-h-[44px] w-full items-center justify-center py-2 text-center",
+              SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+            )}
+          >
+            <span className="text-[13px] font-semibold tabular-nums leading-5 text-accent">
+              Show {Math.min(hiddenCount, EARNINGS_DAY_TABLE_PAGE_SIZE)} more
+              <span className="font-normal text-fg-muted"> · {hiddenCount} remaining</span>
+            </span>
+          </button>
+        </div>
+      ) : null}
+      {overflowCount > 0 ? (
+        <EarningsListSeeMoreMenu
+          overflowCount={overflowCount}
+          preloadedItems={preloadedOverflow}
+          weekMondayYmd={weekMondayYmd}
+          dayYmd={day.date}
+          allowedScopeKeys={allowedScopeKeys}
+          listOffset={visibleItems.length}
+          onOpenCard={onOpen}
+        />
+      ) : null}
+    </ScreenerTableScroll>
   );
 }
 
@@ -796,11 +915,19 @@ export function EarningsWeekGrid({
   const { holdingsByPortfolioId, portfolioDisplayReady } = usePortfolioWorkspace();
   const [clientReady, setClientReady] = useState(false);
   const [pendingWeekMondayYmd, setPendingWeekMondayYmd] = useState<string | null>(null);
-  const [view, setView] = useState<"grid" | "list">("grid");
+  const [view, setView] = useState<"week" | "day">("week");
+  const [selectedDayYmd, setSelectedDayYmd] = useState(() => defaultDayForWeek(data.weekMondayYmd, todayYmd));
 
   useEffect(() => {
     setClientReady(true);
   }, []);
+
+  // Week arrows / links land on another week: keep a picked day in that week, else today or Monday.
+  useEffect(() => {
+    setSelectedDayYmd((prev) =>
+      weekMondayYmdOf(prev) === data.weekMondayYmd ? prev : defaultDayForWeek(data.weekMondayYmd, todayYmd),
+    );
+  }, [data.weekMondayYmd, todayYmd]);
 
   useEffect(() => {
     if (pendingWeekMondayYmd && pendingWeekMondayYmd === data.weekMondayYmd) {
@@ -840,11 +967,6 @@ export function EarningsWeekGrid({
     ? weekTimingGridRowsClient
     : weekTimingGridRowsFromServer;
 
-  const totalListItems = useMemo(
-    () => filteredData.days.reduce((n, day) => n + earningsDayListItems(day).length, 0),
-    [filteredData.days],
-  );
-
   const displayWeekMondayYmd = pendingWeekMondayYmd ?? data.weekMondayYmd;
   const isWeekLoading =
     pendingWeekMondayYmd !== null && pendingWeekMondayYmd !== data.weekMondayYmd;
@@ -883,6 +1005,23 @@ export function EarningsWeekGrid({
     [displayWeekMondayYmd, isWeekLoading, router, scope],
   );
 
+  const selectDay = useCallback(
+    (ymd: string) => {
+      setSelectedDayYmd(ymd);
+      const monday = weekMondayYmdOf(ymd);
+      if (monday !== displayWeekMondayYmd) navigateWeek(monday);
+    },
+    [displayWeekMondayYmd, navigateWeek],
+  );
+
+  const isDayView = view === "day";
+  const selectedDay = isWeekLoading ? undefined : filteredData.days.find((d) => d.date === selectedDayYmd);
+
+  const [calendarMonth, setCalendarMonth] = useState(() => ymdToLocalDate(selectedDayYmd));
+  useEffect(() => {
+    setCalendarMonth(ymdToLocalDate(selectedDayYmd));
+  }, [selectedDayYmd]);
+
   const setHoldingsWatchlistFilter = (enabled: boolean) => {
     const qs = new URLSearchParams({ week: displayWeekMondayYmd });
     if (enabled) qs.set("scope", "portfolio");
@@ -897,8 +1036,12 @@ export function EarningsWeekGrid({
       <div className="relative z-30 flex shrink-0 flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-x-4 md:gap-y-2">
         <div className="flex min-w-0 items-center justify-between gap-3 md:contents">
           <div className="min-w-0">
-            <h1 className="text-[24px] font-semibold leading-9 tracking-tight text-fg">{displayWeekLabel}</h1>
-            <p className="text-[14px] leading-5 text-fg-muted">{formatWeekRangeLabel(displayWeekMondayYmd)}</p>
+            <h1 className="text-[24px] font-semibold leading-9 tracking-tight text-fg">
+              {isDayView ? formatDayHeading(selectedDayYmd) : displayWeekLabel}
+            </h1>
+            {isDayView ? null : (
+              <p className="text-[14px] leading-5 text-fg-muted">{formatWeekRangeLabel(displayWeekMondayYmd)}</p>
+            )}
           </div>
           <div className="shrink-0 md:hidden">
             <EarningsHoldingsWatchlistFilter
@@ -917,26 +1060,32 @@ export function EarningsWeekGrid({
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => navigateWeek(displayPrevWeekYmd)}
+              onClick={() =>
+                isDayView ? selectDay(stepWeekdayYmd(selectedDayYmd, -1)) : navigateWeek(displayPrevWeekYmd)
+              }
               className={weekNavArrowClass}
-              aria-label="Previous week"
+              aria-label={isDayView ? "Previous day" : "Previous week"}
             >
               <ChevronLeft className="h-5 w-5" strokeWidth={1.75} />
             </button>
             <button
               type="button"
-              onClick={() => navigateWeek(thisWeekMondayYmd)}
+              onClick={() =>
+                isDayView ? selectDay(defaultDayForWeek(thisWeekMondayYmd, todayYmd)) : navigateWeek(thisWeekMondayYmd)
+              }
               className={weekNavTodayClass}
-              aria-label="Go to this week"
+              aria-label={isDayView ? "Go to today" : "Go to this week"}
               aria-current={displayWeekMondayYmd === thisWeekMondayYmd ? "page" : undefined}
             >
               Today
             </button>
             <button
               type="button"
-              onClick={() => navigateWeek(displayNextWeekYmd)}
+              onClick={() =>
+                isDayView ? selectDay(stepWeekdayYmd(selectedDayYmd, 1)) : navigateWeek(displayNextWeekYmd)
+              }
               className={weekNavArrowClass}
-              aria-label="Next week"
+              aria-label={isDayView ? "Next day" : "Next week"}
             >
               <ChevronRight className="h-5 w-5" strokeWidth={1.75} />
             </button>
@@ -946,23 +1095,15 @@ export function EarningsWeekGrid({
             value={view}
             onChange={setView}
             options={[
-              {
-                value: "grid",
-                "aria-label": "Week grid view",
-                label: <CalendarDays className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
-              },
-              {
-                value: "list",
-                "aria-label": "List view",
-                label: <LayoutList className="h-5 w-5" strokeWidth={1.75} aria-hidden />,
-              },
+              { value: "week", label: "Week" },
+              { value: "day", label: "Day" },
             ]}
           />
         </div>
       </div>
 
       <div className="flex min-w-0 flex-col">
-        {view === "grid" ? (
+        {!isDayView ? (
         isWeekLoading ? (
           <EarningsWeekGridSkeleton weekMondayYmd={displayWeekMondayYmd} todayYmd={todayYmd} />
         ) : (
@@ -994,53 +1135,43 @@ export function EarningsWeekGrid({
           </div>
         </div>
         )
-        ) : isWeekLoading ? (
-          <EarningsWeekListSkeleton />
         ) : (
-        <div className="flex min-w-0 flex-col space-y-0">
-          {totalListItems === 0 ? (
-            <div className="rounded-2xl border border-stroke-subtle bg-surface px-4 py-12 text-center text-sm text-fg-muted shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
-              No scheduled earnings
-            </div>
-          ) : (
-            <div className="flex min-w-0 flex-col gap-3">
-              {filteredData.days.map((day) => {
-                const { visibleItems, overflowCount, preloadedOverflow } = splitEarningsDayListForView(day);
-                if (visibleItems.length === 0 && overflowCount === 0) return null;
-                const isToday = day.date === todayYmd;
-                return (
-                  <section key={day.date} id={`earnings-list-${day.date}`}>
-                    <ScreenerTableScroll>
-                      <EarningsListDayHeader dateYmd={day.date} isToday={isToday} />
-
-                      {visibleItems.map((item, index) => (
-                        <EarningsListRow
-                          key={`${item.ticker}:${item.reportDate}`}
-                          item={item}
-                          estRevenueDisplay={item.estRevenueDisplay}
-                          estEpsDisplay={item.estEpsDisplay}
-                          showDivider={index < visibleItems.length - 1 || overflowCount > 0}
-                          onOpen={setPreviewItem}
-                        />
-                      ))}
-
-                      {overflowCount > 0 ? (
-                        <EarningsListSeeMoreMenu
-                          overflowCount={overflowCount}
-                          preloadedItems={preloadedOverflow}
-                          weekMondayYmd={filteredData.weekMondayYmd}
-                          dayYmd={day.date}
-                          allowedScopeKeys={allowedScopeKeys}
-                          listOffset={visibleItems.length}
-                          onOpenCard={setPreviewItem}
-                        />
-                      ) : null}
-                    </ScreenerTableScroll>
-                  </section>
-                );
-              })}
-            </div>
-          )}
+        <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start">
+          <div className="min-w-0 flex-1">
+            {selectedDay ? (
+              <EarningsDayTable
+                key={selectedDay.date}
+                day={selectedDay}
+                isToday={selectedDay.date === todayYmd}
+                weekMondayYmd={filteredData.weekMondayYmd}
+                allowedScopeKeys={allowedScopeKeys}
+                onOpen={setPreviewItem}
+              />
+            ) : (
+              <EarningsWeekListSkeleton />
+            )}
+          </div>
+          <aside
+            className={cn(
+              "order-first flex w-full shrink-0 justify-center lg:sticky lg:top-4 lg:order-last lg:w-[320px]",
+              EARNINGS_PANEL_CARD_CLASS,
+            )}
+            aria-label="Pick a day"
+          >
+            <Calendar
+              mode="single"
+              selected={ymdToLocalDate(selectedDayYmd)}
+              onSelect={(d) => {
+                if (d) selectDay(localDateToYmd(d));
+              }}
+              month={calendarMonth}
+              onMonthChange={setCalendarMonth}
+              today={ymdToLocalDate(todayYmd)}
+              disabled={{ dayOfWeek: [0, 6] }}
+              selectedTone="neutral"
+              className="w-full min-w-0 bg-transparent"
+            />
+          </aside>
         </div>
         )}
       </div>

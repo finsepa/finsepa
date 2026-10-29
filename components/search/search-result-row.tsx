@@ -156,7 +156,7 @@ function RecentRowTrailing({
 
 const leadingToggleClassName = "flex w-8 shrink-0 items-center justify-center";
 
-function SearchResultLeadingToggle({
+export function SearchResultLeadingToggle({
   item,
   label,
   wlKey,

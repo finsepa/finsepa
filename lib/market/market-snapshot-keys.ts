@@ -18,6 +18,8 @@ export const MARKET_SNAPSHOT_KEY = {
   screenerSectors: "screener_sectors",
   screenerIndustries: "screener_industries",
   screenerGainersLosers: "screener_gainers_losers",
+  /** All US exchange-listed delayed quotes (EODHD bulk `ex=US`) — own cron step, see `us-quotes-bulk.ts`. */
+  usQuotesBulk: "us_quotes_bulk",
 } as const;
 
 export type MarketSnapshotKey = (typeof MARKET_SNAPSHOT_KEY)[keyof typeof MARKET_SNAPSHOT_KEY];
