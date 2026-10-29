@@ -101,7 +101,6 @@ function HoldingsLogoStack({ holdings }: { holdings: SuperinvestorsFundRowModel[
 }
 
 function FeaturedFundCard({ row }: { row: SuperinvestorsFundRowModel }) {
-  const changes = changesLabel(row.activityCount);
   return (
     <div className={cn(MOBILE_ELEVATED_CARD_CLASS, "group/card relative grid h-full gap-6 p-5 sm:p-6 lg:grid-cols-2 lg:gap-0")}>
       <div className="flex min-w-0 flex-col lg:pr-8">
@@ -118,7 +117,7 @@ function FeaturedFundCard({ row }: { row: SuperinvestorsFundRowModel }) {
               {row.displayName}
             </span>
             <span className="block text-[13px] leading-5 text-fg-muted">
-              13F portfolio · {row.positionCount.toLocaleString("en-US")} positions
+              Filed on {formatFiledDate(row.filingDate, true)}
             </span>
           </span>
         </Link>
@@ -136,9 +135,9 @@ function FeaturedFundCard({ row }: { row: SuperinvestorsFundRowModel }) {
             <dd className={STAT_LABEL_CLASS}>1Y perf.</dd>
           </div>
           <div>
-            <dt className="sr-only">Last filing</dt>
-            <dd className={STAT_VALUE_CLASS}>{formatFiledDate(row.filingDate, true)}</dd>
-            <dd className={STAT_LABEL_CLASS}>{changes ? `Filed · ${changes}` : "Filed"}</dd>
+            <dt className="sr-only">Positions</dt>
+            <dd className={STAT_VALUE_CLASS}>{row.positionCount.toLocaleString("en-US")}</dd>
+            <dd className={STAT_LABEL_CLASS}>Positions</dd>
           </div>
         </dl>
       </div>

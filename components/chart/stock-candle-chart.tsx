@@ -15,7 +15,10 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 
+import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
+import { CHART_PLOT_BACKGROUND_CLASS } from "@/lib/chart/fundamentals-chart-surface";
 import type { StockCandleInterval, StockCandlesResponse } from "@/lib/market/stock-candles";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
 import { resolveFsColor, resolveFsColorWithAlpha } from "@/lib/theme/resolve-fs-color";
@@ -283,7 +286,11 @@ export function StockCandleChart({
   return (
     <div className="relative w-full" style={{ height: height + 20 }}>
       {legendCandle && !loading ? <CandleLegend candle={legendCandle} interval={interval} /> : null}
-      <div ref={wrapRef} className="absolute inset-x-0 bottom-0" style={{ height }} />
+      <div className={cn("pointer-events-none absolute inset-x-0 bottom-0 z-0", CHART_PLOT_BACKGROUND_CLASS)} style={{ height }} aria-hidden>
+        <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+        {!loading && candles.length > 0 ? <ChartBrandWatermark cover="full" /> : null}
+      </div>
+      <div ref={wrapRef} className="absolute inset-x-0 bottom-0 z-10" style={{ height }} />
       {loading ? (
         <div className="absolute inset-0 z-10">
           <AssetChartSkeleton heightPx={height + 20} className="h-full" />

@@ -12,6 +12,9 @@ export type EodhdRawEarningRow = {
   report_date?: string;
   date?: string;
   before_after_market?: string | null;
+  /** Consensus EPS estimate when present on the calendar feed (avoids fundamentals fan-out). */
+  estimate?: number | null;
+  actual?: number | null;
   /** Some responses may include a name field — use when present. */
   name?: string;
   company_name?: string;
@@ -29,6 +32,20 @@ function strField(o: Record<string, unknown>, ...keys: string[]): string | undef
 function parseRawRow(raw: unknown): EodhdRawEarningRow | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
+  const estimateRaw = o.estimate ?? o.eps_estimate ?? o.epsEstimate ?? o.epsEstimated;
+  const actualRaw = o.actual ?? o.eps_actual ?? o.epsActual;
+  const estimate =
+    typeof estimateRaw === "number" && Number.isFinite(estimateRaw)
+      ? estimateRaw
+      : typeof estimateRaw === "string" && estimateRaw.trim()
+        ? Number(estimateRaw)
+        : null;
+  const actual =
+    typeof actualRaw === "number" && Number.isFinite(actualRaw)
+      ? actualRaw
+      : typeof actualRaw === "string" && actualRaw.trim()
+        ? Number(actualRaw)
+        : null;
   return {
     code: typeof o.code === "string" ? o.code : undefined,
     /** Announcement / report calendar date — use for column placement only (not `date`, which is fiscal period end). */
@@ -39,6 +56,8 @@ function parseRawRow(raw: unknown): EodhdRawEarningRow | null {
       o.before_after_market === null || o.before_after_market === undefined
         ? null
         : String(o.before_after_market),
+    estimate: estimate != null && Number.isFinite(estimate) ? estimate : null,
+    actual: actual != null && Number.isFinite(actual) ? actual : null,
     name: typeof o.name === "string" ? o.name : undefined,
     company_name: typeof o.company_name === "string" ? o.company_name : undefined,
     CompanyName: typeof o.CompanyName === "string" ? o.CompanyName : undefined,
@@ -48,6 +67,10 @@ function parseRawRow(raw: unknown): EodhdRawEarningRow | null {
 /**
  * EODHD calendar/earnings for a date range (inclusive).
  * @see https://eodhd.com/financial-apis/calendar-upcoming-earnings-ipos-and-splits
+ */
+/**
+ * Throws on any failure (budget block, HTTP error, bad JSON) so `unstable_cache` never stores an empty
+ * calendar for 24h — a cached miss used to blank out whole weeks. Public wrappers catch and return `[]`.
  */
 async function fetchEodhdEarningsCalendarUncached(fromYmd: string, toYmd: string): Promise<EodhdRawEarningRow[]> {
   const key = getEodhdApiKey();
@@ -61,18 +84,16 @@ async function fetchEodhdEarningsCalendarUncached(fromYmd: string, toYmd: string
   });
   const url = `https://eodhd.com/api/calendar/earnings?${params.toString()}`;
 
-  try {
-    if (!traceEodhdHttp("fetchEodhdEarningsCalendar", { from: fromYmd, to: toYmd })) return [];
-    /** Wide ranges exceed Next.js 2MB data-cache — do not persist this response in the fetch cache. */
-    const res = await fetchEodhd(url, { cache: "no-store" });
-    if (!res.ok) return [];
-    const json = (await res.json()) as { earnings?: unknown };
-    const rows = json?.earnings;
-    if (!Array.isArray(rows)) return [];
-    return rows.map(parseRawRow).filter(Boolean) as EodhdRawEarningRow[];
-  } catch {
-    return [];
+  if (!traceEodhdHttp("fetchEodhdEarningsCalendar", { from: fromYmd, to: toYmd })) {
+    throw new Error("[earnings calendar] EODHD request budget blocked");
   }
+  /** Wide ranges exceed Next.js 2MB data-cache — do not persist this response in the fetch cache. */
+  const res = await fetchEodhd(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`[earnings calendar] HTTP ${res.status}`);
+  const json = (await res.json()) as { earnings?: unknown };
+  const rows = json?.earnings;
+  if (!Array.isArray(rows)) throw new Error("[earnings calendar] unexpected payload");
+  return rows.map(parseRawRow).filter(Boolean) as EodhdRawEarningRow[];
 }
 
 /** Earnings week uses Mon–Fri (~5d); longer windows can exceed Next.js 2MB `unstable_cache` limit. */
@@ -87,7 +108,7 @@ function calendarRangeDayCount(fromYmd: string, toYmd: string): number {
 
 const fetchEodhdEarningsCalendarRangeCached = unstable_cache(
   fetchEodhdEarningsCalendarUncached,
-  ["eodhd-earnings-calendar-range-v1"],
+  ["eodhd-earnings-calendar-range-v2-no-empty-cache"],
   { revalidate: REVALIDATE_EARNINGS_CALENDAR },
 );
 
@@ -96,10 +117,22 @@ const fetchEodhdEarningsCalendarRangeCached = unstable_cache(
  * reuse; wide ranges use `cache: "no-store"` only (no 2MB data-cache write).
  */
 export async function fetchEodhdEarningsCalendar(fromYmd: string, toYmd: string): Promise<EodhdRawEarningRow[]> {
-  if (calendarRangeDayCount(fromYmd, toYmd) > EARNINGS_CALENDAR_MAX_CACHED_RANGE_DAYS) {
-    return fetchEodhdEarningsCalendarUncached(fromYmd, toYmd);
+  try {
+    const days = calendarRangeDayCount(fromYmd, toYmd);
+    // Earnings week uses one request per weekday — skip Next `unstable_cache` (breaks outside Next
+    // request context / can sticky-empty). Multi-day ranges still use the range cache when small.
+    if (days <= 1 || days > EARNINGS_CALENDAR_MAX_CACHED_RANGE_DAYS) {
+      return await fetchEodhdEarningsCalendarUncached(fromYmd, toYmd);
+    }
+    return await fetchEodhdEarningsCalendarRangeCached(fromYmd, toYmd);
+  } catch (e) {
+    console.warn(
+      "[earnings calendar] fetch failed",
+      { from: fromYmd, to: toYmd },
+      e instanceof Error ? e.message : e,
+    );
+    return [];
   }
-  return fetchEodhdEarningsCalendarRangeCached(fromYmd, toYmd);
 }
 
 /**

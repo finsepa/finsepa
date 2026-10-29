@@ -11,9 +11,17 @@ import {
   macroHubSegment,
   newsHubSegment,
 } from "@/lib/market/hub-snapshot-keys";
-import { hubSnapshotRowIsFresh, upsertHubSnapshot } from "@/lib/market/hub-snapshot-store";
+import { hubSnapshotRowIsFresh, readHubSnapshot, upsertHubSnapshot } from "@/lib/market/hub-snapshot-store";
 import { buildEconomyWeekHubPayload } from "@/lib/market/economy-week-data";
-import { addDaysUtc, buildEarningsWeekHubPackage, mondayOfWeekUtc, toYmdUtc } from "@/lib/market/earnings-week-data";
+import {
+  addDaysUtc,
+  buildEarningsWeekHubPackage,
+  earningsWeekRebuildLooksDegraded,
+  mondayOfWeekUtc,
+  toYmdUtc,
+  type EarningsWeekDataPackage,
+} from "@/lib/market/earnings-week-data";
+import { buildUsEquityMcapSnapshotForIngest, usEquityMcapSegment } from "@/lib/market/us-equity-mcap-universe";
 import { buildMacroDashboardPayloadForIngest } from "@/lib/market/macro-dashboard-payload";
 import { buildNewsFeedForHubIngest } from "@/lib/news/news-feed";
 import { runWithProviderTrace } from "@/lib/market/provider-trace";
@@ -74,15 +82,40 @@ export async function ingestHubSnapshots(now: Date = new Date()): Promise<HubSna
       }
     }
 
+    // Before earnings weeks: they size companies from this list instead of per-ticker fundamentals.
+    const mcapSeg = usEquityMcapSegment(now);
+    if (await hubSnapshotRowIsFresh(HUB_SNAPSHOT_KEY.usEquityMcap, mcapSeg, REVALIDATE_STATIC_DAY * 1000)) {
+      keys[HUB_SNAPSHOT_KEY.usEquityMcap] = "skipped";
+    } else {
+      const snap = await buildUsEquityMcapSnapshotForIngest();
+      if (snap) {
+        const res = await upsertHubSnapshot(HUB_SNAPSHOT_KEY.usEquityMcap, mcapSeg, snap);
+        keys[HUB_SNAPSHOT_KEY.usEquityMcap] = res.ok ? "ok" : res.reason;
+      } else {
+        keys[HUB_SNAPSHOT_KEY.usEquityMcap] = "incomplete_build_kept_previous";
+      }
+    }
+
     for (const weekYmd of earningsWeekMondaysForIngest(now)) {
       const key = hubEarningsWeekKey(weekYmd);
       const seg = earningsWeekHubSegment(weekYmd);
       if (await hubSnapshotRowIsFresh(key, seg, REVALIDATE_STATIC_DAY * 1000)) {
         keys[key] = "skipped";
       } else {
-        const pack = await buildEarningsWeekHubPackage(utcMondayFromYmd(weekYmd));
-        const res = await upsertHubSnapshot(key, seg, pack);
-        keys[key] = res.ok ? "ok" : res.reason;
+        try {
+          const pack = await buildEarningsWeekHubPackage(utcMondayFromYmd(weekYmd));
+          const previous = await readHubSnapshot<EarningsWeekDataPackage>(key, seg, { allowStale: true });
+          const degraded = previous ? earningsWeekRebuildLooksDegraded(previous, pack) : null;
+          if (degraded) {
+            console.warn("[hub ingest] earnings week rebuild looks degraded — keeping previous", key, degraded);
+            keys[key] = "degraded_kept_previous";
+          } else {
+            const res = await upsertHubSnapshot(key, seg, pack);
+            keys[key] = res.ok ? "ok" : res.reason;
+          }
+        } catch (e) {
+          keys[key] = e instanceof Error ? e.message.slice(0, 120) : "build_failed";
+        }
       }
     }
 

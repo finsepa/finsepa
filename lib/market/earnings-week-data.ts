@@ -5,6 +5,8 @@ import { unstable_cache } from "next/cache";
 import { REVALIDATE_EARNINGS_CALENDAR } from "@/lib/data/cache-policy";
 import { extractMarketCapUsdFromFundamentalsRoot, fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { fetchEodhdEarningsCalendar, type EodhdRawEarningRow } from "@/lib/market/eodhd-earnings-calendar";
+import { readUsEquityMcapMap } from "@/lib/market/us-equity-mcap-universe";
+import { isUsEquityExchangeHolidayYmd } from "@/lib/market/us-equity-exchange-holidays";
 import type {
   EarningsCalendarItem,
   EarningsDayColumn,
@@ -18,7 +20,7 @@ import { sortEarningsCalendarItemsByMarketCap } from "@/lib/market/earnings-week
 import { earningsDayListItems } from "@/lib/market/earnings-scope-filter";
 import { logoUrlFromFundamentalsRoot } from "@/lib/market/stock-logo-url";
 import { listTop500EquityTickersOrdered } from "@/lib/screener/screener-earnings-universe";
-import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
+import { getTop500UniverseMarketSnapshot } from "@/lib/screener/top500-companies";
 import { resolveEquityLogoUrlFromListingTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { TOP10_META, TOP10_TICKERS, type Top10Ticker } from "@/lib/screener/top10-config";
 import { issuerKeyForOtcListingCollapse } from "@/lib/market/otc-duplicate-tickers";
@@ -35,10 +37,10 @@ import {
 export { addDaysUtc, formatWeekMonthYearLabel, mondayOfWeekUtc, toYmdUtc };
 
 /**
- * Symbols: Top-500 US equities from the Screener static universe (market-cap order). Calendar rows outside
- * that list are ignored (no per-user fan-out to fundamentals for hundreds of off-universe names).
- *
- * Set `EARNINGS_USE_FUNDAMENTALS_MC=1` to fetch fundamentals JSON for MC gating on calendar-matched tickers only.
+ * Earnings week build (hub cron + cold miss):
+ * - Calendar: 1 EODHD call per weekday (EPS `estimate` comes from that feed — no fundamentals for list EPS).
+ * - Market-cap gate: daily `hub_us_equity_mcap` snapshot (+ Top-500); fundamentals only if mcap map missing
+ *   or `EARNINGS_USE_FUNDAMENTALS_MC=1` (never enable in prod).
  */
 function isEarningsFundamentalsMcFilterEnabled(): boolean {
   return process.env.EARNINGS_USE_FUNDAMENTALS_MC === "1";
@@ -64,7 +66,7 @@ function buildScreenerStockAllowKeys(universe: readonly { ticker: string }[]): S
 
 /** True if `ticker` is in the Top-500 earnings universe — use to gate earnings preview API. */
 export async function isTickerOnScreenerEarningsUniverse(ticker: string): Promise<boolean> {
-  const { universe } = await getScreenerCompaniesStaticLayer();
+  const universe = await getTop500UniverseMarketSnapshot();
   return buildScreenerStockAllowKeys(universe).has(earningsUniverseKey(ticker));
 }
 
@@ -206,6 +208,9 @@ const MIN_MARKET_CAP_USD = 1_500_000_000;
  */
 const EARNINGS_BUCKET_PREVIEW_COUNT = 11;
 
+/** Top-500 snapshot normally has ~500 sized rows; far fewer means the universe load failed. */
+const MIN_SIZED_UNIVERSE_FOR_EARNINGS = 100;
+
 /**
  * Parallel fundamentals fetches for market-cap filtering. Previously a fixed chunk size of 10 ran
  * chunks **sequentially**; with 300+ symbols that became tens of back-to-back waves and multi‑minute
@@ -271,6 +276,8 @@ type PreparedEarning = {
   timing: EarningsReportTiming;
   timingLabel: string;
   fallbackName: string | null;
+  /** Consensus EPS from calendar `estimate` (null when provider omits it). */
+  epsEstimate: number | null;
 };
 
 /** Fast path: calendar name + cached universe row — logos match screener (Logo.dev / top-10 domains). */
@@ -450,15 +457,22 @@ function parseFilterDedupeWeek(
       }
     }
     if (!allowedReportDates.has(reportDate)) continue;
+    const epsEstimate =
+      typeof row.estimate === "number" && Number.isFinite(row.estimate) ? row.estimate : null;
     out.push({
       ticker,
       reportDate,
       timing,
       timingLabel,
       fallbackName: nameFromRawRow(row),
+      epsEstimate,
     });
   }
   return out;
+}
+
+function formatCalendarEpsEstimate(n: number): string {
+  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /**
@@ -591,15 +605,22 @@ function preparedToCalendarItem(
     reportDate: p.reportDate,
     timing: p.timing,
     timingLabel: p.timingLabel,
+    estRevenueDisplay: null,
+    estEpsDisplay: p.epsEstimate != null ? formatCalendarEpsEstimate(p.epsEstimate) : null,
   };
+  // Strict MC / legacy: fundamentals can fill revenue + refine EPS when calendar omitted estimate.
   if (fundamentalsRoot) {
     const { estRevenueDisplay, estEpsDisplay } = estimatesDisplayFromFundamentalsRoot(
       fundamentalsRoot,
       p.reportDate,
     );
-    return { ...item, estRevenueDisplay, estEpsDisplay };
+    return {
+      ...item,
+      estRevenueDisplay: estRevenueDisplay ?? item.estRevenueDisplay,
+      estEpsDisplay: item.estEpsDisplay ?? estEpsDisplay,
+    };
   }
-  return { ...item, estRevenueDisplay: null, estEpsDisplay: null };
+  return item;
 }
 
 export type EarningsWeekDataPackage = {
@@ -621,9 +642,7 @@ async function buildEarningsWeekDataPackageUncached(
 ): Promise<EarningsWeekDataPackage> {
   const t0 = performance.now();
   const monday = new Date(weekMondayUtc);
-  const friday = addDaysUtc(monday, 4);
   const fromYmd = toYmdUtc(monday);
-  const toYmd = toYmdUtc(friday);
 
   const weekdayYmds: string[] = [];
   const allowedReportDates = new Set<string>();
@@ -634,7 +653,15 @@ async function buildEarningsWeekDataPackageUncached(
   }
 
   const tCal0 = performance.now();
-  const raw = await fetchEodhdEarningsCalendar(fromYmd, toYmd);
+  // One small cached request per weekday: a short or failed provider response then only affects that day
+  // (a single 5-day response came back cut off and dropped the end of whole weeks).
+  const rawByDay = await Promise.all(weekdayYmds.map((ymd) => fetchEodhdEarningsCalendar(ymd, ymd)));
+  // The global calendar always has rows on a US trading day; an empty one is a failed fetch, not a quiet day.
+  const missingDays = weekdayYmds.filter((ymd, i) => rawByDay[i]!.length === 0 && !isUsEquityExchangeHolidayYmd(ymd));
+  if (missingDays.length > 0) {
+    throw new Error(`[earnings week] calendar fetch empty for ${missingDays.join(", ")} — not building ${fromYmd}`);
+  }
+  const raw = rawByDay.flat();
   const msCalendar = performance.now() - tCal0;
 
   const tParse0 = performance.now();
@@ -643,7 +670,8 @@ async function buildEarningsWeekDataPackageUncached(
   const prepared = dedupePrimaryListings(afterDate);
   const msParseDedupe = performance.now() - tParse0;
 
-  const { universe: staticUniverse } = await getScreenerCompaniesStaticLayer();
+  // Snapshot-first (no Next `unstable_cache`) so hub cron / CLI rebuilds get ranks even outside a request.
+  const staticUniverse = await getTop500UniverseMarketSnapshot();
   const top500TickerList = listTop500EquityTickersOrdered(staticUniverse);
   // Keep the screener-derived universe map (names + market caps) but do NOT drop calendar rows
   // just because they’re outside the Top-500 snapshot. This prevents missing legitimate index
@@ -657,10 +685,31 @@ async function buildEarningsWeekDataPackageUncached(
   let fundamentalsRootByTicker: Map<string, Record<string, unknown> | null> | null = null;
   const universeByKey = buildScreenerUniverseMapForEarnings(staticUniverse, allowKeys);
 
+  // Daily snapshot of every US listing ≥ the floor (hub cron) — sizes calendar names without per-ticker
+  // fundamentals (~10 EODHD credits each). Top-500 values win where both exist.
+  const mcapMap = strictMc ? null : await readUsEquityMcapMap();
+  if (mcapMap) {
+    for (const [key, row] of mcapMap) {
+      if (row.marketCapUsd < MIN_MARKET_CAP_USD) continue;
+      const prev = universeByKey.get(key);
+      if (!prev || prev.marketCapUsd <= 0) universeByKey.set(key, row);
+    }
+  }
+
+  // A degraded universe (e.g. an empty Top-500 load cached after a provider error) drops every large-cap
+  // reporter — AMZN/GOOGL/MSFT vanished from a whole week. Refuse to build so hub snapshots keep the last good week.
+  const sizedUniverseCount = [...universeByKey.values()].filter((u) => u.marketCapUsd >= MIN_MARKET_CAP_USD).length;
+  if (rawCount > 0 && sizedUniverseCount < MIN_SIZED_UNIVERSE_FOR_EARNINGS) {
+    throw new Error(
+      `[earnings week] screener universe unusable (${sizedUniverseCount} sized rows) — not building ${fromYmd}`,
+    );
+  }
+
   const tFund0 = performance.now();
   if (strictMc) {
     fundamentalsRootByTicker = await fetchFundamentalsRootsForMarketCap(uniqueTickers);
-  } else {
+  } else if (!mcapMap) {
+    // Fallback until the first daily mcap snapshot exists.
     const offUniverseTickers = tickersNeedingFundamentalsMarketCap(preparedScreener, universeByKey);
     if (offUniverseTickers.length > 0) {
       fundamentalsRootByTicker = await fetchFundamentalsRootsForMarketCap(offUniverseTickers);
@@ -689,11 +738,22 @@ async function buildEarningsWeekDataPackageUncached(
 
   const preparedForWeek = dedupePreparedByReportDateAndTicker(preparedMarketCap);
 
-  const estimateTickers = [...new Set(preparedForWeek.map((p) => p.ticker))];
-  fundamentalsRootByTicker = await ensureFundamentalsRootsForTickers(
-    estimateTickers,
-    fundamentalsRootByTicker,
-  );
+  // EPS comes from calendar `estimate` (already fetched). Reuse prior hub revenue display when present.
+  // Do NOT fundamentals-fan-out for list estimates — that was the multi-thousand-credit week rebuild cost.
+  const previousEstimates = await readSavedWeekEstimates(fromYmd);
+  if (strictMc) {
+    const estimateTickers = [
+      ...new Set(
+        preparedForWeek
+          .filter((p) => !previousEstimates.has(estimateKey(p.ticker, p.reportDate)))
+          .map((p) => p.ticker),
+      ),
+    ];
+    fundamentalsRootByTicker = await ensureFundamentalsRootsForTickers(
+      estimateTickers,
+      fundamentalsRootByTicker,
+    );
+  }
 
   const byDate = new Map<string, PreparedEarning[]>();
   for (const p of preparedForWeek) {
@@ -738,7 +798,14 @@ async function buildEarningsWeekDataPackageUncached(
 
   function calendarItemForPrepared(p: PreparedEarning): EarningsCalendarItem {
     const root = fundamentalsRootByTicker?.get(p.ticker) ?? null;
-    return preparedToCalendarItem(p, bundleByTicker.get(p.ticker), screenerRankByKey, root);
+    const item = preparedToCalendarItem(p, bundleByTicker.get(p.ticker), screenerRankByKey, root);
+    const saved = previousEstimates.get(estimateKey(p.ticker, p.reportDate));
+    if (!saved) return item;
+    return {
+      ...item,
+      estEpsDisplay: item.estEpsDisplay ?? saved.estEpsDisplay ?? null,
+      estRevenueDisplay: item.estRevenueDisplay ?? saved.estRevenueDisplay ?? null,
+    };
   }
 
   function bucketForTiming(ymd: string, timing: EarningsReportTiming, timingRows: PreparedEarning[]): EarningsTimingBucket {
@@ -820,64 +887,8 @@ async function buildEarningsWeekDataPackageUncached(
   };
 
   const pack: EarningsWeekDataPackage = { payload, overflowByKey };
-  return hydrateEarningsWeekPackageEstimates(pack, fundamentalsRootByTicker);
-}
-
-function enrichCalendarItemEstimates(
-  item: EarningsCalendarItem,
-  roots: ReadonlyMap<string, Record<string, unknown> | null>,
-): EarningsCalendarItem {
-  const root = roots.get(item.ticker) ?? null;
-  if (!root) return item;
-  const est = estimatesDisplayFromFundamentalsRoot(root, item.reportDate);
-  return {
-    ...item,
-    estRevenueDisplay: item.estRevenueDisplay ?? est.estRevenueDisplay,
-    estEpsDisplay: item.estEpsDisplay ?? est.estEpsDisplay,
-  };
-}
-
-async function hydrateEarningsWeekPackageEstimates(
-  pack: EarningsWeekDataPackage,
-  existingRoots?: Map<string, Record<string, unknown> | null> | null,
-): Promise<EarningsWeekDataPackage> {
-  if (pack.estimatesHydrated) return pack;
-
-  const tickers = [
-    ...new Set(pack.payload.days.flatMap((day) => earningsDayListItems(day).map((item) => item.ticker))),
-  ];
-  const roots = await ensureFundamentalsRootsForTickers(tickers, existingRoots ?? null);
-
-  const days: EarningsDayColumn[] = pack.payload.days.map((day) => {
-    const enrich = (item: EarningsCalendarItem) => enrichCalendarItemEstimates(item, roots);
-    return {
-      ...day,
-      listItems: earningsDayListItems(day).map(enrich),
-      beforeMarket: {
-        ...day.beforeMarket,
-        items: day.beforeMarket.items.map(enrich),
-      },
-      afterMarket: {
-        ...day.afterMarket,
-        items: day.afterMarket.items.map(enrich),
-      },
-      timeTbd: {
-        ...day.timeTbd,
-        items: day.timeTbd.items.map(enrich),
-      },
-    };
-  });
-
-  const overflowByKey: Record<string, EarningsCalendarItem[]> = {};
-  for (const [key, items] of Object.entries(pack.overflowByKey)) {
-    overflowByKey[key] = items.map((item) => enrichCalendarItemEstimates(item, roots));
-  }
-
-  return {
-    payload: { ...pack.payload, days },
-    overflowByKey,
-    estimatesHydrated: true,
-  };
+  // Estimates are already applied per row (saved values or freshly fetched fundamentals) — no second pass.
+  return { ...pack, estimatesHydrated: true };
 }
 
 type EarningsCacheMode = "universe" | "fund";
@@ -888,14 +899,106 @@ const getEarningsWeekDataPackageCached = unstable_cache(
     const monday = Number.isFinite(t) ? mondayOfWeekUtc(new Date(t)) : mondayOfWeekUtc(new Date());
     return buildEarningsWeekDataPackageUncached(monday, mode === "fund");
   },
-  ["earnings-week-v35-combined-estimate"],
+  ["earnings-week-v37-calendar-eps-no-fund-estimates"],
   { revalidate: REVALIDATE_EARNINGS_CALENDAR },
 );
+
+const SAVED_WEEK_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+function emptyEarningsWeekPackage(weekMondayYmd: string): EarningsWeekDataPackage {
+  const monday = mondayOfWeekUtc(new Date(`${weekMondayYmd}T12:00:00.000Z`));
+  const emptyBucket = (): EarningsTimingBucket => ({ items: [], overflowCount: 0 });
+  const days: EarningsDayColumn[] = Array.from({ length: 5 }, (_, i) => {
+    const d = addDaysUtc(monday, i);
+    const ymd = toYmdUtc(d);
+    return {
+      date: ymd,
+      weekdayLabel: weekdayShortUtc(ymd),
+      dayNumber: String(d.getUTCDate()),
+      beforeMarket: emptyBucket(),
+      afterMarket: emptyBucket(),
+      timeTbd: emptyBucket(),
+      listItems: [],
+    };
+  });
+  return {
+    payload: {
+      weekMondayYmd: toYmdUtc(monday),
+      weekLabel: formatWeekMonthYearLabel(monday),
+      days,
+      hasAnyEvents: false,
+      datasetFilter: "universe_mc",
+    },
+    overflowByKey: {},
+  };
+}
+
+function estimateKey(ticker: string, reportDate: string): string {
+  return `${ticker}|${reportDate}`;
+}
+
+async function readSavedWeekPackage(weekMondayYmd: string): Promise<EarningsWeekDataPackage | null> {
+  return readHubSnapshot<EarningsWeekDataPackage>(hubEarningsWeekKey(weekMondayYmd), earningsWeekHubSegment(weekMondayYmd), {
+    allowStale: true,
+    maxStaleMs: SAVED_WEEK_MAX_AGE_MS,
+  });
+}
+
+/** `ticker|reportDate` → estimates from the saved week (only rows that were hydrated). */
+async function readSavedWeekEstimates(
+  weekMondayYmd: string,
+): Promise<Map<string, Pick<EarningsCalendarItem, "estRevenueDisplay" | "estEpsDisplay">>> {
+  const out = new Map<string, Pick<EarningsCalendarItem, "estRevenueDisplay" | "estEpsDisplay">>();
+  const saved = await readSavedWeekPackage(weekMondayYmd).catch(() => null);
+  if (!saved?.estimatesHydrated) return out;
+  for (const day of saved.payload.days) {
+    for (const item of earningsDayListItems(day)) {
+      out.set(estimateKey(item.ticker, item.reportDate), {
+        estRevenueDisplay: item.estRevenueDisplay ?? null,
+        estEpsDisplay: item.estEpsDisplay ?? null,
+      });
+    }
+  }
+  return out;
+}
+
+function top500CountByDay(pack: EarningsWeekDataPackage): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const day of pack.payload.days) {
+    out.set(day.date, earningsDayListItems(day).filter((i) => i.screenerRank != null).length);
+  }
+  return out;
+}
+
+/**
+ * Guard before overwriting a saved week: a rebuild that lost a large share of Top-500 reporters on any day is
+ * almost always a short provider response, not a real schedule change. Returns a reason, or `null` when safe.
+ */
+export function earningsWeekRebuildLooksDegraded(
+  previous: EarningsWeekDataPackage,
+  next: EarningsWeekDataPackage,
+): string | null {
+  const before = top500CountByDay(previous);
+  const after = top500CountByDay(next);
+  for (const [date, prevCount] of before) {
+    const nextCount = after.get(date) ?? 0;
+    if (prevCount >= 5 && nextCount < prevCount * 0.7) {
+      return `${date}: top500 ${prevCount} → ${nextCount}`;
+    }
+  }
+  return null;
+}
 
 async function persistHubEarningsWeekSnapshotIfReady(
   weekMondayYmd: string,
   pack: EarningsWeekDataPackage,
 ): Promise<void> {
+  const previous = await readSavedWeekPackage(weekMondayYmd).catch(() => null);
+  const degraded = previous ? earningsWeekRebuildLooksDegraded(previous, pack) : null;
+  if (degraded) {
+    console.warn("[earnings week] rebuild looks degraded — keeping saved week", weekMondayYmd, degraded);
+    return;
+  }
   await upsertHubSnapshot(hubEarningsWeekKey(weekMondayYmd), earningsWeekHubSegment(weekMondayYmd), pack);
 }
 
@@ -908,7 +1011,14 @@ async function getEarningsWeekDataPackage(weekMondayUtc: Date): Promise<Earnings
   if (snap) return snap;
 
   const mode: EarningsCacheMode = isEarningsFundamentalsMcFilterEnabled() ? "fund" : "universe";
-  const pack = await getEarningsWeekDataPackageCached(ymd, mode);
+  let pack: EarningsWeekDataPackage;
+  try {
+    pack = await getEarningsWeekDataPackageCached(ymd, mode);
+  } catch (e) {
+    // Builder refused (provider blip). Throws are not cached — render an empty week and retry next request.
+    console.warn("[earnings week] build failed", ymd, e instanceof Error ? e.message : e);
+    return emptyEarningsWeekPackage(ymd);
+  }
   void persistHubEarningsWeekSnapshotIfReady(ymd, pack).catch(() => {});
   return pack;
 }

@@ -42,14 +42,24 @@ function buildIdentityByTicker(universe: readonly EodhdTopUniverseRow[]): Record
 
 async function buildScreenerStaticLayerUncached(): Promise<ScreenerCompaniesStaticLayer> {
   const universe = await getTop500Universe();
+  // Throwing skips the 7d cache write — an empty universe from a provider blip must not stick for a week.
+  if (universe.length === 0) throw new Error("[screener static layer] empty universe — not caching");
   return { universe, identityByTicker: buildIdentityByTicker(universe) };
 }
 
-export const getScreenerCompaniesStaticLayer = unstable_cache(
+const getScreenerCompaniesStaticLayerCached = unstable_cache(
   buildScreenerStaticLayerUncached,
   ["screener-v2-companies-static-layer-v5-top500-snap"],
   { revalidate: REVALIDATE_SCREENER_IDENTITY },
 );
+
+export async function getScreenerCompaniesStaticLayer(): Promise<ScreenerCompaniesStaticLayer> {
+  try {
+    return await getScreenerCompaniesStaticLayerCached();
+  } catch {
+    return { universe: [], identityByTicker: {} };
+  }
+}
 
 /**
  * Screener v2 — Layer B: one shared realtime map for all screener tickers (batched HTTP),

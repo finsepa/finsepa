@@ -6,6 +6,8 @@ export const HUB_SNAPSHOT_KEY = {
   newsStocks: "hub_news_stocks",
   newsCrypto: "hub_news_crypto",
   newsIndices: "hub_news_indices",
+  /** All US equities ≥ the earnings market-cap floor (screener bands) — daily; earnings calendar gating. */
+  usEquityMcap: "hub_us_equity_mcap",
 } as const;
 
 export type HubSnapshotFixedKey = (typeof HUB_SNAPSHOT_KEY)[keyof typeof HUB_SNAPSHOT_KEY];

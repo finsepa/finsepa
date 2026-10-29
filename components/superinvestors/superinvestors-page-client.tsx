@@ -44,13 +44,10 @@ export function SuperinvestorsPageShell({ children }: { children: ReactNode }) {
       <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
         <div className="mb-6 flex flex-col gap-4 border-b border-stroke-subtle pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 max-w-3xl">
-            <p className="text-[11px] font-semibold uppercase leading-4 tracking-[0.06em] text-fg-muted">
-              13F portfolios
-            </p>
-            <h1 className="mt-1 hidden text-[28px] font-semibold leading-9 tracking-tight text-fg md:block">
+            <h1 className="hidden text-[28px] font-semibold leading-9 tracking-tight text-fg md:block">
               Superinvestors
             </h1>
-            <p className="mt-2 text-[14px] leading-6 text-fg-muted">
+            <p className="text-[14px] leading-6 text-fg-muted md:mt-2">
               Track what the world&apos;s best-known investors own. Each portfolio is rebuilt from the fund&apos;s latest
               SEC 13F filing: holdings, position sizing and value, updated as new filings land.
             </p>

@@ -64,11 +64,18 @@ export async function buildTop500MarketSnapshotForIngest(): Promise<TopCompanyUn
  * Prefer cron `top500_market` so a 7d identity-cache miss does not fan out EODHD on a visitor.
  * Falls back to live EODHD screener pages only when the snapshot is missing/unusable.
  */
+/** Below this the load failed (provider error / budget) — never cache it for the 7d identity window. */
+const MIN_CACHEABLE_TOP500_ROWS = 100;
+
 async function loadTop500UniversePreferSnapshot(): Promise<TopCompanyUniverseRow[]> {
   const fromSnapshot = await readMarketSnapshot<TopCompanyUniverseRow[]>(MARKET_SNAPSHOT_KEY.top500Market);
   const normalized = normalizeTop500SnapshotRows(fromSnapshot);
   if (normalized) return normalized;
-  return buildTop500UniverseUncached();
+  const built = await buildTop500UniverseUncached();
+  if (built.length < MIN_CACHEABLE_TOP500_ROWS) {
+    throw new Error(`[top500] degraded universe (${built.length} rows) — not caching`);
+  }
+  return built;
 }
 
 const getTop500UniverseData = unstable_cache(
@@ -77,8 +84,14 @@ const getTop500UniverseData = unstable_cache(
   { revalidate: REVALIDATE_SCREENER_IDENTITY },
 );
 
-/** Cached across requests; returns up to 500 US equity rows (ETFs/ETNs excluded). */
-export const getTop500Universe = cache(async () => getTop500UniverseData());
+/** Cached across requests; returns up to 500 US equity rows (ETFs/ETNs excluded). Empty (uncached) on provider failure. */
+export const getTop500Universe = cache(async (): Promise<TopCompanyUniverseRow[]> => {
+  try {
+    return await getTop500UniverseData();
+  } catch {
+    return [];
+  }
+});
 
 /**
  * Screener tables that need fresh 1D/1M/YTD (Gainers/Losers, Sectors, Industries):
