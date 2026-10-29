@@ -55,6 +55,32 @@ function legendTime(sec: number, interval: StockCandleInterval): string {
   return formatTime(sec, interval, { month: "short", day: "numeric", year: "numeric" });
 }
 
+const US_SESSION_CLOSE_MIN = 16 * 60;
+const FIVE_MIN_SEC = 5 * 60;
+
+function nyMinutesOfDay(sec: number): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    hour: "numeric",
+    minute: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(new Date(sec * 1000));
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+  return hour * 60 + minute;
+}
+
+/**
+ * Empty 5m slots from the last candle to the 16:00 ET close, so a forming session keeps the full-day time axis
+ * (like the 1D line chart) instead of stretching a handful of candles across the plot.
+ */
+function sessionWhitespaceAfter(lastSec: number): { time: UTCTimestamp }[] {
+  const closeSec = lastSec + (US_SESSION_CLOSE_MIN - nyMinutesOfDay(lastSec)) * 60;
+  const out: { time: UTCTimestamp }[] = [];
+  for (let t = lastSec + FIVE_MIN_SEC; t < closeSec; t += FIVE_MIN_SEC) out.push({ time: t as UTCTimestamp });
+  return out;
+}
+
 function formatPrice(v: number): string {
   return v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: v < 1 ? 4 : 2 });
 }
@@ -254,15 +280,18 @@ export function StockCandleChart({
     const volume = volumeRef.current;
     if (!series || !volume) return;
     const candles = data?.candles ?? [];
-    series.setData(
-      candles.map((c) => ({
+    const lastTime = candles[candles.length - 1]?.time;
+    const sessionPadding = interval === "5m" && lastTime != null ? sessionWhitespaceAfter(lastTime) : [];
+    series.setData([
+      ...candles.map((c) => ({
         time: c.time as UTCTimestamp,
         open: c.open,
         high: c.high,
         low: c.low,
         close: c.close,
       })),
-    );
+      ...sessionPadding,
+    ]);
     const volumeUp = resolveFsColorWithAlpha("--fs-up", VOLUME_BAR_ALPHA);
     const volumeDown = resolveFsColorWithAlpha("--fs-down", VOLUME_BAR_ALPHA);
     volume.setData(
@@ -272,6 +301,8 @@ export function StockCandleChart({
           : { time: c.time as UTCTimestamp },
       ),
     );
+    // `fixRightEdge` clamps to the last real candle and would drag the forming session back to the right edge.
+    chartRef.current?.applyOptions({ timeScale: { fixRightEdge: sessionPadding.length === 0 } });
     const fitKey = `${requestKey}|${interval}`;
     if (candles.length && fittedKeyRef.current !== fitKey) {
       chartRef.current?.timeScale().fitContent();
