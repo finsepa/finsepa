@@ -1,6 +1,6 @@
 import "server-only";
 
-import { REVALIDATE_STATIC_DAY, REVALIDATE_WARM_LONG } from "@/lib/data/cache-policy";
+import { REVALIDATE_STATIC_DAY } from "@/lib/data/cache-policy";
 import {
   earningsWeekHubSegment,
   economyWeekHubSegment,
@@ -25,13 +25,25 @@ import { buildUsEquityMcapSnapshotForIngest, usEquityMcapSegment } from "@/lib/m
 import { buildMacroDashboardPayloadForIngest } from "@/lib/market/macro-dashboard-payload";
 import { buildNewsFeedForHubIngest } from "@/lib/news/news-feed";
 import { runWithProviderTrace } from "@/lib/market/provider-trace";
+import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { NewsTab } from "@/lib/news/news-types";
 
 const ECONOMY_CRON_COUNTRIES = ["US"] as const;
 const NEWS_TABS: NewsTab[] = ["stocks", "crypto", "indices"];
-/** Hub news segment is daily; avoid re-fetching all tabs on every 15m cron tick. */
-const NEWS_HUB_CRON_MAX_AGE_MS = REVALIDATE_WARM_LONG * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+/** Cron ticks every 15m; without slack a 60m limit lands on the 75m tick. */
+const NEWS_CRON_TICK_SLACK_MS = 2 * 60 * 1000;
+
+/**
+ * Each news rebuild costs 5 credits per symbol (stocks 60 → 300, crypto/indices 10 → 50 each),
+ * so refresh by how fast each feed actually moves rather than every cron tick.
+ */
+function newsHubMaxAgeMs(tab: NewsTab, now: Date): number {
+  if (tab !== "stocks") return 2 * HOUR_MS - NEWS_CRON_TICK_SLACK_MS;
+  const hours = getUsEquityMarketSession(now) === "closed" ? 3 : 1;
+  return hours * HOUR_MS - NEWS_CRON_TICK_SLACK_MS;
+}
 
 export type HubSnapshotIngestResult = {
   skipped: boolean;
@@ -73,7 +85,7 @@ export async function ingestHubSnapshots(now: Date = new Date()): Promise<HubSna
     for (const tab of NEWS_TABS) {
       const key = hubNewsKey(tab);
       const seg = newsHubSegment(tab, now);
-      if (await hubSnapshotRowIsFresh(key, seg, NEWS_HUB_CRON_MAX_AGE_MS)) {
+      if (await hubSnapshotRowIsFresh(key, seg, newsHubMaxAgeMs(tab, now))) {
         keys[key] = "skipped";
       } else {
         const feed = await buildNewsFeedForHubIngest(tab);
