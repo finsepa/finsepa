@@ -5,7 +5,10 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, LayoutList } from "@/lib/icons";
 
 import { EarningsListSeeMoreMenu } from "@/components/earnings/earnings-list-see-more-menu";
-import { EarningsOverflowHoverMenu } from "@/components/earnings/earnings-overflow-hover-menu";
+import {
+  EARNINGS_TIMING_ROW_BAR_CLASS,
+  EarningsOverflowHoverMenu,
+} from "@/components/earnings/earnings-overflow-hover-menu";
 import { EarningsPreviewModal } from "@/components/earnings/earnings-preview-modal";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
@@ -285,8 +288,8 @@ const EARNINGS_WEEK_DAY_CARD_CLASS =
 const EARNINGS_WEEK_DAY_GAP_CLASS =
   "flex w-max min-w-full gap-3 md:w-full md:flex-row md:items-stretch";
 
-/** Matches logo (32px) + label + card padding in {@link EarningsCard}. */
-const EARNINGS_TIMING_GRID_CELL_MIN_H_PX = 72;
+/** One list row in {@link EarningsCard}: 28px logo + two text lines + vertical padding. */
+const EARNINGS_TIMING_GRID_CELL_MIN_H_PX = 44;
 
 /** Weekday + day on one line, centered — same on mobile and desktop; table stroke under header. */
 function EarningsWeekDayHeader({
@@ -428,7 +431,7 @@ function EarningsTimingBlock({
     <div className={cn(showTopSpacing && "mt-3")}>
       <EarningsTimingSectionHeading timing={timing} title={title} />
       <div
-        className="grid grid-cols-3 gap-1"
+        className="grid grid-cols-1 gap-0.5"
         style={{
           gridTemplateRows: `repeat(${gridRows}, minmax(${EARNINGS_TIMING_GRID_CELL_MIN_H_PX}px, auto))`,
         }}
@@ -444,10 +447,12 @@ function EarningsTimingBlock({
                 ticker={slot.item.ticker}
                 companyName={slot.item.companyName}
                 logoUrl={slot.item.logoUrl}
+                timing={timing}
                 onOpen={() => onOpenCard(slot.item)}
               />
             ) : slot.kind === "expand" ? (
               <EarningsOverflowHoverMenu
+                variant="row"
                 count={bucket.overflowCount}
                 preloadedItems={preloadedOverflow}
                 weekMondayYmd={weekMondayYmd}
@@ -548,11 +553,13 @@ function EarningsCard({
   ticker,
   companyName,
   logoUrl,
+  timing,
   onOpen,
 }: {
   ticker: string;
   companyName: string;
   logoUrl: string;
+  timing: EarningsReportTiming;
   onOpen: () => void;
 }) {
   return (
@@ -561,11 +568,15 @@ function EarningsCard({
       onClick={onOpen}
       onPointerEnter={() => prefetchStockEarningsTabPayload(ticker, true)}
       onFocus={() => prefetchStockEarningsTabPayload(ticker, true)}
-      className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-surface-muted"
+      className="flex h-full w-full min-w-0 items-center gap-2 rounded-lg py-1.5 pr-1.5 pl-1 text-left transition-colors hover:bg-surface-muted"
     >
-      <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="md" fill />
-      <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-fg">
-        {ticker}
+      <span className={cn("w-[3px] self-stretch shrink-0 rounded-full", EARNINGS_TIMING_ROW_BAR_CLASS[timing])} aria-hidden />
+      <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="28" />
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-[13px] font-semibold leading-4 tabular-nums text-fg">{ticker}</span>
+        {companyName ? (
+          <span className="truncate text-[12px] leading-4 text-fg-muted">{companyName}</span>
+        ) : null}
       </span>
     </button>
   );
@@ -620,6 +631,14 @@ function earningsWeekHref(weekYmd: string, scope: EarningsScopeFilter): string {
   return `/earnings?${qs.toString()}`;
 }
 
+/** Sunday – Saturday around the week's Monday, e.g. `Oct 25 – Oct 31` (the heading above carries the year). */
+function formatWeekRangeLabel(weekMondayYmd: string): string {
+  const monday = new Date(Date.parse(`${weekMondayYmd}T12:00:00.000Z`));
+  if (!Number.isFinite(monday.getTime())) return "";
+  const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  return `${fmt(addDaysUtc(monday, -1))} – ${fmt(addDaysUtc(monday, 5))}`;
+}
+
 type WeekDayDateStub = {
   date: string;
   weekdayLabel: string;
@@ -642,14 +661,15 @@ function EarningsTimingSectionSkeleton({ timing, title }: { timing: EarningsRepo
   return (
     <div className="mt-3 first:mt-0">
       <EarningsTimingSectionHeading timing={timing} title={title} />
-      <div className="grid grid-cols-3 gap-1">
-        {Array.from({ length: 3 }, (_, i) => (
-          <div
-            key={i}
-            className="flex min-h-[72px] flex-col items-center justify-center gap-1.5 px-1 py-1.5"
-          >
-            <LogoSkeleton sizeClass="h-8 w-8" />
-            <TextSkeleton wClass="w-10" hClass="h-3.5" />
+      <div className="grid grid-cols-1 gap-0.5">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="flex min-h-[44px] items-center gap-2 py-1.5 pr-1.5 pl-1">
+            <span className="w-[3px] self-stretch rounded-full bg-surface-muted" aria-hidden />
+            <LogoSkeleton sizeClass="h-7 w-7" />
+            <span className="flex flex-1 flex-col gap-1">
+              <TextSkeleton wClass="w-10" hClass="h-3" />
+              <TextSkeleton wClass="w-20" hClass="h-3" />
+            </span>
           </div>
         ))}
       </div>
@@ -876,9 +896,10 @@ export function EarningsWeekGrid({
       {/* Mobile: title + holdings toggle on one row; week nav left-aligned below. Desktop: title left, all controls right. */}
       <div className="relative z-30 flex shrink-0 flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:justify-between md:gap-x-4 md:gap-y-2">
         <div className="flex min-w-0 items-center justify-between gap-3 md:contents">
-          <h1 className="min-w-0 text-[24px] font-semibold leading-9 tracking-tight text-fg">
-            {displayWeekLabel}
-          </h1>
+          <div className="min-w-0">
+            <h1 className="text-[24px] font-semibold leading-9 tracking-tight text-fg">{displayWeekLabel}</h1>
+            <p className="text-[14px] leading-5 text-fg-muted">{formatWeekRangeLabel(displayWeekMondayYmd)}</p>
+          </div>
           <div className="shrink-0 md:hidden">
             <EarningsHoldingsWatchlistFilter
               pressed={scope === "portfolio"}

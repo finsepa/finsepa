@@ -16,6 +16,13 @@ import { cn } from "@/lib/utils";
 
 const HIDE_DELAY_MS = 140;
 
+/** Earnings list row left accent per timing — matches the calendar section heading colors. */
+export const EARNINGS_TIMING_ROW_BAR_CLASS: Record<EarningsReportTiming, string> = {
+  bmo: "bg-orange",
+  amc: "bg-accent",
+  unknown: "bg-fg-muted/40",
+};
+
 function isCoarsePointer(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(hover: none), (pointer: coarse)").matches;
@@ -30,7 +37,10 @@ export function EarningsOverflowHoverMenu({
   title,
   allowedScopeKeys,
   onOpenCard,
+  variant = "tile",
 }: {
+  /** `row` — left-aligned “+N more” line inside the earnings calendar list. */
+  variant?: "tile" | "row";
   count: number;
   /** When set, dropdown uses SSR overflow without fetching. */
   preloadedItems?: EarningsCalendarItem[];
@@ -139,12 +149,19 @@ export function EarningsOverflowHoverMenu({
       <button
         type="button"
         onClick={toggleTouch}
-        className="flex h-full w-full items-center justify-center rounded-xl bg-surface-muted px-1 py-1.5 text-center transition-colors hover:bg-dropdown-item-hover"
+        className={
+          variant === "row"
+            ? "flex h-full w-full items-center rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-surface-muted"
+            : "flex h-full w-full items-center justify-center rounded-xl bg-surface-muted px-1 py-1.5 text-center transition-colors hover:bg-dropdown-item-hover"
+        }
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={`${count} more companies in ${title}`}
       >
-        <span className="text-[13px] font-semibold tabular-nums leading-5 text-fg-muted">+{count}</span>
+        <span className="text-[13px] font-semibold tabular-nums leading-5 text-fg-muted">
+          +{count}
+          {variant === "row" ? " more" : null}
+        </span>
       </button>
 
       <TopbarDropdownPortal open={open} anchorRef={anchorRef} align="trailing">
@@ -159,10 +176,10 @@ export function EarningsOverflowHoverMenu({
             aria-label={`More companies in ${title}`}
             className={cn(
               dropdownMenuPanelClassName(),
-              "min-w-[220px] w-[min(248px,calc(100vw-1.5rem))] max-w-[min(248px,calc(100vw-1.5rem))]",
+              "min-w-[220px] w-[min(280px,calc(100vw-1.5rem))] max-w-[min(280px,calc(100vw-1.5rem))]",
             )}
           >
-            <DropdownScrollArea className="max-h-[min(252px,50vh)] overflow-y-auto">
+            <DropdownScrollArea className="max-h-[min(360px,60vh)] overflow-y-auto">
               {loading && displayItems.length === 0 ? (
                 <div
                   className="flex items-center justify-center px-3 py-6"
@@ -177,13 +194,13 @@ export function EarningsOverflowHoverMenu({
               ) : displayItems.length === 0 ? (
                 <p className="px-3 py-2 text-[12px] text-fg-muted">No companies</p>
               ) : (
-                <ul className="grid grid-cols-3 gap-1">
+                <ul className="flex flex-col gap-0.5">
                   {displayItems.map((item) => (
                     <li key={`${item.ticker}-${item.reportDate}`} className="min-w-0">
                       <button
                         type="button"
                         role="option"
-                        className="flex w-full flex-col items-center justify-center gap-1.5 rounded-xl px-1 py-1.5 text-center transition-colors hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
+                        className="flex w-full min-w-0 items-center gap-2 rounded-lg py-1.5 pr-1.5 pl-1 text-left transition-colors hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           onOpenCard(item);
@@ -192,15 +209,23 @@ export function EarningsOverflowHoverMenu({
                         onPointerEnter={() => prefetchStockEarningsTabPayload(item.ticker, true)}
                         onFocus={() => prefetchStockEarningsTabPayload(item.ticker, true)}
                       >
+                        <span
+                          className={cn("w-[3px] self-stretch shrink-0 rounded-full", EARNINGS_TIMING_ROW_BAR_CLASS[timing])}
+                          aria-hidden
+                        />
                         <CompanyLogo
                           name={item.companyName || item.ticker}
                           logoUrl={item.logoUrl}
                           symbol={item.ticker}
-                          size="md"
-                          fill
+                          size="28"
                         />
-                        <span className="w-full min-w-0 truncate text-[13px] font-semibold leading-5 tabular-nums text-fg">
-                          {item.ticker}
+                        <span className="flex min-w-0 flex-1 flex-col">
+                          <span className="truncate text-[13px] font-semibold leading-4 tabular-nums text-fg">
+                            {item.ticker}
+                          </span>
+                          {item.companyName ? (
+                            <span className="truncate text-[12px] leading-4 text-fg-muted">{item.companyName}</span>
+                          ) : null}
                         </span>
                       </button>
                     </li>

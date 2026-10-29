@@ -91,6 +91,7 @@ import {
 import {
   clearGuestWatchlistPendingMerge,
   consumeGuestWatchlistPendingMerge,
+  hasGuestWatchlistPendingMerge,
   markGuestWatchlistPendingMerge,
 } from "@/lib/watchlist/guest-merge";
 import {
@@ -209,6 +210,8 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
   const serverSyncChainRef = useRef(Promise.resolve());
   const bootstrapChainRef = useRef(Promise.resolve());
+  /** User the latest bootstrap was queued for (`undefined` = none yet); dedupes repeated SIGNED_IN. */
+  const bootstrappedUidRef = useRef<string | null | undefined>(undefined);
   const mutationChainRef = useRef(Promise.resolve());
   const latestMutationGenerationRef = useRef(0);
   const syncDirtyRef = useRef(false);
@@ -754,12 +757,15 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
         const session = await readSupabaseSession(supabase);
         if (cancelled) return;
         const uid = session?.user?.id ?? null;
+        if (uid && uid === bootstrappedUidRef.current) return;
+        bootstrappedUidRef.current = uid;
         bootstrapChainRef.current = bootstrapChainRef.current
           .then(() => bootstrap(uid, {}, session?.user ?? null))
           .catch(() => undefined);
         await bootstrapChainRef.current;
       } catch {
         if (!cancelled) {
+          bootstrappedUidRef.current = null;
           bootstrapChainRef.current = bootstrapChainRef.current
             .then(() => bootstrap(null, {}, null))
             .catch(() => undefined);
@@ -773,12 +779,17 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       const uid = nextSession?.user?.id ?? null;
       if (event === "SIGNED_IN" && uid) {
+        // Supabase re-emits SIGNED_IN for the same user on session recovery (several per page load);
+        // only a real account change or a pending guest merge needs another bootstrap + GET.
+        if (uid === bootstrappedUidRef.current && !hasGuestWatchlistPendingMerge()) return;
+        bootstrappedUidRef.current = uid;
         const mergeGuest = consumeGuestWatchlistPendingMerge();
         bootstrapChainRef.current = bootstrapChainRef.current
           .then(() => bootstrap(uid, { mergeGuest }, nextSession?.user ?? null))
           .catch(() => undefined);
         void bootstrapChainRef.current;
       } else if (event === "SIGNED_OUT") {
+        bootstrappedUidRef.current = null;
         void (async () => {
           await waitForPendingWatchlistWork();
           clearGuestWatchlistPendingMerge();
@@ -798,6 +809,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      bootstrappedUidRef.current = undefined;
       subscription.unsubscribe();
     };
   }, [adoptServerCanonical, applyCollections, applyFreshServerState, nextMutationGeneration, notifyWatchlistSyncFailed, resolveServerCollectionIdForList, waitForPendingWatchlistWork]);

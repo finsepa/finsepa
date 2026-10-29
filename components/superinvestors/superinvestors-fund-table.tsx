@@ -24,13 +24,25 @@ import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { cn } from "@/lib/utils";
 
 /** Local `/public` fund avatars — native `img` + onError; see `SuperinvestorProfileAvatar`. */
-function FundRowAvatar({ src, displayName }: { src: string | null | undefined; displayName: string }) {
+export function FundRowAvatar({
+  src,
+  displayName,
+  className,
+}: {
+  src: string | null | undefined;
+  displayName: string;
+  /** Size override (default 40px). */
+  className?: string;
+}) {
   const [failed, setFailed] = useState(false);
   const trimmed = typeof src === "string" ? src.trim() : "";
   if (!trimmed || failed) {
     return (
       <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-stroke-muted bg-surface-muted text-fg-muted"
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-stroke-muted bg-surface-muted text-fg-muted",
+          className,
+        )}
         aria-hidden
       >
         <UserRound className="h-5 w-5" strokeWidth={1.75} />
@@ -39,7 +51,12 @@ function FundRowAvatar({ src, displayName }: { src: string | null | undefined; d
   }
 
   return (
-    <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-stroke-muted bg-surface-muted">
+    <span
+      className={cn(
+        "relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-stroke-muted bg-surface-muted",
+        className,
+      )}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element -- public /superinvestors avatars */}
       <img
         src={trimmed}

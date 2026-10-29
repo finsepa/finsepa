@@ -30,6 +30,8 @@ import { StockProfileTab } from "./stock-profile-tab";
 import { StockSuperinvestorsTab } from "./stock-superinvestors-tab";
 import { StockBreadcrumbs } from "./stock-breadcrumbs";
 import { StockHeader } from "./stock-header";
+import { ChartTypeToggle, type ChartType } from "@/components/chart/chart-type-toggle";
+import { StockCandleChart } from "@/components/chart/stock-candle-chart";
 import { ChartControls } from "./chart-controls";
 import { MiniTable } from "./mini-table";
 import { StockComparePicker } from "./stock-compare-picker";
@@ -244,6 +246,7 @@ export function StockPageContent({
     () => initialPageData?.chart?.range ?? "1D",
   );
   const [chartSeries, setChartSeries] = useState<StockChartSeries>("price");
+  const [chartType, setChartType] = useState<ChartType>("line");
   const [comparePicks, setComparePicks] = useState<CompanyPick[]>([]);
   const chartSeriesBeforeCompareRef = useRef<StockChartSeries>("price");
   const comparePicksRef = useRef<CompanyPick[]>([]);
@@ -776,6 +779,7 @@ export function StockPageContent({
 
   /** Overview Market Cap / Return never pin live share-price onto scaled series (MSFT-style prior session). */
   const overviewLiveSessionMinute = chartSeries === "price" ? chartLiveSessionMinute : false;
+  const showCandles = chartType === "candles" && chartSeries === "price" && comparePicks.length === 0;
   const overviewLiveSpotUsd = chartSeries === "price" ? chartLiveSpotUsd : null;
   const overviewLivePostMarketTailTimeUnix =
     chartSeries === "price" ? chartLivePostMarketTailTimeUnix : null;
@@ -1310,6 +1314,11 @@ export function StockPageContent({
             chartSeries={chartSeries}
             onChartSeriesChange={setChartSeries}
             seriesSelectDisabled={comparePicks.length > 0}
+            chartTypeSlot={
+              chartSeries === "price" && comparePicks.length === 0 ? (
+                <ChartTypeToggle value={chartType} onChange={setChartType} />
+              ) : null
+            }
             compareSlot={
               <StockComparePicker baseTicker={ticker} values={comparePicks} onAdd={onAddComparePick} onRemove={onRemoveComparePick} />
             }
@@ -1341,20 +1350,27 @@ export function StockPageContent({
                     <AssetChartSkeleton heightPx={320} className="h-full" />
                   </div>
                 ) : null}
-                <PriceChart
-                  key={`stock-overview-${ticker}-${chartSeries}-${range}`}
-                  kind="stock"
-                  symbol={ticker}
-                  range={range}
-                  series={chartSeries}
-                  initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
-                  liveSessionMinute={overviewLiveSessionMinute}
-                  liveSpotUsd={overviewLiveSpotUsd}
-                  livePostMarketTailTimeUnix={overviewLivePostMarketTailTimeUnix}
-                  onDisplayChange={
-                    chartSeries === "price" ? onOverviewHeaderDisplay : undefined
-                  }
-                />
+                <div className={cn(showCandles && "invisible")} aria-hidden={showCandles || undefined}>
+                  <PriceChart
+                    key={`stock-overview-${ticker}-${chartSeries}-${range}`}
+                    kind="stock"
+                    symbol={ticker}
+                    range={range}
+                    series={chartSeries}
+                    initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
+                    liveSessionMinute={overviewLiveSessionMinute}
+                    liveSpotUsd={overviewLiveSpotUsd}
+                    livePostMarketTailTimeUnix={overviewLivePostMarketTailTimeUnix}
+                    onDisplayChange={
+                      chartSeries === "price" ? onOverviewHeaderDisplay : undefined
+                    }
+                  />
+                </div>
+                {showCandles ? (
+                  <div className="absolute inset-x-0 top-0">
+                    <StockCandleChart ticker={ticker} range={range} height={300} />
+                  </div>
+                ) : null}
               </div>
             )}
           </ChartControls>

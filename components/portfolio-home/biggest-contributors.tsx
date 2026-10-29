@@ -63,12 +63,34 @@ function recentTradeCutoffYmd(): string {
   return d.toISOString().slice(0, 10);
 }
 
-function yesterdayLocalYmd(): string {
+function localYmdDaysAgo(days: number): string {
   const d = new Date();
-  d.setDate(d.getDate() - 1);
+  d.setDate(d.getDate() - days);
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function ymdToDate(ymd: string): Date {
+  return new Date(`${ymd}T12:00:00`);
+}
+
+/** `October 29, 2026` for 1D; `Oct 22 – Oct 29, 2026` for 7D (start year only when it differs) — same as iOS. */
+function contributorsDateLabel(period: ContributorPeriod, data: PeriodStartCloses | null): string {
+  const today = new Date();
+  if (period === "1d") {
+    return today.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  }
+  const starts = data ? Object.values(data.startYmds).filter(Boolean).sort() : [];
+  const start = ymdToDate(starts[0] ?? localYmdDaysAgo(7));
+  const sameYear = start.getFullYear() === today.getFullYear();
+  const startLabel = start.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+  const endLabel = today.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return `${startLabel} – ${endLabel}`;
 }
 
 /**
@@ -84,7 +106,7 @@ async function fetchDayQuotes(symbols: string[]): Promise<PeriodStartCloses> {
   for (const row of [...stocks, ...crypto, ...indices]) {
     byKey.set(normalizeWatchlistStorageKey(row.storageKey || row.symbol), row);
   }
-  const startYmd = yesterdayLocalYmd();
+  const startYmd = localYmdDaysAgo(1);
   const closes: Record<string, number | null> = {};
   const startYmds: Record<string, string> = {};
   const livePrices: Record<string, number> = {};
@@ -393,8 +415,15 @@ export function BiggestContributors({
   return (
     <section aria-label="Biggest contributors" className="min-w-0">
       <div className="mb-5 flex min-w-0 items-center gap-2">
-        <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Biggest contributors</h2>
-        {proGate ? <ProFeatureBadge /> : null}
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Biggest contributors</h2>
+            {proGate ? <ProFeatureBadge /> : null}
+          </div>
+          <p className="truncate text-[13px] leading-5 tabular-nums text-fg-muted" suppressHydrationWarning>
+            {contributorsDateLabel(period, portfolioCloses.data)}
+          </p>
+        </div>
         <SegmentedControl
           aria-label="Contributors period"
           options={PERIOD_OPTIONS}

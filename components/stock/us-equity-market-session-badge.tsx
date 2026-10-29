@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
 import {
+  SessionLabelWithHoverHint,
+  UsEquityTradingHoursHover,
+} from "@/components/stock/us-equity-trading-hours-hover";
+import {
   formatUsEquitySessionBadgeLabel,
   getUsEquitySessionBadgeDisplay,
   type UsEquitySessionBadgeDisplay,
@@ -37,7 +41,7 @@ function MarketOpenStatusDot({ dotSizeClass }: { dotSizeClass: string }) {
 
 function BadgeLabel({ display }: { display: UsEquitySessionBadgeDisplay }) {
   // Countdown text drifts between SSR and hydrate — same pattern as UsMarketsSessionLabel.
-  return <span suppressHydrationWarning>{formatUsEquitySessionBadgeLabel(display)}</span>;
+  return <SessionLabelWithHoverHint label={formatUsEquitySessionBadgeLabel(display)} />;
 }
 
 function BadgeRow({
@@ -108,20 +112,21 @@ export function UsEquityMarketSessionBadge({ className, variant = "default" }: P
   }, []);
 
   return (
-    <div
-      className={cn(
-        "inline-flex items-center text-fg-muted",
-        inline ? "gap-1 text-[12px] font-normal leading-4" : "gap-1.5 text-[13px] font-medium",
-        className,
-      )}
-      role="status"
-      aria-live="polite"
-    >
-      <BadgeRow
-        display={display}
-        iconSize={inline ? 14 : 20}
-        dotSizeClass={inline ? "h-1.5 w-1.5" : "h-2 w-2"}
-      />
-    </div>
+    <UsEquityTradingHoursHover className={cn("inline-flex", className)}>
+      <span
+        className={cn(
+          "inline-flex items-center text-fg-muted",
+          inline ? "gap-1 text-[12px] font-normal leading-4" : "gap-1.5 text-[13px] font-medium",
+        )}
+        role="status"
+        aria-live="polite"
+      >
+        <BadgeRow
+          display={display}
+          iconSize={inline ? 14 : 20}
+          dotSizeClass={inline ? "h-1.5 w-1.5" : "h-2 w-2"}
+        />
+      </span>
+    </UsEquityTradingHoursHover>
   );
 }

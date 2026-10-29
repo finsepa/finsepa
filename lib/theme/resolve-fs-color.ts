@@ -140,6 +140,13 @@ export function resolveFsColor(cssVar: string): string {
   return value;
 }
 
+/** `--fs-*` color at the given opacity (falls back to the opaque color when it cannot be parsed). */
+export function resolveFsColorWithAlpha(cssVar: string, alpha: number): string {
+  const color = resolveFsColor(cssVar);
+  const rgb = parseCssColorToRgb(color);
+  return rgb ? `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})` : color;
+}
+
 /**
  * Hollow chart marker / crosshair disc fill — always the main panel, never light white on dark.
  */

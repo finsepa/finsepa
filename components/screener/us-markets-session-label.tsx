@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 import { PreMarketEarningsIcon } from "@/components/stock/pre-market-earnings-icon";
 import { PostMarketEarningsIcon } from "@/components/stock/post-market-earnings-icon";
 import {
+  SessionLabelWithHoverHint,
+  UsEquityTradingHoursHover,
+} from "@/components/stock/us-equity-trading-hours-hover";
+import {
   formatUsEquitySessionBadgeLabel,
   getUsEquitySessionBadgeDisplay,
   type UsEquitySessionBadgeDisplay,
@@ -64,18 +68,17 @@ export function UsMarketsSessionLabel({ className, market = "us-equity" }: UsMar
   }
 
   return (
-    <div
-      className={cn(
-        "inline-flex max-w-full min-w-0 items-center gap-1.5 text-[13px] font-medium leading-5 text-fg-muted",
-        className,
-      )}
-      role="status"
-      aria-live="polite"
-    >
-      <MarketsSessionStatusIcon display={display} />
-      <span className="min-w-0" suppressHydrationWarning>
-        {formatUsEquitySessionBadgeLabel(display)}
+    <UsEquityTradingHoursHover className={cn("inline-flex max-w-full min-w-0", className)}>
+      <span
+        className="inline-flex max-w-full min-w-0 items-center gap-1.5 text-[13px] font-medium leading-5 text-fg-muted"
+        role="status"
+        aria-live="polite"
+      >
+        <MarketsSessionStatusIcon display={display} />
+        <span className="min-w-0">
+          <SessionLabelWithHoverHint label={formatUsEquitySessionBadgeLabel(display)} />
+        </span>
       </span>
-    </div>
+    </UsEquityTradingHoursHover>
   );
 }

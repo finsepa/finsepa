@@ -1,118 +1,101 @@
-import {
-  SCREENER_TABLE_DATA_ROW_CLASS,
-  SCREENER_TABLE_HEADER_STICKY_CLASS,
-  SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
-  SCREENER_TABLE_ROUNDED_HEADER_CLASS,
-  SCREENER_TABLE_ROW_HOVER_PAD_CLASS,
-  SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
-  SCREENER_TABLE_STROKE_INSET_CLASS,
-  ScreenerTableScroll,
-  TABLE_END_ALIGNED_PAD_CLASS,
-} from "@/components/screener/screener-table-scroll";
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
 
 const pulse = "animate-pulse rounded-md bg-skeleton";
 
-const colLayout =
-  "grid w-full min-w-0 grid-cols-[40px_48px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.75fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-x-2";
+function StatSkeleton({ valueWidth }: { valueWidth: string }) {
+  return (
+    <div className="space-y-1.5">
+      <div className={cn("h-5", valueWidth, pulse)} />
+      <div className={`h-3 w-12 ${pulse}`} />
+    </div>
+  );
+}
 
-const mobileColLayout = "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(4.75rem,auto)] gap-x-2";
-
-const numericHeaderClass = cn("min-w-0 text-right", TABLE_END_ALIGNED_PAD_CLASS);
-
-function SkeletonRow({ mobile }: { mobile?: boolean }) {
-  if (mobile) {
-    return (
-      <div
-        className={cn(
-          mobileColLayout,
-          "items-start py-3 sm:hidden",
-          SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
-        )}
-      >
-        <div className="flex min-w-0 items-start gap-3">
-          <div className={`h-10 w-10 shrink-0 rounded-full ${pulse}`} />
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className={`h-4 w-32 ${pulse}`} />
-            <div className={`h-3.5 w-40 ${pulse}`} />
+/** Mirrors `FeaturedFundCard` — "Most popular" carousel slide. */
+function FeaturedFundSkeleton() {
+  return (
+    <div className={cn(MOBILE_ELEVATED_CARD_CLASS, "grid gap-6 p-5 sm:p-6 lg:grid-cols-2 lg:gap-0")}>
+      <div className="flex min-w-0 flex-col lg:pr-8">
+        <div className="flex items-start justify-between">
+          <div className={`h-5 w-24 ${pulse}`} />
+          <div className={`h-5 w-5 ${pulse}`} />
+        </div>
+        <div className="mt-4 flex items-center gap-3">
+          <div className={`h-12 w-12 shrink-0 rounded-full ${pulse}`} />
+          <div className="space-y-2">
+            <div className={`h-6 w-40 ${pulse}`} />
+            <div className={`h-3.5 w-36 ${pulse}`} />
           </div>
         </div>
-        <div className={cn(`mt-1 h-4 w-16 justify-self-end ${pulse}`, TABLE_END_ALIGNED_PAD_CLASS)} />
+        <div className="mt-auto flex gap-8 pt-6">
+          <StatSkeleton valueWidth="w-20" />
+          <StatSkeleton valueWidth="w-14" />
+          <StatSkeleton valueWidth="w-24" />
+        </div>
       </div>
-    );
-  }
-
-  return (
-    <div
-      className={cn(
-        "hidden h-[60px] max-h-[60px] items-center sm:grid",
-        colLayout,
-        SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
-      )}
-    >
-      <div className={`mx-auto h-4 w-4 ${pulse}`} />
-      <div className={`mx-auto h-10 w-10 rounded-full ${pulse}`} />
-      <div className={`h-4 w-36 ${pulse}`} />
-      <div className={cn(`ml-auto h-4 w-16 ${pulse}`, TABLE_END_ALIGNED_PAD_CLASS)} />
-      <div className={cn(`ml-auto h-4 w-14 ${pulse}`, TABLE_END_ALIGNED_PAD_CLASS)} />
-      <div className={cn(`ml-auto h-4 w-14 ${pulse}`, TABLE_END_ALIGNED_PAD_CLASS)} />
-      <div className={cn(`ml-auto h-4 w-20 ${pulse}`, TABLE_END_ALIGNED_PAD_CLASS)} />
-      <div className={cn("flex justify-end gap-1", TABLE_END_ALIGNED_PAD_CLASS)}>
-        {Array.from({ length: 5 }, (_, i) => (
-          <div key={i} className={`h-7 w-7 rounded-md ${pulse}`} />
-        ))}
+      <div className="min-w-0 border-stroke-subtle lg:border-l lg:pl-8">
+        <div className={`h-3 w-24 ${pulse}`} />
+        <div className="mt-3 flex flex-col gap-2.5">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className={`h-3 w-4 ${pulse}`} />
+              <div className={`h-6 w-6 rounded-full ${pulse}`} />
+              <div className={`h-4 w-12 ${pulse}`} />
+              <div className={`h-3.5 w-36 ${pulse}`} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-export function SuperinvestorsFundTableSkeleton({ rows = 12 }: { rows?: number }) {
+/** Mirrors `FundCard`. */
+function FundCardSkeleton() {
   return (
-    <ScreenerTableScroll aria-busy aria-label="Loading superinvestors">
-      <div
-        className={cn(
-          SCREENER_TABLE_HEADER_STICKY_CLASS,
-          SCREENER_TABLE_ROUNDED_HEADER_CLASS,
-          SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
-          "md:border-b-0",
-        )}
-      >
-        <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
-          <div
-            className={cn(
-              mobileColLayout,
-              "min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted sm:hidden",
-            )}
-          >
-            <div>Fund</div>
-            <div className={numericHeaderClass}>Last updated</div>
-          </div>
-          <div
-            className={cn(
-              colLayout,
-              "hidden min-h-[44px] items-center py-0 text-[14px] font-medium leading-5 text-fg-muted sm:grid",
-            )}
-          >
-            <div aria-hidden />
-            <div className="col-span-2 col-start-2 pl-1">Fund</div>
-            <div className={numericHeaderClass}>Size</div>
-            <div className={numericHeaderClass}>1Y perf.</div>
-            <div className={numericHeaderClass}>No. of stocks</div>
-            <div className={numericHeaderClass}>Last updated</div>
-            <div className={numericHeaderClass}>Top 5 holdings</div>
-          </div>
+    <div className={cn(MOBILE_ELEVATED_CARD_CLASS, "flex flex-col p-4")}>
+      <div className="flex items-center gap-3">
+        <div className={`h-10 w-10 shrink-0 rounded-full ${pulse}`} />
+        <div className="flex-1 space-y-1.5">
+          <div className={`h-4 w-32 ${pulse}`} />
+          <div className={`h-3 w-24 ${pulse}`} />
         </div>
-        <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+        <div className={`h-5 w-5 shrink-0 ${pulse}`} />
       </div>
-      {Array.from({ length: rows }, (_, i) => (
-        <div key={i} className={SCREENER_TABLE_DATA_ROW_CLASS}>
-          <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
-            <SkeletonRow mobile />
-            <SkeletonRow />
-          </div>
-          {i < rows - 1 ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
+      <div className="mt-4 flex items-center gap-2">
+        <div className="flex">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className={cn("-ml-1.5 h-6 w-6 rounded-full first:ml-0", pulse)} />
+          ))}
         </div>
-      ))}
-    </ScreenerTableScroll>
+        <div className={`h-3 w-16 ${pulse}`} />
+      </div>
+      <div className="mt-5 flex items-end justify-between">
+        <StatSkeleton valueWidth="w-20" />
+        <div className="flex flex-col items-end space-y-1.5">
+          <div className={`h-4 w-12 ${pulse}`} />
+          <div className={`h-3 w-12 ${pulse}`} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Loading state for the Superinvestors index: featured carousel + "N Funds" row + card grid. */
+export function SuperinvestorsFundTableSkeleton({ cards = 9 }: { cards?: number }) {
+  return (
+    <div className="flex min-w-0 flex-col gap-4" aria-busy aria-label="Loading superinvestors">
+      <FeaturedFundSkeleton />
+      <div className="flex items-center justify-between gap-3 pt-2">
+        <div className={`h-7 w-24 ${pulse}`} />
+        <div className={`h-8 w-44 rounded-lg ${pulse}`} />
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: cards }, (_, i) => (
+          <FundCardSkeleton key={i} />
+        ))}
+      </div>
+    </div>
   );
 }

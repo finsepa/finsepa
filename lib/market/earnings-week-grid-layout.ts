@@ -6,9 +6,9 @@ import type {
 } from "./earnings-calendar-types";
 import { canonicalEarningsScopeKey } from "./earnings-scope-filter";
 
-/** Fixed company grid per timing section. */
-export const EARNINGS_TIMING_GRID_COLS = 3;
-export const EARNINGS_TIMING_GRID_ROWS = 4;
+/** Company list per timing section — one row each; last slot holds the “+N more” row (server previews 11). */
+export const EARNINGS_TIMING_GRID_COLS = 1;
+export const EARNINGS_TIMING_GRID_ROWS = 12;
 export const EARNINGS_TIMING_GRID_SLOTS = EARNINGS_TIMING_GRID_COLS * EARNINGS_TIMING_GRID_ROWS;
 
 function normalizedEarningsSymbol(raw: string): string {

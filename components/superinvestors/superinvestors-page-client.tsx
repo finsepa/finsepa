@@ -4,10 +4,8 @@ import { createContext, useContext, useMemo, useState, type ReactNode } from "re
 import { UserRound } from "@/lib/icons";
 
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
-import {
-  SuperinvestorsFundTable,
-  type SuperinvestorsFundRowModel,
-} from "@/components/superinvestors/superinvestors-fund-table";
+import { SuperinvestorsFundCards } from "@/components/superinvestors/superinvestors-fund-cards";
+import type { SuperinvestorsFundRowModel } from "@/components/superinvestors/superinvestors-fund-table";
 import {
   Empty,
   EmptyDescription,
@@ -44,16 +42,25 @@ export function SuperinvestorsPageShell({ children }: { children: ReactNode }) {
   return (
     <SuperinvestorsListViewContext.Provider value={{ view, setView }}>
       <div className="min-w-0 px-4 py-4 sm:px-9 sm:py-6">
-        <div className="mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="hidden text-2xl font-semibold tracking-tight text-fg md:block">
-            Superinvestors
-          </h1>
+        <div className="mb-6 flex flex-col gap-4 border-b border-stroke-subtle pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0 max-w-3xl">
+            <p className="text-[11px] font-semibold uppercase leading-4 tracking-[0.06em] text-fg-muted">
+              13F portfolios
+            </p>
+            <h1 className="mt-1 hidden text-[28px] font-semibold leading-9 tracking-tight text-fg md:block">
+              Superinvestors
+            </h1>
+            <p className="mt-2 text-[14px] leading-6 text-fg-muted">
+              Track what the world&apos;s best-known investors own. Each portfolio is rebuilt from the fund&apos;s latest
+              SEC 13F filing: holdings, position sizing and value, updated as new filings land.
+            </p>
+          </div>
           <TabSwitcher
             options={LIST_VIEW_OPTIONS}
             value={view}
             onChange={setView}
             aria-label="Superinvestors list"
-            className="w-auto shrink-0 self-start"
+            className="w-auto shrink-0 self-start sm:self-end"
           />
         </div>
         {children}
@@ -89,5 +96,5 @@ export function SuperinvestorsFundTableSection({ rows }: { rows: SuperinvestorsF
     );
   }
 
-  return <SuperinvestorsFundTable rows={visibleRows} />;
+  return <SuperinvestorsFundCards rows={visibleRows} showFeatured={view === "all"} />;
 }

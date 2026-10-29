@@ -32,6 +32,7 @@ export function ChartControls({
   onChartSeriesChange,
   compareSlot,
   downloadSlot,
+  chartTypeSlot,
   titleSlot,
   seriesSelectDisabled = false,
   rangeLabels,
@@ -54,6 +55,8 @@ export function ChartControls({
   compareSlot?: ReactNode;
   /** Stock overview: download button beside the range control. */
   downloadSlot?: ReactNode;
+  /** Stock overview: line / candles toggle beside the download button. */
+  chartTypeSlot?: ReactNode;
   /** Holdings: replace the default "Price" title (e.g. with portfolio switcher). */
   titleSlot?: ReactNode;
   /** When comparing symbols, metric is fixed to return — disable toggle. */
@@ -151,9 +154,10 @@ export function ChartControls({
         : compareSlot || downloadSlot ?
           null
         : <h2 className="shrink-0 text-[14px] font-semibold leading-5 text-fg">Price</h2>}
-        {compareSlot || downloadSlot ?
+        {compareSlot || downloadSlot || chartTypeSlot ?
           <div className="flex shrink-0 items-center gap-2">
             {compareSlot ? <div className="shrink-0">{compareSlot}</div> : null}
+            {chartTypeSlot ? <div className="shrink-0">{chartTypeSlot}</div> : null}
             {downloadSlot ? <div className="shrink-0">{downloadSlot}</div> : null}
           </div>
         : null}
@@ -188,6 +192,7 @@ export function ChartControls({
             {compareSlot}
           </div>
         ) : null}
+        {chartTypeSlot ? <div className="hidden shrink-0 sm:block">{chartTypeSlot}</div> : null}
         {downloadSlot ? <div className="hidden shrink-0 sm:block">{downloadSlot}</div> : null}
         <div className="shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
           <SegmentedControl
