@@ -207,8 +207,8 @@ async function fetchStock1DRestBaseUncached(ticker: string, sessionYmd: string):
  * wins on its buckets); fall back to 1h only when both are empty. Cached per (ticker, session) so
  * closed minutes are byte-stable across reloads while fresh WS bars (read uncached) supply the tail.
  *
- * Empty bases are NOT cached — otherwise a temporary EODHD miss poisons the hour and WS holes
- * never get REST repair.
+ * Empty bases are NOT stored in the Next Data Cache (a temporary EODHD miss would stick and WS holes
+ * never get REST repair); {@link getStock1DRestBaseCached} remembers them in-process for 60s only.
  */
 const getStock1DRestBaseCachedNonEmpty = unstable_cache(
   async (ticker: string, sessionYmd: string): Promise<Stock1DRestBase> => {
@@ -223,15 +223,32 @@ const getStock1DRestBaseCachedNonEmpty = unstable_cache(
   { revalidate: REVALIDATE_HOT },
 );
 
+/**
+ * Forming-session intraday is often empty for a while; without this every 30s poll per viewer re-paid
+ * 1m + 5m + 1h (~15 credits). Same 60s window as the non-empty cache, so REST repair is not delayed longer.
+ */
+const EMPTY_REST_BASE_TTL_MS = REVALIDATE_HOT * 1000;
+const emptyRestBaseAt = new Map<string, number>();
+
+function emptyRestBase(): Stock1DRestBase {
+  return { points: [], rest1mCount: 0, rest5mCount: 0, rest1hCount: 0 };
+}
+
 async function getStock1DRestBaseCached(ticker: string, sessionYmd: string): Promise<Stock1DRestBase> {
+  const emptyKey = `${ticker}|${sessionYmd}`;
+  const emptyAt = emptyRestBaseAt.get(emptyKey);
+  if (emptyAt != null && Date.now() - emptyAt < EMPTY_REST_BASE_TTL_MS) return emptyRestBase();
   try {
-    return await getStock1DRestBaseCachedNonEmpty(ticker, sessionYmd);
+    const base = await getStock1DRestBaseCachedNonEmpty(ticker, sessionYmd);
+    emptyRestBaseAt.delete(emptyKey);
+    return base;
   } catch (err) {
     if (err instanceof Error && err.message === "STOCK_1D_REST_BASE_EMPTY") {
       if (process.env.NODE_ENV === "development") {
-        console.info("[live-1d-ws] REST base empty (uncached)", { ticker, sessionYmd });
+        console.info("[live-1d-ws] REST base empty (negative-cached 60s)", { ticker, sessionYmd });
       }
-      return { points: [], rest1mCount: 0, rest5mCount: 0, rest1hCount: 0 };
+      emptyRestBaseAt.set(emptyKey, Date.now());
+      return emptyRestBase();
     }
     throw err;
   }

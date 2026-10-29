@@ -192,6 +192,27 @@ type RangeChartPriceBadge = {
  */
 const SKELETON_ON_1D_REFRESH_TICKERS = new Set(["AAPL", "NVDA", "GOOGL"]);
 
+type Stock1DChartJson = { points?: StockChartPoint[]; liveSessionMinute?: boolean };
+
+/** Shorter than the 1D poll interval so each poll cycle still gets a fresh response. */
+const SHARED_1D_CHART_TTL_MS = 20_000;
+const shared1DChartResponses = new Map<string, { at: number; promise: Promise<Stock1DChartJson | null> }>();
+
+/**
+ * The stock page mounts the visible 1D chart and an offscreen header 1D chart for the same URL;
+ * share one in-flight/recent response so both don't each hit the provider-backed route.
+ */
+function fetchShared1DChartJson(path: string): Promise<Stock1DChartJson | null> {
+  const now = Date.now();
+  const hit = shared1DChartResponses.get(path);
+  if (hit && now - hit.at < SHARED_1D_CHART_TTL_MS) return hit.promise;
+  const promise = fetch(path, { credentials: "include", cache: "no-store" })
+    .then(async (res) => (res.ok ? ((await res.json()) as Stock1DChartJson) : null))
+    .catch(() => null);
+  shared1DChartResponses.set(path, { at: now, promise });
+  return promise;
+}
+
 function resolveInitialLiveSessionMinute(
   prop: boolean | undefined,
   initialChart: { liveSessionMinute?: boolean } | null | undefined,
@@ -2536,12 +2557,8 @@ export function PriceChart({
           let gotFreshPoints = false;
           try {
             const path = `/api/stocks/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`;
-            const res = await fetch(path, { credentials: "include", cache: "no-store" });
-            if (res.ok && mounted) {
-              const json = (await res.json()) as {
-                points?: StockChartPoint[];
-                liveSessionMinute?: boolean;
-              };
+            const json = await fetchShared1DChartJson(path);
+            if (json && mounted) {
               const nextPoints = Array.isArray(json.points) ? json.points : [];
               if (process.env.NODE_ENV === "development" && referenceTicker) {
                 const first = nextPoints[0];
@@ -2676,14 +2693,11 @@ export function PriceChart({
       initialChart.points.length >= 2;
 
     const poll = async () => {
+      if (document.hidden) return;
       const path = `/api/stocks/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`;
       try {
-        const res = await fetch(path, { credentials: "include", cache: "no-store" });
-        if (!res.ok || cancelled) return;
-        const json = (await res.json()) as {
-          points?: StockChartPoint[];
-          liveSessionMinute?: boolean;
-        };
+        const json = await fetchShared1DChartJson(path);
+        if (!json || cancelled) return;
         const next = Array.isArray(json.points) ? json.points : [];
         if (typeof json.liveSessionMinute === "boolean" && !cancelled) {
           setLiveSessionMinute(json.liveSessionMinute);
@@ -2705,9 +2719,14 @@ export function PriceChart({
       void poll();
       id = window.setInterval(() => void poll(), pollMs);
     }
+    const onVisibility = () => {
+      if (!document.hidden) void poll();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [holdingsStyle, kind, range, series, symbol, screenshotPreviewMode, liveSessionMinute, initialChart]);
 
@@ -2718,6 +2737,7 @@ export function PriceChart({
     if (!isCryptoLive1DSymbol(symbol)) return;
     let cancelled = false;
     const poll = async () => {
+      if (document.hidden) return;
       const path = `/api/crypto/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`;
       try {
         const res = await fetch(path, { credentials: "include", cache: "no-store" });
@@ -2742,9 +2762,14 @@ export function PriceChart({
     };
     void poll();
     const id = window.setInterval(() => void poll(), 60_000);
+    const onVisibility = () => {
+      if (!document.hidden) void poll();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       cancelled = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [holdingsStyle, kind, range, symbol, series, screenshotPreviewMode]);
 

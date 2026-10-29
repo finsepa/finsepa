@@ -697,7 +697,7 @@ export function StockPageContent({
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [ticker, liveRegularSessionActive, regularSessionClock, initialPageData]);
+  }, [ticker, liveRegularSessionActive, initialPageData]);
 
   // Prime minute-bar worker watch when SSR did not seed live spot.
   // Chart: PriceChart already loads 1D when snapshot points are empty — do not duplicate that EODHD path.
@@ -1024,7 +1024,6 @@ export function StockPageContent({
     showExtendedHoursHeader,
     headerMeta?.exchange,
     headerMeta?.countryIso,
-    regularSessionClock,
     sessionCloseForExtendedHours,
   ]);
 

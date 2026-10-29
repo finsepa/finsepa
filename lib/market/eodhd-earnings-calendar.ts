@@ -118,13 +118,17 @@ const fetchEodhdEarningsCalendarRangeCached = unstable_cache(
  */
 export async function fetchEodhdEarningsCalendar(fromYmd: string, toYmd: string): Promise<EodhdRawEarningRow[]> {
   try {
-    const days = calendarRangeDayCount(fromYmd, toYmd);
-    // Earnings week uses one request per weekday — skip Next `unstable_cache` (breaks outside Next
-    // request context / can sticky-empty). Multi-day ranges still use the range cache when small.
-    if (days <= 1 || days > EARNINGS_CALENDAR_MAX_CACHED_RANGE_DAYS) {
+    if (calendarRangeDayCount(fromYmd, toYmd) > EARNINGS_CALENDAR_MAX_CACHED_RANGE_DAYS) {
       return await fetchEodhdEarningsCalendarUncached(fromYmd, toYmd);
     }
-    return await fetchEodhdEarningsCalendarRangeCached(fromYmd, toYmd);
+    try {
+      return await fetchEodhdEarningsCalendarRangeCached(fromYmd, toYmd);
+    } catch (e) {
+      // Provider failures (our own "[earnings calendar] …" errors) are final. Anything else is the Next
+      // data cache being unavailable (CLI / scripts outside a request) — fetch directly once.
+      if (e instanceof Error && e.message.startsWith("[earnings calendar]")) throw e;
+      return await fetchEodhdEarningsCalendarUncached(fromYmd, toYmd);
+    }
   } catch (e) {
     console.warn(
       "[earnings calendar] fetch failed",
