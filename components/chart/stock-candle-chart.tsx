@@ -183,9 +183,10 @@ export function StockCandleChart({
         fontFamily: FONT_FAMILY,
         attributionLogo: false,
       },
+      // Plot background (dots + watermark) already matches the line chart; grid lines would double it.
       grid: {
-        vertLines: { visible: true, color: resolveFsColor("--fs-stroke"), style: LineStyle.Dotted },
-        horzLines: { visible: true, color: resolveFsColor("--fs-stroke"), style: LineStyle.Dotted },
+        vertLines: { visible: false },
+        horzLines: { visible: false },
       },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.12, bottom: 0.26 } },
       timeScale: {
