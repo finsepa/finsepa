@@ -19,7 +19,10 @@ import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-d
 import { seedPendingAssetShellFromSearchItem } from "@/lib/navigation/seed-pending-asset-shell-from-search";
 import { resolveEquityLogoUrlFromTicker } from "@/lib/screener/resolve-equity-logo-url";
 import { fetchSearchItems } from "@/lib/search/fetch-search-items";
-import type { SearchDirectoryRow } from "@/lib/search/search-directory-types";
+import { formatCryptoUsd } from "@/lib/market/format-crypto-usd";
+import { formatSignedPercent2dp, formatUsdPrice } from "@/lib/market/key-stats-basic-format";
+import { formatMarketCapDisplay } from "@/lib/screener/eod-derived-metrics";
+import type { SearchDirectoryQuote, SearchDirectoryRow } from "@/lib/search/search-directory-types";
 import { getSearchPanelViewState, SEARCH_CLIENT_DEBOUNCE_MS } from "@/lib/search/search-policy";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { useSearchDirectory } from "@/lib/search/use-search-directory";
@@ -61,7 +64,22 @@ const ALL_MARKETS_PREVIEW: Record<Exclude<Category, "all">, number> = {
 const CATEGORY_BROWSE_CAP = 100;
 const RECENT_PREVIEW = 5;
 
-const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_32px] items-center gap-x-3";
+const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_104px_88px_96px_32px] items-center gap-x-3";
+
+/** Hits outside the directory: bulk-list quotes fetched once per symbol for the dialog's lifetime. */
+const extraQuoteCache = new Map<string, SearchDirectoryQuote | null>();
+
+function formatQuotePrice(item: SearchAssetItem, price: number | null | undefined): string {
+  if (price == null || !Number.isFinite(price)) return "—";
+  if (item.type === "crypto") return formatCryptoUsd(price);
+  if (item.type === "index") return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatUsdPrice(price);
+}
+
+function formatQuoteMarketCap(usd: number | null | undefined): string {
+  const s = formatMarketCapDisplay(usd);
+  return s === "-" ? "—" : s;
+}
 
 type Section = { id: string; title: string; items: SearchAssetItem[] };
 
@@ -196,6 +214,22 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
     return browse;
   }, [directory]);
 
+  const directoryQuotes = useMemo(() => {
+    const map = new Map<string, SearchDirectoryQuote>();
+    for (const row of directory?.rows ?? []) {
+      map.set(directoryRowToItem(row).id, { price: row.price, changePct: row.changePct, marketCapUsd: row.marketCapUsd });
+    }
+    return map;
+  }, [directory]);
+
+  const [extraQuotes, setExtraQuotes] = useState(() => new Map(extraQuoteCache));
+
+  const quoteFor = useCallback(
+    (item: SearchAssetItem): SearchDirectoryQuote | null =>
+      directoryQuotes.get(item.id) ?? (item.type === "stock" ? extraQuotes.get(item.symbol) ?? null : null),
+    [directoryQuotes, extraQuotes],
+  );
+
   const isWatched = useCallback(
     (item: SearchAssetItem) => isWatchlistTickerWatched(watchedUnion, watchlistStorageKeyForSearchItem(item)),
     [watchedUnion],
@@ -235,6 +269,33 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
   }, [queryTrim, items, recent, category, tab, browseByCategory, passesFilters, isWatched]);
 
   const flatRows = useMemo(() => sections.flatMap((s) => s.items), [sections]);
+
+  useEffect(() => {
+    if (!directory) return;
+    const missing = [
+      ...new Set(
+        flatRows
+          .filter((it) => it.type === "stock" && !directoryQuotes.has(it.id) && !extraQuoteCache.has(it.symbol))
+          .map((it) => it.symbol),
+      ),
+    ].slice(0, 50);
+    if (!missing.length) return;
+    const ac = new AbortController();
+    void (async () => {
+      try {
+        const res = await fetch(`/api/search/quotes?symbols=${encodeURIComponent(missing.join(","))}`, {
+          signal: ac.signal,
+        });
+        if (!res.ok) return;
+        const { quotes } = (await res.json()) as { quotes: Record<string, SearchDirectoryQuote> };
+        for (const s of missing) extraQuoteCache.set(s, quotes[s] ?? null);
+        setExtraQuotes(new Map(extraQuoteCache));
+      } catch {
+        /* aborted or offline — cells stay "—" */
+      }
+    })();
+    return () => ac.abort();
+  }, [flatRows, directory, directoryQuotes]);
 
   useEffect(() => {
     setHighlight(-1);
@@ -370,6 +431,20 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
+          <div
+            className={cn(
+              ROW_GRID,
+              "mx-2 mt-3 border-b border-stroke-subtle px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle",
+            )}
+            aria-hidden
+          >
+            <span>Name</span>
+            <span className="text-right">Last price</span>
+            <span className="text-right">1D</span>
+            <span className="text-right">Market cap</span>
+            <span />
+          </div>
+
           <OverlayScrollArea className="min-h-0 flex-1" viewportClassName="flex-1 px-2 pb-3">
           <div ref={listRef} id="global-search-results" role="listbox" aria-label="Search results">
             {showSpinner ? (
@@ -400,6 +475,9 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
                   {section.items.map((item) => {
                     rowIndex += 1;
                     const i = rowIndex;
+                    const quote = item.type === "superinvestor" ? null : quoteFor(item);
+                    const change =
+                      quote?.changePct != null && Number.isFinite(quote.changePct) ? quote.changePct : null;
                     return (
                       <div
                         key={`${section.id}:${item.id}`}
@@ -428,6 +506,20 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
                             <div className="truncate text-[12px] leading-4 text-fg-muted">{item.name}</div>
                           </div>
                         </div>
+                        <span className="text-right text-[14px] font-medium leading-5 tabular-nums text-fg">
+                          {item.type === "superinvestor" ? "" : formatQuotePrice(item, quote?.price)}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-right text-[14px] font-medium leading-5 tabular-nums",
+                            change == null || change === 0 ? "text-fg-muted" : change > 0 ? "text-up" : "text-down",
+                          )}
+                        >
+                          {item.type === "superinvestor" ? "" : change != null ? formatSignedPercent2dp(change) : "—"}
+                        </span>
+                        <span className="text-right text-[14px] leading-5 tabular-nums text-fg-muted">
+                          {item.type === "superinvestor" ? "" : formatQuoteMarketCap(quote?.marketCapUsd)}
+                        </span>
                         <div className="justify-self-end" onClick={(e) => e.stopPropagation()}>
                           <SearchResultLeadingToggle
                             item={item}

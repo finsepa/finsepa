@@ -202,12 +202,12 @@ function toDatum(p: EodhdRealtimePayload | undefined): SimpleMarketDatum {
   const price = priceRaw != null && priceRaw > 0 ? priceRaw : null;
   const previousCloseRaw = asFinite(p.previousClose);
   const previousClose = previousCloseRaw != null && previousCloseRaw > 0 ? previousCloseRaw : null;
-  const changeFromApi = asFinite(p.change_p);
+  // EODHD `change_p` drifts from close/previousClose: after the US close it tracks the after-hours move
+  // (GOOGL −0.57% on a −12.6% day) and small-price crypto often reports 0. Derive 1D from the pair when present.
   const changePercent1D =
-    changeFromApi ??
-    (price != null && previousClose != null && previousClose > 0
+    price != null && previousClose != null
       ? ((price - previousClose) / previousClose) * 100
-      : null);
+      : asFinite(p.change_p);
 
   return { price, previousClose, changePercent1D };
 }

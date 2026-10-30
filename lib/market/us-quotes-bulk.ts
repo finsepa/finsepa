@@ -174,7 +174,8 @@ async function loadUsQuotesBulkMap(): Promise<Map<string, UsBulkQuote> | null> {
   const map = new Map<string, UsBulkQuote>();
   for (const [ticker, close, prev, changePct, , tsSec] of snap.rows ?? []) {
     if (!(close > 0) || tsSec == null || nowSec - tsSec > MAX_ROW_AGE_SEC) continue;
-    const pct = changePct ?? (prev != null && prev > 0 ? ((close - prev) / prev) * 100 : null);
+    // Feed `change_p` disagrees with close/prev on ~1/3 of rows after the close (see toDatum); derive it.
+    const pct = prev != null && prev > 0 ? ((close - prev) / prev) * 100 : changePct;
     map.set(ticker, { price: close, previousClose: prev, changePct: pct, tsSec });
   }
   return map.size ? map : null;
