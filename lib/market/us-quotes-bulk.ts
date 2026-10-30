@@ -57,8 +57,13 @@ function num(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** One bulk call per 15-minute New York slot. */
-function bulkSegment(now: Date): string {
+/**
+ * The feed only carries regular-session prints (newest ≈ 16:29 ET), so pre-market and late post-market
+ * refetches return the same closing prices. Keep fetching briefly after the bell to capture the close.
+ */
+const POST_CLOSE_CAPTURE_END_NY_MINUTES = 16 * 60 + 45;
+
+function nyClockParts(now: Date): { ymd: string; minutes: number } {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/New_York",
     year: "numeric",
@@ -69,8 +74,21 @@ function bulkSegment(now: Date): string {
     hourCycle: "h23",
   }).formatToParts(now);
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
-  const minutes = Number(get("hour")) * 60 + Number(get("minute"));
-  return `bulk-${get("year")}-${get("month")}-${get("day")}-s${Math.floor(minutes / SLOT_MINUTES)}`;
+  return {
+    ymd: `${get("year")}-${get("month")}-${get("day")}`,
+    minutes: Number(get("hour")) * 60 + Number(get("minute")),
+  };
+}
+
+/** One bulk call per 15-minute New York slot. */
+function bulkSegment(now: Date): string {
+  const { ymd, minutes } = nyClockParts(now);
+  return `bulk-${ymd}-s${Math.floor(minutes / SLOT_MINUTES)}`;
+}
+
+function bulkIngestWindowOpen(session: string, now: Date): boolean {
+  if (session === "regular") return true;
+  return session === "post" && nyClockParts(now).minutes < POST_CLOSE_CAPTURE_END_NY_MINUTES;
 }
 
 async function fetchUsQuotesBulkRows(): Promise<UsQuotesBulkRow[] | { error: string }> {
@@ -129,10 +147,10 @@ export type UsBulkQuote = {
 
 /** Rows older than this are dead listings (ABBNY still carries a May-2023 print in the feed). */
 const MAX_ROW_AGE_SEC = 4 * 24 * 60 * 60;
-/** During US sessions the list refreshes every 15m; older means cron stopped — readers fall back. */
-const MAX_SNAPSHOT_AGE_SESSION_MS = 45 * 60 * 1000;
-/** Closed (overnight / weekend / holiday): last session's list is still the right close. */
-const MAX_SNAPSHOT_AGE_CLOSED_MS = 4 * 24 * 60 * 60 * 1000;
+/** During the regular session the list refreshes every 15m; older means cron stopped — readers fall back. */
+const MAX_SNAPSHOT_AGE_REGULAR_MS = 45 * 60 * 1000;
+/** Outside the regular session (pre/post/overnight/weekend/holiday) the last captured close is still right. */
+const MAX_SNAPSHOT_AGE_OFF_HOURS_MS = 4 * 24 * 60 * 60 * 1000;
 const READ_TTL_MS = 60_000;
 
 let readCache: { at: number; map: Map<string, UsBulkQuote> | null } | null = null;
@@ -148,7 +166,7 @@ async function loadUsQuotesBulkMap(): Promise<Map<string, UsBulkQuote> | null> {
   if (!row?.data) return null;
   const updatedMs = Date.parse(row.updated_at);
   const maxAge =
-    getUsEquityMarketSession(new Date()) === "closed" ? MAX_SNAPSHOT_AGE_CLOSED_MS : MAX_SNAPSHOT_AGE_SESSION_MS;
+    getUsEquityMarketSession(new Date()) === "regular" ? MAX_SNAPSHOT_AGE_REGULAR_MS : MAX_SNAPSHOT_AGE_OFF_HOURS_MS;
   if (!Number.isFinite(updatedMs) || Date.now() - updatedMs > maxAge) return null;
 
   const snap = row.data as UsQuotesBulkSnapshot;
@@ -180,13 +198,13 @@ export async function readUsQuotesBulkMap(): Promise<Map<string, UsBulkQuote> | 
 
 /**
  * Cron step. Never throws; returns a status string for the cron response.
- * Runs at most once per 15-minute slot, only during US pre/regular/post sessions, and keeps the
- * previous snapshot when the new build fails validation.
+ * Runs at most once per 15-minute slot, only during the regular session plus a short post-close capture,
+ * and keeps the previous snapshot when the new build fails validation.
  */
 export async function ingestUsQuotesBulk(now: Date = new Date()): Promise<string> {
   if (!usQuotesBulkEnabled()) return "disabled";
   const session = getUsEquityMarketSession(now);
-  if (session === "closed") return "skipped_closed";
+  if (!bulkIngestWindowOpen(session, now)) return `skipped_${session}`;
 
   return runWithProviderTrace("cron/us-quotes-bulk", async () => {
     try {
