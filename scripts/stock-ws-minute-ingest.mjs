@@ -265,8 +265,12 @@ function getUsEquityMarketSession(now = new Date()) {
   const hour = Number(parts.find((p) => p.type === "hour")?.value ?? NaN);
   const minute = Number(parts.find((p) => p.type === "minute")?.value ?? NaN);
   const mins = hour * 60 + minute;
+  // Same windows as lib/market/us-equity-market-session.ts — overnight must be "closed" or REST polling runs all night.
+  const preStart = 4 * 60;
   const open = 9 * 60 + 30;
   const close = 16 * 60;
+  const postEnd = 20 * 60;
+  if (mins < preStart || mins >= postEnd) return "closed";
   if (mins < open) return "pre";
   if (mins >= close) return "post";
   return "regular";
