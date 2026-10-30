@@ -733,8 +733,9 @@ async function pollRealtimeMinuteBar(sym) {
 }
 
 async function restPollTick() {
-  const session = getUsEquityMarketSession();
-  if (session === "closed") return;
+  // EODHD real-time REST carries regular-session prints only (stamped ≈16:29 ET until the next open), so
+  // pre/post polls would just re-write the regular close; extended-hours trades arrive via WS.
+  if (getUsEquityMarketSession() !== "regular") return;
 
   const symbols = [...subscribedSymbols];
   if (!symbols.length) return;
