@@ -30,15 +30,28 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const LIVE_HOT_INGEST_MIN_INTERVAL_MS = MARKET_SNAPSHOT_HOT_STALE_MS;
 const FROZEN_INGEST_MAX_AGE_MS = 48 * 60 * 60 * 1000;
-/** Retags reset `updated_at`, so this only bounds a gap of missed cron ticks, not the refresh cadence. */
-const CRYPTO_PAGE2_RETAG_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+/**
+ * Off-slot age limit for `crypto_page2`. Live retags reset `updated_at` and frozen keeps one segment all
+ * night, so the hourly cadence comes from {@link cryptoPage2Held}; this only bounds missed cron ticks.
+ */
+const CRYPTO_PAGE2_HOLD_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 
 /**
  * `crypto_page2` (~80 coins below the hot seed, ~1 realtime credit each, 24/7) refetches on the first
- * cron tick of each UTC hour and is retagged on the other three; `crypto_tab` stays on every tick.
+ * cron tick of each UTC hour and is held (kept or retagged) on the other three; `crypto_tab` stays on every tick.
  */
-function cryptoPage2DueThisTick(now: Date): boolean {
-  return now.getUTCMinutes() < 15;
+function cryptoPage2Held(name: string, now: Date): boolean {
+  return name === "cryptoPage2" && now.getUTCMinutes() >= 15;
+}
+
+/** Per-key freshness / retag window for a hot key this tick. */
+function hotKeyMaxAgeMs(name: string, defaultMaxAgeMs: number, now: Date): number {
+  return cryptoPage2Held(name, now) ? Math.max(defaultMaxAgeMs, CRYPTO_PAGE2_HOLD_MAX_AGE_MS) : defaultMaxAgeMs;
+}
+
+/** On its hourly slot `crypto_page2` must refetch rather than retag the previous row forward. */
+function hotKeyMayRetag(name: string, now: Date): boolean {
+  return name !== "cryptoPage2" || cryptoPage2Held(name, now);
 }
 /** Live session: derived EOD bars need at most one cron fill per regular day. */
 const LIVE_SLOW_INGEST_MAX_AGE_MS = 20 * 60 * 60 * 1000;
@@ -135,12 +148,6 @@ function skippedKeys(keys: readonly MarketSnapshotKey[]): Record<string, "skippe
   return Object.fromEntries(keys.map((k) => [k, "skipped"] as const));
 }
 
-/** Retag max age for a hot key this tick, or null when it must refetch (hourly `crypto_page2` slot). */
-function hotRetagMaxAgeMs(name: string, defaultMaxAgeMs: number, now: Date): number | null {
-  if (name !== "cryptoPage2") return defaultMaxAgeMs;
-  return cryptoPage2DueThisTick(now) ? null : CRYPTO_PAGE2_RETAG_MAX_AGE_MS;
-}
-
 async function upsertCryptoHotIfStale(
   hotSeg: string,
   keys: Record<string, "ok" | "skipped" | string>,
@@ -153,12 +160,12 @@ async function upsertCryptoHotIfStale(
   const pendingFetch: typeof cryptoEntries = [];
   for (const entry of cryptoEntries) {
     const [name, snapshotKey] = entry;
-    if (await marketSnapshotKeyIsFresh(snapshotKey, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)) {
+    const maxAgeMs = hotKeyMaxAgeMs(name, LIVE_HOT_INGEST_MIN_INTERVAL_MS, now);
+    if (await marketSnapshotKeyIsFresh(snapshotKey, hotSeg, maxAgeMs)) {
       keys[snapshotKey] = "ok";
       continue;
     }
-    const retagMaxAgeMs = hotRetagMaxAgeMs(name, LIVE_HOT_INGEST_MIN_INTERVAL_MS, now);
-    if (retagMaxAgeMs != null && (await retagRecentMarketSnapshotSegment(snapshotKey, hotSeg, retagMaxAgeMs))) {
+    if (hotKeyMayRetag(name, now) && (await retagRecentMarketSnapshotSegment(snapshotKey, hotSeg, maxAgeMs))) {
       keys[snapshotKey] = "segment_retagged";
       continue;
     }
@@ -209,14 +216,14 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
       const pendingFetch: typeof hotEntries = [];
       for (const entry of hotEntries) {
         const [name, snapshotKey] = entry;
-        if (await marketSnapshotKeyIsFresh(snapshotKey, hotSeg, retagMaxAgeMs)) {
+        const keyMaxAgeMs = hotKeyMaxAgeMs(name, retagMaxAgeMs, now);
+        if (await marketSnapshotKeyIsFresh(snapshotKey, hotSeg, keyMaxAgeMs)) {
           keys[snapshotKey] = "ok";
           continue;
         }
-        const keyRetagMaxAgeMs = hotRetagMaxAgeMs(name, retagMaxAgeMs, now);
         if (
-          keyRetagMaxAgeMs != null &&
-          (await retagRecentMarketSnapshotSegment(snapshotKey, hotSeg, keyRetagMaxAgeMs))
+          hotKeyMayRetag(name, now) &&
+          (await retagRecentMarketSnapshotSegment(snapshotKey, hotSeg, keyMaxAgeMs))
         ) {
           keys[snapshotKey] = "segment_retagged";
           continue;
