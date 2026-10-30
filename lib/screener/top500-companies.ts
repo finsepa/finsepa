@@ -80,7 +80,7 @@ async function loadTop500UniversePreferSnapshot(): Promise<TopCompanyUniverseRow
 
 const getTop500UniverseData = unstable_cache(
   loadTop500UniversePreferSnapshot,
-  ["screener-top500-universe-v15-snapshot-first"],
+  ["screener-top500-universe-v16-issuer-dedupe-mcap"],
   { revalidate: REVALIDATE_SCREENER_IDENTITY },
 );
 

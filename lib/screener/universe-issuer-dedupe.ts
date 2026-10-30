@@ -34,10 +34,14 @@ export function issuerTickerHasStructuredSecondarySuffix(ticker: string): boolea
   return false;
 }
 
-/** Pink-style foreign ordinary (e.g. TOYOF, NSRGF) — not BRK.B (share class uses a dot). */
+/**
+ * Pink-style foreign ordinary (e.g. TOYOF, NSRGF, SMAWF) — not BRK.B (share class uses a dot).
+ * `…WF` is usually a warrant, except the 5-letter OTC ordinary form (4-letter root + F).
+ */
 function isTrailingFOrdinaryLine(ticker: string): boolean {
   const u = normTicker(ticker);
-  return u.length >= 4 && !u.includes(".") && u.endsWith("F") && !u.endsWith("WF");
+  if (u.length < 4 || u.includes(".") || !u.endsWith("F")) return false;
+  return !u.endsWith("WF") || u.length === 5;
 }
 
 function collapseIssuerGroup<T extends IssuerDedupeRow>(group: readonly T[]): T[] {
@@ -69,13 +73,43 @@ function collapseIssuerGroup<T extends IssuerDedupeRow>(group: readonly T[]): T[
 }
 
 /**
- * One line per issuer where EODHD lists ADR + OTC-F or common + preferred (same `name` string).
+ * Looser issuer key: EODHD spells one company differently per line ("Sony Corp" / "Sony Group Corp",
+ * "Siemens AG ADR" / "Siemens AG Class N", "Mitsui & Co. Ltd" / "Mitsui & Company Ltd"). Too loose on its own
+ * ("SoftBank Corp" vs "SoftBank Group Corp" are different issuers), so groups are split by market cap below.
+ * Class A/B/C stay in the key so dual-class issuers are not merged.
+ */
+function looseIssuerKey(raw: string): string {
+  let s = normalizeIssuerNameForGrouping(raw);
+  s = s.replace(/\bclass [d-z]\b/g, " ");
+  s = s.replace(/\b(the|group|holding|holdings|ag|se|ab|s a|co|company)\b/g, " ");
+  return s.replace(/\s+/g, " ").trim();
+}
+
+/** Lines of one company report near-identical market caps; different issuers sharing a key do not. */
+const SAME_ISSUER_MIN_MCAP_RATIO = 0.75;
+
+function splitByMarketCap<T extends IssuerDedupeRow>(group: readonly T[]): T[][] {
+  const sorted = [...group].sort((a, b) => b.marketCapUsd - a.marketCapUsd);
+  const clusters: T[][] = [];
+  for (const r of sorted) {
+    // Preferred / note series report their own (small) cap; they belong with the issuer's main line.
+    const home = issuerTickerHasStructuredSecondarySuffix(r.ticker)
+      ? clusters[0]
+      : clusters.find((c) => r.marketCapUsd >= c[0]!.marketCapUsd * SAME_ISSUER_MIN_MCAP_RATIO);
+    if (home) home.push(r);
+    else clusters.push([r]);
+  }
+  return clusters;
+}
+
+/**
+ * One line per issuer where EODHD lists ADR + OTC-F or common + preferred.
  * Rows should already be cap-sorted; output is re-sorted by market cap.
  */
 export function filterIssuerLineDuplicatesInUniverse<T extends IssuerDedupeRow>(rows: readonly T[]): T[] {
   const byName = new Map<string, T[]>();
   for (const r of rows) {
-    const k = normalizeIssuerNameForGrouping(r.name);
+    const k = looseIssuerKey(r.name);
     const arr = byName.get(k) ?? [];
     arr.push(r);
     byName.set(k, arr);
@@ -83,7 +117,7 @@ export function filterIssuerLineDuplicatesInUniverse<T extends IssuerDedupeRow>(
 
   const out: T[] = [];
   for (const [, group] of byName) {
-    out.push(...collapseIssuerGroup(group));
+    for (const cluster of splitByMarketCap(group)) out.push(...collapseIssuerGroup(cluster));
   }
   out.sort((a, b) => b.marketCapUsd - a.marketCapUsd || a.ticker.localeCompare(b.ticker));
   return out;

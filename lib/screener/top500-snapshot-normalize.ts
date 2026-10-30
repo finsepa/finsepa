@@ -5,8 +5,9 @@ export type TopCompanyUniverseRow = EodhdTopUniverseRow;
 /**
  * Hide from screener top-500 only (search / stock routes still work via EODHD search).
  * GOOG — Alphabet Class C (list GOOGL). SKHY / SKHYY — OTC ADRs for SK hynix.
+ * CCZ — Comcast Holdings exchangeable notes (ZONES), not Comcast common (CMCSA).
  */
-const SCREENER_TOP500_EXCLUDED_TICKERS = new Set(["GOOG", "SKHY", "SKHYY"]);
+const SCREENER_TOP500_EXCLUDED_TICKERS = new Set(["GOOG", "SKHY", "SKHYY", "CCZ"]);
 
 /** Reject tiny/poisoned cron blobs so we fall back to EODHD instead of caching a bad list for 7d. */
 export const TOP500_SNAPSHOT_MIN_ROWS = 100;

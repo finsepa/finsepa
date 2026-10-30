@@ -49,7 +49,7 @@ async function buildScreenerStaticLayerUncached(): Promise<ScreenerCompaniesStat
 
 const getScreenerCompaniesStaticLayerCached = unstable_cache(
   buildScreenerStaticLayerUncached,
-  ["screener-v2-companies-static-layer-v5-top500-snap"],
+  ["screener-v2-companies-static-layer-v6-issuer-dedupe-mcap"],
   { revalidate: REVALIDATE_SCREENER_IDENTITY },
 );
 
