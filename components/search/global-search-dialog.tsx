@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { useRouter } from "next/navigation";
-import { BarChart3, Coins, Layers2, LineChart, PieChart, Search, UserRound } from "@/lib/icons";
+import { BarChart3, Coins, Layers2, LineChart, PieChart, Search, UserRound, X } from "@/lib/icons";
 
 import { OverlayScrollArea } from "@/components/design-system/overlay-scroll-area";
 import { textInputShellClassName } from "@/components/design-system/text-input-styles";
@@ -488,6 +488,19 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
                 aria-expanded
                 aria-controls="global-search-results"
               />
+              {query.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery("");
+                    inputRef.current?.focus({ preventScroll: true });
+                  }}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" strokeWidth={2} aria-hidden />
+                </button>
+              ) : null}
             </div>
             <SecondaryTabs
               className="min-w-0"
