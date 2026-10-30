@@ -2,10 +2,7 @@ import "server-only";
 
 import { runWithProviderTrace } from "@/lib/market/provider-trace";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
-import {
-  chunkTickers,
-  fetchEarningsCalendarBatch,
-} from "@/lib/notifications/earnings-calendar-batch";
+import { fetchEarningsCalendarForTickers } from "@/lib/notifications/earnings-calendar-batch";
 import type { EarningsNotifyIngestResult } from "@/lib/notifications/earnings-notify-types";
 import {
   buildEarningsNotifyInterestMap,
@@ -25,8 +22,8 @@ import { insertEarningsReleaseNotifications } from "@/lib/notifications/user-not
 import { scheduleEarningsTabWarmAfterRelease } from "@/lib/market/earnings-tab-release-warm";
 
 /**
- * Detect new earnings actuals for watchlist + holdings tickers via batched EODHD calendar/earnings.
- * ~1 API credit per 80 symbols; cron every 15m ≈ 96 runs/day.
+ * Detect new earnings actuals for watchlist + holdings tickers from one whole-market EODHD
+ * calendar/earnings date-range call (1 credit regardless of universe size); cron every 15m ≈ 96 credits/day.
  */
 export async function ingestEarningsReleaseNotifications(): Promise<EarningsNotifyIngestResult> {
   return runWithProviderTrace("cron/earnings-notifications", async () => {
@@ -59,17 +56,8 @@ export async function ingestEarningsReleaseNotifications(): Promise<EarningsNoti
       };
     }
 
-    const batches = chunkTickers(tickers);
-    let eodhdRequests = 0;
-    let calendarRows = 0;
-    const reportedRows: Awaited<ReturnType<typeof fetchEarningsCalendarBatch>>["rows"] = [];
-
-    for (const batch of batches) {
-      const { rows, requests } = await fetchEarningsCalendarBatch(batch);
-      eodhdRequests += requests;
-      calendarRows += rows.length;
-      reportedRows.push(...rows);
-    }
+    const batches = [tickers];
+    const { rows: reportedRows, requests: eodhdRequests } = await fetchEarningsCalendarForTickers(tickers);
 
     const recentReportedRows = reportedRows.filter((row) => isRecentEarningsCalendarRow(row));
 

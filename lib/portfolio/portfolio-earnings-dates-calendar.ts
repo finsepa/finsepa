@@ -12,21 +12,23 @@ import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import type { PortfolioEarningsDateEntry } from "@/lib/portfolio/portfolio-earnings-dates";
 import {
   canonicalNotifyTicker,
-  eodhdCalendarCodeFromTicker,
   isEarningsNotifiableTicker,
 } from "@/lib/notifications/ticker-notify-eligibility";
-import { chunkTickers, EARNINGS_NOTIFY_CALENDAR_BATCH_SIZE } from "@/lib/notifications/earnings-calendar-batch";
+import { usCalendarCode } from "@/lib/notifications/earnings-calendar-batch";
 import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { isStockDetailEtf } from "@/lib/stock/stock-etf";
 
-/** Max tickers per POST — chunked into {@link EARNINGS_NOTIFY_CALENDAR_BATCH_SIZE} EODHD calls. */
+/** Max tickers per POST. */
 export const PORTFOLIO_EARNINGS_DATES_MAX_SYMBOLS = 240;
 
 /** Look ahead ~2 quarters for the next report date. */
 const FORWARD_DAYS = 180;
-/** Report dates move rarely — share successful calendar batches across users for an hour. */
-const CALENDAR_BATCH_REVALIDATE_SEC = 3600;
+/**
+ * One whole-market call (1 EODHD credit; `symbols=` would bill per ticker) shared by every user.
+ * Report dates move rarely.
+ */
+const CALENDAR_MARKET_REVALIDATE_SEC = 3 * 3600;
 
 export type PortfolioEarningsDatesResult = {
   bySymbol: Record<string, PortfolioEarningsDateEntry>;
@@ -99,12 +101,7 @@ function parseReportYmd(raw: unknown): string | null {
   return utcYmd(new Date(t));
 }
 
-type CalendarHit = { ticker: string; reportDateYmd: string };
-
-/**
- * Upcoming earnings dates via EODHD `calendar/earnings?symbols=` (chunked).
- * ~1 API credit per 80 tickers — replaces per-symbol fundamentals fan-out.
- */
+/** Upcoming earnings dates from one shared whole-market EODHD calendar window. */
 export async function buildPortfolioEarningsDatesFromCalendar(
   symbols: readonly string[],
 ): Promise<PortfolioEarningsDatesResult> {
@@ -134,58 +131,34 @@ export async function buildPortfolioEarningsDatesFromCalendar(
   if (!getEodhdApiKey()) return { bySymbol, incomplete: true };
 
   const { from, to } = forwardWindow();
-  const today = utcYmd(new Date());
-  const nextByTicker = new Map<string, string>();
-  let incomplete = false;
-
-  for (const batch of chunkTickers(calendarTickers, EARNINGS_NOTIFY_CALENDAR_BATCH_SIZE)) {
-    let hits: CalendarHit[];
-    try {
-      hits = await getCachedCalendarBatch([...new Set(batch)].sort().join(","), from, to);
-    } catch {
-      incomplete = true;
-      continue;
-    }
-    for (const hit of hits) {
-      if (hit.reportDateYmd < today) continue;
-      const prev = nextByTicker.get(hit.ticker);
-      if (!prev || hit.reportDateYmd < prev) {
-        nextByTicker.set(hit.ticker, hit.reportDateYmd);
-      }
-    }
+  let nextByTicker: Record<string, string>;
+  try {
+    nextByTicker = await getCachedUpcomingReportDates(from, to);
+  } catch {
+    return { bySymbol, incomplete: true };
   }
 
   for (const sym of unique) {
     if (bySymbol[sym]?.notApplicable) continue;
-    const canonical = canonicalNotifyTicker(sym);
-    const ymd = nextByTicker.get(canonical);
+    const ymd = nextByTicker[canonicalNotifyTicker(sym)];
     bySymbol[sym] = ymd ? entryFromYmd(ymd) : emptyEntry();
   }
 
-  return { bySymbol, incomplete };
+  return { bySymbol, incomplete: false };
 }
 
-/** Throws on any upstream failure so `unstable_cache` never stores an empty miss as "no earnings". */
-async function fetchUpcomingCalendarBatch(
-  canonicalTickers: readonly string[],
-  from: string,
-  to: string,
-): Promise<CalendarHit[]> {
-  if (canonicalTickers.length === 0) return [];
+/**
+ * Whole-market forward window reduced to `canonical ticker → earliest report date` (~4k US tickers).
+ * Throws on any upstream failure so `unstable_cache` never stores an empty miss as "no earnings".
+ */
+async function fetchUpcomingReportDatesByTicker(from: string, to: string): Promise<Record<string, string>> {
   const apiToken = getEodhdApiKey();
   if (!apiToken) throw new Error("EODHD key missing");
 
-  const symbols = canonicalTickers.map(eodhdCalendarCodeFromTicker).join(",");
-  const params = new URLSearchParams({
-    symbols,
-    from,
-    to,
-    api_token: apiToken,
-    fmt: "json",
-  });
+  const params = new URLSearchParams({ from, to, api_token: apiToken, fmt: "json" });
   const url = `https://eodhd.com/api/calendar/earnings?${params.toString()}`;
 
-  if (!traceEodhdHttp("fetchPortfolioEarningsDatesCalendarBatch", { count: canonicalTickers.length })) {
+  if (!traceEodhdHttp("fetchPortfolioEarningsDatesCalendarMarket", { from, to })) {
     throw new Error("EODHD request budget exhausted");
   }
   const res = await fetchEodhd(url, { cache: "no-store" });
@@ -194,24 +167,25 @@ async function fetchUpcomingCalendarBatch(
   const arr = json?.earnings;
   if (!Array.isArray(arr)) throw new Error("EODHD calendar: malformed payload");
 
-  const out: CalendarHit[] = [];
+  const out: Record<string, string> = {};
   for (const raw of arr) {
     if (!raw || typeof raw !== "object") continue;
     const o = raw as Record<string, unknown>;
-    const code = typeof o.code === "string" ? o.code.trim().toUpperCase() : "";
-    if (!code.endsWith(".US")) continue;
+    const code = usCalendarCode(o.code);
+    if (!code) continue;
     const ticker = canonicalNotifyTicker(code.replace(/\.US$/i, "").replace(/-/g, "."));
     const reportDateYmd =
       parseReportYmd(o.report_date ?? o.ReportDate ?? o.reportDate) ?? parseReportYmd(o.date);
-    if (!reportDateYmd) continue;
-    out.push({ ticker, reportDateYmd });
+    if (!reportDateYmd || reportDateYmd < from) continue;
+    const prev = out[ticker];
+    if (!prev || reportDateYmd < prev) out[ticker] = reportDateYmd;
   }
+  if (Object.keys(out).length === 0) throw new Error("EODHD calendar: no US rows");
   return out;
 }
 
-const getCachedCalendarBatch = unstable_cache(
-  async (tickersCsv: string, from: string, to: string) =>
-    fetchUpcomingCalendarBatch(tickersCsv.split(",").filter(Boolean), from, to),
-  ["portfolio-earnings-calendar-batch-v1"],
-  { revalidate: CALENDAR_BATCH_REVALIDATE_SEC },
+const getCachedUpcomingReportDates = unstable_cache(
+  async (from: string, to: string) => fetchUpcomingReportDatesByTicker(from, to),
+  ["portfolio-earnings-calendar-market-v1"],
+  { revalidate: CALENDAR_MARKET_REVALIDATE_SEC },
 );

@@ -3,10 +3,7 @@ import "server-only";
 import { getEodhdApiKey } from "@/lib/env/server";
 import { traceEodhdHttp } from "@/lib/market/provider-trace";
 import type { EarningsNotifyCalendarRow } from "@/lib/notifications/earnings-notify-types";
-import {
-  canonicalNotifyTicker,
-  eodhdCalendarCodeFromTicker,
-} from "@/lib/notifications/ticker-notify-eligibility";
+import { canonicalNotifyTicker } from "@/lib/notifications/ticker-notify-eligibility";
 import { EARNINGS_NOTIFY_LOOKBACK_DAYS } from "@/lib/notifications/earnings-release-detect";
 import { fetchEodhd } from "@/lib/market/eodhd-fetch";
 
@@ -20,8 +17,6 @@ function earningsCalendarReportDateWindow(
   const fmt = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
   return { from: fmt(from), to: fmt(to) };
 }
-
-export const EARNINGS_NOTIFY_CALENDAR_BATCH_SIZE = 80;
 
 function num(v: unknown): number | null {
   if (typeof v === "number" && Number.isFinite(v)) return v;
@@ -42,11 +37,19 @@ function ymd(v: unknown): string | null {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
 }
 
+/** Whole-market calendar often emits US listings without `.US` (`TSLA`, `BRK-B`); other exchanges keep a suffix. */
+export function usCalendarCode(raw: unknown): string | null {
+  const code = typeof raw === "string" ? raw.trim().toUpperCase() : "";
+  if (code.endsWith(".US")) return code;
+  if (!code || code.includes(".") || !/^[A-Z0-9-]+$/.test(code)) return null;
+  return `${code}.US`;
+}
+
 function parseCalendarRow(raw: unknown): EarningsNotifyCalendarRow | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
-  const code = typeof o.code === "string" ? o.code.trim().toUpperCase() : "";
-  if (!code.endsWith(".US")) return null;
+  const code = usCalendarCode(o.code);
+  if (!code) return null;
   const ticker = canonicalNotifyTicker(code.replace(/\.US$/i, "").replace(/-/g, "."));
   const epsActual = num(o.actual);
   if (epsActual == null) return null;
@@ -69,26 +72,23 @@ function parseCalendarRow(raw: unknown): EarningsNotifyCalendarRow | null {
   };
 }
 
-export async function fetchEarningsCalendarBatch(
+/**
+ * Whole-market report-date window, filtered locally. EODHD bills `symbols=` per ticker
+ * (79 tickers → 79 credits) but a date-range call without `symbols` as 1 credit.
+ */
+export async function fetchEarningsCalendarForTickers(
   canonicalTickers: readonly string[],
 ): Promise<{ rows: EarningsNotifyCalendarRow[]; requests: number }> {
   const key = getEodhdApiKey();
   if (!key || canonicalTickers.length === 0) return { rows: [], requests: 0 };
 
-  const symbols = canonicalTickers.map(eodhdCalendarCodeFromTicker).join(",");
+  const wanted = new Set(canonicalTickers);
   const { from, to } = earningsCalendarReportDateWindow();
-
-  const params = new URLSearchParams({
-    symbols,
-    from,
-    to,
-    api_token: key,
-    fmt: "json",
-  });
+  const params = new URLSearchParams({ from, to, api_token: key, fmt: "json" });
   const url = `https://eodhd.com/api/calendar/earnings?${params.toString()}`;
 
   try {
-    if (!traceEodhdHttp("fetchEarningsCalendarBatch", { count: canonicalTickers.length })) {
+    if (!traceEodhdHttp("fetchEarningsCalendarForTickers", { count: canonicalTickers.length })) {
       return { rows: [], requests: 0 };
     }
     const res = await fetchEodhd(url, { cache: "no-store" });
@@ -96,17 +96,13 @@ export async function fetchEarningsCalendarBatch(
     const json = (await res.json()) as { earnings?: unknown };
     const arr = json?.earnings;
     if (!Array.isArray(arr)) return { rows: [], requests: 1 };
-    const rows = arr.map(parseCalendarRow).filter(Boolean) as EarningsNotifyCalendarRow[];
+    const rows: EarningsNotifyCalendarRow[] = [];
+    for (const raw of arr) {
+      const row = parseCalendarRow(raw);
+      if (row && wanted.has(row.ticker)) rows.push(row);
+    }
     return { rows, requests: 1 };
   } catch {
     return { rows: [], requests: 1 };
   }
-}
-
-export function chunkTickers(tickers: readonly string[], size = EARNINGS_NOTIFY_CALENDAR_BATCH_SIZE): string[][] {
-  const out: string[][] = [];
-  for (let i = 0; i < tickers.length; i += size) {
-    out.push(tickers.slice(i, i + size));
-  }
-  return out;
 }

@@ -11,8 +11,7 @@ type Body = { symbols?: unknown };
 
 /**
  * Next earnings date per holding / watchlist ticker.
- * Uses batched EODHD `calendar/earnings?symbols=` (~1 credit / 80 tickers) —
- * not per-symbol fundamentals.
+ * Uses one shared whole-market EODHD calendar window — not per-symbol fundamentals.
  */
 export async function POST(request: Request) {
   try {
