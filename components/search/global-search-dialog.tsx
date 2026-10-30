@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType }
 import { useRouter } from "next/navigation";
 import { BarChart3, Coins, Layers2, LineChart, PieChart, Search, UserRound } from "@/lib/icons";
 
-import { SegmentedControl } from "@/components/design-system";
 import { OverlayScrollArea } from "@/components/design-system/overlay-scroll-area";
 import { textInputShellClassName } from "@/components/design-system/text-input-styles";
 import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
@@ -14,6 +13,7 @@ import {
   searchResultCategoryLabel,
 } from "@/components/search/search-result-row";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import { SecondaryTabs } from "@/components/ui/secondary-tabs";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { seedPendingAssetShellFromSearchItem } from "@/lib/navigation/seed-pending-asset-shell-from-search";
@@ -489,15 +489,13 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
                 aria-controls="global-search-results"
               />
             </div>
-            <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              <SegmentedControl
-                aria-label="Search list"
-                className="w-max max-w-none whitespace-nowrap"
-                value={tab}
-                onChange={setTab}
-                options={[{ value: ALL_TAB, label: "All" }, ...watchlists.map((l) => ({ value: l.id, label: l.name }))]}
-              />
-            </div>
+            <SecondaryTabs
+              className="min-w-0"
+              aria-label="Search list"
+              value={tab}
+              onValueChange={setTab}
+              items={[{ id: ALL_TAB, label: "All" }, ...watchlists.map((l) => ({ id: l.id, label: l.name }))]}
+            />
           </div>
 
           <div
