@@ -509,7 +509,7 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
           >
             <span>Name</span>
             <span className="text-right">Last price</span>
-            <span className="text-right">1D</span>
+            <span className="text-right">1D change</span>
             <span className="text-right">Market cap</span>
             <span />
           </div>
