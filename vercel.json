@@ -36,6 +36,10 @@
       "schedule": "15 14 * * *"
     },
     {
+      "path": "/api/cron/eodhd-usage",
+      "schedule": "55 23 * * *"
+    },
+    {
       "path": "/api/cron/earnings-notifications",
       "schedule": "7,22,37,52 * * * *"
     },
