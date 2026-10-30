@@ -128,3 +128,14 @@ export async function readUsEquityMcapMap(): Promise<Map<string, { name: string;
   }
   return map;
 }
+
+const MCAP_MAP_TTL_MS = 10 * 60 * 1000;
+let mcapMapCache: { at: number; map: Awaited<ReturnType<typeof readUsEquityMcapMap>> } | null = null;
+
+/** {@link readUsEquityMcapMap} memoized in-process — the snapshot changes once a day; request paths read it often. */
+export async function readUsEquityMcapMapCached(): ReturnType<typeof readUsEquityMcapMap> {
+  if (mcapMapCache && Date.now() - mcapMapCache.at < MCAP_MAP_TTL_MS) return mcapMapCache.map;
+  const map = await readUsEquityMcapMap().catch(() => null);
+  mcapMapCache = { at: Date.now(), map };
+  return map;
+}

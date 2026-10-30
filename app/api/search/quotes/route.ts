@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 
+import { readUsEquityMcapMapCached } from "@/lib/market/us-equity-mcap-universe";
 import { readUsQuotesBulkMap, usQuotesBulkKey } from "@/lib/market/us-quotes-bulk";
 import type { SearchDirectoryQuote } from "@/lib/search/search-directory-types";
 
 const MAX_SYMBOLS = 50;
 
 /**
- * Last price / 1D for US search hits outside the browse directory, from the cron bulk list
- * (one Supabase row, cached in-process) — no EODHD. OTC names the bulk feed lacks are omitted.
+ * Last price / 1D (cron bulk list) and market cap (daily US equity mcap snapshot) for US search hits
+ * outside the browse directory — Supabase reads only, no EODHD. Symbols in neither source are omitted.
  */
 export async function GET(request: Request) {
   const raw = new URL(request.url).searchParams.get("symbols") ?? "";
@@ -17,10 +18,14 @@ export async function GET(request: Request) {
   );
 
   const quotes: Record<string, SearchDirectoryQuote> = {};
-  const bulk = symbols.length ? await readUsQuotesBulkMap() : null;
+  const [bulk, mcap] = symbols.length
+    ? await Promise.all([readUsQuotesBulkMap(), readUsEquityMcapMapCached()])
+    : [null, null];
   for (const symbol of symbols) {
     const q = bulk?.get(usQuotesBulkKey(symbol));
-    if (q) quotes[symbol] = { price: q.price, changePct: q.changePct, marketCapUsd: null };
+    const marketCapUsd = mcap?.get(symbol.replace(/-/g, "."))?.marketCapUsd ?? null;
+    if (!q && marketCapUsd == null) continue;
+    quotes[symbol] = { price: q?.price ?? null, changePct: q?.changePct ?? null, marketCapUsd };
   }
 
   return NextResponse.json(
