@@ -16,8 +16,8 @@ import {
   CRYPTO_SCREENER_PAGE2,
   CRYPTO_TOP10,
   type CryptoMeta,
-  cryptoRealtimeRequestSymbols,
   fetchCryptoMarketCapUsdForMeta,
+  fetchCryptoRealtimePrimaryFirst,
   fetchEodhdCryptoDailyBarsForMeta,
   pickCryptoRealtimePayload,
 } from "@/lib/market/eodhd-crypto";
@@ -357,8 +357,7 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
       if (includeCrypto) {
         const cryptoMetas = cryptoMetasForBatch(cryptoBatch);
         // Cron / scripts: use raw multi-fetch (not Next `unstable_cache` per-symbol batching).
-        const symbolList = cryptoRealtimeRequestSymbols(cryptoMetas);
-        const map = await fetchEodhdRealtimeSymbolsRaw(symbolList);
+        const map = await fetchCryptoRealtimePrimaryFirst(cryptoMetas, fetchEodhdRealtimeSymbolsRaw);
         for (const c of cryptoMetas) {
           crypto[c.symbol] = toDatum(pickCryptoRealtimePayload(map, c));
         }
@@ -401,16 +400,13 @@ async function loadSimpleMarketDataBatch(opts: SimpleMarketBatchOpts): Promise<S
     }
     symbolList.push(...page2Tickers.filter((t) => !bulkPayload(t)).map((t) => toEodhdUsSymbol(t)));
     const cryptoMetas = includeCrypto ? cryptoMetasForBatch(cryptoBatch) : [];
-    const cryptoSymbols = includeCrypto ? cryptoRealtimeRequestSymbols(cryptoMetas) : [];
     if (includeIndices) {
       symbolList.push(...SCREENER_INDEX_SYMBOLS);
     }
 
     const [map, cryptoMap] = await Promise.all([
       symbolList.length ? loadEodhdRealtimeQuotes(symbolList) : Promise.resolve(new Map<string, EodhdRealtimePayload>()),
-      cryptoSymbols.length
-        ? fetchEodhdRealtimeSymbolsRaw(cryptoSymbols)
-        : Promise.resolve(new Map<string, EodhdRealtimePayload>()),
+      fetchCryptoRealtimePrimaryFirst(cryptoMetas, fetchEodhdRealtimeSymbolsRaw),
     ]);
 
     const stocks = {} as Record<Top10Ticker, SimpleMarketDatum>;

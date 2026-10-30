@@ -1,8 +1,8 @@
 import "server-only";
 
 import {
-  cryptoRealtimeRequestSymbols,
   eodhdSymbolsForMeta,
+  fetchCryptoRealtimePrimaryFirst,
   pickCryptoRealtimePayload,
 } from "@/lib/market/crypto-meta";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
@@ -59,16 +59,13 @@ export async function getCryptoLiveSpotForHeader(routeSymbol: string): Promise<C
 
   // 2) EODHD realtime quote.
   if (meta) {
-    const rtSymbols = cryptoRealtimeRequestSymbols([meta]);
-    if (rtSymbols.length > 0) {
-      const map = await fetchEodhdRealtimeSymbolsRaw(rtSymbols);
-      const rt = pickCryptoRealtimePayload(map, meta);
-      if (rt && isPositive(rt.close)) {
-        const ts = typeof rt.timestamp === "number" && Number.isFinite(rt.timestamp)
-          ? (rt.timestamp > 1e12 ? Math.floor(rt.timestamp / 1000) : Math.floor(rt.timestamp))
-          : nowSec;
-        return { price: rt.close, quotedAtSec: ts, source: "realtime" };
-      }
+    const map = await fetchCryptoRealtimePrimaryFirst([meta], fetchEodhdRealtimeSymbolsRaw);
+    const rt = pickCryptoRealtimePayload(map, meta);
+    if (rt && isPositive(rt.close)) {
+      const ts = typeof rt.timestamp === "number" && Number.isFinite(rt.timestamp)
+        ? (rt.timestamp > 1e12 ? Math.floor(rt.timestamp / 1000) : Math.floor(rt.timestamp))
+        : nowSec;
+      return { price: rt.close, quotedAtSec: ts, source: "realtime" };
     }
   }
 

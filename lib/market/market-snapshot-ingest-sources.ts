@@ -39,15 +39,21 @@ export type MarketSnapshotSlowIngestPayloads = Pick<
   "screenerDerived" | "cryptoDerived" | "indicesDerived" | "currenciesTab"
 >;
 
-/** Hot quotes/tabs — cron only; never reads Supabase. */
-export async function buildMarketSnapshotHotPayloadsForIngest(): Promise<MarketSnapshotHotIngestPayloads> {
-  const [stocksAllPages, cryptoTab, cryptoPage2, indicesTab] = await Promise.all([
-    buildMarketSnapshotStocksAllPagesForIngest(),
-    buildMarketSnapshotCryptoTabForIngest(),
-    buildMarketSnapshotCryptoPage2ForIngest(),
-    buildMarketSnapshotIndicesTabForIngest(),
-  ]);
-  return { stocksAllPages, cryptoTab, cryptoPage2, indicesTab };
+const HOT_PAYLOAD_BUILDERS: {
+  [K in keyof MarketSnapshotHotIngestPayloads]: () => Promise<MarketSnapshotHotIngestPayloads[K]>;
+} = {
+  stocksAllPages: buildMarketSnapshotStocksAllPagesForIngest,
+  cryptoTab: buildMarketSnapshotCryptoTabForIngest,
+  cryptoPage2: buildMarketSnapshotCryptoPage2ForIngest,
+  indicesTab: buildMarketSnapshotIndicesTabForIngest,
+};
+
+/** Hot quotes/tabs — cron only; never reads Supabase. Builds only `names` (each one is billed). */
+export async function buildMarketSnapshotHotPayloadsForIngest<K extends keyof MarketSnapshotHotIngestPayloads>(
+  names: readonly K[],
+): Promise<Pick<MarketSnapshotHotIngestPayloads, K>> {
+  const built = await Promise.all(names.map(async (name) => [name, await HOT_PAYLOAD_BUILDERS[name]()] as const));
+  return Object.fromEntries(built) as Pick<MarketSnapshotHotIngestPayloads, K>;
 }
 
 /** Crypto screener hot hubs only (US-frozen off-hours refresh). */
@@ -75,7 +81,7 @@ export async function buildMarketSnapshotSlowPayloadsForIngest(): Promise<Market
 /** Loads all snapshot blobs from EODHD (cron only — never reads Supabase). */
 export async function buildMarketSnapshotPayloadsForIngest(): Promise<MarketSnapshotIngestPayloads> {
   const [hot, slow] = await Promise.all([
-    buildMarketSnapshotHotPayloadsForIngest(),
+    buildMarketSnapshotHotPayloadsForIngest(["stocksAllPages", "cryptoTab", "cryptoPage2", "indicesTab"]),
     buildMarketSnapshotSlowPayloadsForIngest(),
   ]);
   return { ...hot, ...slow };

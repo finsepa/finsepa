@@ -30,6 +30,16 @@ import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const LIVE_HOT_INGEST_MIN_INTERVAL_MS = MARKET_SNAPSHOT_HOT_STALE_MS;
 const FROZEN_INGEST_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+/** Retags reset `updated_at`, so this only bounds a gap of missed cron ticks, not the refresh cadence. */
+const CRYPTO_PAGE2_RETAG_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * `crypto_page2` (~80 coins below the hot seed, ~1 realtime credit each, 24/7) refetches on the first
+ * cron tick of each UTC hour and is retagged on the other three; `crypto_tab` stays on every tick.
+ */
+function cryptoPage2DueThisTick(now: Date): boolean {
+  return now.getUTCMinutes() < 15;
+}
 /** Live session: derived EOD bars need at most one cron fill per regular day. */
 const LIVE_SLOW_INGEST_MAX_AGE_MS = 20 * 60 * 60 * 1000;
 
@@ -125,9 +135,16 @@ function skippedKeys(keys: readonly MarketSnapshotKey[]): Record<string, "skippe
   return Object.fromEntries(keys.map((k) => [k, "skipped"] as const));
 }
 
+/** Retag max age for a hot key this tick, or null when it must refetch (hourly `crypto_page2` slot). */
+function hotRetagMaxAgeMs(name: string, defaultMaxAgeMs: number, now: Date): number | null {
+  if (name !== "cryptoPage2") return defaultMaxAgeMs;
+  return cryptoPage2DueThisTick(now) ? null : CRYPTO_PAGE2_RETAG_MAX_AGE_MS;
+}
+
 async function upsertCryptoHotIfStale(
   hotSeg: string,
   keys: Record<string, "ok" | "skipped" | string>,
+  now: Date,
 ): Promise<boolean> {
   const cryptoEntries: ["cryptoTab" | "cryptoPage2", MarketSnapshotKey][] = [
     ["cryptoTab", MARKET_SNAPSHOT_KEY.cryptoTab],
@@ -135,17 +152,13 @@ async function upsertCryptoHotIfStale(
   ];
   const pendingFetch: typeof cryptoEntries = [];
   for (const entry of cryptoEntries) {
-    const [, snapshotKey] = entry;
+    const [name, snapshotKey] = entry;
     if (await marketSnapshotKeyIsFresh(snapshotKey, hotSeg, LIVE_HOT_INGEST_MIN_INTERVAL_MS)) {
       keys[snapshotKey] = "ok";
       continue;
     }
-    const retagged = await retagRecentMarketSnapshotSegment(
-      snapshotKey,
-      hotSeg,
-      LIVE_HOT_INGEST_MIN_INTERVAL_MS,
-    );
-    if (retagged) {
+    const retagMaxAgeMs = hotRetagMaxAgeMs(name, LIVE_HOT_INGEST_MIN_INTERVAL_MS, now);
+    if (retagMaxAgeMs != null && (await retagRecentMarketSnapshotSegment(snapshotKey, hotSeg, retagMaxAgeMs))) {
       keys[snapshotKey] = "segment_retagged";
       continue;
     }
@@ -153,7 +166,7 @@ async function upsertCryptoHotIfStale(
   }
   if (!pendingFetch.length) return false;
 
-  const crypto = await buildMarketSnapshotCryptoHotPayloadsForIngest();
+  const crypto = await buildMarketSnapshotHotPayloadsForIngest(pendingFetch.map(([name]) => name));
   for (const [name, snapshotKey] of pendingFetch) {
     const res = await upsertMarketSnapshot(snapshotKey, hotSeg, crypto[name]);
     keys[snapshotKey] = res.ok ? "ok" : res.reason;
@@ -195,24 +208,23 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
         epoch.mode === "frozen" ? FROZEN_INGEST_MAX_AGE_MS : LIVE_HOT_INGEST_MIN_INTERVAL_MS;
       const pendingFetch: typeof hotEntries = [];
       for (const entry of hotEntries) {
-        const [, snapshotKey] = entry;
+        const [name, snapshotKey] = entry;
         if (await marketSnapshotKeyIsFresh(snapshotKey, hotSeg, retagMaxAgeMs)) {
           keys[snapshotKey] = "ok";
           continue;
         }
-        const retagged = await retagRecentMarketSnapshotSegment(
-          snapshotKey,
-          hotSeg,
-          retagMaxAgeMs,
-        );
-        if (retagged) {
+        const keyRetagMaxAgeMs = hotRetagMaxAgeMs(name, retagMaxAgeMs, now);
+        if (
+          keyRetagMaxAgeMs != null &&
+          (await retagRecentMarketSnapshotSegment(snapshotKey, hotSeg, keyRetagMaxAgeMs))
+        ) {
           keys[snapshotKey] = "segment_retagged";
           continue;
         }
         pendingFetch.push(entry);
       }
       if (pendingFetch.length) {
-        const hot = await buildMarketSnapshotHotPayloadsForIngest();
+        const hot = await buildMarketSnapshotHotPayloadsForIngest(pendingFetch.map(([name]) => name));
         for (const [name, snapshotKey] of pendingFetch) {
           const res = await upsertMarketSnapshot(snapshotKey, hotSeg, hot[name]);
           keys[snapshotKey] = res.ok ? "ok" : res.reason;
@@ -222,7 +234,7 @@ export async function ingestMarketSnapshots(now: Date = new Date()): Promise<Mar
       Object.assign(keys, skippedKeys(EQUITY_HOT_SKIP_KEYS));
       // Crypto 24/7: keep refreshing screener page1/page2 while US equities stay frozen.
       if (hotSkipReason === "frozen_segment_fresh") {
-        cryptoRefreshedWhileFrozen = await upsertCryptoHotIfStale(hotSeg, keys);
+        cryptoRefreshedWhileFrozen = await upsertCryptoHotIfStale(hotSeg, keys, now);
       } else {
         Object.assign(keys, skippedKeys(MARKET_SNAPSHOT_CRYPTO_HOT_INGEST_KEYS));
       }

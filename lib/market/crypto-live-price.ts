@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getCryptoPerformance } from "@/lib/market/crypto-performance";
-import { cryptoRealtimeRequestSymbols, eodhdSymbolsForMeta, pickCryptoRealtimePayload } from "@/lib/market/crypto-meta";
+import { eodhdSymbolsForMeta, fetchCryptoRealtimePrimaryFirst, pickCryptoRealtimePayload } from "@/lib/market/crypto-meta";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
 import { fetchEodhdRealtimeSymbolsRaw } from "@/lib/market/eodhd-realtime";
@@ -21,13 +21,9 @@ export async function getCryptoLiveSpotPriceUsd(routeSymbol: string): Promise<nu
   const meta = await resolveCryptoMetaForProvider(trimmed);
   if (!meta) return null;
 
-  const rtSymbols = cryptoRealtimeRequestSymbols([meta]);
-  if (rtSymbols.length > 0) {
-    const map = await fetchEodhdRealtimeSymbolsRaw(rtSymbols);
-    const rt = pickCryptoRealtimePayload(map, meta);
-    const live = rt?.close;
-    if (typeof live === "number" && Number.isFinite(live) && live > 0) return live;
-  }
+  const map = await fetchCryptoRealtimePrimaryFirst([meta], fetchEodhdRealtimeSymbolsRaw);
+  const live = pickCryptoRealtimePayload(map, meta)?.close;
+  if (typeof live === "number" && Number.isFinite(live) && live > 0) return live;
 
   const nowSec = Math.floor(Date.now() / 1000);
   const from = nowSec - 24 * 60 * 60;

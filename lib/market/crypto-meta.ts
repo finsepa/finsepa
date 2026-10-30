@@ -354,13 +354,23 @@ export function pickCryptoRealtimePayload(
   return undefined;
 }
 
-/** Primary + alternate pair symbols to include in `fetchEodhdRealtimeSymbolsRaw`. */
-export function cryptoRealtimeRequestSymbols(metas: readonly CryptoMeta[]): string[] {
-  const out: string[] = [];
+/**
+ * Realtime quotes bill 1 credit per symbol, so ask for each coin's primary pair first and only
+ * request alternate pairs (USDT etc.) for coins whose primary came back empty.
+ */
+export async function fetchCryptoRealtimePrimaryFirst(
+  metas: readonly CryptoMeta[],
+  fetchSymbols: (symbols: string[]) => Promise<Map<string, EodhdRealtimePayload>>,
+): Promise<Map<string, EodhdRealtimePayload>> {
+  if (!metas.length) return new Map();
+  const map = await fetchSymbols([...new Set(metas.map((c) => c.eodhdSymbol))]);
+  const fallback = new Set<string>();
   for (const c of metas) {
-    out.push(c.eodhdSymbol);
-    for (const a of c.eodhdAltSymbols ?? []) out.push(a);
-    for (const a of synthAltSymbols(c)) out.push(a);
+    if (pickCryptoRealtimePayload(map, c)) continue;
+    for (const a of [...(c.eodhdAltSymbols ?? []), ...synthAltSymbols(c)]) fallback.add(a);
   }
-  return out;
+  if (!fallback.size) return map;
+  const alt = await fetchSymbols([...fallback]);
+  for (const [k, v] of alt) if (!map.has(k)) map.set(k, v);
+  return map;
 }
