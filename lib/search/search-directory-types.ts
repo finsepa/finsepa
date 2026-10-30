@@ -6,6 +6,8 @@ export type SearchDirectoryQuote = {
   /** 1D % change (US session for equities, 24h-style daily for crypto). */
   changePct: number | null;
   marketCapUsd: number | null;
+  /** Company name when the row was built from a bare ticker (search quotes endpoint only). */
+  name?: string;
 };
 
 export type SearchDirectoryCategory = "stock" | "etf" | "crypto" | "index";

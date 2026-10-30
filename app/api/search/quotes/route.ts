@@ -23,9 +23,14 @@ export async function GET(request: Request) {
     : [null, null];
   for (const symbol of symbols) {
     const q = bulk?.get(usQuotesBulkKey(symbol));
-    const marketCapUsd = mcap?.get(symbol.replace(/-/g, "."))?.marketCapUsd ?? null;
-    if (!q && marketCapUsd == null) continue;
-    quotes[symbol] = { price: q?.price ?? null, changePct: q?.changePct ?? null, marketCapUsd };
+    const m = mcap?.get(symbol.replace(/-/g, "."));
+    if (!q && !m) continue;
+    quotes[symbol] = {
+      price: q?.price ?? null,
+      changePct: q?.changePct ?? null,
+      marketCapUsd: m?.marketCapUsd ?? null,
+      ...(m?.name ? { name: m.name } : {}),
+    };
   }
 
   return NextResponse.json(

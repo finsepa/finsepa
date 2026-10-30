@@ -28,12 +28,15 @@ import type { SearchAssetItem } from "@/lib/search/search-types";
 import { useSearchDirectory } from "@/lib/search/use-search-directory";
 import { useSearchRecentStorage } from "@/lib/search/use-search-recent-storage";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
-import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
+import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_FOREX_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist/constants";
+import { isWatchlistTickerWatched, normalizeWatchlistStorageKey } from "@/lib/watchlist/normalize-storage-key";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
 
 type Category = "all" | "stocks" | "etfs" | "crypto" | "indices" | "superinvestors";
-type ListTab = "all" | "watchlist";
+/** `"all"` or a watchlist id. */
+type ListTab = string;
+const ALL_TAB = "all";
 
 const CATEGORIES: { id: Category; label: string; Icon: ComponentType<{ className?: string }> }[] = [
   { id: "all", label: "All markets", Icon: Layers2 },
@@ -137,6 +140,48 @@ function directoryRowToItem(row: SearchDirectoryRow): SearchAssetItem {
   };
 }
 
+/** Row for a saved watchlist key that is not in the browse directory (name/quote filled from search quotes). */
+function watchlistKeyToItem(key: string): SearchAssetItem | null {
+  const k = key.trim().toUpperCase();
+  if (!k || k.startsWith(WATCHLIST_FOREX_PREFIX)) return null;
+  if (k.startsWith(WATCHLIST_CRYPTO_PREFIX)) {
+    const sym = k.slice(WATCHLIST_CRYPTO_PREFIX.length);
+    return {
+      id: `crypto:${sym}`,
+      type: "crypto",
+      symbol: sym,
+      name: sym,
+      subtitle: null,
+      logoUrl: getCryptoLogoUrl(sym),
+      route: `/crypto/${encodeURIComponent(sym)}`,
+      marketLabel: "Crypto",
+    };
+  }
+  if (k.startsWith(WATCHLIST_INDEX_PREFIX)) {
+    const sym = k.slice(WATCHLIST_INDEX_PREFIX.length);
+    return {
+      id: `index:${sym}`,
+      type: "index",
+      symbol: sym,
+      name: sym,
+      subtitle: sym,
+      logoUrl: null,
+      route: `/index/${encodeURIComponent(sym)}`,
+      marketLabel: "Index",
+    };
+  }
+  return {
+    id: `stock:${k}`,
+    type: "stock",
+    symbol: k,
+    name: k,
+    subtitle: "US",
+    logoUrl: resolveEquityLogoUrlFromTicker(k),
+    route: `/stock/${encodeURIComponent(k)}`,
+    marketLabel: "US equity",
+  };
+}
+
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
     <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-stroke bg-surface-muted px-1 font-sans text-[11px] font-medium text-fg-muted">
@@ -167,7 +212,10 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [recent, setRecent] = useState<SearchAssetItem[]>([]);
   const [category, setCategory] = useState<Category>("all");
-  const [tab, setTab] = useState<ListTab>("all");
+  const [tabPick, setTab] = useState<ListTab>(ALL_TAB);
+  /** Falls back to All when the picked watchlist is deleted or not hydrated yet. */
+  const tab = tabPick !== ALL_TAB && watchlists.some((l) => l.id === tabPick) ? tabPick : ALL_TAB;
+  const tabIds = useMemo(() => [ALL_TAB, ...watchlists.map((l) => l.id)], [watchlists]);
   const [highlight, setHighlight] = useState(-1);
 
   useEffect(() => {
@@ -230,28 +278,51 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
     [directoryQuotes, extraQuotes],
   );
 
-  const isWatched = useCallback(
-    (item: SearchAssetItem) => isWatchlistTickerWatched(watchedUnion, watchlistStorageKeyForSearchItem(item)),
-    [watchedUnion],
+  const activeList = useMemo(() => watchlists.find((l) => l.id === tab) ?? null, [watchlists, tab]);
+  const activeListKeys = useMemo(() => new Set(activeList?.tickers ?? []), [activeList]);
+
+  const inTab = useCallback(
+    (item: SearchAssetItem) =>
+      tab === ALL_TAB || isWatchlistTickerWatched(activeListKeys, watchlistStorageKeyForSearchItem(item)),
+    [tab, activeListKeys],
   );
 
   const passesFilters = useCallback(
-    (item: SearchAssetItem) =>
-      (category === "all" || itemCategory(item) === category) && (tab === "all" || isWatched(item)),
-    [category, tab, isWatched],
+    (item: SearchAssetItem) => (category === "all" || itemCategory(item) === category) && inTab(item),
+    [category, inTab],
   );
 
+  /** Directory rows by normalized watchlist key, so saved tickers reuse names/logos/quotes when present. */
+  const directoryItemByKey = useMemo(() => {
+    const map = new Map<string, SearchAssetItem>();
+    for (const list of Object.values(browseByCategory)) {
+      for (const item of list) map.set(normalizeWatchlistStorageKey(watchlistStorageKeyForSearchItem(item)), item);
+    }
+    return map;
+  }, [browseByCategory]);
+
   const sections = useMemo((): Section[] => {
-    if (queryTrim.length > 0) {
-      const grouped = new Map<Exclude<Category, "all">, SearchAssetItem[]>();
-      for (const item of items) {
+    const grouped = (list: readonly SearchAssetItem[]): Section[] => {
+      const byCat = new Map<Exclude<Category, "all">, SearchAssetItem[]>();
+      for (const item of list) {
         if (!passesFilters(item)) continue;
         const c = itemCategory(item);
-        const list = grouped.get(c);
-        if (list) list.push(item);
-        else grouped.set(c, [item]);
+        const arr = byCat.get(c);
+        if (arr) arr.push(item);
+        else byCat.set(c, [item]);
       }
-      return [...grouped].map(([c, list]) => ({ id: c, title: SECTION_TITLE[c], items: list }));
+      return [...byCat].map(([c, arr]) => ({ id: c, title: SECTION_TITLE[c], items: arr }));
+    };
+
+    if (queryTrim.length > 0) return grouped(items);
+
+    if (activeList) {
+      const listItems: SearchAssetItem[] = [];
+      for (const key of activeList.tickers) {
+        const item = directoryItemByKey.get(normalizeWatchlistStorageKey(key)) ?? watchlistKeyToItem(key);
+        if (item) listItems.push(item);
+      }
+      return grouped(listItems);
     }
 
     const out: Section[] = [];
@@ -260,13 +331,11 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
 
     const cats = category === "all" ? (Object.keys(SECTION_TITLE) as Exclude<Category, "all">[]) : [category];
     for (const c of cats) {
-      let list = browseByCategory[c];
-      if (tab === "watchlist") list = list.filter(isWatched);
-      else list = list.slice(0, category === "all" ? ALL_MARKETS_PREVIEW[c] : CATEGORY_BROWSE_CAP);
+      const list = browseByCategory[c].slice(0, category === "all" ? ALL_MARKETS_PREVIEW[c] : CATEGORY_BROWSE_CAP);
       if (list.length) out.push({ id: c, title: SECTION_TITLE[c], items: list });
     }
     return out;
-  }, [queryTrim, items, recent, category, tab, browseByCategory, passesFilters, isWatched]);
+  }, [queryTrim, items, recent, category, activeList, directoryItemByKey, browseByCategory, passesFilters]);
 
   const flatRows = useMemo(() => sections.flatMap((s) => s.items), [sections]);
 
@@ -337,9 +406,11 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
         setCategory(CATEGORIES[(i + step + CATEGORIES.length) % CATEGORIES.length]!.id);
         return;
       }
-      if (e.key === "Tab" && !e.shiftKey) {
+      if (e.key === "Tab") {
         e.preventDefault();
-        setTab((t) => (t === "all" ? "watchlist" : "all"));
+        const i = Math.max(0, tabIds.indexOf(tab));
+        const step = e.shiftKey ? -1 : 1;
+        setTab(tabIds[(i + step + tabIds.length) % tabIds.length]!);
         return;
       }
       if (flatRows.length === 0) return;
@@ -359,7 +430,7 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [category, flatRows, highlight, navigateTo, onClose, queryTrim]);
+  }, [category, flatRows, highlight, navigateTo, onClose, queryTrim, tab, tabIds]);
 
   const { searchPending, showStaleList } = getSearchPanelViewState({
     queryTrim,
@@ -418,15 +489,13 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
                 aria-controls="global-search-results"
               />
             </div>
-            <div className="flex items-center justify-between gap-3">
+            <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               <SegmentedControl
                 aria-label="Search list"
+                className="w-max max-w-none whitespace-nowrap"
                 value={tab}
                 onChange={setTab}
-                options={[
-                  { value: "all", label: "All" },
-                  { value: "watchlist", label: "Watchlist" },
-                ]}
+                options={[{ value: ALL_TAB, label: "All" }, ...watchlists.map((l) => ({ value: l.id, label: l.name }))]}
               />
             </div>
           </div>
@@ -453,8 +522,8 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
               <p className="px-3 py-10 text-center text-[13px] leading-5 text-fg-muted">
                 {queryTrim.length > 0
                   ? `No results for “${queryTrim}”`
-                  : tab === "watchlist"
-                    ? "Nothing from your watchlist here yet"
+                  : activeList
+                    ? `Nothing in ${activeList.name} here yet`
                     : "Nothing to show"}
               </p>
             ) : (
@@ -503,7 +572,9 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
                                 {searchResultCategoryLabel(item)}
                               </span>
                             </div>
-                            <div className="truncate text-[12px] leading-4 text-fg-muted">{item.name}</div>
+                            <div className="truncate text-[12px] leading-4 text-fg-muted">
+                              {item.name === item.symbol && quote?.name ? quote.name : item.name}
+                            </div>
                           </div>
                         </div>
                         <span className="text-right text-[14px] font-medium leading-5 tabular-nums text-fg">
@@ -551,7 +622,7 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
               <Kbd>↵</Kbd> to open
             </span>
             <span className="inline-flex items-center gap-1">
-              <Kbd>tab</Kbd> All / Watchlist
+              <Kbd>tab</Kbd> switch list
             </span>
             <span className="inline-flex items-center gap-1">
               <Kbd>⌥</Kbd>

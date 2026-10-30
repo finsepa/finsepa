@@ -59,12 +59,14 @@ async function buildSearchDirectory(): Promise<SearchDirectoryPayload> {
     const t = u.ticker.trim().toUpperCase();
     const q = stockQuote(stocks, t);
     const b = bulk?.get(usQuotesBulkKey(t));
+    // Bulk first: after the close `stocks_all_pages` keeps its last 15m live slot, while the bulk list holds
+    // the official close; during the session the snapshot is built from the same bulk list.
     rows.push({
       category: "stock",
       symbol: t,
       name: u.name,
-      price: positive(q?.price) ?? positive(b?.price) ?? positive(u.adjustedClose),
-      changePct: finite(q?.changePercent1D) ?? finite(b?.changePct) ?? finite(u.refund1dP),
+      price: positive(b?.price) ?? positive(q?.price) ?? positive(u.adjustedClose),
+      changePct: (b ? finite(b.changePct) : null) ?? finite(q?.changePercent1D) ?? finite(u.refund1dP),
       marketCapUsd: positive(u.marketCapUsd),
     });
   }
@@ -79,8 +81,8 @@ async function buildSearchDirectory(): Promise<SearchDirectoryPayload> {
       category: "etf",
       symbol: t,
       name: etfNames.get(t) ?? t,
-      price: positive(q?.price) ?? positive(b?.price),
-      changePct: finite(q?.changePercent1D) ?? finite(b?.changePct),
+      price: positive(b?.price) ?? positive(q?.price),
+      changePct: (b ? finite(b.changePct) : null) ?? finite(q?.changePercent1D),
       marketCapUsd: null,
     });
   }
@@ -126,6 +128,6 @@ async function buildSearchDirectory(): Promise<SearchDirectoryPayload> {
  * Search browse directory (names + last price / 1D / market cap) for the global search dialog.
  * Supabase snapshot reads only, shared across users for 60s — zero EODHD calls.
  */
-export const getSearchDirectory = unstable_cache(buildSearchDirectory, ["search-directory-v3-bulk-quotes"], {
+export const getSearchDirectory = unstable_cache(buildSearchDirectory, ["search-directory-v4-bulk-first"], {
   revalidate: SEARCH_DIRECTORY_REVALIDATE_SEC,
 });
