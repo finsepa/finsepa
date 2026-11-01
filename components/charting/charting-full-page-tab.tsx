@@ -79,6 +79,7 @@ export function ChartingFullPageTab({
       metricControlsPlacement="toolbar"
       histogramLayout="stockFullWidthFixedBars"
       animateBarsOnAppear
+      chartCard
       companyPickerControlsRef={companyPickerControlsRef}
       fullPageCompanyChipSlot={
         <div className={whiteSurfaceChipShellClass}>
