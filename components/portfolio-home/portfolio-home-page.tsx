@@ -834,7 +834,7 @@ function HomeAsideContent() {
         </div>
 
         <div className="flex min-h-0 flex-col overflow-hidden">
-          <OverlayScrollArea>
+          <OverlayScrollArea edgeFade>
             <WatchlistRailScrollContent
               showLoadingState={!watchlistReady || awaitingServerList || (loading && items.length === 0)}
               empty={empty}

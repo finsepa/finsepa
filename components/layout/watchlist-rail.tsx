@@ -558,7 +558,6 @@ export function WatchlistRail() {
                 panelOverlayScrollGutterClassName,
               )}
               wheelIsolation
-              edgeFade={false}
               suppressHydrationWarning
             >
               {showRailContent ? (

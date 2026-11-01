@@ -23,10 +23,13 @@ const THUMB_INSET_PX = 2;
 export function OverlayScrollArea({
   className,
   viewportClassName,
+  edgeFade = false,
   children,
 }: {
   className?: string;
   viewportClassName?: string;
+  /** Dropdown-style top/bottom fade while the viewport overflows. */
+  edgeFade?: boolean;
   children: ReactNode;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -80,6 +83,7 @@ export function OverlayScrollArea({
         }}
         className={cn(
           "min-h-0 overflow-y-auto overscroll-y-contain overscroll-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          edgeFade && thumb && "scroll-fade-effect-y",
           viewportClassName,
         )}
       >
