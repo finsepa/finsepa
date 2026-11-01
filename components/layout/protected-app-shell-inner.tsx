@@ -189,10 +189,10 @@ function ProtectedAppChrome({
             <main
               ref={mainRef}
               suppressHydrationWarning
-              style={{ ["--shell-rail-reserved" as string]: `${railReservedPx}px` }}
+              style={{ paddingRight: railReservedPx }}
               className={cn(
                 "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain",
-                "md:pr-[var(--shell-rail-reserved)] md:transition-[padding] md:duration-[280ms] md:ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none",
+                "max-md:!pr-0 md:transition-[padding] md:duration-[280ms] md:ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none",
                 SHELL_DESKTOP_PANEL_BG_MD_CLASS,
                 // Scope mobile grey to max-md so it cannot override desktop panel fill.
                 "max-md:bg-canvas",
