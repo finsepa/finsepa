@@ -102,7 +102,10 @@ import {
   SegmentedControl,
   type SegmentedControlOption,
 } from "@/components/design-system/segmented-control";
-import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
 import type {
   PortfolioChartRange,
@@ -3673,6 +3676,7 @@ function PortfolioOverviewChartInner({
   onPeriodSnapshot,
   hideChrome = false,
   fixedRange = null,
+  card = false,
 }: {
   transactions: PortfolioTransaction[];
   /** Current open equity cost basis; aligns benchmark $ line with “invested” under Total value. */
@@ -3683,6 +3687,8 @@ function PortfolioOverviewChartInner({
   hideChrome?: boolean;
   /** Lock the chart to a single range (no range picker). */
   fixedRange?: PortfolioChartRange | null;
+  /** Portfolio page Overview: title, controls and chart in one elevated card. */
+  card?: boolean;
 }) {
   const metric: PortfolioChartMetricMode = "value";
   const [range, setRange] = useState<PortfolioChartRange>(fixedRange ?? "1y");
@@ -3843,6 +3849,7 @@ function PortfolioOverviewChartInner({
       className={cn(
         "relative z-10 w-full min-w-0",
         hideChrome ? "mb-0 max-md:mb-0" : "mb-6 max-md:mb-4",
+        card && cn("p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS),
       )}
     >
       {!hideChrome ? (
