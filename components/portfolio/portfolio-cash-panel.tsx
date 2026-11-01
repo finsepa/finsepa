@@ -39,6 +39,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TABLE_PAGE_SIZE, TablePaginationBar, tablePageCount } from "@/components/ui/table-pagination";
 import { cn } from "@/lib/utils";
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
 const usd0 = new Intl.NumberFormat("en-US", {
@@ -281,7 +282,7 @@ function PortfolioCashPanelInner() {
                 value={cashSearch}
                 onChange={(e) => setCashSearch(e.target.value)}
                 placeholder="Type to search..."
-                className="h-9 w-full rounded-full border-0 bg-surface-muted py-2 pl-9 pr-3 text-sm text-fg placeholder:text-fg-muted outline-none focus:ring-2 focus:ring-fg/10"
+                className={cn("h-9 w-full rounded-full py-2 pl-9 pr-3 text-sm text-fg placeholder:text-fg-muted outline-none focus:ring-2 focus:ring-fg/10", whiteSurfaceButtonChromeClass)}
                 aria-label="Search cash transactions"
               />
             </div>
@@ -289,7 +290,7 @@ function PortfolioCashPanelInner() {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-surface-muted px-4 text-[14px] font-medium leading-5 text-fg transition-colors duration-100 hover:bg-stroke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
+                  className={cn("inline-flex h-9 shrink-0 items-center gap-2 rounded-full px-4 text-[14px] font-medium leading-5 text-fg transition-colors duration-100 hover:bg-surface-muted dark:hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2", whiteSurfaceButtonChromeClass)}
                 >
                   <Filter className="h-4 w-4 opacity-90" aria-hidden />
                   Filter

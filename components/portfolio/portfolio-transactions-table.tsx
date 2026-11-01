@@ -53,6 +53,7 @@ import {
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { cn } from "@/lib/utils";
+import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { portfolioIsCombined } from "@/components/portfolio/portfolio-types";
 
@@ -443,7 +444,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                 value={txSearch}
                 onChange={(e) => setTxSearch(e.target.value)}
                 placeholder="Type to search..."
-                className="h-9 w-full rounded-full border-0 bg-surface-muted py-2 pl-9 pr-9 text-sm text-fg placeholder:text-fg-muted outline-none focus:ring-2 focus:ring-fg/10"
+                className={cn("h-9 w-full rounded-full py-2 pl-9 pr-9 text-sm text-fg placeholder:text-fg-muted outline-none focus:ring-2 focus:ring-fg/10", whiteSurfaceButtonChromeClass)}
                 aria-label="Search transactions by asset name or ticker"
               />
               {txSearch ? (
@@ -464,7 +465,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                   <button
                     type="button"
                     aria-label="Transaction filters"
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg transition-colors duration-100 hover:bg-stroke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
+                    className={cn("inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-fg transition-colors duration-100 hover:bg-surface-muted dark:hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2", whiteSurfaceButtonChromeClass)}
                   >
                     <Filter className="h-4 w-4 opacity-90" aria-hidden />
                   </button>
