@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { AssetBreadcrumbBar } from "@/components/stock/asset-breadcrumb-bar";
 import { UsEquityMarketSessionBadge } from "@/components/stock/us-equity-market-session-badge";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
@@ -9,7 +10,6 @@ import { mapProviderSectorToCanonical } from "@/lib/screener/screener-gics-secto
 import { SCREENER_ETFS_HREF } from "@/lib/screener/screener-market-url";
 import { screenerIndustryDrillHref } from "@/lib/screener/screener-industry-url";
 import { screenerSectorCompaniesHref } from "@/lib/screener/screener-sector-url";
-
 type Props = {
   ticker: string;
   headerMeta: StockDetailHeaderMeta | null;
@@ -33,10 +33,7 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
   );
 
   return (
-    <nav
-      aria-label="Breadcrumb"
-      className="sticky top-0 z-50 hidden min-w-0 items-center justify-between gap-3 px-4 py-3 text-[14px] text-fg-muted md:flex md:border-b md:border-stroke-shell md:bg-panel sm:px-9"
-    >
+    <AssetBreadcrumbBar>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
       <Link
         href={isEtf ? SCREENER_ETFS_HREF : "/screener"}
@@ -96,6 +93,6 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
       </span>
       </div>
       <UsEquityMarketSessionBadge className="shrink-0" />
-    </nav>
+    </AssetBreadcrumbBar>
   );
 }

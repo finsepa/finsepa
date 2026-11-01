@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { AssetBreadcrumbBar } from "@/components/stock/asset-breadcrumb-bar";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { SCREENER_CRYPTO_HREF } from "@/lib/screener/screener-market-url";
 
@@ -22,10 +23,7 @@ export function CryptoBreadcrumbs({ symbol }: Props) {
   );
 
   return (
-    <nav
-      aria-label="Breadcrumb"
-      className="sticky top-0 z-50 hidden min-w-0 items-center gap-3 px-4 py-3 text-[14px] text-fg-muted md:flex md:border-b md:border-stroke-shell md:bg-panel sm:px-9"
-    >
+    <AssetBreadcrumbBar>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
         <Link href={SCREENER_CRYPTO_HREF} className={`shrink-0 ${breadcrumbLinkClass}`}>
           Crypto
@@ -39,6 +37,6 @@ export function CryptoBreadcrumbs({ symbol }: Props) {
           {pairLabel}
         </span>
       </div>
-    </nav>
+    </AssetBreadcrumbBar>
   );
 }
