@@ -183,14 +183,6 @@ function watchlistKeyToItem(key: string): SearchAssetItem | null {
   };
 }
 
-function Kbd({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-stroke bg-surface-muted px-1 font-sans text-[11px] font-medium text-fg-muted">
-      {children}
-    </kbd>
-  );
-}
-
 /**
  * Desktop global search — category rail, All/Watchlist, browse lists from the cron snapshot directory.
  * Queries hit the existing `/api/search` (same cache keys as before); categories filter client-side.
@@ -628,26 +620,6 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
             )}
           </div>
           </OverlayScrollArea>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[12px] leading-4 text-fg-muted">
-            <span className="inline-flex items-center gap-1">
-              <Kbd>↑</Kbd>
-              <Kbd>↓</Kbd> to move
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Kbd>↵</Kbd> to open
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Kbd>tab</Kbd> switch list
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Kbd>⌥</Kbd>
-              <Kbd>↑↓</Kbd> to change category
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Kbd>esc</Kbd> to close
-            </span>
           </div>
         </div>
       </div>
