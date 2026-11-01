@@ -3,7 +3,7 @@
 /**
  * Design system: secondary tab row (e.g. Screener Companies / Gainers & Losers,
  * Portfolio Overview Assets / Allocation). Active tab uses a soft gray pill.
- * Dark: `surface-subtle` fill + light shadow (no stroke) — same as sidebar nav active.
+ * Fill matches sidebar nav active (`--fs-sidebar-nav-active`); dark adds a light shadow (no stroke).
  * No hover wash — inactive stays muted until selected.
  */
 export type SecondaryTabItem<T extends string = string> = {
@@ -17,7 +17,7 @@ const tabBaseClass =
   "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full px-[14px] text-[13px] font-medium leading-5 transition-[color,background-color,box-shadow] duration-100 sm:text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
 
 const tabActiveClass =
-  `${tabBaseClass} bg-surface-subtle text-fg dark:shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]`;
+  `${tabBaseClass} bg-[var(--fs-sidebar-nav-active)] text-fg dark:shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]`;
 
 const tabInactiveClass = `${tabBaseClass} bg-transparent text-fg-muted`;
 
