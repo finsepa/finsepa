@@ -70,7 +70,10 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { secondaryFillButtonClassName, secondaryOutlineButtonClassName, TabSwitcher, type TabSwitcherOption, whiteSurfaceChipDividerClass, whiteSurfaceChipLabelClass, whiteSurfaceChipRemoveClass, whiteSurfaceChipShellClass } from "@/components/design-system";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
-import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { ChartingMetricPickerMenu } from "@/components/charting/charting-metric-picker-menu";
 import { cn } from "@/lib/utils";
 import {
@@ -1288,6 +1291,8 @@ type Props = {
   animateBarsOnAppear?: boolean;
   /** Stock Charting tab: show download button that opens the screenshot builder modal. */
   enableScreenshotDownload?: boolean;
+  /** Stock Charting tab: title, controls, chart and legend in one elevated card; data table below it. */
+  chartCard?: boolean;
   /** Read-only chart preview inside the download modal — hides controls and editing UI. */
   screenshotPreviewMode?: boolean;
   previewLockedState?: {
@@ -1833,6 +1838,7 @@ export function ChartingWorkspace({
   histogramLayout = "default",
   animateBarsOnAppear = false,
   enableScreenshotDownload = false,
+  chartCard = false,
   screenshotPreviewMode = false,
   previewLockedState,
   screenshotChartBlockHeightPx,
@@ -3504,6 +3510,28 @@ export function ChartingWorkspace({
     </div>
   );
 
+  const companyTable =
+    canPlot && !screenshotPreviewMode ? (
+      <ChartingIndividualCompanyTable
+        ordered={ordered}
+        selected={selected}
+        periodMode={periodMode}
+        timeRange={timeRange}
+        ticker={ticker}
+        metricColors={metricChipColorById}
+        isBarValuesVisible={isBarValuesVisible}
+        onShowBarValuesChange={setBarValuesVisibleForMetric}
+        hideMetricSettings={useRailMetricPicker || metricControlsInLegend}
+      />
+    ) : null;
+
+  const wrapChartCard = (node: ReactNode) =>
+    chartCard && !screenshotPreviewMode ? (
+      <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>{node}</div>
+    ) : (
+      node
+    );
+
   return (
     <>
       {!screenshotPreviewMode ? (
@@ -3586,6 +3614,8 @@ export function ChartingWorkspace({
               : "space-y-5",
         )}
       >
+      {wrapChartCard(
+      <>
       {!screenshotPreviewMode ? (
       useRailMetricPicker ? (
         <div className="sr-only">
@@ -3732,13 +3762,14 @@ export function ChartingWorkspace({
           ) : (
             <div className="w-full min-w-0 overflow-visible" style={{ height: chartHeight }}>
               <div className="flex min-h-0 w-full overflow-visible" style={{ height: chartPlotHeight }}>
-                <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-panel">
+                <div
+                  className="relative min-h-0 min-w-0 flex-1 overflow-visible"
+                  style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
+                >
                   <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
                     <div
-                      className={cn(
-                        "absolute inset-x-0 bg-panel",
-                        CHARTING_PLOT_BACKDROP_INSET_CLASS,
-                      )}
+                      className={cn("absolute inset-x-0", CHARTING_PLOT_BACKDROP_INSET_CLASS)}
+                      style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
                     >
                       <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
                     </div>
@@ -3929,8 +3960,9 @@ export function ChartingWorkspace({
                             return (
                               <span
                                 key={`y-tick-primary-${i}`}
-                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
+                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm px-1 py-px"
                                 style={{
+                                  backgroundColor: "var(--fs-chart-plot-bg)",
                                   top:
                                     topPx != null && Number.isFinite(topPx)
                                       ? topPx
@@ -3961,8 +3993,9 @@ export function ChartingWorkspace({
                             return (
                               <span
                                 key={`y-tick-percent-${i}`}
-                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
+                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm px-1 py-px"
                                 style={{
+                                  backgroundColor: "var(--fs-chart-plot-bg)",
                                   top:
                                     topPx != null && Number.isFinite(topPx)
                                       ? topPx
@@ -3993,8 +4026,9 @@ export function ChartingWorkspace({
                             return (
                               <span
                                 key={`y-tick-valuation-${i}`}
-                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
+                                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm px-1 py-px"
                                 style={{
+                                  backgroundColor: "var(--fs-chart-plot-bg)",
                                   top:
                                     topPx != null && Number.isFinite(topPx)
                                       ? topPx
@@ -4123,22 +4157,15 @@ export function ChartingWorkspace({
             </div>
           </div>
           ) : null}
-          {canPlot && !screenshotPreviewMode ? (
-            <ChartingIndividualCompanyTable
-              ordered={ordered}
-              selected={selected}
-              periodMode={periodMode}
-              timeRange={timeRange}
-              ticker={ticker}
-              metricColors={metricChipColorById}
-              isBarValuesVisible={isBarValuesVisible}
-              onShowBarValuesChange={setBarValuesVisibleForMetric}
-              hideMetricSettings={useRailMetricPicker || metricControlsInLegend}
-            />
-          ) : null}
+          {!chartCard ? companyTable : null}
         </>
       )}
       </div>
+      </>,
+      )}
+      {chartCard && companyTable && !showStockTabMetricEmptyState && !drawdownOnly && !loading && !empty ? (
+        <div className="mt-5">{companyTable}</div>
+      ) : null}
     </div>
       {useRailMetricPicker ? (
         <CompanyRailCard className="hidden w-[240px] self-start md:block" />

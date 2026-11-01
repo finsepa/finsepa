@@ -180,6 +180,7 @@ export function StockChartingTab({
       histogramLayout="stockFullWidthFixedBars"
       animateBarsOnAppear
       enableScreenshotDownload
+      chartCard
       assetDisplayName={assetDisplayName}
       assetLogoUrl={assetLogoUrl}
       isActive={isActive}
