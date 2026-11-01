@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import dynamic from "next/dynamic";
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { CheckoutSuccessToast } from "@/components/account/checkout-success-toast";
 import { MainScrollToTop } from "@/components/layout/main-scroll-to-top";
@@ -69,6 +69,27 @@ function ProtectedAppChrome({
   const mainRef = useRef<HTMLElement>(null);
 
   useMobileTopbarScrollBlur();
+
+  // Always-visible scrollbars narrow <main> but not the topbar, which pads by this width to stay aligned.
+  useEffect(() => {
+    const main = mainRef.current;
+    const row = main?.parentElement;
+    if (!main || !row) return;
+    const root = document.documentElement;
+    const sync = () => {
+      const flushRight = row.getBoundingClientRect().right - main.getBoundingClientRect().right < 1;
+      const width = flushRight ? main.offsetWidth - main.clientWidth : 0;
+      root.style.setProperty("--shell-main-scrollbar-w", `${width}px`);
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(main);
+    ro.observe(row);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--shell-main-scrollbar-w");
+    };
+  }, []);
 
   const chromeColumnStyle = {
     ["--shell-left" as string]: leftOffset,
