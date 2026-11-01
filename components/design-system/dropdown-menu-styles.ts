@@ -40,7 +40,7 @@ export const dropdownMenuDividerClassName = "border-dropdown-divider";
 
 /** Same field chrome + focus ring as top bar / {@link SearchInlineInputShell} (`h-9`). */
 export const dropdownMenuSearchInputClassName = [
-  "h-9 w-full rounded-[10px] px-3 text-sm leading-5 text-fg placeholder:text-fg-subtle",
+  "h-9 w-full rounded-full px-3.5 text-sm leading-5 text-fg placeholder:text-fg-subtle",
   fieldChromeClassName,
   "outline-none transition-[color,background-color,border-color,box-shadow]",
   "dark:[&:not(:focus)]:hover:border-field-stroke-hover",

@@ -443,14 +443,14 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                 value={txSearch}
                 onChange={(e) => setTxSearch(e.target.value)}
                 placeholder="Type to search..."
-                className="h-9 w-full rounded-[10px] border-0 bg-surface-muted py-2 pl-9 pr-9 text-sm text-fg placeholder:text-fg-muted outline-none focus:ring-2 focus:ring-fg/10"
+                className="h-9 w-full rounded-full border-0 bg-surface-muted py-2 pl-9 pr-9 text-sm text-fg placeholder:text-fg-muted outline-none focus:ring-2 focus:ring-fg/10"
                 aria-label="Search transactions by asset name or ticker"
               />
               {txSearch ? (
                 <button
                   type="button"
                   onClick={() => setTxSearch("")}
-                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
+                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
                   aria-label="Clear search"
                 >
                   <X className="h-4 w-4" strokeWidth={1.5} aria-hidden />

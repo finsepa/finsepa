@@ -153,7 +153,7 @@ export function TopbarSearch() {
         role="search"
         data-open={open ? "true" : "false"}
         className={cn(
-          "relative flex h-9 min-w-0 w-full cursor-text items-center overflow-hidden rounded-[10px] pl-3 pr-3",
+          "relative flex h-9 min-w-0 w-full cursor-text items-center overflow-hidden rounded-full pl-3 pr-3",
           textInputShellClassName,
           "motion-reduce:transition-none",
           open && textInputActiveRingClassName,
@@ -230,7 +230,7 @@ export function TopbarSearch() {
                 close();
               }}
               className={cn(
-                "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-md text-fg-muted",
+                "pointer-events-auto absolute inset-0 flex items-center justify-center rounded-full text-fg-muted",
                 "hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10",
               )}
               aria-label="Close search"

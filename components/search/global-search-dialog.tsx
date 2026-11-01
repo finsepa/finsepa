@@ -472,7 +472,7 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-col gap-3 px-4 pt-4">
-            <div className={cn("flex h-11 items-center gap-2.5 rounded-xl px-3", textInputShellClassName)}>
+            <div className={cn("flex h-11 items-center gap-2.5 rounded-full px-4", textInputShellClassName)}>
               <Search className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden />
               <input
                 ref={inputRef}

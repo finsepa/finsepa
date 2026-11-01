@@ -281,7 +281,7 @@ function PortfolioCashPanelInner() {
                 value={cashSearch}
                 onChange={(e) => setCashSearch(e.target.value)}
                 placeholder="Type to search..."
-                className="h-9 w-full rounded-[10px] border-0 bg-surface-muted py-2 pl-9 pr-3 text-sm text-fg placeholder:text-fg-muted outline-none focus:ring-2 focus:ring-fg/10"
+                className="h-9 w-full rounded-full border-0 bg-surface-muted py-2 pl-9 pr-3 text-sm text-fg placeholder:text-fg-muted outline-none focus:ring-2 focus:ring-fg/10"
                 aria-label="Search cash transactions"
               />
             </div>
