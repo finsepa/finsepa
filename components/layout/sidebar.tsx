@@ -3,7 +3,7 @@
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { FinsepaLogo } from "@/components/brand/finsepa-logo";
 import { OverlayScrollArea } from "@/components/design-system/overlay-scroll-area";
@@ -25,7 +25,9 @@ import {
   SIDEBAR_WIDTH_MOTION_CLASS,
   useSidebarLayout,
 } from "@/components/layout/sidebar-layout-context";
+import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { requestAgentHomeIfAlreadyThere } from "@/lib/agents/agent-home-nav";
+import { ChevronDown, PieChart01 } from "@/lib/icons";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { cn } from "@/lib/utils";
 
@@ -239,6 +241,137 @@ function SidebarRow({
   );
 }
 
+const PORTFOLIO_GROUP_EXPANDED_KEY = "finsepa-sidebar-portfolio-expanded";
+const portfolioGroupListeners = new Set<() => void>();
+const subscribeNoop = () => () => {};
+
+function subscribePortfolioGroupExpanded(listener: () => void): () => void {
+  portfolioGroupListeners.add(listener);
+  return () => portfolioGroupListeners.delete(listener);
+}
+
+function readPortfolioGroupExpanded(): boolean {
+  try {
+    return localStorage.getItem(PORTFOLIO_GROUP_EXPANDED_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+function writePortfolioGroupExpanded(next: boolean): void {
+  try {
+    localStorage.setItem(PORTFOLIO_GROUP_EXPANDED_KEY, next ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+  for (const l of portfolioGroupListeners) l();
+}
+
+function portfolioIdFromPathname(pathname: string): string | null {
+  const m = /^\/home\/([^/?#]+)/.exec(pathname);
+  return m ? decodeURIComponent(m[1]!) : null;
+}
+
+/**
+ * Backpack-style expandable group: the row opens the last viewed portfolio; the chevron (hover-only)
+ * toggles the per-portfolio list.
+ */
+function SidebarPortfolioGroup({ pathname, collapsed }: { pathname: string; collapsed: boolean }) {
+  const { portfolios, selectedPortfolioId } = usePortfolioWorkspace();
+  const hasMounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
+  const expanded = useSyncExternalStore(subscribePortfolioGroupExpanded, readPortfolioGroupExpanded, () => true);
+  const toggleExpanded = useCallback(() => writePortfolioGroupExpanded(!readPortfolioGroupExpanded()), []);
+
+  // Portfolios hydrate from the client workspace — keep the SSR pass on the static fallback.
+  const list = hasMounted ? portfolios : [];
+  const lastId =
+    selectedPortfolioId && list.some((p) => p.id === selectedPortfolioId) ? selectedPortfolioId : (list[0]?.id ?? null);
+  const href = lastId ? `/home/${encodeURIComponent(lastId)}` : "/home";
+  const activeId = hasMounted ? portfolioIdFromPathname(pathname) : null;
+  const showList = !collapsed && expanded && list.length > 0;
+
+  const rowClass = cn(
+    "flex h-9 shrink-0 items-center gap-2 overflow-hidden rounded-lg py-2 text-sm font-medium leading-5 text-fg",
+    SIDEBAR_CONTENT_MOTION_CLASS,
+    collapsed ? "w-[calc(100%+5px)] -mr-[5px] pl-4 pr-[11px]" : "w-full px-4",
+    activeId && (collapsed || !showList)
+      ? "bg-[var(--fs-sidebar-nav-active)]"
+      : activeId
+        ? ""
+        : "opacity-70 hover:bg-[var(--fs-sidebar-nav-active)]/70 dark:hover:bg-[var(--fs-sidebar-nav-active)] dark:hover:opacity-100",
+  );
+
+  return (
+    <div className={cn(collapsed && "w-full")}>
+      <CollapsedRailTooltip label="Portfolio" enabled={collapsed}>
+        <div className="group/portfolio relative flex w-full">
+          <Link prefetch={false} href={href} className={rowClass} suppressHydrationWarning>
+            <PieChart01 className="h-5 w-5 shrink-0 text-fg" aria-hidden />
+            <span
+              className={cn(
+                "min-w-0 truncate",
+                SIDEBAR_CONTENT_MOTION_CLASS,
+                collapsed ? "max-w-0 opacity-0" : "max-w-[12rem] flex-1 opacity-100",
+              )}
+            >
+              Portfolio
+            </span>
+          </Link>
+          {!collapsed && list.length > 0 ? (
+            <button
+              type="button"
+              onClick={toggleExpanded}
+              aria-expanded={expanded}
+              aria-label={expanded ? "Collapse Portfolio" : "Expand Portfolio"}
+              className="absolute right-1 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-lg text-fg-muted opacity-0 transition-[opacity,background-color,color] duration-200 hover:bg-[var(--fs-sidebar-nav-active)] hover:text-fg focus-visible:opacity-100 group-hover/portfolio:opacity-100"
+            >
+              <ChevronDown
+                className={cn("size-3.5 transition-transform duration-200", !expanded && "-rotate-90")}
+                strokeWidth={2.25}
+                aria-hidden
+              />
+            </button>
+          ) : null}
+        </div>
+      </CollapsedRailTooltip>
+
+      {!collapsed ? (
+        <div
+          className={cn(
+            "grid transition-[grid-template-rows] duration-200 motion-reduce:transition-none",
+            showList ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+          )}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="ml-[25px] mt-0.5 flex flex-col gap-0.5 border-l border-stroke py-1 pl-2.5">
+              {list.map((p) => {
+                const active = p.id === activeId;
+                return (
+                  <Link
+                    key={p.id}
+                    prefetch={false}
+                    href={`/home/${encodeURIComponent(p.id)}`}
+                    aria-current={active ? "page" : undefined}
+                    tabIndex={showList ? undefined : -1}
+                    className={cn(
+                      "flex h-9 shrink-0 items-center truncate rounded-lg px-3 text-sm font-medium leading-5 transition-colors",
+                      active
+                        ? "bg-surface text-fg shadow-card"
+                        : "text-fg-muted hover:bg-[var(--fs-sidebar-nav-active)]/70 hover:text-fg",
+                    )}
+                  >
+                    <span className="truncate">{p.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** Nav content width in the fully collapsed rail (72px shell − 12px ×2 padding). */
 const SECTION_TITLE_COLLAPSED_CONTENT_PX = SIDEBAR_OUTER_COLLAPSED_PX - 24;
 /** Rail width where section titles begin crossfading toward "-". */
@@ -397,6 +530,7 @@ export function Sidebar() {
       >
         <div className={cn("space-y-0.5", collapsed && "flex flex-col items-center")}>
           <SidebarRow item={protectedPortfolioHomeItem} pathname={pathname} collapsed={collapsed} />
+          <SidebarPortfolioGroup pathname={pathname} collapsed={collapsed} />
         </div>
         <SidebarSection title="Markets" items={protectedMarketItems} pathname={pathname} collapsed={collapsed} />
         <SidebarSection title="Calendar" items={protectedCalendarItems} pathname={pathname} collapsed={collapsed} />

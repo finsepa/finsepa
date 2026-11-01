@@ -29,13 +29,12 @@ export type ProtectedNavItem = {
   activePathPrefixes?: readonly string[];
 };
 
-/** Post-signup home — net worth overview; each portfolio opens at `/home/[id]` (legacy `/portfolio` redirects there). */
+/** Post-signup home — net worth overview; portfolios (`/home/[id]`) live under the sidebar Portfolio group. */
 export const protectedPortfolioHomeItem: ProtectedNavItem = {
   label: "Home",
   icon: Home01,
   href: "/home",
   available: true,
-  activePathPrefix: true,
 };
 
 export const protectedMarketItems: ProtectedNavItem[] = [
