@@ -165,7 +165,7 @@ function WatchlistRailRow({
           symbol={row.symbol}
           size="sm"
         />
-        <span className="min-w-0 shrink truncate text-[14px] font-normal leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
+        <span className="min-w-0 shrink truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
           {symbolLabel}
         </span>
       </Link>
