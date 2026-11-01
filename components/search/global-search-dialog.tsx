@@ -445,10 +445,10 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
         className="flex h-[min(640px,calc(100dvh-14vh))] w-[min(980px,calc(100vw-2rem))] gap-3 overflow-hidden rounded-2xl border border-stroke-subtle bg-page p-3 shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)]"
       >
         <nav
-          className={cn("hidden w-[208px] shrink-0 flex-col gap-0.5 p-2 md:flex", MOBILE_ELEVATED_CARD_CLASS)}
+          className="hidden w-[200px] shrink-0 flex-col gap-0.5 py-1 md:flex"
           aria-label="Category"
         >
-          <p className="px-2 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">Category</p>
+          <p className="px-2.5 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">Category</p>
           {CATEGORIES.map(({ id, label, Icon }) => (
             <button
               key={id}
@@ -457,7 +457,9 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
               aria-pressed={category === id}
               className={cn(
                 "flex h-9 items-center gap-2.5 rounded-[10px] px-2.5 text-left text-[14px] leading-5 transition-colors",
-                category === id ? "bg-surface-muted font-medium text-fg" : "text-fg-muted hover:bg-surface-muted hover:text-fg",
+                category === id
+                  ? "bg-[var(--fs-sidebar-nav-active)] font-medium text-fg"
+                  : "text-fg-muted hover:bg-[var(--fs-sidebar-nav-active)]/70 hover:text-fg dark:hover:bg-[var(--fs-sidebar-nav-active)]",
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
