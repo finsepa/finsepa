@@ -17,8 +17,8 @@ import {
 
 /** Expanded rail width (Figma watchlist panel). */
 export const WATCHLIST_PANEL_WIDTH_PX = 300;
-/** Collapsed rail: a single 36px round toggle. */
-export const WATCHLIST_RAIL_OUTER_COLLAPSED_PX = 36;
+/** Collapsed rail is fully hidden; the topbar watchlist button reopens it. */
+export const WATCHLIST_RAIL_OUTER_COLLAPSED_PX = 0;
 export const WATCHLIST_RAIL_OUTER_EXPANDED_PX = WATCHLIST_PANEL_WIDTH_PX;
 
 export const WATCHLIST_RAIL_WIDTH_MOTION_CLASS =

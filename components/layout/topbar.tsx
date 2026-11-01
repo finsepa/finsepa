@@ -10,6 +10,7 @@ import { NotificationsPanelModal } from "./notifications-panel-modal";
 import { useNotificationsClient } from "@/lib/notifications/use-notifications-client";
 import { TopbarAddMenu } from "./topbar-add-menu";
 import { TopbarMobileAppButton } from "./topbar-mobile-app-button";
+import { TopbarWatchlistButton } from "./topbar-watchlist-button";
 import { TopbarUpgradeButton } from "./topbar-upgrade-button";
 import { TopbarUserMenu } from "./topbar-user-menu";
 import { MobileAssetTopbarChrome } from "./mobile-asset-topbar-chrome";
@@ -176,6 +177,8 @@ export function Topbar({
               </button>
             </TopbarDelayedTooltip>
           ) : null}
+
+          <TopbarWatchlistButton />
 
           <TopbarMobileAppButton />
 

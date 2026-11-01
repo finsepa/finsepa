@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GripVertical, Maximize2, PanelLeftOpen, Star, X } from "@/lib/icons";
+import { GripVertical, Maximize2, PanelLeftOpen, X } from "@/lib/icons";
 
 import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
 import { WatchlistOptionsMenu } from "@/components/watchlist/watchlist-options-menu";
@@ -17,7 +17,6 @@ import {
   useWatchlistRailLayout,
 } from "@/components/layout/watchlist-rail-layout-context";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
-import { shellChromeToggleButtonClass } from "@/components/layout/shell-chrome-toggle-button";
 import {
   MOBILE_ELEVATED_CARD_CLASS,
   SHELL_DESKTOP_PANEL_BG_CLASS,
@@ -405,28 +404,16 @@ function WatchlistRailFullPageLink() {
   );
 }
 
-function WatchlistRailToggle({
-  expanded,
-  onToggle,
-}: {
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  const label = expanded ? "Collapse watchlist" : "Expand watchlist";
+function WatchlistRailHideButton({ onHide }: { onHide: () => void }) {
   return (
-    <TopbarDelayedTooltip label={label} placement="left">
+    <TopbarDelayedTooltip label="Hide watchlist" placement="left">
       <button
         type="button"
-        onClick={onToggle}
-        aria-expanded={expanded}
-        aria-label={label}
-        className={expanded ? RAIL_HEADER_ICON_BUTTON_CLASS : cn(shellChromeToggleButtonClass, "rounded-full")}
+        onClick={onHide}
+        aria-label="Hide watchlist"
+        className={RAIL_HEADER_ICON_BUTTON_CLASS}
       >
-        {expanded ? (
-          <PanelLeftOpen className="size-4" strokeWidth={2} aria-hidden />
-        ) : (
-          <Star className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
-        )}
+        <PanelLeftOpen className="size-4" strokeWidth={2} aria-hidden />
       </button>
     </TopbarDelayedTooltip>
   );
@@ -434,8 +421,13 @@ function WatchlistRailToggle({
 
 /** Width the shell reserves on the right of `<main>` for the rail (0 where the rail is hidden). */
 export function watchlistRailReservedWidthPx(pathname: string, outerWidthPx: number): number {
-  if (isFullWatchlistPage(pathname) || isPortfolioHomePage(pathname)) return 0;
+  if (!watchlistRailAvailable(pathname) || outerWidthPx <= 0) return 0;
   return outerWidthPx + RAIL_CARD_INSET.left + RAIL_CARD_INSET.right;
+}
+
+/** Pages that show the shell watchlist rail (home and the full watchlist page have their own). */
+export function watchlistRailAvailable(pathname: string): boolean {
+  return !isFullWatchlistPage(pathname) && !isPortfolioHomePage(pathname);
 }
 
 /** Home has its own in-page watchlist column; the user's portfolio pages (`/home/[id]`, `/portfolio`) show none. */
@@ -500,7 +492,7 @@ export function WatchlistRail() {
     !mounted || !storageHydrated || (!serverSynced && watchedTickers.length === 0);
   const showRailContent = mounted && storageHydrated;
 
-  if (isFullWatchlistPage(pathname) || isPortfolioHomePage(pathname)) {
+  if (!watchlistRailAvailable(pathname) || !expanded) {
     return null;
   }
 
@@ -520,7 +512,6 @@ export function WatchlistRail() {
       }}
       aria-label="Watchlist panel"
     >
-      {expanded ? (
         <div
           suppressHydrationWarning
           className={cn("flex max-h-full min-h-0 shrink-0 flex-col self-start overflow-hidden p-2", MOBILE_ELEVATED_CARD_CLASS)}
@@ -548,7 +539,7 @@ export function WatchlistRail() {
             )}
             <div className="flex shrink-0 items-center gap-0.5">
               <WatchlistRailFullPageLink />
-              <WatchlistRailToggle expanded={expanded} onToggle={toggleCollapsed} />
+              <WatchlistRailHideButton onHide={toggleCollapsed} />
             </div>
           </div>
           <div className="flex min-h-0 flex-col overflow-hidden">
@@ -583,14 +574,6 @@ export function WatchlistRail() {
             </DropdownScrollArea>
           </div>
         </div>
-      ) : (
-        <div
-          suppressHydrationWarning
-          className={cn(MOBILE_ELEVATED_CARD_CLASS, "size-9 shrink-0 self-start overflow-hidden rounded-full border-0")}
-        >
-          <WatchlistRailToggle expanded={expanded} onToggle={toggleCollapsed} />
-        </div>
-      )}
     </div>
   );
 }
