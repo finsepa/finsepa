@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType }
 import { useRouter } from "next/navigation";
 import { BarChart3, Coins, Layers2, LineChart, PieChart, Search, UserRound, X } from "@/lib/icons";
 
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { OverlayScrollArea } from "@/components/design-system/overlay-scroll-area";
 import { textInputShellClassName } from "@/components/design-system/text-input-styles";
 import { SearchLoadingIndicator } from "@/components/search/search-loading-indicator";
@@ -449,9 +450,12 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
         role="dialog"
         aria-modal="true"
         aria-label="Search"
-        className="flex h-[min(640px,calc(100dvh-14vh))] w-[min(980px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-stroke-subtle bg-surface shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)]"
+        className="flex h-[min(640px,calc(100dvh-14vh))] w-[min(980px,calc(100vw-2rem))] gap-3 overflow-hidden rounded-2xl border border-stroke-subtle bg-page p-3 shadow-[0_24px_64px_-16px_rgba(0,0,0,0.35)]"
       >
-        <nav className="hidden w-[208px] shrink-0 flex-col gap-0.5 border-r border-stroke-subtle p-3 md:flex" aria-label="Category">
+        <nav
+          className={cn("hidden w-[208px] shrink-0 flex-col gap-0.5 p-2 md:flex", MOBILE_ELEVATED_CARD_CLASS)}
+          aria-label="Category"
+        >
           <p className="px-2 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">Category</p>
           {CATEGORIES.map(({ id, label, Icon }) => (
             <button
@@ -470,9 +474,9 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
           ))}
         </nav>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex flex-col gap-3 px-4 pt-4">
-            <div className={cn("flex h-11 items-center gap-2.5 rounded-full px-4", textInputShellClassName)}>
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
+          <div className="flex flex-col gap-3">
+            <div className={cn("flex h-11 items-center gap-2.5 rounded-full px-4", textInputShellClassName, "bg-surface")}>
               <Search className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden />
               <input
                 ref={inputRef}
@@ -511,10 +515,11 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
             />
           </div>
 
+          <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", MOBILE_ELEVATED_CARD_CLASS)}>
           <div
             className={cn(
               ROW_GRID,
-              "mx-2 mt-3 border-b border-stroke-subtle px-3 pb-2 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle",
+              "mx-2 border-b border-stroke-subtle px-3 pb-2 pt-3 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle",
             )}
             aria-hidden
           >
@@ -623,8 +628,9 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
             )}
           </div>
           </OverlayScrollArea>
+          </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-stroke-subtle px-4 py-2.5 text-[12px] leading-4 text-fg-muted">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[12px] leading-4 text-fg-muted">
             <span className="inline-flex items-center gap-1">
               <Kbd>↑</Kbd>
               <Kbd>↓</Kbd> to move
