@@ -9,7 +9,12 @@ import type { ChartDisplayState, HoldingsTradeTooltipItem } from "@/components/c
 import { PriceChart } from "@/components/chart/PriceChart";
 import { ChartControls } from "@/components/stock/chart-controls";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
-import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+  STOCK_OVERVIEW_SECTION_TITLE_CLASS,
+} from "@/components/design-system/card-surface-styles";
+import { KEY_STATS_CARD_CLASS, KEY_STATS_ROW_BORDER_CLASS, KEY_STATS_ROW_PY_CLASS } from "@/components/stock/key-stats";
 import {
   DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_DATA_ROW_CLASS,
@@ -99,11 +104,9 @@ function sumColorClass(sum: number): string {
 
 function PositionStat({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="min-w-0">
-      <div className="text-[13px] font-normal leading-4 text-fg-muted">{label}</div>
-      <div className="mt-1.5 min-w-0 text-[14px] font-semibold leading-5 tabular-nums text-fg">
-        {children}
-      </div>
+    <div className={cn("flex items-center justify-between gap-3", KEY_STATS_ROW_BORDER_CLASS, KEY_STATS_ROW_PY_CLASS)}>
+      <span className="min-w-0 shrink text-[14px] leading-5 text-fg">{label}</span>
+      <span className="min-w-0 text-right text-[14px] font-medium leading-5 tabular-nums text-fg">{children}</span>
     </div>
   );
 }
@@ -390,60 +393,45 @@ export function AssetPositionDetail({
       </section>
 
       <section>
-        <h2 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-fg">My positions</h2>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="rounded-[12px] border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
-            <h3 className="mb-4 text-[15px] font-semibold leading-5 text-fg">General</h3>
+        <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>My positions</h2>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <div className={KEY_STATS_CARD_CLASS}>
+            <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>General</h3>
             <div>
-              <div className="grid grid-cols-2 gap-4 border-b border-dotted border-stroke pb-4">
-                <PositionStat label="Shares">{sharesLabel}</PositionStat>
-                <PositionStat label="Current value">{usd0.format(holding.currentValue)}</PositionStat>
-              </div>
-              <div className="grid grid-cols-2 gap-4 border-b border-dotted border-stroke py-4">
-                <PositionStat label="Cost per share">{formatPortfolioUsdPerUnit(holding.avgPrice)}</PositionStat>
-                <PositionStat label="Cost basis">{usd0.format(holding.costBasis)}</PositionStat>
-              </div>
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <PositionStat label="Share in portfolio">{pct.format(weightPct)}%</PositionStat>
-                <div aria-hidden className="hidden min-[480px]:block" />
-              </div>
+              <PositionStat label="Shares">{sharesLabel}</PositionStat>
+              <PositionStat label="Current value">{usd0.format(holding.currentValue)}</PositionStat>
+              <PositionStat label="Cost per share">{formatPortfolioUsdPerUnit(holding.avgPrice)}</PositionStat>
+              <PositionStat label="Cost basis">{usd0.format(holding.costBasis)}</PositionStat>
+              <PositionStat label="Share in portfolio">{pct.format(weightPct)}%</PositionStat>
             </div>
           </div>
 
-          <div className="rounded-[12px] border border-stroke bg-surface p-5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
-            <h3 className="mb-4 text-[15px] font-semibold leading-5 text-fg">Return</h3>
+          <div className={KEY_STATS_CARD_CLASS}>
+            <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>Return</h3>
             <div>
-              <div className="grid grid-cols-2 gap-4 border-b border-dotted border-stroke pb-4">
-                <PositionStat label="Total profit">
-                  <span className={cn("font-semibold tabular-nums", profitTone(totalProfitUsd))}>
-                    {formatSignedUsd(totalProfitUsd)}
-                  </span>
-                </PositionStat>
-                <PositionStat label="Capital gain">
-                  <span className={cn("font-semibold tabular-nums", profitTone(retUsd))}>
-                    {formatSignedUsd(retUsd)} ({formatSignedPct(retPct)})
-                  </span>
-                </PositionStat>
-              </div>
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <PositionStat label="Realized P&amp;L">
-                  <span className={cn("font-semibold tabular-nums", profitTone(realizedUsd))}>
-                    {formatSignedUsd(realizedUsd)}
-                  </span>
-                </PositionStat>
-                <PositionStat label="Fees paid">
-                  <span className={feesUsd > 0 ? "text-down" : "text-fg-muted"}>
-                    {feesUsd <= 0 ? usd0.format(0) : `-${usd0.format(feesUsd)}`}
-                  </span>
-                </PositionStat>
-              </div>
+              <PositionStat label="Total profit">
+                <span className={profitTone(totalProfitUsd)}>{formatSignedUsd(totalProfitUsd)}</span>
+              </PositionStat>
+              <PositionStat label="Capital gain">
+                <span className={profitTone(retUsd)}>
+                  {formatSignedUsd(retUsd)} ({formatSignedPct(retPct)})
+                </span>
+              </PositionStat>
+              <PositionStat label="Realized P&amp;L">
+                <span className={profitTone(realizedUsd)}>{formatSignedUsd(realizedUsd)}</span>
+              </PositionStat>
+              <PositionStat label="Fees paid">
+                <span className={feesUsd > 0 ? "text-down" : "text-fg-muted"}>
+                  {feesUsd <= 0 ? usd0.format(0) : `-${usd0.format(feesUsd)}`}
+                </span>
+              </PositionStat>
             </div>
           </div>
         </div>
       </section>
 
       <div>
-        <h2 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-fg">Transactions</h2>
+        <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Transactions</h2>
         {tradeRows.length === 0 ? (
           <p className="text-[14px] leading-6 text-fg-muted">No trades recorded for this symbol in this portfolio.</p>
         ) : (

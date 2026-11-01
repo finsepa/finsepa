@@ -28,10 +28,10 @@ const KEY_STATS_MOBILE_SHELL_CLASS = cn(
 );
 
 /** 4px dash / 4px gap (CSS `border-dashed` at 1px looks solid) — stroke at 100%. */
-const KEY_STATS_ROW_BORDER_CLASS =
+export const KEY_STATS_ROW_BORDER_CLASS =
   "relative after:absolute after:inset-x-0 after:bottom-0 after:h-px after:[background-image:repeating-linear-gradient(90deg,var(--fs-stroke)_0,var(--fs-stroke)_4px,transparent_4px,transparent_8px)] last:after:hidden";
 /** Mobile keeps the taller row; web reverts to the original compact height (matches crypto key stats). */
-const KEY_STATS_ROW_PY_CLASS = "py-2.5 md:py-1.5";
+export const KEY_STATS_ROW_PY_CLASS = "py-2.5 md:py-1.5";
 
 type KeyStatsTabId =
   | "basic"
