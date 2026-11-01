@@ -31,7 +31,8 @@ export type SegmentedControlSize = "sm" | "md";
 const RADIUS = "rounded-full";
 /** Active thumb sits inside track pad — 2px tighter than the track. */
 const ACTIVE_RADIUS = "rounded-full";
-const TRACK_PAD = "p-px";
+/** Extra 2px on the sides so the pill thumb clears the track's rounded ends. */
+const TRACK_PAD = "py-px px-[3px]";
 
 /** Active thumb — light: same border + shadow as outline buttons; dark: fill + shadow, no stroke. */
 const ACTIVE_THUMB_CHROME = cn(
