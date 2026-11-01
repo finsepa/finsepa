@@ -384,7 +384,7 @@ export function WatchlistRailScrollContent({
 }
 
 /** Rail card insets inside the shell: 4px left keeps the card shadow unclipped, 36px right matches the topbar gutter. */
-const RAIL_CARD_GUTTER_X_PX = 4 + 36;
+const RAIL_CARD_INSET = { top: 20, right: 36, bottom: 20, left: 4 } as const;
 
 const watchlistRailSurfaceClass = cn("flex min-h-0 flex-col overflow-hidden", MOBILE_ELEVATED_CARD_CLASS);
 
@@ -418,7 +418,7 @@ function WatchlistRailToggle({
         onClick={onToggle}
         aria-expanded={expanded}
         aria-label={label}
-        className={shellChromeToggleButtonClass}
+        className={cn(shellChromeToggleButtonClass, !expanded && "rounded-full")}
       >
         {expanded ? (
           <PanelLeftOpen className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
@@ -500,22 +500,25 @@ export function WatchlistRail() {
     <div
       suppressHydrationWarning
       className={cn(
-        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden md:flex md:pb-5 md:pl-1 md:pr-9 md:pt-5",
+        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden md:flex",
         SHELL_DESKTOP_PANEL_BG_CLASS,
         WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
       )}
-      style={{ width: `${outerWidthPx + RAIL_CARD_GUTTER_X_PX}px` }}
+      style={{
+        width: `${outerWidthPx + RAIL_CARD_INSET.left + RAIL_CARD_INSET.right}px`,
+        padding: `${RAIL_CARD_INSET.top}px ${RAIL_CARD_INSET.right}px ${RAIL_CARD_INSET.bottom}px ${RAIL_CARD_INSET.left}px`,
+      }}
       aria-label="Watchlist panel"
     >
       <div
         suppressHydrationWarning
-        className={cn(watchlistRailSurfaceClass, expanded ? "h-full" : "self-start")}
-        style={{ width: expanded ? `${WATCHLIST_PANEL_WIDTH_PX}px` : "100%" }}
+        className={cn(watchlistRailSurfaceClass, expanded ? "h-full" : "size-9 shrink-0 self-start rounded-full border-0")}
+        style={expanded ? { width: `${WATCHLIST_PANEL_WIDTH_PX}px` } : undefined}
       >
         <div
           className={cn(
             "flex shrink-0 items-center",
-            expanded ? "justify-between gap-2 px-2 pl-3 pr-2 pt-2" : "justify-center p-1",
+            expanded ? "justify-between gap-2 px-2 pl-3 pr-2 pt-2" : "size-full justify-center",
           )}
         >
           {expanded ? (
