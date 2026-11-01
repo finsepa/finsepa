@@ -477,13 +477,24 @@ const Y_AXIS_LABEL_COUNT = 6;
 
 const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
 
-function yAxisLabelOnlyOptions(backdrop: "panel" | "surface" = "panel") {
+/** Pill fill that matches the plot backdrop the chart actually sits on (card surface vs page panel). */
+function chartPlotBackdropColor(chart: IChartApi): string {
+  try {
+    const v = getComputedStyle(chart.chartElement()).getPropertyValue("--fs-chart-plot-bg").trim();
+    if (v) return v;
+  } catch {
+    /* detached chart */
+  }
+  return resolveFsColor("--fs-panel");
+}
+
+function yAxisLabelOnlyOptions(labelBg: string) {
   return {
     color: "transparent",
     lineWidth: 1 as const,
     lineStyle: LineStyle.Solid,
     axisLabelVisible: true,
-    axisLabelColor: resolveFsColor(backdrop === "surface" ? "--fs-surface" : "--fs-panel"),
+    axisLabelColor: labelBg,
     axisLabelTextColor: resolveFsColor("--fs-fg-muted"),
     lineVisible: false,
     title: "",
@@ -624,10 +635,11 @@ function syncYAxisTickLabels(
     }
   }
 
+  const labelBg = axisBackdrop === "surface" ? resolveFsColor("--fs-surface") : chartPlotBackdropColor(chart);
   for (let i = 0; i < prices.length; i++) {
     const price = prices[i]!;
     const existing = ticksRef.current[i];
-    const opts = yAxisLabelOnlyOptions(axisBackdrop);
+    const opts = yAxisLabelOnlyOptions(labelBg);
     if (existing) {
       existing.applyOptions({ price, ...opts });
     } else {
