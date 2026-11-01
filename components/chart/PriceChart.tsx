@@ -691,7 +691,7 @@ function overviewBaselineOptions(
       ...fills,
       crosshairMarkerVisible: !lightweight,
       crosshairMarkerRadius: 5,
-      crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
+      crosshairMarkerBorderColor: "",
       crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
       crosshairMarkerBorderWidth: 2,
     };
@@ -1894,7 +1894,7 @@ export function PriceChart({
           lastValueVisible: true,
       crosshairMarkerVisible: true,
       crosshairMarkerRadius: 5,
-      crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
+      crosshairMarkerBorderColor: "",
       crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
       crosshairMarkerBorderWidth: 2,
           });
