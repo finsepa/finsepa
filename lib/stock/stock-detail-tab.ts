@@ -11,6 +11,7 @@ export type StockDetailTabId =
   | "charting"
   | "peers"
   | "holdings"
+  | "etf-holdings"
   | "profile";
 
 export function parseStockDetailTabQuery(raw: string | null | undefined): StockDetailTabId | null {
@@ -25,6 +26,7 @@ export function parseStockDetailTabQuery(raw: string | null | undefined): StockD
     raw === "charting" ||
     raw === "peers" ||
     raw === "holdings" ||
+    raw === "etf-holdings" ||
     raw === "profile"
   ) {
     return raw;

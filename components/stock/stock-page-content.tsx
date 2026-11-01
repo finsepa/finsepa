@@ -19,6 +19,8 @@ import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { coerceStockDetailTabForEtf, isStockDetailEtf, normalizeStockDetailTab } from "@/lib/stock/stock-etf";
 import { clearPendingAssetShellIfMatch } from "@/lib/navigation/pending-asset-shell";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
+import { EtfHoldingsTab } from "@/components/stock/etf-holdings-tab";
+import { EtfKeyStats } from "@/components/stock/etf-key-stats";
 import { StockDetailTabNav } from "./stock-detail-tab-nav";
 import { useRegisterStockDetailTabHost } from "./stock-detail-tab-host-context";
 import { MultichartsTabSkeleton } from "@/components/stock/stock-multicharts-tab-skeleton";
@@ -189,6 +191,7 @@ function initialTabsMounted(tab: StockDetailTabId): Record<StockDetailTabId, boo
     charting: tab === "charting",
     peers: tab === "peers",
     holdings: tab === "holdings",
+    "etf-holdings": tab === "etf-holdings",
     profile: tab === "profile",
   };
 }
@@ -1410,6 +1413,7 @@ export function StockPageContent({
               onRemoveCompare={onRemoveComparePick}
             />
           ) : null}
+          {isEtf ? <EtfKeyStats ticker={ticker} /> : null}
           <StockOverviewMetricActionsProvider
             value={{
               onOpenMetricChart: openRevenueProfitMetricModal,
@@ -1553,6 +1557,17 @@ export function StockPageContent({
             initialPageData={initialPageData?.ticker === ticker ? initialPageData : undefined}
             isActive={displayTab === "peers"}
           />
+        </div>
+      ) : null}
+
+      {tabsMounted["etf-holdings"] ? (
+        <div
+          role="tabpanel"
+          id="stock-tab-etf-holdings"
+          aria-hidden={displayTab !== "etf-holdings"}
+          className={displayTab === "etf-holdings" ? "block" : "hidden"}
+        >
+          <EtfHoldingsTab ticker={ticker} isActive={displayTab === "etf-holdings"} />
         </div>
       ) : null}
 

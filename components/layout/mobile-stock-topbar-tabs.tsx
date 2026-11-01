@@ -6,8 +6,7 @@ import { useCallback, useMemo } from "react";
 import { UnderlineTabs } from "@/components/screener/market-tabs";
 import { useStockDetailTabHost } from "@/components/stock/stock-detail-tab-host-context";
 import { parseStockDetailTabQuery, type StockDetailTabId } from "@/lib/stock/stock-detail-tab";
-import { STOCK_DETAIL_TAB_ITEMS } from "@/lib/stock/stock-detail-tab-items";
-import { ETF_STOCK_DETAIL_TAB_IDS } from "@/lib/stock/stock-etf";
+import { stockDetailTabItemsFor } from "@/lib/stock/stock-etf";
 
 /** Stock section tabs in the fixed mobile top bar — matches {@link MobileMarketsTopbarTabs} on `/screener`. */
 export function MobileStockTopbarTabs() {
@@ -24,10 +23,7 @@ export function MobileStockTopbarTabs() {
   const isEtf = registration?.isEtf ?? false;
 
   const tabOptions = useMemo(() => {
-    const items =
-      isEtf
-        ? STOCK_DETAIL_TAB_ITEMS.filter((t) => (ETF_STOCK_DETAIL_TAB_IDS as readonly string[]).includes(t.id))
-        : STOCK_DETAIL_TAB_ITEMS;
+    const items = stockDetailTabItemsFor(isEtf);
     return items.map((t) => ({ value: t.id, label: t.label }));
   }, [isEtf]);
 

@@ -7,8 +7,7 @@ import {
   horizontalOverlayScrollbarClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
-import { STOCK_DETAIL_TAB_ITEMS } from "@/lib/stock/stock-detail-tab-items";
-import { ETF_STOCK_DETAIL_TAB_IDS } from "@/lib/stock/stock-etf";
+import { stockDetailTabItemsFor } from "@/lib/stock/stock-etf";
 import { cn } from "@/lib/utils";
 
 export type { StockDetailTabId };
@@ -29,18 +28,12 @@ export function StockDetailTabNav({
   onTabChange: (tab: StockDetailTabId) => void;
   /** Hover/focus prefetch before the tab panel mounts (e.g. earnings API). */
   onTabIntent?: (tab: StockDetailTabId) => void;
-  /** When true, only Overview and Portfolio tabs are shown. */
+  /** When true, only Overview, Holdings and Portfolio tabs are shown. */
   isEtf?: boolean;
   /** Off on Financials so the statement year row can stick to the top of the scroll area. */
   sticky?: boolean;
 }) {
-  const tabs = useMemo(
-    () =>
-      isEtf
-        ? STOCK_DETAIL_TAB_ITEMS.filter((t) => (ETF_STOCK_DETAIL_TAB_IDS as readonly string[]).includes(t.id))
-        : STOCK_DETAIL_TAB_ITEMS,
-    [isEtf],
-  );
+  const tabs = useMemo(() => stockDetailTabItemsFor(isEtf), [isEtf]);
 
   const navRef = useRef<HTMLElement>(null);
   const tabRefs = useRef(new Map<StockDetailTabId, HTMLButtonElement>());

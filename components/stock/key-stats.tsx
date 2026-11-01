@@ -19,7 +19,7 @@ const KEY_STATS_TAB_MOTION_MS = 280;
 const KEY_STATS_TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
 
 /** Mobile matches screener home table card — 16px radius, stacked shadow, no outer border. */
-const KEY_STATS_CARD_CLASS = cn("min-w-0 p-4", MOBILE_INSET_CARD_CLASS);
+export const KEY_STATS_CARD_CLASS = cn("min-w-0 p-4", MOBILE_INSET_CARD_CLASS);
 
 /** Mobile shell: tabs + body share one inset card (tabs bleed edge-to-edge). */
 const KEY_STATS_MOBILE_SHELL_CLASS = cn(
@@ -357,7 +357,7 @@ function KeyStatMetricRow({
   );
 }
 
-function StatRow({
+export function StatRow({
   label,
   value,
   valueClassName,
@@ -374,7 +374,7 @@ function StatRow({
   );
 }
 
-function CardSkeleton({ rowLabels }: { rowLabels: string[] }) {
+export function CardSkeleton({ rowLabels }: { rowLabels: string[] }) {
   return (
     <div className="space-y-2 pt-0.5" aria-hidden>
       {rowLabels.map((label) => (

@@ -3,6 +3,7 @@ import type { StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 /** Order matches stock Web App Design — shared by in-page nav and mobile top bar. */
 export const STOCK_DETAIL_TAB_ITEMS: { id: StockDetailTabId; label: string }[] = [
   { id: "overview", label: "Overview" },
+  { id: "etf-holdings", label: "Holdings" },
   { id: "financials", label: "Financials" },
   { id: "earnings", label: "Earnings" },
   { id: "multicharts", label: "Multicharts" },
