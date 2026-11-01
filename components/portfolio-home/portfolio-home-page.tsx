@@ -440,7 +440,7 @@ export function PortfolioHomePage() {
 
   return (
     <div className="flex w-full min-w-0 flex-col items-stretch gap-8 md:flex-row md:items-start md:gap-8">
-      <div className="min-w-0 flex-1 space-y-8">
+      <div className="min-w-0 flex-1 space-y-5">
         <section aria-label="Markets" className="min-w-0 space-y-3">
           <div className="flex h-8 items-center">
             <UsMarketsSessionLabel />
