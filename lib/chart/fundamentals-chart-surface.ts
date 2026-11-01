@@ -342,13 +342,24 @@ export function computeFundamentalsChartTooltipPlacement(
   return { anchorX, side: "right" };
 }
 
-function yAxisLabelOnlyOptions() {
+/** Plot backdrop the chart actually sits on (card surface vs page panel) — for canvas-drawn fills. */
+export function chartPlotBackdropColor(chart: IChartApi): string {
+  try {
+    const v = getComputedStyle(chart.chartElement()).getPropertyValue("--fs-chart-plot-bg").trim();
+    if (v) return v;
+  } catch {
+    /* detached chart */
+  }
+  return resolveFsColor("--fs-panel");
+}
+
+function yAxisLabelOnlyOptions(labelBg: string) {
   return {
     color: "transparent",
     lineWidth: 1 as const,
     lineStyle: LineStyle.Solid,
     axisLabelVisible: true,
-    axisLabelColor: resolveFsColor("--fs-panel"),
+    axisLabelColor: labelBg,
     axisLabelTextColor: resolveFsColor("--fs-fg-muted"),
     lineVisible: false,
     title: "",
@@ -465,13 +476,14 @@ export function syncFundamentalsChartYAxisTickLabels(
     }
   }
 
+  const labelOpts = yAxisLabelOnlyOptions(chartPlotBackdropColor(chart));
   for (let i = 0; i < prices.length; i++) {
     const price = prices[i]!;
     const existing = ticksRef.current[i];
     if (existing) {
-      existing.applyOptions({ price, ...yAxisLabelOnlyOptions() });
+      existing.applyOptions({ price, ...labelOpts });
     } else {
-      ticksRef.current.push(series.createPriceLine({ price, ...yAxisLabelOnlyOptions() }));
+      ticksRef.current.push(series.createPriceLine({ price, ...labelOpts }));
     }
   }
 }

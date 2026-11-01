@@ -139,6 +139,7 @@ import {
 import {
   CHART_PLOT_BACKGROUND_CLASS,
   CHART_PLOT_BACKGROUND_FAINT_CLASS,
+  chartPlotBackdropColor,
 } from "@/lib/chart/fundamentals-chart-surface";
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import { cn } from "@/lib/utils";
@@ -476,17 +477,6 @@ const BASELINE_LINE = "rgba(113, 113, 122, 0.55)";
 const Y_AXIS_LABEL_COUNT = 6;
 
 const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
-
-/** Pill fill that matches the plot backdrop the chart actually sits on (card surface vs page panel). */
-function chartPlotBackdropColor(chart: IChartApi): string {
-  try {
-    const v = getComputedStyle(chart.chartElement()).getPropertyValue("--fs-chart-plot-bg").trim();
-    if (v) return v;
-  } catch {
-    /* detached chart */
-  }
-  return resolveFsColor("--fs-panel");
-}
 
 function yAxisLabelOnlyOptions(labelBg: string) {
   return {
@@ -1862,7 +1852,7 @@ export function PriceChart({
 
     const series = holdingsStyle
       ? (() => {
-          const underlay = holdingsAreaUnderlayColors(holdingsPlotBackdropRef.current);
+          const underlay = holdingsAreaUnderlayColors(holdingsPlotBackdropRef.current, chartPlotBackdropColor(chart));
           holdingsFillUnderlayRef.current = chart.addSeries(AreaSeries, {
             lineColor: "rgba(255,255,255,0)",
             topColor: underlay.top,

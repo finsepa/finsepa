@@ -53,14 +53,15 @@ export function accentAreaGradientColors(): { top: string; bottom: string } {
 
 /**
  * Opaque underlay under holdings blue fill (masks quarter bars).
- * Light: white (as before). Dark: match plot backdrop (`panel` or `surface`).
+ * Light: white (as before). Dark: match plot backdrop (`surface`, else the container's
+ * `--fs-chart-plot-bg` via `plotBg` so carded charts don't paint a page-black block).
  */
 export function holdingsAreaUnderlayColors(
   backdrop: "panel" | "surface" = "panel",
+  plotBg?: string,
 ): { top: string; bottom: string } {
   if (rawPanelLooksDark()) {
-    const token = backdrop === "surface" ? "--fs-surface" : "--fs-panel";
-    const fill = resolveFsColor(token);
+    const fill = backdrop === "surface" ? resolveFsColor("--fs-surface") : (plotBg ?? resolveFsColor("--fs-panel"));
     return { top: fill, bottom: fill };
   }
   if (backdrop === "surface") {
@@ -78,8 +79,7 @@ export function holdingsQuarterBandFill(
   side: "buy" | "sell",
   backdrop: "panel" | "surface" = "panel",
 ): string {
-  const baseToken = backdrop === "surface" ? "--fs-surface" : "--fs-panel";
-  const base = resolveFsColor(baseToken);
+  const base = backdrop === "surface" ? resolveFsColor("--fs-surface") : "var(--fs-chart-plot-bg)";
   const accent = resolveFsColor(side === "buy" ? "--fs-up" : "--fs-down");
   const accentHex = accent.match(/^#[0-9a-f]{6}$/i)?.[0] ?? (side === "buy" ? "#16a34a" : "#dc2626");
   if (rawPanelLooksDark()) {

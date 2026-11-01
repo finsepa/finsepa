@@ -462,7 +462,7 @@ function DrawdownHistoryChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
+              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-[var(--fs-chart-plot-bg)]"
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -657,7 +657,7 @@ function DrawdownHistoryChart({
               {yDomain.ticks.map((tick) => (
                 <span
                   key={tick}
-                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
+                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[var(--fs-chart-plot-bg)] px-1 py-px"
                   style={{ top: `${valueToPlotBandTopPercent(tick, yDomain.min, yDomain.max)}%` }}
                 >
                   {formatDrawdownAxisTick(tick)}

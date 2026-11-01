@@ -1888,11 +1888,11 @@ export function ChartingCompareWorkspace({
             <>
               <div className="w-full min-w-0 overflow-visible" style={{ height: chartHeight }}>
                 <div className="flex min-h-0 w-full overflow-visible" style={{ height: chartPlotHeight }}>
-                  <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-panel">
+                  <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-[var(--fs-chart-plot-bg)]">
                     <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
                       <div
                         className={cn(
-                          "absolute inset-x-0 bg-panel",
+                          "absolute inset-x-0 bg-[var(--fs-chart-plot-bg)]",
                           CHARTING_PLOT_BACKDROP_INSET_CLASS,
                         )}
                       >
@@ -1972,7 +1972,7 @@ export function ChartingCompareWorkspace({
                               return (
                                 <span
                                   key={`y-tick-primary-${i}`}
-                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
+                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[var(--fs-chart-plot-bg)] px-1 py-px"
                                   style={{
                                     top:
                                       topPx != null && Number.isFinite(topPx)
@@ -2004,7 +2004,7 @@ export function ChartingCompareWorkspace({
                               return (
                                 <span
                                   key={`y-tick-percent-${i}`}
-                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
+                                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-[var(--fs-chart-plot-bg)] px-1 py-px"
                                   style={{
                                     top:
                                       topPx != null && Number.isFinite(topPx)
