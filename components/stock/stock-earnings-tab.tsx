@@ -1096,9 +1096,24 @@ export function StockEarningsTabContent({
       ) : null}
 
       {!loading && data && historyRows.length > 0 ? (
-        <div className="min-w-0 space-y-5">
-          <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Earnings history</h2>
-          <ScreenerTableScroll mobileScroll>
+        <div
+          className={cn(
+            "min-w-0",
+            previewMode ? cn("overflow-clip pb-2", MOBILE_ELEVATED_CARD_CLASS) : "space-y-5",
+          )}
+        >
+          <h2
+            className={cn(
+              STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+              previewMode && "mb-2 px-4 pt-4 sm:px-5 sm:pt-5",
+            )}
+          >
+            Earnings history
+          </h2>
+          <ScreenerTableScroll
+            mobileScroll
+            className={previewMode ? "rounded-none border-0 bg-transparent shadow-none" : undefined}
+          >
             <div className="bg-surface">
               <ReportsHeaderRow />
               {earningsHistoryRendered.map((entry, idx) => {
