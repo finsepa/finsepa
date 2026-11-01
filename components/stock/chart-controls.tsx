@@ -38,6 +38,7 @@ export function ChartControls({
   rangeLabels,
   availableRanges,
   hideMarketCapSeries = false,
+  bodyClassName,
   children,
 }: {
   activeRange: StockChartRange;
@@ -61,6 +62,8 @@ export function ChartControls({
   titleSlot?: ReactNode;
   /** When comparing symbols, metric is fixed to return — disable toggle. */
   seriesSelectDisabled?: boolean;
+  /** Wraps chart + mobile range row (e.g. a card) while title/range controls stay outside. */
+  bodyClassName?: string;
   /** Chart body — on mobile, metric/actions above chart; range below. */
   children?: ReactNode;
 }) {
@@ -222,8 +225,17 @@ export function ChartControls({
     <div className="relative z-10 mb-0">
       {mobileTopToolbar}
       <div className="mb-0 hidden sm:mb-4 sm:block">{desktopControls}</div>
-      {children}
-      {mobileRangeControl}
+      {bodyClassName ? (
+        <div className={bodyClassName}>
+          {children}
+          {mobileRangeControl}
+        </div>
+      ) : (
+        <>
+          {children}
+          {mobileRangeControl}
+        </>
+      )}
     </div>
   );
 }

@@ -286,6 +286,7 @@ export function AssetPositionDetail({
   titleSlot,
   onChartDisplayChange,
   chartCard = false,
+  chartHeaderOutside = false,
 }: {
   assetKind: "stock" | "crypto";
   routeKey: string;
@@ -297,6 +298,8 @@ export function AssetPositionDetail({
   onChartDisplayChange?: (s: ChartDisplayState) => void;
   /** Elevated cards on a page-grey backdrop: chart section in a card, borderless transactions card. */
   chartCard?: boolean;
+  /** With `chartCard`: title + range tabs sit above the card; only the chart is carded. */
+  chartHeaderOutside?: boolean;
 }) {
   const route = routeKey.trim().toUpperCase();
   const [holdingsChartRange, setHoldingsChartRange] = useState<StockChartRange>("1Y");
@@ -371,11 +374,17 @@ export function AssetPositionDetail({
 
   return (
     <div className="space-y-5">
-      <section className={cn("space-y-4", chartCard && cn("p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS))}>
+      <section
+        className={cn(
+          "space-y-4",
+          chartCard && !chartHeaderOutside && cn("p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS),
+        )}
+      >
         <ChartControls
           activeRange={holdingsChartRange}
           onRangeChange={setHoldingsChartRange}
           titleSlot={titleSlot}
+          bodyClassName={chartCard && chartHeaderOutside ? cn("p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS) : undefined}
         >
           <div className={cn("overflow-visible", !chartCard && "rounded-[12px] bg-panel")}>
             <PriceChart
