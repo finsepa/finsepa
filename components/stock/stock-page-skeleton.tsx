@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 
 import { AssetPageHeaderActions } from "@/components/asset/asset-page-header-actions";
-import { MOBILE_INSET_CARD_CLASS } from "@/components/design-system/card-surface-styles";
+import { MOBILE_ELEVATED_CARD_CLASS, MOBILE_INSET_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { CryptoBreadcrumbs } from "@/components/crypto/crypto-breadcrumbs";
 import { CryptoDetailTabNav } from "@/components/crypto/crypto-detail-tab-nav";
 import { CurrencyBreadcrumbs } from "@/components/currency/currency-breadcrumbs";
@@ -224,7 +224,53 @@ export function StockPageSkeleton() {
   const kind = parsed?.kind ?? pending?.kind ?? null;
   const symbol = parsed?.symbol ?? pending?.symbol ?? null;
 
-  // Soft-nav / known asset path: real breadcrumbs, tabs, chart toggles.
+  // Stock: same carded layout as `StockPageContent` (breadcrumbs + header + tabs card, chart card).
+  if (kind === "stock" && symbol) {
+    const shellPending = showOptimistic ? pending : null;
+    return (
+      <div className="relative min-w-0" aria-busy aria-label={`Loading ${symbol}`}>
+        <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:pt-5 sm:pb-6">
+          <div className={cn("space-y-5 p-4 sm:p-5 md:pb-0", MOBILE_ELEVATED_CARD_CLASS)}>
+            <StockBreadcrumbs ticker={symbol} headerMeta={null} embedded />
+            <ShellHeader kind={kind} symbol={symbol} pending={shellPending} />
+            <div className="max-md:hidden pointer-events-none">
+              <StockDetailTabNav activeTab="overview" onTabChange={noop} embedded />
+            </div>
+          </div>
+
+          <div className={cn("pointer-events-none space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+            <ChartControls
+              activeRange="1D"
+              onRangeChange={noop}
+              chartSeries="price"
+              onChartSeriesChange={noop}
+            >
+              <div className="relative min-h-[320px] w-full">
+                <AssetChartSkeleton heightPx={320} className="h-full" />
+              </div>
+            </ChartControls>
+          </div>
+
+          <KeyIndicatorsSkeleton />
+
+          <div className="grid w-full gap-4 md:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className={cn(MOBILE_INSET_CARD_CLASS, "space-y-3 p-4")}>
+                <SkeletonBox className="h-4 w-24 rounded" />
+                <div className="space-y-2.5">
+                  <SkeletonBox className="h-3.5 w-full rounded" />
+                  <SkeletonBox className="h-3.5 w-[85%] rounded" />
+                  <SkeletonBox className="h-3.5 w-[70%] rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Soft-nav / known asset path (crypto, index, currency): real breadcrumbs, tabs, chart toggles.
   if (kind && symbol) {
     const hideMarketCap = kind === "index" || kind === "currency";
     return (
@@ -233,11 +279,6 @@ export function StockPageSkeleton() {
         <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:pt-5 sm:pb-6">
           <ShellHeader kind={kind} symbol={symbol} pending={showOptimistic ? pending : null} />
 
-          {kind === "stock" ? (
-            <div className="max-md:hidden pointer-events-none">
-              <StockDetailTabNav activeTab="overview" onTabChange={noop} />
-            </div>
-          ) : null}
           {kind === "crypto" ? (
             <div className="pointer-events-none">
               <CryptoDetailTabNav activeTab="overview" onTabChange={noop} />
@@ -258,22 +299,7 @@ export function StockPageSkeleton() {
             </ChartControls>
           </div>
 
-          {kind === "stock" || kind === "crypto" ? <KeyIndicatorsSkeleton /> : null}
-
-          {kind === "stock" ? (
-            <div className="grid w-full gap-4 md:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className={cn(MOBILE_INSET_CARD_CLASS, "space-y-3 p-4")}>
-                  <SkeletonBox className="h-4 w-24 rounded" />
-                  <div className="space-y-2.5">
-                    <SkeletonBox className="h-3.5 w-full rounded" />
-                    <SkeletonBox className="h-3.5 w-[85%] rounded" />
-                    <SkeletonBox className="h-3.5 w-[70%] rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : null}
+          {kind === "crypto" ? <KeyIndicatorsSkeleton /> : null}
         </div>
       </div>
     );

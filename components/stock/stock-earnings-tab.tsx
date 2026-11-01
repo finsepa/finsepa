@@ -714,9 +714,20 @@ function EstimatesChartSkeleton() {
   );
 }
 
-function TableSkeleton() {
+/** Preview modal: heading + table share one card; the table drops its own chrome. */
+const EARNINGS_HISTORY_TABLE_IN_CARD_CLASS = "rounded-none border-0 bg-transparent shadow-none";
+
+function earningsHistoryWrapClass(inCard: boolean): string {
+  return cn("min-w-0", inCard ? cn("overflow-clip pb-2", MOBILE_ELEVATED_CARD_CLASS) : "space-y-5");
+}
+
+function earningsHistoryHeadingClass(inCard: boolean): string {
+  return cn(STOCK_OVERVIEW_SECTION_HEADING_CLASS, inCard && "mb-2 px-4 pt-4 sm:px-5 sm:pt-5");
+}
+
+function TableSkeleton({ className }: { className?: string }) {
   return (
-    <ScreenerTableScroll mobileScroll>
+    <ScreenerTableScroll mobileScroll className={className}>
       <div className="bg-surface">
         <ReportsHeaderRow />
         {Array.from({ length: 4 }).map((_, r) => (
@@ -1029,11 +1040,13 @@ export function StockEarningsTabContent({
     <div className="min-w-0 space-y-5">
       {loading ? (
         <>
-          <EstimatesHeaderSkeleton />
-          <EstimatesChartSkeleton />
-          <div className="min-w-0 space-y-5">
-            <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Earnings history</h2>
-            <TableSkeleton />
+          <div className={cn("min-w-0 space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+            <EstimatesHeaderSkeleton />
+            <EstimatesChartSkeleton />
+          </div>
+          <div className={earningsHistoryWrapClass(previewMode)}>
+            <h2 className={earningsHistoryHeadingClass(previewMode)}>Earnings history</h2>
+            <TableSkeleton className={previewMode ? EARNINGS_HISTORY_TABLE_IN_CARD_CLASS : undefined} />
           </div>
         </>
       ) : null}
@@ -1096,23 +1109,11 @@ export function StockEarningsTabContent({
       ) : null}
 
       {!loading && data && historyRows.length > 0 ? (
-        <div
-          className={cn(
-            "min-w-0",
-            previewMode ? cn("overflow-clip pb-2", MOBILE_ELEVATED_CARD_CLASS) : "space-y-5",
-          )}
-        >
-          <h2
-            className={cn(
-              STOCK_OVERVIEW_SECTION_HEADING_CLASS,
-              previewMode && "mb-2 px-4 pt-4 sm:px-5 sm:pt-5",
-            )}
-          >
-            Earnings history
-          </h2>
+        <div className={earningsHistoryWrapClass(previewMode)}>
+          <h2 className={earningsHistoryHeadingClass(previewMode)}>Earnings history</h2>
           <ScreenerTableScroll
             mobileScroll
-            className={previewMode ? "rounded-none border-0 bg-transparent shadow-none" : undefined}
+            className={previewMode ? EARNINGS_HISTORY_TABLE_IN_CARD_CLASS : undefined}
           >
             <div className="bg-surface">
               <ReportsHeaderRow />

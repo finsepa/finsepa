@@ -498,13 +498,19 @@ function PortfolioDividendsPanelInner({
 
   if (loading && !payload) {
     return (
-      <div className="space-y-10 py-2">
+      <div className="animate-pulse space-y-5">
+        <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+          <div className="h-9 w-48 rounded-full bg-surface-muted" />
+          <div className="h-[260px] rounded-md bg-surface-muted" />
+        </div>
         {[0, 1].map((i) => (
-          <div key={i} className="animate-pulse space-y-4">
+          <div key={i} className="space-y-4">
             <div className="h-7 w-40 rounded-md bg-surface-muted" />
-            <div className="h-11 border-t border-stroke bg-canvas" />
-            <div className="h-[60px] bg-surface-muted" />
-            <div className="h-[60px] bg-surface-muted" />
+            <div className={cn("space-y-2 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+              <div className="h-[44px] rounded-md bg-surface-muted" />
+              <div className="h-[52px] rounded-md bg-surface-muted" />
+              <div className="h-[52px] rounded-md bg-surface-muted" />
+            </div>
           </div>
         ))}
       </div>

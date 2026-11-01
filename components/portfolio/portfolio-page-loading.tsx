@@ -5,12 +5,12 @@ import {
   SCREENER_TABLE_MOBILE_SURFACE_CLASS,
   SCREENER_TABLE_OUTER_BORDER_CLASS,
 } from "@/components/screener/screener-table-scroll";
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { portfolioViewTabs, publicPortfolioViewTabs } from "@/components/portfolio/portfolio-page-tabs";
 import { cn } from "@/lib/utils";
 
-const METRIC_CARD_CLASS =
-  "flex flex-col items-start gap-1 overflow-hidden rounded-2xl border border-stroke bg-surface px-3 py-3 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] sm:px-4 sm:py-4";
+const METRIC_CARD_CLASS = cn("flex flex-col items-start gap-1 overflow-hidden p-4", MOBILE_ELEVATED_CARD_CLASS);
 
 function Pulse({ className }: { className?: string }) {
   return <div className={cn("animate-pulse rounded bg-skeleton", className)} aria-hidden />;
@@ -127,7 +127,7 @@ function PortfolioHoldingsSubTabsSkeleton({ className }: { className?: string })
 function PortfolioHoldingsTableSkeleton() {
   return (
     <div className="w-full min-w-0" aria-hidden>
-      <div className="hidden border-t border-stroke sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:gap-4 sm:px-0 sm:py-3">
+      <div className="hidden border-b border-table-row-stroke sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:gap-4 sm:px-5 sm:py-3">
         {["Asset", "Price", "Holdings", "Avg. Buy Price", "Profit/Loss", "Weight"].map((label) => (
           <Pulse key={label} className="h-3 w-16 bg-skeleton" />
         ))}
@@ -136,7 +136,7 @@ function PortfolioHoldingsTableSkeleton() {
       <div>
         {[1, 2, 3, 4, 5, 6].map((row) => (
           <div key={row}>
-            <div className="flex min-h-[60px] items-center justify-between gap-3 px-4 py-3 sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:items-center sm:gap-4 sm:px-0 sm:py-4">
+            <div className="flex min-h-[60px] items-center justify-between gap-3 px-4 py-3 sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:items-center sm:gap-4 sm:px-5 sm:py-4">
               <div className="flex min-w-0 items-center gap-3">
                 <div className="h-9 w-9 shrink-0 animate-pulse rounded-full bg-skeleton" />
                 <div className="min-w-0 space-y-2">
@@ -241,21 +241,20 @@ export function PortfolioPageLoadingShell({
       <PortfolioOverviewCardsSkeleton />
       <PortfolioPageTabsSkeleton publicView={publicView} />
 
-      <section className="mb-6 w-full min-w-0" aria-hidden>
+      <section className={cn("mb-6 w-full min-w-0 p-4 max-md:mb-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)} aria-hidden>
         <PortfolioChartControlsSkeleton />
         <div className="relative h-[240px] sm:h-[320px]">
           <AssetChartSkeleton fill />
         </div>
       </section>
 
-      <div className="pt-6" aria-hidden>
-        <PortfolioHoldingsSubTabsSkeleton className="hidden md:flex" />
+      <div aria-hidden>
+        <PortfolioHoldingsSubTabsSkeleton className="mb-3 hidden md:flex" />
         <div
           className={cn(
-            "w-full min-w-0 max-w-full bg-surface",
+            "w-full min-w-0 max-w-full",
             SCREENER_TABLE_OUTER_BORDER_CLASS,
             SCREENER_TABLE_MOBILE_SURFACE_CLASS,
-            "max-md:overflow-hidden max-md:rounded-2xl md:contents",
           )}
         >
           <div className="px-4 py-2 md:hidden">
@@ -274,7 +273,8 @@ export function PortfolioTabPanelSkeleton({ className }: { className?: string })
   return (
     <div
       className={cn(
-        "min-h-[min(50vh,420px)] rounded-xl border border-stroke bg-surface p-6 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]",
+        "min-h-[min(50vh,420px)] p-5",
+        MOBILE_ELEVATED_CARD_CLASS,
         className,
       )}
       aria-hidden

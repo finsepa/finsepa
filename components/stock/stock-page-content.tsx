@@ -118,8 +118,11 @@ const StockChartingTab = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex min-h-[320px] w-full items-center justify-center">
-        <div className="h-40 w-full animate-pulse rounded-2xl bg-surface-muted" />
+      <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)} aria-busy>
+        <div className="h-9" aria-hidden />
+        <div className="relative h-[320px] w-full">
+          <AssetChartSkeleton fill />
+        </div>
       </div>
     ),
   },
