@@ -88,8 +88,8 @@ export function PortfolioAssetPositionModal({
           </div>
         }
         headerClassName="px-5 py-4"
-        bodyClassName="min-h-0 min-w-0 px-5 pb-5 pt-4"
-        cardClassName="overflow-hidden shadow-none"
+        bodyClassName="min-h-0 min-w-0 px-4 pb-4 pt-1"
+        cardClassName="overflow-hidden border-transparent bg-transparent shadow-none dark:border-transparent dark:bg-transparent"
       >
         <AssetPositionDetail
           assetKind={assetKind}
@@ -97,6 +97,7 @@ export function PortfolioAssetPositionModal({
           holding={holding}
           holdings={holdings}
           transactions={transactions}
+          chartCard
         />
       </AppModalShell>
     </AppModalOverlay>

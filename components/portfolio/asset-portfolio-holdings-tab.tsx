@@ -295,7 +295,7 @@ export function AssetPositionDetail({
   transactions: PortfolioTransaction[];
   titleSlot?: ReactNode;
   onChartDisplayChange?: (s: ChartDisplayState) => void;
-  /** Asset page Portfolio tab: portfolio switcher, range tabs and chart in one elevated card. */
+  /** Elevated cards on a page-grey backdrop: chart section in a card, borderless transactions card. */
   chartCard?: boolean;
 }) {
   const route = routeKey.trim().toUpperCase();
@@ -438,7 +438,7 @@ export function AssetPositionDetail({
           <div
             className={cn(
               "w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]",
-              SCREENER_TABLE_OUTER_BORDER_CLASS,
+              chartCard ? MOBILE_ELEVATED_CARD_CLASS : SCREENER_TABLE_OUTER_BORDER_CLASS,
               SCREENER_TABLE_MOBILE_SURFACE_CLASS,
             )}
           >
