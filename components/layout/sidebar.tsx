@@ -242,6 +242,8 @@ function SidebarRow({
 }
 
 const PORTFOLIO_GROUP_EXPANDED_KEY = "finsepa-sidebar-portfolio-expanded";
+/** Row `px-4` (16px) + half the 20px icon − half the 1px line. */
+const PORTFOLIO_GUIDE_LINE_INSET_PX = 25;
 const portfolioGroupListeners = new Set<() => void>();
 const subscribeNoop = () => () => {};
 
@@ -281,6 +283,7 @@ function SidebarPortfolioGroup({ pathname, collapsed }: { pathname: string; coll
   const hasMounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
   const expanded = useSyncExternalStore(subscribePortfolioGroupExpanded, readPortfolioGroupExpanded, () => true);
   const toggleExpanded = useCallback(() => writePortfolioGroupExpanded(!readPortfolioGroupExpanded()), []);
+  const [rowHovered, setRowHovered] = useState(false);
 
   // Portfolios hydrate from the client workspace — keep the SSR pass on the static fallback.
   const list = hasMounted ? portfolios : [];
@@ -304,7 +307,11 @@ function SidebarPortfolioGroup({ pathname, collapsed }: { pathname: string; coll
   return (
     <div className={cn(collapsed && "w-full")}>
       <CollapsedRailTooltip label="Portfolio" enabled={collapsed}>
-        <div className="group/portfolio relative flex w-full">
+        <div
+          className="relative flex w-full"
+          onPointerEnter={() => setRowHovered(true)}
+          onPointerLeave={() => setRowHovered(false)}
+        >
           <Link prefetch={false} href={href} className={rowClass} suppressHydrationWarning>
             <PieChart01 className="h-5 w-5 shrink-0 text-fg" aria-hidden />
             <span
@@ -323,7 +330,10 @@ function SidebarPortfolioGroup({ pathname, collapsed }: { pathname: string; coll
               onClick={toggleExpanded}
               aria-expanded={expanded}
               aria-label={expanded ? "Collapse Portfolio" : "Expand Portfolio"}
-              className="absolute right-1 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-lg text-fg-muted opacity-0 transition-[opacity,background-color,color] duration-200 hover:bg-[var(--fs-sidebar-nav-active)] hover:text-fg focus-visible:opacity-100 group-hover/portfolio:opacity-100"
+              onFocus={() => setRowHovered(true)}
+              onBlur={() => setRowHovered(false)}
+              className="absolute right-1 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-lg text-fg-muted transition-[opacity,background-color,color] duration-200 hover:bg-[var(--fs-sidebar-nav-active)] hover:text-fg"
+              style={{ opacity: rowHovered ? 1 : 0 }}
             >
               <ChevronDown
                 className={cn("size-3.5 transition-transform duration-200", !expanded && "-rotate-90")}
@@ -343,7 +353,10 @@ function SidebarPortfolioGroup({ pathname, collapsed }: { pathname: string; coll
           )}
         >
           <div className="min-h-0 overflow-hidden">
-            <div className="ml-[25px] mt-0.5 flex flex-col gap-0.5 border-l border-stroke py-1 pl-2.5">
+            <div
+              className="mt-0.5 flex flex-col gap-0.5 border-l border-stroke py-1 pl-2.5"
+              style={{ marginLeft: PORTFOLIO_GUIDE_LINE_INSET_PX }}
+            >
               {list.map((p) => {
                 const active = p.id === activeId;
                 return (
@@ -356,8 +369,8 @@ function SidebarPortfolioGroup({ pathname, collapsed }: { pathname: string; coll
                     className={cn(
                       "flex h-9 shrink-0 items-center truncate rounded-lg px-3 text-sm font-medium leading-5 transition-colors",
                       active
-                        ? "bg-surface text-fg shadow-card"
-                        : "text-fg-muted hover:bg-[var(--fs-sidebar-nav-active)]/70 hover:text-fg",
+                        ? "bg-[var(--fs-sidebar-nav-active)] text-fg"
+                        : "text-fg opacity-70 hover:bg-[var(--fs-sidebar-nav-active)]/70 dark:hover:bg-[var(--fs-sidebar-nav-active)] dark:hover:opacity-100",
                     )}
                   >
                     <span className="truncate">{p.name}</span>
