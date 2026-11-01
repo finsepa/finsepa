@@ -404,7 +404,7 @@ function WatchlistRailFullPageLink() {
   );
 }
 
-function WatchlistRailHideButton({ onHide }: { onHide: () => void }) {
+export function WatchlistRailHideButton({ onHide }: { onHide: () => void }) {
   return (
     <TopbarDelayedTooltip label="Hide watchlist" placement="left">
       <button

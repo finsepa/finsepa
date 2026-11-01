@@ -25,7 +25,7 @@ import { PortfolioCreateMenu } from "@/components/layout/portfolio-create-menu";
 import { FollowedSuperinvestorsCarousel } from "@/components/portfolio-home/followed-superinvestors-carousel";
 import { HomeMarketTiles } from "@/components/portfolio-home/home-market-tiles";
 import { UsMarketsSessionLabel } from "@/components/screener/us-markets-session-label";
-import { WatchlistRailScrollContent } from "@/components/layout/watchlist-rail";
+import { WatchlistRailHideButton, WatchlistRailScrollContent } from "@/components/layout/watchlist-rail";
 import { OverlayScrollArea } from "@/components/design-system/overlay-scroll-area";
 import {
   UpcomingDividendsCarousel,
@@ -729,6 +729,7 @@ function useViewportStickyAsideStyle(asideRef: RefObject<HTMLElement | null>): C
 }
 
 function HomeAsideContent() {
+  const { toggleCollapsed: hideWatchlist } = useWatchlistRailLayout();
   const {
     watchlists,
     activeWatchlistId,
@@ -837,6 +838,7 @@ function HomeAsideContent() {
                 ready={watchlistReady}
               />
             ) : null}
+            <WatchlistRailHideButton onHide={hideWatchlist} />
           </div>
         </div>
 
