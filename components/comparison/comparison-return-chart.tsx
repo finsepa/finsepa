@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { ComparisonReturnChartSkeleton } from "@/components/comparison/comparison-skeletons";
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import {
   annualReturnPctForYear,
   comparisonAnnualReturnYears,
@@ -18,6 +19,7 @@ import {
   FUNDAMENTALS_CHART_Y_AXIS_LABEL_COUNT,
 } from "@/lib/chart/fundamentals-chart-surface";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
+import { cn } from "@/lib/utils";
 
 const RETURN_CHART_PLOT_HEIGHT_PX = 288;
 const RETURN_CHART_AXIS_ROW_PX = 32;
@@ -353,7 +355,7 @@ export function ComparisonReturnChart({
   }
 
   return (
-    <section className="w-full min-w-0 max-w-full overflow-hidden bg-panel">
+    <section className={cn("w-full min-w-0 max-w-full overflow-hidden p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
       <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-fg">Return</h3>
 
       <div>
@@ -386,7 +388,8 @@ export function ComparisonReturnChart({
                   onPointerLeave={clearHover}
                 >
                   <div
-                    className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
+                    className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0"
+                    style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
                     aria-hidden
                   >
                     <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -509,8 +512,11 @@ export function ComparisonReturnChart({
                     {yTicks.map((t, i) => (
                       <span
                         key={i}
-                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-0.5 py-px"
-                        style={{ top: `${returnTickTopPercent(t, scale)}%` }}
+                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px"
+                        style={{
+                          top: `${returnTickTopPercent(t, scale)}%`,
+                          backgroundColor: "var(--fs-chart-plot-bg)",
+                        }}
                       >
                         {formatReturnAxisTick(t)}
                       </span>

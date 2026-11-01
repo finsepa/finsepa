@@ -1,5 +1,6 @@
 "use client";
 
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { SkeletonBox, LogoSkeleton } from "@/components/markets/skeleton";
 import {
   DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
@@ -117,7 +118,11 @@ export function ComparisonReturnChartSkeleton() {
   const totalH = 320;
   const plotH = 288;
   return (
-    <section className="w-full min-w-0 max-w-full overflow-x-hidden bg-surface" aria-busy="true" aria-label="Loading return chart">
+    <section
+      className={cn("w-full min-w-0 max-w-full overflow-x-hidden p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}
+      aria-busy="true"
+      aria-label="Loading return chart"
+    >
       <h3 className="mb-4 text-[18px] font-semibold leading-7 tracking-tight text-fg">Return</h3>
       <div className="px-2 sm:px-3" style={{ height: totalH }}>
         <SkeletonBox className="w-full rounded-md" style={{ height: plotH }} />
