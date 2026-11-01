@@ -425,19 +425,14 @@ export function watchlistRailReservedWidthPx(pathname: string, outerWidthPx: num
   return outerWidthPx + RAIL_CARD_INSET.left + RAIL_CARD_INSET.right;
 }
 
-/** Pages that show the shell watchlist rail (home and the full watchlist page have their own). */
+/** Pages that show the shell watchlist rail (home renders its own column; the full watchlist page is the list). */
 export function watchlistRailAvailable(pathname: string): boolean {
-  return !isFullWatchlistPage(pathname) && !isPortfolioHomePage(pathname);
+  return !isFullWatchlistPage(pathname) && pathname !== "/home";
 }
 
-/** Home has its own in-page watchlist column; the user's portfolio pages (`/home/[id]`, `/portfolio`) show none. */
-function isPortfolioHomePage(pathname: string): boolean {
-  return (
-    pathname === "/home" ||
-    pathname.startsWith("/home/") ||
-    pathname === "/portfolio" ||
-    pathname.startsWith("/portfolio/")
-  );
+/** Topbar watchlist toggle: everywhere except the full watchlist page (home toggles its own column). */
+export function watchlistToggleAvailable(pathname: string): boolean {
+  return !isFullWatchlistPage(pathname);
 }
 
 function isFullWatchlistPage(pathname: string): boolean {

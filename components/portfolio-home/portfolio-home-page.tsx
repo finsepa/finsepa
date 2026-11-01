@@ -31,7 +31,10 @@ import {
   UpcomingDividendsCarousel,
   UpcomingEarningsCarousel,
 } from "@/components/portfolio-home/upcoming-earnings-carousel";
-import { WATCHLIST_PANEL_WIDTH_PX } from "@/components/layout/watchlist-rail-layout-context";
+import {
+  useWatchlistRailLayout,
+  WATCHLIST_PANEL_WIDTH_PX,
+} from "@/components/layout/watchlist-rail-layout-context";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import {
   portfolioIsCombined,
@@ -366,6 +369,7 @@ export function PortfolioHomePage() {
   const [animateCollapse, setAnimateCollapse] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
   const asideStickyStyle = useViewportStickyAsideStyle(asideRef);
+  const { collapsed: watchlistHidden } = useWatchlistRailLayout();
 
   useEffect(() => {
     setChartCollapsed(readNetWorthChartCollapsed());
@@ -662,7 +666,10 @@ export function PortfolioHomePage() {
 
       <aside
         ref={asideRef}
-        className="flex w-full min-w-0 flex-col md:w-[var(--home-aside-w)] md:shrink-0 md:self-start md:overflow-hidden"
+        className={cn(
+          "flex w-full min-w-0 flex-col md:w-[var(--home-aside-w)] md:shrink-0 md:self-start md:overflow-hidden",
+          watchlistHidden && "md:hidden",
+        )}
         style={
           {
             "--home-aside-w": `${WATCHLIST_PANEL_WIDTH_PX}px`,

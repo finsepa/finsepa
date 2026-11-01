@@ -6,18 +6,18 @@ import {
   topbarSquircleActiveClass,
   topbarSquircleIconClass,
 } from "@/components/design-system/topbar-control-classes";
-import { watchlistRailAvailable } from "@/components/layout/watchlist-rail";
+import { watchlistToggleAvailable } from "@/components/layout/watchlist-rail";
 import { useWatchlistRailLayout } from "@/components/layout/watchlist-rail-layout-context";
 import { Star } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 import { TopbarDelayedTooltip } from "./topbar-delayed-tooltip";
 
-/** Desktop topbar toggle for the shell watchlist rail (hidden where the page has its own watchlist). */
+/** Desktop topbar toggle for the watchlist panel (shell rail, or the home page's own column). */
 export function TopbarWatchlistButton() {
   const pathname = usePathname();
   const { collapsed, toggleCollapsed } = useWatchlistRailLayout();
-  if (!watchlistRailAvailable(pathname)) return null;
+  if (!watchlistToggleAvailable(pathname)) return null;
 
   const label = collapsed ? "Show watchlist" : "Hide watchlist";
   return (
