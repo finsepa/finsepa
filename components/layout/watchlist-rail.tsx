@@ -386,7 +386,9 @@ export function WatchlistRailScrollContent({
 /** Rail card insets inside the shell: 4px left keeps the card shadow unclipped, 36px right matches the topbar gutter. */
 const RAIL_CARD_INSET = { top: 20, right: 36, bottom: 20, left: 4 } as const;
 
-const watchlistRailSurfaceClass = cn("flex min-h-0 flex-col overflow-hidden", MOBILE_ELEVATED_CARD_CLASS);
+/** Header icon buttons above the open rail card — same as the home watchlist header. */
+const RAIL_HEADER_ICON_BUTTON_CLASS =
+  "flex size-8 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15";
 
 function WatchlistRailFullPageLink() {
   return (
@@ -395,9 +397,9 @@ function WatchlistRailFullPageLink() {
         href="/watchlist"
         prefetch={false}
         aria-label="Open full watchlist"
-        className={shellChromeToggleButtonClass}
+        className={RAIL_HEADER_ICON_BUTTON_CLASS}
       >
-        <Maximize2 className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+        <Maximize2 className="size-4" strokeWidth={2} aria-hidden />
       </Link>
     </TopbarDelayedTooltip>
   );
@@ -418,10 +420,10 @@ function WatchlistRailToggle({
         onClick={onToggle}
         aria-expanded={expanded}
         aria-label={label}
-        className={cn(shellChromeToggleButtonClass, !expanded && "rounded-full")}
+        className={expanded ? RAIL_HEADER_ICON_BUTTON_CLASS : cn(shellChromeToggleButtonClass, "rounded-full")}
       >
         {expanded ? (
-          <PanelLeftOpen className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
+          <PanelLeftOpen className="size-4" strokeWidth={2} aria-hidden />
         ) : (
           <Star className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden />
         )}
@@ -518,56 +520,41 @@ export function WatchlistRail() {
       }}
       aria-label="Watchlist panel"
     >
-      <div
-        suppressHydrationWarning
-        className={cn(watchlistRailSurfaceClass, expanded ? "h-full" : "size-9 shrink-0 self-start rounded-full border-0")}
-        style={expanded ? { width: `${WATCHLIST_PANEL_WIDTH_PX}px` } : undefined}
-      >
+      {expanded ? (
         <div
-          className={cn(
-            "flex shrink-0 items-center",
-            expanded ? "justify-between gap-2 px-2 pl-3 pr-2 pt-2" : "size-full justify-center",
-          )}
+          suppressHydrationWarning
+          className="flex h-full min-h-0 shrink-0 flex-col"
+          style={{ width: `${WATCHLIST_PANEL_WIDTH_PX}px` }}
         >
-          {expanded ? (
-            <>
-              {mounted && storageHydrated ? (
-                <WatchlistOptionsMenu
-                  name={activeWatchlistName}
-                  watchlists={watchlists}
-                  activeWatchlistId={activeWatchlistId}
-                  onCreate={createWatchlist}
-                  onCreateSection={createActiveSection}
-                  onRename={renameActiveWatchlist}
-                  onDelete={deleteActiveWatchlist}
-                  onSwitch={switchWatchlist}
-                  variant="rail-title"
-                  className="min-w-0 flex-1"
-                  ready={storageHydrated}
-                  countBadge={freeWatchlistCountBadge}
-                />
-              ) : (
-                <WatchlistRailTitleSkeleton />
-              )}
+          <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
+            {mounted && storageHydrated ? (
+              <WatchlistOptionsMenu
+                name={activeWatchlistName}
+                watchlists={watchlists}
+                activeWatchlistId={activeWatchlistId}
+                onCreate={createWatchlist}
+                onCreateSection={createActiveSection}
+                onRename={renameActiveWatchlist}
+                onDelete={deleteActiveWatchlist}
+                onSwitch={switchWatchlist}
+                variant="rail-title"
+                className="min-w-0"
+                titleClassName="gap-1 pl-0 text-[15px] leading-6 text-fg"
+                ready={storageHydrated}
+                countBadge={freeWatchlistCountBadge}
+              />
+            ) : (
+              <WatchlistRailTitleSkeleton />
+            )}
+            <div className="flex shrink-0 items-center gap-0.5">
               <WatchlistRailFullPageLink />
               <WatchlistRailToggle expanded={expanded} onToggle={toggleCollapsed} />
-            </>
-          ) : (
-            <span className="sr-only">Watchlist</span>
-          )}
-          {!expanded ? <WatchlistRailToggle expanded={expanded} onToggle={toggleCollapsed} /> : null}
-        </div>
-
-        <div
-          className={cn(
-            "grid min-h-0 flex-1 transition-[grid-template-rows] duration-[280ms] ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none",
-            expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-          )}
-        >
-          <div className="flex min-h-0 h-full flex-col overflow-hidden">
+            </div>
+          </div>
+          <div className={cn("flex min-h-0 flex-col overflow-hidden p-2", MOBILE_ELEVATED_CARD_CLASS)}>
             <DropdownScrollArea
               className={cn(
-                "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain overscroll-x-hidden px-1 pb-2",
+                "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain overscroll-x-hidden",
                 panelOverlayScrollGutterClassName,
               )}
               wheelIsolation
@@ -597,7 +584,14 @@ export function WatchlistRail() {
             </DropdownScrollArea>
           </div>
         </div>
-      </div>
+      ) : (
+        <div
+          suppressHydrationWarning
+          className={cn(MOBILE_ELEVATED_CARD_CLASS, "size-9 shrink-0 self-start overflow-hidden rounded-full border-0")}
+        >
+          <WatchlistRailToggle expanded={expanded} onToggle={toggleCollapsed} />
+        </div>
+      )}
     </div>
   );
 }
