@@ -100,7 +100,7 @@ export function Topbar({
         <header
           suppressHydrationWarning
           className={cn(
-            "flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:bg-transparent max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:gap-3 md:px-4 md:py-3",
+            "flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:bg-transparent max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:gap-3 md:px-9 md:py-3",
             SHELL_DESKTOP_PANEL_BG_MD_CLASS,
             headerRouteChromeClass,
           )}
