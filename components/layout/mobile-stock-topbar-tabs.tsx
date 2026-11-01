@@ -1,12 +1,14 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 
 import { UnderlineTabs } from "@/components/screener/market-tabs";
 import { useStockDetailTabHost } from "@/components/stock/stock-detail-tab-host-context";
 import { parseStockDetailTabQuery, type StockDetailTabId } from "@/lib/stock/stock-detail-tab";
 import { stockDetailTabItemsFor } from "@/lib/stock/stock-etf";
+
+const subscribeNoop = () => () => {};
 
 /** Stock section tabs in the fixed mobile top bar — matches {@link MobileMarketsTopbarTabs} on `/screener`. */
 export function MobileStockTopbarTabs() {
@@ -19,8 +21,11 @@ export function MobileStockTopbarTabs() {
     () => parseStockDetailTabQuery(searchParams.get("tab")) ?? "overview",
     [searchParams],
   );
-  const activeTab = registration?.activeTab ?? urlTab;
-  const isEtf = registration?.isEtf ?? false;
+  // This Suspense-wrapped bar can hydrate after the page registered itself; keep the hydration pass equal to SSR.
+  const hydrated = useSyncExternalStore(subscribeNoop, () => true, () => false);
+  const hostRegistration = hydrated ? registration : null;
+  const activeTab = hostRegistration?.activeTab ?? urlTab;
+  const isEtf = hostRegistration?.isEtf ?? false;
 
   const tabOptions = useMemo(() => {
     const items = stockDetailTabItemsFor(isEtf);
