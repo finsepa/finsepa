@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
 import type { StockProfilePayload } from "@/lib/market/stock-profile-types";
 import { withLogoDevTheme } from "@/lib/screener/company-logo-url";
@@ -9,6 +10,7 @@ import { mapProviderSectorToCanonical } from "@/lib/screener/screener-gics-secto
 import { screenerIndustryDrillHref } from "@/lib/screener/screener-industry-url";
 import { screenerSectorCompaniesHref } from "@/lib/screener/screener-sector-url";
 import { useLogoDevTheme } from "@/lib/theme/use-logo-dev-theme";
+import { cn } from "@/lib/utils";
 
 function dash(v: string | null | undefined): string {
   return v != null && String(v).trim() !== "" ? String(v).trim() : "—";
@@ -176,7 +178,7 @@ export function StockProfileTab({ ticker, initialProfile }: { ticker: string; in
   const p = profile;
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-5">
+    <div className={cn("flex w-full min-w-0 flex-col gap-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
       {loading ? (
         <>
           <div className="flex justify-start" aria-hidden>
