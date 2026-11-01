@@ -100,7 +100,7 @@ export async function MarketNewsPage({
               name="q"
               defaultValue={q}
               placeholder="Search..."
-              className={cn(textInputFieldClassName, "w-full min-w-0 rounded-full pl-10 pr-3 placeholder:text-fg-subtle")}
+              className={cn(textInputFieldClassName, "w-full min-w-0 rounded-full bg-button pl-10 pr-3 placeholder:text-fg-subtle")}
               aria-label="Search news"
             />
           </div>
