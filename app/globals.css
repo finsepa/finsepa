@@ -9,12 +9,12 @@
    * Dark mode: override the same names under `.dark` (see docs/DARK-MODE-TOKENS.md).
    * Prefer Tailwind utilities: bg-page, text-fg, border-stroke, etc.
    */
-  --fs-page: #f3f3f4;
-  --fs-canvas: #fafafa;
-  --fs-panel: #fcfcfd;
+  --fs-page: #f2f2f2;
+  --fs-canvas: #f2f2f2;
+  --fs-panel: #f2f2f2;
   /** Left navigation rail fill — separate from page wash / main panel. */
-  --fs-nav: #f3f3f4;
-  --fs-surface: #ffffff;
+  --fs-nav: #f2f2f2;
+  --fs-surface: #fafafa;
   /** Outline / white-chrome controls (topbar squircles, Customize, chips). */
   --fs-button: #ffffff;
   /** Modal dialog fill (legacy). */
@@ -116,9 +116,9 @@
   --fs-skeleton: #f4f4f5;
   --fs-skeleton-shimmer: color-mix(in srgb, var(--fs-surface) 75%, transparent);
   /** Comma-separated RGB for rgba(var(--fs-*-rgb), a) washes / skeleton. */
-  --fs-canvas-rgb: 250, 250, 250;
+  --fs-canvas-rgb: 242, 242, 242;
   --fs-stroke-rgb: 228, 228, 231;
-  --fs-surface-rgb: 255, 255, 255;
+  --fs-surface-rgb: 250, 250, 250;
   --fs-shadow-rgb: 10, 10, 10;
   /** Shadow alphas — dark raises these so elevation stays visible on black. */
   --fs-shadow-a-03: 0.03;

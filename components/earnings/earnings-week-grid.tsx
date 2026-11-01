@@ -277,7 +277,7 @@ function EarningsListRow({
 
 /** Day column — screener/table card chrome (stroke + light shadow). */
 const EARNINGS_WEEK_DAY_CARD_CLASS =
-  "flex w-[min(100%,220px)] shrink-0 flex-col rounded-2xl border border-stroke-subtle bg-surface px-2 pt-1 pb-3 shadow-card md:min-h-0 md:flex-1 md:shrink md:px-0 md:py-0";
+  "flex w-[min(100%,220px)] shrink-0 flex-col rounded-2xl border border-transparent bg-surface px-2 pt-1 pb-3 shadow-card md:min-h-0 md:flex-1 md:shrink md:px-0 md:py-0";
 
 /** Horizontal gap between day cards (12px). No outer shell — cards sit on the panel. */
 const EARNINGS_WEEK_DAY_GAP_CLASS =
@@ -759,7 +759,7 @@ function EarningsWeekGridSkeleton({
 const EARNINGS_DAY_TABLE_PAGE_SIZE = 50;
 
 const EARNINGS_PANEL_CARD_CLASS =
-  "rounded-2xl border border-stroke-subtle bg-surface shadow-card";
+  "rounded-2xl border border-transparent bg-surface shadow-card";
 
 /** Day view — one table for the selected day. */
 function EarningsDayTable({

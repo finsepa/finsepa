@@ -64,7 +64,7 @@ const MACRO_WORKSPACE_CHART_HEIGHT_PX = 420;
 
 /** Same white card chrome as Charting / Comparison {@link CompanyRailCard}. */
 const macroRailCardClass =
-  "flex w-full flex-col overflow-hidden rounded-2xl border border-stroke-subtle bg-surface shadow-card";
+  "flex w-full flex-col overflow-hidden rounded-2xl border border-transparent bg-surface shadow-card";
 
 const macroRailBodyClass =
   "flex max-h-[calc(100dvh-5rem)] flex-col overflow-y-auto overscroll-y-contain p-2";
