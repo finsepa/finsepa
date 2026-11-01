@@ -33,7 +33,7 @@ export function StockDetailTabNav({
   isEtf?: boolean;
   /** Off on Financials so the statement year row can stick to the top of the scroll area. */
   sticky?: boolean;
-  /** Pill tabs inside their own card: sliding grey pill instead of the underline, no gutter bleed or stickiness. */
+  /** Inside the asset hero card: no page-gutter bleed, panel fill or stickiness. */
   embedded?: boolean;
 }) {
   const tabs = useMemo(() => stockDetailTabItemsFor(isEtf), [isEtf]);
@@ -109,13 +109,11 @@ export function StockDetailTabNav({
         sticky && !embedded ? `sticky top-0 z-40 max-md:top-[var(--mobile-topbar-offset)] ${shellClassName}` : shellClassName
       }
     >
-      <div className={cn("min-w-0", !embedded && "border-b border-solid border-stroke")}>
+      <div className="min-w-0 border-b border-solid border-stroke">
         <nav
           ref={navRef}
           className={cn(
-            embedded
-              ? "relative flex min-w-0 flex-nowrap items-start gap-1 overflow-x-auto overflow-y-hidden overscroll-x-contain"
-              : "relative -mx-1 flex min-w-0 flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-px sm:mx-0 sm:gap-5",
+            "relative -mx-1 flex min-w-0 flex-nowrap items-start gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain pb-px sm:mx-0 sm:gap-5",
             "[-webkit-overflow-scrolling:touch]",
             horizontalOverlayScrollbarClassName,
             scrollbarVisible && horizontalOverlayScrollbarActiveClassName,
@@ -138,10 +136,8 @@ export function StockDetailTabNav({
                 onPointerEnter={() => onTabIntent?.(id)}
                 onFocus={() => onTabIntent?.(id)}
                 className={cn(
-                  embedded
-                    ? "relative z-[1] inline-flex h-9 shrink-0 cursor-pointer items-center whitespace-nowrap rounded-full px-4 text-[14px] font-medium leading-5 text-fg transition-[color,opacity] duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 hover:opacity-80"
-                    : "-mb-px inline-flex h-9 shrink-0 cursor-pointer items-center whitespace-nowrap border-b-2 border-solid border-transparent text-left text-[14px] font-medium leading-5 text-fg transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2 hover:opacity-80",
-                  isActive ? (embedded ? "opacity-100" : "font-semibold opacity-100") : embedded ? "opacity-60" : "opacity-70",
+                  "-mb-px inline-flex h-9 shrink-0 cursor-pointer items-center whitespace-nowrap border-b-2 border-solid border-transparent text-left text-[14px] font-medium leading-5 text-fg transition-[color,opacity] duration-100 focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2 hover:opacity-80",
+                  isActive ? "font-semibold opacity-100" : "opacity-70",
                 )}
               >
                 {label}
@@ -149,14 +145,10 @@ export function StockDetailTabNav({
             );
           })}
           <span
-            className={cn(
-              "pointer-events-none absolute rounded-full motion-reduce:transition-none",
-              embedded ? "top-0 z-0 h-9" : "bottom-0 z-[1] h-0.5 bg-fg",
-            )}
+            className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-fg motion-reduce:transition-none"
             style={{
               left: indicator.left,
               width: indicator.width,
-              backgroundColor: embedded ? "color-mix(in srgb, var(--fs-fg) 7%, transparent)" : undefined,
               transitionProperty: "left, width",
               transitionDuration: `${TAB_MOTION_MS}ms`,
               transitionTimingFunction: TAB_MOTION_EASE,
