@@ -24,9 +24,10 @@ export function StockTabs({
               onClick={() => onTabChange(tab)}
               className={`shrink-0 py-2 text-[14px] leading-6 cursor-pointer transition-colors whitespace-nowrap ${
                 isActive
-                  ? "font-semibold text-fg border-b-[3px] border-fg -mb-px"
+                  ? "font-semibold text-fg border-b-2 border-fg -mb-px"
                   : "font-normal text-fg-muted hover:text-fg border-b-2 border-transparent -mb-px"
               }`}
+              style={{ borderBottomWidth: 3 }}
             >
               {tab}
             </button>

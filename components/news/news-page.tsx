@@ -77,12 +77,17 @@ export function NewsPage() {
                 type="button"
                 onClick={() => setTab(t.id)}
                 className={`relative py-2 text-[14px] leading-6 font-medium transition-colors duration-100 ${
-                  active
-                    ? "text-fg after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:bg-fg after:content-['']"
-                    : "text-fg-muted hover:text-fg"
+                  active ? "text-fg" : "text-fg-muted hover:text-fg"
                 }`}
               >
                 {t.label}
+                {active ? (
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 bottom-0 rounded-full bg-fg"
+                    style={{ height: 3 }}
+                  />
+                ) : null}
               </button>
             );
           })}
