@@ -5,7 +5,6 @@ import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { Search, X } from "@/lib/icons";
 
-import { textInputActiveRingClassName, textInputShellClassName } from "@/components/design-system/text-input-styles";
 import { dropdownMenuSurfaceClassName } from "@/components/design-system/dropdown-menu-styles";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { TopbarDropdownPortal } from "@/components/layout/topbar-dropdown-portal";
@@ -154,9 +153,9 @@ export function TopbarSearch() {
         data-open={open ? "true" : "false"}
         className={cn(
           "relative flex h-9 min-w-0 w-full cursor-text items-center overflow-hidden rounded-full pl-3 pr-3",
-          textInputShellClassName,
+          "border border-transparent bg-surface shadow-card outline-none transition-[background-color,box-shadow]",
           "motion-reduce:transition-none",
-          open && textInputActiveRingClassName,
+          open && "shadow-[0_0_0_2px_var(--fs-field-ring),var(--fs-card-shadow)]",
         )}
         style={motionStyle}
         onPointerDown={handleSearchShellPointerDown}
