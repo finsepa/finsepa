@@ -66,7 +66,7 @@ export function ScreenerIndustriesTable({
         className={cn(
           "px-4 py-6 text-center text-[14px] leading-6 text-fg-muted",
           !embeddedInMobileCard &&
-            "rounded-2xl border border-transparent bg-surface shadow-card",
+            "rounded-2xl border border-transparent bg-surface shadow-card [--fs-chart-plot-bg:var(--fs-surface)]",
         )}
       >
         No industry data is available for the current screener list.

@@ -154,6 +154,18 @@ export function chartMarkerDiscFillColor(): string {
   return resolveFsColor("--fs-panel");
 }
 
+/**
+ * Plot backdrop behind a chart mounted in `el` — `--fs-chart-plot-bg` (card fill inside cards, panel
+ * elsewhere). Canvas options need a resolved color, so read it from the chart's own container.
+ */
+export function chartPlotBackdropColor(el: Element | null | undefined): string {
+  if (el && typeof window !== "undefined") {
+    const v = getComputedStyle(el).getPropertyValue("--fs-chart-plot-bg").trim();
+    if (v) return v;
+  }
+  return chartMarkerDiscFillColor();
+}
+
 /** Snapshot of chart-facing semantic colors for the active theme. */
 export function chartFsColors() {
   return {

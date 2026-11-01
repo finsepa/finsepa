@@ -21,13 +21,14 @@ import {
 export const FUNDAMENTALS_CHART_HOVER_BAND_BG = "rgba(59, 130, 246, 0.14)";
 
 /**
- * Chart plot canvas — matches shell main panel (`bg-panel` / `--fs-panel`).
+ * Chart plot canvas — `--fs-chart-plot-bg`: the shell panel by default, the card fill inside cards
+ * (set by `CARD_CHROME_CLASS`).
  * Use for backdrop fills and Y-axis label chips that sit on the plot.
  */
-export const CHART_PLOT_BACKGROUND = "var(--fs-panel)";
-export const CHART_PLOT_BACKGROUND_CLASS = "bg-panel";
-export const CHART_PLOT_BACKGROUND_FAINT_CLASS = "bg-panel/55";
-export const CHART_PLOT_BACKGROUND_LABEL_CLASS = "bg-panel";
+export const CHART_PLOT_BACKGROUND = "var(--fs-chart-plot-bg)";
+export const CHART_PLOT_BACKGROUND_CLASS = "bg-[var(--fs-chart-plot-bg)]";
+export const CHART_PLOT_BACKGROUND_FAINT_CLASS = "bg-[color-mix(in_srgb,var(--fs-chart-plot-bg)_55%,transparent)]";
+export const CHART_PLOT_BACKGROUND_LABEL_CLASS = "bg-[var(--fs-chart-plot-bg)]";
 
 /** Hollow point markers on fundamentals line charts (Key Stats modal / Multichart line). */
 export const CHARTING_LINE_POINT_MARKER_RADIUS_PX = 4.5;

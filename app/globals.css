@@ -105,8 +105,10 @@
   --fs-orange-soft: #ffedd5;
   /** Left nav active pill — light #E6E6E6; dark matches `--fs-surface-subtle`. */
   --fs-sidebar-nav-active: #e6e6e6;
-  /** Chart plot dot grid (radial pattern) — keep subtle on panel. */
-  --fs-chart-dot: rgba(228, 228, 231, 0.42);
+  /** Chart plot dot grid (radial pattern) — subtle on the panel and on off-white cards. */
+  --fs-chart-dot: rgba(212, 212, 216, 0.55);
+  /** Chart plot backdrop — shell panel by default; cards override with their own fill. */
+  --fs-chart-plot-bg: var(--fs-panel);
   /** Chart brand watermark (“Finsepa”) behind series. */
   --fs-chart-watermark: rgba(161, 161, 170, 0.2);
   /** Chart loading area shape (minimal skeleton). */
@@ -466,8 +468,8 @@
       ellipse 50% 64% at 50% 50%,
       transparent 0%,
       transparent 30%,
-      var(--fs-panel) 88%,
-      var(--fs-panel) 100%
+      var(--fs-chart-plot-bg) 88%,
+      var(--fs-chart-plot-bg) 100%
     ),
     radial-gradient(circle, var(--fs-chart-dot) 1px, transparent 1px);
 }
@@ -482,7 +484,7 @@
       ellipse 52% 72% at 50% 50%,
       transparent 0%,
       transparent 38%,
-      var(--fs-panel) 100%
+      var(--fs-chart-plot-bg) 100%
     ),
     radial-gradient(circle, var(--fs-chart-dot) 1px, transparent 1px);
   background-size: 100% 100%, 8px 8px;

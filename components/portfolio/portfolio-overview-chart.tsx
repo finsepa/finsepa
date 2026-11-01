@@ -1,6 +1,6 @@
 "use client";
 
-import { chartMarkerDiscFillColor, resolveFsColor } from "@/lib/theme/resolve-fs-color";
+import { chartPlotBackdropColor, resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import {
   memo,
   useCallback,
@@ -256,12 +256,12 @@ function overviewTooltipValue(
   return { valueLabel, valueTone };
 }
 
-function overlayLineCrosshairOptions(color: string, visible: boolean) {
+function overlayLineCrosshairOptions(color: string, visible: boolean, discFill: string) {
   return {
     crosshairMarkerVisible: visible,
     crosshairMarkerRadius: 5,
     crosshairMarkerBorderColor: color,
-    crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
+    crosshairMarkerBackgroundColor: discFill,
     crosshairMarkerBorderWidth: 2,
   } as const;
 }
@@ -2508,7 +2508,7 @@ export function PortfolioValueHistoryChartPane({
       crosshairMarkerVisible: true,
       crosshairMarkerRadius: 5,
       crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
-      crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
+      crosshairMarkerBackgroundColor: chartPlotBackdropColor(el),
       crosshairMarkerBorderWidth: 2,
     } as const;
 
@@ -2528,7 +2528,7 @@ export function PortfolioValueHistoryChartPane({
           crosshairMarkerVisible: true,
           crosshairMarkerRadius: 5,
           crosshairMarkerBorderColor: resolveFsColor("--fs-accent"),
-          crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
+          crosshairMarkerBackgroundColor: chartPlotBackdropColor(el),
           crosshairMarkerBorderWidth: 2,
         });
         })()
@@ -3126,7 +3126,7 @@ export function PortfolioValueHistoryChartPane({
             lastValueVisible: o.visible,
             color: o.color,
             visible: o.visible,
-            ...overlayLineCrosshairOptions(o.color, o.visible),
+            ...overlayLineCrosshairOptions(o.color, o.visible, chartPlotBackdropColor(wrapRef.current)),
           });
           overlaySeriesRefs.current.set(o.id, s);
           lastPointMarkersRef.current.overlays.set(
@@ -3139,7 +3139,7 @@ export function PortfolioValueHistoryChartPane({
             visible: o.visible,
             lastValueVisible: o.visible,
             lastPriceAnimation: LastPriceAnimationMode.Disabled,
-            ...overlayLineCrosshairOptions(o.color, o.visible),
+            ...overlayLineCrosshairOptions(o.color, o.visible, chartPlotBackdropColor(wrapRef.current)),
           });
         }
         if (!o.visible) {
@@ -3431,7 +3431,7 @@ export function PortfolioValueHistoryChartPane({
                       height: GOAL_ACHIEVEMENT_DOT_PX,
                       left: dot.xPx - GOAL_ACHIEVEMENT_DOT_HALF,
                       top: dot.yPx - GOAL_ACHIEVEMENT_DOT_HALF,
-                      backgroundColor: chartMarkerDiscFillColor(),
+                      backgroundColor: "var(--fs-chart-plot-bg)",
                       border: `2px solid ${dot.color}`,
                     }}
                   />
