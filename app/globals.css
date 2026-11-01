@@ -388,7 +388,7 @@
   --fs-orange-soft: #322817;
   --fs-sidebar-nav-active: #1a1a1a;
   /** Plot backdrop dots — slightly stronger than “barely there” so they read on black panel. */
-  --fs-chart-dot: rgba(255, 255, 255, 0.095);
+  --fs-chart-dot: rgba(0, 0, 0, 0.6);
   /** Quieter watermark on dark panel (muted fg, low alpha). */
   --fs-chart-watermark: rgba(144, 144, 144, 0.08);
   /** Soft lift above panel — quieter than surface-muted. */
