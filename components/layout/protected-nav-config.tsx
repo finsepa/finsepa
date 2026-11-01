@@ -7,7 +7,7 @@ import {
   Globe01,
   Globe04,
   Grid01,
-  Home01,
+  Home05,
   Rows01,
   Users01,
   type AppIcon,
@@ -32,7 +32,7 @@ export type ProtectedNavItem = {
 /** Post-signup home — net worth overview; portfolios (`/home/[id]`) live under the sidebar Portfolio group. */
 export const protectedPortfolioHomeItem: ProtectedNavItem = {
   label: "Home",
-  icon: Home01,
+  icon: Home05,
   href: "/home",
   available: true,
 };

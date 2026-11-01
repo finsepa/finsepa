@@ -11,7 +11,7 @@ export {
   Globe01,
   Globe04,
   Grid01,
-  Home01,
+  Home05,
   IntersectCircle,
   NavigationPointer01,
   PieChart01,
