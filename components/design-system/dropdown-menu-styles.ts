@@ -92,7 +92,7 @@ export const dropdownMenuMobileSheetStripPanelClassName =
   "[&>*]:!rounded-none [&>*]:!border-0 [&>*]:!bg-transparent [&>*]:!shadow-none [&>*]:!backdrop-blur-none [&>*]:!backdrop-saturate-100";
 
 const plainItemBase =
-  "flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-lg bg-transparent px-4 py-2 text-left text-sm font-normal leading-5 text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10";
+  "flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-full bg-transparent px-4 py-2 text-left text-sm font-normal leading-5 text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10";
 
 /**
  * Single-line option (~40px): surface row; use `dropdownMenuPlainItemRowClassName` when showing a trailing check.
@@ -119,7 +119,7 @@ export function dropdownMenuPlainItemRowClassName(opts?: { selected?: boolean })
  * Row with split hit targets (e.g. portfolio label + edit icon).
  */
 export const dropdownMenuCompositeRowClassName =
-  "flex min-h-12 w-full items-center gap-0 overflow-hidden rounded-lg bg-transparent text-sm text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover";
+  "flex min-h-12 w-full items-center gap-0 overflow-hidden rounded-full bg-transparent text-sm text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover";
 
 /**
  * Searchable menus — slightly denser two-line rows (company / metric pickers).

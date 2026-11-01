@@ -309,7 +309,7 @@ export function AgentChatHistoryHeader({
                           type="button"
                           role="menuitem"
                           className={cn(
-                            "flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm leading-5 text-fg",
+                            "flex min-w-0 flex-1 items-center gap-2 rounded-full px-3 py-2 text-left text-sm leading-5 text-fg",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10",
                           )}
                           onClick={() => {
