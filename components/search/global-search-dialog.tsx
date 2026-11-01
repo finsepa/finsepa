@@ -14,7 +14,7 @@ import {
   searchResultCategoryLabel,
 } from "@/components/search/search-result-row";
 import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
-import { SecondaryTabs } from "@/components/ui/secondary-tabs";
+import { TabSwitcher } from "@/components/design-system";
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { seedPendingAssetShellFromSearchItem } from "@/lib/navigation/seed-pending-asset-shell-from-search";
@@ -498,13 +498,19 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
                 </button>
               ) : null}
             </div>
-            <SecondaryTabs
-              className="min-w-0"
-              aria-label="Search list"
-              value={tab}
-              onValueChange={setTab}
-              items={[{ id: ALL_TAB, label: "All" }, ...watchlists.map((l) => ({ id: l.id, label: l.name }))]}
-            />
+            <div className="min-w-0 overflow-x-auto [scrollbar-width:none]">
+              <TabSwitcher
+                size="sm"
+                className="inline-flex w-max flex-nowrap"
+                aria-label="Search list"
+                value={tab}
+                onChange={setTab}
+                options={[
+                  { value: ALL_TAB, label: "All" },
+                  ...watchlists.map((l) => ({ value: l.id, label: l.name })),
+                ]}
+              />
+            </div>
           </div>
 
           <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", MOBILE_ELEVATED_CARD_CLASS)}>
