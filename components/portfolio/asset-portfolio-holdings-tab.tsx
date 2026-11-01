@@ -9,6 +9,7 @@ import type { ChartDisplayState, HoldingsTradeTooltipItem } from "@/components/c
 import { PriceChart } from "@/components/chart/PriceChart";
 import { ChartControls } from "@/components/stock/chart-controls";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import {
   DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_DATA_ROW_CLASS,
@@ -267,6 +268,7 @@ export function AssetPortfolioHoldingsTab({
       transactions={transactions}
       titleSlot={portfolioTitleSlot}
       onChartDisplayChange={onChartDisplayChange}
+      chartCard
     />
   );
 }
@@ -280,6 +282,7 @@ export function AssetPositionDetail({
   transactions,
   titleSlot,
   onChartDisplayChange,
+  chartCard = false,
 }: {
   assetKind: "stock" | "crypto";
   routeKey: string;
@@ -289,6 +292,8 @@ export function AssetPositionDetail({
   transactions: PortfolioTransaction[];
   titleSlot?: ReactNode;
   onChartDisplayChange?: (s: ChartDisplayState) => void;
+  /** Asset page Portfolio tab: portfolio switcher, range tabs and chart in one elevated card. */
+  chartCard?: boolean;
 }) {
   const route = routeKey.trim().toUpperCase();
   const [holdingsChartRange, setHoldingsChartRange] = useState<StockChartRange>("1Y");
@@ -363,13 +368,13 @@ export function AssetPositionDetail({
 
   return (
     <div className="space-y-5">
-      <section className="space-y-4">
+      <section className={cn("space-y-4", chartCard && cn("p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS))}>
         <ChartControls
           activeRange={holdingsChartRange}
           onRangeChange={setHoldingsChartRange}
           titleSlot={titleSlot}
         >
-          <div className="overflow-visible rounded-[12px] bg-panel">
+          <div className={cn("overflow-visible", !chartCard && "rounded-[12px] bg-panel")}>
             <PriceChart
               kind={assetKind}
               symbol={route}
