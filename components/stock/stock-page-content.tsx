@@ -176,7 +176,7 @@ function buildInitialSessionHeaderUi(
   );
 }
 
-/** Asset header card; the tab bar sits in its own pill card below. */
+/** Asset header card with the pill tab bar along its bottom. */
 const STOCK_HERO_CARD_CLASS = cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS);
 
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
@@ -1301,9 +1301,7 @@ export function StockPageContent({
         </div>
       ) : null}
 
-      </div>
-
-      <div className={cn(MOBILE_ELEVATED_CARD_CLASS, "rounded-full max-md:hidden")} style={{ padding: 6 }}>
+      <div className="max-md:hidden">
         <StockDetailTabNav
           activeTab={displayTab}
           onTabChange={handleTabChange}
@@ -1312,6 +1310,7 @@ export function StockPageContent({
           sticky={displayTab !== "financials"}
           embedded
         />
+      </div>
       </div>
 
       {/*
