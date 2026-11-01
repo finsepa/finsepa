@@ -176,8 +176,8 @@ function buildInitialSessionHeaderUi(
   );
 }
 
-/** Breadcrumbs and header share one elevated card. */
-const STOCK_HERO_CARD_CLASS = cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS);
+/** Breadcrumbs, header and tab bar share one elevated card; the tab underline sits on its bottom edge. */
+const STOCK_HERO_CARD_CLASS = cn("space-y-5 p-4 sm:p-5 md:pb-0", MOBILE_ELEVATED_CARD_CLASS);
 
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
 const OFFSCREEN_PRICE_CHART =
@@ -1301,9 +1301,7 @@ export function StockPageContent({
         </div>
       ) : null}
 
-      </div>
-
-      <div className={cn("px-5 py-1 max-md:hidden", MOBILE_ELEVATED_CARD_CLASS)}>
+      <div className="max-md:hidden">
         <StockDetailTabNav
           activeTab={displayTab}
           onTabChange={handleTabChange}
@@ -1312,6 +1310,7 @@ export function StockPageContent({
           sticky={displayTab !== "financials"}
           embedded
         />
+      </div>
       </div>
 
       {/*
