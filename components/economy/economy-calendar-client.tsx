@@ -687,6 +687,7 @@ export function EconomyCalendarClient({
               options={IMPACT_OPTIONS}
               truncateLabel={false}
               className="w-max shrink-0"
+              triggerClassName="bg-button"
             />
             <FormListboxSelect
               aria-label="Timezone"
@@ -695,6 +696,7 @@ export function EconomyCalendarClient({
               options={tzOptions}
               truncateLabel={false}
               className="w-max shrink-0"
+              triggerClassName="bg-button"
             />
             <FormListboxSelect
               aria-label="Country"
@@ -710,6 +712,7 @@ export function EconomyCalendarClient({
               truncateLabel={false}
               truncateOptions={false}
               className="w-max shrink-0"
+              triggerClassName="bg-button"
             />
           </div>
 
@@ -753,6 +756,7 @@ export function EconomyCalendarClient({
             options={IMPACT_OPTIONS}
             truncateLabel={false}
             className="w-full"
+            triggerClassName="bg-button"
           />
           <FormListboxSelect
             aria-label="Timezone"
@@ -761,6 +765,7 @@ export function EconomyCalendarClient({
             options={tzOptions}
             truncateLabel={false}
             className="w-full"
+            triggerClassName="bg-button"
           />
           <FormListboxSelect
             aria-label="Country"
@@ -776,6 +781,7 @@ export function EconomyCalendarClient({
             truncateLabel={false}
             truncateOptions={false}
             className="w-full"
+            triggerClassName="bg-button"
           />
         </div>
       )}
