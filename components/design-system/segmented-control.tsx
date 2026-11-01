@@ -28,9 +28,9 @@ export type SegmentedControlOption<T extends string = string> = {
 
 export type SegmentedControlSize = "sm" | "md";
 
-const RADIUS = "rounded-[10px]";
+const RADIUS = "rounded-full";
 /** Active thumb sits inside track pad — 2px tighter than the track. */
-const ACTIVE_RADIUS = "rounded-[8px]";
+const ACTIVE_RADIUS = "rounded-full";
 const TRACK_PAD = "p-px";
 
 /** Active thumb — light: same border + shadow as outline buttons; dark: fill + shadow, no stroke. */

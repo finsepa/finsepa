@@ -100,7 +100,7 @@ export function EmailOtpAuthForm({
         <button
           type="button"
           aria-label="Back"
-          className="-ml-1 inline-flex size-9 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg disabled:opacity-50"
+          className="-ml-1 inline-flex size-9 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg disabled:opacity-50"
           disabled={busy}
           onClick={goBackToEmail}
         >

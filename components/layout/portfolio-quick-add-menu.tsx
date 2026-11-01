@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 type ActivityItemId = "trade" | "cash" | "connectBrokerage" | "import";
 type ManageItemId = "edit" | "delete";
 
-const PRIMARY_TRIGGER_CLASS = `flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-stroke-muted bg-fg text-surface ${whiteSurfaceButtonShadowClass} ${primaryButtonGradientStrokeClass} transition-opacity duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15`;
+const PRIMARY_TRIGGER_CLASS = `flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stroke-muted bg-fg text-surface ${whiteSurfaceButtonShadowClass} ${primaryButtonGradientStrokeClass} transition-opacity duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15`;
 const GHOST_TRIGGER_CLASS =
   "flex size-7 shrink-0 items-center justify-center rounded-[8px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15";
 

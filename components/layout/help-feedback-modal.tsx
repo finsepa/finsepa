@@ -273,7 +273,7 @@ export function HelpFeedbackModal({
                       <button
                         type="button"
                         onClick={() => removeFile(index)}
-                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-fg-muted hover:bg-surface-muted hover:text-fg"
+                        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-fg-muted hover:bg-surface-muted hover:text-fg"
                         aria-label={`Remove ${file.name}`}
                       >
                         <X className="h-4 w-4" strokeWidth={2} aria-hidden />

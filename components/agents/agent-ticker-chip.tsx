@@ -254,7 +254,7 @@ export function AgentTickerChip({
       prefetch={false}
       href={ticker.href}
       className={cn(
-        "inline-flex h-8 max-w-full items-center gap-1.5 rounded-[10px] border border-stroke-muted bg-surface px-2",
+        "inline-flex h-8 max-w-full items-center gap-1.5 rounded-full border border-stroke-muted bg-surface px-2",
         "text-[13px] font-semibold leading-none text-fg no-underline shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]",
         "transition-colors hover:bg-surface-muted",
         className,

@@ -369,7 +369,7 @@ function SidebarChromeHeader() {
       <Link
         href={PATH_APP_ENTRY}
         aria-label="Finsepa home — Home"
-        className="absolute top-1/2 h-8 w-8 -translate-y-1/2 rounded-md text-fg outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
+        className="absolute top-1/2 h-8 w-8 -translate-y-1/2 rounded-full text-fg outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
         style={{ left: leftPx }}
       >
         <FinsepaLogo size={LOGO_SIZE_PX} className="h-8 w-8" title="" />

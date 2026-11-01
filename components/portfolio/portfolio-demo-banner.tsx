@@ -27,7 +27,7 @@ export function PortfolioDemoBanner({
       <button
         type="button"
         onClick={onCreateOwn}
-        className={cn(accentFillButtonClassName, "h-7 w-auto rounded-[8px] px-2.5 text-[12px]")}
+        className={cn(accentFillButtonClassName, "h-7 w-auto rounded-full px-2.5 text-[12px]")}
       >
         Create Portfolio
       </button>

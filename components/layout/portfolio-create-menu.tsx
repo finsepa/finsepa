@@ -137,7 +137,7 @@ export function PortfolioCreateMenu({
         className={
           variant === "button"
             ? cn(
-                "inline-flex h-10 items-center justify-center gap-1.5 rounded-[10px] border border-transparent bg-fg px-4 text-sm font-semibold text-surface",
+                "inline-flex h-10 items-center justify-center gap-1.5 rounded-full border border-transparent bg-fg px-4 text-sm font-semibold text-surface",
                 "fs-primary-button-gradient-stroke shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-12))] transition-opacity hover:opacity-90",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:ring-offset-2",
                 open && "opacity-90",

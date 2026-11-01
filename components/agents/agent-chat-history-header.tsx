@@ -239,7 +239,7 @@ export function AgentChatHistoryHeader({
               onNewChat();
             }}
             className={cn(
-              "inline-flex size-8 shrink-0 items-center justify-center rounded-[10px] text-fg transition-colors",
+              "inline-flex size-8 shrink-0 items-center justify-center rounded-full text-fg transition-colors",
               "hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
               disabled && "pointer-events-none opacity-60",
             )}
@@ -335,7 +335,7 @@ export function AgentChatHistoryHeader({
                           type="button"
                           aria-label={`Options for ${thread.title || "chat"}`}
                           className={cn(
-                            "absolute right-1 top-1/2 inline-flex size-7 -translate-y-1/2 shrink-0 items-center justify-center rounded-md text-fg-muted",
+                            "absolute right-1 top-1/2 inline-flex size-7 -translate-y-1/2 shrink-0 items-center justify-center rounded-full text-fg-muted",
                             "opacity-100 transition-opacity sm:opacity-0",
                             "sm:group-hover:opacity-100 sm:group-focus-within:opacity-100",
                             "hover:bg-stroke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:opacity-100",

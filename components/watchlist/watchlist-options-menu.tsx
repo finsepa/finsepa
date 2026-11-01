@@ -39,7 +39,7 @@ import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { cn } from "@/lib/utils";
 
 const titleGhostTriggerClass =
-  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
+  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
 
 type ModalStep = "closed" | "create" | "createSection" | "rename" | "deleteConfirm";
 

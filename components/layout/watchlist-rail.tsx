@@ -192,7 +192,7 @@ function WatchlistRailRow({
                     e.stopPropagation();
                     onRemove(row.storageKey);
                   }}
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-fg-subtle outline-none hover:bg-surface-hover hover:text-fg-muted focus-visible:ring-2 focus-visible:ring-fg/10"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-fg-subtle outline-none hover:bg-surface-hover hover:text-fg-muted focus-visible:ring-2 focus-visible:ring-fg/10"
                 >
                   <X className="h-3.5 w-3.5" strokeWidth={2} />
                 </button>

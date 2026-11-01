@@ -39,12 +39,12 @@ function PrivacyGlyph({ privacy }: { privacy: PortfolioPrivacy }) {
 type Variant = "field" | "compact" | "toolbar" | "titleGhost";
 
 const toolbarTriggerClass = cn(
-  "inline-flex h-9 max-w-[min(52vw,220px)] shrink-0 cursor-pointer items-center gap-2 rounded-[10px] px-3 text-left text-sm font-medium text-fg transition-all duration-100 hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40",
+  "inline-flex h-9 max-w-[min(52vw,220px)] shrink-0 cursor-pointer items-center gap-2 rounded-full px-3 text-left text-sm font-medium text-fg transition-all duration-100 hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40",
   whiteSurfaceButtonChromeClass,
 );
 
 const titleGhostTriggerClass =
-  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
+  "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 /** `leading`: menu grows right (portfolio title). `trailing`: menu aligns to trigger’s right edge (top bar). */
 export type CompactMenuAlign = "leading" | "trailing";
@@ -360,7 +360,7 @@ export function TransactionPortfolioField({
           : variant === "titleGhost" ?
             titleGhostTriggerClass
           : variant === "compact" ?
-            "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] text-icon transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+            "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-icon transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
           : cn(
               // Match TransactionDateField / Operation field chrome + hover stroke.
               "flex w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] px-3 text-left text-sm font-normal text-fg",

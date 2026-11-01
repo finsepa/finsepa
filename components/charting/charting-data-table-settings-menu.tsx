@@ -72,7 +72,7 @@ export function ChartingDataTableSettingsMenu({
                   open && "bg-surface-muted text-fg",
                 )
               : cn(
-                  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-transparent text-fg-muted",
+                  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-transparent text-fg-muted",
                   "transition-colors hover:bg-surface-muted hover:text-fg",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
                   open && "bg-surface-muted text-fg",

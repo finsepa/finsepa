@@ -14,7 +14,7 @@ export type SecondaryTabItem<T extends string = string> = {
 };
 
 const tabBaseClass =
-  "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-[10px] px-[12px] text-[13px] font-medium leading-5 transition-[color,background-color,box-shadow] duration-100 sm:text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
+  "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full px-[14px] text-[13px] font-medium leading-5 transition-[color,background-color,box-shadow] duration-100 sm:text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
 
 const tabActiveClass =
   `${tabBaseClass} bg-surface-subtle text-fg dark:shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]`;

@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 import { SCREENER_TABLE_PAGINATION_BTN } from "@/components/ui/table-pagination";
 
 const PAGE_NUM_INACTIVE =
-  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-medium text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
+  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-full px-2 text-sm font-medium text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
 
 const PAGE_NUM_ACTIVE = cn(
-  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-semibold tabular-nums text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
+  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-full px-2 text-sm font-semibold tabular-nums text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
   whiteSurfaceButtonChromeClass,
 );
 

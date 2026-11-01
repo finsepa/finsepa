@@ -732,7 +732,7 @@ export function TopbarUserMenu({
                     setOpen(false);
                     router.push(PATH_ACCOUNT_PLANS);
                   }}
-                  className="flex h-9 w-full items-center justify-center gap-1.5 rounded-[10px] bg-accent px-3.5 text-[13px] font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.2)] transition-colors hover:bg-accent-hover"
+                  className="flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-accent px-3.5 text-[13px] font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.2)] transition-colors hover:bg-accent-hover"
                 >
                   <Sparkles className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
                   Get Pro

@@ -302,7 +302,7 @@ function EditPortfolioModal({
             <button
               type="button"
               onClick={onRequestDelete}
-              className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-4 py-2 text-sm font-medium text-down transition-colors hover:bg-down-soft hover:text-down"
+              className="inline-flex min-h-9 shrink-0 items-center justify-center rounded-full px-4 py-2 text-sm font-medium text-down transition-colors hover:bg-down-soft hover:text-down"
             >
               Delete
             </button>

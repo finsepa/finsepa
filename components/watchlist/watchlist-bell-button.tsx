@@ -53,7 +53,7 @@ export function WatchlistBellToggle({
         }}
         className={
           isDetail
-            ? `flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] bg-surface-muted text-fg outline-none transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-fg/15 ${buttonClassName}`
+            ? `flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg outline-none transition-colors hover:bg-surface-hover focus-visible:ring-2 focus-visible:ring-fg/15 ${buttonClassName}`
             : `flex items-center justify-center rounded-md p-0.5 text-fg outline-none focus-visible:ring-2 focus-visible:ring-fg/20 ${buttonClassName}`
         }
       >

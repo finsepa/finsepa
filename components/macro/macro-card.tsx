@@ -90,7 +90,7 @@ export function MacroCard({
           <button
             type="button"
             onClick={() => setModalOpen(true)}
-            className="shrink-0 rounded-lg p-1.5 text-fg-muted outline-none transition-colors hover:bg-black/5 hover:text-fg focus-visible:ring-2 focus-visible:ring-fg/10"
+            className="shrink-0 rounded-full p-1.5 text-fg-muted outline-none transition-colors hover:bg-black/5 hover:text-fg focus-visible:ring-2 focus-visible:ring-fg/10"
             aria-label={`Open ${model.title} in full view`}
           >
             <Maximize2 className="h-4 w-4" strokeWidth={2} aria-hidden />

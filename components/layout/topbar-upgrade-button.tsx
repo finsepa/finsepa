@@ -83,7 +83,7 @@ export function TopbarUpgradeButton({
             router.push(PATH_ACCOUNT_PLANS);
           }}
           className={cn(
-            "inline-flex h-9 items-center justify-center gap-1.5 rounded-[10px] bg-accent px-3.5 text-[13px] font-semibold text-white",
+            "inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-accent px-3.5 text-[13px] font-semibold text-white",
             "shadow-[0px_1px_2px_0px_rgba(37,99,235,0.2)] transition-colors hover:bg-accent-hover",
           )}
         >

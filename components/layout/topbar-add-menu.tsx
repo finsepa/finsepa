@@ -67,7 +67,7 @@ const SECTION_LABEL_CLASS = "px-3 py-1.5 text-xs font-medium leading-4 text-fg-m
 const SEPARATOR_CLASS = "-mx-1 my-0.5 h-px shrink-0 bg-stroke";
 
 /** `quick-add-trigger` drives the + → × rotation (globals.css) via `data-open`. */
-const TRIGGER_CLASS = `quick-add-trigger flex h-9 shrink-0 items-center justify-center rounded-[10px] border border-stroke-muted bg-fg text-surface ${whiteSurfaceButtonShadowClass} ${primaryButtonGradientStrokeClass} transition-opacity duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15`;
+const TRIGGER_CLASS = `quick-add-trigger flex h-9 shrink-0 items-center justify-center rounded-full border border-stroke-muted bg-fg text-surface ${whiteSurfaceButtonShadowClass} ${primaryButtonGradientStrokeClass} transition-opacity duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15`;
 const TRIGGER_STYLE = { gap: 6, paddingLeft: 12, paddingRight: 14 } as const;
 const TRIGGER_ICON_STYLE = { width: 16, height: 16 } as const;
 

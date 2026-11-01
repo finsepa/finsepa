@@ -225,7 +225,7 @@ function StocksTabBody({
             <button
               type="button"
               onClick={onClearCompaniesSector}
-              className="shrink-0 rounded-lg border border-stroke bg-surface px-3 py-1.5 text-[13px] font-medium leading-5 text-fg transition-colors hover:bg-surface-muted"
+              className="shrink-0 rounded-full border border-stroke bg-surface px-3 py-1.5 text-[13px] font-medium leading-5 text-fg transition-colors hover:bg-surface-muted"
             >
               Show all companies
             </button>

@@ -579,7 +579,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     <button
                       type="button"
                       onClick={() => router.push(PATH_ACCOUNT_PLANS)}
-                      className="mt-6 h-10 w-full rounded-[10px] border border-transparent bg-fg px-6 text-sm font-semibold text-surface fs-primary-button-gradient-stroke transition-opacity hover:opacity-90"
+                      className="mt-6 h-10 w-full rounded-full border border-transparent bg-fg px-6 text-sm font-semibold text-surface fs-primary-button-gradient-stroke transition-opacity hover:opacity-90"
                     >
                       Buy Pro
                     </button>
@@ -614,7 +614,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                     <button
                       type="button"
                       onClick={() => router.push(PATH_ACCOUNT_PLANS)}
-                      className="mt-4 h-10 rounded-[10px] border border-stroke bg-surface px-4 text-sm font-semibold text-fg transition-colors hover:bg-surface-muted"
+                      className="mt-4 h-10 rounded-full border border-stroke bg-surface px-4 text-sm font-semibold text-fg transition-colors hover:bg-surface-muted"
                     >
                       View plans
                     </button>
@@ -628,7 +628,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                         type="button"
                         onClick={() => void openManageSubscriptionPortal()}
                         disabled={portalLoading}
-                        className="mt-4 h-10 rounded-[10px] bg-accent px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
+                        className="mt-4 h-10 rounded-full bg-accent px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {portalLoading ? <SpinnerLabel>Opening…</SpinnerLabel> : "Manage Subscription"}
                       </button>
@@ -637,7 +637,7 @@ export function AccountPageContent({ initial }: { initial: AccountPageInitial })
                       <button
                         type="button"
                         onClick={() => router.push(PATH_ACCOUNT_PLANS)}
-                        className="mt-4 h-10 rounded-[10px] bg-accent px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-accent-hover"
+                        className="mt-4 h-10 rounded-full bg-accent px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(37,99,235,0.25)] transition-colors hover:bg-accent-hover"
                       >
                         {actionLabel}
                       </button>

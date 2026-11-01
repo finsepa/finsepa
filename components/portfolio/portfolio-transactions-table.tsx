@@ -422,7 +422,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                 setOpenMenuId(null);
                 setBulkDeleteIds(new Set(selectedIds));
               }}
-              className="h-9 shrink-0 rounded-[10px] bg-down px-4 text-sm font-semibold text-white transition-colors hover:bg-down focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-down/40 focus-visible:ring-offset-2"
+              className="h-9 shrink-0 rounded-full bg-down px-4 text-sm font-semibold text-white transition-colors hover:bg-down focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-down/40 focus-visible:ring-offset-2"
             >
               Delete
             </button>
@@ -464,7 +464,7 @@ function PortfolioTransactionsTableInner({ transactions }: { transactions: Portf
                   <button
                     type="button"
                     aria-label="Transaction filters"
-                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-surface-muted text-fg transition-colors duration-100 hover:bg-stroke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg transition-colors duration-100 hover:bg-stroke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
                   >
                     <Filter className="h-4 w-4 opacity-90" aria-hidden />
                   </button>

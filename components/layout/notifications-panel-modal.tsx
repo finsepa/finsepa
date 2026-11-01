@@ -45,12 +45,12 @@ type PanelView = "list" | "settings";
 const PANEL_TRANSITION_MS = 400;
 
 const panelHeaderActionButtonClass =
-  "inline-flex h-7 shrink-0 items-center justify-center rounded-[10px] text-fg transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex h-7 shrink-0 items-center justify-center rounded-full text-fg transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:cursor-not-allowed disabled:opacity-40";
 
 const NOTIFICATION_UNREAD_DOT_CLASS = "h-2 w-2 rounded-full bg-down";
 
 const notificationDismissButtonClass =
-  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15";
+  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15";
 
 function notificationToEarningsPreviewItem(item: NotificationItem): EarningsCalendarItem {
   const payload = parseEarningsNotificationPayload(item.payload);

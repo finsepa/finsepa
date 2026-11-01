@@ -10,7 +10,7 @@ export const TABLE_PAGE_SIZE = 20;
 
 /** Square prev/next icon buttons (Screener + portfolio tables). */
 export const SCREENER_TABLE_PAGINATION_BTN = cn(
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-icon transition-all duration-100 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-icon transition-all duration-100 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
   whiteSurfaceButtonChromeClass,
 );
 
@@ -47,11 +47,11 @@ function buildScreenerPageItems(current: number, last: number): (number | "ellip
 }
 
 const PAGE_NUM_INACTIVE =
-  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-medium text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
+  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-full px-2 text-sm font-medium text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
 
 /** Active page: bordered tile (same family as `SCREENER_TABLE_PAGINATION_BTN`, no fill). */
 const PAGE_NUM_ACTIVE = cn(
-  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-[10px] px-2 text-sm font-semibold tabular-nums text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
+  "inline-flex h-9 min-w-9 max-w-12 shrink-0 items-center justify-center rounded-full px-2 text-sm font-semibold tabular-nums text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
   whiteSurfaceButtonChromeClass,
 );
 

@@ -18,7 +18,7 @@ import { Check, ChevronDown, Minus, Plus } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 const zoomIconButtonClass = cn(
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-fg transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40",
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-fg transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40",
   whiteSurfaceButtonChromeClass,
 );
 

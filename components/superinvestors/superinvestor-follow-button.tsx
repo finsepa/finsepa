@@ -44,7 +44,7 @@ export function SuperinvestorFollowButton({
       onMouseLeave={() => setHovered(false)}
       onBlur={() => setHovered(false)}
       className={cn(
-        "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] border px-4 text-sm font-semibold transition-colors",
+        "inline-flex h-9 shrink-0 items-center justify-center rounded-full border px-4 text-sm font-semibold transition-colors",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
         "disabled:cursor-wait disabled:opacity-60",
         showRemoving

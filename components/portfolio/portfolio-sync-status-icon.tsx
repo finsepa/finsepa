@@ -83,8 +83,8 @@ export function PortfolioSyncStatusIcon({
           variant === "toolbar" ?
             cn(topbarSquircleTextButtonClass, "text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2")
           : variant === "title" ?
-            "h-9 w-9 rounded-[10px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
-          : "h-9 w-9 rounded-lg text-fg-muted hover:bg-surface-muted hover:text-fg",
+            "h-9 w-9 rounded-full text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
+          : "h-9 w-9 rounded-full text-fg-muted hover:bg-surface-muted hover:text-fg",
         )}
         aria-label={tooltipLabel.replace(/\n/g, ". ")}
       >

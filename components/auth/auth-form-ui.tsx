@@ -103,7 +103,7 @@ export function AuthPrimaryButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex h-[44px] w-full items-center justify-center gap-2 rounded-[10px] bg-accent px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(54,74,255,0.25)] transition-colors duration-100 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60",
+        "flex h-[44px] w-full items-center justify-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-white shadow-[0px_1px_2px_0px_rgba(54,74,255,0.25)] transition-colors duration-100 hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-60",
         className,
       )}
     >

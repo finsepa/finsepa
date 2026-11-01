@@ -379,7 +379,7 @@ function EconomyListDayHeader() {
 }
 
 const weekNavBtnClass = cn(
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-fg transition-all duration-100 hover:bg-surface-muted",
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-full text-fg transition-all duration-100 hover:bg-surface-muted",
   whiteSurfaceButtonChromeClass,
 );
 
@@ -650,7 +650,7 @@ export function EconomyCalendarClient({
             type="button"
             onClick={() => setMobileSettingsOpen((v) => !v)}
             className={cn(
-              "flex h-9 items-center gap-1.5 rounded-[10px] border border-stroke bg-surface px-3 text-sm font-medium text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] transition-colors hover:bg-surface-muted sm:hidden",
+              "flex h-9 items-center gap-1.5 rounded-full border border-stroke bg-surface px-3 text-sm font-medium text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] transition-colors hover:bg-surface-muted sm:hidden",
               mobileSettingsOpen && "bg-surface-muted",
             )}
             aria-expanded={mobileSettingsOpen}

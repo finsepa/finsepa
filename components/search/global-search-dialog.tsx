@@ -495,7 +495,7 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
                     setQuery("");
                     inputRef.current?.focus({ preventScroll: true });
                   }}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10"
                   aria-label="Clear search"
                 >
                   <X className="h-4 w-4" strokeWidth={2} aria-hidden />

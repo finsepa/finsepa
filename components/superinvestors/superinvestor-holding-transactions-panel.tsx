@@ -158,7 +158,7 @@ function SuperinvestorHoldingTransactionsPanelInner({
           type="button"
           onClick={() => onViewAllTransactions(searchQuery)}
           className={cn(
-            "mt-4 flex h-10 w-full items-center justify-center rounded-[10px] border border-stroke bg-surface",
+            "mt-4 flex h-10 w-full items-center justify-center rounded-full border border-stroke bg-surface",
             "text-[14px] font-medium leading-5 text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]",
             "transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2",
           )}

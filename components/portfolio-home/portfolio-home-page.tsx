@@ -809,7 +809,7 @@ function HomeAsideContent() {
             <Link
               href="/watchlist"
               aria-label="Open full watchlist"
-              className="flex size-8 items-center justify-center rounded-[10px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
+              className="flex size-8 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
             >
               <Maximize2 className="size-4" strokeWidth={2} aria-hidden />
             </Link>

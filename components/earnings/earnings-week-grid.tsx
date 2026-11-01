@@ -579,7 +579,7 @@ function EarningsCard({
 
 /** Week nav — bordered controls (arrows + Today), aligned with toolbar squircles. */
 const weekNavBtnClass = cn(
-  "inline-flex h-9 shrink-0 items-center justify-center rounded-[10px] text-fg transition-all duration-100 hover:bg-surface-muted",
+  "inline-flex h-9 shrink-0 items-center justify-center rounded-full text-fg transition-all duration-100 hover:bg-surface-muted",
   whiteSurfaceButtonChromeClass,
 );
 

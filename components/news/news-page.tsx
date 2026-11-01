@@ -110,7 +110,7 @@ export function NewsPage() {
           type="button"
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={safePage <= 1 || loading}
-          className="h-9 shrink-0 rounded-[10px] border border-stroke bg-surface px-3 text-sm font-semibold text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] transition-all duration-100 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-9 shrink-0 rounded-full border border-stroke bg-surface px-3 text-sm font-semibold text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] transition-all duration-100 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
         >
           Previous
         </button>
@@ -124,7 +124,7 @@ export function NewsPage() {
           type="button"
           onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
           disabled={safePage >= totalPages || loading}
-          className="h-9 shrink-0 rounded-[10px] border border-stroke bg-surface px-3 text-sm font-semibold text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] transition-all duration-100 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+          className="h-9 shrink-0 rounded-full border border-stroke bg-surface px-3 text-sm font-semibold text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] transition-all duration-100 hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
         >
           Next
         </button>

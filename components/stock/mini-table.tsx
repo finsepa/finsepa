@@ -158,7 +158,7 @@ function CompanyCell({
         <button
           type="button"
           onClick={onRemove}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
           aria-label={`Remove ${symbol} from comparison`}
         >
           <X className="h-4 w-4" strokeWidth={2} />

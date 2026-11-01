@@ -737,7 +737,7 @@ export function AgentChatPage() {
                                 void deleteThread(thread.id);
                               }}
                               className={cn(
-                                "mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-fg-subtle",
+                                "mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-fg-subtle",
                                 "opacity-0 transition-opacity hover:bg-down-soft hover:text-down",
                                 "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
                                 "group-hover/recent:opacity-100 max-sm:opacity-100",

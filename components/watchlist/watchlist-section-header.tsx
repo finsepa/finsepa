@@ -134,7 +134,7 @@ export function WatchlistSectionHeader({
   };
 
   const actionButtonClassName = cn(
-    "flex h-7 w-7 items-center justify-center rounded-[8px] text-fg-muted opacity-0 transition-opacity",
+    "flex h-7 w-7 items-center justify-center rounded-full text-fg-muted opacity-0 transition-opacity",
     "hover:bg-surface-muted hover:text-fg group-hover:opacity-100 focus-visible:opacity-100",
   );
 

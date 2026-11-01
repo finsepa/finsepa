@@ -86,7 +86,7 @@ export function ClearableInput({
           <button
             type="button"
             onClick={() => onChange("")}
-            className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-black/5 hover:text-fg"
+            className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-black/5 hover:text-fg"
             aria-label={clearLabel}
           >
             <X className="h-4 w-4" strokeWidth={2} />
@@ -121,7 +121,7 @@ export function ClearableInput({
         <button
           type="button"
           onClick={() => onChange("")}
-          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-fg-muted transition-colors hover:bg-black/5 hover:text-fg"
+          className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-black/5 hover:text-fg"
           aria-label={clearLabel}
         >
           <X className="h-4 w-4" strokeWidth={2} />

@@ -1044,7 +1044,7 @@ export function StockEarningsTabContent({
             type="button"
             onClick={() => setReloadNonce((n) => n + 1)}
             className={cn(
-              "inline-flex h-9 items-center justify-center rounded-[10px] px-3 text-[14px] font-medium text-fg hover:bg-surface-muted",
+              "inline-flex h-9 items-center justify-center rounded-full px-3 text-[14px] font-medium text-fg hover:bg-surface-muted",
               whiteSurfaceButtonChromeClass,
             )}
           >

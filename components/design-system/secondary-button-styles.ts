@@ -14,7 +14,7 @@ export const whiteSurfaceButtonChromeClass = `${whiteSurfaceButtonBorderClass} $
  * Matches earnings row actions, pagination, and toolbar “Add …” controls.
  * Horizontal padding: 12px (`px-3`) — same as topbar text squircles.
  */
-export const secondaryOutlineButtonClassName = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] ${whiteSurfaceButtonChromeClass} px-3 text-[13px] font-semibold leading-none text-fg transition-colors duration-100 hover:bg-surface-muted dark:hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15`;
+export const secondaryOutlineButtonClassName = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full ${whiteSurfaceButtonChromeClass} px-3 text-[13px] font-semibold leading-none text-fg transition-colors duration-100 hover:bg-surface-muted dark:hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15`;
 
 /**
  * Primary CTA stroke class — Figma diagonal gradient (light + dark).
@@ -27,22 +27,22 @@ export const primaryButtonGradientStrokeClass = "fs-primary-button-gradient-stro
  * Same size, radius, border, and shadow geometry as outline chrome.
  * Metallic / soft gradient stroke per theme (Figma primary).
  */
-export const invertedFillButtonClassName = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-stroke-muted bg-fg px-3 text-[13px] font-semibold leading-none text-surface ${whiteSurfaceButtonShadowClass} ${primaryButtonGradientStrokeClass} transition-colors duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:cursor-not-allowed disabled:opacity-60`;
+export const invertedFillButtonClassName = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full border border-stroke-muted bg-fg px-3 text-[13px] font-semibold leading-none text-surface ${whiteSurfaceButtonShadowClass} ${primaryButtonGradientStrokeClass} transition-colors duration-100 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:cursor-not-allowed disabled:opacity-60`;
 
 /**
  * Accent primary CTA — blue fill, darker accent stroke, soft blue shadow.
  */
-export const accentFillButtonClassName = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-[10px] border border-[color-mix(in_srgb,var(--fs-accent)_55%,#000)] bg-accent px-3 text-[13px] font-semibold leading-none text-white shadow-[0px_1px_2px_0px_rgba(54,74,255,0.25)] transition-colors duration-100 hover:border-accent-hover hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-60`;
+export const accentFillButtonClassName = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--fs-accent)_55%,#000)] bg-accent px-3 text-[13px] font-semibold leading-none text-white shadow-[0px_1px_2px_0px_rgba(54,74,255,0.25)] transition-colors duration-100 hover:border-accent-hover hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-60`;
 
 /**
  * Grey fill toolbar action — Charting / Comparison + Add Company / + Add Metric.
  * Same 12px horizontal padding as white surface; no stroke/shadow (flat grey).
  */
 export const secondaryFillButtonClassName =
-  "inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-surface-muted px-3 text-[14px] font-medium leading-5 text-fg transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-surface-muted px-3 text-[14px] font-medium leading-5 text-fg transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 disabled:pointer-events-none disabled:opacity-50";
 
 /** Removable white chip shell (ticker / metric tags) — same chrome as topbar white buttons. */
-export const whiteSurfaceChipShellClass = `inline-flex h-9 max-w-full min-w-0 items-stretch overflow-hidden rounded-[10px] ${whiteSurfaceButtonChromeClass}`;
+export const whiteSurfaceChipShellClass = `inline-flex h-9 max-w-full min-w-0 items-stretch overflow-hidden rounded-full ${whiteSurfaceButtonChromeClass}`;
 
 /** Label cell inside a white chip — 12px horizontal padding. */
 export const whiteSurfaceChipLabelClass =

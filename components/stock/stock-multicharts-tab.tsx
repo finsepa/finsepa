@@ -460,7 +460,7 @@ function MultichartCard({
             <button
               type="button"
               onClick={() => onOpenMetricChart(metricId)}
-              className="shrink-0 rounded-lg p-1.5 text-fg-muted outline-none transition-colors hover:bg-black/5 hover:text-fg focus-visible:ring-2 focus-visible:ring-fg/10"
+              className="shrink-0 rounded-full p-1.5 text-fg-muted outline-none transition-colors hover:bg-black/5 hover:text-fg focus-visible:ring-2 focus-visible:ring-fg/10"
               aria-label={`Open ${metricLabel} in full view`}
             >
               <Maximize2 className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -469,7 +469,7 @@ function MultichartCard({
           <button
             type="button"
             onClick={onRemove}
-            className="shrink-0 rounded-lg p-1.5 text-fg-muted outline-none transition-colors hover:bg-black/5 hover:text-fg focus-visible:ring-2 focus-visible:ring-fg/10"
+            className="shrink-0 rounded-full p-1.5 text-fg-muted outline-none transition-colors hover:bg-black/5 hover:text-fg focus-visible:ring-2 focus-visible:ring-fg/10"
             aria-label={`Remove ${metricLabel}`}
             title="Remove"
           >

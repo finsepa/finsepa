@@ -15,7 +15,7 @@ import { deleteMenuIconAnimation } from "@/lib/lottie/watchlist-menu-animations"
 import { cn } from "@/lib/utils";
 
 const ghostSquareBtn =
-  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-transparent text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
+  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-transparent text-fg transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
 
 export function HoldingRowActionsMenu({
   holding,

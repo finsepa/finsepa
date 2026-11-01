@@ -677,7 +677,7 @@ export function GoalScenarioLegendBadge({
       onClick={onToggle}
       aria-pressed={pressed}
       className={cn(
-        "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-[8px] border border-stroke bg-surface px-3 py-0 text-[12px] font-medium leading-none text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] transition-opacity",
+        "inline-flex h-6 max-w-full min-w-0 items-center gap-2 overflow-hidden rounded-full border border-stroke bg-surface px-3 py-0 text-[12px] font-medium leading-none text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] transition-opacity",
         !pressed && "opacity-40",
       )}
     >

@@ -597,7 +597,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
               aria-label="Cash chart time range"
               onClick={() => setRangeOpen((o) => !o)}
               className={cn(
-                "flex h-9 w-auto max-w-full cursor-pointer items-center justify-between gap-2 rounded-[10px] px-4 text-left text-sm font-normal leading-5 text-fg focus-visible:ring-2 focus-visible:ring-fg/10",
+                "flex h-9 w-auto max-w-full cursor-pointer items-center justify-between gap-2 rounded-full px-4 text-left text-sm font-normal leading-5 text-fg focus-visible:ring-2 focus-visible:ring-fg/10",
                 dropdownTriggerFieldClassName,
                 "bg-surface-muted",
               )}

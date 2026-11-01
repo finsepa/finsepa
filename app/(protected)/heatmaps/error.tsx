@@ -15,7 +15,7 @@ export default function HeatmapsError({ error, reset }: { error: Error & { diges
         <button
           type="button"
           onClick={() => reset()}
-          className="mt-4 rounded-[10px] border border-stroke bg-surface-muted px-4 py-2 text-sm font-medium text-fg transition-colors hover:bg-stroke"
+          className="mt-4 rounded-full border border-stroke bg-surface-muted px-4 py-2 text-sm font-medium text-fg transition-colors hover:bg-stroke"
         >
           Try again
         </button>

@@ -1184,7 +1184,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                 <button
                                   type="button"
                                   onClick={() => setEditingId(null)}
-                                  className="flex h-7 w-7 items-center justify-center rounded-[8px] bg-fg text-surface hover:bg-fg"
+                                  className="flex h-7 w-7 items-center justify-center rounded-full bg-fg text-surface hover:bg-fg"
                                   aria-label="Confirm changes"
                                 >
                                   <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
@@ -1194,7 +1194,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                   <button
                                     type="button"
                                     onClick={() => setEditingId(r.id)}
-                                    className="flex h-7 w-7 items-center justify-center rounded-[8px] text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
+                                    className="flex h-7 w-7 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg"
                                     aria-label="Edit row"
                                   >
                                     <Pencil className="h-3.5 w-3.5" />
@@ -1202,7 +1202,7 @@ export function ImportTransactionsModal({ open, onClose }: Props) {
                                   <button
                                     type="button"
                                     onClick={() => removeRow(r.id)}
-                                    className="flex h-7 w-7 items-center justify-center rounded-[8px] text-fg-muted transition-colors hover:bg-down-soft hover:text-down"
+                                    className="flex h-7 w-7 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-down-soft hover:text-down"
                                     aria-label="Remove row"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />

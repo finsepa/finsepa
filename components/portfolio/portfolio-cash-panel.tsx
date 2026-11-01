@@ -289,7 +289,7 @@ function PortfolioCashPanelInner() {
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-[10px] bg-surface-muted px-4 text-[14px] font-medium leading-5 text-fg transition-colors duration-100 hover:bg-stroke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
+                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full bg-surface-muted px-4 text-[14px] font-medium leading-5 text-fg transition-colors duration-100 hover:bg-stroke focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2"
                 >
                   <Filter className="h-4 w-4 opacity-90" aria-hidden />
                   Filter

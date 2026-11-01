@@ -39,13 +39,13 @@ export const APP_MODAL_RULE_CLASS = "border-stroke dark:border-stroke-shell";
 export const APP_MODAL_TITLE_CLASS = "text-base font-semibold leading-7 text-fg";
 
 export const appModalCancelButtonClass = cn(
-  "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-3 py-2 text-sm font-medium text-fg transition-colors hover:bg-surface-muted dark:hover:bg-dropdown-item-hover disabled:cursor-not-allowed disabled:opacity-50",
+  "inline-flex min-h-9 shrink-0 items-center justify-center rounded-full px-3 py-2 text-sm font-medium text-fg transition-colors hover:bg-surface-muted dark:hover:bg-dropdown-item-hover disabled:cursor-not-allowed disabled:opacity-50",
   whiteSurfaceButtonChromeClass,
 );
 
 export function appModalPrimaryButtonClass(enabled: boolean) {
   return cn(
-    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-3 py-2 text-sm font-medium text-surface transition-colors",
+    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-full px-3 py-2 text-sm font-medium text-surface transition-colors",
     enabled
       ? cn(
           "border border-transparent bg-fg hover:bg-fg",
@@ -57,7 +57,7 @@ export function appModalPrimaryButtonClass(enabled: boolean) {
 
 export function appModalDangerButtonClass(enabled = true) {
   return cn(
-    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-[10px] px-3 py-2 text-sm font-medium text-white transition-colors",
+    "inline-flex min-h-9 shrink-0 items-center justify-center rounded-full px-3 py-2 text-sm font-medium text-white transition-colors",
     enabled ? "bg-down hover:bg-down" : "cursor-not-allowed bg-fg-subtle opacity-50",
   );
 }
@@ -77,7 +77,7 @@ export function AppModalCloseButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex h-7 w-7 shrink-0 items-center justify-center rounded-[10px] text-fg transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40",
+        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-fg transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40",
         className,
       )}
       aria-label="Close"
