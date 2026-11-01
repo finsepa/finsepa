@@ -430,6 +430,12 @@ function WatchlistRailToggle({
   );
 }
 
+/** Width the shell reserves on the right of `<main>` for the rail (0 where the rail is hidden). */
+export function watchlistRailReservedWidthPx(pathname: string, outerWidthPx: number): number {
+  if (isFullWatchlistPage(pathname) || isPortfolioHomePage(pathname)) return 0;
+  return outerWidthPx + RAIL_CARD_INSET.left + RAIL_CARD_INSET.right;
+}
+
 /** Home has its own in-page watchlist column; the user's portfolio pages (`/home/[id]`, `/portfolio`) show none. */
 function isPortfolioHomePage(pathname: string): boolean {
   return (
@@ -500,12 +506,13 @@ export function WatchlistRail() {
     <div
       suppressHydrationWarning
       className={cn(
-        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden md:flex",
+        // Overlays <main>'s reserved right padding, left of its scrollbar, so the page scrollbar sits at the panel edge.
+        "absolute inset-y-0 right-[var(--shell-main-scrollbar-w,0px)] z-10 hidden overflow-hidden md:flex",
         SHELL_DESKTOP_PANEL_BG_CLASS,
         WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
       )}
       style={{
-        width: `${outerWidthPx + RAIL_CARD_INSET.left + RAIL_CARD_INSET.right}px`,
+        width: `${watchlistRailReservedWidthPx(pathname, outerWidthPx)}px`,
         padding: `${RAIL_CARD_INSET.top}px ${RAIL_CARD_INSET.right}px ${RAIL_CARD_INSET.bottom}px ${RAIL_CARD_INSET.left}px`,
       }}
       aria-label="Watchlist panel"

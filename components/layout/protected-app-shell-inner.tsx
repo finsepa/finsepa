@@ -2,6 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
 import { CheckoutSuccessToast } from "@/components/account/checkout-success-toast";
@@ -21,8 +22,11 @@ import {
 } from "@/components/layout/sidebar-layout-context";
 import { MobileAssetTopbarProvider } from "@/components/layout/mobile-asset-topbar-context";
 import { Topbar } from "@/components/layout/topbar";
-import { WatchlistRail } from "@/components/layout/watchlist-rail";
-import { WatchlistRailLayoutProvider } from "@/components/layout/watchlist-rail-layout-context";
+import { WatchlistRail, watchlistRailReservedWidthPx } from "@/components/layout/watchlist-rail";
+import {
+  useWatchlistRailLayout,
+  WatchlistRailLayoutProvider,
+} from "@/components/layout/watchlist-rail-layout-context";
 import { ChartingCompanyRailProvider } from "@/components/charting/charting-company-rail-context";
 import { dropdownMenuFloatingScrollbarClassName } from "@/components/design-system/dropdown-menu-styles";
 import {
@@ -70,21 +74,21 @@ function ProtectedAppChrome({
 
   useMobileTopbarScrollBlur();
 
-  // Always-visible scrollbars narrow <main> but not the topbar, which pads by this width to stay aligned.
+  const pathname = usePathname();
+  const { outerWidthPx: railOuterWidthPx } = useWatchlistRailLayout();
+  const railReservedPx = watchlistRailReservedWidthPx(pathname, railOuterWidthPx);
+
+  // Always-visible scrollbars narrow <main> but not the topbar or the rail; both offset by this width to stay aligned.
   useEffect(() => {
     const main = mainRef.current;
-    const row = main?.parentElement;
-    if (!main || !row) return;
+    if (!main) return;
     const root = document.documentElement;
     const sync = () => {
-      const flushRight = row.getBoundingClientRect().right - main.getBoundingClientRect().right < 1;
-      const width = flushRight ? main.offsetWidth - main.clientWidth : 0;
-      root.style.setProperty("--shell-main-scrollbar-w", `${width}px`);
+      root.style.setProperty("--shell-main-scrollbar-w", `${main.offsetWidth - main.clientWidth}px`);
     };
     sync();
     const ro = new ResizeObserver(sync);
     ro.observe(main);
-    ro.observe(row);
     return () => {
       ro.disconnect();
       root.style.removeProperty("--shell-main-scrollbar-w");
@@ -178,15 +182,17 @@ function ProtectedAppChrome({
           <div
             suppressHydrationWarning
             className={cn(
-              "shell-desktop-panel__content flex min-h-0 min-w-0 flex-1 max-md:flex-col md:flex-row md:overflow-hidden",
+              "shell-desktop-panel__content relative flex min-h-0 min-w-0 flex-1 max-md:flex-col md:flex-row md:overflow-hidden",
               mobileTopbarVariant === "stock" ? "max-md:pt-0" : "max-md:pt-[var(--mobile-topbar-offset)]",
             )}
           >
             <main
               ref={mainRef}
               suppressHydrationWarning
+              style={{ ["--shell-rail-reserved" as string]: `${railReservedPx}px` }}
               className={cn(
                 "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain",
+                "md:pr-[var(--shell-rail-reserved)] md:transition-[padding] md:duration-[280ms] md:ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none",
                 SHELL_DESKTOP_PANEL_BG_MD_CLASS,
                 // Scope mobile grey to max-md so it cannot override desktop panel fill.
                 "max-md:bg-canvas",
