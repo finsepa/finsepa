@@ -384,7 +384,7 @@ export function PortfolioGoalPanel({
         </div>
       </div>
 
-      <section className="w-full min-w-0">
+      <section className={cn("w-full min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
         <div className="mb-4 flex w-full min-w-0 items-start justify-between gap-3">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <GoalProjectionConfigBadges goal={goal} currentYieldPct={currentDividendYieldPct} />

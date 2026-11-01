@@ -431,7 +431,8 @@ export function PortfolioGoalProjectionChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
+              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0"
+              style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
