@@ -36,7 +36,7 @@ export function SuperinvestorFollowStarToggle({
           e.stopPropagation();
           toggleFollow(profileHref, { displayName: label });
         }}
-        className={`flex items-center justify-center rounded-md p-0.5 text-fg outline-none focus-visible:ring-2 focus-visible:ring-fg/20 ${buttonClassName}`}
+        className={`-m-1 flex h-7 w-7 items-center justify-center rounded-full text-fg outline-none transition-colors duration-100 hover:bg-dropdown-item-hover focus-visible:ring-2 focus-visible:ring-fg/20 ${buttonClassName}`}
       >
         <Star
           className={`h-4 w-4 transition-colors ${
