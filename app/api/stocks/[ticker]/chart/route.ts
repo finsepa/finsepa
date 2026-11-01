@@ -14,9 +14,7 @@ import {
   pricePointsToReturnIndexPoints,
 } from "@/lib/market/stock-chart-data";
 import { usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
-import { isStockChartRange, sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";
-import { snapStock1DToOfficialClose } from "@/lib/market/stock-1d-official-close";
-import { isStockChartSeries, type StockChartRange, type StockChartSeries } from "@/lib/market/stock-chart-types";
+import { isStockChartRange, sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";import { isStockChartSeries, type StockChartRange, type StockChartSeries } from "@/lib/market/stock-chart-types";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { getNvdaChartPoints } from "@/lib/fixtures/nvda";
 
@@ -69,7 +67,7 @@ export async function GET(request: Request, { params }: Ctx) {
   const cadenceDaily = url.searchParams.get("cadence") === "daily";
   const loadChartPoints = cadenceDaily ? getSuperinvestorHoldingStockChartPoints : getStockChartPointsForApi;
   const rawPoints = await loadChartPoints(routeTicker, range, series);
-  let points = sliceStockChartPointsForRange(rawPoints, range);
+  const points = sliceStockChartPointsForRange(rawPoints, range);
   const now = new Date();
   // Live minute / spot only applies to the price series — market cap & return use last session.
   const liveSessionMinute =
@@ -79,9 +77,6 @@ export async function GET(request: Request, { params }: Ctx) {
     isStock1DLiveSessionMinuteChart(routeTicker, now);
   const livePostMarketChart =
     series === "price" && usesStock1DLiveWsPostMarketChart(routeTicker, now);
-  if (range === "1D" && series === "price" && !cadenceDaily && !liveSessionMinute && !livePostMarketChart) {
-    points = await snapStock1DToOfficialClose(routeTicker, points, now);
-  }
   const priorSession1D =
     range === "1D" &&
     !cadenceDaily &&

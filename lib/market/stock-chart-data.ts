@@ -9,6 +9,7 @@ import { fetchEodhdIntraday, type EodhdIntradayBar } from "@/lib/market/eodhd-in
 import { type EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { fetchEodhdUsRealtime } from "@/lib/market/eodhd-realtime";
+import { snapStock1DToOfficialClose } from "@/lib/market/stock-1d-official-close";
 import {
   isEodhdUsQuoteDelayedAcceptableForDisplay,
   isEodhdUsQuoteDelayedFresh,
@@ -1466,7 +1467,8 @@ export async function getStockChartPointsForApi(
     // Non-live 1D (closed / pre-market): allowlist and non-allowlist share the immutable
     // prior-session cache so all four reference tickers select the same last completed session.
     logApi1DBranchDebug(ticker, now, "prior-session-cache");
-    return getStockChartPoints1DPriorSession(ticker, series, completedSessionYmd);
+    const priorSession = await getStockChartPoints1DPriorSession(ticker, series, completedSessionYmd);
+    return snapStock1DToOfficialClose(ticker, priorSession, now);
   }
   return getStockChartPoints(ticker, range, series);
 }
@@ -1591,7 +1593,7 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
     }
   }
   const nowSec = Math.floor(now.getTime() / 1000);
-  const pts = await load1DChartPoints(sym, now, nowSec);
+  const pts = await snapStock1DToOfficialClose(sym, await load1DChartPoints(sym, now, nowSec), now);
   if (!pts.length) return { price: null, previousClose: null, quotedAtSec: null };
   const lastPt = pts[pts.length - 1]!;
   const last = lastPt.value;
@@ -1612,7 +1614,7 @@ const getStockSpotQuoteLiveSessionCached = unstable_cache(
 
 const getStockSpotQuoteCached = unstable_cache(
   async (ticker: string) => fetchStockSpotQuoteUncached(ticker),
-  ["stock-spot-quote-v1"],
+  ["stock-spot-quote-v2-official-close"],
   { revalidate: REVALIDATE_HOT },
 );
 

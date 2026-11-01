@@ -43,6 +43,7 @@ import {
   PriceScaleMode,
   createChart,
   createSeriesMarkers,
+  type AutoscaleInfo,
   type IChartApi,
   type IPriceLine,
   type ISeriesApi,
@@ -401,6 +402,11 @@ type Props = {
   tradeTooltipItems?: readonly HoldingsTradeTooltipItem[];
   /** Avg cost — dashed horizontal price line when holdingsStyle. */
   costBasisPrice?: number | null;
+  /**
+   * 1D only: prior session close — colors the line, places the dashed baseline and drives hover % (Google/Yahoo
+   * style) so the chart agrees with the header's 1D change. Falls back to the first point when absent.
+   */
+  previousCloseBaseline?: number | null;
   /**
    * `daily` — superinvestor holding charts only: server + client cache refresh at most once per UTC day.
    */
@@ -897,6 +903,7 @@ export function PriceChart({
   holdingsEarlierSummary = null,
   tradeTooltipItems = [],
   costBasisPrice = null,
+  previousCloseBaseline = null,
   chartDataCadence = "default",
   screenshotPreviewMode = false,
   screenshotChartBlockHeightPx,
@@ -1628,8 +1635,13 @@ export function PriceChart({
     return mobileOverviewHeaderCrosshair;
   }, [holdingsStyle, useMobileOverviewCrosshair, mobileOverviewHeaderCrosshair]);
 
+  const prevCloseBaseline1D =
+    range === "1D" && !holdingsStyle && isFiniteNumber(previousCloseBaseline) && previousCloseBaseline > 0
+      ? previousCloseBaseline
+      : null;
+
   const metrics = useMemo(() => {
-    const fromChart = computeChartHeaderMetrics(chartPoints, null, crosshairForHeader);
+    const fromChart = computeChartHeaderMetrics(chartPoints, null, crosshairForHeader, prevCloseBaseline1D);
     const liveRegular =
       kind === "stock" &&
       range === "1D" &&
@@ -1647,7 +1659,7 @@ export function PriceChart({
       return { ...fromChart, displayPrice: liveSpotUsd };
     }
     return fromChart;
-  }, [kind, range, series, holdingsStyle, chartPoints, crosshairForHeader, liveSpotUsd, liveSessionMinute]);
+  }, [kind, range, series, holdingsStyle, chartPoints, crosshairForHeader, liveSpotUsd, liveSessionMinute, prevCloseBaseline1D]);
 
   const tooltipByDate = useMemo(() => {
     const m = new Map<string, string[]>();
@@ -1672,8 +1684,9 @@ export function PriceChart({
     const first = chartPoints.find((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value));
     if (first == null || chartPoints.length < 1) return resolveFsColor("--fs-up");
     const last = chartPoints[chartPoints.length - 1]?.value;
-    return isFiniteNumber(last) && last < first.value ? resolveFsColor("--fs-down") : resolveFsColor("--fs-up");
-  }, [chartPoints]);
+    const base = prevCloseBaseline1D ?? first.value;
+    return isFiniteNumber(last) && last < base ? resolveFsColor("--fs-down") : resolveFsColor("--fs-up");
+  }, [chartPoints, prevCloseBaseline1D]);
   const lastPointStrokeRef = useRef(lastPointStroke);
   lastPointStrokeRef.current = lastPointStroke;
 
@@ -2886,8 +2899,16 @@ export function PriceChart({
         ? stock1DLiveSessionLineDataWithGapBreaks(valued)
         : valuedLineData;
 
+    const prevCloseBase =
+      !holdingsStyleRef.current &&
+      rangeRef.current === "1D" &&
+      isFiniteNumber(previousCloseBaseline) &&
+      previousCloseBaseline > 0
+        ? previousCloseBaseline
+        : null;
     const open =
-      useLiveSessionChart && liveSessionYmd
+      prevCloseBase ??
+      (useLiveSessionChart && liveSessionYmd
         ? (resolveSessionOpenAnchorValue(
             sessionChartPoints,
             liveSessionYmd,
@@ -2896,7 +2917,7 @@ export function PriceChart({
             new Date(),
             { liveSessionMinute: liveSessionMinuteRef.current },
           ) ?? sessionChartPoints.find((p) => isFiniteNumber(p.value))?.value)
-        : sessionChartPoints.find((p) => isFiniteNumber(p.value))?.value;
+        : sessionChartPoints.find((p) => isFiniteNumber(p.value))?.value);
     if (!isFiniteNumber(open)) {
       removeSplitBundle();
       overviewInBarMarkersRef.current = null;
@@ -3033,7 +3054,33 @@ export function PriceChart({
     markers = markersRef.current;
     if (!markers) return;
 
-    single.applyOptions(overviewBaselineOptions(open, "bright", isTouchLikeChartDevice(), relGrad));
+    // Baseline fills shade the whole band past the base; with a prior-close base the session can sit entirely
+    // on one side, which would paint an empty red/green strip — hide the side the line never reaches.
+    let sessionMin = Infinity;
+    let sessionMax = -Infinity;
+    for (const p of valuedLineData) {
+      if (p.value < sessionMin) sessionMin = p.value;
+      if (p.value > sessionMax) sessionMax = p.value;
+    }
+    const hideBottomFill = prevCloseBase != null && sessionMin >= prevCloseBase;
+    const hideTopFill = prevCloseBase != null && sessionMax <= prevCloseBase;
+    single.applyOptions({
+      ...overviewBaselineOptions(open, "bright", isTouchLikeChartDevice(), relGrad),
+      ...(hideBottomFill ? { bottomFillColor1: "rgba(0,0,0,0)", bottomFillColor2: "rgba(0,0,0,0)" } : {}),
+      ...(hideTopFill ? { topFillColor1: "rgba(0,0,0,0)", topFillColor2: "rgba(0,0,0,0)" } : {}),
+      // Keep the prior-close baseline on screen even when the whole session traded above/below it.
+      autoscaleInfoProvider: (original: () => AutoscaleInfo | null) => {
+        const info = original();
+        if (prevCloseBase == null || !info?.priceRange) return info;
+        return {
+          ...info,
+          priceRange: {
+            minValue: Math.min(info.priceRange.minValue, prevCloseBase),
+            maxValue: Math.max(info.priceRange.maxValue, prevCloseBase),
+          },
+        };
+      },
+    });
     if (
       useLiveSessionChart &&
       !stock1DUsesLiveSessionClock(new Date(), { liveSessionMinute: liveSessionMinuteRef.current })
@@ -3186,7 +3233,7 @@ export function PriceChart({
         });
       });
     }
-  }, [chartPoints, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, kind, series, symbol, screenshotPreviewMode, chartThemePaintKey]);
+  }, [chartPoints, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, previousCloseBaseline, kind, series, symbol, screenshotPreviewMode, chartThemePaintKey]);
 
   useEffect(() => {
     if (!stock1DLiveSession || holdingsStyle) return;
@@ -3225,7 +3272,10 @@ export function PriceChart({
     }
 
     const openPoint = chartPoints.find((p) => isFiniteNumber(p.value));
-    const open = openPoint?.value;
+    const open =
+      range === "1D" && isFiniteNumber(previousCloseBaseline) && previousCloseBaseline > 0
+        ? previousCloseBaseline
+        : openPoint?.value;
     if (open == null || !Number.isFinite(open) || open === 0) {
       return { valueLabel, changeLabel: null, changePct: null };
     }
@@ -3236,7 +3286,7 @@ export function PriceChart({
       changeLabel: formatSignedPercent2dp(changePct),
       changePct,
     };
-  }, [holdingsStyle, overviewHover, kind, series, chartPoints]);
+  }, [holdingsStyle, overviewHover, kind, series, chartPoints, range, previousCloseBaseline]);
 
   const overviewMetricTitle =
     series === "marketCap" ? "Market cap" : series === "return" ? "Return" : "Price";

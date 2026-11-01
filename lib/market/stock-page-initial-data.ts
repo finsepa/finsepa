@@ -42,6 +42,7 @@ import {
 } from "@/lib/market/asset-snapshot-payload";
 import { readAssetSnapshotForPage, upsertAssetSnapshot } from "@/lib/market/asset-snapshot-store";
 import { assetSnapshotKey } from "@/lib/market/asset-snapshot-keys";
+import { snapStock1DToOfficialClose } from "@/lib/market/stock-1d-official-close";
 import {
   ASSET_REBUILD_LEASE_TTL_SEC,
   ASSET_REBUILD_WAITER_MAX_MS,
@@ -453,6 +454,13 @@ async function resolveStockPageForPersist(page: StockPageInitialData): Promise<S
   }
 }
 
+/** Snapshots persisted before a session's close was known keep the last intraday bar; pin it to the official close. */
+async function withOfficialClose1D(page: StockPageInitialData): Promise<StockPageInitialData> {
+  if (page.chart.range !== "1D" || !page.chart.points.length) return page;
+  const points = await snapStock1DToOfficialClose(page.ticker, page.chart.points);
+  return points === page.chart.points ? page : { ...page, chart: { ...page.chart, points } };
+}
+
 /**
  * P5: shared per-ticker snapshot in Supabase (`market_snapshot` key `asset_{TICKER}`).
  * Miss → distributed single-flight rebuild (one uncached load per ticker/segment); hit →
@@ -476,7 +484,7 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
   const cachedHit = await readAssetSnapshotForPage(ticker, epoch.segment, { allowStale: true });
 
   if (cachedHit?.payload?.ticker === ticker) {
-    const base = assetSnapshotPayloadToPageData(cachedHit.payload);
+    const base = await withOfficialClose1D(assetSnapshotPayloadToPageData(cachedHit.payload));
     // Live and frozen: paint from snapshot immediately.
     // Live snapshots store empty 1D points + null spot/KI by design (`stripAssetSnapshotHotFields`);
     // StockPageContent + PriceChart + KeyIndicators refresh those via existing APIs (cached / single-flight).
@@ -508,7 +516,7 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
     readSnapshot: () => readAssetSnapshotForPage(ticker, epoch.segment, { allowStale: true }),
     pageFromSnapshot: async (hit) => {
       // Waiter / coalesced path — no EODHD hot refresh.
-      return assetSnapshotPayloadToPageData(hit.payload);
+      return withOfficialClose1D(assetSnapshotPayloadToPageData(hit.payload));
     },
     fallbackPage: () => fallbackStockPageInitialData(ticker, new Date()),
     sleep: sleepMs,

@@ -752,6 +752,16 @@ export function StockPageContent({
     headerPriorCloseClient ??
     (initialPageData?.ticker === ticker ? (initialPageData.headerPriorCloseUsd ?? null) : null);
 
+  /** 1D chart baseline: close of the session before the one on screen (matches the header's 1D change). */
+  const chartPreviousCloseBaseline = useMemo(() => {
+    if (isUsEquityLiveRegularSession(new Date(), liveRegularSessionActive)) {
+      return headerPriorCloseForMerge != null && headerPriorCloseForMerge > 0 ? headerPriorCloseForMerge : null;
+    }
+    const day = priorSessionDayChangeFromPerformance(performanceForHeaderFallback, headerPriorCloseForMerge);
+    const prior = day ? day.closePrice - day.changeAbs : null;
+    return prior != null && Number.isFinite(prior) && prior > 0 ? prior : null;
+  }, [liveRegularSessionActive, headerPriorCloseForMerge, performanceForHeaderFallback]);
+
   /** Live WS reference tickers: regular spot or post-market extended price for chart tail pin only. */
   const chartLiveSpotUsd = useMemo(() => {
     if (!chartLiveSessionMinute || range !== "1D") return null;
@@ -1363,6 +1373,7 @@ export function StockPageContent({
                     liveSessionMinute={overviewLiveSessionMinute}
                     liveSpotUsd={overviewLiveSpotUsd}
                     livePostMarketTailTimeUnix={overviewLivePostMarketTailTimeUnix}
+                    previousCloseBaseline={chartSeries === "price" ? chartPreviousCloseBaseline : null}
                     onDisplayChange={
                       chartSeries === "price" ? onOverviewHeaderDisplay : undefined
                     }
@@ -1388,6 +1399,7 @@ export function StockPageContent({
               liveSessionMinute={overviewLiveSessionMinute}
               liveSpotUsd={overviewLiveSpotUsd}
               livePostMarketTailTimeUnix={overviewLivePostMarketTailTimeUnix}
+              previousCloseBaseline={chartSeries === "price" ? chartPreviousCloseBaseline : null}
               onDisplayChange={
                 chartSeries === "price" ? onOverviewHeaderDisplay : undefined
               }

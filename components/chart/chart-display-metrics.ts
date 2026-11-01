@@ -41,6 +41,8 @@ export function computeChartHeaderMetrics(
   points: StockChartPoint[],
   selection: ChartRangeSelection,
   crosshairForHeader: { price: number; timeUnix: number; periodLabel?: string | null } | null = null,
+  /** 1D: prior session close — period move is measured from it instead of the first bar. */
+  baselineOverride: number | null = null,
 ): ChartHeaderMetrics {
   if (!points.length) {
     return {
@@ -90,7 +92,7 @@ export function computeChartHeaderMetrics(
   ) {
     const last = lastFinite.value;
     const lastTime = lastFinite.time;
-    const first = firstFinite.value;
+    const first = baselineOverride ?? firstFinite.value;
     const periodAbs = last - first;
     const periodPct = first !== 0 ? (periodAbs / first) * 100 : null;
     const selAbs = selection.endPrice - selection.startPrice;
@@ -109,7 +111,7 @@ export function computeChartHeaderMetrics(
     };
   }
 
-  const first = firstFinite.value;
+  const first = baselineOverride ?? firstFinite.value;
 
   if (
     crosshairForHeader != null &&

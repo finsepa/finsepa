@@ -23,13 +23,15 @@ export async function snapStock1DToOfficialClose(
   if (!last || !ymd) return points;
 
   const closeSec = usSessionWallClockUnix(ymd, 16, 0);
-  if (now.getTime() / 1000 < closeSec + 60 || last.time < closeSec - MAX_LAST_BAR_GAP_SEC) return points;
+  if (now.getTime() / 1000 < closeSec + 60) return points;
+  // Leave post-market tails alone, and sparse/half-day sessions whose last bar is nowhere near 16:00.
+  if (last.time > closeSec || last.time < closeSec - MAX_LAST_BAR_GAP_SEC) return points;
 
   const quote = (await readUsQuotesBulkMap())?.get(usQuotesBulkKey(ticker));
   if (!quote?.tsSec || NY_YMD.format(new Date(quote.tsSec * 1000)) !== ymd) return points;
   if (Math.abs(quote.price - last.value) < 1e-9) return points;
 
-  if (last.time >= closeSec) {
+  if (last.time === closeSec) {
     return [...points.slice(0, -1), { ...last, value: quote.price }];
   }
   return [...points, { ...last, time: closeSec, value: quote.price }];
