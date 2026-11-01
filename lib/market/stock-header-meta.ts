@@ -12,6 +12,8 @@ export type StockDetailHeaderMeta = {
   countryIso: string | null;
   sector: string | null;
   industry: string | null;
+  /** EODHD `General.Type` (`Common Stock`, `ETF`, `FUND`, …); absent on older cached payloads. */
+  assetType?: string | null;
   earningsDateDisplay: string | null;
   /** Global count of watchlist rows for this plain ticker; null if unavailable. */
   watchlistCount: number | null;

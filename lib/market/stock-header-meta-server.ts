@@ -15,7 +15,7 @@ import { getScreenerRankForTicker } from "@/lib/screener/screener-rank";
 
 type HeaderIdentityFields = Pick<
   StockDetailHeaderMeta,
-  "fullName" | "logoUrl" | "exchange" | "countryIso" | "sector" | "industry"
+  "fullName" | "logoUrl" | "exchange" | "countryIso" | "sector" | "industry" | "assetType"
 >;
 
 function parseGeneral(root: Record<string, unknown> | null): Record<string, unknown> | null {
@@ -59,7 +59,10 @@ async function buildHeaderIdentityUncached(ticker: string): Promise<HeaderIdenti
     countryIso = c === "USA" ? "US" : /^[A-Z]{2}$/.test(c) ? c : null;
   }
 
-  const out = { fullName, logoUrl, exchange, countryIso, sector, industry };
+  const typeRaw = general?.Type ?? null;
+  const assetType = typeof typeRaw === "string" && typeRaw.trim() ? typeRaw.trim() : null;
+
+  const out = { fullName, logoUrl, exchange, countryIso, sector, industry, assetType };
   void upsertStockHeaderIdentitySnapshot(ticker, out);
   return out;
 }
@@ -75,7 +78,7 @@ async function buildHeaderEarningsLineUncached(
   return resolveEarningsDateMeta(highlights, r);
 }
 
-const getCachedStockHeaderIdentity = unstable_cache(buildHeaderIdentityUncached, ["stock-header-identity-v3-country"], {
+const getCachedStockHeaderIdentity = unstable_cache(buildHeaderIdentityUncached, ["stock-header-identity-v4-asset-type"], {
   revalidate: REVALIDATE_IDENTITY,
 });
 

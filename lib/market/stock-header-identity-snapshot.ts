@@ -10,6 +10,7 @@ export type StockHeaderIdentitySnapshot = {
   countryIso: string | null;
   sector: string | null;
   industry: string | null;
+  assetType?: string | null;
 };
 
 function identityKey(ticker: string): string | null {
@@ -19,7 +20,7 @@ function identityKey(ticker: string): string | null {
   return `stock_header_identity_${t}`;
 }
 
-const IDENTITY_SEGMENT = "identity_static_v1";
+const IDENTITY_SEGMENT = "identity_static_v2-asset-type";
 
 export async function readStockHeaderIdentitySnapshot(
   ticker: string,

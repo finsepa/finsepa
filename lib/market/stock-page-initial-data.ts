@@ -13,7 +13,7 @@ import { usesStock1DLiveWsMinutePipeline } from "@/lib/market/stock-1d-live-minu
 import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 import type { ChartingSeriesPoint } from "@/lib/market/charting-series-types";
 import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
-import { getStockDetailHeaderMetaForPage } from "@/lib/market/stock-header-meta-server";
+import { getStockDetailHeaderMetaForPage, getStockHeaderIdentityForTicker } from "@/lib/market/stock-header-meta-server";
 import { buildStockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle";
 import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
 import { stockKeyIndicatorsServerEnabled } from "@/lib/features/key-indicators";
@@ -461,6 +461,19 @@ async function withOfficialClose1D(page: StockPageInitialData): Promise<StockPag
   return points === page.chart.points ? page : { ...page, chart: { ...page.chart, points } };
 }
 
+/** Older snapshots predate `assetType` (EODHD `General.Type`) and misread funds like XLP as stocks. */
+async function withAssetType(page: StockPageInitialData): Promise<StockPageInitialData> {
+  if (page.headerMeta?.assetType !== undefined) return page;
+  const identity = await getStockHeaderIdentityForTicker(page.ticker).catch(() => null);
+  if (!identity) return page;
+  const headerMeta = { ...page.headerMeta, assetType: identity.assetType ?? null };
+  return { ...page, headerMeta, isEtf: page.isEtf || isStockDetailEtf(page.ticker, headerMeta) };
+}
+
+async function refreshSnapshotPage(page: StockPageInitialData): Promise<StockPageInitialData> {
+  return withAssetType(await withOfficialClose1D(page));
+}
+
 /**
  * P5: shared per-ticker snapshot in Supabase (`market_snapshot` key `asset_{TICKER}`).
  * Miss → distributed single-flight rebuild (one uncached load per ticker/segment); hit →
@@ -484,7 +497,7 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
   const cachedHit = await readAssetSnapshotForPage(ticker, epoch.segment, { allowStale: true });
 
   if (cachedHit?.payload?.ticker === ticker) {
-    const base = await withOfficialClose1D(assetSnapshotPayloadToPageData(cachedHit.payload));
+    const base = await refreshSnapshotPage(assetSnapshotPayloadToPageData(cachedHit.payload));
     // Live and frozen: paint from snapshot immediately.
     // Live snapshots store empty 1D points + null spot/KI by design (`stripAssetSnapshotHotFields`);
     // StockPageContent + PriceChart + KeyIndicators refresh those via existing APIs (cached / single-flight).
@@ -516,7 +529,7 @@ export async function loadStockPageInitialData(routeTicker: string): Promise<Sto
     readSnapshot: () => readAssetSnapshotForPage(ticker, epoch.segment, { allowStale: true }),
     pageFromSnapshot: async (hit) => {
       // Waiter / coalesced path — no EODHD hot refresh.
-      return withOfficialClose1D(assetSnapshotPayloadToPageData(hit.payload));
+      return refreshSnapshotPage(assetSnapshotPayloadToPageData(hit.payload));
     },
     fallbackPage: () => fallbackStockPageInitialData(ticker, new Date()),
     sleep: sleepMs,

@@ -10,6 +10,8 @@ export const ETF_STOCK_DETAIL_TAB_IDS = ["overview", "etf-holdings", "holdings"]
 
 export function isEtfFromHeaderMeta(meta: StockDetailHeaderMeta | null | undefined): boolean {
   if (!meta) return false;
+  const assetType = (meta.assetType ?? "").trim().toUpperCase();
+  if (assetType === "ETF" || assetType === "ETN") return true;
   const sector = (meta.sector ?? "").trim().toLowerCase();
   if (sector === "etfs" || sector === "etf") return true;
   const industry = (meta.industry ?? "").trim().toLowerCase();
