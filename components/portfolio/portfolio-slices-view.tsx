@@ -680,7 +680,7 @@ function PortfolioSlicesViewInner({
                               style={{ backgroundColor: hRow.color }}
                               aria-hidden
                             />
-                            <div className="h-8 w-8 shrink-0 overflow-hidden rounded-[10px] bg-surface">
+                            <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-surface">
                               <CompanyLogo
                                 name={hRow.name}
                                 logoUrl={displayLogoUrlForPortfolioSymbol(hRow.symbol)}

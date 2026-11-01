@@ -25,7 +25,8 @@ export function PillSkeleton({ wClass = "w-12" }: { wClass?: string }) {
 }
 
 export function LogoSkeleton({ sizeClass = "h-8 w-8" }: { sizeClass?: string }) {
-  return <SkeletonBox className={cls(sizeClass, "rounded-lg border border-stroke-muted")} />;
+  // `.skeleton` sets border-radius outside Tailwind layers, so a `rounded-*` class would lose.
+  return <SkeletonBox className={cls(sizeClass, "border border-stroke-muted")} style={{ borderRadius: 9999 }} />;
 }
 
 export function SparklineSkeleton({ className = "h-10 w-full" }: { className?: string }) {

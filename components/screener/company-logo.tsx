@@ -30,6 +30,24 @@ const LOGO_SCALE_BOOST: Partial<Record<string, number>> = {
   BCH: 1.3,
 };
 
+type LogoSize = "xs" | "sm" | "28" | "md" | "40" | "lg";
+
+const LOGO_BOX_SIZE: Record<LogoSize, string> = {
+  xs: "h-5 w-5",
+  sm: "h-6 w-6",
+  "28": "h-7 w-7",
+  md: "h-8 w-8",
+  "40": "h-10 w-10",
+  lg: "h-12 w-12",
+};
+
+const LOGO_PX: Record<LogoSize, number> = { xs: 20, sm: 24, "28": 28, md: 32, "40": 40, lg: 48 };
+
+/** Every asset mark (company, crypto, index, cash, initials) is a circle. */
+function logoBoxClass(size: LogoSize): string {
+  return `${LOGO_BOX_SIZE[size]} rounded-full`;
+}
+
 /** Normalize `BTC-USD` / `ETH.CC` → base for tile/scale lookups. */
 function logoLookupSymbol(symbol: string | undefined): string | undefined {
   const raw = symbol?.trim().toUpperCase();
@@ -53,7 +71,7 @@ function logoScaleBoost(symbol: string | undefined): number | null {
 /** Full-bleed marks look oversized — pad inside the fixed frame only. */
 function brandLogoInsetClass(
   symbol: string | undefined,
-  size: "xs" | "sm" | "28" | "md" | "40" | "lg",
+  size: LogoSize,
 ): string {
   const sym = symbol?.trim().toUpperCase();
   if (!sym || !LOGO_INSET_TICKERS.has(sym)) return "";
@@ -77,7 +95,7 @@ function InitialsMark({
   className,
 }: {
   name: string;
-  size: "xs" | "sm" | "28" | "md" | "40" | "lg";
+  size: LogoSize;
   className?: string;
 }) {
   const colors = logoColors[name] ?? {
@@ -85,20 +103,20 @@ function InitialsMark({
     text: "text-neutral-600",
     border: "border-stroke-muted",
   };
-  const box =
-    size === "xs"
-      ? "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-[9px] font-bold"
-      : size === "sm"
-        ? "flex h-6 w-6 shrink-0 items-center justify-center rounded-[8px] border text-[10px] font-bold"
-        : size === "28"
-          ? "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[10px] font-bold"
-          : size === "40"
-            ? "flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border text-[12px] font-bold"
-            : size === "lg"
-              ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border text-[12px] font-bold"
-              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border text-[11px] font-bold";
+  const textSize =
+    size === "xs" ? "text-[9px]" : size === "sm" || size === "28" ? "text-[10px]" : size === "md" ? "text-[11px]" : "text-[12px]";
   return (
-    <div className={cn(box, colors.bg, colors.text, colors.border, className)}>
+    <div
+      className={cn(
+        "flex shrink-0 items-center justify-center border font-bold",
+        logoBoxClass(size),
+        textSize,
+        colors.bg,
+        colors.text,
+        colors.border,
+        className,
+      )}
+    >
       {name.slice(0, 2).toUpperCase()}
     </div>
   );
@@ -109,23 +127,11 @@ function UsdCashMark({
   size,
   className,
 }: {
-  size: "xs" | "sm" | "28" | "md" | "40" | "lg";
+  size: LogoSize;
   className?: string;
 }) {
-  const px =
-    size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : size === "40" ? 40 : 32;
-  const imgBox =
-    size === "xs"
-      ? "h-5 w-5 rounded-md"
-      : size === "sm"
-        ? "h-6 w-6 rounded-[8px]"
-        : size === "28"
-          ? "h-7 w-7 rounded-md"
-          : size === "40"
-            ? "h-10 w-10 rounded-[12px]"
-            : size === "lg"
-              ? "h-12 w-12 rounded-lg"
-              : "h-8 w-8 rounded-[10px]";
+  const px = LOGO_PX[size];
+  const imgBox = logoBoxClass(size);
   return (
     // eslint-disable-next-line @next/next/no-img-element -- static public SVG
     <img
@@ -154,24 +160,12 @@ function BundledIndexMark({
 }: {
   src: string;
   name: string;
-  size: "xs" | "sm" | "28" | "md" | "40" | "lg";
+  size: LogoSize;
   className?: string;
   eagerLoad?: boolean;
 }) {
-  const px =
-    size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : size === "40" ? 40 : 32;
-  const imgBox =
-    size === "xs"
-      ? "h-5 w-5 rounded-md"
-      : size === "sm"
-        ? "h-6 w-6 rounded-[8px]"
-        : size === "28"
-          ? "h-7 w-7 rounded-md"
-          : size === "40"
-            ? "h-10 w-10 rounded-[12px]"
-            : size === "lg"
-              ? "h-12 w-12 rounded-lg"
-              : "h-8 w-8 rounded-[10px]";
+  const px = LOGO_PX[size];
+  const imgBox = logoBoxClass(size);
   return (
     // eslint-disable-next-line @next/next/no-img-element -- static public PNG
     <img
@@ -205,7 +199,7 @@ export function CompanyLogo({
   /** When set (e.g. ticker), enables session logo reuse across views. */
   symbol?: string;
   /** `xs` = 20×20, `sm` = 24×24, `28` = 28×28, `md` = 32×32 (default), `40` = 40×40, `lg` = 48×48. */
-  size?: "xs" | "sm" | "28" | "md" | "40" | "lg";
+  size?: LogoSize;
   /** Zoom logo to fill the square (earnings grid, etc.). Inset brands keep their padding. */
   fill?: boolean;
   /** Screenshot export — load immediately (no lazy) so html-to-image captures the bitmap. */
@@ -253,20 +247,8 @@ export function CompanyLogo({
   if (failed || !hasLogoUrl) {
     return <InitialsMark name={displayName} size={size} className={className} />;
   }
-  const px =
-    size === "xs" ? 20 : size === "sm" ? 24 : size === "28" ? 28 : size === "lg" ? 48 : size === "40" ? 40 : 32;
-  const imgBox =
-    size === "xs"
-      ? "h-5 w-5 rounded-md"
-      : size === "sm"
-        ? "h-6 w-6 rounded-[8px]"
-        : size === "28"
-          ? "h-7 w-7 rounded-md"
-          : size === "40"
-            ? "h-10 w-10 rounded-[12px]"
-            : size === "lg"
-              ? "h-12 w-12 rounded-lg"
-              : "h-8 w-8 rounded-[10px]";
+  const px = LOGO_PX[size];
+  const imgBox = logoBoxClass(size);
   const sym = symbol?.trim().toUpperCase();
   const scaleBoost = logoScaleBoost(sym);
   const useFillFrame =

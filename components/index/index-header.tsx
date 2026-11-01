@@ -98,7 +98,7 @@ export function IndexHeader({
       logoUrl=""
       symbol={symbol}
       size="lg"
-      className="rounded-2xl shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]"
+      className="shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]"
     />
   );
 

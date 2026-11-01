@@ -135,7 +135,7 @@ function ShellHeader({
           </h1>
           {priceBlock}
         </div>
-        <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={symbol} size="lg" className="rounded-2xl" />
+        <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={symbol} size="lg" />
       </div>
 
       <div className="hidden space-y-5 md:block">
@@ -146,7 +146,7 @@ function ShellHeader({
               logoUrl={logoUrl}
               symbol={symbol}
               size="lg"
-              className="rounded-2xl shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]"
+              className="shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]"
             />
             <div className="min-w-0">
               <h1 className="text-[20px] font-semibold leading-7 text-fg">{titleWithRank}</h1>

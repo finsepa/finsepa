@@ -635,7 +635,6 @@ export function EarningsTranscriptModal({ open, transcript, onClose, proGate = f
                 logoUrl={logoUrl}
                 symbol={transcript.ticker}
                 size="40"
-                className="rounded-lg"
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[14px] font-semibold leading-5 text-fg">

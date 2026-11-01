@@ -624,7 +624,6 @@ export function KeyStatsMetricChartModal({
             logoUrl={headerMeta?.logoUrl ?? ""}
             symbol={ticker}
             size="lg"
-            className="!rounded-xl"
           />
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="shrink-0 text-[18px] font-semibold leading-7 text-fg">

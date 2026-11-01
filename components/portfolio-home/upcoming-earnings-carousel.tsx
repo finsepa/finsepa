@@ -312,7 +312,7 @@ function DayTileContent({
         {dayTileEyebrow(ymd, daysLeft)}
       </span>
       <span className="text-[20px] font-semibold leading-6 tabular-nums text-fg">{dayTileNumber(ymd)}</span>
-      <CompanyLogo name={name} logoUrl={logoUrl} symbol={symbol} size="md" className="h-8 w-8 shrink-0 rounded-[10px]" />
+      <CompanyLogo name={name} logoUrl={logoUrl} symbol={symbol} size="md" className="h-8 w-8 shrink-0" />
       <span className="w-full min-w-0 space-y-0.5">
         <span className="block truncate text-[13px] font-semibold leading-4 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
           {symbol}

@@ -118,9 +118,9 @@ export function CryptoHeader({
 
   const logoMark =
     headerLoading ?
-      <div className="h-12 w-12 shrink-0 animate-pulse rounded-xl border border-stroke bg-surface-muted" aria-hidden />
+      <div className="h-12 w-12 shrink-0 animate-pulse rounded-full border border-stroke bg-surface-muted" aria-hidden />
     : logoSrc ?
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-stroke-muted bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-stroke-muted bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
         {/* eslint-disable-next-line @next/next/no-img-element -- remote logo */}
         <img
           src={logoSrc}
@@ -135,7 +135,7 @@ export function CryptoHeader({
           }}
         />
       </div>
-    : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-stroke bg-surface-muted text-[18px] font-bold text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
+    : <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-stroke bg-surface-muted text-[18px] font-bold text-fg shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]">
         {logoLetter.slice(0, 1)}
       </div>;
 
