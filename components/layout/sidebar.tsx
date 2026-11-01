@@ -283,7 +283,23 @@ function SidebarPortfolioGroup({ pathname, collapsed }: { pathname: string; coll
   const hasMounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
   const expanded = useSyncExternalStore(subscribePortfolioGroupExpanded, readPortfolioGroupExpanded, () => true);
   const toggleExpanded = useCallback(() => writePortfolioGroupExpanded(!readPortfolioGroupExpanded()), []);
-  const [rowHovered, setRowHovered] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [sidebarHovered, setSidebarHovered] = useState(false);
+  const [chevronFocused, setChevronFocused] = useState(false);
+  const [chevronHovered, setChevronHovered] = useState(false);
+
+  useEffect(() => {
+    const aside = rootRef.current?.closest("aside");
+    if (!aside) return;
+    const enter = () => setSidebarHovered(true);
+    const leave = () => setSidebarHovered(false);
+    aside.addEventListener("pointerenter", enter);
+    aside.addEventListener("pointerleave", leave);
+    return () => {
+      aside.removeEventListener("pointerenter", enter);
+      aside.removeEventListener("pointerleave", leave);
+    };
+  }, []);
 
   // Portfolios hydrate from the client workspace — keep the SSR pass on the static fallback.
   const list = hasMounted ? portfolios : [];
@@ -305,13 +321,9 @@ function SidebarPortfolioGroup({ pathname, collapsed }: { pathname: string; coll
   );
 
   return (
-    <div className={cn(collapsed && "w-full")}>
+    <div ref={rootRef} className={cn(collapsed && "w-full")}>
       <CollapsedRailTooltip label="Portfolio" enabled={collapsed}>
-        <div
-          className="relative flex w-full"
-          onPointerEnter={() => setRowHovered(true)}
-          onPointerLeave={() => setRowHovered(false)}
-        >
+        <div className="relative flex w-full">
           <Link prefetch={false} href={href} className={rowClass} suppressHydrationWarning>
             <PieChart01 className="h-5 w-5 shrink-0 text-fg" aria-hidden />
             <span
@@ -330,17 +342,20 @@ function SidebarPortfolioGroup({ pathname, collapsed }: { pathname: string; coll
               onClick={toggleExpanded}
               aria-expanded={expanded}
               aria-label={expanded ? "Collapse Portfolio" : "Expand Portfolio"}
-              onFocus={() => setRowHovered(true)}
-              onBlur={() => setRowHovered(false)}
-              className="absolute right-1 top-1/2 size-7 -translate-y-1/2 rounded-lg text-fg-muted transition-[opacity,color] duration-200 hover:text-fg"
+              onFocus={() => setChevronFocused(true)}
+              onBlur={() => setChevronFocused(false)}
+              onPointerEnter={() => setChevronHovered(true)}
+              onPointerLeave={() => setChevronHovered(false)}
+              className="absolute right-1 top-1/2 size-7 -translate-y-1/2 rounded-lg text-fg-muted hover:text-fg"
               style={{
-                opacity: rowHovered ? 1 : 0,
+                opacity: sidebarHovered || chevronFocused ? 1 : 0,
+                transition: "opacity 200ms, color 200ms, background-color 150ms",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 width: 28,
                 height: 28,
-                backgroundColor: "color-mix(in srgb, var(--fs-fg) 8%, transparent)",
+                backgroundColor: chevronHovered ? "color-mix(in srgb, var(--fs-fg) 8%, transparent)" : "transparent",
               }}
             >
               <ChevronDown
