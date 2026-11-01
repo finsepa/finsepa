@@ -42,7 +42,6 @@ import { PortfolioSyncStatusIcon } from "@/components/portfolio/portfolio-sync-s
 import { PortfolioPendingBrokerageSyncButton } from "@/components/portfolio/portfolio-pending-brokerage-sync-button";
 import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
 import { PortfoliosBreadcrumbs } from "@/components/portfolios/portfolios-breadcrumbs";
-import { PortfolioHomeBreadcrumbs } from "@/components/portfolio-home/portfolio-home-breadcrumbs";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import {
@@ -460,7 +459,6 @@ export function PortfolioPageView({
   return (
     <div className="relative flex min-h-full min-w-0 flex-col md:overflow-x-clip">
       {showPortfoliosBreadcrumb ? <PortfoliosBreadcrumbs currentLabel={portfolioName} /> : null}
-      {showAccountsBreadcrumb ? <PortfolioHomeBreadcrumbs currentLabel={portfolioName} /> : null}
       <div className="relative flex min-h-full min-w-0 flex-1 flex-col px-4 py-4 max-md:overflow-visible md:overflow-x-hidden sm:px-9 sm:py-6">
       <AssetPageTopLoader />
       <div className="mb-5 hidden shrink-0 flex-col gap-2 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
