@@ -109,7 +109,7 @@ export function StockDetailTabNav({
         sticky && !embedded ? `sticky top-0 z-40 max-md:top-[var(--mobile-topbar-offset)] ${shellClassName}` : shellClassName
       }
     >
-      <div className="min-w-0 border-b border-solid border-stroke">
+      <div className={cn("min-w-0", !embedded && "border-b border-solid border-stroke")}>
         <nav
           ref={navRef}
           className={cn(

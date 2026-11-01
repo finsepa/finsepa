@@ -176,7 +176,7 @@ function buildInitialSessionHeaderUi(
   );
 }
 
-/** Breadcrumbs, header and tab bar share one elevated card. */
+/** Breadcrumbs and header share one elevated card. */
 const STOCK_HERO_CARD_CLASS = cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS);
 
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
@@ -1301,7 +1301,9 @@ export function StockPageContent({
         </div>
       ) : null}
 
-      <div className="max-md:hidden">
+      </div>
+
+      <div className={cn("px-5 py-1 max-md:hidden", MOBILE_ELEVATED_CARD_CLASS)}>
         <StockDetailTabNav
           activeTab={displayTab}
           onTabChange={handleTabChange}
@@ -1310,7 +1312,6 @@ export function StockPageContent({
           sticky={displayTab !== "financials"}
           embedded
         />
-      </div>
       </div>
 
       {/*
