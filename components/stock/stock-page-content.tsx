@@ -19,7 +19,6 @@ import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { coerceStockDetailTabForEtf, isStockDetailEtf, normalizeStockDetailTab } from "@/lib/stock/stock-etf";
 import { clearPendingAssetShellIfMatch } from "@/lib/navigation/pending-asset-shell";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
-import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { EtfHoldingsTab } from "@/components/stock/etf-holdings-tab";
 import { EtfKeyStats } from "@/components/stock/etf-key-stats";
 import { StockDetailTabNav } from "./stock-detail-tab-nav";
@@ -175,6 +174,10 @@ function buildInitialSessionHeaderUi(
     headerPriorCloseUsd,
   );
 }
+
+/** Desktop: header, tab bar and Overview chart share one elevated card (mobile keeps the bare layout). */
+const STOCK_HERO_CARD_CLASS =
+  "space-y-5 md:rounded-2xl md:border md:border-transparent md:bg-surface md:p-5 md:shadow-card md:[--fs-chart-plot-bg:var(--fs-surface)]";
 
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
 const OFFSCREEN_PRICE_CHART =
@@ -1230,6 +1233,7 @@ export function StockPageContent({
       <Suspense fallback={null}>
         <AssetPageTopLoader />
       </Suspense>
+      <div className={STOCK_HERO_CARD_CLASS}>
       <StockHeader
         ticker={ticker}
         periodLabel={headerPeriodLabel}
@@ -1304,6 +1308,7 @@ export function StockPageContent({
           onTabIntent={handleTabIntent}
           isEtf={isEtf}
           sticky={displayTab !== "financials"}
+          embedded
         />
       </div>
 
@@ -1315,7 +1320,7 @@ export function StockPageContent({
       <div
         className={
           displayTab === "overview"
-            ? cn("space-y-5 p-3 md:p-4", MOBILE_ELEVATED_CARD_CLASS)
+            ? "space-y-5"
             : "pointer-events-none fixed left-0 top-0 -z-10 h-[420px] w-[min(1200px,calc(100vw-4.5rem))] -translate-x-[120vw] opacity-0"
         }
         aria-hidden={displayTab !== "overview"}
@@ -1407,6 +1412,7 @@ export function StockPageContent({
             />
           </div>
         ) : null}
+      </div>
       </div>
 
       {tabsMounted.overview ? (

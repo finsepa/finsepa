@@ -23,6 +23,7 @@ export function StockDetailTabNav({
   onTabIntent,
   isEtf = false,
   sticky = true,
+  embedded = false,
 }: {
   activeTab: StockDetailTabId;
   onTabChange: (tab: StockDetailTabId) => void;
@@ -32,6 +33,8 @@ export function StockDetailTabNav({
   isEtf?: boolean;
   /** Off on Financials so the statement year row can stick to the top of the scroll area. */
   sticky?: boolean;
+  /** Inside the asset hero card: no page-gutter bleed, panel fill or stickiness. */
+  embedded?: boolean;
 }) {
   const tabs = useMemo(() => stockDetailTabItemsFor(isEtf), [isEtf]);
 
@@ -96,11 +99,16 @@ export function StockDetailTabNav({
     };
   }, [measureIndicator, revealScrollbar]);
 
-  const shellClassName =
-    "max-md:bg-canvas bg-panel max-md:mx-0 max-md:-mt-2 max-md:pt-0 max-md:pb-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2 sm:pb-0";
+  const shellClassName = embedded
+    ? ""
+    : "max-md:bg-canvas bg-panel max-md:mx-0 max-md:-mt-2 max-md:pt-0 max-md:pb-1 sm:-mx-9 sm:-mt-5 sm:px-9 sm:pt-2 sm:pb-0";
 
   return (
-    <div className={sticky ? `sticky top-0 z-40 max-md:top-[var(--mobile-topbar-offset)] ${shellClassName}` : shellClassName}>
+    <div
+      className={
+        sticky && !embedded ? `sticky top-0 z-40 max-md:top-[var(--mobile-topbar-offset)] ${shellClassName}` : shellClassName
+      }
+    >
       <div className="min-w-0 border-b border-solid border-stroke">
         <nav
           ref={navRef}
