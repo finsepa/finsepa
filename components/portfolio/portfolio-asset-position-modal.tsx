@@ -98,7 +98,7 @@ export function PortfolioAssetPositionModal({
           holdings={holdings}
           transactions={transactions}
           chartCard
-          chartHeaderOutside
+          sectionCards
         />
       </AppModalShell>
     </AppModalOverlay>
