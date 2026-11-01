@@ -515,7 +515,7 @@ function UpcomingEventsSection({
         <div className="relative">
           <div
             ref={scrollerRef}
-            className="mobile-scroll-x flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="mobile-scroll-x flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto md:-mx-2 md:-my-2 md:w-[calc(100%+1rem)] md:px-2 md:py-2 md:scroll-px-2 pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {items.map((item) => (
               <div key={item.key} className="min-w-0 snap-start" style={{ flex: cardFlexBasis }}>

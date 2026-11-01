@@ -28,6 +28,8 @@ const HOME_TILES_GRID_STYLE = {
 const HOME_TILES_SCROLL_CLASS = cn(
   INDEX_CARDS_SCROLL_CLASS,
   "md:overflow-x-auto md:[scrollbar-width:none] md:[&::-webkit-scrollbar]:hidden",
+  // overflow-x:auto also clips vertically — pad the track (negative margin keeps layout) so card shadows show.
+  "md:-mx-2 md:-my-2 md:px-2 md:py-2",
 );
 
 const BTC_TILE_NAME = "Bitcoin";
