@@ -8,7 +8,6 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type ComponentType,
   type CSSProperties,
   type RefObject,
@@ -95,23 +94,6 @@ const SPARK_PAD = 2;
 const SPARK_WIDTH_CSS = `min(${SPARK_W}px, 40vw)`;
 
 /** Collapsed chart: a minimized net-worth line for the selected range. */
-const TODAY_LABEL_FORMAT = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" });
-
-function subscribeTodayLabel(onChange: () => void): () => void {
-  const id = window.setInterval(onChange, 60_000);
-  return () => window.clearInterval(id);
-}
-
-/** "Sunday, November 1" in the viewer's timezone — client-only so SSR (server TZ) never mismatches. */
-function HomeTodayLabel() {
-  const label = useSyncExternalStore(
-    subscribeTodayLabel,
-    () => TODAY_LABEL_FORMAT.format(new Date()),
-    () => "",
-  );
-  return <span className="min-w-0 truncate text-sm font-medium text-fg">{label}</span>;
-}
-
 function HomeNetWorthSparkline({ values }: { values: readonly number[] }) {
   const gradientId = useId();
   if (values.length < 2) {
@@ -464,8 +446,7 @@ export function PortfolioHomePage() {
     <div className="flex w-full min-w-0 flex-col items-stretch gap-8 md:flex-row md:items-start md:gap-8">
       <div className="min-w-0 flex-1 space-y-5">
         <section aria-label="Markets" className="min-w-0 space-y-3">
-          <div className="flex h-8 items-center justify-between gap-3">
-            <HomeTodayLabel />
+          <div className="flex h-8 items-center">
             <UsMarketsSessionLabel />
           </div>
           <HomeMarketTiles />
