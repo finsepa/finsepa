@@ -176,7 +176,7 @@ function buildInitialSessionHeaderUi(
   );
 }
 
-/** Breadcrumbs, header and tab bar share one elevated card; the tab underline sits on its bottom edge. */
+/** Header and tab bar share one elevated card; the tab underline sits on its bottom edge. */
 const STOCK_HERO_CARD_CLASS = cn("space-y-5 p-4 sm:p-5 md:pb-0", MOBILE_ELEVATED_CARD_CLASS);
 
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
@@ -1206,6 +1206,7 @@ export function StockPageContent({
 
   return (
     <div className="relative min-w-0">
+      <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} />
       <div className="space-y-5 px-4 py-0 max-md:pt-0 sm:space-y-5 sm:px-9 sm:pt-5 sm:pb-6">
       <KeyStatsMetricChartModal
         key={revenueProfitModalMetric ?? "closed"}
@@ -1233,7 +1234,6 @@ export function StockPageContent({
         <AssetPageTopLoader />
       </Suspense>
       <div className={STOCK_HERO_CARD_CLASS}>
-      <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} embedded />
       <StockHeader
         ticker={ticker}
         periodLabel={headerPeriodLabel}

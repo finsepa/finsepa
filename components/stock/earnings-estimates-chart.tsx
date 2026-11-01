@@ -471,7 +471,8 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
             <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: `${plotHeight}px` }}>
               <div ref={plotAreaRef} className="relative min-h-0 min-w-0 flex-1" onPointerLeave={clearHover}>
                 <div
-                  className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
+                  className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0"
+                  style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
                   aria-hidden
                 >
                   <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -613,8 +614,11 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     return (
                       <span
                         key={i}
-                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-0.5 py-px"
-                        style={{ top: `${(PLOT_INSET_TOP_FRAC + pct * insetSpan) * 100}%` }}
+                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px"
+                        style={{
+                          top: `${(PLOT_INSET_TOP_FRAC + pct * insetSpan) * 100}%`,
+                          backgroundColor: "var(--fs-chart-plot-bg)",
+                        }}
                       >
                         {formatFundamentalsAxisTickLabel(metricConfig.axisKind, t)}
                       </span>

@@ -3,7 +3,10 @@
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import { SkeletonBox } from "@/components/markets/skeleton";
 import { EarningsEstimatesSection } from "@/components/stock/earnings-estimates-section";
@@ -1058,6 +1061,7 @@ export function StockEarningsTabContent({
       ) : null}
 
       {!loading && data?.estimatesChart ? (
+        <div className={cn("min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
         <EarningsEstimatesSection
           data={data.estimatesChart}
           aboveHeader={
@@ -1074,9 +1078,11 @@ export function StockEarningsTabContent({
             ) : null
           }
         />
+        </div>
       ) : null}
 
       {!loading && !data?.estimatesChart && summaryForCards ? (
+        <div className={cn("min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
         <EarningsCountdownStats
           reportDateYmd={summaryForCards.reportDateYmd}
           fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
@@ -1086,6 +1092,7 @@ export function StockEarningsTabContent({
           epsEstimateChangePct={summaryForCards.epsEstimateChangePct}
           forwardPeDisplay={summaryForCards.forwardPeDisplay}
         />
+        </div>
       ) : null}
 
       {!loading && data && historyRows.length > 0 ? (
