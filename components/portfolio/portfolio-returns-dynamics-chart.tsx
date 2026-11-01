@@ -13,7 +13,10 @@ import {
 import { LineChart } from "@/lib/icons";
 
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
-import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { SecondaryTabs, type SecondaryTabItem } from "@/components/ui/secondary-tabs";
 import { PortfolioUpDownLegendSwatch } from "@/components/chart/portfolio-up-down-legend-swatch";
 import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
@@ -238,9 +241,10 @@ function ReturnsDynamicsChartSkeleton() {
           <div className="relative min-w-0 flex-1">
             <div
               className={cn(
-                "pointer-events-none absolute inset-x-0 z-0 bg-panel",
+                "pointer-events-none absolute inset-x-0 z-0",
                 CHART_PLOT_BACKDROP_INSET_CLASS,
               )}
+              style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
             </div>
@@ -479,9 +483,10 @@ function DynamicsSvg({
           <div ref={plotRef} className="relative min-h-0 min-w-0 flex-1 overflow-visible">
             <div
               className={cn(
-                "pointer-events-none absolute inset-x-0 z-0 bg-panel",
+                "pointer-events-none absolute inset-x-0 z-0",
                 CHART_PLOT_BACKDROP_INSET_CLASS,
               )}
+              style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -647,8 +652,8 @@ function DynamicsSvg({
               {ticks.map((t) => (
                 <span
                   key={t}
-                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-0.5 py-px"
-                  style={{ top: `${tickTopPercent(t, yMin, yMax)}%` }}
+                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px"
+                  style={{ top: `${tickTopPercent(t, yMin, yMax)}%`, backgroundColor: "var(--fs-chart-plot-bg)" }}
                 >
                   {formatPctAxis(t)}
                 </span>
@@ -822,7 +827,7 @@ function PortfolioReturnsDynamicsChartInner({
   }, [bars, granularity]);
 
   return (
-    <section className="mb-10 w-full min-w-0">
+    <section className={cn("mb-5 w-full min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
       <div className="mb-4 flex flex-col gap-3">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="flex min-w-0 items-start justify-between gap-3">

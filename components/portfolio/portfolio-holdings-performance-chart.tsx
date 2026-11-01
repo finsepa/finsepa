@@ -292,7 +292,11 @@ function HoldingsPerformanceBarChart({
             </div>
 
             <div className="relative min-w-0 flex-1 overflow-hidden">
-              <div className="pointer-events-none absolute inset-0 z-0 bg-panel" aria-hidden>
+              <div
+                className="pointer-events-none absolute inset-0 z-0"
+                style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
+                aria-hidden
+              >
                 <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
               </div>
 

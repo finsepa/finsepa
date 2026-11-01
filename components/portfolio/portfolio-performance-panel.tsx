@@ -543,7 +543,7 @@ function PortfolioPerformancePanelInner({
 
       <PortfolioReturnsDynamicsChart transactions={transactions} canLoad={canLoad} />
 
-      <section className="pt-6">
+      <section className={cn("w-full min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
         <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
           Holdings performance
         </h2>
