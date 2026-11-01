@@ -13,7 +13,7 @@ export const dropdownMenuElevationImportantClass =
   "!shadow-[0px_10px_16px_-3px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-10)),0px_4px_6px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]";
 
 /**
- * Figma — menu shell: 16px radius, surface fill, 1px stroke, dual elevation.
+ * Figma — menu shell: 20px radius (`rounded-2xl`); rows inside use 15px (20 − 1px stroke − 4px inset) so corners stay concentric, surface fill, 1px stroke, dual elevation.
  * Light + dark: iOS-style glass — 70% opaque fill + blur/saturate over content behind.
  * No padding — use for composite menus (search header + scroll list).
  */
@@ -92,7 +92,7 @@ export const dropdownMenuMobileSheetStripPanelClassName =
   "[&>*]:!rounded-none [&>*]:!border-0 [&>*]:!bg-transparent [&>*]:!shadow-none [&>*]:!backdrop-blur-none [&>*]:!backdrop-saturate-100";
 
 const plainItemBase =
-  "flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-full bg-transparent px-4 py-2 text-left text-sm font-normal leading-5 text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10";
+  "flex w-full shrink-0 cursor-pointer items-center gap-2 rounded-[15px] bg-transparent px-4 py-2 text-left text-sm font-normal leading-5 text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/10";
 
 /**
  * Single-line option (~40px): surface row; use `dropdownMenuPlainItemRowClassName` when showing a trailing check.
@@ -119,13 +119,13 @@ export function dropdownMenuPlainItemRowClassName(opts?: { selected?: boolean })
  * Row with split hit targets (e.g. portfolio label + edit icon).
  */
 export const dropdownMenuCompositeRowClassName =
-  "flex min-h-12 w-full items-center gap-0 overflow-hidden rounded-full bg-transparent text-sm text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover";
+  "flex min-h-12 w-full items-center gap-0 overflow-hidden rounded-[15px] bg-transparent text-sm text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover";
 
 /**
  * Searchable menus — slightly denser two-line rows (company / metric pickers).
  */
 export function dropdownMenuRichItemClassName() {
   return cn(
-    "flex w-full cursor-pointer items-start gap-2 rounded-lg bg-transparent px-3 py-2 text-left text-[13px] leading-4 text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover",
+    "flex w-full cursor-pointer items-start gap-2 rounded-[15px] bg-transparent px-3 py-2 text-left text-[13px] leading-4 text-fg transition-colors hover:bg-dropdown-item-hover active:bg-dropdown-item-hover",
   );
 }
