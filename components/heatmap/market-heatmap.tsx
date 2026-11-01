@@ -21,9 +21,9 @@ import { HeatmapHoverTooltip } from "@/components/heatmap/heatmap-hover-tooltip"
 import { cn } from "@/lib/utils";
 
 /** Gap between sector cards (treemap padding + visible gutter). */
-const SECTOR_GAP = 12;
-/** Corner radius for each sector card — matches earnings / table cards (`rounded-2xl`). */
-const SECTOR_RADIUS = 16;
+const SECTOR_GAP = 20;
+/** Corner radius for each sector card — matches app cards (`rounded-2xl` = 20px). */
+const SECTOR_RADIUS = 20;
 /** Figma sector title bar height */
 const HEADER_H = 24;
 /** Industry / sub-sector strip inside a sector (stocks only) */
@@ -36,8 +36,6 @@ const INDUSTRY_LABEL_CHAR_PX = 5.5;
 const PAD = 4;
 /** Corner radius for every company tile. */
 const TILE_CORNER_RADIUS = 8;
-/** Same stroke as earnings / screener table cards. */
-const SECTOR_BORDER = "var(--fs-stroke-subtle)";
 const SECTOR_SHADOW_FILTER_ID = "heatmap-sector-shadow";
 
 function leafIndustryGroupKey(L: HeatmapLeaf): string {
@@ -506,16 +504,16 @@ function assetHref(market: HeatmapMarket, ticker: string): string {
 }
 
 function HeatmapSectorShadowFilter() {
-  // Match earnings / table card: `0px 1px 2px rgba(--fs-shadow-rgb, --fs-shadow-a-04)`.
+  // SVG twin of `shadow-card` (`0 1px 3.5px rgba(--fs-shadow-rgb, --fs-card-shadow-a)`).
   return (
     <filter id={SECTOR_SHADOW_FILTER_ID} x="-40%" y="-40%" width="180%" height="180%" colorInterpolationFilters="sRGB">
       <feDropShadow
         dx="0"
         dy="1"
-        stdDeviation="1"
+        stdDeviation="1.75"
         style={{
           floodColor: "rgb(var(--fs-shadow-rgb))",
-          floodOpacity: "var(--fs-shadow-a-04)",
+          floodOpacity: "var(--fs-card-shadow-a)",
         }}
       />
     </filter>
@@ -571,8 +569,6 @@ function renderSectorGroup(
         rx={r}
         ry={r}
         fill="var(--fs-surface)"
-        stroke={SECTOR_BORDER}
-        strokeWidth={1}
         filter={`url(#${SECTOR_SHADOW_FILTER_ID})`}
       />
       <g clipPath={`url(#${clipId})`}>
