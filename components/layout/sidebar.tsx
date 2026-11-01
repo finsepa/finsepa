@@ -30,6 +30,7 @@ import { requestAgentHomeIfAlreadyThere } from "@/lib/agents/agent-home-nav";
 import { ChevronDown, PieChart01 } from "@/lib/icons";
 import { PATH_APP_ENTRY } from "@/lib/auth/routes";
 import { cn } from "@/lib/utils";
+import { TopbarMobileAppButton } from "@/components/layout/topbar-mobile-app-button";
 
 const soonBadgeClass =
   "shrink-0 rounded-md border border-stroke bg-surface-muted px-1.5 text-[11px] font-medium leading-4 normal-case text-fg-muted";
@@ -592,6 +593,9 @@ export function Sidebar() {
           {content}
         </OverlayScrollArea>
       )}
+      <div className={cn("hidden shrink-0 pt-2 md:flex", collapsed ? "justify-center" : "px-3")}>
+        <TopbarMobileAppButton placement="sidebar" />
+      </div>
     </aside>
   );
 }

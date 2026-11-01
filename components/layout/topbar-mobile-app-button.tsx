@@ -18,17 +18,19 @@ const SHOW_MS = 120;
 const HIDE_MS = 140;
 const POPOVER_GAP_PX = 8;
 
+type PopoverPos = { left?: number; right?: number; top?: number; bottom?: number };
+
 /**
- * Top bar control — squircle icon; hover opens the App Store QR below, right-aligned to the button.
+ * Squircle icon; hover opens the App Store QR.
+ * `topbar`: panel below, right-aligned. `sidebar`: panel above, left-aligned (bottom-left rail slot).
  */
-export function TopbarMobileAppButton() {
+export function TopbarMobileAppButton({ placement = "topbar" }: { placement?: "topbar" | "sidebar" } = {}) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  /** Fixed: below the button, right edges aligned so the panel opens to the left. */
-  const [pos, setPos] = useState({ right: 0, top: 0 });
+  const [pos, setPos] = useState<PopoverPos>({ right: 0, top: 0 });
 
   useEffect(() => {
     setMounted(true);
@@ -59,11 +61,18 @@ export function TopbarMobileAppButton() {
     const el = buttonRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
+    if (placement === "sidebar") {
+      setPos({
+        left: Math.max(POPOVER_GAP_PX, r.left),
+        bottom: window.innerHeight - r.top + POPOVER_GAP_PX,
+      });
+      return;
+    }
     setPos({
       right: Math.max(POPOVER_GAP_PX, window.innerWidth - r.right),
       top: r.bottom + POPOVER_GAP_PX,
     });
-  }, []);
+  }, [placement]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -107,7 +116,7 @@ export function TopbarMobileAppButton() {
     open && mounted ? (
       <div
         className="fixed z-[200]"
-        style={{ right: pos.right, top: pos.top }}
+        style={pos}
         role="dialog"
         aria-label="Download iOS Finsepa app"
         onPointerEnter={scheduleShow}
