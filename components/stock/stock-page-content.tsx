@@ -60,6 +60,7 @@ import { mergeClosedMarketOverviewHeader, mergeSessionHeaderWithPerformanceSpot 
 import { changePctFromPrior, reconcilePriceChangePair } from "@/lib/chart/reconcile-price-change";
 import { useMobileSheet } from "@/lib/layout/use-mobile-sheet";
 import { cn } from "@/lib/utils";
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { priorSessionDayChangeFromPerformance } from "@/lib/market/prior-session-day-change";
 import { getUsEquityMarketSession, isUsEquityExtendedHoursHeaderEligible, lastUsRegularSessionCloseUnix } from "@/lib/market/us-equity-market-session";
 import {
@@ -175,9 +176,8 @@ function buildInitialSessionHeaderUi(
   );
 }
 
-/** Desktop: header, tab bar and Overview chart share one elevated card (mobile keeps the bare layout). */
-const STOCK_HERO_CARD_CLASS =
-  "space-y-5 md:rounded-2xl md:border md:border-transparent md:bg-surface md:p-5 md:shadow-card md:[--fs-chart-plot-bg:var(--fs-surface)]";
+/** Header, tab bar and Overview chart share one elevated card. */
+const STOCK_HERO_CARD_CLASS = cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS);
 
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
 const OFFSCREEN_PRICE_CHART =

@@ -117,7 +117,7 @@ export function EtfHoldingsTab({ ticker, isActive }: { ticker: string; isActive:
   const topTenOnly = holdings.length === 10;
 
   return (
-    <div className={cn("space-y-6 p-4 md:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+    <div className={cn("space-y-6 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
       {profile.sectors.length ? <SectorExposure sectors={profile.sectors} /> : null}
 
       {holdings.length ? (
