@@ -2,8 +2,8 @@
 
 /**
  * Design system: secondary tab row (e.g. Screener Companies / Gainers & Losers,
- * Portfolio Overview Assets / Allocation). Active tab uses a soft gray pill.
- * Fill matches sidebar nav active (`--fs-sidebar-nav-active`); dark adds a light shadow (no stroke).
+ * Portfolio Overview Assets / Allocation).
+ * Active pill is a white surface with card shadow — same chrome as the cards around it.
  * No hover wash — inactive stays muted until selected.
  */
 export type SecondaryTabItem<T extends string = string> = {
@@ -17,7 +17,7 @@ const tabBaseClass =
   "inline-flex h-9 shrink-0 items-center whitespace-nowrap rounded-full px-[14px] text-[13px] font-medium leading-5 transition-[color,background-color,box-shadow] duration-100 sm:text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
 
 const tabActiveClass =
-  `${tabBaseClass} bg-[var(--fs-sidebar-nav-active)] text-fg dark:shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]`;
+  `${tabBaseClass} bg-surface text-fg shadow-card`;
 
 const tabInactiveClass = `${tabBaseClass} bg-transparent text-fg-muted`;
 
@@ -65,7 +65,7 @@ export function SecondaryTabs<T extends string>({
                     suppressHydrationWarning
                     className={
                       active
-                        ? "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-[6px] text-[11px] font-medium tabular-nums leading-none text-fg transition-colors duration-100 bg-surface dark:bg-panel"
+                        ? "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-[6px] text-[11px] font-medium tabular-nums leading-none text-fg transition-colors duration-100 bg-[var(--fs-sidebar-nav-active)]"
                         : "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-[6px] text-[11px] font-medium tabular-nums leading-none text-fg transition-colors duration-100 bg-stroke"
                     }
                   >
