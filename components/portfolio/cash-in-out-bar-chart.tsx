@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/empty";
 import { dropdownTriggerFieldClassName } from "@/components/design-system/text-input-styles";
 import { cn } from "@/lib/utils";
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
 /** Figma Color/Blue/600 + Color/Orange/600 (Charting bar pair). */
@@ -348,10 +349,8 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
         <div className="flex min-h-0 w-full overflow-visible" style={{ height: CHART_PLOT_HEIGHT_PX }}>
           <div ref={plotRef} className="relative min-h-0 min-w-0 flex-1 overflow-visible">
             <div
-              className={cn(
-                "pointer-events-none absolute inset-x-0 z-0 bg-panel",
-                CHART_PLOT_BACKDROP_INSET_CLASS,
-              )}
+              className={cn("pointer-events-none absolute inset-x-0 z-0", CHART_PLOT_BACKDROP_INSET_CLASS)}
+              style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -495,8 +494,8 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
               {ticks.map((t) => (
                 <span
                   key={t}
-                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-0.5 py-px"
-                  style={{ top: `${tickTopPercent(t, yMax)}%` }}
+                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px"
+                  style={{ top: `${tickTopPercent(t, yMax)}%`, backgroundColor: "var(--fs-chart-plot-bg)" }}
                 >
                   {formatAxisUsd(t)}
                 </span>
@@ -575,7 +574,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
   );
 
   return (
-    <div className="mb-5">
+    <div className={cn("mb-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="hidden text-2xl font-semibold leading-9 tracking-tight text-fg sm:block">Cash</h2>
         <div className="flex w-full min-w-0 flex-nowrap items-center justify-between gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3 md:flex-nowrap">
