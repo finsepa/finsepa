@@ -18,7 +18,10 @@ import {
 } from "@/components/layout/watchlist-rail-layout-context";
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import { shellChromeToggleButtonClass } from "@/components/layout/shell-chrome-toggle-button";
-import { SHELL_DESKTOP_PANEL_BG_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  SHELL_DESKTOP_PANEL_BG_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { FREE_MAX_WATCHLIST_ASSETS } from "@/lib/account/plan-entitlements";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
@@ -380,10 +383,10 @@ export function WatchlistRailScrollContent({
   );
 }
 
-const watchlistRailSurfaceClass = cn(
-  "flex h-full min-h-0 flex-col overflow-hidden md:rounded-none",
-  SHELL_DESKTOP_PANEL_BG_CLASS,
-);
+/** Rail card insets inside the shell: 4px left keeps the card shadow unclipped, 36px right matches the topbar gutter. */
+const RAIL_CARD_GUTTER_X_PX = 4 + 36;
+
+const watchlistRailSurfaceClass = cn("flex min-h-0 flex-col overflow-hidden", MOBILE_ELEVATED_CARD_CLASS);
 
 function WatchlistRailFullPageLink() {
   return (
@@ -497,22 +500,22 @@ export function WatchlistRail() {
     <div
       suppressHydrationWarning
       className={cn(
-        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden md:flex md:border-l md:border-stroke-shell",
+        "hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden md:flex md:pb-5 md:pl-1 md:pr-9 md:pt-5",
         SHELL_DESKTOP_PANEL_BG_CLASS,
         WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
       )}
-      style={{ width: `${outerWidthPx}px` }}
+      style={{ width: `${outerWidthPx + RAIL_CARD_GUTTER_X_PX}px` }}
       aria-label="Watchlist panel"
     >
       <div
         suppressHydrationWarning
-        className={watchlistRailSurfaceClass}
+        className={cn(watchlistRailSurfaceClass, expanded ? "h-full" : "self-start")}
         style={{ width: expanded ? `${WATCHLIST_PANEL_WIDTH_PX}px` : "100%" }}
       >
         <div
           className={cn(
-            "flex shrink-0 items-center pt-2",
-            expanded ? "justify-between gap-2 px-2 pl-3 pr-2" : "justify-center px-1",
+            "flex shrink-0 items-center",
+            expanded ? "justify-between gap-2 px-2 pl-3 pr-2 pt-2" : "justify-center p-1",
           )}
         >
           {expanded ? (
