@@ -73,7 +73,7 @@ export function ScreenerSectorsTable({
         className={cn(
           "px-4 py-6 text-center text-[14px] leading-6 text-fg-muted",
           !embeddedInMobileCard &&
-            "rounded-2xl border border-stroke-subtle bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]",
+            "rounded-2xl border border-stroke-subtle bg-surface shadow-card",
         )}
       >
         No sector data is available for the current screener list.

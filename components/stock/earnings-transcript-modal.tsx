@@ -248,7 +248,7 @@ function SpeakerCard({
   return (
     <article
       className={cn(
-        "rounded-2xl border bg-surface px-4 py-3.5 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] transition-colors dark:border-stroke-shell",
+        "rounded-2xl border bg-surface px-4 py-3.5 shadow-card transition-colors dark:border-stroke-shell",
         state === "active" ? "border-fg/40 ring-1 ring-fg/15" : "border-stroke",
       )}
     >

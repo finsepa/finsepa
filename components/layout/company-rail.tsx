@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 
 /** White card — same stroke / shadow as screener inset containers. */
 const companyRailCardClass =
-  "flex w-full flex-col overflow-hidden rounded-2xl border border-stroke-subtle bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]";
+  "flex w-full flex-col overflow-hidden rounded-2xl border border-stroke-subtle bg-surface shadow-card";
 
 /** Fit-content body; 8px pad; scroll only when the list exceeds the viewport. */
 const companyRailBodyClass =

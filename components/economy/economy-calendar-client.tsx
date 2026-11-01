@@ -152,7 +152,7 @@ function eventHasData(e: EconomyCalendarEvent): boolean {
 
 /** Day column — same screener/table card chrome as earnings week grid. 8px pad on mobile around events. */
 const ECONOMY_WEEK_DAY_CARD_CLASS =
-  "flex w-[min(100%,240px)] shrink-0 flex-col rounded-2xl border border-stroke-subtle bg-surface px-2 pt-1 pb-3 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))] md:min-h-0 md:flex-1 md:shrink md:px-0 md:py-0";
+  "flex w-[min(100%,240px)] shrink-0 flex-col rounded-2xl border border-stroke-subtle bg-surface px-2 pt-1 pb-3 shadow-card md:min-h-0 md:flex-1 md:shrink md:px-0 md:py-0";
 
 /** Horizontal gap between day cards (12px). No outer shell — cards sit on the panel. */
 const ECONOMY_WEEK_DAY_GAP_CLASS =
@@ -825,7 +825,7 @@ export function EconomyCalendarClient({
       ) : (
         <div className="flex min-w-0 flex-col space-y-5">
           {totalFilteredEvents === 0 ? (
-            <div className="rounded-2xl border border-stroke-subtle bg-surface px-4 py-12 text-center text-sm text-fg-muted shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
+            <div className="rounded-2xl border border-stroke-subtle bg-surface px-4 py-12 text-center text-sm text-fg-muted shadow-card">
               No scheduled reports
             </div>
           ) : (

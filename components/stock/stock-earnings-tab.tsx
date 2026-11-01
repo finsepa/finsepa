@@ -703,7 +703,7 @@ function EstimatesChartSkeleton() {
         </div>
       </div>
       <div className="-mx-1 overflow-x-auto sm:-mx-0">
-        <div className="min-w-[640px] overflow-hidden rounded-2xl border border-stroke-subtle bg-surface px-4 py-4 shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]">
+        <div className="min-w-[640px] overflow-hidden rounded-2xl border border-stroke-subtle bg-surface px-4 py-4 shadow-card">
           <SkeletonBox className="h-[200px] w-full rounded" />
         </div>
       </div>

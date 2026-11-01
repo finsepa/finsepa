@@ -180,7 +180,7 @@ function FinancialsViewportScrollFrame({
         // Border / radius / shadow live outside the scroll mask so the right stroke stays visible.
         "w-full min-w-0 max-w-full rounded-2xl bg-surface",
         SCREENER_TABLE_OUTER_BORDER_CLASS,
-        "md:shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]",
+        "md:shadow-card",
         MOBILE_CARD_SURFACE_CLASS,
         embeddedInMobileCard &&
           "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
