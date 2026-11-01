@@ -332,8 +332,16 @@ function SidebarPortfolioGroup({ pathname, collapsed }: { pathname: string; coll
               aria-label={expanded ? "Collapse Portfolio" : "Expand Portfolio"}
               onFocus={() => setRowHovered(true)}
               onBlur={() => setRowHovered(false)}
-              className="absolute right-1 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-lg bg-[var(--fs-segment-thumb)] text-fg-muted shadow-segment transition-[opacity,color] duration-200 hover:text-fg"
-              style={{ opacity: rowHovered ? 1 : 0 }}
+              className="absolute right-1 top-1/2 size-7 -translate-y-1/2 rounded-lg text-fg-muted transition-[opacity,color] duration-200 hover:text-fg"
+              style={{
+                opacity: rowHovered ? 1 : 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 28,
+                height: 28,
+                backgroundColor: "color-mix(in srgb, var(--fs-fg) 8%, transparent)",
+              }}
             >
               <ChevronDown
                 className={cn("size-3.5 transition-transform duration-200", !expanded && "-rotate-90")}
