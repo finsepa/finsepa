@@ -507,11 +507,12 @@ export function WatchlistRail() {
       suppressHydrationWarning
       className={cn(
         // Overlays <main>'s reserved right padding, left of its scrollbar, so the page scrollbar sits at the panel edge.
-        "absolute inset-y-0 right-[var(--shell-main-scrollbar-w,0px)] z-10 hidden overflow-hidden md:flex",
+        "absolute inset-y-0 z-10 hidden overflow-hidden md:flex",
         SHELL_DESKTOP_PANEL_BG_CLASS,
         WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
       )}
       style={{
+        right: "var(--shell-main-scrollbar-w, 0px)",
         width: `${watchlistRailReservedWidthPx(pathname, outerWidthPx)}px`,
         padding: `${RAIL_CARD_INSET.top}px ${RAIL_CARD_INSET.right}px ${RAIL_CARD_INSET.bottom}px ${RAIL_CARD_INSET.left}px`,
       }}
