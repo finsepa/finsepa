@@ -174,7 +174,7 @@ function PortfolioDividendsChartInner({
   };
 
   return (
-    <section className="mb-5 w-full min-w-0 max-w-full overflow-x-hidden">
+    <section className="w-full min-w-0 max-w-full overflow-x-hidden">
       <div className="relative flex w-full min-w-0 flex-col overflow-visible" style={{ height: CHART_HEIGHT_PX }}>
         <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: plotHeight }}>
           <div
@@ -183,7 +183,8 @@ function PortfolioDividendsChartInner({
             onPointerLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
+              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0"
+              style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -298,8 +299,11 @@ function PortfolioDividendsChartInner({
                 return (
                   <span
                     key={i}
-                    className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-0.5 py-px"
-                    style={{ top: `${(PLOT_INSET_TOP_FRAC + pct * insetSpan) * 100}%` }}
+                    className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px"
+                    style={{
+                      top: `${(PLOT_INSET_TOP_FRAC + pct * insetSpan) * 100}%`,
+                      backgroundColor: "var(--fs-chart-plot-bg)",
+                    }}
                   >
                     {formatFundamentalsAxisTickLabel("usd", t)}
                   </span>

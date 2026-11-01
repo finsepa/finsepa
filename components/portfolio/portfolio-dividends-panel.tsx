@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/empty";
 import { SecondaryTabs, type SecondaryTabItem } from "@/components/ui/secondary-tabs";
 import { cn } from "@/lib/utils";
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import { PortfolioDividendsChart } from "@/components/portfolio/portfolio-dividends-chart";
 
 const usd0 = new Intl.NumberFormat("en-US", {
@@ -520,13 +521,15 @@ function PortfolioDividendsPanelInner({
 
   return (
     <div className="w-full min-w-0 pb-8">
-      <DividendsYearTabs
-        year={selectedYear}
-        minYear={navMinYear}
-        maxYear={navMaxYear}
-        onYearChange={setSelectedYear}
-      />
-      <PortfolioDividendsChart months={yearMonths} year={selectedYear} />
+      <div className={cn("mb-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+        <DividendsYearTabs
+          year={selectedYear}
+          minYear={navMinYear}
+          maxYear={navMaxYear}
+          onYearChange={setSelectedYear}
+        />
+        <PortfolioDividendsChart months={yearMonths} year={selectedYear} />
+      </div>
       {yearHasRows ? (
         <DividendsScheduleTables months={yearMonths} nameBySymbol={nameBySymbol} />
       ) : (
