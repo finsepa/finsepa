@@ -310,6 +310,16 @@ function SidebarPortfolioGroup({ pathname, collapsed }: { pathname: string; coll
   const activeId = hasMounted ? portfolioIdFromPathname(pathname) : null;
   const showList = !collapsed && expanded && list.length > 0;
 
+  const wasOnPortfolioRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!hasMounted) return;
+    const onPortfolio = activeId != null;
+    if (onPortfolio && wasOnPortfolioRef.current === false && !readPortfolioGroupExpanded()) {
+      writePortfolioGroupExpanded(true);
+    }
+    wasOnPortfolioRef.current = onPortfolio;
+  }, [activeId, hasMounted]);
+
   const rowClass = cn(
     "flex h-9 shrink-0 items-center gap-2 overflow-hidden rounded-lg py-2 text-sm font-medium leading-5 text-fg",
     SIDEBAR_CONTENT_MOTION_CLASS,
