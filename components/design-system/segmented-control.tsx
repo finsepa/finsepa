@@ -2,7 +2,6 @@
 
 import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
-import { whiteSurfaceButtonBorderClass, whiteSurfaceButtonShadowClass } from "@/components/design-system/secondary-button-styles";
 import { cn } from "@/lib/utils";
 
 const SEGMENT_MOTION_MS = 280;
@@ -12,8 +11,8 @@ const SEGMENT_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
  * Segmented control (“Button Group” in Figma Web-App-Design).
  * @see https://www.figma.com/design/YSUI0cOq1fIhZsGu1VuIOK/Web-App-Design?node-id=374-24183
  *
- * Track and segments use **10px** corner radius (not fully rounded). Active segment: white fill,
- * same border + light shadow as white-surface buttons; label **Inter Medium 14px / 20px / #141414** (Figma).
+ * Fully rounded track + thumb (Backpack): sunken `--fs-segment-track`, borderless raised thumb with a
+ * white top rim and soft shadow; label **Inter Medium 14px / 20px / #141414**.
  * Inactive: zinc-500, regular weight.
  * Set {@link fullWidth} for a single joined row that spans the container (equal-width segments).
  * Icon-only options (non-string {@link SegmentedControlOption.label} + `aria-label`) use square `size-8` hit targets.
@@ -34,12 +33,7 @@ const ACTIVE_RADIUS = "rounded-full";
 /** Extra 2px on the sides so the pill thumb clears the track's rounded ends. */
 const TRACK_PAD = "py-px px-[3px]";
 
-/** Active thumb — light: same border + shadow as outline buttons; dark: fill + shadow, no stroke. */
-const ACTIVE_THUMB_CHROME = cn(
-  whiteSurfaceButtonBorderClass,
-  whiteSurfaceButtonShadowClass,
-  "bg-button dark:border-transparent dark:bg-[#2C2C2E]",
-);
+const ACTIVE_THUMB_CHROME = "bg-[var(--fs-segment-thumb)] shadow-segment";
 
 function isIconOnlyOption(opt: SegmentedControlOption): boolean {
   return typeof opt.label !== "string" && Boolean(opt["aria-label"]);
@@ -132,7 +126,7 @@ export function SegmentedControl<T extends string>({
       ref={trackRef}
       className={cn(
         fullWidth ? "flex w-full min-w-0" : "inline-flex max-w-full min-w-0",
-        "relative h-9 gap-0 bg-surface-subtle",
+        "relative h-9 gap-0 bg-[var(--fs-segment-track)]",
         iconOnly ? "items-center" : "items-stretch",
         RADIUS,
         TRACK_PAD,

@@ -37,6 +37,10 @@
   /** Table year / section bands — light matches muted; dark is a fixed lift off card. */
   --fs-surface-section: #f4f4f5;
   --fs-surface-subtle: #f1f1f2;
+  /** Segmented control (Backpack): sunken track + raised thumb with a top rim. */
+  --fs-segment-track: #e5e5e5;
+  --fs-segment-thumb: var(--fs-surface);
+  --fs-segment-thumb-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 1), 0 2px 20px 0 rgba(0, 0, 0, 0.04);
   --fs-surface-hover: #ebebeb;
   /** Text-entry fields (search, clearable inputs) — fill / border / hover / focus stroke. */
   --fs-field: #f1f1f2;
@@ -272,6 +276,7 @@
   --color-success-fg: var(--fs-success-fg);
   --font-sans: var(--font-inter);
   --shadow-card: var(--fs-card-shadow);
+  --shadow-segment: var(--fs-segment-thumb-shadow);
   /** Containers / dialogs use `rounded-2xl` — 20px (Tailwind default is 16px). */
   --radius-2xl: 1.25rem;
 }
@@ -307,6 +312,9 @@
   /** Year / sector bands in table cards. */
   --fs-surface-section: #191919;
   --fs-surface-subtle: #1a1a1a; /* segmented track / group fills */
+  --fs-segment-track: #1a1a1a;
+  --fs-segment-thumb: #2c2c2e;
+  --fs-segment-thumb-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 20px 0 rgba(0, 0, 0, 0.3);
   --fs-surface-hover: #232325;
   /** Text-entry fields — same hex as `--fs-surface` (separate token). */
   --fs-field: #151515;
