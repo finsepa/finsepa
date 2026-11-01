@@ -70,7 +70,7 @@ export async function MarketNewsPage({
                 href={`/news?${p.toString()}`}
                 className={`relative py-2 text-[14px] font-medium leading-6 transition-colors duration-100 ${
                   active
-                    ? "text-fg after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-fg after:content-['']"
+                    ? "text-fg after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[3px] after:bg-fg after:content-['']"
                     : "text-fg-muted hover:text-fg"
                 }`}
               >

@@ -180,6 +180,7 @@ export function CashOperationTabs({
         <span
           className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-fg motion-reduce:transition-none"
           style={{
+            height: 3,
             left: indicator.left,
             width: indicator.width,
             opacity: indicator.width > 0 ? 1 : 0,

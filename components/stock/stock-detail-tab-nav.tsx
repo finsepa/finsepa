@@ -147,7 +147,7 @@ export function StockDetailTabNav({
           <span
             className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-fg motion-reduce:transition-none"
             style={{
-              height: embedded ? 3 : undefined,
+              height: 3,
               left: indicator.left,
               width: indicator.width,
               transitionProperty: "left, width",
