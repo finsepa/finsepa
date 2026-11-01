@@ -31,7 +31,7 @@ const RADIUS = "rounded-full";
 /** Active thumb sits inside track pad — 2px tighter than the track. */
 const ACTIVE_RADIUS = "rounded-full";
 /** Same inset on every side so the thumb sits concentric in the pill track. */
-const TRACK_PAD = "p-px";
+const TRACK_PAD = "p-0.5";
 
 const ACTIVE_THUMB_CHROME = "bg-[var(--fs-segment-thumb)] shadow-segment";
 
