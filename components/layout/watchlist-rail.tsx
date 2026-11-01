@@ -523,10 +523,10 @@ export function WatchlistRail() {
       {expanded ? (
         <div
           suppressHydrationWarning
-          className="flex h-full min-h-0 shrink-0 flex-col"
+          className={cn("flex max-h-full min-h-0 shrink-0 flex-col self-start overflow-hidden p-2", MOBILE_ELEVATED_CARD_CLASS)}
           style={{ width: `${WATCHLIST_PANEL_WIDTH_PX}px` }}
         >
-          <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
+          <div className="mb-1 flex shrink-0 items-center justify-between gap-2 pl-3">
             {mounted && storageHydrated ? (
               <WatchlistOptionsMenu
                 name={activeWatchlistName}
@@ -551,7 +551,7 @@ export function WatchlistRail() {
               <WatchlistRailToggle expanded={expanded} onToggle={toggleCollapsed} />
             </div>
           </div>
-          <div className={cn("flex min-h-0 flex-col overflow-hidden p-2", MOBILE_ELEVATED_CARD_CLASS)}>
+          <div className="flex min-h-0 flex-col overflow-hidden">
             <DropdownScrollArea
               className={cn(
                 "flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain overscroll-x-hidden",

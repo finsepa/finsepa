@@ -771,8 +771,11 @@ function HomeAsideContent() {
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-col gap-6">
-      <section className="flex min-h-0 min-w-0 flex-col" aria-label="Watchlist">
-        <div className="mb-3 flex shrink-0 items-center justify-between gap-2">
+      <section
+        className={cn("flex min-h-0 min-w-0 flex-col overflow-hidden p-2", MOBILE_ELEVATED_CARD_CLASS)}
+        aria-label="Watchlist"
+      >
+        <div className="mb-1 flex shrink-0 items-center justify-between gap-2 pl-3">
           {!watchlistReady ? (
             <div className="h-4 w-24 animate-pulse rounded bg-stroke" aria-hidden />
           ) : singleWatchlist ? (
@@ -830,7 +833,7 @@ function HomeAsideContent() {
           </div>
         </div>
 
-        <div className={cn("flex min-h-0 flex-col overflow-hidden p-2", MOBILE_ELEVATED_CARD_CLASS)}>
+        <div className="flex min-h-0 flex-col overflow-hidden">
           <OverlayScrollArea>
             <WatchlistRailScrollContent
               showLoadingState={!watchlistReady || awaitingServerList || (loading && items.length === 0)}
