@@ -138,7 +138,7 @@ function ProtectedAppChrome({
           <div
             suppressHydrationWarning
             className={cn(
-              "shell-desktop-panel__header mobile-topbar-shell z-30 min-w-0 w-full max-w-full shrink-0 max-md:bg-transparent max-md:shadow-none md:border-b md:border-stroke-shell",
+              "shell-desktop-panel__header mobile-topbar-shell z-30 min-w-0 w-full max-w-full shrink-0 max-md:bg-transparent max-md:shadow-none",
               SHELL_DESKTOP_PANEL_BG_MD_CLASS,
             )}
           >

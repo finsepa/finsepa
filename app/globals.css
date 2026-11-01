@@ -197,7 +197,6 @@
   --shell-desktop-padding-left: 8px;
   --shell-desktop-padding-right: 8px;
   --shell-desktop-padding-bottom: 8px;
-  --shell-desktop-panel-radius: 16px;
   /** Shared height for topbar + sidebar logo/toggle row (desktop). */
   --shell-chrome-header-height: 60px;
   /** Figma modal chrome — inset + radius on `#app-shell-root` when a modal is open. */
@@ -574,28 +573,18 @@ html:not(.dark) .fs-primary-button-gradient-stroke {
     left: var(--shell-left);
   }
 
+  /* Frameless main area (Backpack-style): same fill as the page, no stroke / radius / shadow. */
   .shell-desktop-panel {
     background: var(--fs-panel);
-    border: 1px solid var(--fs-stroke-shell);
-    border-radius: var(--shell-desktop-panel-radius);
-    box-shadow: 0 1px 2px 0 rgba(var(--fs-shadow-rgb), var(--fs-shadow-a-06));
     overflow: hidden;
-    border-top-left-radius: var(--shell-desktop-panel-radius);
-    border-top-right-radius: var(--shell-desktop-panel-radius);
-    border-bottom-left-radius: var(--shell-desktop-panel-radius);
-    border-bottom-right-radius: var(--shell-desktop-panel-radius);
   }
 
   .shell-desktop-panel__header {
-    border-top-left-radius: var(--shell-desktop-panel-radius);
-    border-top-right-radius: var(--shell-desktop-panel-radius);
     overflow: hidden;
     background: var(--fs-panel);
   }
 
   .shell-desktop-panel__content {
-    border-bottom-left-radius: var(--shell-desktop-panel-radius);
-    border-bottom-right-radius: var(--shell-desktop-panel-radius);
     overflow: hidden;
     background: var(--fs-panel);
   }
