@@ -176,7 +176,7 @@ function buildInitialSessionHeaderUi(
   );
 }
 
-/** Header, tab bar and Overview chart share one elevated card. */
+/** Breadcrumbs, header and tab bar share one elevated card. */
 const STOCK_HERO_CARD_CLASS = cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS);
 
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
@@ -1206,7 +1206,6 @@ export function StockPageContent({
 
   return (
     <div className="relative min-w-0">
-      <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} />
       <div className="space-y-5 px-4 py-0 max-md:pt-0 sm:space-y-5 sm:px-9 sm:pt-5 sm:pb-6">
       <KeyStatsMetricChartModal
         key={revenueProfitModalMetric ?? "closed"}
@@ -1234,6 +1233,7 @@ export function StockPageContent({
         <AssetPageTopLoader />
       </Suspense>
       <div className={STOCK_HERO_CARD_CLASS}>
+      <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} embedded />
       <StockHeader
         ticker={ticker}
         periodLabel={headerPeriodLabel}
@@ -1311,6 +1311,7 @@ export function StockPageContent({
           embedded
         />
       </div>
+      </div>
 
       {/*
         Overview price chart must stay mounted when other tabs are open — `hidden` on the tabpanel
@@ -1320,7 +1321,7 @@ export function StockPageContent({
       <div
         className={
           displayTab === "overview"
-            ? "space-y-5"
+            ? cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)
             : "pointer-events-none fixed left-0 top-0 -z-10 h-[420px] w-[min(1200px,calc(100vw-4.5rem))] -translate-x-[120vw] opacity-0"
         }
         aria-hidden={displayTab !== "overview"}
@@ -1412,7 +1413,6 @@ export function StockPageContent({
             />
           </div>
         ) : null}
-      </div>
       </div>
 
       {tabsMounted.overview ? (

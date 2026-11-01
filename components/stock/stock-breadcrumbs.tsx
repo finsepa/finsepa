@@ -14,9 +14,10 @@ type Props = {
   ticker: string;
   headerMeta: StockDetailHeaderMeta | null;
   isEtf?: boolean;
+  embedded?: boolean;
 };
 
-export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
+export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false, embedded = false }: Props) {
   const meta = getStockDetailMetaFromTicker(ticker);
   const breadcrumbSymbol = meta.ticker;
 
@@ -33,7 +34,7 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false }: Props) {
   );
 
   return (
-    <AssetBreadcrumbBar>
+    <AssetBreadcrumbBar embedded={embedded}>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
       <Link
         href={isEtf ? SCREENER_ETFS_HREF : "/screener"}
