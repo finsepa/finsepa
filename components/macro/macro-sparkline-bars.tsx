@@ -261,8 +261,9 @@ export function MacroSparklineBars({
           onPointerLeave={clearHover}
         >
           <div
-            className="pointer-events-none absolute inset-x-0 z-0 bg-panel"
+            className="pointer-events-none absolute inset-x-0 z-0"
             style={{
+              backgroundColor: "var(--fs-chart-plot-bg)",
               top: `${PLOT_INSET_TOP_FRAC * 100}%`,
               bottom: `${PLOT_INSET_BOTTOM_FRAC * 100}%`,
             }}
@@ -415,8 +416,11 @@ export function MacroSparklineBars({
             {yTicks.map((t, i) => (
               <span
                 key={i}
-                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
-                style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
+                className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm px-1 py-px"
+                style={{
+                  top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%`,
+                  backgroundColor: "var(--fs-chart-plot-bg)",
+                }}
               >
                 {formatMacroChartAxisTick(t, kind)}
               </span>

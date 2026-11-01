@@ -319,7 +319,8 @@ function MacroProminentLineChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
+              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0"
+              style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
             >
               <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
@@ -424,8 +425,9 @@ function MacroProminentLineChart({
                   />
                   <span
                     aria-hidden
-                    className="pointer-events-none absolute z-[4] -translate-x-1/2 -translate-y-1/2 rounded-full border-solid bg-panel"
+                    className="pointer-events-none absolute z-[4] -translate-x-1/2 -translate-y-1/2 rounded-full border-solid"
                     style={{
+                      backgroundColor: "var(--fs-chart-plot-bg)",
                       left: `${(hoveredPt.x / SVG_PLOT_W) * 100}%`,
                       top: `${(hoveredPt.y / SVG_PLOT_H) * 100}%`,
                       width: CHARTING_LINE_POINT_MARKER_RADIUS_PX * 2,
@@ -440,8 +442,9 @@ function MacroProminentLineChart({
               {hoveredIndex == null && lineSvg.lastPt && lineRevealProgress >= 1 ? (
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full border-solid bg-panel"
+                  className="pointer-events-none absolute z-[3] -translate-x-1/2 -translate-y-1/2 rounded-full border-solid"
                   style={{
+                    backgroundColor: "var(--fs-chart-plot-bg)",
                     left: `${(lineSvg.lastPt.x / SVG_PLOT_W) * 100}%`,
                     top: `${(lineSvg.lastPt.y / SVG_PLOT_H) * 100}%`,
                     width: CHARTING_LINE_POINT_MARKER_RADIUS_PX * 2,
@@ -507,8 +510,11 @@ function MacroProminentLineChart({
               {yTicks.map((t, i) => (
                 <span
                   key={i}
-                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm bg-panel px-1 py-px"
-                  style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
+                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm px-1 py-px"
+                  style={{
+                    top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%`,
+                    backgroundColor: "var(--fs-chart-plot-bg)",
+                  }}
                 >
                   {formatMacroChartAxisTick(t, kind)}
                 </span>

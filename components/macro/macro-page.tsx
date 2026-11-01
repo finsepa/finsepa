@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Check, ChevronDown } from "@/lib/icons";
 
 import { TabSwitcher } from "@/components/design-system";
+import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { MacroCardModel } from "@/components/macro/macro-card";
 import { MacroChangeDisplay } from "@/components/macro/macro-change-display";
 import { formatMacroLatestDate, formatMacroPeriodCaption, formatMacroValue } from "@/components/macro/macro-format";
@@ -312,7 +313,7 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
               No macro data available from EODHD right now.
             </div>
           ) : selected && windowedModel ? (
-            <div className="min-w-0">
+            <div className={cn("min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
               <div className="mb-4 min-w-0">
                 <h2 className="mb-2 text-xl font-semibold leading-7 tracking-tight text-fg">
                   {selected.title}
