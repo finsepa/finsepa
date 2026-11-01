@@ -25,7 +25,7 @@ import {
   portfolioKindSubtext,
   type PortfolioEntry,
 } from "@/components/portfolio/portfolio-types";
-import { ChevronLeft, ChevronRight, Layers2, Lock, Plus, Settings, X } from "@/lib/icons";
+import { ChevronLeft, ChevronRight, Layers2, Lock, PlusCircleSolid, Settings, XCircle } from "@/lib/icons";
 import {
   createCombinedPortfolioMenuIconAnimation,
   createPortfolioMenuIconAnimation,
@@ -215,8 +215,8 @@ export function TopbarAddMenu() {
         style={TRIGGER_STYLE}
       >
         <span className="quick-add-trigger-icons" style={TRIGGER_ICON_STYLE} aria-hidden>
-          <Plus strokeWidth={2} className="h-5 w-5 quick-add-trigger-plus" style={TRIGGER_ICON_STYLE} />
-          <X strokeWidth={2} className="h-5 w-5 quick-add-trigger-close" style={TRIGGER_ICON_STYLE} />
+          <PlusCircleSolid className="h-5 w-5 quick-add-trigger-plus" style={TRIGGER_ICON_STYLE} />
+          <XCircle className="h-5 w-5 quick-add-trigger-close" style={TRIGGER_ICON_STYLE} />
         </span>
         <span className="text-[13px] font-semibold leading-5">Add</span>
       </button>

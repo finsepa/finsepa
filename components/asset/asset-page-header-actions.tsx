@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "@/lib/icons";
+import { PlusCircleSolid } from "@/lib/icons";
 
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
@@ -47,7 +47,7 @@ export function AssetPageHeaderActions({
           className={addTradeButtonClass}
           aria-label="Add Trade"
         >
-          <Plus className="h-5 w-5 shrink-0 md:h-4 md:w-4" strokeWidth={1.75} aria-hidden />
+          <PlusCircleSolid className="h-5 w-5 shrink-0 md:h-4 md:w-4" aria-hidden />
           <span className="hidden md:inline">Add Trade</span>
         </button>
       )}

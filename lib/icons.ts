@@ -302,6 +302,7 @@ export const Contrast: AppIcon = ({
 export {
   CheckVerified02 as VerifiedBadge,
   Play as PlaySolid,
+  PlusCircle as PlusCircleSolid,
   Stop as StopSolid,
   XCircle,
 } from "@untitledui-pro/icons/solid";

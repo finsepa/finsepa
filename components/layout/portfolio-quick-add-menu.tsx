@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MoreHorizontal, Plus, X } from "@/lib/icons";
+import { MoreHorizontal, PlusCircleSolid, XCircle } from "@/lib/icons";
 
 import { DropdownMenuLottieIcon } from "@/components/icons/dropdown-menu-lottie-icon";
 
@@ -327,8 +327,8 @@ export function PortfolioQuickAddMenu({
         <MoreHorizontal strokeWidth={2} className="h-5 w-5" style={iconSizeStyle} aria-hidden />
       ) : (
         <span className="quick-add-trigger-icons" style={iconSizeStyle} aria-hidden>
-          <Plus strokeWidth={2} className="h-5 w-5 quick-add-trigger-plus" style={iconSizeStyle} />
-          <X strokeWidth={2} className="h-5 w-5 quick-add-trigger-close" style={iconSizeStyle} />
+          <PlusCircleSolid className="h-5 w-5 quick-add-trigger-plus" style={iconSizeStyle} />
+          <XCircle className="h-5 w-5 quick-add-trigger-close" style={iconSizeStyle} />
         </span>
       )}
       {primaryWithLabel ? (
