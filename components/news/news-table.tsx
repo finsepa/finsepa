@@ -31,14 +31,14 @@ function formatTime(iso: string): string {
 }
 
 const NEWS_GRID =
-  "grid w-full min-w-0 items-center gap-x-2 grid-cols-[3fr_1.2fr_1fr] sm:grid-cols-[120px_3fr_1.5fr_1fr]";
+  "grid w-full min-w-0 items-center gap-x-2 grid-cols-[3fr_1.2fr_1fr] sm:grid-cols-[160px_3fr_1.5fr_1fr]";
 
 function NewsRowCells({ item }: { item: NewsItem }) {
   return (
     <>
       <div
         className={cn(
-          "hidden text-[14px] font-medium leading-5 text-fg-muted tabular-nums sm:block",
+          "hidden whitespace-nowrap text-[14px] font-medium leading-5 text-fg-muted tabular-nums sm:block",
           TABLE_START_ALIGNED_PAD_CLASS,
         )}
       >
