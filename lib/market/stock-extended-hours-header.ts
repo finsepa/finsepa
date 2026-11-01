@@ -226,6 +226,9 @@ export function resolveExtendedHoursLiveQuote(
     }
   }
 
+  // Thin listings can carry an ext-hours print from days ago; never show one older than the last session
+  // (36h still covers holiday calendar drift, where the real prior close is ~24h before `regularCloseSec`).
+  const minFreshSec = regularCloseSec - 36 * 3600;
   const post = candidates.filter((c) => c.timeSec > regularCloseSec);
   const pre = candidates.filter((c) => isPreMarketQuoteTime(c.timeSec, now));
   const preSpan = candidates.filter((c) => isTodayPreMarketSpan(c.timeSec, now, regularCloseSec));
@@ -241,14 +244,16 @@ export function resolveExtendedHoursLiveQuote(
   } else {
     pool = post.length ? post : pre.length ? pre : preSpan;
     if (!pool.length && wall === "closed") {
-      const extended = candidates.filter((c) => isExtendedHoursQuoteTimeSec(c.timeSec));
+      const extended = candidates.filter(
+        (c) => c.timeSec >= minFreshSec && isExtendedHoursQuoteTimeSec(c.timeSec),
+      );
       if (extended.length) pool = extended;
     }
   }
   if (!pool.length) {
     const eth = positiveUsd(row.ethPrice);
     const ethSec = parseProviderTimeSec(row.ethTime);
-    if (eth != null && ethSec != null && isExtendedHoursQuoteTimeSec(ethSec)) {
+    if (eth != null && ethSec != null && ethSec >= minFreshSec && isExtendedHoursQuoteTimeSec(ethSec)) {
       return {
         price: eth,
         timeSec: ethSec,
