@@ -203,6 +203,16 @@ function ProtectedAppChrome({
             >
               {children}
             </main>
+            <div
+              aria-hidden
+              className="shell-top-progressive-blur hidden md:block"
+              style={{ right: `calc(var(--shell-main-scrollbar-w, 0px) + ${railReservedPx}px)` }}
+            >
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
             <Suspense fallback={null}>
               <WatchlistRail />
             </Suspense>
