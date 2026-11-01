@@ -21,7 +21,7 @@ function BrokerageInitials({ name, className }: { name: string; className?: stri
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-[10px] border border-stroke bg-surface text-[11px] font-semibold text-fg-muted shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]",
+        "flex shrink-0 items-center justify-center rounded-full border border-stroke bg-surface text-[11px] font-semibold text-fg-muted shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]",
         className,
       )}
       aria-hidden
@@ -37,11 +37,11 @@ const portfolioListLogoSizeClass = {
 } as const;
 
 const portfolioListLogoShellClass =
-  "flex shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-stroke bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]";
+  "flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-stroke bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]";
 
 /** Top bar squircle — matches `topbarSquircleIconClass` (36×36). */
 export const portfolioTopbarLogoClass =
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-stroke bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]";
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stroke bg-surface shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]";
 
 type PortfolioLogoSize = "list" | "topbar";
 
