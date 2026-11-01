@@ -116,6 +116,7 @@ export function parseEtfProfile(ticker: string, root: Record<string, unknown> | 
     dividendFrequency: str(etf.Dividend_Paying_Frequency),
     holdingsCount: num(etf.Holdings_Count),
     holdings,
+    lookThrough: null,
     sectors: weightsFromMap(etf.Sector_Weights, "Equity_%", SECTOR_LABELS),
     assetAllocation: weightsFromMap(etf.Asset_Allocation, "Net_Assets_%", ASSET_CLASS_LABELS),
     regions: weightsFromMap(etf.World_Regions, "Equity_%"),
@@ -135,8 +136,39 @@ export function parseEtfProfile(ticker: string, root: Record<string, unknown> | 
   };
 }
 
+/** A single position at or above this weight makes the fund a wrapper worth looking through. */
+const LOOK_THROUGH_MIN_WEIGHT_PCT = 80;
+
+/**
+ * Wrapper fund → underlying ETF's holdings, scaled by the wrapper's weight in it.
+ * One extra (cached) fundamentals read, only for funds that are ~all one ETF.
+ */
+async function lookThroughHoldings(profile: EtfProfile): Promise<EtfProfile["lookThrough"]> {
+  const top = profile.holdings[0];
+  if (!top || profile.holdings.length > 3 || top.weightPct < LOOK_THROUGH_MIN_WEIGHT_PCT) return null;
+  if (top.code === profile.ticker) return null;
+  const underlying = parseEtfProfile(top.code, await fetchEodhdFundamentalsJson(top.code));
+  if (!underlying?.holdings.length) return null;
+  const scale = top.weightPct / 100;
+  return {
+    viaCode: top.code,
+    viaName: underlying.name ?? top.name,
+    holdings: underlying.holdings.map((h) => {
+      const weightPct = h.weightPct * scale;
+      return {
+        ...h,
+        weightPct,
+        valueUsd: profile.aumUsd != null ? (profile.aumUsd * weightPct) / 100 : null,
+      };
+    }),
+  };
+}
+
 /** ETF fund data from the shared fundamentals cache (no extra EODHD request when the page already loaded it). */
 export async function getEtfProfile(ticker: string): Promise<EtfProfile | null> {
   const root = await fetchEodhdFundamentalsJson(ticker);
-  return parseEtfProfile(ticker, root);
+  const profile = parseEtfProfile(ticker, root);
+  if (!profile) return null;
+  const lookThrough = await lookThroughHoldings(profile);
+  return lookThrough ? { ...profile, lookThrough } : profile;
 }

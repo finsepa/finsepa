@@ -26,6 +26,11 @@ export type EtfProfile = {
   /** EODHD `Holdings_Count` — equals the listed rows (often capped at 10 for large funds). */
   holdingsCount: number | null;
   holdings: EtfHolding[];
+  /**
+   * Wrapper funds (e.g. an income overlay that holds ~100% of one ETF): the underlying fund's
+   * holdings, with weights/values scaled to this fund's exposure.
+   */
+  lookThrough: { viaCode: string; viaName: string; holdings: EtfHolding[] } | null;
   sectors: EtfWeight[];
   assetAllocation: EtfWeight[];
   regions: EtfWeight[];

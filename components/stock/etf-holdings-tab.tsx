@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 const SECTOR_COLORS = ["#6366F1", "#F87171", "#FBBF24", "#4ADE80", "#38BDF8", "#2DD4BF", "#FB923C", "#A78BFA"];
 const OTHER_COLOR = "#A1A1AA";
 const MAX_LEGEND_SECTORS = 6;
+const MAX_LISTED_HOLDINGS = 20;
 
 /** Top sectors + a single "Other" bucket so the bar and legend stay readable. */
 function sectorSegments(sectors: EtfWeight[]): { label: string; pct: number; color: string }[] {
@@ -111,10 +112,18 @@ export function EtfHoldingsTab({ ticker, isActive }: { ticker: string; isActive:
     );
   }
 
-  const holdings = profile.holdings;
+  const lookThrough = profile.lookThrough;
+  const allHoldings = lookThrough?.holdings ?? profile.holdings;
+  const holdings = allHoldings.slice(0, MAX_LISTED_HOLDINGS);
   const maxWeight = holdings[0]?.weightPct || 1;
   /** EODHD caps large funds at their top 10 positions. */
-  const topTenOnly = holdings.length === 10;
+  const topTenOnly = allHoldings.length === 10;
+  const holdingsTitle =
+    allHoldings.length > MAX_LISTED_HOLDINGS
+      ? `Top ${MAX_LISTED_HOLDINGS} of ${allHoldings.length} holdings`
+      : topTenOnly
+        ? "Top 10 holdings"
+        : `Holdings (${allHoldings.length})`;
 
   return (
     <div className={cn("space-y-6 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
@@ -123,7 +132,7 @@ export function EtfHoldingsTab({ ticker, isActive }: { ticker: string; isActive:
       {holdings.length ? (
         <section aria-label="Holdings" className="space-y-2">
           <div className="flex items-baseline justify-between gap-3">
-            <h3 className={STOCK_OVERVIEW_SECTION_TITLE_CLASS}>{topTenOnly ? "Top 10 holdings" : `Holdings (${holdings.length})`}</h3>
+            <h3 className={STOCK_OVERVIEW_SECTION_TITLE_CLASS}>{holdingsTitle}</h3>
             {profile.aumUsd != null ? (
               <span className="text-[13px] text-fg-muted">AUM {formatUsdCompact(profile.aumUsd)}</span>
             ) : null}
@@ -140,6 +149,15 @@ export function EtfHoldingsTab({ ticker, isActive }: { ticker: string; isActive:
             ))}
           </div>
           <p className="pt-2 text-[12px] leading-4 text-fg-muted">
+            {lookThrough ? (
+              <>
+                This fund holds{" "}
+                <Link href={`/stock/${encodeURIComponent(lookThrough.viaCode)}`} prefetch={false} className="font-medium text-fg hover:underline">
+                  {lookThrough.viaCode}
+                </Link>
+                ; holdings shown through it, weighted by this fund&apos;s exposure.{" "}
+              </>
+            ) : null}
             Value is the holding&apos;s weight × fund AUM.
           </p>
         </section>
