@@ -233,22 +233,21 @@ export function StockPageSkeleton() {
           <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
             <StockBreadcrumbs ticker={symbol} headerMeta={null} embedded />
             <ShellHeader kind={kind} symbol={symbol} pending={shellPending} />
+            <div className="pointer-events-none">
+              <ChartControls
+                activeRange="1D"
+                onRangeChange={noop}
+                chartSeries="price"
+                onChartSeriesChange={noop}
+              >
+                <div className="relative min-h-[320px] w-full">
+                  <AssetChartSkeleton heightPx={320} className="h-full" />
+                </div>
+              </ChartControls>
+            </div>
           </div>
           <div className="max-md:hidden pointer-events-none border-b border-solid border-stroke">
             <StockDetailTabNav activeTab="overview" onTabChange={noop} embedded />
-          </div>
-
-          <div className={cn("pointer-events-none space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
-            <ChartControls
-              activeRange="1D"
-              onRangeChange={noop}
-              chartSeries="price"
-              onChartSeriesChange={noop}
-            >
-              <div className="relative min-h-[320px] w-full">
-                <AssetChartSkeleton heightPx={320} className="h-full" />
-              </div>
-            </ChartControls>
           </div>
 
           <KeyIndicatorsSkeleton />

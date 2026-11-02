@@ -180,7 +180,8 @@ function buildInitialSessionHeaderUi(
 }
 
 /** Asset header card; the tab underline sits on its bottom edge. */
-const STOCK_HERO_CARD_CLASS = cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS);
+/** Flex gap (not `space-y`) so the offscreen fixed chart on non-overview tabs adds no trailing space. */
+const STOCK_HERO_CARD_CLASS = cn("flex flex-col gap-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS);
 
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
 const OFFSCREEN_PRICE_CHART =
@@ -1304,19 +1305,6 @@ export function StockPageContent({
         </div>
       ) : null}
 
-      </div>
-
-      <div className="max-md:hidden border-b border-solid border-stroke">
-        <StockDetailTabNav
-          activeTab={displayTab}
-          onTabChange={handleTabChange}
-          onTabIntent={handleTabIntent}
-          isEtf={isEtf}
-          sticky={displayTab !== "financials"}
-          embedded
-        />
-      </div>
-
       {/*
         Overview price chart must stay mounted when other tabs are open — `hidden` on the tabpanel
         skips mount on deep links (e.g. ?tab=insiders), which left the header stuck on "Loading…".
@@ -1325,7 +1313,7 @@ export function StockPageContent({
       <div
         className={
           displayTab === "overview"
-            ? cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)
+            ? "space-y-5"
             : "pointer-events-none fixed left-0 top-0 -z-10 h-[420px] w-[min(1200px,calc(100vw-4.5rem))] -translate-x-[120vw] opacity-0"
         }
         aria-hidden={displayTab !== "overview"}
@@ -1417,6 +1405,18 @@ export function StockPageContent({
             />
           </div>
         ) : null}
+      </div>
+      </div>
+
+      <div className="max-md:hidden border-b border-solid border-stroke">
+        <StockDetailTabNav
+          activeTab={displayTab}
+          onTabChange={handleTabChange}
+          onTabIntent={handleTabIntent}
+          isEtf={isEtf}
+          sticky={displayTab !== "financials"}
+          embedded
+        />
       </div>
 
       {tabsMounted.overview ? (
