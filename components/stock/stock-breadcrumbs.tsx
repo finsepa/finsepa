@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { CompanyLogo } from "@/components/screener/company-logo";
 import { AssetBreadcrumbBar } from "@/components/stock/asset-breadcrumb-bar";
 import { UsEquityMarketSessionBadge } from "@/components/stock/us-equity-market-session-badge";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
@@ -86,10 +87,16 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false, embedded =
       ) : null}
       {breadcrumbSep}
       <span
-        className={`${breadcrumbCrumbClass} shrink-0 font-medium text-fg`}
+        className="inline-flex shrink-0 items-center gap-1.5 font-medium text-fg"
         title={breadcrumbSymbol}
         aria-current="page"
       >
+        <CompanyLogo
+          name={meta.name ?? breadcrumbSymbol}
+          logoUrl={headerMeta?.logoUrl ?? meta.logoUrl ?? ""}
+          symbol={breadcrumbSymbol}
+          size="xs"
+        />
         {breadcrumbSymbol}
       </span>
       </div>
