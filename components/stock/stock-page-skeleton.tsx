@@ -230,12 +230,12 @@ export function StockPageSkeleton() {
     return (
       <div className="relative min-w-0" aria-busy aria-label={`Loading ${symbol}`}>
         <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:pt-5 sm:pb-6">
-          <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+          <div className={cn("space-y-5 p-4 sm:p-5 md:pb-0", MOBILE_ELEVATED_CARD_CLASS)}>
             <StockBreadcrumbs ticker={symbol} headerMeta={null} embedded />
             <ShellHeader kind={kind} symbol={symbol} pending={shellPending} />
-          </div>
-          <div className="max-md:hidden pointer-events-none border-b border-solid border-stroke">
-            <StockDetailTabNav activeTab="overview" onTabChange={noop} embedded />
+            <div className="max-md:hidden pointer-events-none">
+              <StockDetailTabNav activeTab="overview" onTabChange={noop} embedded />
+            </div>
           </div>
 
           <div className={cn("pointer-events-none space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
