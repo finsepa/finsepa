@@ -182,6 +182,12 @@ function buildInitialSessionHeaderUi(
 /** Asset header card; the tab underline sits on its bottom edge. */
 /** Flex gap (not `space-y`) so the offscreen fixed chart on non-overview tabs adds no trailing space. */
 const STOCK_HERO_CARD_CLASS = cn("flex flex-col gap-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS);
+/**
+ * Desktop non-overview tabs show only breadcrumbs + tabs on top. The header/chart card stays mounted
+ * (chart drives live header state) but moves offscreen — `hidden` would zero the chart's layout size.
+ */
+const STOCK_HERO_OFFSCREEN_DESKTOP_CLASS =
+  "md:pointer-events-none md:fixed md:left-0 md:top-0 md:-z-10 md:w-[min(1200px,calc(100vw-4.5rem))] md:-translate-x-[120vw] md:opacity-0";
 
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
 const OFFSCREEN_PRICE_CHART =
@@ -1236,8 +1242,25 @@ export function StockPageContent({
       <Suspense fallback={null}>
         <AssetPageTopLoader />
       </Suspense>
-      <div className={STOCK_HERO_CARD_CLASS}>
-      <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} embedded />
+      <div className={cn("px-4 py-3 max-md:hidden sm:px-5", MOBILE_ELEVATED_CARD_CLASS)}>
+        <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} embedded />
+      </div>
+
+      <div className="max-md:hidden border-b border-solid border-stroke">
+        <StockDetailTabNav
+          activeTab={displayTab}
+          onTabChange={handleTabChange}
+          onTabIntent={handleTabIntent}
+          isEtf={isEtf}
+          sticky={displayTab !== "financials"}
+          embedded
+        />
+      </div>
+
+      <div
+        className={cn(STOCK_HERO_CARD_CLASS, displayTab !== "overview" && STOCK_HERO_OFFSCREEN_DESKTOP_CLASS)}
+        aria-hidden={displayTab !== "overview" ? true : undefined}
+      >
       <StockHeader
         ticker={ticker}
         periodLabel={headerPeriodLabel}
@@ -1374,17 +1397,6 @@ export function StockPageContent({
             )}
           </ChartControls>
       </div>
-      </div>
-
-      <div className="max-md:hidden border-b border-solid border-stroke">
-        <StockDetailTabNav
-          activeTab={displayTab}
-          onTabChange={handleTabChange}
-          onTabIntent={handleTabIntent}
-          isEtf={isEtf}
-          sticky={displayTab !== "financials"}
-          embedded
-        />
       </div>
 
       {tabsMounted.overview ? (
