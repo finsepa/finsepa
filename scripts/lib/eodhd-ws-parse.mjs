@@ -65,8 +65,12 @@ function tradeSecInTodayExtendedSession(tradeSec, nowSec) {
 export function resolveEodhdWsTradeSec(rawTs, nowSec) {
   let t = rawTs;
   if (typeof t === "string" && t.trim()) t = Number(t);
-  if (typeof t !== "number" || !Number.isFinite(t)) return nowSec;
-  const tradeSec = t > 1e12 ? Math.floor(t / 1000) : Math.floor(t);
+  if (typeof t !== "number" || !Number.isFinite(t) || t <= 0) return nowSec;
+  // EODHD stamps are usually ms but µs/ns have appeared; anything past year ~5000 in seconds is a finer unit.
+  let sec = t;
+  while (sec > 1e11) sec /= 1000;
+  const tradeSec = Math.floor(sec);
+  if (!Number.isFinite(new Date(tradeSec * 1000).getTime())) return nowSec;
   if (tradeSecInTodayExtendedSession(tradeSec, nowSec)) return tradeSec;
   return nowSec;
 }

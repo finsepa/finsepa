@@ -575,7 +575,13 @@ function attachWsHandlers(ws, source, onAuthorized) {
     rawWsDrainScheduled = false;
     const batch = rawWsQueue.splice(0, 250);
     for (const raw of batch) {
-      const result = processWsText(raw.toString(), source);
+      let result = null;
+      try {
+        result = processWsText(raw.toString(), source);
+      } catch (err) {
+        log("skipped malformed ws message", source, String(err), raw.toString().slice(0, 200));
+        continue;
+      }
       if (result === "authorized") onAuthorized();
     }
     if (rawWsQueue.length > 0) {
