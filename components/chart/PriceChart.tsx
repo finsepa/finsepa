@@ -691,7 +691,7 @@ function overviewBaselineOptions(
       ...fills,
       crosshairMarkerVisible: !lightweight,
       crosshairMarkerRadius: 5,
-      crosshairMarkerBorderColor: "",
+      crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
       crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
       crosshairMarkerBorderWidth: 2,
     };
@@ -1894,7 +1894,7 @@ export function PriceChart({
           lastValueVisible: true,
       crosshairMarkerVisible: true,
       crosshairMarkerRadius: 5,
-      crosshairMarkerBorderColor: "",
+      crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
       crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
       crosshairMarkerBorderWidth: 2,
           });
@@ -2090,6 +2090,18 @@ export function PriceChart({
       clearMobileOverviewCrosshairDom();
     };
 
+    /** Baseline hover dot: green above the baseline, red below (LWC paints one fixed marker color). */
+    let markerSideSeries: MainPriceSeries | null = null;
+    let markerSide: "up" | "down" | null = null;
+    const syncBaselineMarkerColor = (series: MainPriceSeries, value: number) => {
+      const base = (series.options() as { baseValue?: { price?: number } }).baseValue?.price;
+      if (typeof base !== "number" || !Number.isFinite(base)) return;
+      const side = value >= base ? "up" : "down";
+      if (series === markerSideSeries && side === markerSide) return;
+      markerSideSeries = series;
+      markerSide = side;
+      series.applyOptions({ crosshairMarkerBorderColor: resolveFsColor(side === "up" ? "--fs-up" : "--fs-down") });
+    };
     const onCrosshairMove = (param: MouseEventParams) => {
       const s = seriesRef.current;
       if (!s) return;
@@ -2132,6 +2144,7 @@ export function PriceChart({
         if (nearBar && isFiniteNumber(nearBar.time) && isFiniteNumber(nearBar.value)) {
           crosshairHoveredRef.current = true;
           hoverTimeRef.current = param.time as Time;
+          syncBaselineMarkerColor(s, nearBar.value);
           if (hideMobileYAxisLabelsRef.current) {
             applyMobileOverviewCrosshair(
               { x: param.point.x, y: param.point.y },
