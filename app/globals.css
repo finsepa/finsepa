@@ -314,7 +314,8 @@
   /** Year / sector bands in table cards. */
   --fs-surface-section: #191919;
   --fs-surface-subtle: #1a1a1a; /* segmented track / group fills */
-  --fs-segment-track: #0f0f10;
+  /* On the black page; cards override to black via `CARD_CHROME_CLASS`. */
+  --fs-segment-track: #1c1c1e;
   --fs-segment-thumb: #2c2c2e;
   --fs-segment-thumb-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 20px 0 rgba(0, 0, 0, 0.3);
   --fs-surface-hover: #232325;

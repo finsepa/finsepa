@@ -17,7 +17,7 @@ export const SHELL_DESKTOP_PANEL_BG_MD_CLASS = "md:bg-panel";
  * 1px stroke-subtle, drop shadow 0 / 1 / 2 / 0 @ 4%, surface fill applied by consumers.
  */
 export const CARD_CHROME_CLASS =
-  "border border-transparent shadow-card [--fs-chart-plot-bg:var(--fs-surface)]";
+  "border border-transparent shadow-card [--fs-chart-plot-bg:var(--fs-surface)] dark:[--fs-segment-track:#000000]";
 
 /**
  * @deprecated Prefer {@link CARD_CHROME_CLASS} — same chrome at every breakpoint.
