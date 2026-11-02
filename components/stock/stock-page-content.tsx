@@ -180,7 +180,7 @@ function buildInitialSessionHeaderUi(
 }
 
 /** Asset header card; the tab underline sits on its bottom edge. */
-const STOCK_HERO_CARD_CLASS = cn("space-y-5 p-4 sm:p-5 md:pb-0", MOBILE_ELEVATED_CARD_CLASS);
+const STOCK_HERO_CARD_CLASS = cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS);
 
 /** Offscreen mount so lightweight-charts + `onDisplayChange` stay active without affecting layout. */
 const OFFSCREEN_PRICE_CHART =
@@ -1304,7 +1304,9 @@ export function StockPageContent({
         </div>
       ) : null}
 
-      <div className="max-md:hidden">
+      </div>
+
+      <div className="max-md:hidden border-b border-solid border-stroke">
         <StockDetailTabNav
           activeTab={displayTab}
           onTabChange={handleTabChange}
@@ -1313,7 +1315,6 @@ export function StockPageContent({
           sticky={displayTab !== "financials"}
           embedded
         />
-      </div>
       </div>
 
       {/*
