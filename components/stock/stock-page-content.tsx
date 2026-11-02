@@ -831,7 +831,7 @@ export function StockPageContent({
     [initialPageData, ticker],
   );
 
-  const overviewDrivesHeader = displayTab === "overview" && comparePicks.length === 0;
+  const overviewDrivesHeader = comparePicks.length === 0;
 
   const overviewHeaderUiMerged = useMemo(() => {
     if (!overviewHeaderUi) return null;
@@ -1305,20 +1305,7 @@ export function StockPageContent({
         </div>
       ) : null}
 
-      {/*
-        Overview price chart must stay mounted when other tabs are open — `hidden` on the tabpanel
-        skips mount on deep links (e.g. ?tab=insiders), which left the header stuck on "Loading…".
-        Offscreen + opacity-0 keeps layout engines and `onDisplayChange` alive without showing the chart.
-      */}
-      <div
-        className={
-          displayTab === "overview"
-            ? "space-y-5"
-            : "pointer-events-none fixed left-0 top-0 -z-10 h-[420px] w-[min(1200px,calc(100vw-4.5rem))] -translate-x-[120vw] opacity-0"
-        }
-        aria-hidden={displayTab !== "overview"}
-      >
-        {displayTab === "overview" ? (
+      <div className="space-y-5">
           <ChartControls
             activeRange={range}
             onRangeChange={setRange}
@@ -1386,25 +1373,6 @@ export function StockPageContent({
               </div>
             )}
           </ChartControls>
-        ) : tabsMounted.overview && comparePicks.length === 0 && pageDataReady ? (
-          <div className="relative min-h-[320px] w-full">
-            <PriceChart
-              key={`stock-overview-${ticker}-${chartSeries}-${range}`}
-              kind="stock"
-              symbol={ticker}
-              range={range}
-              series={chartSeries}
-              initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
-              liveSessionMinute={overviewLiveSessionMinute}
-              liveSpotUsd={overviewLiveSpotUsd}
-              livePostMarketTailTimeUnix={overviewLivePostMarketTailTimeUnix}
-              previousCloseBaseline={chartSeries === "price" ? chartPreviousCloseBaseline : null}
-              onDisplayChange={
-                chartSeries === "price" ? onOverviewHeaderDisplay : undefined
-              }
-            />
-          </div>
-        ) : null}
       </div>
       </div>
 
