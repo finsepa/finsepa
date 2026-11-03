@@ -60,6 +60,7 @@ import {
 import { formatEconomyLongDateUtc } from "@/lib/market/economy-format-display";
 import { prefetchStockEarningsTabPayload } from "@/lib/market/stock-earnings-tab-client";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
+import { WatchlistStarButton } from "@/components/watchlist/watchlist-star-button";
 import { SegmentedControl, whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import { Calendar } from "@/components/ui/calendar";
 import { PillSwitch } from "@/components/ui/pill-switch";
@@ -557,23 +558,33 @@ function EarningsCard({
   timing: EarningsReportTiming;
   onOpen: () => void;
 }) {
+  const storageKey = ticker.trim().toUpperCase();
+
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      onPointerEnter={() => prefetchStockEarningsTabPayload(ticker, true)}
-      onFocus={() => prefetchStockEarningsTabPayload(ticker, true)}
-      className="flex h-full w-full min-w-0 items-center gap-2 rounded-lg py-1.5 pr-1.5 pl-1 text-left transition-colors hover:bg-surface-muted"
-    >
-      <span className={cn("w-[3px] self-stretch shrink-0 rounded-full", EARNINGS_TIMING_ROW_BAR_CLASS[timing])} aria-hidden />
-      <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="28" />
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[13px] font-semibold leading-4 tabular-nums text-fg">{ticker}</span>
-        {companyName ? (
-          <span className="truncate text-[12px] leading-4 text-fg-muted">{companyName}</span>
-        ) : null}
-      </span>
-    </button>
+    <div className="group/earnings-card relative h-full min-w-0">
+      <button
+        type="button"
+        onClick={onOpen}
+        onPointerEnter={() => prefetchStockEarningsTabPayload(ticker, true)}
+        onFocus={() => prefetchStockEarningsTabPayload(ticker, true)}
+        className="flex h-full w-full min-w-0 items-center gap-2 rounded-lg py-1.5 pr-8 pl-1 text-left transition-colors hover:bg-surface-muted"
+      >
+        <span className={cn("w-[3px] self-stretch shrink-0 rounded-full", EARNINGS_TIMING_ROW_BAR_CLASS[timing])} aria-hidden />
+        <CompanyLogo name={companyName || ticker} logoUrl={logoUrl} symbol={ticker} size="28" />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-[13px] font-semibold leading-4 tabular-nums text-fg">{ticker}</span>
+          {companyName ? (
+            <span className="truncate text-[12px] leading-4 text-fg-muted">{companyName}</span>
+          ) : null}
+        </span>
+      </button>
+      <WatchlistStarButton
+        storageKey={storageKey}
+        label={ticker}
+        idleIconClassName="text-fg-muted hover:text-fg"
+        className="absolute top-1/2 right-1.5 -translate-y-1/2 opacity-0 transition-opacity group-hover/earnings-card:opacity-100 focus-within:opacity-100"
+      />
+    </div>
   );
 }
 

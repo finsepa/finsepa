@@ -34,6 +34,8 @@ type ToggleProps = {
   className?: string;
   /** Extra classes on the button. */
   buttonClassName?: string;
+  /** Star color when not watched (`default` variant) — overrides the faint table-row grey. */
+  idleIconClassName?: string;
   /** `detail` = asset page header — matches top bar icon buttons. `default` = screener / tables. */
   variant?: "default" | "detail";
 };
@@ -131,6 +133,7 @@ function WatchlistStarToggleInteractive({
   activeWatchlistId,
   className,
   buttonClassName = "",
+  idleIconClassName = "text-neutral-300 group-hover:text-neutral-400",
   variant = "default",
 }: ToggleProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -194,7 +197,7 @@ function WatchlistStarToggleInteractive({
                 : `h-4 w-4 transition-colors ${
                     isWatched
                       ? "fill-orange text-orange"
-                      : "fill-none text-neutral-300 group-hover:text-neutral-400"
+                      : `fill-none ${idleIconClassName}`
                   }`
             }
           />

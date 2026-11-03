@@ -155,6 +155,8 @@ function RecentRowTrailing({
 }
 
 const leadingToggleClassName = "flex w-8 shrink-0 items-center justify-center";
+const leadingStarButtonClassName =
+  "h-8 w-8 !rounded-full transition-colors duration-100 hover:bg-stroke focus-visible:bg-stroke";
 
 export function SearchResultLeadingToggle({
   item,
@@ -181,6 +183,7 @@ export function SearchResultLeadingToggle({
     return (
       <SuperinvestorFollowStarToggle
         className={leadingToggleClassName}
+        buttonClassName="hover:!bg-stroke"
         profileHref={item.route}
         label={item.name}
       />
@@ -190,6 +193,7 @@ export function SearchResultLeadingToggle({
   return (
     <WatchlistStarToggle
       className={leadingToggleClassName}
+      buttonClassName={leadingStarButtonClassName}
       storageKey={wlKey}
       label={label}
       watched={watched}
