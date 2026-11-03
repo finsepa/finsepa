@@ -38,6 +38,8 @@ const FONT_FAMILY = "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, R
 /** Neutral axis pill for crosshair price/time labels — readable on light and dark panels. */
 const CROSSHAIR_LABEL_BG = "#52525B";
 
+/** Room above the plot for the MA legend row. */
+const LEGEND_HEIGHT_PX = 22;
 const VOLUME_PANE_PX = 72;
 const VOLUME_BAR_ALPHA = 0.45;
 const VOLUME_MA_PERIOD = 20;
@@ -84,10 +86,6 @@ const volumeFormatter = new Intl.NumberFormat("en-US", { notation: "compact", ma
 
 function formatPrice(v: number): string {
   return Math.abs(v) < 1 ? smallPriceFormatter.format(v) : priceFormatter.format(v);
-}
-
-function formatSigned(v: number): string {
-  return `${v >= 0 ? "+" : "−"}${formatPrice(Math.abs(v))}`;
 }
 
 function formatTime(sec: number, opts: Intl.DateTimeFormatOptions): string {
@@ -146,44 +144,16 @@ export function CryptoCandleIntervalControl({
   );
 }
 
-function CandleLegend({
-  candle,
-  interval,
-  maValues,
-}: {
-  candle: OhlcBar;
-  interval: CryptoCandleInterval;
-  maValues: (number | null)[];
-}) {
-  const change = candle.close - candle.open;
-  const changePct = candle.open > 0 ? (change / candle.open) * 100 : 0;
-  const range = candle.high - candle.low;
-  const rangePct = candle.open > 0 ? (range / candle.open) * 100 : 0;
-  const tone = change >= 0 ? "text-[var(--fs-up)]" : "text-[var(--fs-down)]";
-  const cell = (label: string, value: string, valueClass = tone) => (
-    <span className="whitespace-nowrap">
-      <span className="text-fg-muted">{label}</span> <span className={cn("tabular-nums", valueClass)}>{value}</span>
-    </span>
-  );
+/** MA values for the hovered (or latest) candle, above the plot. */
+function MovingAverageLegend({ maValues }: { maValues: (number | null)[] }) {
   return (
-    <div className="pointer-events-none absolute left-0 top-0 z-[11] flex flex-col gap-0.5 text-[12px] leading-4">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-        <span className="text-fg-muted">{legendTime(candle.time, interval)}</span>
-        {cell("O", formatPrice(candle.open))}
-        {cell("H", formatPrice(candle.high))}
-        {cell("L", formatPrice(candle.low))}
-        {cell("C", formatPrice(candle.close))}
-        {cell("Change", `${formatSigned(change)} (${changePct >= 0 ? "+" : ""}${changePct.toFixed(2)}%)`)}
-        {cell("Range", `${formatPrice(range)} (${rangePct.toFixed(2)}%)`, "text-fg")}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-        <span className="text-fg-muted">MA({MOVING_AVERAGES.map((m) => m.period).join(",")})</span>
-        {MOVING_AVERAGES.map((ma, i) => (
-          <span key={ma.period} className="whitespace-nowrap tabular-nums" style={{ color: ma.color }}>
-            MA{ma.period}: {maValues[i] != null ? formatPrice(maValues[i]!) : "—"}
-          </span>
-        ))}
-      </div>
+    <div className="pointer-events-none absolute left-0 top-0 z-[11] flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] leading-4">
+      <span className="text-fg-muted">MA({MOVING_AVERAGES.map((m) => m.period).join(",")})</span>
+      {MOVING_AVERAGES.map((ma, i) => (
+        <span key={ma.period} className="whitespace-nowrap tabular-nums" style={{ color: ma.color }}>
+          MA{ma.period}: {maValues[i] != null ? formatPrice(maValues[i]!) : "—"}
+        </span>
+      ))}
     </div>
   );
 }
@@ -519,10 +489,8 @@ export function CryptoCandleChart({
   const legendVolumeMa = legendIndex >= 0 ? volumeMa[legendIndex] : null;
 
   return (
-    <div className="relative w-full" style={{ height: height + 36 }}>
-      {legendCandle && !loading ? (
-        <CandleLegend candle={legendCandle} interval={interval} maValues={legendMa} />
-      ) : null}
+    <div className="relative w-full" style={{ height: height + LEGEND_HEIGHT_PX }}>
+      {legendCandle && !loading ? <MovingAverageLegend maValues={legendMa} /> : null}
       <div
         className={cn("pointer-events-none absolute inset-x-0 bottom-0 z-0", CHART_PLOT_BACKGROUND_CLASS)}
         style={{ height }}
@@ -541,7 +509,7 @@ export function CryptoCandleChart({
                 label.side === "left" && "flex-row-reverse",
               )}
               style={{
-                top: 36 + label.y,
+                top: LEGEND_HEIGHT_PX + label.y,
                 left: label.x,
                 transform: `translate(${label.side === "left" ? "-100%" : "0"}, -50%)`,
               }}
@@ -554,7 +522,7 @@ export function CryptoCandleChart({
       {!loading && volumeLegendTop != null && candles.length > 0 ? (
         <div
           className="pointer-events-none absolute left-0 z-[11] flex items-center gap-3 text-[12px] leading-4"
-          style={{ top: 36 + volumeLegendTop + 4 }}
+          style={{ top: LEGEND_HEIGHT_PX + volumeLegendTop + 4 }}
         >
           <span className="text-fg-muted">
             Volume <span className="tabular-nums text-fg">{legendVolume != null ? volumeFormatter.format(legendVolume) : "—"}</span>
@@ -566,7 +534,7 @@ export function CryptoCandleChart({
       ) : null}
       {loading ? (
         <div className="absolute inset-0 z-10">
-          <AssetChartSkeleton heightPx={height + 36} className="h-full" />
+          <AssetChartSkeleton heightPx={height + LEGEND_HEIGHT_PX} className="h-full" />
         </div>
       ) : candles.length === 0 ? (
         <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-fg-muted">
