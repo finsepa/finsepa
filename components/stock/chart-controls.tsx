@@ -38,6 +38,8 @@ export function ChartControls({
   rangeLabels,
   availableRanges,
   hideMarketCapSeries = false,
+  rangeSlot,
+  mobileRangeSlot,
   children,
 }: {
   activeRange: StockChartRange;
@@ -48,6 +50,10 @@ export function ChartControls({
   availableRanges?: readonly StockChartRange[];
   /** Hide market-cap metric (indices / non-equity charts). */
   hideMarketCapSeries?: boolean;
+  /** Replaces the range tabs (e.g. crypto candle intervals). */
+  rangeSlot?: ReactNode;
+  /** Mobile counterpart of {@link rangeSlot} (full-width row under the chart). */
+  mobileRangeSlot?: ReactNode;
   /** When set (stock overview), show metric toggle instead of a static title. */
   chartSeries?: StockChartSeries;
   onChartSeriesChange?: (s: StockChartSeries) => void;
@@ -108,15 +114,17 @@ export function ChartControls({
       )}
     >
       <div className="flex items-center gap-2">
-        <SegmentedControl
-          options={mobileRangeOptions}
-          value={activeRange === "YTD" ? "6M" : activeRange}
-          onChange={onRangeChange}
-          size="sm"
-          fullWidth
-          aria-label="Chart time range"
-          className="min-w-0 flex-1"
-        />
+        {mobileRangeSlot ?? (
+          <SegmentedControl
+            options={mobileRangeOptions}
+            value={activeRange === "YTD" ? "6M" : activeRange}
+            onChange={onRangeChange}
+            size="sm"
+            fullWidth
+            aria-label="Chart time range"
+            className="min-w-0 flex-1"
+          />
+        )}
         {!chartBodyLayout && downloadSlot ? <div className="shrink-0">{downloadSlot}</div> : null}
       </div>
     </div>
@@ -195,14 +203,16 @@ export function ChartControls({
         {chartTypeSlot ? <div className="hidden shrink-0 sm:block">{chartTypeSlot}</div> : null}
         {downloadSlot ? <div className="hidden shrink-0 sm:block">{downloadSlot}</div> : null}
         <div className="shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
-          <SegmentedControl
-            options={rangeOptions}
-            value={activeRange}
-            onChange={onRangeChange}
-            size="sm"
-            aria-label="Chart time range"
-            className="min-w-min flex-nowrap"
-          />
+          {rangeSlot ?? (
+            <SegmentedControl
+              options={rangeOptions}
+              value={activeRange}
+              onChange={onRangeChange}
+              size="sm"
+              aria-label="Chart time range"
+              className="min-w-min flex-nowrap"
+            />
+          )}
         </div>
       </div>
     </div>

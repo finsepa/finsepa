@@ -8,6 +8,9 @@ import { AssetPageTopLoader } from "@/components/layout/asset-page-top-loader";
 import { SearchParamsBridge } from "@/components/navigation/search-params-bridge";
 import type { ChartDisplayState } from "@/components/chart/PriceChart";
 import { PriceChart } from "@/components/chart/PriceChart";
+import { ChartTypeToggle, type ChartType } from "@/components/chart/chart-type-toggle";
+import { CryptoCandleChart, CryptoCandleIntervalControl } from "@/components/chart/crypto-candle-chart";
+import type { CryptoCandleInterval } from "@/lib/market/crypto-candles-shared";
 import { CryptoBreadcrumbs } from "@/components/crypto/crypto-breadcrumbs";
 import { CryptoHeader } from "@/components/crypto/crypto-header";
 import { CryptoKeyStats } from "@/components/crypto/crypto-key-stats";
@@ -111,6 +114,14 @@ export function CryptoPageContent({
    * Stock-style pipeline coins default to 1D but are not live-allowlisted unless in this set.
    */
   const isLiveCrypto = isCryptoLive1DSymbol(symUpper);
+
+  const [chartType, setChartType] = useState<ChartType>("line");
+  const [candleInterval, setCandleInterval] = useState<CryptoCandleInterval>(() =>
+    isCryptoLive1DSymbol(routeSymbol) ? "15m" : "1D",
+  );
+  useEffect(() => {
+    setCandleInterval(isCryptoLive1DSymbol(symUpper) ? "15m" : "1D");
+  }, [symUpper]);
 
   // Soft-nav between coins can reuse this client tree; keep the default range aligned with the allowlist.
   useEffect(() => {
@@ -323,6 +334,8 @@ export function CryptoPageContent({
     isLiveCrypto && headerLiveQuote?.source === "ws" ? headerLiveSpotClient : null;
   const cryptoLiveWsTipQuotedAtSec =
     isLiveCrypto && headerLiveQuote?.source === "ws" ? headerLiveQuote.quotedAtSec : null;
+
+  const showCandles = chartType === "candles" && chartSeries === "price" && comparePicks.length === 0;
 
   const spotUi = useMemo(
     () =>
@@ -537,7 +550,7 @@ export function CryptoPageContent({
         onClose={() => setOverviewDownloadOpen(false)}
         snapshot={overviewDownloadSnapshot}
       />
-      <CryptoBreadcrumbs symbol={symUpper} />
+      <CryptoBreadcrumbs symbol={symUpper} logoUrl={headerLogoUrl} />
       <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:py-6">
       <Suspense fallback={null}>
         <AssetPageTopLoader />
@@ -615,6 +628,30 @@ export function CryptoPageContent({
                 chartSeries={chartSeries}
                 onChartSeriesChange={setChartSeries}
                 seriesSelectDisabled={comparePicks.length > 0}
+                chartTypeSlot={
+                  chartSeries === "price" && comparePicks.length === 0 ? (
+                    <ChartTypeToggle value={chartType} onChange={setChartType} />
+                  ) : null
+                }
+                rangeSlot={
+                  showCandles ? (
+                    <CryptoCandleIntervalControl
+                      value={candleInterval}
+                      onChange={setCandleInterval}
+                      liveIntraday={isLiveCrypto}
+                    />
+                  ) : undefined
+                }
+                mobileRangeSlot={
+                  showCandles ? (
+                    <CryptoCandleIntervalControl
+                      value={candleInterval}
+                      onChange={setCandleInterval}
+                      liveIntraday={isLiveCrypto}
+                      fullWidth
+                    />
+                  ) : undefined
+                }
                 compareSlot={
                   <CryptoComparePicker
                     baseSymbol={symUpper}
@@ -645,6 +682,11 @@ export function CryptoPageContent({
                     range={range}
                   />
                 ) : (
+                  <div className="relative w-full">
+                  <div
+                    className={cn(showCandles && "pointer-events-none invisible absolute inset-x-0 top-0")}
+                    aria-hidden={showCandles || undefined}
+                  >
                   <PriceChart
                     kind="crypto"
                     symbol={symUpper}
@@ -670,6 +712,16 @@ export function CryptoPageContent({
                     liveSpotUsd={range === "1D" ? cryptoLiveWsTipSpot : null}
                     liveQuotedAtSec={range === "1D" ? cryptoLiveWsTipQuotedAtSec : null}
                   />
+                  </div>
+                  {showCandles ? (
+                    <CryptoCandleChart
+                      symbol={symUpper}
+                      interval={candleInterval}
+                      liveSpotUsd={headerLiveSpotClient}
+                      liveQuotedAtSec={headerLiveQuote?.quotedAtSec ?? null}
+                    />
+                  ) : null}
+                  </div>
                 )}
               </ChartControls>
               {comparePicks.length > 0 ? (
