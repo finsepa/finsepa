@@ -1,27 +1,14 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { memo } from "react";
 
+import {
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+  STOCK_OVERVIEW_SECTION_TITLE_CLASS,
+} from "@/components/design-system/card-surface-styles";
+import { KEY_STATS_CARD_CLASS, StatRow } from "@/components/stock/key-stats";
 import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
-
-function StatRow({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-stroke py-1.5 last:border-0">
-      <span className="min-w-0 shrink text-[14px] leading-5 text-fg">{label}</span>
-      <span className="shrink-0 text-right text-[14px] font-medium leading-5 tabular-nums text-fg">{value}</span>
-    </div>
-  );
-}
-
-function Card({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <div className="rounded-xl border border-stroke bg-surface p-4">
-      <h3 className="mb-2 text-[14px] font-semibold leading-5 text-fg">{title}</h3>
-      {children}
-    </div>
-  );
-}
+import { cn } from "@/lib/utils";
 
 /** Display stored USD-ish strings with a leading $ when missing (API strips $ for some fields). */
 function usdFigure(raw: string): string {
@@ -53,23 +40,26 @@ function CryptoKeyStatsInner({ row }: { row: CryptoAssetRow }) {
 
   return (
     <div>
-      <h2 className="mb-4 text-[18px] font-semibold leading-7 text-fg">Key Stats</h2>
+      <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Key Stats</h2>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        <Card title="General">
+        <div className={KEY_STATS_CARD_CLASS}>
+          <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>General</h3>
           <StatRow label="Market Cap" value={usdFigure(row.marketCap || "—")} />
           <StatRow label="Fully Diluted Market Cap" value={usdFigure(row.fullyDilutedMarketCap)} />
-        </Card>
+        </div>
 
-        <Card title="Supply">
+        <div className={KEY_STATS_CARD_CLASS}>
+          <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>Supply</h3>
           <StatRow label="Total Supply" value={supplyWithTicker(sym, row.totalSupply)} />
           <StatRow label="Circ. Supply" value={supplyWithTicker(sym, row.circulatingSupply)} />
           <StatRow label="Max Supply" value={formatMaxSupply(sym, row.maxSupply)} />
-        </Card>
+        </div>
 
-        <Card title="Volume">
+        <div className={KEY_STATS_CARD_CLASS}>
+          <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>Volume</h3>
           <StatRow label="Volume (24h)" value={usdFigure(row.volume24h)} />
           <StatRow label="Volume/Market cap (24h)" value={row.volumeToMarketCap24h} />
-        </Card>
+        </div>
       </div>
     </div>
   );

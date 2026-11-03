@@ -96,7 +96,7 @@ export function CryptoLinksSection({ links }: { links: CryptoAssetLinks }) {
   if (official.length === 0 && network.length === 0 && social.length === 0) return null;
 
   return (
-    <div className="border-t border-stroke pt-8">
+    <div className="pt-8">
       <h2 className="mb-6 text-[18px] font-semibold leading-7 tracking-tight text-fg">Links</h2>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-10">
         <Column title="Official Links" items={official} />
