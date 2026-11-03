@@ -2,7 +2,11 @@ import "server-only";
 
 import { unstable_cache } from "next/cache";
 
-import { REVALIDATE_STOCK_1D_LIVE_SPOT, REVALIDATE_WARM } from "@/lib/data/cache-policy";
+import {
+  REVALIDATE_SCREENER_FILTERED,
+  REVALIDATE_STOCK_1D_LIVE_SPOT,
+  REVALIDATE_WARM_LONG,
+} from "@/lib/data/cache-policy";
 import {
   isCryptoIntradayCandleInterval,
   type CryptoCandleInterval,
@@ -81,9 +85,21 @@ async function fetchHistorySourceBars(pair: string, interval: CryptoCandleInterv
   return (await fetchEodhdIntradayOhlc(pair, from, now, source)) ?? [];
 }
 
-const getHistorySourceBars = unstable_cache(fetchHistorySourceBars, ["crypto-candles-history-v1"], {
-  revalidate: REVALIDATE_WARM,
+/** EODHD crypto intraday lags ~15–18h and the live minute tail fills the gap, so hourly refresh loses nothing. */
+const getIntradayHistoryBars = unstable_cache(fetchHistorySourceBars, ["crypto-candles-history-intraday-v1"], {
+  revalidate: REVALIDATE_SCREENER_FILTERED,
 });
+
+/** Daily bars carry today's forming candle for coins without a live feed. */
+const getDailyHistoryBars = unstable_cache(fetchHistorySourceBars, ["crypto-candles-history-daily-v1"], {
+  revalidate: REVALIDATE_WARM_LONG,
+});
+
+function getHistorySourceBars(pair: string, interval: CryptoCandleInterval): Promise<OhlcBar[]> {
+  return INTERVAL_CONFIG[interval].source === "d"
+    ? getDailyHistoryBars(pair, interval)
+    : getIntradayHistoryBars(pair, interval);
+}
 
 /**
  * Patch candles with live 1m closes newer than the provider history. Minute closes carry no volume, so
