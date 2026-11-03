@@ -9,6 +9,11 @@ import { IndexComponentsTable } from "@/components/index/index-components-table"
 import { IndexHeader } from "@/components/index/index-header";
 import { ChartControls } from "@/components/stock/chart-controls";
 import { MiniTable } from "@/components/stock/mini-table";
+import {
+  ASSET_BREADCRUMB_CARD_CLASS,
+  ASSET_HERO_CARD_CLASS,
+  ASSET_PAGE_SHELL_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { StockPageSkeleton } from "@/components/stock/stock-page-skeleton";
 import { mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
 import {
@@ -79,9 +84,12 @@ function IndexPageContentInner({
 
   return (
     <div className="min-w-0 pb-10">
-      <IndexBreadcrumbs symbol={symKey} displayName={displayName} />
+      <div className={ASSET_PAGE_SHELL_CLASS}>
+        <div className={ASSET_BREADCRUMB_CARD_CLASS}>
+          <IndexBreadcrumbs symbol={symKey} displayName={displayName} embedded />
+        </div>
 
-      <div className="space-y-6 px-4 pt-4 sm:px-9 sm:pt-6">
+        <div className={ASSET_HERO_CARD_CLASS}>
         <IndexHeader
           symbol={symKey}
           displayName={displayName}
@@ -130,6 +138,7 @@ function IndexPageContentInner({
             onDisplayChange={setSessionHeaderUi}
           />
         </ChartControls>
+        </div>
 
         <MiniTable
           ticker={displayCode}

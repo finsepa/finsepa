@@ -11,9 +11,10 @@ import { SCREENER_CRYPTO_HREF } from "@/lib/screener/screener-market-url";
 type Props = {
   symbol: string;
   logoUrl?: string | null;
+  embedded?: boolean;
 };
 
-export function CryptoBreadcrumbs({ symbol, logoUrl = null }: Props) {
+export function CryptoBreadcrumbs({ symbol, logoUrl = null, embedded = false }: Props) {
   const sym = symbol.trim().toUpperCase();
   const pairLabel = eodhdCryptoSpotTickerDisplay(sym);
   const resolvedLogo = logoUrl?.trim() || getCryptoLogoUrl(sym);
@@ -27,7 +28,7 @@ export function CryptoBreadcrumbs({ symbol, logoUrl = null }: Props) {
   );
 
   return (
-    <AssetBreadcrumbBar>
+    <AssetBreadcrumbBar embedded={embedded}>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
         <Link href={SCREENER_CRYPTO_HREF} className={`shrink-0 ${breadcrumbLinkClass}`}>
           Crypto

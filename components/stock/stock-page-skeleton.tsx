@@ -4,7 +4,13 @@ import { usePathname } from "next/navigation";
 import { useSyncExternalStore } from "react";
 
 import { AssetPageHeaderActions } from "@/components/asset/asset-page-header-actions";
-import { MOBILE_ELEVATED_CARD_CLASS, MOBILE_INSET_CARD_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  ASSET_BREADCRUMB_CARD_CLASS,
+  ASSET_HERO_CARD_CLASS,
+  ASSET_PAGE_SHELL_CLASS,
+  MOBILE_ELEVATED_CARD_CLASS,
+  MOBILE_INSET_CARD_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { CryptoBreadcrumbs } from "@/components/crypto/crypto-breadcrumbs";
 import { CryptoDetailTabNav } from "@/components/crypto/crypto-detail-tab-nav";
 import { CurrencyBreadcrumbs } from "@/components/currency/currency-breadcrumbs";
@@ -206,11 +212,11 @@ function ShellBreadcrumbs({
   pending: PendingAssetShell | null;
 }) {
   if (kind === "crypto") {
-    return <CryptoBreadcrumbs symbol={symbol} logoUrl={pending?.logoUrl} />;
+    return <CryptoBreadcrumbs symbol={symbol} logoUrl={pending?.logoUrl} embedded />;
   }
   if (kind === "index") {
     return (
-      <IndexBreadcrumbs symbol={symbol} displayName={pending?.name?.trim() || symbol} />
+      <IndexBreadcrumbs symbol={symbol} displayName={pending?.name?.trim() || symbol} embedded />
     );
   }
   if (kind === "currency") {
@@ -219,10 +225,11 @@ function ShellBreadcrumbs({
         symbol={symbol}
         displayName={pending?.name?.trim() || symbol}
         displayCode={symbol}
+        embedded
       />
     );
   }
-  return <StockBreadcrumbs ticker={symbol} headerMeta={null} />;
+  return <StockBreadcrumbs ticker={symbol} headerMeta={null} embedded />;
 }
 
 /** Shared loading chrome for asset routes — static nav paints immediately; chart body skeletons. */
@@ -286,28 +293,32 @@ export function StockPageSkeleton() {
     const hideMarketCap = kind === "index" || kind === "currency";
     return (
       <div className="relative min-w-0" aria-busy aria-label={`Loading ${symbol}`}>
-        <ShellBreadcrumbs kind={kind} symbol={symbol} pending={showOptimistic ? pending : null} />
-        <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:pt-5 sm:pb-6">
-          <ShellHeader kind={kind} symbol={symbol} pending={showOptimistic ? pending : null} />
+        <div className={ASSET_PAGE_SHELL_CLASS}>
+          <div className={ASSET_BREADCRUMB_CARD_CLASS}>
+            <ShellBreadcrumbs kind={kind} symbol={symbol} pending={showOptimistic ? pending : null} />
+          </div>
 
           {kind === "crypto" ? (
-            <div className="pointer-events-none">
-              <CryptoDetailTabNav activeTab="overview" onTabChange={noop} />
+            <div className="pointer-events-none max-md:hidden">
+              <CryptoDetailTabNav activeTab="overview" onTabChange={noop} embedded />
             </div>
           ) : null}
 
-          <div className="pointer-events-none">
-            <ChartControls
-              activeRange="1D"
-              onRangeChange={noop}
-              chartSeries="price"
-              onChartSeriesChange={noop}
-              hideMarketCapSeries={hideMarketCap}
-            >
-              <div className="relative min-h-[320px] w-full">
-                <AssetChartSkeleton heightPx={320} className="h-full" />
-              </div>
-            </ChartControls>
+          <div className={ASSET_HERO_CARD_CLASS}>
+            <ShellHeader kind={kind} symbol={symbol} pending={showOptimistic ? pending : null} />
+            <div className="pointer-events-none">
+              <ChartControls
+                activeRange="1D"
+                onRangeChange={noop}
+                chartSeries="price"
+                onChartSeriesChange={noop}
+                hideMarketCapSeries={hideMarketCap}
+              >
+                <div className="relative min-h-[320px] w-full">
+                  <AssetChartSkeleton heightPx={320} className="h-full" />
+                </div>
+              </ChartControls>
+            </div>
           </div>
 
           {kind === "crypto" ? <KeyIndicatorsSkeleton /> : null}

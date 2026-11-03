@@ -10,10 +10,12 @@ export function CurrencyBreadcrumbs({
   symbol,
   displayName,
   displayCode,
+  embedded = false,
 }: {
   symbol: string;
   displayName: string;
   displayCode?: string;
+  embedded?: boolean;
 }) {
   const logoSymbol = (displayCode ?? symbol).trim().toUpperCase() || symbol.trim().toUpperCase();
   const breadcrumbLinkClass = "min-w-0 truncate transition-colors hover:text-fg hover:underline";
@@ -24,7 +26,7 @@ export function CurrencyBreadcrumbs({
   );
 
   return (
-    <AssetBreadcrumbBar>
+    <AssetBreadcrumbBar embedded={embedded}>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
         <Link href={SCREENER_CURRENCIES_HREF} className={`shrink-0 ${breadcrumbLinkClass}`}>
           Currencies

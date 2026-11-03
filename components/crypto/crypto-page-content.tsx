@@ -22,6 +22,12 @@ import { LogoSkeleton, SkeletonBox } from "@/components/markets/skeleton";
 import { ChartControls } from "@/components/stock/chart-controls";
 import { ChartScreenshotDownloadModal } from "@/components/chart/chart-screenshot-download-modal";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
+import {
+  ASSET_BREADCRUMB_CARD_CLASS,
+  ASSET_HERO_CARD_CLASS,
+  ASSET_HERO_OFFSCREEN_DESKTOP_CLASS,
+  ASSET_PAGE_SHELL_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { LatestNews } from "@/components/stock/latest-news";
 import { CryptoDetailTabNav } from "@/components/crypto/crypto-detail-tab-nav";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
@@ -336,6 +342,8 @@ export function CryptoPageContent({
     isLiveCrypto && headerLiveQuote?.source === "ws" ? headerLiveQuote.quotedAtSec : null;
 
   const showCandles = chartType === "candles" && chartSeries === "price" && comparePicks.length === 0;
+  /** Desktop non-overview tabs: header + chart card moves offscreen (still mounted), like the stock page. */
+  const heroOffscreen = row != null && activeTab !== "overview";
 
   const spotUi = useMemo(
     () =>
@@ -550,11 +558,24 @@ export function CryptoPageContent({
         onClose={() => setOverviewDownloadOpen(false)}
         snapshot={overviewDownloadSnapshot}
       />
-      <CryptoBreadcrumbs symbol={symUpper} logoUrl={headerLogoUrl} />
-      <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:py-6">
+      <div className={ASSET_PAGE_SHELL_CLASS}>
       <Suspense fallback={null}>
         <AssetPageTopLoader />
       </Suspense>
+      <div className={ASSET_BREADCRUMB_CARD_CLASS}>
+        <CryptoBreadcrumbs symbol={symUpper} logoUrl={headerLogoUrl} embedded />
+      </div>
+
+      {safeRow ? (
+        <div className="max-md:hidden">
+          <CryptoDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} embedded />
+        </div>
+      ) : null}
+
+      <div
+        className={cn(ASSET_HERO_CARD_CLASS, heroOffscreen && ASSET_HERO_OFFSCREEN_DESKTOP_CLASS)}
+        aria-hidden={heroOffscreen || undefined}
+      >
 
       {loading ? (
         <div className="space-y-3">
@@ -592,10 +613,118 @@ export function CryptoPageContent({
           headerLoading={false}
         />
       )}
+      {safeRow && activeTab === "overview" ? (
+        <ChartControls
+          activeRange={range}
+          onRangeChange={setRange}
+          rangeLabels={isLiveCrypto ? { "1D": "24H" } : undefined}
+          chartSeries={chartSeries}
+          onChartSeriesChange={setChartSeries}
+          seriesSelectDisabled={comparePicks.length > 0}
+          chartTypeSlot={
+            chartSeries === "price" && comparePicks.length === 0 ? (
+              <ChartTypeToggle value={chartType} onChange={setChartType} />
+            ) : null
+          }
+          rangeSlot={
+            showCandles ? (
+              <CryptoCandleIntervalControl
+                value={candleInterval}
+                onChange={setCandleInterval}
+                liveIntraday={isLiveCrypto}
+              />
+            ) : undefined
+          }
+          mobileRangeSlot={
+            showCandles ? (
+              <CryptoCandleIntervalControl
+                value={candleInterval}
+                onChange={setCandleInterval}
+                liveIntraday={isLiveCrypto}
+                fullWidth
+              />
+            ) : undefined
+          }
+          compareSlot={
+            <CryptoComparePicker
+              baseSymbol={symUpper}
+              values={comparePicks}
+              onAdd={onAddComparePick}
+              onRemove={onRemoveComparePick}
+            />
+          }
+          downloadSlot={
+            comparePicks.length > 0 ? null : (
+              <button
+                type="button"
+                onClick={() => void handleOpenCryptoDownload()}
+                disabled={cryptoDownloadDisabled}
+                className={cn(topbarSquircleIconClass, "disabled:cursor-not-allowed disabled:opacity-40")}
+                aria-label="Download chart"
+              >
+                <Download className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+              </button>
+            )
+          }
+        >
+          {comparePicks.length > 0 ? (
+            <StockCompareReturnChart
+              key={`compare-${symUpper}-${comparePicks.map((p) => p.symbol.trim().toUpperCase()).join("-")}-${range}`}
+              primaryTicker={symUpper}
+              comparePicks={comparePicks}
+              range={range}
+            />
+          ) : (
+            <div className="relative w-full">
+            <div
+              className={cn(showCandles && "pointer-events-none invisible absolute inset-x-0 top-0")}
+              aria-hidden={showCandles || undefined}
+            >
+            <PriceChart
+              kind="crypto"
+              symbol={symUpper}
+              range={range}
+              series={chartSeries}
+              initialChart={
+                // Proven: SSR 1Y seed slows interaction — never seed 1Y on stock-style pipeline.
+                usesCryptoStockPipelineExperiment(symUpper) && range === "1Y"
+                  ? null
+                  : isLiveCrypto
+                    ? range === "1D"
+                      ? initialSessionChartMemo
+                      : null
+                    : initialChartMemo?.range === range
+                      ? initialChartMemo
+                      : null
+              }
+              onDisplayChange={
+                !isLiveCrypto ? undefined
+                : range === "1D" ? onSessionHeaderDisplay
+                : onRangeChartDisplay
+              }
+              liveSpotUsd={range === "1D" ? cryptoLiveWsTipSpot : null}
+              liveQuotedAtSec={range === "1D" ? cryptoLiveWsTipQuotedAtSec : null}
+            />
+            </div>
+            {showCandles ? (
+              <CryptoCandleChart
+                symbol={symUpper}
+                interval={candleInterval}
+                liveSpotUsd={headerLiveSpotClient}
+                liveQuotedAtSec={headerLiveQuote?.quotedAtSec ?? null}
+              />
+            ) : null}
+            </div>
+          )}
+        </ChartControls>
+      ) : null}
+      </div>
 
       {safeRow ? (
         <>
-          <CryptoDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} />
+          <div className="md:hidden">
+            <CryptoDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} embedded />
+          </div>
 
           {/* Offscreen 1D header chart only when overview is not already driving the header. */}
           {needsOffscreenHeaderChart && mountHeaderChart ? (
@@ -621,109 +750,6 @@ export function CryptoPageContent({
               id="crypto-tab-overview"
               className="space-y-5 max-md:space-y-3"
             >
-              <ChartControls
-                activeRange={range}
-                onRangeChange={setRange}
-                rangeLabels={isLiveCrypto ? { "1D": "24H" } : undefined}
-                chartSeries={chartSeries}
-                onChartSeriesChange={setChartSeries}
-                seriesSelectDisabled={comparePicks.length > 0}
-                chartTypeSlot={
-                  chartSeries === "price" && comparePicks.length === 0 ? (
-                    <ChartTypeToggle value={chartType} onChange={setChartType} />
-                  ) : null
-                }
-                rangeSlot={
-                  showCandles ? (
-                    <CryptoCandleIntervalControl
-                      value={candleInterval}
-                      onChange={setCandleInterval}
-                      liveIntraday={isLiveCrypto}
-                    />
-                  ) : undefined
-                }
-                mobileRangeSlot={
-                  showCandles ? (
-                    <CryptoCandleIntervalControl
-                      value={candleInterval}
-                      onChange={setCandleInterval}
-                      liveIntraday={isLiveCrypto}
-                      fullWidth
-                    />
-                  ) : undefined
-                }
-                compareSlot={
-                  <CryptoComparePicker
-                    baseSymbol={symUpper}
-                    values={comparePicks}
-                    onAdd={onAddComparePick}
-                    onRemove={onRemoveComparePick}
-                  />
-                }
-                downloadSlot={
-                  comparePicks.length > 0 ? null : (
-                    <button
-                      type="button"
-                      onClick={() => void handleOpenCryptoDownload()}
-                      disabled={cryptoDownloadDisabled}
-                      className={cn(topbarSquircleIconClass, "disabled:cursor-not-allowed disabled:opacity-40")}
-                      aria-label="Download chart"
-                    >
-                      <Download className="h-5 w-5" strokeWidth={1.75} aria-hidden />
-                    </button>
-                  )
-                }
-              >
-                {comparePicks.length > 0 ? (
-                  <StockCompareReturnChart
-                    key={`compare-${symUpper}-${comparePicks.map((p) => p.symbol.trim().toUpperCase()).join("-")}-${range}`}
-                    primaryTicker={symUpper}
-                    comparePicks={comparePicks}
-                    range={range}
-                  />
-                ) : (
-                  <div className="relative w-full">
-                  <div
-                    className={cn(showCandles && "pointer-events-none invisible absolute inset-x-0 top-0")}
-                    aria-hidden={showCandles || undefined}
-                  >
-                  <PriceChart
-                    kind="crypto"
-                    symbol={symUpper}
-                    range={range}
-                    series={chartSeries}
-                    initialChart={
-                      // Proven: SSR 1Y seed slows interaction — never seed 1Y on stock-style pipeline.
-                      usesCryptoStockPipelineExperiment(symUpper) && range === "1Y"
-                        ? null
-                        : isLiveCrypto
-                          ? range === "1D"
-                            ? initialSessionChartMemo
-                            : null
-                          : initialChartMemo?.range === range
-                            ? initialChartMemo
-                            : null
-                    }
-                    onDisplayChange={
-                      !isLiveCrypto ? undefined
-                      : range === "1D" ? onSessionHeaderDisplay
-                      : onRangeChartDisplay
-                    }
-                    liveSpotUsd={range === "1D" ? cryptoLiveWsTipSpot : null}
-                    liveQuotedAtSec={range === "1D" ? cryptoLiveWsTipQuotedAtSec : null}
-                  />
-                  </div>
-                  {showCandles ? (
-                    <CryptoCandleChart
-                      symbol={symUpper}
-                      interval={candleInterval}
-                      liveSpotUsd={headerLiveSpotClient}
-                      liveQuotedAtSec={headerLiveQuote?.quotedAtSec ?? null}
-                    />
-                  ) : null}
-                  </div>
-                )}
-              </ChartControls>
               {comparePicks.length > 0 ? (
                 <MiniTable
                   ticker={symUpper}

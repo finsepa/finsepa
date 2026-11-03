@@ -8,6 +8,11 @@ import { CurrencyBreadcrumbs } from "@/components/currency/currency-breadcrumbs"
 import { CurrencyHeader } from "@/components/currency/currency-header";
 import { ChartControls } from "@/components/stock/chart-controls";
 import { MiniTable } from "@/components/stock/mini-table";
+import {
+  ASSET_BREADCRUMB_CARD_CLASS,
+  ASSET_HERO_CARD_CLASS,
+  ASSET_PAGE_SHELL_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { StockPageSkeleton } from "@/components/stock/stock-page-skeleton";
 import { mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session-header-with-performance-spot";
 import {
@@ -76,9 +81,12 @@ function CurrencyPageContentInner({
 
   return (
     <div className="min-w-0 pb-10">
-      <CurrencyBreadcrumbs symbol={symKey} displayName={displayName} displayCode={displayCode} />
+      <div className={ASSET_PAGE_SHELL_CLASS}>
+        <div className={ASSET_BREADCRUMB_CARD_CLASS}>
+          <CurrencyBreadcrumbs symbol={symKey} displayName={displayName} displayCode={displayCode} embedded />
+        </div>
 
-      <div className="space-y-6 px-4 pt-4 sm:px-9 sm:pt-6">
+        <div className={ASSET_HERO_CARD_CLASS}>
         <CurrencyHeader
           symbol={symKey}
           displayName={displayName}
@@ -127,6 +135,7 @@ function CurrencyPageContentInner({
             onDisplayChange={setSessionHeaderUi}
           />
         </ChartControls>
+        </div>
 
         <MiniTable
           ticker={displayCode}

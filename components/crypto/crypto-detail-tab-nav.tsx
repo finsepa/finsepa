@@ -12,12 +12,15 @@ const TABS: { id: CryptoDetailTabId; label: string }[] = [
 export function CryptoDetailTabNav({
   activeTab,
   onTabChange,
+  embedded = false,
 }: {
   activeTab: CryptoDetailTabId;
   onTabChange: (tab: CryptoDetailTabId) => void;
+  /** Asset page shell: sits flush in the page gutter between the breadcrumbs and header cards. */
+  embedded?: boolean;
 }) {
   return (
-    <div className="max-md:bg-canvas max-md:-mt-2 max-md:pt-0 max-md:pb-1 px-3 sm:-mx-9 sm:px-9">
+    <div className={embedded ? undefined : "max-md:bg-canvas max-md:-mt-2 max-md:pt-0 max-md:pb-1 px-3 sm:-mx-9 sm:px-9"}>
       <div className="border-b border-solid border-stroke">
       <nav className="flex flex-wrap items-start gap-5" aria-label="Crypto sections">
         {TABS.map(({ id, label }) => {

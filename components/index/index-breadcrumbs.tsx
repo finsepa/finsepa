@@ -9,9 +9,11 @@ import { SCREENER_INDICES_HREF } from "@/lib/screener/screener-market-url";
 export function IndexBreadcrumbs({
   symbol,
   displayName,
+  embedded = false,
 }: {
   symbol: string;
   displayName: string;
+  embedded?: boolean;
 }) {
   const sym = symbol.trim().toUpperCase();
   const breadcrumbLinkClass = "min-w-0 truncate transition-colors hover:text-fg hover:underline";
@@ -22,7 +24,7 @@ export function IndexBreadcrumbs({
   );
 
   return (
-    <AssetBreadcrumbBar>
+    <AssetBreadcrumbBar embedded={embedded}>
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 sm:flex-nowrap">
         <Link href={SCREENER_INDICES_HREF} className={`shrink-0 ${breadcrumbLinkClass}`}>
           Indices
