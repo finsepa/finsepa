@@ -188,7 +188,7 @@ export function CryptoCandleChart({
   const [loaded, setLoaded] = useState<{ key: string; data: CryptoCandlesResponse | null } | null>(null);
   const [hoveredTime, setHoveredTime] = useState<number | null>(null);
   const [volumeLegendTop, setVolumeLegendTop] = useState<number | null>(null);
-  const [highLow, setHighLow] = useState<{ high: HighLowLabel; low: HighLowLabel } | null>(null);
+  const [highLow, setHighLow] = useState<{ high: HighLowLabel | null; low: HighLowLabel | null } | null>(null);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -381,19 +381,30 @@ export function CryptoCandleChart({
         }
         const timeScale = chart.timeScale();
         const plotWidth = timeScale.width();
+        const plotHeight = chart.panes()[0]?.getHeight() ?? 0;
         const label = (bar: OhlcBar, price: number): HighLowLabel | null => {
           const x = timeScale.timeToCoordinate(bar.time as UTCTimestamp);
           const y = candleSeries.priceToCoordinate(price);
-          if (x == null || y == null) return null;
+          // Price-axis zoom can push the extreme outside the candle pane, where the label would float alone.
+          if (x == null || y == null || x < 0 || x > plotWidth || y < 0 || y > plotHeight) return null;
           return { x, y, text: formatPrice(price), side: x > plotWidth / 2 ? "left" : "right" };
         };
         const high = label(hi, hi.high);
         const low = label(lo, lo.low);
-        setHighLow(high && low ? { high, low } : null);
+        setHighLow(high || low ? { high, low } : null);
       });
     };
     refreshHighLowRef.current = () => updateHighLow(chart.timeScale().getVisibleLogicalRange());
     chart.timeScale().subscribeVisibleLogicalRangeChange(updateHighLow);
+    // Price-axis drag / wheel zoom / double-click reset don't emit a time-range change.
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.buttons) refreshHighLowRef.current();
+    };
+    const onScaleGesture = () => refreshHighLowRef.current();
+    el.addEventListener("pointermove", onPointerMove);
+    el.addEventListener("pointerup", onScaleGesture);
+    el.addEventListener("wheel", onScaleGesture, { passive: true });
+    el.addEventListener("dblclick", onScaleGesture);
 
     chart.subscribeCrosshairMove((param) => {
       setHoveredTime(param.time != null && param.seriesData.get(candleSeries) ? (param.time as number) : null);
@@ -421,6 +432,10 @@ export function CryptoCandleChart({
       setHighLow(null);
       ro.disconnect();
       cancelAnimationFrame(highLowFrame);
+      el.removeEventListener("pointermove", onPointerMove);
+      el.removeEventListener("pointerup", onScaleGesture);
+      el.removeEventListener("wheel", onScaleGesture);
+      el.removeEventListener("dblclick", onScaleGesture);
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(updateHighLow);
       refreshHighLowRef.current = () => {};
       chart.remove();
@@ -501,9 +516,12 @@ export function CryptoCandleChart({
       </div>
       <div ref={wrapRef} className="absolute inset-x-0 bottom-0 z-10" style={{ height }} />
       {!loading && highLow
-        ? [highLow.high, highLow.low].map((label, i) => (
+        ? (["high", "low"] as const).map((key) => {
+            const label = highLow[key];
+            if (!label) return null;
+            return (
             <div
-              key={i === 0 ? "high" : "low"}
+              key={key}
               className={cn(
                 "pointer-events-none absolute z-[11] flex items-center gap-1 text-[11px] leading-none tabular-nums text-fg",
                 label.side === "left" && "flex-row-reverse",
@@ -517,7 +535,8 @@ export function CryptoCandleChart({
               <span className="h-px w-3 bg-fg-muted" aria-hidden />
               {label.text}
             </div>
-          ))
+            );
+          })
         : null}
       {!loading && volumeLegendTop != null && candles.length > 0 ? (
         <div
