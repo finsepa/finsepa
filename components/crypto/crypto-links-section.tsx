@@ -14,7 +14,13 @@ import {
   Wallet,
 } from "@/lib/icons";
 
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+  STOCK_OVERVIEW_SECTION_TITLE_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import type { CryptoAssetLinks } from "@/lib/market/crypto-asset";
+import { cn } from "@/lib/utils";
 
 function iconForLabel(label: string): AppIcon {
   const l = label.toLowerCase();
@@ -37,7 +43,7 @@ function LinkPill({ href, label }: { href: string; label: string }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex max-w-full items-center gap-2 rounded-full bg-surface-muted px-3 py-2 text-[13px] font-medium text-fg transition-colors hover:bg-[#ECECEE]"
+      className="inline-flex max-w-full items-center gap-2 rounded-full bg-surface-muted px-3 py-2 text-[13px] font-medium text-fg transition-colors hover:bg-surface-hover"
     >
       {createElement(Icon, {
         className: "h-3.5 w-3.5 shrink-0 text-fg-muted",
@@ -52,7 +58,7 @@ function Column({ title, items }: { title: string; items: { label: string; href:
   if (items.length === 0) return null;
   return (
     <div className="min-w-0">
-      <h3 className="mb-3 text-[15px] font-semibold leading-6 text-fg">{title}</h3>
+      <h3 className={cn("mb-3", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>{title}</h3>
       <div className="flex flex-wrap gap-2">
         {items.map((item) => (
           <LinkPill key={item.href + item.label} href={item.href} label={item.label} />
@@ -96,9 +102,9 @@ export function CryptoLinksSection({ links }: { links: CryptoAssetLinks }) {
   if (official.length === 0 && network.length === 0 && social.length === 0) return null;
 
   return (
-    <div className="pt-8">
-      <h2 className="mb-6 text-[18px] font-semibold leading-7 tracking-tight text-fg">Links</h2>
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-10">
+    <div className="pt-2">
+      <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Links</h2>
+      <div className={cn("grid grid-cols-1 gap-6 p-4 sm:p-5 md:grid-cols-3 md:gap-10", MOBILE_ELEVATED_CARD_CLASS)}>
         <Column title="Official Links" items={official} />
         <Column title="Network information" items={network} />
         <Column title="Socials" items={social} />
