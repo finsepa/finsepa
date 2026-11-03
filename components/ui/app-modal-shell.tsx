@@ -28,7 +28,7 @@ export const APP_MODAL_SHELL_OUTER_CLASS = cn(
  * Light: dropdown chrome. Dark: page fill + shell stroke (matches panel / top bar).
  */
 export const APP_MODAL_SHELL_CARD_CLASS =
-  "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-dropdown-stroke bg-dropdown shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] dark:border-stroke-shell dark:bg-page";
+  "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-dropdown-stroke bg-dropdown shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))] [--fs-chart-plot-bg:var(--fs-dropdown)] dark:border-stroke-shell dark:bg-page dark:[--fs-chart-plot-bg:var(--fs-page)]";
 
 /**
  * Horizontal / edge rules inside modal cards — dark matches panel/top-bar shell stroke.

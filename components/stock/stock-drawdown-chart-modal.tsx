@@ -871,7 +871,7 @@ export function StockDrawdownChartModal({
       showClose={false}
       maxWidthClass="w-full"
       maxHeightClass="max-h-[min(92vh,720px)]"
-      className="key-stats-metric-sheet-enter !rounded-t-xl !rounded-b-none !bg-surface !p-0 !shadow-[0px_10px_8px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-10)),0px_4px_3px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]"
+      className="key-stats-metric-sheet-enter !rounded-t-xl !rounded-b-none !bg-surface !p-0 [--fs-chart-plot-bg:var(--fs-surface)] !shadow-[0px_10px_8px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-10)),0px_4px_3px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-04))]"
       bareBody
       bodyScroll={false}
     >
