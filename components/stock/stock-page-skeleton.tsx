@@ -205,12 +205,22 @@ function ShellBreadcrumbs({
   symbol: string;
   pending: PendingAssetShell | null;
 }) {
-  if (kind === "crypto") return <CryptoBreadcrumbs symbol={symbol} />;
+  if (kind === "crypto") {
+    return <CryptoBreadcrumbs symbol={symbol} logoUrl={pending?.logoUrl} />;
+  }
   if (kind === "index") {
-    return <IndexBreadcrumbs displayName={pending?.name?.trim() || symbol} />;
+    return (
+      <IndexBreadcrumbs symbol={symbol} displayName={pending?.name?.trim() || symbol} />
+    );
   }
   if (kind === "currency") {
-    return <CurrencyBreadcrumbs displayName={pending?.name?.trim() || symbol} />;
+    return (
+      <CurrencyBreadcrumbs
+        symbol={symbol}
+        displayName={pending?.name?.trim() || symbol}
+        displayCode={symbol}
+      />
+    );
   }
   return <StockBreadcrumbs ticker={symbol} headerMeta={null} />;
 }

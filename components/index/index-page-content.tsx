@@ -79,7 +79,7 @@ function IndexPageContentInner({
 
   return (
     <div className="min-w-0 pb-10">
-      <IndexBreadcrumbs displayName={displayName} />
+      <IndexBreadcrumbs symbol={symKey} displayName={displayName} />
 
       <div className="space-y-6 px-4 pt-4 sm:px-9 sm:pt-6">
         <IndexHeader

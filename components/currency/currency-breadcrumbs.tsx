@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 
+import { CompanyLogo } from "@/components/screener/company-logo";
 import { AssetBreadcrumbBar } from "@/components/stock/asset-breadcrumb-bar";
 import { SCREENER_CURRENCIES_HREF } from "@/lib/screener/screener-market-url";
 
-export function CurrencyBreadcrumbs({ displayName }: { displayName: string }) {
+export function CurrencyBreadcrumbs({
+  symbol,
+  displayName,
+  displayCode,
+}: {
+  symbol: string;
+  displayName: string;
+  displayCode?: string;
+}) {
+  const logoSymbol = (displayCode ?? symbol).trim().toUpperCase() || symbol.trim().toUpperCase();
   const breadcrumbLinkClass = "min-w-0 truncate transition-colors hover:text-fg hover:underline";
   const breadcrumbSep = (
     <span className="shrink-0 select-none" aria-hidden>
@@ -20,7 +30,12 @@ export function CurrencyBreadcrumbs({ displayName }: { displayName: string }) {
           Currencies
         </Link>
         {breadcrumbSep}
-        <span className="min-w-0 shrink-0 truncate font-medium text-fg" title={displayName} aria-current="page">
+        <span
+          className="inline-flex min-w-0 shrink-0 items-center gap-1.5 truncate font-medium text-fg"
+          title={displayName}
+          aria-current="page"
+        >
+          <CompanyLogo name={displayName} logoUrl="" symbol={logoSymbol} size="xs" />
           {displayName}
         </span>
       </div>

@@ -76,7 +76,7 @@ function CurrencyPageContentInner({
 
   return (
     <div className="min-w-0 pb-10">
-      <CurrencyBreadcrumbs displayName={displayName} />
+      <CurrencyBreadcrumbs symbol={symKey} displayName={displayName} displayCode={displayCode} />
 
       <div className="space-y-6 px-4 pt-4 sm:px-9 sm:pt-6">
         <CurrencyHeader

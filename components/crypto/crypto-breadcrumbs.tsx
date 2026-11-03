@@ -2,17 +2,21 @@
 
 import Link from "next/link";
 
+import { CompanyLogo } from "@/components/screener/company-logo";
 import { AssetBreadcrumbBar } from "@/components/stock/asset-breadcrumb-bar";
+import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { SCREENER_CRYPTO_HREF } from "@/lib/screener/screener-market-url";
 
 type Props = {
   symbol: string;
+  logoUrl?: string | null;
 };
 
-export function CryptoBreadcrumbs({ symbol }: Props) {
+export function CryptoBreadcrumbs({ symbol, logoUrl = null }: Props) {
   const sym = symbol.trim().toUpperCase();
   const pairLabel = eodhdCryptoSpotTickerDisplay(sym);
+  const resolvedLogo = logoUrl?.trim() || getCryptoLogoUrl(sym);
 
   const breadcrumbLinkClass =
     "min-w-0 truncate transition-colors hover:text-fg hover:underline";
@@ -30,10 +34,11 @@ export function CryptoBreadcrumbs({ symbol }: Props) {
         </Link>
         {breadcrumbSep}
         <span
-          className="min-w-0 shrink-0 truncate font-medium text-fg"
+          className="inline-flex shrink-0 items-center gap-1.5 font-medium text-fg"
           title={pairLabel}
           aria-current="page"
         >
+          <CompanyLogo name={pairLabel} logoUrl={resolvedLogo} symbol={sym} size="xs" />
           {pairLabel}
         </span>
       </div>
