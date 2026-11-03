@@ -43,7 +43,42 @@ function compareRows(a: SuperinvestorsFundRowModel, b: SuperinvestorsFundRowMode
     if (bv == null) return -1;
     return bv - av;
   }
+  const byQuarter = (filingQuarter(b)?.key ?? "").localeCompare(filingQuarter(a)?.key ?? "");
+  if (byQuarter !== 0) return byQuarter;
   return (b.filingDate ?? "").localeCompare(a.filingDate ?? "");
+}
+
+/**
+ * Quarter the 13F covers (e.g. "Q2 2026"). Older snapshot rows lack `reportDate`, so fall back to the
+ * last quarter that ended before the filing date (13Fs are filed within 45 days of quarter end).
+ */
+function filingQuarter(row: SuperinvestorsFundRowModel): { key: string; label: string } | null {
+  const report = row.reportDate?.trim() ? parseISO(row.reportDate.trim()) : null;
+  if (report && isValid(report)) {
+    const year = report.getFullYear();
+    const q = Math.floor(report.getMonth() / 3) + 1;
+    return { key: `${year}-${q}`, label: `Q${q} ${year}` };
+  }
+  const filed = row.filingDate?.trim() ? parseISO(row.filingDate.trim()) : null;
+  if (!filed || !isValid(filed)) return null;
+  let year = filed.getFullYear();
+  let q = Math.floor(filed.getMonth() / 3);
+  if (q === 0) {
+    q = 4;
+    year -= 1;
+  }
+  return { key: `${year}-${q}`, label: `Q${q} ${year}` };
+}
+
+function groupRowsByQuarter(rows: SuperinvestorsFundRowModel[]) {
+  const groups: { key: string; label: string; rows: SuperinvestorsFundRowModel[] }[] = [];
+  for (const row of rows) {
+    const quarter = filingQuarter(row) ?? { key: "unknown", label: "Unknown quarter" };
+    const last = groups[groups.length - 1];
+    if (last && last.key === quarter.key) last.rows.push(row);
+    else groups.push({ ...quarter, rows: [row] });
+  }
+  return groups;
 }
 
 function formatFiledDate(ymd: string | null, withYear: boolean): string {
@@ -274,7 +309,7 @@ export function SuperinvestorsFundCards({
   rows: SuperinvestorsFundRowModel[];
   showFeatured: boolean;
 }) {
-  const [sortKey, setSortKey] = useState<SortKey>("size");
+  const [sortKey, setSortKey] = useState<SortKey>("updated");
 
   const featured = useMemo(() => {
     if (!showFeatured) return [];
@@ -282,6 +317,10 @@ export function SuperinvestorsFundCards({
     return MOST_POPULAR_FUND_HREFS.flatMap((href) => byHref.get(href) ?? []);
   }, [rows, showFeatured]);
   const gridRows = useMemo(() => [...rows].sort((a, b) => compareRows(a, b, sortKey)), [rows, sortKey]);
+  const quarterGroups = useMemo(
+    () => (sortKey === "updated" ? groupRowsByQuarter(gridRows) : null),
+    [gridRows, sortKey],
+  );
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -292,11 +331,26 @@ export function SuperinvestorsFundCards({
         </h2>
         <SegmentedControl options={SORT_OPTIONS} value={sortKey} onChange={setSortKey} size="sm" aria-label="Sort funds" />
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {gridRows.map((r) => (
-          <FundCard key={r.href} row={r} />
-        ))}
-      </div>
+      {quarterGroups ? (
+        quarterGroups.map((group) => (
+          <section key={group.key} className="flex min-w-0 flex-col gap-3" aria-label={group.label}>
+            <h3 className="border-b border-stroke pt-2 pb-2 text-[15px] font-semibold leading-6 text-fg">
+              {group.label}
+            </h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {group.rows.map((r) => (
+                <FundCard key={r.href} row={r} />
+              ))}
+            </div>
+          </section>
+        ))
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {gridRows.map((r) => (
+            <FundCard key={r.href} row={r} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

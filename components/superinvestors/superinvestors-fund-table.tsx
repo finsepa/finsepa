@@ -101,6 +101,8 @@ export type SuperinvestorsFundRowModel = {
   totalValueUsd: number;
   positionCount: number;
   filingDate: string | null;
+  /** 13F report period end (quarter the filing covers); absent on snapshots built before it was added. */
+  reportDate?: string | null;
   /** Buy/sell count in the latest 13F filing quarter (Activity tab). */
   activityCount?: number;
   /** Top five positions by value (same order as portfolio). */
