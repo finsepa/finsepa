@@ -10,33 +10,54 @@ export function normalizeStockTicker(raw) {
   return base;
 }
 
-function usSessionYmdFromUnixSeconds(sec) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: DISPLAY_TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date(sec * 1000));
-  const y = parts.find((p) => p.type === "year")?.value;
-  const m = parts.find((p) => p.type === "month")?.value;
-  const d = parts.find((p) => p.type === "day")?.value;
-  return `${y}-${m}-${d}`;
+// Built once: constructing Intl formatters per trade message saturates the CPU at the US open
+// (hundreds of ticks/sec), which starves Supabase writes and REST polls until they time out.
+const YMD_FORMATTER = new Intl.DateTimeFormat("en-CA", {
+  timeZone: DISPLAY_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const WALL_CLOCK_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: DISPLAY_TZ,
+  hour: "numeric",
+  minute: "numeric",
+  hour12: false,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const CACHE_MAX_ENTRIES = 4_096;
+/** @type {Map<number, string>} UTC minute → New York session date */
+const ymdByUtcMinute = new Map();
+/** @type {Map<string, number>} `${ymd}|${hour}|${minute}` → unix seconds */
+const wallClockUnixCache = new Map();
+
+function remember(map, key, value) {
+  if (map.size >= CACHE_MAX_ENTRIES) map.clear();
+  map.set(key, value);
+  return value;
 }
 
-function usSessionWallClockUnix(sessionYmd, hour, minute) {
+/** New York calendar date (`YYYY-MM-DD`) for a unix-seconds instant. */
+export function usSessionYmdFromUnixSeconds(sec) {
+  const utcMinute = Math.floor(sec / 60);
+  const hit = ymdByUtcMinute.get(utcMinute);
+  if (hit) return hit;
+  return remember(ymdByUtcMinute, utcMinute, YMD_FORMATTER.format(new Date(utcMinute * 60_000)));
+}
+
+/** Unix seconds for a New York wall-clock time on `sessionYmd` (DST-aware). */
+export function usSessionWallClockUnix(sessionYmd, hour, minute) {
+  const key = `${sessionYmd}|${hour}|${minute}`;
+  const hit = wallClockUnixCache.get(key);
+  if (hit != null) return hit;
   const [y, mo, d] = sessionYmd.split("-").map(Number);
   const guessUtc = Date.UTC(y, mo - 1, d, hour + 5, minute, 0);
   for (let offsetMin = -840; offsetMin <= 840; offsetMin += 15) {
     const probe = new Date(guessUtc + offsetMin * 60 * 1000);
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: DISPLAY_TZ,
-      hour: "numeric",
-      minute: "numeric",
-      hour12: false,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(probe);
+    const parts = WALL_CLOCK_FORMATTER.formatToParts(probe);
     const ph = Number(parts.find((p) => p.type === "hour")?.value ?? NaN);
     const pm = Number(parts.find((p) => p.type === "minute")?.value ?? NaN);
     const py = parts.find((p) => p.type === "year")?.value;
@@ -44,10 +65,10 @@ function usSessionWallClockUnix(sessionYmd, hour, minute) {
     const pd = parts.find((p) => p.type === "day")?.value;
     const ymd = `${py}-${pmo}-${pd}`;
     if (ymd === sessionYmd && ph === hour && pm === minute) {
-      return Math.floor(probe.getTime() / 1000);
+      return remember(wallClockUnixCache, key, Math.floor(probe.getTime() / 1000));
     }
   }
-  return Math.floor(guessUtc / 1000);
+  return remember(wallClockUnixCache, key, Math.floor(guessUtc / 1000));
 }
 
 function tradeSecInTodayExtendedSession(tradeSec, nowSec) {

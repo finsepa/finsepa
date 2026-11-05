@@ -15,7 +15,12 @@ import {
   stockWsCuratedMode,
   stockWsPinnedOnlyMode,
 } from "./lib/stock-ws-priority-universe.mjs";
-import { normalizeStockTicker, parseEodhdUsWsMessage } from "./lib/eodhd-ws-parse.mjs";
+import {
+  normalizeStockTicker,
+  parseEodhdUsWsMessage,
+  usSessionWallClockUnix,
+  usSessionYmdFromUnixSeconds,
+} from "./lib/eodhd-ws-parse.mjs";
 import { createStockMinuteWriteController } from "./lib/stock-minute-ingest-write-core.mjs";
 import { isUsEquityExchangeHolidayYmd } from "./lib/us-equity-exchange-holidays.mjs";
 
@@ -52,6 +57,17 @@ const STATIC_TICKERS = (process.env.STOCK_WS_TICKERS ?? "")
   .filter(Boolean);
 
 const DISPLAY_TZ = "America/New_York";
+
+const SESSION_PARTS_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: DISPLAY_TZ,
+  weekday: "short",
+  hour: "numeric",
+  minute: "numeric",
+  hour12: false,
+});
+
+/** @type {{ minute: number, session: string } | null} */
+let sessionCache = null;
 const SCREENER_SNAPSHOT_KEYS = ["top500_market", "stocks_all_pages"];
 
 /** @type {Record<string, unknown>} */
@@ -206,62 +222,14 @@ let quoteWs = null;
 const tradeCoalesce = new Map();
 
 function usSessionYmdFromDate(date) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: DISPLAY_TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const y = parts.find((p) => p.type === "year")?.value;
-  const m = parts.find((p) => p.type === "month")?.value;
-  const d = parts.find((p) => p.type === "day")?.value;
-  return `${y}-${m}-${d}`;
+  return usSessionYmdFromUnixSeconds(date.getTime() / 1000);
 }
 
-function usSessionWallClockUnix(sessionYmd, hour, minute) {
-  const [y, mo, d] = sessionYmd.split("-").map(Number);
-  const guessUtc = Date.UTC(y, mo - 1, d, hour + 5, minute, 0);
-  for (let offsetMin = -840; offsetMin <= 840; offsetMin += 15) {
-    const probe = new Date(guessUtc + offsetMin * 60 * 1000);
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: DISPLAY_TZ,
-      hour: "numeric",
-      minute: "numeric",
-      hour12: false,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(probe);
-    const ph = Number(parts.find((p) => p.type === "hour")?.value ?? NaN);
-    const pm = Number(parts.find((p) => p.type === "minute")?.value ?? NaN);
-    const py = parts.find((p) => p.type === "year")?.value;
-    const pmo = parts.find((p) => p.type === "month")?.value;
-    const pd = parts.find((p) => p.type === "day")?.value;
-    const ymd = `${py}-${pmo}-${pd}`;
-    if (ymd === sessionYmd && ph === hour && pm === minute) {
-      return Math.floor(probe.getTime() / 1000);
-    }
-  }
-  return Math.floor(guessUtc / 1000);
-}
-
-function getUsEquityMarketSession(now = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: DISPLAY_TZ,
-    weekday: "short",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: false,
-  }).formatToParts(now);
+function computeUsEquityMarketSession(now) {
+  const parts = SESSION_PARTS_FORMATTER.formatToParts(now);
   const weekday = parts.find((p) => p.type === "weekday")?.value ?? "";
   if (weekday === "Sat" || weekday === "Sun") return "closed";
-  const ymd = new Intl.DateTimeFormat("en-CA", {
-    timeZone: DISPLAY_TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
-  if (isUsEquityExchangeHolidayYmd(ymd)) return "closed";
+  if (isUsEquityExchangeHolidayYmd(usSessionYmdFromDate(now))) return "closed";
   const hour = Number(parts.find((p) => p.type === "hour")?.value ?? NaN);
   const minute = Number(parts.find((p) => p.type === "minute")?.value ?? NaN);
   const mins = hour * 60 + minute;
@@ -274,6 +242,15 @@ function getUsEquityMarketSession(now = new Date()) {
   if (mins < open) return "pre";
   if (mins >= close) return "post";
   return "regular";
+}
+
+/** Called per trade message — memoized per wall-clock minute (session windows start on whole minutes). */
+function getUsEquityMarketSession(now = new Date()) {
+  const minute = Math.floor(now.getTime() / 60_000);
+  if (sessionCache?.minute === minute) return sessionCache.session;
+  const session = computeUsEquityMarketSession(now);
+  sessionCache = { minute, session };
+  return session;
 }
 
 function minuteBucketUnix(sessionYmd, tradeSec) {
