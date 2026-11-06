@@ -613,8 +613,6 @@ export function CryptoPageContent({
           headerLoading={false}
         />
       )}
-      </div>
-
       {safeRow && activeTab === "overview" ? (
         <ChartControls
           activeRange={range}
@@ -720,6 +718,7 @@ export function CryptoPageContent({
           )}
         </ChartControls>
       ) : null}
+      </div>
 
       {safeRow ? (
         <>

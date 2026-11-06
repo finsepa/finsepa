@@ -106,7 +106,6 @@ function CurrencyPageContentInner({
           chartHovering={headerUi.isHovering}
           headerLoading={!serverMatch}
         />
-        </div>
 
         <ChartControls
           activeRange={range}
@@ -136,6 +135,7 @@ function CurrencyPageContentInner({
             onDisplayChange={setSessionHeaderUi}
           />
         </ChartControls>
+        </div>
 
         <MiniTable
           ticker={displayCode}
