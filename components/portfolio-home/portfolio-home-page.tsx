@@ -452,7 +452,7 @@ export function PortfolioHomePage() {
           <HomeMarketTiles />
         </section>
 
-        <section aria-label="Performance" className={cn("space-y-4 p-4", MOBILE_ELEVATED_CARD_CLASS)}>
+        <section aria-label="Performance" className="space-y-4">
           <div className="flex items-start justify-between gap-3">
             <header className="flex min-w-0 flex-col items-start gap-1">
               <button
