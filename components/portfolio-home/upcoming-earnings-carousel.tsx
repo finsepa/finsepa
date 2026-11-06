@@ -287,7 +287,6 @@ const DAY_TILE_CLASS = cn(
 function DayTileContent({
   ymd,
   daysLeft,
-  todayClassName,
   name,
   logoUrl,
   symbol,
@@ -295,7 +294,6 @@ function DayTileContent({
 }: {
   ymd: string;
   daysLeft: number;
-  todayClassName: string;
   name: string;
   logoUrl: string;
   symbol: string;
@@ -306,7 +304,7 @@ function DayTileContent({
       <span
         className={cn(
           "truncate text-[12px] font-medium leading-4",
-          daysLeft === 0 ? todayClassName : "text-fg-muted",
+          daysLeft === 0 ? "text-down" : "text-fg-muted",
         )}
       >
         {dayTileEyebrow(ymd, daysLeft)}
@@ -343,7 +341,6 @@ function EarningsCard({
       <DayTileContent
         ymd={card.earningsDateYmd}
         daysLeft={card.daysLeft}
-        todayClassName="text-down"
         name={card.name}
         logoUrl={card.logoUrl}
         symbol={card.symbol}
@@ -359,7 +356,6 @@ function DividendCard({ card }: { card: UpcomingDividendCard }) {
     <DayTileContent
       ymd={card.paymentDateYmd}
       daysLeft={card.daysLeft}
-      todayClassName="text-up"
       name={card.name}
       logoUrl={card.logoUrl}
       symbol={card.symbol}
