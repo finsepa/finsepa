@@ -73,15 +73,30 @@ function IndexPageContentInner({
   const showComponents = serverMatch?.showComponents ?? false;
 
   const recentDailyCloses = serverMatch?.recentDailyCloses;
+  const seedChartLastSec = serverMatch?.chart.points.at(-1)?.time ?? null;
   const headerUi = useMemo(() => {
     const now = new Date();
     let priorClose: number | null = null;
+    let todaySpot: number | null = null;
     if (getUsEquityMarketSession(now) === "regular" && recentDailyCloses?.length) {
       const todayYmd = usSessionYmdFromUnixSeconds(Math.floor(now.getTime() / 1000));
       priorClose = recentDailyCloses.filter((b) => b.date < todayYmd).at(-1)?.close ?? null;
+      // Some indices (NDX, DJI) have no intraday bars for today — the daily bar is the freshest price.
+      const chartIsToday = seedChartLastSec != null && usSessionYmdFromUnixSeconds(seedChartLastSec) === todayYmd;
+      if (!chartIsToday) todaySpot = recentDailyCloses.find((b) => b.date === todayYmd)?.close ?? null;
     }
-    return mergeSessionHeaderWithPerformanceSpot(sessionHeaderUi, performance, chartSeries, null, now, priorClose);
-  }, [sessionHeaderUi, performance, chartSeries, recentDailyCloses]);
+    const merged = mergeSessionHeaderWithPerformanceSpot(
+      sessionHeaderUi,
+      performance,
+      chartSeries,
+      todaySpot,
+      now,
+      priorClose,
+    );
+    return todaySpot != null && !merged.isHovering && !merged.selectionActive
+      ? { ...merged, priceTimestampLabel: null }
+      : merged;
+  }, [sessionHeaderUi, performance, chartSeries, recentDailyCloses, seedChartLastSec]);
 
   const initialChartMemo = useMemo(
     () => (serverMatch ? { range: serverMatch.chart.range, points: serverMatch.chart.points } : null),
