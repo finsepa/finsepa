@@ -253,20 +253,20 @@ export function StockPageSkeleton() {
           <div className="max-md:hidden pointer-events-none border-b border-solid border-stroke">
             <StockDetailTabNav activeTab="overview" onTabChange={noop} embedded />
           </div>
-          <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+          <div className={ASSET_HERO_CARD_CLASS}>
             <ShellHeader kind={kind} symbol={symbol} pending={shellPending} />
-            <div className="pointer-events-none">
-              <ChartControls
-                activeRange="1D"
-                onRangeChange={noop}
-                chartSeries="price"
-                onChartSeriesChange={noop}
-              >
-                <div className="relative min-h-[320px] w-full">
-                  <AssetChartSkeleton heightPx={320} className="h-full" />
-                </div>
-              </ChartControls>
-            </div>
+          </div>
+          <div className="pointer-events-none">
+            <ChartControls
+              activeRange="1D"
+              onRangeChange={noop}
+              chartSeries="price"
+              onChartSeriesChange={noop}
+            >
+              <div className="relative min-h-[320px] w-full">
+                <AssetChartSkeleton heightPx={320} className="h-full" />
+              </div>
+            </ChartControls>
           </div>
 
           <KeyIndicatorsSkeleton />
@@ -306,19 +306,19 @@ export function StockPageSkeleton() {
 
           <div className={ASSET_HERO_CARD_CLASS}>
             <ShellHeader kind={kind} symbol={symbol} pending={showOptimistic ? pending : null} />
-            <div className="pointer-events-none">
-              <ChartControls
-                activeRange="1D"
-                onRangeChange={noop}
-                chartSeries="price"
-                onChartSeriesChange={noop}
-                hideMarketCapSeries={hideMarketCap}
-              >
-                <div className="relative min-h-[320px] w-full">
-                  <AssetChartSkeleton heightPx={320} className="h-full" />
-                </div>
-              </ChartControls>
-            </div>
+          </div>
+          <div className="pointer-events-none">
+            <ChartControls
+              activeRange="1D"
+              onRangeChange={noop}
+              chartSeries="price"
+              onChartSeriesChange={noop}
+              hideMarketCapSeries={hideMarketCap}
+            >
+              <div className="relative min-h-[320px] w-full">
+                <AssetChartSkeleton heightPx={320} className="h-full" />
+              </div>
+            </ChartControls>
           </div>
 
           {kind === "crypto" ? <KeyIndicatorsSkeleton /> : null}

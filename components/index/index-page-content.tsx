@@ -109,6 +109,7 @@ function IndexPageContentInner({
           chartHovering={headerUi.isHovering}
           headerLoading={!serverMatch}
         />
+        </div>
 
         <ChartControls
           activeRange={range}
@@ -138,7 +139,6 @@ function IndexPageContentInner({
             onDisplayChange={setSessionHeaderUi}
           />
         </ChartControls>
-        </div>
 
         <MiniTable
           ticker={displayCode}

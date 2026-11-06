@@ -1323,8 +1323,13 @@ export function StockPageContent({
           />
         </div>
       ) : null}
+      </div>
 
-      <div className="space-y-5">
+      {/* Chart sits on the page panel (outside the header card); offscreen on other tabs so it keeps driving the header. */}
+      <div
+        className={cn(displayTab !== "overview" && ASSET_HERO_OFFSCREEN_DESKTOP_CLASS)}
+        aria-hidden={displayTab !== "overview" ? true : undefined}
+      >
           <ChartControls
             activeRange={range}
             onRangeChange={setRange}
@@ -1392,7 +1397,6 @@ export function StockPageContent({
               </div>
             )}
           </ChartControls>
-      </div>
       </div>
 
       {tabsMounted.overview ? (
