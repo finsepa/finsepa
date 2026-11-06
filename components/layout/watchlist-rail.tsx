@@ -7,7 +7,6 @@ import { GripVertical, Maximize2, PanelLeftOpen, X } from "@/lib/icons";
 
 import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
 import { WatchlistOptionsMenu } from "@/components/watchlist/watchlist-options-menu";
-import { WatchlistSectionHeader } from "@/components/watchlist/watchlist-section-header";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { DropdownScrollArea } from "@/components/design-system/dropdown-scroll-area";
 import { panelOverlayScrollGutterClassName } from "@/components/design-system/dropdown-menu-styles";
@@ -26,7 +25,6 @@ import { FREE_MAX_WATCHLIST_ASSETS } from "@/lib/account/plan-entitlements";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import { normalizeWatchlistStorageKey } from "@/lib/watchlist/normalize-storage-key";
-import { partitionEnrichedItemsBySections } from "@/lib/watchlist/sections";
 import type { WatchlistDropTarget } from "@/lib/watchlist/watchlist-drag";
 import { readWatchlistDragData, writeWatchlistDragData } from "@/lib/watchlist/watchlist-drag";
 import { resolveWatchlistRailHref } from "@/lib/watchlist/watchlist-rail-href";
@@ -96,7 +94,6 @@ function RailChange({ value }: { value: number | null }) {
 function WatchlistRailRow({
   row,
   globalIndex,
-  sectionId,
   pathname,
   tabParam,
   pricesLoading,
@@ -106,7 +103,6 @@ function WatchlistRailRow({
 }: {
   row: WatchlistEnrichedItem;
   globalIndex: number;
-  sectionId: string | null;
   pathname: string;
   tabParam: string | null;
   pricesLoading: boolean;
@@ -149,7 +145,7 @@ function WatchlistRailRow({
         const payload = readWatchlistDragData(event.dataTransfer);
         if (!payload) return;
         if (payload.globalIndex === globalIndex) return;
-        onMoveItem(payload.globalIndex, { kind: "row", toIndex: globalIndex, sectionId });
+        onMoveItem(payload.globalIndex, { kind: "row", toIndex: globalIndex, sectionId: null });
       }}
       className={cn(
         "group flex min-w-0 items-center gap-1 rounded-lg px-2 py-1.5 transition-colors",
@@ -213,73 +209,6 @@ function WatchlistRailRow({
   );
 }
 
-function WatchlistRailSectionGroup({
-  sectionId,
-  sectionIndex,
-  label,
-  rows,
-  watchedTickers,
-  pathname,
-  tabParam,
-  pricesLoading,
-  loading,
-  onMoveItem,
-  onRemove,
-  onRenameSection,
-  onDeleteSection,
-  onReorderSection,
-}: {
-  sectionId: string;
-  sectionIndex: number;
-  label: string;
-  rows: WatchlistEnrichedItem[];
-  watchedTickers: string[];
-  pathname: string;
-  tabParam: string | null;
-  pricesLoading: boolean;
-  loading: boolean;
-  onMoveItem: (fromIndex: number, target: WatchlistDropTarget) => void;
-  onRemove: (storageKey: string) => void;
-  onRenameSection: (sectionId: string, name: string) => void;
-  onDeleteSection: (sectionId: string) => void;
-  onReorderSection: (fromSectionIndex: number, toSectionIndex: number) => void;
-}) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  return (
-    <>
-      <WatchlistSectionHeader
-        variant="rail"
-        sectionId={sectionId}
-        sectionIndex={sectionIndex}
-        label={label}
-        collapsed={collapsed}
-        onToggleCollapsed={() => setCollapsed((value) => !value)}
-        onRename={(name) => onRenameSection(sectionId, name)}
-        onDelete={() => onDeleteSection(sectionId)}
-        onDropItem={onMoveItem}
-        onReorderSection={onReorderSection}
-      />
-      {!collapsed
-        ? rows.map((row) => (
-            <WatchlistRailRow
-              key={row.entryId}
-              row={row}
-              globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
-              sectionId={sectionId}
-              pathname={pathname}
-              tabParam={tabParam}
-              pricesLoading={pricesLoading}
-              loading={loading}
-              onMoveItem={onMoveItem}
-              onRemove={onRemove}
-            />
-          ))
-        : null}
-    </>
-  );
-}
-
 function WatchlistRailSkeleton() {
   return (
     <div className="flex flex-col">
@@ -297,12 +226,12 @@ function WatchlistRailSkeleton() {
   );
 }
 
-/** Rail list body — sections (collapse / rename / reorder), drag-and-drop rows, hover remove. Also used on Home. */
+/** Rail list body — drag-and-drop rows, hover remove. Also used on Home. */
 export function WatchlistRailScrollContent({
   showLoadingState,
   empty,
   error,
-  railGroups,
+  rows,
   watchedTickers,
   pathname,
   tabParam,
@@ -310,14 +239,11 @@ export function WatchlistRailScrollContent({
   loading,
   moveActiveWatchlistItem,
   removeFromActiveWatchlist,
-  renameActiveSection,
-  deleteActiveSection,
-  reorderActiveSection,
 }: {
   showLoadingState: boolean;
   empty: boolean;
   error: string | null;
-  railGroups: ReturnType<typeof partitionEnrichedItemsBySections>;
+  rows: WatchlistEnrichedItem[];
   watchedTickers: string[];
   pathname: string;
   tabParam: string | null;
@@ -325,9 +251,6 @@ export function WatchlistRailScrollContent({
   loading: boolean;
   moveActiveWatchlistItem: (fromIndex: number, target: WatchlistDropTarget) => void;
   removeFromActiveWatchlist: (storageKey: string) => void;
-  renameActiveSection: (sectionId: string, name: string) => void;
-  deleteActiveSection: (sectionId: string) => void;
-  reorderActiveSection: (fromSectionIndex: number, toSectionIndex: number) => void;
 }) {
   if (showLoadingState) {
     return <WatchlistRailSkeleton />;
@@ -345,37 +268,17 @@ export function WatchlistRailScrollContent({
   }
   return (
     <div className="flex flex-col">
-      {railGroups.unsectioned.map((row) => (
+      {rows.map((row) => (
         <WatchlistRailRow
           key={row.entryId}
           row={row}
           globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
-          sectionId={null}
           pathname={pathname}
           tabParam={tabParam}
           pricesLoading={pricesLoading}
           loading={loading}
           onMoveItem={moveActiveWatchlistItem}
           onRemove={removeFromActiveWatchlist}
-        />
-      ))}
-      {railGroups.sections.map(({ section, rows }, sectionIndex) => (
-        <WatchlistRailSectionGroup
-          key={section.id}
-          sectionId={section.id}
-          sectionIndex={sectionIndex}
-          label={section.name}
-          rows={rows}
-          watchedTickers={watchedTickers}
-          pathname={pathname}
-          tabParam={tabParam}
-          pricesLoading={pricesLoading}
-          loading={loading}
-          onMoveItem={moveActiveWatchlistItem}
-          onRemove={removeFromActiveWatchlist}
-          onRenameSection={renameActiveSection}
-          onDeleteSection={deleteActiveSection}
-          onReorderSection={reorderActiveSection}
         />
       ))}
     </div>
@@ -456,15 +359,9 @@ export function WatchlistRail() {
     activeWatchlistId,
     activeWatchlistName,
     watchedTickers,
-    activeSections,
-    activeTickerSections,
     createWatchlist,
-    createActiveSection,
     renameActiveWatchlist,
-    renameActiveSection,
     deleteActiveWatchlist,
-    deleteActiveSection,
-    reorderActiveSection,
     switchWatchlist,
     moveActiveWatchlistItem,
     removeFromActiveWatchlist,
@@ -477,12 +374,6 @@ export function WatchlistRail() {
       ? `${watchedTickers.length}/${plan.maxWatchlistAssets ?? FREE_MAX_WATCHLIST_ASSETS}`
       : null;
 
-  const railGroups = partitionEnrichedItemsBySections(
-    items,
-    watchedTickers,
-    activeSections,
-    activeTickerSections,
-  );
   const showLoadingState =
     !mounted || !storageHydrated || (!serverSynced && watchedTickers.length === 0);
   const showRailContent = mounted && storageHydrated;
@@ -519,7 +410,6 @@ export function WatchlistRail() {
                 watchlists={watchlists}
                 activeWatchlistId={activeWatchlistId}
                 onCreate={createWatchlist}
-                onCreateSection={createActiveSection}
                 onRename={renameActiveWatchlist}
                 onDelete={deleteActiveWatchlist}
                 onSwitch={switchWatchlist}
@@ -551,7 +441,7 @@ export function WatchlistRail() {
                   showLoadingState={showLoadingState}
                   empty={empty}
                   error={error}
-                  railGroups={railGroups}
+                  rows={items}
                   watchedTickers={watchedTickers}
                   pathname={pathname}
                   tabParam={tabParam}
@@ -559,9 +449,6 @@ export function WatchlistRail() {
                   loading={loading}
                   moveActiveWatchlistItem={moveActiveWatchlistItem}
                   removeFromActiveWatchlist={removeFromActiveWatchlist}
-                  renameActiveSection={renameActiveSection}
-                  deleteActiveSection={deleteActiveSection}
-                  reorderActiveSection={reorderActiveSection}
                 />
               ) : (
                 <WatchlistRailSkeleton />

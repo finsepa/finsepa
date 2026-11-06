@@ -47,7 +47,6 @@ import {
 import type { PortfolioChartPeriodSnapshot } from "@/components/portfolio/portfolio-overview-chart";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { WatchlistOptionsMenu } from "@/components/watchlist/watchlist-options-menu";
-import { partitionEnrichedItemsBySections } from "@/lib/watchlist/sections";
 import { countManualPortfoliosForFreeQuota } from "@/lib/account/free-plan-quota";
 import { FREE_MAX_REAL_PORTFOLIOS, FREE_MAX_WATCHLIST_ASSETS } from "@/lib/account/plan-entitlements";
 import { formatSignedUsdAmountGrouped2dp } from "@/lib/market/key-stats-basic-format";
@@ -735,15 +734,9 @@ function HomeAsideContent() {
     activeWatchlistId,
     activeWatchlistName,
     watchedTickers,
-    activeSections,
-    activeTickerSections,
     createWatchlist,
-    createActiveSection,
     renameActiveWatchlist,
-    renameActiveSection,
     deleteActiveWatchlist,
-    deleteActiveSection,
-    reorderActiveSection,
     switchWatchlist,
     moveActiveWatchlistItem,
     removeFromActiveWatchlist,
@@ -766,17 +759,6 @@ function HomeAsideContent() {
   /** Free plan only — shows usage against the cap; Pro has no limit to show. */
   const activeWatchlistBadge =
     freeWatchlistMax != null ? `${watchedTickers.length}/${freeWatchlistMax}` : null;
-  const groups = useMemo(
-    () =>
-      partitionEnrichedItemsBySections(
-        items,
-        watchedTickers,
-        activeSections,
-        activeTickerSections,
-      ),
-    [items, watchedTickers, activeSections, activeTickerSections],
-  );
-
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-col gap-6">
       <section
@@ -804,7 +786,6 @@ function HomeAsideContent() {
                 watchlists={watchlists}
                 activeWatchlistId={activeWatchlistId}
                 onCreate={createWatchlist}
-                onCreateSection={createActiveSection}
                 onRename={renameActiveWatchlist}
                 onDelete={deleteActiveWatchlist}
                 onSwitch={switchWatchlist}
@@ -830,7 +811,6 @@ function HomeAsideContent() {
                 watchlists={watchlists}
                 activeWatchlistId={activeWatchlistId}
                 onCreate={createWatchlist}
-                onCreateSection={createActiveSection}
                 onRename={renameActiveWatchlist}
                 onDelete={deleteActiveWatchlist}
                 onSwitch={switchWatchlist}
@@ -848,7 +828,7 @@ function HomeAsideContent() {
               showLoadingState={!watchlistReady || awaitingServerList || (loading && items.length === 0)}
               empty={empty}
               error={error}
-              railGroups={groups}
+              rows={items}
               watchedTickers={watchedTickers}
               pathname="/home"
               tabParam={null}
@@ -856,9 +836,6 @@ function HomeAsideContent() {
               loading={loading}
               moveActiveWatchlistItem={moveActiveWatchlistItem}
               removeFromActiveWatchlist={removeFromActiveWatchlist}
-              renameActiveSection={renameActiveSection}
-              deleteActiveSection={deleteActiveSection}
-              reorderActiveSection={reorderActiveSection}
             />
           </OverlayScrollArea>
         </div>

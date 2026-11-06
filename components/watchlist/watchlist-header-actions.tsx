@@ -12,7 +12,6 @@ type Props = {
   /** Active list ticker count (for Free `n/15` badge). */
   assetCount?: number;
   onCreate: (name: string) => void;
-  onCreateSection?: (name: string) => void;
   onRename: (name: string) => void;
   onDelete: () => void | Promise<void>;
   onSwitch: (id: string) => void;
@@ -25,7 +24,6 @@ export function WatchlistHeaderActions({
   activeWatchlistId,
   assetCount = 0,
   onCreate,
-  onCreateSection,
   onRename,
   onDelete,
   onSwitch,
@@ -62,7 +60,6 @@ export function WatchlistHeaderActions({
         watchlists={watchlists}
         activeWatchlistId={activeWatchlistId}
         onCreate={onCreate}
-        onCreateSection={onCreateSection}
         onRename={onRename}
         onDelete={onDelete}
         onSwitch={onSwitch}

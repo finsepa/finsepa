@@ -17,7 +17,6 @@ export function MobileWatchlistTopbarChrome() {
     activeWatchlistId,
     watchedTickers,
     createWatchlist,
-    createActiveSection,
     renameActiveWatchlist,
     deleteActiveWatchlist,
     switchWatchlist,
@@ -53,7 +52,6 @@ export function MobileWatchlistTopbarChrome() {
         watchlists={watchlists}
         activeWatchlistId={activeWatchlistId}
         onCreate={createWatchlist}
-        onCreateSection={createActiveSection}
         onRename={renameActiveWatchlist}
         onDelete={deleteActiveWatchlist}
         onSwitch={switchWatchlist}

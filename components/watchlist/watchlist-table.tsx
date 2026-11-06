@@ -21,9 +21,7 @@ import {
 import { WatchlistEmptyState } from "@/components/watchlist/watchlist-empty-state";
 import { WatchlistHeaderActions } from "@/components/watchlist/watchlist-header-actions";
 import { WatchlistRowRemoveButton } from "@/components/watchlist/watchlist-star-button";
-import { WatchlistSectionHeader } from "@/components/watchlist/watchlist-section-header";
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
-import { partitionEnrichedItemsBySections } from "@/lib/watchlist/sections";
 import { normalizeWatchlistStorageKey } from "@/lib/watchlist/normalize-storage-key";
 import type { WatchlistDropTarget } from "@/lib/watchlist/watchlist-drag";
 import { readWatchlistDragData, writeWatchlistDragData } from "@/lib/watchlist/watchlist-drag";
@@ -194,13 +192,11 @@ function WatchlistTableSkeleton() {
 function WatchlistTableRow({
   row,
   globalIndex,
-  sectionId,
   onRemove,
   onMoveItem,
 }: {
   row: WatchlistEnrichedItem;
   globalIndex: number;
-  sectionId: string | null;
   onRemove: (ticker: string) => void;
   onMoveItem: (fromIndex: number, target: WatchlistDropTarget) => void;
 }) {
@@ -214,7 +210,7 @@ function WatchlistTableRow({
           aria-label={`Reorder ${row.symbol}`}
           onDragStart={(event) => {
             if (globalIndex < 0) return;
-            logWatchlistDragStart(row.storageKey, globalIndex, sectionId);
+            logWatchlistDragStart(row.storageKey, globalIndex, null);
             writeWatchlistDragData(event.dataTransfer, {
               globalIndex,
               storageKey: row.storageKey,
@@ -237,8 +233,9 @@ function WatchlistTableRow({
             const payload = readWatchlistDragData(event.dataTransfer);
             if (!payload) return;
             if (payload.globalIndex === globalIndex) return;
-            logWatchlistDragEnd(payload.storageKey, { kind: "row", toIndex: globalIndex, sectionId });
-            onMoveItem(payload.globalIndex, { kind: "row", toIndex: globalIndex, sectionId });
+            const target = { kind: "row", toIndex: globalIndex, sectionId: null } as const;
+            logWatchlistDragEnd(payload.storageKey, target);
+            onMoveItem(payload.globalIndex, target);
           }}
           className={cn(
             "group grid min-h-[60px] cursor-grab items-center transition-colors duration-75 active:cursor-grabbing max-md:touch-manipulation",
@@ -344,61 +341,6 @@ function WatchlistTableRow({
   );
 }
 
-function UserSectionGroup({
-  label,
-  sectionId,
-  sectionIndex,
-  rows,
-  watchedTickers,
-  onRemove,
-  onMoveItem,
-  onRenameSection,
-  onDeleteSection,
-  onReorderSection,
-}: {
-  label: string;
-  sectionId: string;
-  sectionIndex: number;
-  rows: WatchlistEnrichedItem[];
-  watchedTickers: string[];
-  onRemove: (ticker: string) => void;
-  onMoveItem: (fromIndex: number, target: WatchlistDropTarget) => void;
-  onRenameSection: (sectionId: string, name: string) => void;
-  onDeleteSection: (sectionId: string) => void;
-  onReorderSection: (fromSectionIndex: number, toSectionIndex: number) => void;
-}) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  return (
-    <>
-      <WatchlistSectionHeader
-        variant="card"
-        sectionId={sectionId}
-        sectionIndex={sectionIndex}
-        label={label}
-        collapsed={collapsed}
-        onToggleCollapsed={() => setCollapsed((value) => !value)}
-        onRename={(name) => onRenameSection(sectionId, name)}
-        onDelete={() => onDeleteSection(sectionId)}
-        onDropItem={onMoveItem}
-        onReorderSection={onReorderSection}
-      />
-
-      {!collapsed &&
-        rows.map((row) => (
-          <WatchlistTableRow
-            key={row.entryId}
-            row={row}
-            globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
-            sectionId={sectionId}
-            onRemove={onRemove}
-            onMoveItem={onMoveItem}
-          />
-        ))}
-    </>
-  );
-}
-
 export function WatchlistTable() {
   const {
     watched,
@@ -406,30 +348,17 @@ export function WatchlistTable() {
     removeFromActiveWatchlist,
     moveActiveWatchlistItem,
     createWatchlist,
-    createActiveSection,
-    renameActiveSection,
-    deleteActiveSection,
-    reorderActiveSection,
     renameActiveWatchlist,
     deleteActiveWatchlist,
     switchWatchlist,
     watchlists,
     activeWatchlistId,
     activeWatchlistName,
-    activeSections,
-    activeTickerSections,
     serverListWarning,
     storageHydrated,
     watchedUnion,
   } = useWatchlist();
   const { items, ready, error } = useWatchlistEnrichedItems({ enabled: true });
-
-  const tableGroups = partitionEnrichedItemsBySections(
-    items,
-    watchedTickers,
-    activeSections,
-    activeTickerSections,
-  );
 
   const hasUsableRows = watched.size > 0 && items.length > 0;
   const empty = storageHydrated && watched.size === 0 && !error;
@@ -444,7 +373,6 @@ export function WatchlistTable() {
           activeWatchlistId={activeWatchlistId}
           assetCount={watchedTickers.length}
           onCreate={createWatchlist}
-          onCreateSection={createActiveSection}
           onRename={renameActiveWatchlist}
           onDelete={deleteActiveWatchlist}
           onSwitch={switchWatchlist}
@@ -470,29 +398,13 @@ export function WatchlistTable() {
         <ScreenerTableScroll>
           <div className="bg-surface">
             <WatchlistTableHeader />
-            {tableGroups.unsectioned.map((row) => (
+            {items.map((row) => (
               <WatchlistTableRow
                 key={row.entryId}
                 row={row}
                 globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
-                sectionId={null}
                 onRemove={removeFromActiveWatchlist}
                 onMoveItem={moveActiveWatchlistItem}
-              />
-            ))}
-            {tableGroups.sections.map(({ section, rows }, sectionIndex) => (
-              <UserSectionGroup
-                key={section.id}
-                sectionId={section.id}
-                sectionIndex={sectionIndex}
-                label={section.name}
-                rows={rows}
-                watchedTickers={watchedTickers}
-                onRemove={removeFromActiveWatchlist}
-                onMoveItem={moveActiveWatchlistItem}
-                onRenameSection={renameActiveSection}
-                onDeleteSection={deleteActiveSection}
-                onReorderSection={reorderActiveSection}
               />
             ))}
           </div>

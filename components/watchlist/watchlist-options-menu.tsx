@@ -30,7 +30,6 @@ import {
 import type { WatchlistCollection } from "@/lib/watchlist/collections";
 import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
 import {
-  addSectionMenuIconAnimation,
   addWatchlistMenuIconAnimation,
   deleteMenuIconAnimation,
   renameMenuIconAnimation,
@@ -41,14 +40,13 @@ import { cn } from "@/lib/utils";
 const titleGhostTriggerClass =
   "flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15 focus-visible:ring-offset-2";
 
-type ModalStep = "closed" | "create" | "createSection" | "rename" | "deleteConfirm";
+type ModalStep = "closed" | "create" | "rename" | "deleteConfirm";
 
 export type WatchlistOptionsMenuProps = {
   name: string;
   watchlists: WatchlistCollection[];
   activeWatchlistId: string;
   onCreate: (name: string) => void;
-  onCreateSection?: (name: string) => void;
   onRename: (name: string) => void;
   onDelete: () => void | Promise<void>;
   onSwitch: (id: string) => void;
@@ -71,7 +69,6 @@ export function WatchlistOptionsMenu({
   watchlists,
   activeWatchlistId,
   onCreate,
-  onCreateSection,
   onRename,
   onDelete,
   onSwitch,
@@ -85,20 +82,17 @@ export function WatchlistOptionsMenu({
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [addWatchlistIconPlaying, setAddWatchlistIconPlaying] = useState(false);
-  const [addSectionIconPlaying, setAddSectionIconPlaying] = useState(false);
   const [renameIconPlaying, setRenameIconPlaying] = useState(false);
   const [deleteIconPlaying, setDeleteIconPlaying] = useState(false);
   const [step, setStep] = useState<ModalStep>("closed");
   const [renameValue, setRenameValue] = useState(name);
   const [createValue, setCreateValue] = useState("");
-  const [createSectionValue, setCreateSectionValue] = useState("");
   const [clearing, setClearing] = useState(false);
   const [pendingDeleteName, setPendingDeleteName] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuPortalRef = useRef<HTMLDivElement>(null);
   const chevronsRef = useRef<ChevronsUpDownIconHandle>(null);
   const createTitleId = useId();
-  const createSectionTitleId = useId();
   const renameTitleId = useId();
   const deleteTitleId = useId();
 
@@ -110,7 +104,6 @@ export function WatchlistOptionsMenu({
   useEffect(() => {
     if (!menuOpen) {
       setAddWatchlistIconPlaying(false);
-      setAddSectionIconPlaying(false);
       setRenameIconPlaying(false);
       setDeleteIconPlaying(false);
     }
@@ -137,7 +130,6 @@ export function WatchlistOptionsMenu({
   useEffect(() => {
     if (step === "rename") setRenameValue(name);
     if (step === "create") setCreateValue("");
-    if (step === "createSection") setCreateSectionValue("");
   }, [step, name]);
 
   const closeModal = () => {
@@ -157,11 +149,6 @@ export function WatchlistOptionsMenu({
       return;
     }
     setStep("create");
-  };
-
-  const openCreateSection = () => {
-    setMenuOpen(false);
-    setStep("createSection");
   };
 
   const openRename = () => {
@@ -189,13 +176,6 @@ export function WatchlistOptionsMenu({
     closeModal();
   };
 
-  const confirmCreateSection = () => {
-    const trimmed = createSectionValue.trim();
-    if (!trimmed) return;
-    onCreateSection?.(trimmed);
-    closeModal();
-  };
-
   const confirmDelete = async () => {
     if (clearing) return;
     setClearing(true);
@@ -209,7 +189,6 @@ export function WatchlistOptionsMenu({
 
   const renameEnabled = renameValue.trim().length > 0;
   const createEnabled = createValue.trim().length > 0;
-  const createSectionEnabled = createSectionValue.trim().length > 0;
 
   const showSwitcher = variant !== "more-icon";
 
@@ -341,24 +320,6 @@ export function WatchlistOptionsMenu({
                 />
                 <span>Add New Watchlist</span>
               </button>
-              {onCreateSection ? (
-                <button
-                  type="button"
-                  role="menuitem"
-                  onMouseEnter={() => setAddSectionIconPlaying(true)}
-                  onMouseLeave={() => setAddSectionIconPlaying(false)}
-                  onFocus={() => setAddSectionIconPlaying(true)}
-                  onBlur={() => setAddSectionIconPlaying(false)}
-                  onClick={openCreateSection}
-                  className={dropdownMenuPlainItemClassName()}
-                >
-                  <DropdownMenuLottieIcon
-                    animationData={addSectionMenuIconAnimation}
-                    playing={addSectionIconPlaying}
-                  />
-                  <span>Add New Section</span>
-                </button>
-              ) : null}
               <div role="separator" aria-hidden className="-mx-1 my-0.5 h-px shrink-0 bg-stroke" />
               <button
                 type="button"
@@ -428,41 +389,6 @@ export function WatchlistOptionsMenu({
               type="text"
               value={createValue}
               onChange={setCreateValue}
-              placeholder="Add a name"
-              clearLabel="Clear name"
-            />
-          </label>
-        </AppModalShell>
-      </AppModalOverlay>
-
-      <AppModalOverlay open={step === "createSection"} onClose={closeModal} zIndex={120}>
-        <AppModalShell
-          titleId={createSectionTitleId}
-          title="Add new section"
-          onClose={closeModal}
-          bodyClassName="px-5 pb-5 pt-5"
-          footer={
-            <AppModalFooter>
-              <button type="button" onClick={closeModal} className={appModalCancelButtonClass}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={!createSectionEnabled}
-                onClick={confirmCreateSection}
-                className={appModalPrimaryButtonClass(createSectionEnabled)}
-              >
-                Create
-              </button>
-            </AppModalFooter>
-          }
-        >
-          <label className="flex w-full flex-col gap-2">
-            <span className="text-sm font-medium leading-5 text-fg">Section name</span>
-            <ClearableInput
-              type="text"
-              value={createSectionValue}
-              onChange={setCreateSectionValue}
               placeholder="Add a name"
               clearLabel="Clear name"
             />
