@@ -1,6 +1,7 @@
 import "server-only";
 
 import { unstable_cache } from "next/cache";
+import { after } from "next/server";
 
 import { REVALIDATE_HOT } from "@/lib/data/cache-policy";
 import {
@@ -139,14 +140,33 @@ export async function loadIndexPageInitialDataUncached(routeSymbol: string): Pro
     displayCode: indexDisplayCode(sym),
     chart: { range: DEFAULT_RANGE, points: chartPoints },
     performance,
+    recentDailyCloses: sorted.slice(-3).map((b) => ({ date: b.date, close: b.close })),
     components,
     showComponents,
     news: [],
   };
 }
 
+/** Stale hit: rebuild once per segment after the response (lease = one leader across instances). */
+function scheduleIndexSnapshotRefresh(sym: string, segment: string): void {
+  const snapKey = routeAssetPageSnapshotKey("index", sym);
+  if (!snapKey) return;
+  after(async () => {
+    const ownerId = newAssetRebuildLeaseOwner();
+    if ((await tryAcquireAssetRebuildLease(snapKey, segment, ownerId, ASSET_REBUILD_LEASE_TTL_SEC)) !== true) return;
+    try {
+      const fresh = await loadIndexPageInitialDataUncached(sym);
+      await upsertRouteAssetPageSnapshot("index", sym, segment, fresh);
+      await releaseAssetRebuildLease(snapKey, segment, ownerId);
+    } catch {
+      await failAssetRebuildLease(snapKey, segment, ownerId);
+    }
+  });
+}
+
 /**
- * Durable `asset_index_{SYM}` + single-flight cold miss. Warm hit unchanged (serve snapshot).
+ * Durable `asset_index_{SYM}` + single-flight cold miss. Warm hit serves the snapshot; a prior-segment hit
+ * also schedules a background rebuild for the current 15m segment.
  * Chart range APIs use stock-style HOT cache via `getIndexChartPoints`.
  */
 export async function loadIndexPageInitialData(routeSymbol: string): Promise<IndexPageInitialData> {
@@ -160,6 +180,7 @@ export async function loadIndexPageInitialData(routeSymbol: string): Promise<Ind
   });
 
   if (cachedHit?.payload?.routeSymbol?.trim().toUpperCase() === sym) {
+    if (!cachedHit.exactSegment) scheduleIndexSnapshotRefresh(sym, segment);
     return cachedHit.payload;
   }
 

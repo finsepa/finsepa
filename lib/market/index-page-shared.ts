@@ -28,6 +28,8 @@ export type IndexPageInitialData = {
   displayCode: string;
   chart: { range: IndexChartRange; points: StockChartPoint[] };
   performance: StockPerformance;
+  /** Last few daily closes — EODHD's index daily series includes today's bar mid-session. */
+  recentDailyCloses?: { date: string; close: number }[];
   components: IndexComponentRow[];
   showComponents: boolean;
   news: StockNewsArticle[];

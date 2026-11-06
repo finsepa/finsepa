@@ -22,6 +22,8 @@ import {
   type IndexPageInitialData,
 } from "@/lib/market/index-page-shared";
 import { clearPendingAssetShellIfMatch } from "@/lib/navigation/pending-asset-shell";
+import { usSessionYmdFromUnixSeconds } from "@/lib/market/chart-timestamp-format";
+import { getUsEquityMarketSession } from "@/lib/market/us-equity-market-session";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
 
 const EMPTY_CHART_DISPLAY: ChartDisplayState = {
@@ -70,10 +72,16 @@ function IndexPageContentInner({
   const components = serverMatch?.components ?? [];
   const showComponents = serverMatch?.showComponents ?? false;
 
-  const headerUi = useMemo(
-    () => mergeSessionHeaderWithPerformanceSpot(sessionHeaderUi, performance, chartSeries, null),
-    [sessionHeaderUi, performance, chartSeries],
-  );
+  const recentDailyCloses = serverMatch?.recentDailyCloses;
+  const headerUi = useMemo(() => {
+    const now = new Date();
+    let priorClose: number | null = null;
+    if (getUsEquityMarketSession(now) === "regular" && recentDailyCloses?.length) {
+      const todayYmd = usSessionYmdFromUnixSeconds(Math.floor(now.getTime() / 1000));
+      priorClose = recentDailyCloses.filter((b) => b.date < todayYmd).at(-1)?.close ?? null;
+    }
+    return mergeSessionHeaderWithPerformanceSpot(sessionHeaderUi, performance, chartSeries, null, now, priorClose);
+  }, [sessionHeaderUi, performance, chartSeries, recentDailyCloses]);
 
   const initialChartMemo = useMemo(
     () => (serverMatch ? { range: serverMatch.chart.range, points: serverMatch.chart.points } : null),

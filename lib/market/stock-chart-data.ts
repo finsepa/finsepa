@@ -922,11 +922,35 @@ async function loadLatestTradingDay1DChartPoints(
   return [];
 }
 
+/** US indices (`GSPC.INDX`) have no WS minute feed, but EODHD intraday carries today's bars minutes behind. */
+export function isUsIntradayIndexSymbol(ticker: string): boolean {
+  return /\.INDX$/i.test(ticker.trim());
+}
+
 /**
- * 1D live session: WS minute store (allowlist via {@link usesStock1DLiveWsMinutePipeline}).
- * All other tickers: last completed session via EODHD intraday (chart only).
+ * Today's regular-session bars for a US index. Fetched directly — the per-session intraday cache is for
+ * completed sessions and would freeze a live chart; callers sit behind the HOT chart cache.
+ */
+async function loadTodayIndexIntraday1DChartPoints(ticker: string, nowSec: number): Promise<StockChartPoint[]> {
+  const sessionYmd = usSessionYmdFromUnixSeconds(nowSec);
+  const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, STOCK_DISPLAY_TZ);
+  for (const interval of ["1m", "5m"] as const) {
+    const bars = filterIntradayBarsToSessionYmd(await fetchEodhdIntraday(ticker, openSec, nowSec, interval), sessionYmd);
+    const points = historicalSessionIntradayToChartPoints(bars, sessionYmd);
+    if (points.length >= 2) return points;
+  }
+  return [];
+}
+
+/**
+ * 1D live session: WS minute store (allowlist via {@link usesStock1DLiveWsMinutePipeline}); US indices use
+ * today's EODHD intraday. All other tickers: last completed session via EODHD intraday (chart only).
  */
 async function load1DChartPoints(ticker: string, now: Date, nowSec: number): Promise<StockChartPoint[]> {
+  if (isUsIntradayIndexSymbol(ticker) && getUsEquityMarketSession(now) === "regular") {
+    const today = await loadTodayIndexIntraday1DChartPoints(ticker, nowSec);
+    if (today.length >= 2) return today;
+  }
   if (!isStock1DLiveMinuteChartTicker(ticker)) {
     return loadLatestTradingDay1DChartPoints(ticker, now);
   }
@@ -1459,6 +1483,9 @@ export async function getStockChartPointsForApi(
       requestStockMinuteBarWatch(ticker);
       logApi1DBranchDebug(ticker, now, "ws-regular-uncached");
       return loadStockChartPointsUncached(ticker, "1D", series);
+    }
+    if (isUsIntradayIndexSymbol(ticker) && getUsEquityMarketSession(now) === "regular") {
+      return getStockChartPoints(ticker, "1D", series);
     }
     if (usesStock1DLiveWsPostMarketChart(ticker, now)) {
       logApi1DBranchDebug(ticker, now, "ws-postmarket-uncached");

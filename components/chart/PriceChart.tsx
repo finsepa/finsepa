@@ -2549,7 +2549,9 @@ export function PriceChart({
           series === "price" &&
           !holdingsStyle &&
           (regularSession
-            ? usesStock1DLiveWsMinutePipeline(symbol, now) && !ssrLive1DReady
+            ? (usesStock1DLiveWsMinutePipeline(symbol, now) && !ssrLive1DReady) ||
+              // US indices: SSR seed can be a prior session; the API serves today's intraday.
+              /\.INDX$/i.test(symbol.trim())
             : referenceTicker ||
               usesStock1DLiveWsPostMarketChart(symbol, now) ||
               !(
