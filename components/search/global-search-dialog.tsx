@@ -27,6 +27,11 @@ import type { SearchDirectoryQuote, SearchDirectoryRow } from "@/lib/search/sear
 import { getSearchPanelViewState, SEARCH_CLIENT_DEBOUNCE_MS } from "@/lib/search/search-policy";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { useSearchDirectory } from "@/lib/search/use-search-directory";
+import {
+  hasSearchExtraQuote,
+  loadSearchExtraQuotes,
+  readSearchExtraQuotes,
+} from "@/lib/search/search-extra-quotes";
 import { useSearchRecentStorage } from "@/lib/search/use-search-recent-storage";
 import { watchlistStorageKeyForSearchItem } from "@/lib/search/watchlist-storage-key";
 import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_FOREX_PREFIX, WATCHLIST_INDEX_PREFIX } from "@/lib/watchlist/constants";
@@ -69,9 +74,6 @@ const CATEGORY_BROWSE_CAP = 100;
 const RECENT_PREVIEW = 5;
 
 const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_104px_88px_96px_32px] items-center gap-x-3";
-
-/** Hits outside the directory: bulk-list quotes fetched once per symbol for the dialog's lifetime. */
-const extraQuoteCache = new Map<string, SearchDirectoryQuote | null>();
 
 function formatQuotePrice(item: SearchAssetItem, price: number | null | undefined): string {
   if (price == null || !Number.isFinite(price)) return "—";
@@ -211,9 +213,15 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
   const tabIds = useMemo(() => [ALL_TAB, ...watchlists.map((l) => l.id)], [watchlists]);
   const [highlight, setHighlight] = useState(-1);
 
+  const [extraQuotes, setExtraQuotes] = useState(readSearchExtraQuotes);
+
   useEffect(() => {
     inputRef.current?.focus({ preventScroll: true });
-    setRecent(readRecent());
+    const recentItems = readRecent();
+    setRecent(recentItems);
+    // Recents are usually outside the browse directory — fetch them alongside it, not after.
+    const symbols = recentItems.filter((it) => it.type === "stock").map((it) => it.symbol);
+    if (symbols.length) void loadSearchExtraQuotes(symbols).then(() => setExtraQuotes(readSearchExtraQuotes()));
   }, [readRecent]);
 
   useEffect(() => {
@@ -262,8 +270,6 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
     }
     return map;
   }, [directory]);
-
-  const [extraQuotes, setExtraQuotes] = useState(() => new Map(extraQuoteCache));
 
   const quoteFor = useCallback(
     (item: SearchAssetItem): SearchDirectoryQuote | null =>
@@ -334,29 +340,17 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     if (!directory) return;
-    const missing = [
-      ...new Set(
-        flatRows
-          .filter((it) => it.type === "stock" && !directoryQuotes.has(it.id) && !extraQuoteCache.has(it.symbol))
-          .map((it) => it.symbol),
-      ),
-    ].slice(0, 50);
+    const missing = flatRows
+      .filter((it) => it.type === "stock" && !directoryQuotes.has(it.id) && !hasSearchExtraQuote(it.symbol))
+      .map((it) => it.symbol);
     if (!missing.length) return;
-    const ac = new AbortController();
-    void (async () => {
-      try {
-        const res = await fetch(`/api/search/quotes?symbols=${encodeURIComponent(missing.join(","))}`, {
-          signal: ac.signal,
-        });
-        if (!res.ok) return;
-        const { quotes } = (await res.json()) as { quotes: Record<string, SearchDirectoryQuote> };
-        for (const s of missing) extraQuoteCache.set(s, quotes[s] ?? null);
-        setExtraQuotes(new Map(extraQuoteCache));
-      } catch {
-        /* aborted or offline — cells stay "—" */
-      }
-    })();
-    return () => ac.abort();
+    let alive = true;
+    void loadSearchExtraQuotes(missing).then(() => {
+      if (alive) setExtraQuotes(readSearchExtraQuotes());
+    });
+    return () => {
+      alive = false;
+    };
   }, [flatRows, directory, directoryQuotes]);
 
   useEffect(() => {
