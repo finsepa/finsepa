@@ -494,7 +494,6 @@ function PortfolioHoldingsTableInner({
                   <div className="relative z-[1] min-w-0 flex-1">{left}</div>
                   <div className="relative z-[1] shrink-0">{right}</div>
                 </div>
-                <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
               </div>
             );
           })}
@@ -705,7 +704,6 @@ function PortfolioHoldingsTableInner({
                       ) : null}
                     </div>
                   </div>
-                  <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
                 </div>
               );
             })}
