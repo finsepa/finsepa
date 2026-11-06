@@ -74,6 +74,24 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
       exportOptions.showMinLine,
     ]);
 
+    // `PriceChart` reloads its data whenever `initialChart` changes identity; the page behind the modal
+    // re-renders on every live tick, so these must stay stable or the preview flickers.
+    const stockOverviewInitialChart = useMemo(
+      () =>
+        snapshot.stockOverview
+          ? { range: snapshot.stockOverview.range, points: snapshot.stockOverview.points }
+          : null,
+      [snapshot.stockOverview],
+    );
+    const stockOverviewDisplayOptions = useMemo(
+      () => ({
+        showVerticalLegend: exportOptions.showVerticalLegend,
+        showHorizontalLegend: exportOptions.showHorizontalLegend,
+        showRangeBadges: exportOptions.showValues,
+      }),
+      [exportOptions.showVerticalLegend, exportOptions.showHorizontalLegend, exportOptions.showValues],
+    );
+
     /** Preview card grows/shrinks with zoom — 100% = fit-to-pane size. */
     const frameWidth = frameSize.width * previewScale;
     const frameHeight = frameSize.height * previewScale;
@@ -110,7 +128,7 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
               data-chart-screenshot-height={frameSize.height}
               className={cn(
                 "pointer-events-none box-border flex select-none flex-col overflow-hidden",
-                isPortfolioAllocation ? "bg-canvas" : "bg-surface",
+                isPortfolioAllocation ? "bg-canvas" : "bg-surface [--fs-chart-plot-bg:var(--fs-surface)]",
               )}
               style={{
                 width: frameSize.width,
@@ -188,17 +206,10 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
                       range={snapshot.stockOverview!.range}
                       series={snapshot.stockOverview!.series}
                       height={chartArea.height}
-                      initialChart={{
-                        range: snapshot.stockOverview!.range,
-                        points: snapshot.stockOverview!.points,
-                      }}
+                      initialChart={stockOverviewInitialChart}
                       screenshotPreviewMode
                       screenshotChartBlockHeightPx={chartArea.height}
-                      screenshotDisplayOptions={{
-                        showVerticalLegend: exportOptions.showVerticalLegend,
-                        showHorizontalLegend: exportOptions.showHorizontalLegend,
-                        showRangeBadges: exportOptions.showValues,
-                      }}
+                      screenshotDisplayOptions={stockOverviewDisplayOptions}
                     />
                   ) : isPortfolioAllocation ? (
                     <PortfolioAllocationScreenshotContent
