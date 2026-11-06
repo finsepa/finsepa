@@ -8,6 +8,7 @@ import { getScreenerCurrenciesMajorsRows } from "@/lib/screener/screener-currenc
 import type { EodhdRealtimePayload } from "@/lib/market/eodhd-realtime";
 import type { SimpleMarketData, SimpleMarketDatum, SimpleScreenerDerived } from "@/lib/market/simple-market-layer";
 import type { TopCompanyUniverseRow } from "@/lib/screener/top500-companies";
+import { stockQuoteDatum } from "@/lib/market/market-snapshot-slice";
 
 import {
   buildScreenerCompanyRowFromUniverse,
@@ -160,7 +161,7 @@ export async function buildStockScreenerTablePages(
     const tk = t.toUpperCase();
     const u = byTicker.get(tk);
     if (!u) continue;
-    const ex = data.extraScreenerStocks[t] ?? data.extraScreenerStocks[tk];
+    const ex = stockQuoteDatum(data, tk);
     page2.push(
       buildScreenerCompanyRowFromUniverse(
         u,
@@ -196,7 +197,7 @@ export async function buildScreenerPage2RowsForTickers(
     const tk = t.toUpperCase();
     const u = byTicker.get(tk);
     if (!u) continue;
-    const ex = data.extraScreenerStocks[t] ?? data.extraScreenerStocks[tk];
+    const ex = stockQuoteDatum(data, tk);
     rows.push(
       buildScreenerCompanyRowFromUniverse(
         u,
@@ -356,7 +357,7 @@ export async function buildScreenerCompaniesApiResponse(
   const list = resolveScreenerCompaniesListMode(opts);
   const listKey = list.mode === "all" ? "all" : list.mode === "sector" ? `sector:${list.sector}` : `industry:${list.sector}:${list.industry}`;
   return withScreenerUsMarketCache(
-    "screener-companies-api-response-v8-page50",
+    "screener-companies-api-response-v9-top10-quotes",
     () => buildScreenerCompaniesApiResponseUncached(p, ps, list),
     [String(p), String(ps), listKey],
   );
@@ -546,7 +547,7 @@ export async function buildScreenerMarketTabApiResponse(
   }
   const listKey = market === "stocks" ? stocksMarketTabCacheKey(opts) : market;
   return withScreenerUsMarketCache(
-    "screener-market-tab-payload-v5-crypto-movers",
+    "screener-market-tab-payload-v6-top10-quotes",
     () => buildScreenerPagePayload(market, opts),
     [market, listKey],
   );

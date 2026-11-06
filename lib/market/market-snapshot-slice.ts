@@ -39,7 +39,9 @@ export function sliceSimpleMarketDataForStockTickers(
   };
 }
 
-function stockQuoteDatum(full: SimpleMarketData, tk: string): SimpleMarketDatum | undefined {
+/** Quote for a US stock ticker — TOP10 names live under `stocks`, everything else under `extraScreenerStocks`. */
+export function stockQuoteDatum(full: SimpleMarketData, ticker: string): SimpleMarketDatum | undefined {
+  const tk = ticker.trim().toUpperCase();
   if (isTop10Ticker(tk)) return full.stocks[tk as Top10Ticker];
   return full.extraScreenerStocks[tk];
 }

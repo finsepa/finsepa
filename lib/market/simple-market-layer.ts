@@ -57,6 +57,7 @@ import {
   sliceSimpleMarketDataForStockTickers,
   stockTickersMissingFromMarketSlice,
   sliceSimpleMarketDataScreenerStocksPage1,
+  stockQuoteDatum,
 } from "@/lib/market/market-snapshot-slice";
 
 /**
@@ -878,7 +879,7 @@ async function loadSimpleScreenerStockDerivedForTickersUncached(
   tickers.forEach((t) => {
     const tk = t.toUpperCase();
     const bars = barsByUpper.get(tk) ?? [];
-    const live = marketLive.extraScreenerStocks[t] ?? marketLive.extraScreenerStocks[tk];
+    const live = stockQuoteDatum(marketLive, tk);
     const livePx = epoch.mode === "frozen" ? null : (live?.price ?? null);
     out[tk] = barsToStockDerived(bars, livePx);
   });
