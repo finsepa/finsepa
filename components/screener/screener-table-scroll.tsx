@@ -36,16 +36,11 @@ export const SCREENER_TABLE_BODY_DIVIDE_CLASS =
 export const SCREENER_TABLE_ROW_BORDER_B_CLASS =
   "md:border-b md:border-solid md:border-table-row-stroke";
 
-/**
- * Companies table desktop: hover fill inset 8px from the card; stroke inset 20px
- * so the rule sits inside the hover area. Strokes hide above/below the hovered row.
- */
+/** Companies table desktop: hover fill inset 8px from the card. */
 export const SCREENER_TABLE_DATA_ROW_CLASS = cn(
   "screener-data-row group/row relative bg-surface max-md:hover:bg-table-row-hover",
-  // Hide this row's bottom stroke while hovered.
-  "[&:hover_.screener-row-stroke]:opacity-0",
-  // Hide this row's bottom stroke when the next row is hovered (top rule of hovered row).
-  "has-[+.screener-data-row:hover]:[&_.screener-row-stroke]:opacity-0",
+  // Tables keep only the rule under the column labels — no separators between data rows.
+  "[&_.screener-row-stroke]:hidden",
 );
 
 /**

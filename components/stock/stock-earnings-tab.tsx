@@ -760,7 +760,6 @@ function TableSkeleton({ className }: { className?: string }) {
                 </div>
               </div>
             </div>
-            {r < 3 ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
           </div>
         ))}
       </div>
@@ -1118,7 +1117,6 @@ export function StockEarningsTabContent({
             <div className="bg-surface">
               <ReportsHeaderRow />
               {earningsHistoryRendered.map((entry, idx) => {
-                const isLast = idx === earningsHistoryRendered.length - 1;
                 if (entry.kind === "year") {
                   return (
                     <div key={`reports-year-${entry.year}-${idx}`}>
@@ -1129,7 +1127,6 @@ export function StockEarningsTabContent({
                           </div>
                         </div>
                       </div>
-                      {!isLast ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
                     </div>
                   );
                 }
@@ -1201,7 +1198,6 @@ export function StockEarningsTabContent({
                         </div>
                       </div>
                     </div>
-                    {!isLast ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
                   </div>
                 );
               })}

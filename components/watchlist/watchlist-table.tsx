@@ -143,7 +143,7 @@ function WatchlistTableHeader() {
   );
 }
 
-function WatchlistTableSkeletonRow({ showDivider }: { showDivider: boolean }) {
+function WatchlistTableSkeletonRow() {
   return (
     <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
       <div className={SCREENER_TABLE_ROW_HOVER_PAD_CLASS}>
@@ -174,7 +174,6 @@ function WatchlistTableSkeletonRow({ showDivider }: { showDivider: boolean }) {
           </div>
         </div>
       </div>
-      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );
 }
@@ -185,7 +184,7 @@ function WatchlistTableSkeleton() {
       <div className="bg-surface">
         <WatchlistTableHeader />
         {[0, 1, 2].map((i) => (
-          <WatchlistTableSkeletonRow key={i} showDivider={i < 2} />
+          <WatchlistTableSkeletonRow key={i} />
         ))}
       </div>
     </ScreenerTableScroll>
@@ -198,15 +197,12 @@ function WatchlistTableRow({
   sectionId,
   onRemove,
   onMoveItem,
-  showDivider = false,
 }: {
   row: WatchlistEnrichedItem;
   globalIndex: number;
   sectionId: string | null;
   onRemove: (ticker: string) => void;
   onMoveItem: (fromIndex: number, target: WatchlistDropTarget) => void;
-  /** Mobile inset stroke under the row (desktop uses parent `divide-y`). */
-  showDivider?: boolean;
 }) {
   const [dragOver, setDragOver] = useState(false);
 
@@ -344,7 +340,6 @@ function WatchlistTableRow({
           </div>
         </div>
       </div>
-      {showDivider ? <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden /> : null}
     </div>
   );
 }
@@ -360,7 +355,6 @@ function UserSectionGroup({
   onRenameSection,
   onDeleteSection,
   onReorderSection,
-  showTrailingSectionStroke,
 }: {
   label: string;
   sectionId: string;
@@ -372,8 +366,6 @@ function UserSectionGroup({
   onRenameSection: (sectionId: string, name: string) => void;
   onDeleteSection: (sectionId: string) => void;
   onReorderSection: (fromSectionIndex: number, toSectionIndex: number) => void;
-  /** Inset rule after this section when another section follows. */
-  showTrailingSectionStroke: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -393,21 +385,16 @@ function UserSectionGroup({
       />
 
       {!collapsed &&
-        rows.map((row, i) => {
-          const isLastInSection = i === rows.length - 1;
-          const showDivider = !isLastInSection || showTrailingSectionStroke;
-          return (
-            <WatchlistTableRow
-              key={row.entryId}
-              row={row}
-              globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
-              sectionId={sectionId}
-              onRemove={onRemove}
-              onMoveItem={onMoveItem}
-              showDivider={showDivider}
-            />
-          );
-        })}
+        rows.map((row) => (
+          <WatchlistTableRow
+            key={row.entryId}
+            row={row}
+            globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
+            sectionId={sectionId}
+            onRemove={onRemove}
+            onMoveItem={onMoveItem}
+          />
+        ))}
     </>
   );
 }
@@ -483,21 +470,16 @@ export function WatchlistTable() {
         <ScreenerTableScroll>
           <div className="bg-surface">
             <WatchlistTableHeader />
-            {tableGroups.unsectioned.map((row, i) => {
-              const isLastUnsectioned = i === tableGroups.unsectioned.length - 1;
-              const showDivider = !isLastUnsectioned || tableGroups.sections.length > 0;
-              return (
-                <WatchlistTableRow
-                  key={row.entryId}
-                  row={row}
-                  globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
-                  sectionId={null}
-                  onRemove={removeFromActiveWatchlist}
-                  onMoveItem={moveActiveWatchlistItem}
-                  showDivider={showDivider}
-                />
-              );
-            })}
+            {tableGroups.unsectioned.map((row) => (
+              <WatchlistTableRow
+                key={row.entryId}
+                row={row}
+                globalIndex={globalTickerIndex(watchedTickers, row.storageKey)}
+                sectionId={null}
+                onRemove={removeFromActiveWatchlist}
+                onMoveItem={moveActiveWatchlistItem}
+              />
+            ))}
             {tableGroups.sections.map(({ section, rows }, sectionIndex) => (
               <UserSectionGroup
                 key={section.id}
@@ -511,7 +493,6 @@ export function WatchlistTable() {
                 onRenameSection={renameActiveSection}
                 onDeleteSection={deleteActiveSection}
                 onReorderSection={reorderActiveSection}
-                showTrailingSectionStroke={sectionIndex < tableGroups.sections.length - 1}
               />
             ))}
           </div>
