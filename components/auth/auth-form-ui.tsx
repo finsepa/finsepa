@@ -127,7 +127,7 @@ export function AuthSecondaryButton({
 }) {
   // Stable class string (no `cn`/`twMerge`) — avoids chrome hydration mismatch.
   const resolvedClassName = [
-    "inline-flex w-full items-center justify-center gap-2 rounded-[10px] px-4 text-sm font-semibold text-fg",
+    "inline-flex w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold text-fg",
     whiteSurfaceButtonChromeClass,
     "transition-colors duration-100 hover:bg-surface-muted dark:hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
     "disabled:cursor-not-allowed disabled:opacity-60",
