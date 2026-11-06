@@ -1,5 +1,7 @@
 import "server-only";
 
+import { stockQuoteDatum } from "@/lib/market/market-snapshot-slice";
+import { getSimpleMarketDataScreenerStocksAllPages } from "@/lib/market/simple-market-layer";
 import { getScreenerCompaniesStaticLayer } from "@/lib/screener/screener-companies-layers";
 import { buildScreenerPage2RowsForTickers } from "@/lib/screener/screener-page-payload";
 import type { ScreenerIndustryRow } from "@/lib/screener/screener-industries-types";
@@ -18,11 +20,23 @@ export type ScreenerGainersLosersSnapshot = {
   losers: ScreenerTableRow[];
 };
 
+/**
+ * `top500_market` carries EODHD's screener 1D, which is the previous session's move. Sectors, industries and
+ * gainers/losers rank and aggregate on the live screener quotes instead.
+ */
+async function withLiveDailyMove(universe: readonly TopCompanyUniverseRow[]): Promise<TopCompanyUniverseRow[]> {
+  const market = await getSimpleMarketDataScreenerStocksAllPages();
+  return universe.map((u) => {
+    const pct = stockQuoteDatum(market, u.ticker)?.changePercent1D;
+    return pct != null && Number.isFinite(pct) ? { ...u, refund1dP: pct } : u;
+  });
+}
+
 export async function buildScreenerSectorsFromUniverse(
   universe: readonly TopCompanyUniverseRow[],
 ): Promise<ScreenerSectorRow[]> {
-  const sectorEtfYtd = await getScreenerSectorEtfProxyYtdBySector();
-  const { sectors } = buildScreenerSectorsAndIndustriesRows(universe);
+  const [sectorEtfYtd, live] = await Promise.all([getScreenerSectorEtfProxyYtdBySector(), withLiveDailyMove(universe)]);
+  const { sectors } = buildScreenerSectorsAndIndustriesRows(live);
   return sectors.map((row) => {
     const hasAggregateYtd = row.changeYTD != null && Number.isFinite(row.changeYTD);
     if (hasAggregateYtd) return row;
@@ -34,23 +48,26 @@ export async function buildScreenerSectorsFromUniverse(
   });
 }
 
-export function buildScreenerIndustriesFromUniverse(
+export async function buildScreenerIndustriesFromUniverse(
   universe: readonly TopCompanyUniverseRow[],
-): ScreenerIndustryRow[] {
-  const { industries } = buildScreenerSectorsAndIndustriesRows(universe);
+): Promise<ScreenerIndustryRow[]> {
+  const { industries } = buildScreenerSectorsAndIndustriesRows(await withLiveDailyMove(universe));
   return industries;
 }
 
 export async function buildScreenerGainersLosersFromUniverse(
   universe: readonly TopCompanyUniverseRow[],
 ): Promise<ScreenerGainersLosersSnapshot> {
-  const { identityByTicker } = await getScreenerCompaniesStaticLayer();
-  const valid = universe.filter((u) => u.refund1dP != null && Number.isFinite(u.refund1dP));
+  const [{ identityByTicker }, live] = await Promise.all([
+    getScreenerCompaniesStaticLayer(),
+    withLiveDailyMove(universe),
+  ]);
+  const valid = live.filter((u) => u.refund1dP != null && Number.isFinite(u.refund1dP));
   const by1dDesc = [...valid].sort((a, b) => (b.refund1dP ?? 0) - (a.refund1dP ?? 0));
   const by1dAsc = [...valid].sort((a, b) => (a.refund1dP ?? 0) - (b.refund1dP ?? 0));
   const gainerTickers = by1dDesc.slice(0, GAINERS_LOSERS_TOP_N).map((u) => u.ticker);
   const loserTickers = by1dAsc.slice(0, GAINERS_LOSERS_TOP_N).map((u) => u.ticker);
-  const universeRows = [...universe];
+  const universeRows = [...live];
   const [gainers, losers] = await Promise.all([
     buildScreenerPage2RowsForTickers(gainerTickers, universeRows, 1, identityByTicker),
     buildScreenerPage2RowsForTickers(loserTickers, universeRows, 1, identityByTicker),
@@ -68,7 +85,7 @@ export async function buildScreenerStocksSubtabSnapshotsForIngest(): Promise<{
   const top500Market = await buildTop500MarketSnapshotForIngest();
   const [sectors, industries, gainersLosers] = await Promise.all([
     buildScreenerSectorsFromUniverse(top500Market),
-    Promise.resolve(buildScreenerIndustriesFromUniverse(top500Market)),
+    buildScreenerIndustriesFromUniverse(top500Market),
     buildScreenerGainersLosersFromUniverse(top500Market),
   ]);
   return { top500Market, sectors, industries, gainersLosers };

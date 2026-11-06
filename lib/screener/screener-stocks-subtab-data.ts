@@ -22,7 +22,7 @@ async function buildScreenerSectorsUncached(): Promise<{ sectors: ScreenerSector
 
 async function buildScreenerIndustriesUncached(): Promise<{ industries: ScreenerIndustryRow[] }> {
   const universe = await getTop500UniverseMarketSnapshot();
-  return { industries: buildScreenerIndustriesFromUniverse(universe) };
+  return { industries: await buildScreenerIndustriesFromUniverse(universe) };
 }
 
 async function buildScreenerGainersLosersUncached(): Promise<ScreenerGainersLosersSnapshot> {
