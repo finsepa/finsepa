@@ -11,7 +11,7 @@ import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { withLogoDevTheme } from "@/lib/screener/company-logo-url";
 import { useClientMounted, useLogoDevTheme } from "@/lib/theme/use-logo-dev-theme";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
-import { formatCryptoUsd, formatCryptoUsdChangeAbs } from "@/lib/market/format-crypto-usd";
+import { formatCryptoUsdChangeAbs } from "@/lib/market/format-crypto-usd";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
 
 /** Per-symbol zoom inside the fixed 48×48 header frame (crypto marks carry baked-in padding). */
@@ -97,6 +97,8 @@ export function CryptoHeader({
   }, [price, changeAbs, changePct]);
 
   const anim = useSpringTriplet(springTarget, { stiffness: 520, damping: 38, epsilon: 1e-4 });
+  // Live 24H: tint changed digits green/red (no roll / no background flash).
+  const digitFlash = stockStyleLayout && !chartHovering;
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
   const isPositive = isPositivePriceChange(anim.abs, anim.pct);
@@ -198,19 +200,32 @@ export function CryptoHeader({
   const mobileChangeRow = buildChangeRow(mobilePeriodLabel);
 
   // Stock-style pieces: inline change chip (sits right of the price) + date/time row (below).
-  const stockStyleChangeText =
-    chartLoading || !hasChange || anim.abs == null || anim.pct == null
-      ? "—"
-      : `${isPositive ? "+" : ""}${formatCryptoUsdChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`;
-
   const stockStyleChangeClass = `text-[15px] font-medium tabular-nums transition-colors duration-200 ease-out ${
     hasChange ? (isPositive ? "text-up" : "text-down") : "text-fg-muted"
   }`;
+  const stockStyleAbsText =
+    chartLoading || !hasChange || anim.abs == null
+      ? null
+      : `${isPositive ? "+" : ""}${formatCryptoUsdChangeAbs(anim.abs, anim.price)}`;
+  const stockStylePctText =
+    chartLoading || !hasChange || anim.pct == null
+      ? null
+      : `(${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`;
 
   const buildStockStyleChangeChip = (periodText: string) => (
     <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0">
-      <span suppressHydrationWarning className={stockStyleChangeClass}>
-        {stockStyleChangeText}
+      <span
+        suppressHydrationWarning
+        className={`inline-flex items-baseline gap-0.5 ${stockStyleChangeClass}`}
+      >
+        {stockStyleAbsText == null || stockStylePctText == null ? (
+          "—"
+        ) : (
+          <>
+            <span className="whitespace-nowrap">{stockStyleAbsText}</span>
+            <span className="whitespace-nowrap">{stockStylePctText}</span>
+          </>
+        )}
       </span>
       {!hasSelectionSecondary ? <span className={periodLabelClass}>{periodText}</span> : null}
     </span>
@@ -239,25 +254,25 @@ export function CryptoHeader({
   ) : null;
 
   const stockStylePriceValue = (
-    <span
-      suppressHydrationWarning
-      className={`text-[28px] font-semibold leading-9 tabular-nums text-fg transition-[transform] duration-200 ease-out ${
-        chartHovering ? "scale-[1.01]" : "scale-100"
-      }`}
-    >
-      {chartLoading || anim.price == null ? "—" : formatCryptoUsd(anim.price)}
-    </span>
+    <MobileAssetHeaderPrice
+      value={price}
+      loading={chartLoading}
+      variant="crypto"
+      chartHovering={chartHovering}
+      className="leading-9"
+      animateTicks={digitFlash}
+    />
   );
 
   const priceValue = (
-    <span
-      suppressHydrationWarning
-      className={`block text-[28px] font-semibold leading-9 tabular-nums text-fg transition-[transform] duration-200 ease-out ${
-        chartHovering ? "scale-[1.01]" : "scale-100"
-      }`}
-    >
-      {chartLoading || anim.price == null ? "—" : formatCryptoUsd(anim.price)}
-    </span>
+    <MobileAssetHeaderPrice
+      value={price}
+      loading={chartLoading}
+      variant="crypto"
+      chartHovering={chartHovering}
+      className="leading-9"
+      animateTicks={digitFlash}
+    />
   );
 
   const mobilePriceValue = (
@@ -266,6 +281,7 @@ export function CryptoHeader({
       loading={chartLoading}
       variant="crypto"
       chartHovering={chartHovering}
+      animateTicks={digitFlash}
     />
   );
 
@@ -276,7 +292,7 @@ export function CryptoHeader({
           <h1 className="truncate text-[17px] font-semibold leading-6 text-fg">{displayName}</h1>
           {stockStyleLayout ? (
             <>
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                 {mobilePriceValue}
                 {buildStockStyleChangeChip(mobilePeriodLabel)}
               </div>
@@ -321,7 +337,7 @@ export function CryptoHeader({
         <div className={`space-y-1 ${priceMotionClass}`}>
           {stockStyleLayout ? (
             <>
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                 {stockStylePriceValue}
                 {buildStockStyleChangeChip(desktopPeriodLabel)}
               </div>

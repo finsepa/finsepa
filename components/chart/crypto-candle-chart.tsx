@@ -17,8 +17,6 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 
-import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { SegmentedControl, type SegmentedControlOption } from "@/components/design-system";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { CHART_PLOT_BACKGROUND_CLASS } from "@/lib/chart/fundamentals-chart-surface";
@@ -30,18 +28,17 @@ import {
   type CryptoCandlesResponse,
 } from "@/lib/market/crypto-candles-shared";
 import type { OhlcBar } from "@/lib/market/eodhd-ohlc";
+import { cryptoUsdPriceFormat, formatCryptoUsdAxis } from "@/lib/market/format-crypto-usd";
 import { resolveFsColor, resolveFsColorWithAlpha } from "@/lib/theme/resolve-fs-color";
 import { cn } from "@/lib/utils";
 
 const FONT_FAMILY = "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif";
 
-/** Neutral axis pill for crosshair price/time labels — readable on light and dark panels. */
-const CROSSHAIR_LABEL_BG = "#52525B";
-
 /** Room above the plot for the MA legend row. */
 const LEGEND_HEIGHT_PX = 22;
 const VOLUME_PANE_PX = 72;
-const VOLUME_BAR_ALPHA = 0.45;
+/** Bybit-like muted volume — readable without competing with candles. */
+const VOLUME_BAR_ALPHA = 0.28;
 const VOLUME_MA_PERIOD = 20;
 /** Candles shown on first paint — older history stays one drag away. */
 const INITIAL_VISIBLE_BARS = 120;
@@ -58,7 +55,6 @@ const VOLUME_MA_COLOR = "#F59E0B";
 type HighLowLabel = { x: number; y: number; text: string; side: "left" | "right" };
 
 const BUCKET_SEC: Record<CryptoCandleInterval, number> = {
-  "1m": 60,
   "5m": 300,
   "15m": 900,
   "30m": 1_800,
@@ -77,15 +73,13 @@ function bucketStart(sec: number, interval: CryptoCandleInterval): number {
 
 function refreshMs(interval: CryptoCandleInterval, live: boolean): number | null {
   if (!live) return 5 * 60_000;
-  return interval === "1m" || interval === "5m" ? 15_000 : 30_000;
+  return interval === "5m" ? 15_000 : 30_000;
 }
 
-const priceFormatter = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const smallPriceFormatter = new Intl.NumberFormat("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 });
 const volumeFormatter = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 });
 
 function formatPrice(v: number): string {
-  return Math.abs(v) < 1 ? smallPriceFormatter.format(v) : priceFormatter.format(v);
+  return formatCryptoUsdAxis(v);
 }
 
 function formatTime(sec: number, opts: Intl.DateTimeFormatOptions): string {
@@ -163,7 +157,7 @@ export function CryptoCandleChart({
   interval,
   liveSpotUsd = null,
   liveQuotedAtSec = null,
-  height = 380,
+  height = 422,
 }: {
   symbol: string;
   interval: CryptoCandleInterval;
@@ -261,7 +255,10 @@ export function CryptoCandleChart({
     const el = wrapRef.current;
     if (!el) return;
     const intraday = isCryptoIntradayCandleInterval(interval);
-    const crosshairLine = resolveFsColorWithAlpha("--fs-fg-muted", 0.7);
+    // Finsepa stroke grid (same as stock candles) — never alpha-wrap `--fs-fg` (parse miss → solid white).
+    const gridLine = resolveFsColor("--fs-stroke");
+    const crosshairLine = resolveFsColorWithAlpha("--fs-fg-muted", 0.4);
+    const axisLabelBg = resolveFsColor("--fs-surface-muted");
     const chart = createChart(el, {
       width: Math.max(2, el.clientWidth),
       height,
@@ -277,7 +274,10 @@ export function CryptoCandleChart({
           enableResize: false,
         },
       },
-      grid: { vertLines: { visible: false }, horzLines: { visible: false } },
+      grid: {
+        vertLines: { visible: true, color: gridLine, style: LineStyle.Solid },
+        horzLines: { visible: true, color: gridLine, style: LineStyle.Solid },
+      },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.14, bottom: 0.06 } },
       timeScale: {
         borderVisible: false,
@@ -297,9 +297,21 @@ export function CryptoCandleChart({
         timeFormatter: (time: Time) => legendTime(time as number, interval),
       },
       crosshair: {
-        mode: CrosshairMode.Normal,
-        vertLine: { color: crosshairLine, style: LineStyle.Dashed, width: 1, labelBackgroundColor: CROSSHAIR_LABEL_BG },
-        horzLine: { color: crosshairLine, style: LineStyle.Dashed, width: 1, labelBackgroundColor: CROSSHAIR_LABEL_BG },
+        mode: CrosshairMode.Magnet,
+        vertLine: {
+          color: crosshairLine,
+          style: LineStyle.Dashed,
+          width: 1,
+          labelVisible: true,
+          labelBackgroundColor: axisLabelBg,
+        },
+        horzLine: {
+          color: crosshairLine,
+          style: LineStyle.Dashed,
+          width: 1,
+          labelVisible: true,
+          labelBackgroundColor: axisLabelBg,
+        },
       },
       handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale: {
@@ -319,9 +331,10 @@ export function CryptoCandleChart({
       borderDownColor: down,
       wickUpColor: up,
       wickDownColor: down,
-      priceFormat: { type: "custom", minMove: 0.01, formatter: formatPrice },
+      priceFormat: cryptoUsdPriceFormat(1, formatPrice),
       priceLineVisible: true,
       priceLineStyle: LineStyle.Dotted,
+      // Binance/CMC-style last-price axis badge (color follows last candle up/down).
       lastValueVisible: true,
     });
 
@@ -456,6 +469,8 @@ export function CryptoCandleChart({
     if (!chart || !candleSeries || !volumeSeries || !volumeMaSeries) return;
 
     candlesRef.current = candles;
+    const refClose = candles.at(-1)?.close ?? candles[0]?.close ?? 1;
+    candleSeries.applyOptions({ priceFormat: cryptoUsdPriceFormat(refClose, formatPrice) });
     candleSeries.setData(
       candles.map((c) => ({ time: c.time as UTCTimestamp, open: c.open, high: c.high, low: c.low, close: c.close })),
     );
@@ -510,10 +525,7 @@ export function CryptoCandleChart({
         className={cn("pointer-events-none absolute inset-x-0 bottom-0 z-0", CHART_PLOT_BACKGROUND_CLASS)}
         style={{ height }}
         aria-hidden
-      >
-        <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
-        {!loading && candles.length > 0 ? <ChartBrandWatermark cover="full" /> : null}
-      </div>
+      />
       <div ref={wrapRef} className="absolute inset-x-0 bottom-0 z-10" style={{ height }} />
       {!loading && highLow
         ? (["high", "low"] as const).map((key) => {

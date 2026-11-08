@@ -1,0 +1,15 @@
+.git
+.gitignore
+node_modules
+**/node_modules
+.next
+.turbo
+.vercel
+public
+tmp
+coverage
+playwright-report
+test-results
+*.log
+finsepa-superinvestor-photos.zip
+tsconfig.tsbuildinfo

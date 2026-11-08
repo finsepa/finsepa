@@ -266,7 +266,7 @@ export function CryptoPageContent({
           setHeaderLiveQuote({ quotedAtSec, source });
           if (debug) {
             console.info("[crypto-live-price poll]", symUpper, {
-              source, // ws | realtime | intraday | performance
+              source, // binance | ws | realtime | intraday | performance
               price: p,
               quotedAtSec, // data timestamp of the quote (not render time)
               quotedAt: quotedAtSec != null ? new Date(quotedAtSec * 1000).toISOString() : null,
@@ -293,8 +293,8 @@ export function CryptoPageContent({
       }
     };
     void tick();
-    // BTC (live 1D) polls faster so the header keeps pace with the ~60s chart.
-    const pollMs = isCryptoLive1DSymbol(symUpper) ? 30_000 : 90_000;
+    // Live 1D header: poll like CMC (~few seconds). Chart/sparkline stay on 1m WS bars.
+    const pollMs = isCryptoLive1DSymbol(symUpper) ? 5_000 : 90_000;
     const id = window.setInterval(tick, pollMs);
     const onVisibility = () => {
       if (!document.hidden) void tick();

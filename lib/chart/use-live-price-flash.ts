@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 export type LivePriceFlashDirection = "up" | "down";
 
-const LIVE_PRICE_FLASH_MS = 350;
+/** Match `.animate-live-price-flash-*` duration in globals.css */
+const LIVE_PRICE_FLASH_MS = 650;
 
 /**
  * Brief up/down background flash when a live header price tick changes.

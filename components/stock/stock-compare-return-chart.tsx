@@ -135,7 +135,7 @@ type Props = {
   height?: number;
 };
 
-export function StockCompareReturnChart({ primaryTicker, comparePicks, range, height = 320 }: Props) {
+export function StockCompareReturnChart({ primaryTicker, comparePicks, range, height = 422 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);

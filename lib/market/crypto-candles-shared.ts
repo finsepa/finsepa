@@ -1,6 +1,10 @@
 import type { OhlcBar } from "@/lib/market/eodhd-ohlc";
 
-export const CRYPTO_CANDLE_INTERVALS = ["1m", "5m", "15m", "30m", "1h", "4h", "1D", "1W"] as const;
+/**
+ * Candle intervals for the crypto overview candle view.
+ * Binance/CMC-style overview set — skip 1m (too noisy) and 1M monthly (not needed here).
+ */
+export const CRYPTO_CANDLE_INTERVALS = ["5m", "15m", "30m", "1h", "4h", "1D", "1W"] as const;
 
 export type CryptoCandleInterval = (typeof CRYPTO_CANDLE_INTERVALS)[number];
 

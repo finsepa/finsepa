@@ -1,5 +1,6 @@
 import "server-only";
 
+import { fetchBinanceUsdtLastPrice, usesBinanceHeaderSpot } from "@/lib/market/binance-crypto-ticker";
 import {
   eodhdSymbolsForMeta,
   fetchCryptoRealtimePrimaryFirst,
@@ -11,8 +12,17 @@ import { fetchCryptoMinuteBarsFromDb, fetchLatestCryptoMinuteBarFromDb } from "@
 import { cryptoMinuteBarsHavePriceVariation } from "@/lib/market/crypto-ws-minute-bar-quality";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
 import { fetchEodhdRealtimeSymbolsRaw } from "@/lib/market/eodhd-realtime";
+import { fetchKrakenUsdLastPrice, usesKrakenHeaderSpot } from "@/lib/market/kraken-crypto-ticker";
+import { fetchOkxUsdtLastPrice, usesOkxHeaderSpot } from "@/lib/market/okx-crypto-ticker";
 
-export type CryptoLiveSpotSource = "ws" | "realtime" | "intraday" | "performance";
+export type CryptoLiveSpotSource =
+  | "binance"
+  | "kraken"
+  | "okx"
+  | "ws"
+  | "realtime"
+  | "intraday"
+  | "performance";
 
 export type CryptoLiveSpot = {
   price: number;
@@ -33,9 +43,10 @@ function isPositive(n: unknown): n is number {
 /**
  * Freshest spot USD for a **live 24/7 crypto** header (BTC).
  *
- * Source priority (freshest first): live WS minute close → EODHD realtime → latest intraday bar →
- * daily-close performance (last resort). Returns the data timestamp so the header can show when the
- * quote is from, instead of the current render time.
+ * Source priority (freshest first): Binance / Kraken / OKX last (header allowlists, CMC-style) →
+ * live WS minute close → EODHD realtime → latest intraday bar → daily-close performance (last
+ * resort). Returns the data timestamp so the header can show when the quote is from, instead of the
+ * current render time.
  *
  * Distinct from {@link import("@/lib/market/crypto-live-price").getCryptoLiveSpotPriceUsd}, which
  * intentionally prefers the daily close so portfolio prices match asset pages — that ordering freezes
@@ -44,6 +55,20 @@ function isPositive(n: unknown): n is number {
 export async function getCryptoLiveSpotForHeader(routeSymbol: string): Promise<CryptoLiveSpot | null> {
   const trimmed = routeSymbol.trim();
   const nowSec = Math.floor(Date.now() / 1000);
+
+  // 0) Free exchange last — header only (chart/sparkline stays on 1m WS bars).
+  if (usesBinanceHeaderSpot(trimmed)) {
+    const bn = await fetchBinanceUsdtLastPrice(trimmed);
+    if (bn) return { price: bn.price, quotedAtSec: bn.quotedAtSec, source: "binance" };
+  }
+  if (usesKrakenHeaderSpot(trimmed)) {
+    const kr = await fetchKrakenUsdLastPrice(trimmed);
+    if (kr) return { price: kr.price, quotedAtSec: kr.quotedAtSec, source: "kraken" };
+  }
+  if (usesOkxHeaderSpot(trimmed)) {
+    const ox = await fetchOkxUsdtLastPrice(trimmed);
+    if (ox) return { price: ox.price, quotedAtSec: ox.quotedAtSec, source: "okx" };
+  }
 
   // 1) Live WS minute close (Supabase) — freshest when the ingest worker is up and prices move.
   const wsBar = await fetchLatestCryptoMinuteBarFromDb(trimmed);

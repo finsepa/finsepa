@@ -1,4 +1,5 @@
-# Long-running EODHD crypto WebSocket → Supabase minute-bar ingestor (BTC only).
+# Long-running crypto WebSocket → Supabase minute-bar ingestor.
+# Prefer Binance/Kraken/OKX trade streams; EODHD /ws/crypto only for leftover pairs.
 # Self-contained: deploy with this dir as the upload/build context
 # (`railway up workers/crypto-minute-ingest --service finsepa-crypto-minute-ingest`).
 FROM node:22-alpine

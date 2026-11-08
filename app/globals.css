@@ -1185,44 +1185,93 @@ body {
 @keyframes live-price-flash-up {
   0% {
     background-color: transparent;
+    opacity: 0;
   }
-  12% {
+  18% {
     background-color: var(--fs-up-soft);
+    opacity: 1;
   }
-  38% {
+  55% {
     background-color: var(--fs-up-soft);
+    opacity: 1;
   }
   100% {
     background-color: transparent;
+    opacity: 0;
   }
 }
 
 @keyframes live-price-flash-down {
   0% {
     background-color: transparent;
+    opacity: 0;
   }
-  12% {
+  18% {
     background-color: var(--fs-down-soft);
+    opacity: 1;
   }
-  38% {
+  55% {
     background-color: var(--fs-down-soft);
+    opacity: 1;
   }
   100% {
     background-color: transparent;
+    opacity: 0;
   }
 }
 
 .animate-live-price-flash-up {
-  animation: live-price-flash-up 0.35s ease-out both;
+  animation: live-price-flash-up 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-live-price-flash-down {
-  animation: live-price-flash-down 0.35s ease-out both;
+  animation: live-price-flash-down 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Yahoo-style: only the changed digit tints up/down, then eases back to fg. */
+@keyframes live-digit-flash-up {
+  0% {
+    color: var(--fs-fg);
+  }
+  12% {
+    color: var(--fs-up);
+  }
+  55% {
+    color: var(--fs-up);
+  }
+  100% {
+    color: var(--fs-fg);
+  }
+}
+
+@keyframes live-digit-flash-down {
+  0% {
+    color: var(--fs-fg);
+  }
+  12% {
+    color: var(--fs-down);
+  }
+  55% {
+    color: var(--fs-down);
+  }
+  100% {
+    color: var(--fs-fg);
+  }
+}
+
+.animate-live-digit-flash-up {
+  animation: live-digit-flash-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-live-digit-flash-down {
+  animation: live-digit-flash-down 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-live-price-flash-up,
-  .animate-live-price-flash-down {
+  .animate-live-price-flash-down,
+  .animate-live-digit-flash-up,
+  .animate-live-digit-flash-down {
     animation: none;
   }
 }

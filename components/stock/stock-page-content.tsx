@@ -73,7 +73,10 @@ import {
   isUsEquityHeaderAtCloseMode,
   isUsEquityLiveRegularSession,
 } from "@/lib/market/us-equity-live-session";
-import { STOCK_1D_LIVE_PRICE_POLL_MS } from "@/lib/chart/stock-live-poll-intervals";
+import {
+  STOCK_1D_LIVE_PRICE_POLL_MS,
+  STOCK_1D_LIVE_WS_PRICE_POLL_MS,
+} from "@/lib/chart/stock-live-poll-intervals";
 import { usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
 import {
   stockPageSsrHasLiveSpotSeed,
@@ -126,7 +129,7 @@ const StockChartingTab = dynamic(
     loading: () => (
       <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)} aria-busy>
         <div className="h-9" aria-hidden />
-        <div className="relative h-[320px] w-full">
+        <div className="relative h-[422px] w-full">
           <AssetChartSkeleton fill />
         </div>
       </div>
@@ -596,11 +599,17 @@ export function StockPageContent({
   const [headerLiveSpotClient, setHeaderLiveSpotClient] = useState<number | null>(null);
   const [headerPriorCloseClient, setHeaderPriorCloseClient] = useState<number | null>(null);
   const [headerQuoteAtSec, setHeaderQuoteAtSec] = useState(() => Math.floor(Date.now() / 1000));
+  /** Crypto-style quote metadata — tip/sparkline only pins when `source === "ws"`. */
+  const [headerLiveQuote, setHeaderLiveQuote] = useState<{
+    quotedAtSec: number | null;
+    source: string | null;
+  } | null>(null);
 
   useEffect(() => {
     setHeaderLiveSpotClient(null);
     setHeaderPriorCloseClient(null);
     setHeaderQuoteAtSec(Math.floor(Date.now() / 1000));
+    setHeaderLiveQuote(null);
   }, [ticker]);
 
   const liveRegularSessionActive = useMemo(() => {
@@ -658,17 +667,20 @@ export function StockPageContent({
           price?: unknown;
           previousClose?: unknown;
           quotedAtSec?: unknown;
+          source?: unknown;
         };
         const p = json.price;
         const prev = json.previousClose;
         const quotedAtSec =
           typeof json.quotedAtSec === "number" && Number.isFinite(json.quotedAtSec)
             ? json.quotedAtSec
-            : Math.floor(Date.now() / 1000);
+            : null;
+        const source = typeof json.source === "string" ? json.source : null;
         if (process.env.NODE_ENV === "development") {
           console.log("[header-live-spot]", ticker, {
             price: p,
             quotedAtSec,
+            source,
             ok: res.ok,
           });
         }
@@ -680,7 +692,8 @@ export function StockPageContent({
           !cancelled
         ) {
           setHeaderLiveSpotClient(p);
-          setHeaderQuoteAtSec(quotedAtSec);
+          setHeaderLiveQuote({ quotedAtSec, source });
+          if (quotedAtSec != null) setHeaderQuoteAtSec(quotedAtSec);
         }
         if (typeof prev === "number" && Number.isFinite(prev) && prev > 0 && !cancelled) {
           setHeaderPriorCloseClient(prev);
@@ -692,14 +705,18 @@ export function StockPageContent({
     const ssrSpotSeed =
       stockPageSsrHasLiveSpotSeed(initialPageData, ticker) &&
       getUsEquityMarketSession(new Date()) === "regular";
+    // Crypto-style 5s for WS allowlist; 15s for EODHD-backed quotes.
+    const pollMs = usesStock1DLiveWsMinutePipeline(ticker, new Date())
+      ? STOCK_1D_LIVE_WS_PRICE_POLL_MS
+      : STOCK_1D_LIVE_PRICE_POLL_MS;
 
     let id: number;
     if (ssrSpotSeed) {
-      // P1-1: SSR hot fields already loaded spot — wait for first poll interval (matches 15s cache).
-      id = window.setInterval(tick, STOCK_1D_LIVE_PRICE_POLL_MS);
+      // SSR already seeded spot — wait for first poll interval.
+      id = window.setInterval(tick, pollMs);
     } else {
       void tick();
-      id = window.setInterval(tick, STOCK_1D_LIVE_PRICE_POLL_MS);
+      id = window.setInterval(tick, pollMs);
     }
     const onVisibility = () => {
       if (!document.hidden) void tick();
@@ -772,12 +789,15 @@ export function StockPageContent({
     return prior != null && Number.isFinite(prior) && prior > 0 ? prior : null;
   }, [liveRegularSessionActive, headerPriorCloseForMerge, performanceForHeaderFallback]);
 
-  /** Live WS reference tickers: regular spot or post-market extended price for chart tail pin only. */
+  /**
+   * 1D sparkline / line tip — crypto-style: only when live-price `source === "ws"`
+   * (allowlist regular session). Post-market still pins from extended-hours quote.
+   */
   const chartLiveSpotUsd = useMemo(() => {
     if (!chartLiveSessionMinute || range !== "1D") return null;
     const now = new Date();
     if (usesStock1DLiveWsMinutePipeline(ticker, now)) {
-      return headerLiveSpotForMerge;
+      return headerLiveQuote?.source === "ws" ? headerLiveSpotForMerge : null;
     }
     if (usesStock1DLiveWsPostMarketChart(ticker, now)) {
       const p = extendedHoursQuote?.extendedPrice;
@@ -788,8 +808,26 @@ export function StockPageContent({
     chartLiveSessionMinute,
     range,
     ticker,
+    headerLiveQuote?.source,
     headerLiveSpotForMerge,
     extendedHoursQuote?.extendedPrice,
+    regularSessionClock,
+  ]);
+
+  /** Quote data time for the WS tip pin — never fall back to wall clock (matches crypto). */
+  const chartLiveQuotedAtSec = useMemo(() => {
+    if (!chartLiveSessionMinute || range !== "1D") return null;
+    const now = new Date();
+    if (usesStock1DLiveWsMinutePipeline(ticker, now)) {
+      return headerLiveQuote?.source === "ws" ? headerLiveQuote.quotedAtSec : null;
+    }
+    return null;
+  }, [
+    chartLiveSessionMinute,
+    range,
+    ticker,
+    headerLiveQuote?.source,
+    headerLiveQuote?.quotedAtSec,
     regularSessionClock,
   ]);
 
@@ -804,8 +842,22 @@ export function StockPageContent({
   const overviewLiveSessionMinute = chartSeries === "price" ? chartLiveSessionMinute : false;
   const showCandles = chartType === "candles" && chartSeries === "price" && comparePicks.length === 0;
   const overviewLiveSpotUsd = chartSeries === "price" ? chartLiveSpotUsd : null;
+  const overviewLiveQuotedAtSec = chartSeries === "price" ? chartLiveQuotedAtSec : null;
   const overviewLivePostMarketTailTimeUnix =
     chartSeries === "price" ? chartLivePostMarketTailTimeUnix : null;
+  /** Candles: any header live spot (like crypto) — not WS-gated; AH uses extended quote. */
+  const candleLiveSpotUsd = useMemo(() => {
+    if (!showCandles) return null;
+    if (headerLiveSpotForMerge != null) return headerLiveSpotForMerge;
+    const p = extendedHoursQuote?.extendedPrice;
+    return typeof p === "number" && Number.isFinite(p) && p > 0 ? p : null;
+  }, [showCandles, headerLiveSpotForMerge, extendedHoursQuote?.extendedPrice]);
+  const candleLiveQuotedAtSec = useMemo(() => {
+    if (!showCandles) return null;
+    if (headerLiveQuote?.quotedAtSec != null) return headerLiveQuote.quotedAtSec;
+    const t = extendedHoursQuote?.extendedTimeUnix;
+    return typeof t === "number" && Number.isFinite(t) && t > 0 ? t : null;
+  }, [showCandles, headerLiveQuote?.quotedAtSec, extendedHoursQuote?.extendedTimeUnix]);
 
   const sessionSpotHeaderUi = useMemo(
     () =>
@@ -1299,6 +1351,7 @@ export function StockPageContent({
             initialChart={initialSessionChartMemo}
             liveSessionMinute={chartLiveSessionMinute}
             liveSpotUsd={chartLiveSpotUsd}
+            liveQuotedAtSec={chartLiveQuotedAtSec}
             livePostMarketTailTimeUnix={chartLivePostMarketTailTimeUnix}
             onDisplayChange={onSessionHeaderDisplay}
           />
@@ -1318,6 +1371,7 @@ export function StockPageContent({
             initialChart={range === "1D" && initialChartMemo?.range === "1D" ? initialChartMemo : null}
             liveSessionMinute={chartLiveSessionMinute}
             liveSpotUsd={chartLiveSpotUsd}
+            liveQuotedAtSec={chartLiveQuotedAtSec}
             livePostMarketTailTimeUnix={chartLivePostMarketTailTimeUnix}
             onDisplayChange={onOverviewHeaderDisplay}
           />
@@ -1361,10 +1415,10 @@ export function StockPageContent({
                 range={range}
               />
             ) : (
-              <div className="relative min-h-[320px] w-full">
+              <div className="relative min-h-[422px] w-full">
                 {!pageDataReady ? (
                   <div className="absolute inset-0 z-10">
-                    <AssetChartSkeleton heightPx={320} className="h-full" />
+                    <AssetChartSkeleton heightPx={422} className="h-full" />
                   </div>
                 ) : null}
                 <div className={cn(showCandles && "invisible")} aria-hidden={showCandles || undefined}>
@@ -1377,6 +1431,7 @@ export function StockPageContent({
                     initialChart={initialChartMemo?.range === range ? initialChartMemo : null}
                     liveSessionMinute={overviewLiveSessionMinute}
                     liveSpotUsd={overviewLiveSpotUsd}
+                    liveQuotedAtSec={overviewLiveQuotedAtSec}
                     livePostMarketTailTimeUnix={overviewLivePostMarketTailTimeUnix}
                     previousCloseBaseline={chartSeries === "price" ? chartPreviousCloseBaseline : null}
                     onDisplayChange={
@@ -1386,7 +1441,13 @@ export function StockPageContent({
                 </div>
                 {showCandles ? (
                   <div className="absolute inset-x-0 top-0">
-                    <StockCandleChart ticker={ticker} range={range} height={300} />
+                    <StockCandleChart
+                      ticker={ticker}
+                      range={range}
+                      height={300}
+                      liveSpotUsd={candleLiveSpotUsd}
+                      liveQuotedAtSec={candleLiveQuotedAtSec}
+                    />
                   </div>
                 ) : null}
               </div>

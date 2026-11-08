@@ -262,8 +262,8 @@ export function StockPageSkeleton() {
                 chartSeries="price"
                 onChartSeriesChange={noop}
               >
-                <div className="relative min-h-[320px] w-full">
-                  <AssetChartSkeleton heightPx={320} className="h-full" />
+                <div className="relative min-h-[422px] w-full">
+                  <AssetChartSkeleton heightPx={422} className="h-full" />
                 </div>
               </ChartControls>
             </div>
@@ -314,8 +314,8 @@ export function StockPageSkeleton() {
                 onChartSeriesChange={noop}
                 hideMarketCapSeries={hideMarketCap}
               >
-                <div className="relative min-h-[320px] w-full">
-                  <AssetChartSkeleton heightPx={320} className="h-full" />
+                <div className="relative min-h-[422px] w-full">
+                  <AssetChartSkeleton heightPx={422} className="h-full" />
                 </div>
               </ChartControls>
             </div>

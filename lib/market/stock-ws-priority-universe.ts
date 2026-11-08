@@ -64,7 +64,7 @@ export const STOCK_WS_FALLBACK_CURATED_TOP_STOCKS = [
   "SBUX",
 ] as const;
 
-/** Top US stocks by market cap (ETFs counted separately). 20 + SPY/QQQ = 22 stock WS. */
+/** Top US stocks by market cap (ETFs counted separately). Prefer pinned live list over top-N. */
 const DEFAULT_TOP_STOCKS = 20;
 
 export function stockWsTopStocksCount(): number {

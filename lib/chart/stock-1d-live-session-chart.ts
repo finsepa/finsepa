@@ -728,32 +728,40 @@ export function liveSpotToMinuteBar(
 }
 
 /**
- * Option B tail pin: adjust only the final minute bucket from the header live spot.
- * Server-normalized WS history is unchanged except the last point (replace or extend one bucket).
+ * Crypto-style tip pin: adjust only the final minute bucket from the header live spot.
+ * Requires {@link liveQuotedAtSec} (quote data time) — no wall-clock fallback (matches crypto tip).
  *
  * Never span more than {@link STOCK_1D_LIVE_SESSION_MAX_FORWARD_FILL_SEC} from the last real bar —
- * a longer gap means missing minute data; connecting to `now` draws a false straight chord.
- * (The chart layer also breaks large gaps with whitespace; this keeps the pin itself honest.)
+ * a longer gap means missing minute data; connecting forward draws a false straight chord.
  */
 export function pinLiveWsMinuteChartTail(
   points: readonly StockChartPoint[],
   liveSpotUsd: number | null | undefined,
   now: Date = new Date(),
   timeZone: string = STOCK_1D_LIVE_SESSION_TZ,
+  liveQuotedAtSec?: number | null,
 ): StockChartPoint[] {
   if (!points.length) return [...points];
   if (liveSpotUsd == null || !Number.isFinite(liveSpotUsd) || liveSpotUsd <= 0) {
     return [...points];
   }
+  if (
+    liveQuotedAtSec == null ||
+    !Number.isFinite(liveQuotedAtSec) ||
+    liveQuotedAtSec <= 0
+  ) {
+    return [...points];
+  }
   if (getUsEquityMarketSession(now) !== "regular") return [...points];
 
   const nowSec = Math.floor(now.getTime() / 1000);
+  const tipSec = Math.floor(liveQuotedAtSec);
   const sessionYmd = usSessionYmdFromUnixSeconds(nowSec);
   const openSec = usSessionWallClockUnix(sessionYmd, 9, 30, timeZone);
   const closeSec = usSessionWallClockUnix(sessionYmd, 16, 0, timeZone);
   if (nowSec < openSec || nowSec > closeSec) return [...points];
 
-  const bucketTime = stock1DLiveSessionMinuteBucketUnix(sessionYmd, nowSec, timeZone);
+  const bucketTime = stock1DLiveSessionMinuteBucketUnix(sessionYmd, tipSec, timeZone);
   const last = points[points.length - 1]!;
   if (bucketTime < last.time) return [...points];
 

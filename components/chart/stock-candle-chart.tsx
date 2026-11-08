@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CandlestickSeries,
   ColorType,
@@ -15,8 +15,6 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 
-import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { CHART_PLOT_BACKGROUND_CLASS } from "@/lib/chart/fundamentals-chart-surface";
 import type { StockCandleInterval, StockCandlesResponse } from "@/lib/market/stock-candles";
@@ -26,11 +24,19 @@ import { cn } from "@/lib/utils";
 
 type Candle = StockCandlesResponse["candles"][number];
 
-const LIVE_REFRESH_MS = 60_000;
+/** Match crypto candle refresh: faster while live so forming candles keep up with the header. */
+function liveRefreshMs(interval: StockCandleInterval, live: boolean): number {
+  if (!live) return 5 * 60_000;
+  return interval === "5m" ? 15_000 : 30_000;
+}
+
+function candleBucketStart(sec: number, interval: StockCandleInterval): number {
+  if (interval === "5m") return Math.floor(sec / 300) * 300;
+  if (interval === "30m") return Math.floor(sec / 1800) * 1800;
+  return Math.floor(sec / 86_400) * 86_400;
+}
 
 /** Neutral axis pill for crosshair price/time labels — readable on light and dark panels. */
-const CROSSHAIR_LABEL_BG = "#52525B";
-
 /** Volume stays in the background — candles carry the contrast. */
 const VOLUME_BAR_ALPHA = 0.2;
 
@@ -120,11 +126,16 @@ function CandleLegend({ candle, interval }: { candle: Candle; interval: StockCan
 export function StockCandleChart({
   ticker,
   range,
-  height = 320,
+  height = 422,
+  liveSpotUsd = null,
+  liveQuotedAtSec = null,
 }: {
   ticker: string;
   range: StockChartRange;
   height?: number;
+  /** Header live spot — patches the forming candle like crypto. */
+  liveSpotUsd?: number | null;
+  liveQuotedAtSec?: number | null;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -139,8 +150,8 @@ export function StockCandleChart({
   useEffect(() => {
     const ctrl = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const scheduleRefresh = () => {
-      timer = setTimeout(() => void load(true), LIVE_REFRESH_MS);
+    const scheduleRefresh = (interval: StockCandleInterval, live: boolean) => {
+      timer = setTimeout(() => void load(true), liveRefreshMs(interval, live));
     };
     const load = (isRefresh: boolean): Promise<void> =>
       fetch(`/api/stocks/${encodeURIComponent(ticker)}/candles?range=${encodeURIComponent(range)}`, {
@@ -150,11 +161,13 @@ export function StockCandleChart({
         .then((r) => (r.ok ? (r.json() as Promise<StockCandlesResponse>) : null))
         .then((json) => {
           if (json || !isRefresh) setLoaded({ key: requestKey, data: json });
-          if (json?.live || (isRefresh && !json)) scheduleRefresh();
+          if (json?.live || (isRefresh && !json)) {
+            scheduleRefresh(json?.interval ?? "5m", Boolean(json?.live));
+          }
         })
         .catch(() => {
           if (ctrl.signal.aborted) return;
-          if (isRefresh) scheduleRefresh();
+          if (isRefresh) scheduleRefresh("5m", true);
           else setLoaded({ key: requestKey, data: null });
         });
     void load(false);
@@ -167,12 +180,57 @@ export function StockCandleChart({
   const loading = loaded?.key !== requestKey;
   const data = loading ? null : loaded.data;
   const interval = data?.interval ?? "1d";
+  const live = data?.live ?? false;
+
+  /** Server candles with the forming candle patched from the header live price (crypto-style). */
+  const candles = useMemo(() => {
+    const base = data?.candles ?? [];
+    if (
+      !live ||
+      liveSpotUsd == null ||
+      !Number.isFinite(liveSpotUsd) ||
+      liveSpotUsd <= 0 ||
+      base.length === 0
+    ) {
+      return base;
+    }
+    const last = base[base.length - 1]!;
+    const nowBucket =
+      liveQuotedAtSec != null && Number.isFinite(liveQuotedAtSec)
+        ? candleBucketStart(liveQuotedAtSec, interval)
+        : last.time;
+    if (nowBucket < last.time) return base;
+    if (nowBucket === last.time) {
+      return [
+        ...base.slice(0, -1),
+        {
+          ...last,
+          close: liveSpotUsd,
+          high: Math.max(last.high, liveSpotUsd),
+          low: Math.min(last.low, liveSpotUsd),
+        },
+      ];
+    }
+    return [
+      ...base,
+      {
+        time: nowBucket,
+        open: last.close,
+        high: Math.max(last.close, liveSpotUsd),
+        low: Math.min(last.close, liveSpotUsd),
+        close: liveSpotUsd,
+      },
+    ];
+  }, [data, live, liveSpotUsd, liveQuotedAtSec, interval]);
 
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
 
-    const crosshairLine = resolveFsColorWithAlpha("--fs-fg-muted", 0.7);
+    // Match overview PriceChart chrome: stroke grid, muted dashed crosshair, surface-muted axis pills.
+    const gridLine = resolveFsColor("--fs-stroke");
+    const crosshairLine = resolveFsColorWithAlpha("--fs-fg-muted", 0.55);
+    const axisLabelBg = resolveFsColor("--fs-surface-muted");
     const chart = createChart(el, {
       width: Math.max(2, el.clientWidth),
       height,
@@ -183,10 +241,9 @@ export function StockCandleChart({
         fontFamily: FONT_FAMILY,
         attributionLogo: false,
       },
-      // Plot background (dots + watermark) already matches the line chart; grid lines would double it.
       grid: {
-        vertLines: { visible: false },
-        horzLines: { visible: false },
+        vertLines: { visible: true, color: gridLine, style: LineStyle.Solid },
+        horzLines: { visible: true, color: gridLine, style: LineStyle.Solid },
       },
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.12, bottom: 0.26 } },
       timeScale: {
@@ -215,14 +272,14 @@ export function StockCandleChart({
           style: LineStyle.Dashed,
           width: 1,
           labelVisible: true,
-          labelBackgroundColor: CROSSHAIR_LABEL_BG,
+          labelBackgroundColor: axisLabelBg,
         },
         horzLine: {
           color: crosshairLine,
           style: LineStyle.Dashed,
           width: 1,
           labelVisible: true,
-          labelBackgroundColor: CROSSHAIR_LABEL_BG,
+          labelBackgroundColor: axisLabelBg,
         },
       },
       handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
@@ -280,7 +337,6 @@ export function StockCandleChart({
     const series = seriesRef.current;
     const volume = volumeRef.current;
     if (!series || !volume) return;
-    const candles = data?.candles ?? [];
     const lastTime = candles[candles.length - 1]?.time;
     const sessionPadding = interval === "5m" && lastTime != null ? sessionWhitespaceAfter(lastTime) : [];
     series.setData([
@@ -309,19 +365,15 @@ export function StockCandleChart({
       chartRef.current?.timeScale().fitContent();
       fittedKeyRef.current = fitKey;
     }
-  }, [data, interval, requestKey]);
+  }, [candles, interval, requestKey]);
 
-  const candles = data?.candles ?? [];
   const hovered = hoveredTime != null ? candles.find((c) => c.time === hoveredTime) : undefined;
   const legendCandle = hovered ?? candles[candles.length - 1] ?? null;
 
   return (
     <div className="relative w-full" style={{ height: height + 20 }}>
       {legendCandle && !loading ? <CandleLegend candle={legendCandle} interval={interval} /> : null}
-      <div className={cn("pointer-events-none absolute inset-x-0 bottom-0 z-0", CHART_PLOT_BACKGROUND_CLASS)} style={{ height }} aria-hidden>
-        <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
-        {!loading && candles.length > 0 ? <ChartBrandWatermark cover="full" /> : null}
-      </div>
+      <div className={cn("pointer-events-none absolute inset-x-0 bottom-0 z-0", CHART_PLOT_BACKGROUND_CLASS)} style={{ height }} aria-hidden />
       <div ref={wrapRef} className="absolute inset-x-0 bottom-0 z-10" style={{ height }} />
       {loading ? (
         <div className="absolute inset-0 z-10">

@@ -29,7 +29,6 @@ const INTERVAL_CONFIG: Record<
   CryptoCandleInterval,
   { source: HistorySource; bucketSec: number; windowSec: number }
 > = {
-  "1m": { source: "1m", bucketSec: 60, windowSec: DAY_SEC },
   "5m": { source: "5m", bucketSec: 300, windowSec: 5 * DAY_SEC },
   "15m": { source: "5m", bucketSec: 900, windowSec: 12 * DAY_SEC },
   "30m": { source: "5m", bucketSec: 1_800, windowSec: 25 * DAY_SEC },
@@ -153,7 +152,6 @@ async function loadCryptoCandlesUncached(
   const { source, windowSec } = INTERVAL_CONFIG[interval];
   let candles = aggregateBars(sourceBars, interval);
 
-  let usedLiveTail = false;
   if (live) {
     const now = Math.floor(Date.now() / 1000);
     const lastSource = sourceBars[sourceBars.length - 1];
@@ -163,7 +161,6 @@ async function loadCryptoCandlesUncached(
     const closes = await fetchCryptoMinuteBarsFromDb(base, tailFrom);
     if (closes.length) {
       candles = mergeLiveTail(candles, closes, interval);
-      usedLiveTail = true;
     }
   }
 
@@ -172,11 +169,13 @@ async function loadCryptoCandlesUncached(
     symbol: base,
     interval,
     candles: candles.filter((c) => c.time >= cutoff),
-    live: usedLiveTail,
+    // Live allowlist — enables client header-spot tip patching even when the minute
+    // DB tail is empty/stale (header still moves via Binance/live-price poll).
+    live,
   };
 }
 
-const getCryptoCandlesCached = unstable_cache(loadCryptoCandlesUncached, ["crypto-candles-v1"], {
+const getCryptoCandlesCached = unstable_cache(loadCryptoCandlesUncached, ["crypto-candles-v2"], {
   revalidate: REVALIDATE_STOCK_1D_LIVE_SPOT,
 });
 

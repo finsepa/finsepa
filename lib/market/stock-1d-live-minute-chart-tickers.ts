@@ -3,7 +3,10 @@ import {
   usEquityTodayRegularSessionComplete,
 } from "@/lib/market/us-equity-market-session";
 
-/** WebSocket / minute-store tickers — live 1m 1D charts. All others: last traded day @ 2m. */
+/**
+ * WebSocket / minute-store tickers — live 1m 1D charts. All others: last traded day @ 2m.
+ * Sized for EODHD’s ~50 US WS slots after crypto moved to Binance/Kraken/OKX (leave a little headroom).
+ */
 export const STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS = [
   "NVDA",
   "AAPL",
@@ -27,6 +30,32 @@ export const STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS = [
   "JNJ",
   "ASML",
   "INTC",
+  "UNH",
+  "MA",
+  "PG",
+  "HD",
+  "COST",
+  "ABBV",
+  "NFLX",
+  "CRM",
+  "BAC",
+  "KO",
+  "MRK",
+  "ORCL",
+  "PEP",
+  "CVX",
+  "TMO",
+  "ACN",
+  "CSCO",
+  "MCD",
+  "ADBE",
+  "LIN",
+  "DIS",
+  "INTU",
+  "QCOM",
+  "TXN",
+  "AMGN",
+  "HON",
 ] as const;
 
 /** Alias — same tickers for WS ingest + live 1D reference implementation. */

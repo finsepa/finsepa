@@ -6,7 +6,8 @@ import {
   STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS,
 } from "@/lib/market/stock-1d-live-minute-chart-tickers";
 
-test("live 1D allowlist includes next mega-caps by mcap + core ETFs", () => {
+test("live 1D allowlist covers ~48 mega-caps + core ETFs (EODHD WS budget after crypto carve-out)", () => {
+  assert.equal(STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS.length, 48);
   assert.deepEqual([...STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS], [
     "NVDA",
     "AAPL",
@@ -30,10 +31,37 @@ test("live 1D allowlist includes next mega-caps by mcap + core ETFs", () => {
     "JNJ",
     "ASML",
     "INTC",
+    "UNH",
+    "MA",
+    "PG",
+    "HD",
+    "COST",
+    "ABBV",
+    "NFLX",
+    "CRM",
+    "BAC",
+    "KO",
+    "MRK",
+    "ORCL",
+    "PEP",
+    "CVX",
+    "TMO",
+    "ACN",
+    "CSCO",
+    "MCD",
+    "ADBE",
+    "LIN",
+    "DIS",
+    "INTU",
+    "QCOM",
+    "TXN",
+    "AMGN",
+    "HON",
   ]);
   for (const t of STOCK_1D_LIVE_MINUTE_CHART_DEFAULT_TICKERS) {
     assert.equal(isStock1DLiveMinuteChartTicker(t), true);
   }
-  assert.equal(isStock1DLiveMinuteChartTicker("MA"), false);
+  assert.equal(isStock1DLiveMinuteChartTicker("MA"), true);
   assert.equal(isStock1DLiveMinuteChartTicker("GOOG"), false);
+  assert.equal(isStock1DLiveMinuteChartTicker("SBUX"), false);
 });

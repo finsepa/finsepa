@@ -59,12 +59,19 @@ export async function GET(request: Request, { params }: Ctx) {
       price: quote.price,
       quotedAtSec,
       previousClose: quote.previousClose,
+      source: quote.source ?? null,
       session,
     });
   }
 
   return NextResponse.json(
-    { ticker: upper, price: quote.price, previousClose: quote.previousClose, quotedAtSec },
+    {
+      ticker: upper,
+      price: quote.price,
+      previousClose: quote.previousClose,
+      quotedAtSec,
+      source: quote.source ?? null,
+    },
     { headers: { "Cache-Control": cacheControl } },
   );
 }

@@ -1,6 +1,10 @@
 "use client";
 
-import { chartMarkerDiscFillColor, resolveFsColor } from "@/lib/theme/resolve-fs-color";
+import {
+  chartMarkerDiscFillColor,
+  resolveFsColor,
+  resolveFsColorWithAlpha,
+} from "@/lib/theme/resolve-fs-color";
 import { useChartThemePaintKey } from "@/lib/theme/use-logo-dev-theme";
 import {
   memo,
@@ -14,8 +18,6 @@ import {
 } from "react";
 import {
   overviewChartAxisRowPx,
-  CHART_PLOT_DOTS_PATTERN_CLASS,
-  CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS,
   buildOverviewCrosshairLabelByBarTime,
   chartPointDisplayUnix,
   overviewAxisLabelsEqual,
@@ -30,7 +32,6 @@ import {
   type OverviewBottomAxisMode,
   type PeriodAxisLabelAnchor,
 } from "@/components/chart/overview-bottom-axis";
-import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
 import {
   LineSeries,
   AreaSeries,
@@ -144,7 +145,11 @@ import {
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import { cn } from "@/lib/utils";
 import { formatSignedPercent2dp } from "@/lib/market/key-stats-basic-format";
-import { formatCryptoUsd, formatCryptoUsdAxis } from "@/lib/market/format-crypto-usd";
+import {
+  cryptoUsdPriceFormat,
+  formatCryptoUsd,
+  formatCryptoUsdAxis,
+} from "@/lib/market/format-crypto-usd";
 import type { StockChartRange, StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
 
 function formatStockPriceAxis(p: number): string {
@@ -377,8 +382,8 @@ type Props = {
   /** Latest spot — during 1D regular session, extends the line to the current wall-clock time. */
   liveSpotUsd?: number | null;
   /**
-   * Crypto 24H only: data timestamp (UNIX sec) of `liveSpotUsd` from the header live-price poll.
-   * When set with a valid WS spot, only the chart tip is pinned to match the header.
+   * Data timestamp (UNIX sec) of `liveSpotUsd` from the header live-price poll.
+   * Crypto 24H + stock live-WS allowlist: pin only the chart tip to match the header.
    */
   liveQuotedAtSec?: number | null;
   /** Frozen AH quote timestamp (20:00 ET cap) — post-market allowlist chart tail only. */
@@ -463,7 +468,7 @@ function applyLiveSessionSeriesPriceLineOptions(
     priceLineVisible: true,
     priceLineStyle: LineStyle.Dashed,
     priceLineColor: color,
-    lineType: LineType.Curved,
+    lineType: LineType.Simple,
   });
 }
 
@@ -672,22 +677,31 @@ function overviewBaselineOptions(
   variant: "bright" | "dim",
   lightweight = false,
   relativeGradient = false,
+  /** Crypto asset charts: hide the colored last-price axis tag (header shows live price). */
+  hideLastValueTag = false,
 ) {
   const base = {
     baseValue: { type: "price" as const, price: open },
     relativeGradient: relativeGradient && !lightweight,
     lineWidth: 2 as const,
-    lineType: lightweight ? LineType.Simple : LineType.Curved,
+    // Straight segments — Curved over-smooths dense 1D / live ticks.
+    lineType: LineType.Simple,
     priceLineVisible: false,
-    lastPriceAnimation: lightweight
-      ? LastPriceAnimationMode.Disabled
-      : LastPriceAnimationMode.OnDataUpdate,
+    // Crypto: adaptive minMove — LWC default 0.01 blows out PEPE-scale Y-axes into ±0.06.
+    ...(hideLastValueTag
+      ? { priceFormat: cryptoUsdPriceFormat(open > 0 ? open : 1, formatCryptoUsdAxis) }
+      : {}),
+    // Crypto: no pulsing last-price dot (header carries live price). Stocks keep OnDataUpdate.
+    lastPriceAnimation:
+      lightweight || hideLastValueTag
+        ? LastPriceAnimationMode.Disabled
+        : LastPriceAnimationMode.OnDataUpdate,
   };
   if (variant === "bright") {
     const fills = baselineUpDownFillColors("bright");
     return {
       ...base,
-      lastValueVisible: !lightweight,
+      lastValueVisible: !lightweight && !hideLastValueTag,
       ...fills,
       crosshairMarkerVisible: !lightweight,
       crosshairMarkerRadius: 5,
@@ -891,7 +905,7 @@ export function PriceChart({
   symbol,
   range,
   series = "price",
-  height = 320,
+  height = 422,
   onDisplayChange,
   initialChart,
   liveSessionMinute: liveSessionMinuteProp,
@@ -1107,7 +1121,13 @@ export function PriceChart({
       series === "price"
     ) {
       if (usesStock1DLiveWsMinutePipeline(symbol, now)) {
-        return pinLiveWsMinuteChartTail(chartSourcePoints, liveSpotUsd, now);
+        return pinLiveWsMinuteChartTail(
+          chartSourcePoints,
+          liveSpotUsd,
+          now,
+          STOCK_1D_LIVE_SESSION_TZ,
+          liveQuotedAtSec,
+        );
       }
       if (usesStock1DLiveWsPostMarketChart(symbol, now)) {
         return pinLiveWsPostMarketChartTail(
@@ -1197,6 +1217,12 @@ export function PriceChart({
   const [ready, setReady] = useState(false);
   /** Avoid re-running series setData when only ready flips. */
   const readyRef = useRef(false);
+  /**
+   * Skeleton stays up a beat after data is ready so LWCharts can paint setData —
+   * otherwise range switches flash an empty pane between skeleton and the line.
+   */
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  const skeletonRevealRafRef = useRef(0);
   const [containerWidth, setContainerWidth] = useState(0);
   const [rangeOpenBadge, setRangeOpenBadge] = useState<RangeChartPriceBadge | null>(null);
   const [rangeHighBadge, setRangeHighBadge] = useState<RangeChartPriceBadge | null>(null);
@@ -1525,13 +1551,10 @@ export function PriceChart({
             openPt.value,
           );
         series.applyOptions({
-          lastValueVisible: !hide,
+          // Crypto: no colored last-price axis tag (CMC-style; header carries the live price).
+          lastValueVisible: !hide && kindRef.current !== "crypto",
           relativeGradient: relGrad,
-          lineType: hide
-            ? LineType.Simple
-            : stock1DLiveSessionRef.current
-              ? LineType.Curved
-              : LineType.Curved,
+          lineType: LineType.Simple,
           lastPriceAnimation:
             hide ||
             !stock1DUsesLiveSessionClock(new Date(), {
@@ -1682,16 +1705,6 @@ export function PriceChart({
     quarterBandLayoutsRef.current = quarterBandLayouts;
   }, [quarterBandLayouts]);
 
-  const lastPointStroke = useMemo(() => {
-    const first = chartPoints.find((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value));
-    if (first == null || chartPoints.length < 1) return resolveFsColor("--fs-up");
-    const last = chartPoints[chartPoints.length - 1]?.value;
-    const base = prevCloseBaseline1D ?? first.value;
-    return isFiniteNumber(last) && last < base ? resolveFsColor("--fs-down") : resolveFsColor("--fs-up");
-  }, [chartPoints, prevCloseBaseline1D]);
-  const lastPointStrokeRef = useRef(lastPointStroke);
-  lastPointStrokeRef.current = lastPointStroke;
-
   const pushDisplay = useCallback(() => {
     if (!onDisplayChange) return;
     const priceTimestampLabel =
@@ -1776,10 +1789,14 @@ export function PriceChart({
     clearMobileOverviewCrosshairDom();
   }, [clearMobileOverviewCrosshairDom]);
 
+  // Allow SSR/session seed only once per asset — range switches must fetch + skeleton (no stale 24H flash).
+  useLayoutEffect(() => {
+    initialConsumedRef.current = false;
+  }, [kind, symbol, series, holdingsStyle]);
+
   useLayoutEffect(() => {
     hoverTimeRef.current = null;
     crosshairHoveredRef.current = false;
-    initialConsumedRef.current = false;
 
     overviewHoverDraftRef.current = null;
     if (overviewHoverRafRef.current) {
@@ -1835,7 +1852,8 @@ export function PriceChart({
             ? CrosshairMode.Normal
             : CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(20, 20, 20, 0.28)",
+          // Theme-aware — hard-coded dark rgba was invisible on dark chart panels.
+          color: resolveFsColorWithAlpha("--fs-fg-muted", 0.55),
           labelVisible: false,
           width: 1,
           style: LineStyle.Dashed,
@@ -1884,19 +1902,23 @@ export function PriceChart({
         })()
       : (() => {
           holdingsFillUnderlayRef.current = null;
+          const isCrypto = kindRef.current === "crypto";
           return chart.addSeries(BaselineSeries, {
           baseValue: { type: "price", price: 0 },
           relativeGradient: false,
           ...baselineUpDownFillColors("bright"),
           lineWidth: 2,
-          lineType: LineType.Curved,
+          lineType: LineType.Simple,
           priceLineVisible: false,
-          lastValueVisible: true,
-      crosshairMarkerVisible: true,
-      crosshairMarkerRadius: 5,
-      crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
-      crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
-      crosshairMarkerBorderWidth: 2,
+          lastValueVisible: !isCrypto,
+          ...(isCrypto
+            ? { priceFormat: cryptoUsdPriceFormat(1, formatCryptoUsdAxis) }
+            : {}),
+          crosshairMarkerVisible: true,
+          crosshairMarkerRadius: 5,
+          crosshairMarkerBorderColor: resolveFsColor("--fs-up"),
+          crosshairMarkerBackgroundColor: chartMarkerDiscFillColor(),
+          crosshairMarkerBorderWidth: 2,
           });
         })();
 
@@ -2515,9 +2537,39 @@ export function PriceChart({
     });
   }, [kind, series]);
 
-  useEffect(() => {
-    initialConsumedRef.current = false;
-  }, [kind, symbol, range, series]);
+  /**
+   * Range/series switches: drop the previous sparkline before paint and show skeleton.
+   * A post-paint `useEffect` left one frame (plus a 300ms opacity fade) of the old series.
+   */
+  useLayoutEffect(() => {
+    if (skeletonRevealRafRef.current) {
+      cancelAnimationFrame(skeletonRevealRafRef.current);
+      skeletonRevealRafRef.current = 0;
+    }
+    setShowSkeleton(true);
+    setLoading(true);
+    setReady(false);
+    readyRef.current = false;
+    setPoints([]);
+    setPeriodAxisLabelsGuarded([]);
+    setHoverPriceGuarded(null);
+    setHoverTimeUnixGuarded(null);
+    clearOverviewHover();
+    clearMobileOverviewCrosshairDom();
+    commitRangePriceBadge(setRangeOpenBadge, null);
+    commitRangePriceBadge(setRangeHighBadge, null);
+    overviewInBarMarkersRef.current = null;
+    try {
+      seriesRef.current?.setData([]);
+      holdingsFillUnderlayRef.current?.setData([]);
+      markersRef.current?.setMarkers([]);
+      removeScaleBoundsPriceLines(seriesRef.current, scaleTopPriceLineRef, scaleBottomPriceLineRef);
+      removeSessionHighLowPriceLines(seriesRef.current, sessionHighPriceLineRef, sessionLowPriceLineRef);
+      removeYAxisTickLabels(seriesRef.current, yAxisTickLinesRef);
+    } catch {
+      /* chart may not exist yet */
+    }
+  }, [kind, symbol, range, series, chartDataCadence, clearOverviewHover, clearMobileOverviewCrosshairDom]);
 
   // Fetch
   useEffect(() => {
@@ -2571,23 +2623,49 @@ export function PriceChart({
           setLiveSessionMinute(initialChart.liveSessionMinute);
         }
 
-        if (deferSeedForSkeleton) {
-          // Hold the skeleton (loading, not ready) — do not paint the stale SSR seed.
+        // Live crypto 24H (and stock 1D refreshes): keep skeleton and prefer network over SSR seed
+        // when switching back from 5D/YTD/… — painting the seed here flashed yesterday’s line.
+        const preferNetworkOverSeed =
+          deferSeedForSkeleton ||
+          (kind === "crypto" && range === "1D") ||
+          shouldRefresh1DChart;
+
+        if (preferNetworkOverSeed) {
+          setShowSkeleton(true);
           setLoading(true);
-          setReady(false); readyRef.current = false;
+          setReady(false);
+          readyRef.current = false;
+          setPoints([]);
         } else {
+          setShowSkeleton(true);
           setLoading(true);
-          setReady(false); readyRef.current = false;
+          setReady(false);
+          readyRef.current = false;
           setPoints(initialChart.points);
           setLoading(false);
-          setReady(true); readyRef.current = true;
+          setReady(true);
+          readyRef.current = true;
         }
 
-        if (shouldRefresh1DChart) {
+        if (preferNetworkOverSeed) {
           let gotFreshPoints = false;
           try {
-            const path = `/api/stocks/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`;
-            const json = await fetchShared1DChartJson(path);
+            const path =
+              kind === "crypto"
+                ? `/api/crypto/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`
+                : `/api/stocks/${encodeURIComponent(symbol)}/chart?range=1D&series=${encodeURIComponent(series)}`;
+            let json: { points?: StockChartPoint[]; liveSessionMinute?: boolean } | null = null;
+            if (kind === "crypto") {
+              const res = await fetch(path, { credentials: "include" });
+              if (res.ok) {
+                json = (await res.json()) as {
+                  points?: StockChartPoint[];
+                  liveSessionMinute?: boolean;
+                };
+              }
+            } else {
+              json = await fetchShared1DChartJson(path);
+            }
             if (json && mounted) {
               const nextPoints = Array.isArray(json.points) ? json.points : [];
               if (process.env.NODE_ENV === "development" && referenceTicker) {
@@ -2624,14 +2702,13 @@ export function PriceChart({
               }
             }
           } catch {
-            /* keep SSR chart */
+            /* fall back to SSR seed below */
           } finally {
-            if (deferSeedForSkeleton && mounted) {
-              // Reveal the chart once the refetch settles. If it produced nothing (error/empty),
-              // fall back to the SSR seed so we never leave an empty chart behind the skeleton.
+            if (mounted) {
               if (!gotFreshPoints) setPoints(initialChart.points);
               setLoading(false);
-              setReady(true); readyRef.current = true;
+              setReady(true);
+              readyRef.current = true;
             }
           }
         }
@@ -2869,7 +2946,13 @@ export function PriceChart({
       }
       const s = chart.addSeries(
         BaselineSeries,
-        overviewBaselineOptions(open, "bright", isTouchLikeChartDevice(), relGrad),
+        overviewBaselineOptions(
+          open,
+          "bright",
+          isTouchLikeChartDevice(),
+          relGrad,
+          kindRef.current === "crypto",
+        ),
       );
       seriesRef.current = s;
       markersRef.current = createSeriesMarkers(s, [], { autoScale: true }) as ISeriesMarkersPluginApi<UTCTimestamp>;
@@ -3082,7 +3165,13 @@ export function PriceChart({
     const hideBottomFill = prevCloseBase != null && sessionMin >= prevCloseBase;
     const hideTopFill = prevCloseBase != null && sessionMax <= prevCloseBase;
     single.applyOptions({
-      ...overviewBaselineOptions(open, "bright", isTouchLikeChartDevice(), relGrad),
+      ...overviewBaselineOptions(
+        open,
+        "bright",
+        isTouchLikeChartDevice(),
+        relGrad,
+        kindRef.current === "crypto",
+      ),
       ...(hideBottomFill ? { bottomFillColor1: "rgba(0,0,0,0)", bottomFillColor2: "rgba(0,0,0,0)" } : {}),
       ...(hideTopFill ? { topFillColor1: "rgba(0,0,0,0)", topFillColor2: "rgba(0,0,0,0)" } : {}),
       // Keep the prior-close baseline on screen even when the whole session traded above/below it.
@@ -3211,19 +3300,9 @@ export function PriceChart({
       fitChartTimeScaleRef.current(chart, plotW, data.length);
     }
 
-    if (lastValued && !useLiveSessionChart) {
-      const lastTemplates: SeriesMarker<UTCTimestamp>[] = hollowInBarCircleMarkers(
-        lastValued.time,
-        lastPointStroke,
-        1,
-        lastPointStroke,
-      );
-      overviewInBarMarkersRef.current = lastTemplates;
-      scheduleScaledInBarMarkers(chart, markers, lastTemplates);
-    } else {
-      overviewInBarMarkersRef.current = null;
-      markers.setMarkers([]);
-    }
+    // No end-of-line “live” dot — hover crosshair marker is enough.
+    overviewInBarMarkersRef.current = null;
+    markers.setMarkers([]);
     syncRangePriceBadgesRef.current?.();
     removeScaleBoundsPriceLines(single, scaleTopPriceLineRef, scaleBottomPriceLineRef);
     removeSessionHighLowPriceLines(single, sessionHighPriceLineRef, sessionLowPriceLineRef);
@@ -3250,7 +3329,7 @@ export function PriceChart({
         });
       });
     }
-  }, [chartPoints, lastPointStroke, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, previousCloseBaseline, kind, series, symbol, screenshotPreviewMode, chartThemePaintKey]);
+  }, [chartPoints, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, previousCloseBaseline, kind, series, symbol, screenshotPreviewMode, chartThemePaintKey]);
 
   useEffect(() => {
     if (!stock1DLiveSession || holdingsStyle) return;
@@ -3270,6 +3349,42 @@ export function PriceChart({
   }, [stock1DLiveSession, liveSpotUsd, holdingsStyle, liveSessionMinute]);
 
   const empty = !loading && chartPoints.length === 0;
+
+  useEffect(() => {
+    if (skeletonRevealRafRef.current) {
+      cancelAnimationFrame(skeletonRevealRafRef.current);
+      skeletonRevealRafRef.current = 0;
+    }
+    if (loading || !ready) {
+      setShowSkeleton(true);
+      return;
+    }
+    // Confirmed empty range — drop skeleton and show the empty message.
+    if (chartPoints.length === 0) {
+      setShowSkeleton(false);
+      return;
+    }
+    setShowSkeleton(true);
+    let cancelled = false;
+    let revealTimer: ReturnType<typeof setTimeout> | null = null;
+    // Wait for LWCharts to paint setData, then a short beat so the empty pane never flashes.
+    skeletonRevealRafRef.current = requestAnimationFrame(() => {
+      skeletonRevealRafRef.current = requestAnimationFrame(() => {
+        skeletonRevealRafRef.current = 0;
+        revealTimer = setTimeout(() => {
+          if (!cancelled) setShowSkeleton(false);
+        }, 50);
+      });
+    });
+    return () => {
+      cancelled = true;
+      if (revealTimer) clearTimeout(revealTimer);
+      if (skeletonRevealRafRef.current) {
+        cancelAnimationFrame(skeletonRevealRafRef.current);
+        skeletonRevealRafRef.current = 0;
+      }
+    };
+  }, [loading, ready, chartPoints.length]);
 
   const overviewHoverTooltip = useMemo(() => {
     if (holdingsStyle || !overviewHover) return null;
@@ -3415,21 +3530,7 @@ export function PriceChart({
       }
     >
       <div className={cn("relative min-h-0", useCustomBottomAxis ? "min-w-0 flex-1" : "absolute inset-0")} style={useCustomBottomAxis ? { height: plotHeight } : undefined}>
-      <div className={cn("pointer-events-none absolute inset-0 z-0", holdingsStyle && holdingsPlotBackdrop === "surface" ? "bg-surface" : CHART_PLOT_BACKGROUND_CLASS)} aria-hidden>
-        {!useMobileOverviewCrosshair ? (
-          <div
-            className={
-              screenshotPreviewMode ? CHART_PLOT_DOTS_PATTERN_EXPORT_CLASS : CHART_PLOT_DOTS_PATTERN_CLASS
-            }
-          />
-        ) : null}
-      </div>
-      {!holdingsStyle && !loading && ready ? (
-        <ChartBrandWatermark
-          cover="full"
-          size={screenshotPreviewMode ? "compact" : "default"}
-        />
-      ) : null}
+      <div className={cn("pointer-events-none absolute inset-0 z-0", holdingsStyle && holdingsPlotBackdrop === "surface" ? "bg-surface" : CHART_PLOT_BACKGROUND_CLASS)} aria-hidden />
       {showHoldingsActivityOverlay ? (
         <HoldingsQuarterBandsOverlay
           layouts={quarterBandLayouts}
@@ -3442,9 +3543,13 @@ export function PriceChart({
       ) : null}
       <div
         ref={wrapRef}
-        className={`absolute inset-0 z-10 transition-opacity duration-300 ease-out ${
-          loading || !ready ? "opacity-0" : "opacity-100"
-        }`}
+        // Hide while skeleton is up (no empty-canvas flash). Fade in only after reveal.
+        className={cn(
+          "absolute inset-0 z-10",
+          showSkeleton || loading || !ready
+            ? "opacity-0"
+            : "opacity-100 transition-opacity duration-300 ease-out",
+        )}
       />
       <div
         ref={dimOverlayRef}
@@ -3481,7 +3586,7 @@ export function PriceChart({
           </div>
         </>
       ) : null}
-      {!holdingsStyle && !loading && ready && (!screenshotPreviewMode || screenshotShowRangeBadges)
+      {!holdingsStyle && !showSkeleton && !loading && ready && (!screenshotPreviewMode || screenshotShowRangeBadges)
         ? [rangeOpenBadge, rangeHighBadge]
             .filter((b): b is RangeChartPriceBadge => b != null)
             .map((badge) => (
@@ -3534,12 +3639,12 @@ export function PriceChart({
           ) : null}
         </div>
       ) : null}
-      {loading ? (
+      {showSkeleton ? (
         <div className="absolute inset-0 z-20 flex flex-col px-1 py-1">
           <ChartSkeleton fill variant="minimal" />
         </div>
       ) : null}
-      {empty ? (
+      {empty && !showSkeleton ? (
         <div className="absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[14px] text-fg-muted">
           {kind === "stock" && series === "marketCap"
             ? "No market cap data for this range (shares outstanding unavailable)."

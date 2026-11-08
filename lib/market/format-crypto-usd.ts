@@ -1,13 +1,36 @@
 /**
  * Shared crypto USD display precision — header, chart axis, and tip labels.
- * Low-priced coins need more fraction digits so $1.4405 does not collapse to $1.44.
+ * Low-priced coins need more fraction digits so $1.4405 does not collapse to $1.44,
+ * and meme-priced coins (PEPE ~5e-6) need still more so they don’t round to $0.000005
+ * while Lightweight Charts defaults (`minMove: 0.01`) blow out the Y-axis.
  */
 export function cryptoUsdFractionDigits(value: number): number {
   if (!Number.isFinite(value)) return 2;
   const abs = Math.abs(value);
+  if (abs > 0 && abs < 1e-6) return 12;
+  if (abs < 1e-4) return 10;
+  if (abs < 1e-2) return 8;
   if (abs < 1) return 6;
   if (abs < 100) return 4;
   return 2;
+}
+
+/** Lightweight Charts `minMove` matched to {@link cryptoUsdFractionDigits}. */
+export function cryptoUsdMinMove(value: number): number {
+  const digits = cryptoUsdFractionDigits(value);
+  return 10 ** -digits;
+}
+
+/** Series `priceFormat` for crypto USD prices (line + candle charts). */
+export function cryptoUsdPriceFormat(
+  refPrice: number,
+  formatter: (value: number) => string = formatCryptoUsdAxis,
+): { type: "custom"; minMove: number; formatter: (value: number) => string } {
+  return {
+    type: "custom",
+    minMove: cryptoUsdMinMove(refPrice > 0 ? refPrice : 1),
+    formatter,
+  };
 }
 
 /** `$1.4405` / `$70,500.12` — matches crypto asset header. */

@@ -26,8 +26,9 @@ export async function GET(request: Request, { params }: Ctx) {
     );
   }
 
-  // Live 24/7 crypto (BTC): prefer the freshest source (WS → realtime → intraday → daily close) and
-  // return the data timestamp + source so the header shows a moving price, not a frozen daily close.
+  // Live 24/7 crypto: prefer the freshest header source (Binance / Kraken / OKX last → WS →
+  // realtime → intraday → daily close) so the headline moves like CMC; chart/sparkline stay on 1m
+  // bars separately.
   if (isCryptoLive1DSymbol(routeSymbol)) {
     const spot = await getCryptoLiveSpotForHeader(routeSymbol);
     if (process.env.NODE_ENV === "development") {

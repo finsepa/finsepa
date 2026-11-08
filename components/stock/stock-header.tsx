@@ -2,9 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
-import { LivePriceFlashWrap } from "@/components/chart/live-price-flash-wrap";
 import { isPositivePriceChange, reconcilePriceChangePair } from "@/lib/chart/reconcile-price-change";
-import { useLivePriceFlash } from "@/lib/chart/use-live-price-flash";
 import { MobileAssetHeaderPrice } from "@/components/chart/mobile-asset-header-price";
 import { AssetPageHeaderActions } from "@/components/asset/asset-page-header-actions";
 import { useSetMobileAssetTopbarSubtitle } from "@/components/layout/mobile-asset-topbar-context";
@@ -17,7 +15,7 @@ import {
 } from "@/lib/market/stock-header-meta";
 import type { StockChartSeries } from "@/lib/market/stock-chart-types";
 import type { StockExtendedHoursHeader } from "@/lib/market/stock-extended-hours-header-types";
-import { formatUsdCompact, formatUsdPrice, formatSignedUsdAmountGrouped2dp } from "@/lib/market/key-stats-basic-format";
+import { formatUsdCompact, formatSignedUsdAmountGrouped2dp } from "@/lib/market/key-stats-basic-format";
 import { ChangePctParen } from "@/components/screener/change-pct";
 import { StockExtendedHoursPrice } from "@/components/stock/stock-extended-hours-price";
 import { ScreenerRankBadge } from "@/components/earnings/screener-rank-badge";
@@ -181,7 +179,7 @@ export function StockHeader({
       Number.isFinite(selectionChangeAbs) &&
       Number.isFinite(selectionChangePct)
     );
-  const { flash: liveFlash, animationKey: liveFlashKey } = useLivePriceFlash(price, liveFlashEnabled, ticker);
+  const digitFlash = liveFlashEnabled;
 
   const hasChange = changePct != null && changeAbs != null && Number.isFinite(changePct) && Number.isFinite(changeAbs);
   const isPositive = isPositivePriceChange(anim.abs, anim.pct);
@@ -232,18 +230,8 @@ export function StockHeader({
     chartHovering ? "translate-y-px" : ""
   }`;
 
-  const formattedPrice =
-    anim.price == null
-      ? "—"
-      : headerChartMetric === "marketCap"
-        ? formatUsdCompact(anim.price)
-        : headerChartMetric === "return"
-          ? (() => {
-              const r = (anim.price ?? 100) - 100;
-              const sign = r > 0 ? "+" : r < 0 ? "−" : "";
-              return `${sign}${Math.abs(r).toFixed(2)}%`;
-            })()
-          : formatUsdPrice(anim.price);
+  // Live ticks: snap + digit tint on discrete `price`. Scrub/hover: follow spring `anim.price`.
+  const headerPriceValue = digitFlash ? price : anim.price;
 
   const periodLabelClass = "text-[13px] text-fg-muted";
   const desktopPeriodLabel = periodLabelOverride ?? periodLabel;
@@ -278,17 +266,15 @@ export function StockHeader({
       />
     ) : (
       <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0">
-        <LivePriceFlashWrap flash={liveFlash} animationKey={liveFlashKey}>
-          {periodChangePct != null ? (
-            <ChangePctParen
-              absText={periodChangeAbsText}
-              value={periodChangePct}
-              className={periodChangeClass}
-            />
-          ) : (
-            <span className={periodChangeClass}>{periodChangeAbsText}</span>
-          )}
-        </LivePriceFlashWrap>
+        {periodChangePct != null ? (
+          <ChangePctParen
+            absText={periodChangeAbsText}
+            value={periodChangePct}
+            className={periodChangeClass}
+          />
+        ) : (
+          <span className={periodChangeClass}>{periodChangeAbsText}</span>
+        )}
         {movementRangeBadge && !hasSelectionSecondary ? (
           <span className={periodLabelClass}>{movementRangeBadge}</span>
         ) : null}
@@ -341,27 +327,25 @@ export function StockHeader({
   );
 
   const priceValue = (
-    <LivePriceFlashWrap flash={liveFlash} animationKey={liveFlashKey} className="inline-block">
-      <span
-        className={`text-[28px] font-semibold leading-9 tabular-nums transition-[transform] duration-200 ease-out ${mainPriceClass} ${
-          chartHovering ? "scale-[1.01]" : "scale-100"
-        }`}
-      >
-        {formattedPrice}
-      </span>
-    </LivePriceFlashWrap>
+    <MobileAssetHeaderPrice
+      value={headerPriceValue}
+      loading={chartLoading}
+      chartMetric={headerChartMetric}
+      className={mainPriceClass}
+      chartHovering={chartHovering}
+      animateTicks={digitFlash}
+    />
   );
 
   const mobilePriceValue = (
-    <LivePriceFlashWrap flash={liveFlash} animationKey={liveFlashKey} className="inline-block">
-      <MobileAssetHeaderPrice
-        value={anim.price}
-        loading={chartLoading}
-        chartMetric={headerChartMetric}
-        className={mainPriceClass}
-        chartHovering={chartHovering}
-      />
-    </LivePriceFlashWrap>
+    <MobileAssetHeaderPrice
+      value={headerPriceValue}
+      loading={chartLoading}
+      chartMetric={headerChartMetric}
+      className={mainPriceClass}
+      chartHovering={chartHovering}
+      animateTicks={digitFlash}
+    />
   );
 
   const mainPriceBlock = (

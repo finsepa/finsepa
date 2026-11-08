@@ -1529,6 +1529,8 @@ export type StockSpotQuote = {
   previousClose: number | null;
   /** Trade / quote UNIX seconds when known (EODHD realtime timestamp or minute bar). */
   quotedAtSec?: number | null;
+  /** Diagnostic — matches crypto live-price `source` (ws tip vs EODHD REST vs chart). */
+  source?: "ws" | "realtime" | "delayed" | "chart";
 };
 
 function previousCloseFromRealtimePayload(
@@ -1580,7 +1582,12 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
       const live = rt?.close != null ? clampFinite(rt.close) : null;
       const previousClose = previousCloseFromRealtimePayload(rt);
       if (live != null && live > 0) {
-        return { price: live, previousClose, quotedAtSec: quotedAtSecFromRealtime(rt, now) };
+        return {
+          price: live,
+          previousClose,
+          quotedAtSec: quotedAtSecFromRealtime(rt, now),
+          source: "realtime",
+        };
       }
     }
 
@@ -1594,6 +1601,7 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
           price: live,
           previousClose,
           quotedAtSec: quotedAtSecFromDelayed(delayed, now),
+          source: "delayed",
         };
       }
     }
@@ -1602,7 +1610,12 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
       const live = rt?.close != null ? clampFinite(rt.close) : null;
       const previousClose = previousCloseFromRealtimePayload(rt);
       if (live != null && live > 0) {
-        return { price: live, previousClose, quotedAtSec: quotedAtSecFromRealtime(rt, now) };
+        return {
+          price: live,
+          previousClose,
+          quotedAtSec: quotedAtSecFromRealtime(rt, now),
+          source: "realtime",
+        };
       }
     }
 
@@ -1615,6 +1628,7 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
           price: live,
           previousClose,
           quotedAtSec: quotedAtSecFromDelayed(delayed, now),
+          source: "delayed",
         };
       }
     }
@@ -1630,12 +1644,13 @@ async function fetchStockSpotQuoteUncached(ticker: string): Promise<StockSpotQuo
     price,
     previousClose: null,
     quotedAtSec: typeof lastPt.time === "number" ? lastPt.time : null,
+    source: "chart",
   };
 }
 
 const getStockSpotQuoteLiveSessionCached = unstable_cache(
   async (ticker: string) => fetchStockSpotQuoteUncached(ticker),
-  ["stock-spot-quote-1d-live-v11-minute-store"],
+  ["stock-spot-quote-1d-live-v12-ws-first"],
   { revalidate: REVALIDATE_STOCK_1D_LIVE_SPOT },
 );
 
@@ -1645,8 +1660,11 @@ const getStockSpotQuoteCached = unstable_cache(
   { revalidate: REVALIDATE_HOT },
 );
 
-/** Trust WS minute store over EODHD REST when the bar was updated recently. */
-const MINUTE_STORE_SPOT_MAX_AGE_SEC = 90;
+/**
+ * Trust WS minute store when the bar was updated recently.
+ * Aligned with crypto header freshness (5m) so allowlisted tips feel live.
+ */
+const MINUTE_STORE_SPOT_MAX_AGE_SEC = 5 * 60;
 
 async function enhanceLiveSpotQuoteWithMinuteStore(
   ticker: string,
@@ -1695,22 +1713,44 @@ async function enhanceLiveSpotQuoteWithMinuteStore(
     price: minutePrice,
     previousClose: quote.previousClose,
     quotedAtSec: minuteUpdatedSec,
+    source: "ws",
   };
 }
 
-/** Live-price API + SSR hot fields — EODHD live OHLCV during regular session. */
+/**
+ * Live-price API + SSR hot fields.
+ * Allowlisted 1D tickers: crypto-style priority — fresh WS minute tip first, then EODHD REST.
+ * Others: EODHD realtime/delayed, WS only if REST has no price.
+ */
 export async function getStockSpotQuoteForApi(ticker: string): Promise<StockSpotQuote> {
   const now = new Date();
   if (getUsEquityMarketSession(now) === "regular") {
     requestStockMinuteBarWatch(ticker);
+    const liveAllowlist = isStock1DLiveMinuteChartTicker(ticker);
+
+    if (liveAllowlist) {
+      const emptyBase: StockSpotQuote = { price: null, previousClose: null, quotedAtSec: null };
+      const fromWs = await enhanceLiveSpotQuoteWithMinuteStore(ticker, emptyBase, now);
+      if (fromWs.price != null && Number.isFinite(fromWs.price) && fromWs.price > 0) {
+        const base = await getStockSpotQuoteLiveSessionCached(ticker);
+        const quote: StockSpotQuote = {
+          price: fromWs.price,
+          previousClose: base.previousClose,
+          quotedAtSec: fromWs.quotedAtSec,
+          source: "ws",
+        };
+        recordStockSessionMinuteBar(ticker, quote.price, now);
+        return quote;
+      }
+    }
+
     const base = await getStockSpotQuoteLiveSessionCached(ticker);
-    // Option B: header tracks EODHD realtime; minute store is chart-only (no bar-close override).
     const quote =
       base.price != null && Number.isFinite(base.price) && base.price > 0
-        ? base
+        ? { ...base, source: base.source ?? ("realtime" as const) }
         : await enhanceLiveSpotQuoteWithMinuteStore(ticker, base, now);
     if (
-      isStock1DLiveMinuteChartTicker(ticker) &&
+      liveAllowlist &&
       quote.price != null &&
       Number.isFinite(quote.price) &&
       quote.price > 0
