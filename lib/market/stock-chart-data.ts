@@ -1731,15 +1731,16 @@ export async function getStockSpotQuoteForApi(ticker: string): Promise<StockSpot
     if (liveAllowlist) {
       const emptyBase: StockSpotQuote = { price: null, previousClose: null, quotedAtSec: null };
       const fromWs = await enhanceLiveSpotQuoteWithMinuteStore(ticker, emptyBase, now);
-      if (fromWs.price != null && Number.isFinite(fromWs.price) && fromWs.price > 0) {
+      const wsPrice = fromWs.price;
+      if (wsPrice != null && Number.isFinite(wsPrice) && wsPrice > 0) {
         const base = await getStockSpotQuoteLiveSessionCached(ticker);
         const quote: StockSpotQuote = {
-          price: fromWs.price,
+          price: wsPrice,
           previousClose: base.previousClose,
           quotedAtSec: fromWs.quotedAtSec,
           source: "ws",
         };
-        recordStockSessionMinuteBar(ticker, quote.price, now);
+        recordStockSessionMinuteBar(ticker, wsPrice, now);
         return quote;
       }
     }
