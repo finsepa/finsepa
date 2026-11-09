@@ -122,6 +122,7 @@ export function HomeMarketTiles() {
         changePercent1D:
           (liveBtc ? cryptoUtcDayChangePct(liveBtc.price, liveBtc.utcOpen) : null) ?? btc?.pct1d ?? null,
         href: BTC_HREF,
+        flashTicks: true,
       },
     ],
     [btc, liveBtc],

@@ -30,6 +30,7 @@ import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { useWatchlistEnrichedItems } from "@/lib/watchlist/use-watchlist-enriched-items";
 import { watchlistKindToPendingAssetKind } from "@/lib/navigation/pending-asset-shell";
 import { cn } from "@/lib/utils";
+import { LiveDigitFlashText } from "@/components/chart/live-digit-flash-text";
 
 /** Mobile: asset + price/1D + remove (row drag reorders). Desktop adds metric columns. */
 const watchlistRowGridClass =
@@ -78,7 +79,11 @@ function PriceAndChangeCell({
           hasPrice ? "text-fg" : "text-fg-muted"
         }`}
       >
-        {hasPrice ? formatPrice(price, kind) : "-"}
+        {hasPrice ? (
+          <LiveDigitFlashText value={price} text={formatPrice(price, kind)} animate={kind === "crypto"} />
+        ) : (
+          "-"
+        )}
       </div>
       <div
         className={cn(
@@ -292,7 +297,11 @@ function WatchlistTableRow({
                 row.price == null || !Number.isFinite(row.price) ? "text-fg-muted" : "text-fg",
               )}
             >
-              {formatPrice(row.price, row.kind)}
+              <LiveDigitFlashText
+                value={row.price}
+                text={formatPrice(row.price, row.kind)}
+                animate={row.kind === "crypto"}
+              />
             </div>
 
             <div className={cn("hidden min-w-0 w-full sm:block", TABLE_END_ALIGNED_PAD_CLASS)}>

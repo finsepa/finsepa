@@ -24,6 +24,7 @@ import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-d
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { cn } from "@/lib/utils";
+import { LiveDigitFlashText } from "@/components/chart/live-digit-flash-text";
 
 /** Sub-cent meme coins need more precision than 2–4 fixed decimals (avoids `$0`). */
 function formatCryptoScreenerUsdPrice(value: number): string {
@@ -58,7 +59,7 @@ function PriceAndChangeCell({
           hasPrice ? "text-fg" : "text-fg-muted"
         }`}
       >
-        {hasPrice ? formatCryptoScreenerUsdPrice(price!) : "-"}
+        {hasPrice ? <LiveDigitFlashText value={price} text={formatCryptoScreenerUsdPrice(price!)} /> : "-"}
       </div>
       <div
         className={cn(
@@ -200,9 +201,11 @@ export function CryptoTable({
                           r.price == null || !Number.isFinite(r.price) ? "text-fg-muted" : "text-fg",
                         )}
                       >
-                        {r.price == null || !Number.isFinite(r.price)
-                          ? "-"
-                          : formatCryptoScreenerUsdPrice(r.price)}
+                        {r.price == null || !Number.isFinite(r.price) ? (
+                          "-"
+                        ) : (
+                          <LiveDigitFlashText value={r.price} text={formatCryptoScreenerUsdPrice(r.price)} />
+                        )}
                       </div>
 
                       <div className={desktopNumericCellClass}>

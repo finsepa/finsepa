@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties, type Ref } from "react";
 
 import { ChangeCaretIcon } from "@/components/screener/change-pct";
+import { LiveDigitFlashText } from "@/components/chart/live-digit-flash-text";
 import { FadeIn } from "@/components/markets/skeleton";
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { IndexCardData } from "@/lib/screener/indices-today";
@@ -23,6 +24,9 @@ import {
 
 type IndexEntry = {
   name: string;
+  price: number | null;
+  /** Live-ticking tile (e.g. BTC) — changed digits tint up/down like the asset header. */
+  flashTicks: boolean;
   value: string;
   change: string;
   positive: boolean;
@@ -36,6 +40,7 @@ export type IndexCardExtra = {
   price: number | null;
   changePercent1D: number | null;
   href: string | null;
+  flashTicks?: boolean;
 };
 
 function formatIndexValue(price: number | null): string {
@@ -57,12 +62,13 @@ function toEntry(
   price: number | null,
   pct: number | null,
   href: string | null,
+  flashTicks = false,
 ): IndexEntry {
   const value = formatIndexValue(price);
   const change = formatChangePercent(pct);
   const neutral = change === "—" || value === "—";
   const positive = !neutral && (pct ?? 0) >= 0;
-  return { name, value, change, positive, neutral, href };
+  return { name, price, flashTicks, value, change, positive, neutral, href };
 }
 
 function entriesFromCards(cards: IndexCardData[], extras: readonly IndexCardExtra[]): IndexEntry[] {
@@ -73,7 +79,10 @@ function entriesFromCards(cards: IndexCardData[], extras: readonly IndexCardExtr
     const symbol = MARKET_INDICES_TODAY.find((row) => row.name === name)?.eodhdSymbol;
     return toEntry(name, c?.price ?? null, c?.changePercent1D ?? null, symbol ? indexAssetHref(symbol) : null);
   });
-  return [...indexEntries, ...extras.map((x) => toEntry(x.name, x.price, x.changePercent1D, x.href))];
+  return [
+    ...indexEntries,
+    ...extras.map((x) => toEntry(x.name, x.price, x.changePercent1D, x.href, x.flashTicks)),
+  ];
 }
 
 export const INDEX_CARDS_GRID_CLASS =
@@ -169,7 +178,7 @@ export function IndexCards({
     <div className={outerClassName}>
       <div ref={scrollRef} className={scrollClassName} aria-label="Market indices">
         <div className={gridClassName} style={gridStyle}>
-        {entries.map(({ name, value, change, positive, neutral, href }) => {
+        {entries.map(({ name, price, flashTicks, value, change, positive, neutral, href }) => {
           const body = (
             <>
               <p className="w-full truncate text-left text-[14px] font-medium leading-5 text-fg-muted group-hover:underline group-hover:underline-offset-2">
@@ -180,7 +189,7 @@ export function IndexCards({
                   className="w-full truncate text-left text-[15px] font-bold leading-5 tabular-nums text-fg sm:text-base sm:leading-6"
                   suppressHydrationWarning
                 >
-                  {value}
+                  {flashTicks ? <LiveDigitFlashText value={price} text={value} /> : value}
                 </p>
               </FadeIn>
               <FadeIn show={fadeIn}>

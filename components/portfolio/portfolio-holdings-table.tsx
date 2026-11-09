@@ -47,6 +47,7 @@ import {
 } from "@/lib/portfolio/use-portfolio-holding-display-names";
 import { tooltipSurfaceClassName } from "@/components/design-system/tooltip-surface-styles";
 import { cn } from "@/lib/utils";
+import { LiveDigitFlashText } from "@/components/chart/live-digit-flash-text";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
 const EM_DASH = "\u2014";
@@ -641,7 +642,11 @@ function PortfolioHoldingsTableInner({
                           TABLE_END_ALIGNED_PAD_CLASS,
                         )}
                       >
-                        {formatPortfolioUsdPerUnit(h.marketPrice)}
+                        <LiveDigitFlashText
+                          value={h.marketPrice}
+                          text={formatPortfolioUsdPerUnit(h.marketPrice)}
+                          animate={assetKind === "crypto"}
+                        />
                       </div>
                       <div
                         className={cn(

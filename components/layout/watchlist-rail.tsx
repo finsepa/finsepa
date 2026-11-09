@@ -32,6 +32,7 @@ import { useWatchlistEnrichedItems } from "@/lib/watchlist/use-watchlist-enriche
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
 import { ChangePctParen } from "@/components/screener/change-pct";
 import { cn } from "@/lib/utils";
+import { LiveDigitFlashText } from "@/components/chart/live-digit-flash-text";
 
 function globalTickerIndex(watchedTickers: string[], storageKey: string): number {
   const key = normalizeWatchlistStorageKey(storageKey);
@@ -172,9 +173,12 @@ function WatchlistRailRow({
       ) : (
         <div className="ml-auto flex shrink-0 items-center gap-4 font-['Inter'] tabular-nums">
           {priceText ? (
-            <span className="shrink-0 text-right text-[14px] font-normal leading-5 text-fg">
-              {priceText}
-            </span>
+            <LiveDigitFlashText
+              value={row.price}
+              text={priceText}
+              animate={row.kind === "crypto"}
+              className="shrink-0 text-right text-[14px] font-normal leading-5 text-fg"
+            />
           ) : null}
           <div className="relative h-5 w-16 shrink-0">
             <span className="absolute inset-0 flex items-center justify-end overflow-hidden group-hover:invisible">
