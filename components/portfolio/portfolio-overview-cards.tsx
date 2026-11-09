@@ -36,6 +36,10 @@ import {
 } from "@/lib/portfolio/realized-pnl-from-trades";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import { cn } from "@/lib/utils";
+import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
+import { findCryptoLiveQuote } from "@/lib/market/crypto-live-quotes-shared";
+import { getCryptoLiveQuotesSnapshot } from "@/lib/market/use-crypto-live-quotes";
+import { isPortfolioCryptoSymbol } from "@/lib/portfolio/portfolio-crypto-symbol";
 
 const SPY_BENCHMARK = "SPY";
 
@@ -262,7 +266,10 @@ function PortfolioOverviewCardsInner({
   const applyOverviewPerformanceMarks = useCallback(
     (performanceBySymbol: Record<string, StockPerformance | null>) => {
       const prices: Record<string, number> = {};
+      const liveCrypto = getCryptoLiveQuotesSnapshot();
       for (const [sym, perf] of Object.entries(performanceBySymbol)) {
+        // A cached overview payload can be minutes old; never let it override a live crypto mark.
+        if (isPortfolioCryptoSymbol(sym) && findCryptoLiveQuote(liveCrypto, cryptoRouteBase(sym))) continue;
         const px = perf?.price;
         if (typeof px === "number" && Number.isFinite(px) && px > 0) {
           prices[sym.trim().toUpperCase()] = px;

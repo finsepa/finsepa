@@ -13,6 +13,8 @@ import { buildWatchlistMembershipKey } from "@/lib/watchlist/watchlist-membershi
 import { sortEnrichedItemsByTickerOrder } from "@/lib/watchlist/sort-enriched-items";
 import { isWatchlistTickerWatched } from "@/lib/watchlist/normalize-storage-key";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
+import { findCryptoLiveQuote, overlayCryptoLiveQuote } from "@/lib/market/crypto-live-quotes-shared";
+import { useCryptoLiveQuotes } from "@/lib/market/use-crypto-live-quotes";
 
 function itemStillWatched(item: WatchlistEnrichedItem, watched: Set<string>): boolean {
   return isWatchlistTickerWatched(watched, item.storageKey);
@@ -197,25 +199,36 @@ export function useWatchlistEnrichedItems(options: UseWatchlistEnrichedItemsOpti
     enabled && storageHydrated && watchedTickers.length > 0 && items.length === 0 && !ready && !error;
   const pricesLoading = enabled && loading && items.length > 0;
 
+  const hasCrypto = useMemo(() => items.some((r) => r.kind === "crypto"), [items]);
+  const liveQuotes = useCryptoLiveQuotes(enabled && hasCrypto);
+  const liveItems = useMemo(() => {
+    if (!liveQuotes) return items;
+    return items.map((r) =>
+      r.kind === "crypto"
+        ? overlayCryptoLiveQuote(r, findCryptoLiveQuote(liveQuotes, r.storageKey || r.symbol), "pct1d")
+        : r,
+    );
+  }, [items, liveQuotes]);
+
   const stocks = useMemo(
-    () => sortEnrichedItemsByTickerOrder(items.filter((r) => r.kind === "stock"), watchedTickers),
-    [items, watchedTickers],
+    () => sortEnrichedItemsByTickerOrder(liveItems.filter((r) => r.kind === "stock"), watchedTickers),
+    [liveItems, watchedTickers],
   );
   const crypto = useMemo(
-    () => sortEnrichedItemsByTickerOrder(items.filter((r) => r.kind === "crypto"), watchedTickers),
-    [items, watchedTickers],
+    () => sortEnrichedItemsByTickerOrder(liveItems.filter((r) => r.kind === "crypto"), watchedTickers),
+    [liveItems, watchedTickers],
   );
   const indices = useMemo(
     () =>
       sortEnrichedItemsByTickerOrder(
-        items.filter((r) => r.kind === "index" || r.kind === "forex"),
+        liveItems.filter((r) => r.kind === "index" || r.kind === "forex"),
         watchedTickers,
       ),
-    [items, watchedTickers],
+    [liveItems, watchedTickers],
   );
 
   return {
-    items,
+    items: liveItems,
     stocks,
     crypto,
     indices,

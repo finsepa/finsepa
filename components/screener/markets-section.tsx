@@ -94,6 +94,8 @@ import {
   withCryptoMoverLocalFallbacks,
 } from "@/lib/screener/screener-crypto-mover-fallbacks";
 import { CryptoFearGreedModal } from "@/components/screener/crypto-fear-greed-modal";
+import { useCryptoLiveQuotes } from "@/lib/market/use-crypto-live-quotes";
+import { overlayCryptoTop10Rows } from "@/lib/screener/crypto-live-overlay";
 import type { CryptoFearGreedIndex } from "@/lib/market/alternative-fear-greed";
 import type { ScreenerIndustryRow } from "@/lib/screener/screener-industries-types";
 import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
@@ -355,6 +357,11 @@ function CryptoTabBody({
   const safeCryptoPage = Math.min(totalPages, Math.max(1, cryptoPage));
 
   const [fearGreedModalOpen, setFearGreedModalOpen] = useState(false);
+  const liveQuotes = useCryptoLiveQuotes();
+  const liveTableRows = useMemo(
+    () => overlayCryptoTop10Rows(cryptoRowsResolved, liveQuotes),
+    [cryptoRowsResolved, liveQuotes],
+  );
 
   const movers = useMemo(() => {
     const source =
@@ -363,8 +370,8 @@ function CryptoTabBody({
         : withCryptoMoverLocalFallbacks(
             cryptoRowsResolved.length > 0 ? cryptoRowsResolved : cryptoMoverFallbackRows(),
           );
-    return splitCryptoLargestMovers(source);
-  }, [cryptoMoverRows, cryptoRowsResolved]);
+    return splitCryptoLargestMovers(overlayCryptoTop10Rows(source, liveQuotes));
+  }, [cryptoMoverRows, cryptoRowsResolved, liveQuotes]);
 
   return (
     <div>
@@ -374,7 +381,7 @@ function CryptoTabBody({
         <CryptoFearGreedCard data={fearGreed} onOpenFullscreen={() => setFearGreedModalOpen(true)} />
       </div>
       <CryptoTable
-        initialRows={cryptoRowsResolved}
+        initialRows={liveTableRows}
         rankOffset={(safeCryptoPage - 1) * pageSize}
       />
 

@@ -4,6 +4,8 @@ import { WATCHLIST_CRYPTO_PREFIX, WATCHLIST_FOREX_PREFIX, WATCHLIST_INDEX_PREFIX
 import type { WatchlistEnrichedItem } from "@/lib/watchlist/enriched-types";
 import type { WatchlistRow } from "@/lib/watchlist/types";
 import { getCryptoAsset } from "@/lib/market/crypto-asset";
+import { getCryptoLiveQuotes } from "@/lib/market/crypto-live-quotes";
+import { findCryptoLiveQuote, overlayCryptoLiveQuote } from "@/lib/market/crypto-live-quotes-shared";
 import {
   ALL_CRYPTO_METAS,
   CRYPTO_SCREENER_ALL,
@@ -312,7 +314,16 @@ async function enrichStock(entry: WatchlistRow, batch: WatchlistStockBatch | nul
   return enrichStockWithBatch(entry, b);
 }
 
+/** Snapshot row with live exchange price + UTC-day 1D % when the coin has free-exchange coverage. */
 async function enrichCrypto(entry: WatchlistRow): Promise<WatchlistEnrichedItem> {
+  const [row, live] = await Promise.all([
+    enrichCryptoFromSnapshot(entry),
+    getCryptoLiveQuotes([parseWatchlistStorageKey(entry.ticker).symbol]).catch(() => ({})),
+  ]);
+  return overlayCryptoLiveQuote(row, findCryptoLiveQuote(live, row.symbol), "pct1d");
+}
+
+async function enrichCryptoFromSnapshot(entry: WatchlistRow): Promise<WatchlistEnrichedItem> {
   const { symbol } = parseWatchlistStorageKey(entry.ticker);
   const sup = toSupportedCryptoTicker(symbol);
 

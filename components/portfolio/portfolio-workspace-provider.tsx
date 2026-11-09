@@ -140,6 +140,10 @@ import {
   refreshHoldingMarketPrices,
   replayTradeTransactionsToHoldings,
 } from "@/lib/portfolio/rebuild-holdings-from-trades";
+import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
+import { findCryptoLiveQuote } from "@/lib/market/crypto-live-quotes-shared";
+import { useCryptoLiveQuotes } from "@/lib/market/use-crypto-live-quotes";
+import { isPortfolioCryptoSymbol } from "@/lib/portfolio/portfolio-crypto-symbol";
 
 /** Default portfolio; created when the user deletes the last one. */
 const DEFAULT_PORTFOLIO_NAME = "My Portfolio";
@@ -1579,7 +1583,7 @@ export function PortfolioWorkspaceProvider({
 
   /** Paint / refresh holdings from a symbol→USD map (EOD performance or live). */
   const applySymbolMarketPrices = useCallback(
-    (prices: Record<string, number>) => {
+    (prices: Record<string, number>, opts?: { refreshQuoteSession?: boolean }) => {
       const cleaned: Record<string, number> = {};
       for (const [raw, p] of Object.entries(prices)) {
         const sym = raw.trim().toUpperCase();
@@ -1599,15 +1603,42 @@ export function PortfolioWorkspaceProvider({
       const ledger = appliedLedgerFingerprintRef.current;
       if (ledger) {
         const prevSession = readPortfolioQuoteSession(quoteSessionKey);
-        writePortfolioQuoteSession(quoteSessionKey, {
-          ledger,
-          at: Date.now(),
-          prices: { ...(prevSession?.prices ?? {}), ...cleaned },
-        });
+        // Partial (crypto-only) marks must not bump `at`, or the 3-minute stock refresh sees a
+        // "fresh" session forever and stops re-quoting stocks.
+        const refreshAt = opts?.refreshQuoteSession ?? true;
+        if (refreshAt || prevSession?.ledger === ledger) {
+          writePortfolioQuoteSession(quoteSessionKey, {
+            ledger,
+            at: refreshAt ? Date.now() : (prevSession?.at ?? 0),
+            prices: { ...(prevSession?.prices ?? {}), ...cleaned },
+          });
+        }
       }
     },
     [quoteSessionKey],
   );
+
+  /** Crypto holdings tick from the shared exchange poller (stocks keep their 3-minute quote refresh). */
+  const cryptoHoldingSymbolsKey = useMemo(() => {
+    const syms = new Set<string>();
+    for (const holds of Object.values(holdingsByPortfolioId)) {
+      for (const h of holds) {
+        const sym = h.symbol.trim().toUpperCase();
+        if (sym && isPortfolioCryptoSymbol(sym)) syms.add(sym);
+      }
+    }
+    return [...syms].sort().join(",");
+  }, [holdingsByPortfolioId]);
+  const liveCryptoQuotes = useCryptoLiveQuotes(cryptoHoldingSymbolsKey.length > 0);
+  useEffect(() => {
+    if (!liveCryptoQuotes || !cryptoHoldingSymbolsKey) return;
+    const prices: Record<string, number> = {};
+    for (const sym of cryptoHoldingSymbolsKey.split(",")) {
+      const q = findCryptoLiveQuote(liveCryptoQuotes, cryptoRouteBase(sym));
+      if (q) prices[sym] = q.price;
+    }
+    applySymbolMarketPrices(prices, { refreshQuoteSession: false });
+  }, [liveCryptoQuotes, cryptoHoldingSymbolsKey, applySymbolMarketPrices]);
 
   /** Continuous-price ledger repair (strip auto CA splits / reverse as-traded heals). Silent. */
   const stockSplitsFpRef = useRef(new Map<string, string>());

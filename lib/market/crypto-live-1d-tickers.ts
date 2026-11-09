@@ -528,7 +528,6 @@ export const CRYPTO_LIVE_1D_DEFAULT_TICKERS = [
   "XMR",
   "LEO",
   "TON",
-  "MKR",
   "MNT",
   "EOS",
   "KAS",
@@ -1061,8 +1060,6 @@ export const CRYPTO_BINANCE_LIVE_DEFAULT_BASES = [
 export const CRYPTO_BINANCE_BASE_ALIASES: Readonly<Record<string, string>> = {
   RNDR: "RENDER",
   FTM: "S",
-  /** Maker rebrand — Binance lists SKYUSDT. */
-  MKR: "SKY",
 };
 
 /**

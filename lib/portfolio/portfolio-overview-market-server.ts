@@ -10,6 +10,12 @@ import { fetchEodhdOpenPriceOnOrBefore } from "@/lib/market/eodhd-eod";
 import { fetchEodhdFundamentalsJson } from "@/lib/market/eodhd-fundamentals";
 import { dividendYieldRatioFromFundamentalsRoot } from "@/lib/market/eodhd-key-stats-dividends";
 import { getCryptoPerformance } from "@/lib/market/crypto-performance";
+import { getCryptoLiveQuotes } from "@/lib/market/crypto-live-quotes";
+import {
+  cryptoUtcDayChangePct,
+  findCryptoLiveQuote,
+  type CryptoLiveQuote,
+} from "@/lib/market/crypto-live-quotes-shared";
 import { getStockPerformance } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import {
@@ -173,6 +179,27 @@ const getCachedOverviewSlow = unstable_cache(
   { revalidate: REVALIDATE_IDENTITY },
 );
 
+/**
+ * Overview marks overwrite holding prices client-side, so crypto `price` / `d1` must use the same
+ * live spot + UTC-day basis as `/api/portfolio/live-quotes` — otherwise marks flicker between the two.
+ * Applied after the 60s cache so the live part never freezes inside it.
+ */
+function withLiveCryptoPerformance(
+  performanceBySymbol: Record<string, StockPerformance | null>,
+  cryptoSymbols: string[],
+  liveCrypto: Record<string, CryptoLiveQuote>,
+): Record<string, StockPerformance | null> {
+  if (!cryptoSymbols.length || !Object.keys(liveCrypto).length) return performanceBySymbol;
+  const out = { ...performanceBySymbol };
+  for (const sym of cryptoSymbols) {
+    const live = findCryptoLiveQuote(liveCrypto, cryptoRouteBase(sym));
+    const perf = out[sym];
+    if (!live || !perf) continue;
+    out[sym] = { ...perf, price: live.price, d1: cryptoUtcDayChangePct(live.price, live.utcOpen) ?? perf.d1 };
+  }
+  return out;
+}
+
 export async function getPortfolioOverviewMarketPayload(
   symbols: string[],
   inceptionYmd: string | null,
@@ -181,13 +208,17 @@ export async function getPortfolioOverviewMarketPayload(
   const key = overviewCacheKey(symbols, inceptionYmd, inceptionPriceTickers);
   const symbolsJson = JSON.stringify(symbols);
   const tickersJson = JSON.stringify(inceptionPriceTickers);
-  const [fast, slow] = await Promise.all([
+  const cryptoSymbols = symbols.filter((t) => isSupportedCryptoAssetSymbol(cryptoRouteBase(t)));
+  const [fast, slow, liveCrypto] = await Promise.all([
     getCachedOverviewFast(symbolsJson),
     getCachedOverviewSlow(key, symbolsJson, inceptionYmd ?? "", tickersJson),
+    cryptoSymbols.length
+      ? getCryptoLiveQuotes(cryptoSymbols.map((t) => cryptoRouteBase(t))).catch(() => ({}))
+      : Promise.resolve({}),
   ]);
   return {
     spy: fast.spy,
-    performanceBySymbol: fast.performanceBySymbol,
+    performanceBySymbol: withLiveCryptoPerformance(fast.performanceBySymbol, cryptoSymbols, liveCrypto),
     yieldBySymbol: slow.yieldBySymbol,
     inceptionPriceByTicker: slow.inceptionPriceByTicker,
     inceptionYmd: slow.inceptionYmd,

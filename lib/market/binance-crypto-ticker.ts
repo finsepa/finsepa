@@ -14,6 +14,8 @@ const cache = new Map<string, CacheEntry>();
 /** Keep header snappy without hammering Binance on every parallel poll. */
 const CACHE_TTL_MS = 1_500;
 const FETCH_TIMEOUT_MS = 2_500;
+/** Market-data-only host — `api.binance.com` returns 451 from US regions (Vercel iad1). */
+export const BINANCE_REST_BASE = "https://data-api.binance.vision";
 
 /**
  * Binance USDT last price for header-only live quotes (CMC-style).
@@ -36,7 +38,7 @@ export async function fetchBinanceUsdtLastPrice(
   const ac = new AbortController();
   const timer = setTimeout(() => ac.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pair}`, {
+    const res = await fetch(`${BINANCE_REST_BASE}/api/v3/ticker/price?symbol=${pair}`, {
       signal: ac.signal,
       cache: "no-store",
     });

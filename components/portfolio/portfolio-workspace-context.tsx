@@ -88,7 +88,7 @@ export type PortfolioWorkspaceContextValue = {
    * Apply symbol → USD marks across all standard portfolios (Overview EOD / live quotes).
    * Used so Value / top-bar match the chart’s last-close mark family.
    */
-  applySymbolMarketPrices: (prices: Record<string, number>) => void;
+  applySymbolMarketPrices: (prices: Record<string, number>, opts?: { refreshQuoteSession?: boolean }) => void;
   /** Remove one ledger row and rebuild holdings from remaining trades (closes edit modal if it matched). */
   removePortfolioTransaction: (transaction: PortfolioTransaction) => Promise<void>;
   /** Remove many ledger rows by id (same rebuild as single delete; closes edit modal if its row is included). */

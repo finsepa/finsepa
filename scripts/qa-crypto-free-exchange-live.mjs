@@ -4,11 +4,11 @@
  */
 import { createClient } from "@supabase/supabase-js";
 
-const symbols = ["BTC", "MKR", "XMR", "TON", "MNT", "KAS", "LRC", "CRO", "FLR", "HNT", "LEO", "EOS"];
+const symbols = ["BTC", "XMR", "TON", "MNT", "KAS", "LRC", "CRO", "FLR", "HNT", "LEO", "EOS"];
 
 async function fetchBinance(base) {
-  const pairBase = { MKR: "SKY", RNDR: "RENDER", FTM: "S" }[base] ?? base;
-  const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pairBase}USDT`);
+  const pairBase = { RNDR: "RENDER", FTM: "S" }[base] ?? base;
+  const res = await fetch(`https://data-api.binance.vision/api/v3/ticker/price?symbol=${pairBase}USDT`);
   if (!res.ok) return null;
   const j = await res.json();
   const price = Number(j.price);
@@ -47,7 +47,7 @@ async function fetchOkx(base) {
 }
 
 async function expectHeader(base) {
-  if (["BTC", "MKR"].includes(base)) return fetchBinance(base);
+  if (base === "BTC") return fetchBinance(base);
   if (base === "LEO") return fetchOkx(base);
   if (base === "EOS") return { source: "eodhd-fallback", price: null };
   return fetchKraken(base);

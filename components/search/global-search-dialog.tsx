@@ -27,6 +27,8 @@ import type { SearchDirectoryQuote, SearchDirectoryRow } from "@/lib/search/sear
 import { getSearchPanelViewState, SEARCH_CLIENT_DEBOUNCE_MS } from "@/lib/search/search-policy";
 import type { SearchAssetItem } from "@/lib/search/search-types";
 import { useSearchDirectory } from "@/lib/search/use-search-directory";
+import { cryptoUtcDayChangePct, findCryptoLiveQuote } from "@/lib/market/crypto-live-quotes-shared";
+import { useCryptoLiveQuotes } from "@/lib/market/use-crypto-live-quotes";
 import {
   hasSearchExtraQuote,
   loadSearchExtraQuotes,
@@ -271,10 +273,22 @@ export function GlobalSearchDialog({ onClose }: { onClose: () => void }) {
     return map;
   }, [directory]);
 
+  const liveCryptoQuotes = useCryptoLiveQuotes();
+
   const quoteFor = useCallback(
-    (item: SearchAssetItem): SearchDirectoryQuote | null =>
-      directoryQuotes.get(item.id) ?? (item.type === "stock" ? extraQuotes.get(item.symbol) ?? null : null),
-    [directoryQuotes, extraQuotes],
+    (item: SearchAssetItem): SearchDirectoryQuote | null => {
+      const base =
+        directoryQuotes.get(item.id) ?? (item.type === "stock" ? extraQuotes.get(item.symbol) ?? null : null);
+      if (item.type !== "crypto") return base;
+      const live = findCryptoLiveQuote(liveCryptoQuotes, item.symbol);
+      if (!live) return base;
+      return {
+        price: live.price,
+        changePct: cryptoUtcDayChangePct(live.price, live.utcOpen) ?? base?.changePct ?? null,
+        marketCapUsd: base?.marketCapUsd ?? null,
+      };
+    },
+    [directoryQuotes, extraQuotes, liveCryptoQuotes],
   );
 
   const activeList = useMemo(() => watchlists.find((l) => l.id === tab) ?? null, [watchlists, tab]);

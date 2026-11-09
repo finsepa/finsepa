@@ -13,6 +13,8 @@ import type { IndexCardData } from "@/lib/screener/indices-today";
 import { fetchScreenerIndexCardsCached } from "@/lib/screener/screener-index-cards-cache";
 import { SCREENER_INDEX_CARD_LABELS } from "@/lib/screener/screener-index-card-fallbacks";
 import { cn } from "@/lib/utils";
+import { cryptoUtcDayChangePct, findCryptoLiveQuote } from "@/lib/market/crypto-live-quotes-shared";
+import { useCryptoLiveQuotes } from "@/lib/market/use-crypto-live-quotes";
 
 const HOME_TILES_OUTER_CLASS = "overflow-visible";
 const HOME_TILE_CARD_STYLE: CSSProperties = { rowGap: 0 };
@@ -109,16 +111,20 @@ export function HomeMarketTiles() {
     };
   }, []);
 
+  const liveQuotes = useCryptoLiveQuotes();
+  const liveBtc = findCryptoLiveQuote(liveQuotes, "BTC");
+
   const extraCards = useMemo(
     (): IndexCardExtra[] => [
       {
         name: BTC_TILE_NAME,
-        price: btc?.price ?? null,
-        changePercent1D: btc?.pct1d ?? null,
+        price: liveBtc?.price ?? btc?.price ?? null,
+        changePercent1D:
+          (liveBtc ? cryptoUtcDayChangePct(liveBtc.price, liveBtc.utcOpen) : null) ?? btc?.pct1d ?? null,
         href: BTC_HREF,
       },
     ],
-    [btc],
+    [btc, liveBtc],
   );
 
   if (!loaded) {

@@ -3,10 +3,11 @@ import "server-only";
 import type { PortfolioHolding } from "@/components/portfolio/portfolio-types";
 import { applyLivePricesToHoldings } from "@/lib/portfolio/apply-live-prices-to-holdings";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
-import { isSupportedCryptoAssetSymbol } from "@/lib/crypto/crypto-logo-url";
+import { isPortfolioCryptoSymbol } from "@/lib/portfolio/portfolio-crypto-symbol";
 import { getCryptoLiveSpotPriceUsd } from "@/lib/market/crypto-live-price";
+import { getCryptoLiveQuotes } from "@/lib/market/crypto-live-quotes";
+import { findCryptoLiveQuote } from "@/lib/market/crypto-live-quotes-shared";
 import { getCryptoPerformance } from "@/lib/market/crypto-performance";
-import { toSupportedCryptoTicker } from "@/lib/market/crypto-meta";
 import { loadEodhdRealtimeQuotes } from "@/lib/market/eodhd-realtime-quotes";
 import { toEodhdUsSymbol } from "@/lib/market/eodhd-symbol";
 import { getStockPerformance } from "@/lib/market/stock-performance";
@@ -14,11 +15,6 @@ import { getStockPerformance } from "@/lib/market/stock-performance";
 function realtimeClose(payload: { close?: number } | undefined): number | null {
   const c = payload?.close;
   return typeof c === "number" && Number.isFinite(c) && c > 0 ? c : null;
-}
-
-function isPortfolioCryptoSymbol(sym: string): boolean {
-  if (toSupportedCryptoTicker(sym)) return true;
-  return isSupportedCryptoAssetSymbol(cryptoRouteBase(sym));
 }
 
 async function performanceLastCloseUsd(sym: string): Promise<number | null> {
@@ -67,8 +63,18 @@ export async function fetchPortfolioLivePricesUsd(symbols: string[]): Promise<Re
     }
   }
 
+  // Exchange-covered coins mark at the live spot (matches asset headers); the rest keep the
+  // daily-close-first path.
+  const liveCrypto = cryptoRoute.length
+    ? await getCryptoLiveQuotes(cryptoRoute.map((s) => cryptoRouteBase(s))).catch(() => ({}))
+    : {};
   await Promise.all(
     cryptoRoute.map(async (sym) => {
+      const live = findCryptoLiveQuote(liveCrypto, cryptoRouteBase(sym));
+      if (live) {
+        out[sym.toUpperCase()] = live.price;
+        return;
+      }
       try {
         const p = await getCryptoLiveSpotPriceUsd(sym);
         out[sym.toUpperCase()] = p;

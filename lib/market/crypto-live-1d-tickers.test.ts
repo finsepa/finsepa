@@ -37,8 +37,10 @@ test("Binance live bases are all TRADING USDT spot pairs", () => {
   assert.equal(usesBinanceLiveSpot("ADA"), true);
   assert.equal(usesBinanceLiveSpot("RNDR"), true);
   assert.equal(toBinanceUsdtBase("RNDR"), "RENDER");
-  assert.equal(usesBinanceLiveSpot("MKR"), true);
-  assert.equal(toBinanceUsdtBase("MKR"), "SKY");
+  // MKRUSDT is halted; 1 MKR ≈ 24,000 SKY, so SKY is not a 1:1 alias.
+  assert.equal(usesBinanceLiveSpot("MKR"), false);
+  assert.equal(toBinanceUsdtBase("MKR"), "MKR");
+  assert.equal(isCryptoLive1DSymbol("MKR"), false);
   assert.equal(usesBinanceLiveSpot("LEO"), false);
   assert.equal(usesBinanceLiveSpot("XMR"), false);
   assert.equal(usesBinanceLiveSpot("USDT"), false);

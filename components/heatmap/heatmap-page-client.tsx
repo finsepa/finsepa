@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 
 import type { HeatmapMarket, HeatmapMetric, HeatmapPagePayload } from "@/lib/heatmap/heatmap-types";
+import { cryptoUtcDayChangePct, findCryptoLiveQuote } from "@/lib/market/crypto-live-quotes-shared";
+import { useCryptoLiveQuotes } from "@/lib/market/use-crypto-live-quotes";
 import { MarketHeatmap } from "@/components/heatmap/market-heatmap";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 
@@ -108,7 +110,17 @@ export function HeatmapPageClient({ initial }: { initial: HeatmapPagePayload }) 
     [displayMarket, displayMetric, router],
   );
 
-  const { leaves } = payload;
+  const liveQuotes = useCryptoLiveQuotes(payload.market === "crypto");
+  const leaves = useMemo(() => {
+    if (payload.market !== "crypto" || !liveQuotes) return payload.leaves;
+    return payload.leaves.map((leaf) => {
+      const q = findCryptoLiveQuote(liveQuotes, leaf.ticker);
+      if (!q) return leaf;
+      // Only the 1D view is a UTC-day move; 1W / 1M / YTD keep their daily-bar basis.
+      const pct = payload.metric === "1d" ? cryptoUtcDayChangePct(q.price, q.utcOpen) : null;
+      return { ...leaf, price: q.price, changePct: pct ?? leaf.changePct };
+    });
+  }, [payload, liveQuotes]);
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
