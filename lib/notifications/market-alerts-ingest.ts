@@ -149,6 +149,53 @@ async function loadHistory(assetKind: AssetKind, symbol: string, dayYmd: string,
   }
 }
 
+const HISTORY_RETENTION_DAYS = 7;
+
+/** Day-scoped levels from `market_alert_history`; computes and stores the missing ones. */
+async function loadHistories(
+  admin: SupabaseClient,
+  config: ScopeConfig,
+  quoted: readonly Quoted[],
+  now: Date,
+): Promise<History[]> {
+  const byKey = new Map<string, History>();
+  const days = [...new Set(quoted.map((q) => q.dayYmd))];
+  const { data, error } = await admin
+    .from("market_alert_history")
+    .select("asset_key,day_ymd,extremes,last_close")
+    .in("asset_key", quoted.map((q) => config.storedTicker(q.key)))
+    .in("day_ymd", days);
+  if (!error) {
+    for (const row of data ?? []) {
+      byKey.set(`${row.asset_key}|${row.day_ymd}`, {
+        extremes: (row.extremes as PriceExtremes | null) ?? null,
+        lastClose: typeof row.last_close === "number" ? row.last_close : null,
+      });
+    }
+  }
+
+  const missing = quoted.filter((q) => !byKey.has(`${config.storedTicker(q.key)}|${q.dayYmd}`));
+  const loaded = await mapWithConcurrency(missing, BARS_CONCURRENCY, (q) =>
+    loadHistory(config.assetKind, q.key, q.dayYmd, now),
+  );
+  const rows: { asset_key: string; day_ymd: string; extremes: PriceExtremes | null; last_close: number | null }[] = [];
+  missing.forEach((q, i) => {
+    const h = loaded[i]!;
+    byKey.set(`${config.storedTicker(q.key)}|${q.dayYmd}`, h);
+    // A failed load is retried next run rather than stored as "no history".
+    if (h.extremes || h.lastClose != null) {
+      rows.push({ asset_key: config.storedTicker(q.key), day_ymd: q.dayYmd, extremes: h.extremes, last_close: h.lastClose });
+    }
+  });
+  if (rows.length > 0) {
+    await admin.from("market_alert_history").upsert(rows, { onConflict: "asset_key,day_ymd" });
+    const cutoff = ymdUtc(new Date(now.getTime() - HISTORY_RETENTION_DAYS * 86_400_000));
+    await admin.from("market_alert_history").delete().lt("day_ymd", cutoff);
+  }
+
+  return quoted.map((q) => byKey.get(`${config.storedTicker(q.key)}|${q.dayYmd}`) ?? { extremes: null, lastClose: null });
+}
+
 async function mapWithConcurrency<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const out = new Array<R>(items.length);
   let next = 0;
@@ -304,9 +351,7 @@ async function runScope(
   const base = { skipped: false, followed: interest.size, quoted: quoted.length };
   if (quoted.length === 0) return emptyScope("no_quotes", { followed: interest.size });
 
-  const histories = await mapWithConcurrency(quoted, BARS_CONCURRENCY, (q) =>
-    loadHistory(config.assetKind, q.key, q.dayYmd, now),
-  );
+  const histories = await loadHistories(admin, config, quoted, now);
 
   let guarded = 0;
   const candidates: Candidate[] = [];
