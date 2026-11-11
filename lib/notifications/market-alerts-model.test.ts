@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  CRYPTO_MOVE_TIERS,
+  formatUsdPrice,
+  lastCloseBefore,
+  looksLikeUnadjustedSplit,
+  referenceCloseMatchesHistory,
   detectHighLow,
   highLowCopy,
   highLowEventKey,
@@ -36,6 +41,49 @@ describe("priceMoveTier", () => {
   it("records lower tiers so a 10% day never re-fires at 5%", () => {
     assert.deepEqual(priceMoveEventKeys("2026-11-11", "up", 10), ["move:2026-11-11:up:5", "move:2026-11-11:up:10"]);
     assert.deepEqual(priceMoveEventKeys("2026-11-11", "down", 5), ["move:2026-11-11:down:5"]);
+  });
+});
+
+describe("crypto tiers", () => {
+  it("uses ±10% / ±20%", () => {
+    assert.equal(priceMoveTier(8, CRYPTO_MOVE_TIERS), null);
+    assert.deepEqual(priceMoveTier(-11, CRYPTO_MOVE_TIERS), { direction: "down", tier: 10 });
+    assert.deepEqual(priceMoveTier(25, CRYPTO_MOVE_TIERS), { direction: "up", tier: 20 });
+    assert.deepEqual(priceMoveEventKeys("2026-11-11", "up", 20, CRYPTO_MOVE_TIERS), [
+      "move:2026-11-11:up:10",
+      "move:2026-11-11:up:20",
+    ]);
+  });
+});
+
+describe("split guard", () => {
+  it("flags a reference close that disagrees with history", () => {
+    assert.equal(referenceCloseMatchesHistory(100, 101), true);
+    assert.equal(referenceCloseMatchesHistory(10, 100), false);
+    assert.equal(referenceCloseMatchesHistory(null, 100), true);
+  });
+
+  it("spots unadjusted split ratios but not ordinary crashes", () => {
+    assert.equal(looksLikeUnadjustedSplit(10.02, 100), true); // 1:10
+    assert.equal(looksLikeUnadjustedSplit(50.4, 100), true); // 1:2
+    assert.equal(looksLikeUnadjustedSplit(40, 10), true); // 4:1 reverse
+    assert.equal(looksLikeUnadjustedSplit(62, 100), false); // −38% real drop
+    assert.equal(looksLikeUnadjustedSplit(27, 100), false);
+  });
+
+  it("finds the last close before a date", () => {
+    const series: CloseBar[] = [
+      { date: "2026-11-09", close: 10 },
+      { date: "2026-11-10", close: 11 },
+      { date: "2026-11-11", close: 12 },
+    ];
+    assert.equal(lastCloseBefore(series, "2026-11-11"), 11);
+    assert.equal(lastCloseBefore(series, "2026-11-01"), null);
+  });
+
+  it("formats sub-cent prices", () => {
+    assert.equal(formatUsdPrice(0.00001234), "$0.00001234");
+    assert.equal(formatUsdPrice(0.5), "$0.50");
   });
 });
 

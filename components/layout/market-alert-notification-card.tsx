@@ -28,8 +28,8 @@ function str(v: unknown): string | null {
 /** ±5% / ±10% daily moves and new 52-week / all-time highs and lows. */
 export function MarketAlertNotificationCard({ item, className }: { item: NotificationItem; className?: string }) {
   const payload = item.payload ?? {};
-  const ticker = resolveNotificationTicker(item);
-  const identity = readScreenerCompanyIdentity(ticker);
+  const ticker = str(payload.symbol) ?? resolveNotificationTicker(item).replace(/^CRYPTO:/, "");
+  const identity = payload.assetKind === "crypto" ? null : readScreenerCompanyIdentity(ticker);
   const companyName = str(payload.companyName) ?? identity?.name ?? ticker;
   const logoUrl = str(payload.logoUrl) ?? identity?.logoUrl ?? "";
   const price = num(payload.price);

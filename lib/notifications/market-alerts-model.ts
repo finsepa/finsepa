@@ -13,27 +13,75 @@ export function isMarketAlertKind(kind: string | null | undefined): kind is Mark
 }
 
 /** Robinhood-style tiers: one alert at ±5%, another at ±10%, per stock per day per direction. */
-export const PRICE_MOVE_TIERS = [5, 10] as const;
-export type PriceMoveTier = (typeof PRICE_MOVE_TIERS)[number];
+export const STOCK_MOVE_TIERS: readonly number[] = [5, 10];
+/** Crypto routinely moves 5% in a UTC day, so its tiers sit higher. */
+export const CRYPTO_MOVE_TIERS: readonly number[] = [10, 20];
 export type MoveDirection = "up" | "down";
 
-/** Highest tier reached by today's change vs the previous close, or null below 5%. */
-export function priceMoveTier(changePct: number | null | undefined): { direction: MoveDirection; tier: PriceMoveTier } | null {
+/** Highest tier reached by the day's change, or null below the first tier. */
+export function priceMoveTier(
+  changePct: number | null | undefined,
+  tiers: readonly number[] = STOCK_MOVE_TIERS,
+): { direction: MoveDirection; tier: number } | null {
   if (changePct == null || !Number.isFinite(changePct)) return null;
   const abs = Math.abs(changePct);
-  let tier: PriceMoveTier | null = null;
-  for (const t of PRICE_MOVE_TIERS) if (abs >= t) tier = t;
+  let tier: number | null = null;
+  for (const t of tiers) if (abs >= t) tier = t;
   if (tier == null) return null;
   return { direction: changePct > 0 ? "up" : "down", tier };
 }
 
 /** Event keys for every tier up to the one reached — recording lower tiers too stops a 10% day from later re-firing at 5%. */
-export function priceMoveEventKeys(quoteYmd: string, direction: MoveDirection, tier: PriceMoveTier): string[] {
-  return PRICE_MOVE_TIERS.filter((t) => t <= tier).map((t) => priceMoveEventKey(quoteYmd, direction, t));
+export function priceMoveEventKeys(
+  quoteYmd: string,
+  direction: MoveDirection,
+  tier: number,
+  tiers: readonly number[] = STOCK_MOVE_TIERS,
+): string[] {
+  return tiers.filter((t) => t <= tier).map((t) => priceMoveEventKey(quoteYmd, direction, t));
 }
 
-export function priceMoveEventKey(quoteYmd: string, direction: MoveDirection, tier: PriceMoveTier): string {
+export function priceMoveEventKey(quoteYmd: string, direction: MoveDirection, tier: number): string {
   return `move:${quoteYmd}:${direction}:${tier}`;
+}
+
+/** Last close strictly before `beforeYmd` (bars ascending). */
+export function lastCloseBefore(bars: readonly CloseBar[], beforeYmd: string): number | null {
+  for (let i = bars.length - 1; i >= 0; i--) {
+    const b = bars[i]!;
+    if (b.date < beforeYmd && Number.isFinite(b.close) && b.close > 0) return b.close;
+  }
+  return null;
+}
+
+/**
+ * The quote's reference close must agree with the history we compare against. On a split day one
+ * side is often adjusted and the other not (or the feed glitches) — then every comparison is wrong.
+ */
+export function referenceCloseMatchesHistory(
+  referenceClose: number | null | undefined,
+  historyClose: number | null | undefined,
+  tolerance = 0.25,
+): boolean {
+  if (referenceClose == null || historyClose == null) return true;
+  if (!(referenceClose > 0) || !(historyClose > 0)) return true;
+  return Math.abs(referenceClose / historyClose - 1) <= tolerance;
+}
+
+/** Moves this large get a corporate-action check before anyone is alerted. */
+export const SPLIT_CHECK_MIN_MOVE_PCT = 25;
+
+const SPLIT_FACTORS = [2, 3, 4, 5, 6, 8, 10, 15, 20, 25, 30, 40, 50, 100];
+
+/**
+ * Price / previous close sits on a common split ratio (1:2 … 1:100 or reverse) and the move is
+ * implausibly large — an unadjusted previous close, not a real crash or rally.
+ */
+export function looksLikeUnadjustedSplit(price: number, previousClose: number): boolean {
+  if (!(price > 0) || !(previousClose > 0)) return false;
+  const ratio = price / previousClose;
+  if (ratio > 0.55 && ratio < 1.8) return false;
+  return SPLIT_FACTORS.some((f) => Math.abs(ratio * f - 1) <= 0.03 || Math.abs(ratio / f - 1) <= 0.03);
 }
 
 export type CloseBar = { date: string; close: number };
@@ -106,6 +154,9 @@ export function highLowEventKey(side: "high" | "low", quoteYmd: string): string 
 }
 
 export function formatUsdPrice(value: number): string {
+  if (value > 0 && value < 0.01) {
+    return `$${value.toLocaleString("en-US", { maximumSignificantDigits: 4 })}`;
+  }
   return `$${value.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: value < 1 ? 4 : 2,
