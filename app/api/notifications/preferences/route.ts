@@ -3,24 +3,34 @@ import { NextResponse } from "next/server";
 import { getSubscriptionGateContext } from "@/lib/account/subscription-gate";
 import {
   getNotificationPreferences,
-  setEarningsResultsEnabled,
-  setReportsEnabled,
-  setSlidesEnabled,
-  setSuperinvestorActivityEnabled,
+  updateNotificationPreferences,
+  type NotificationPreferences,
 } from "@/lib/notifications/notification-preferences-store";
 import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/api-auth";
 import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
 
-function jsonPreferences(
-  preferences: Awaited<ReturnType<typeof getNotificationPreferences>>,
-  canUseActivityAlerts: boolean,
-) {
+/** Activity alerts (Pro). Market alerts are free and never gated. */
+const PRO_FIELDS = [
+  "earningsResultsEnabled",
+  "superinvestorActivityEnabled",
+  "slidesEnabled",
+  "reportsEnabled",
+] as const satisfies readonly (keyof NotificationPreferences)[];
+
+const FREE_FIELDS = [
+  "marketHighLowEnabled",
+  "priceAlertsEnabled",
+] as const satisfies readonly (keyof NotificationPreferences)[];
+
+function jsonPreferences(preferences: NotificationPreferences, canUseActivityAlerts: boolean) {
   return {
     earningsResultsEnabled: canUseActivityAlerts && preferences.earningsResultsEnabled,
     superinvestorActivityEnabled:
       canUseActivityAlerts && preferences.superinvestorActivityEnabled,
     slidesEnabled: canUseActivityAlerts && preferences.slidesEnabled,
     reportsEnabled: canUseActivityAlerts && preferences.reportsEnabled,
+    marketHighLowEnabled: preferences.marketHighLowEnabled,
+    priceAlertsEnabled: preferences.priceAlertsEnabled,
     canUseActivityAlerts,
   };
 }
@@ -47,8 +57,22 @@ export async function PATCH(request: Request) {
   try {
     const user = await requireAuthUserFromRequest(request);
     const supabase = await getSupabaseClientForRequest(request);
+    const body = (await request.json()) as Record<string, unknown>;
+
+    const patch: Partial<NotificationPreferences> = {};
+    for (const field of [...PRO_FIELDS, ...FREE_FIELDS]) {
+      if (typeof body[field] === "boolean") patch[field] = body[field];
+    }
+    if (Object.keys(patch).length === 0) {
+      return NextResponse.json(
+        { error: `Provide any of: ${[...PRO_FIELDS, ...FREE_FIELDS].join(", ")}` },
+        { status: 400 },
+      );
+    }
+
     const gate = await getSubscriptionGateContext(supabase, user.id);
-    if (!gate.canUseActivityAlerts) {
+    const touchesPro = PRO_FIELDS.some((field) => field in patch);
+    if (touchesPro && !gate.canUseActivityAlerts) {
       return NextResponse.json(
         {
           error: "Activity alerts are available on Pro. Upgrade to change notification preferences.",
@@ -58,50 +82,8 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const body = (await request.json()) as {
-      earningsResultsEnabled?: unknown;
-      superinvestorActivityEnabled?: unknown;
-      slidesEnabled?: unknown;
-      reportsEnabled?: unknown;
-    };
-
-    const hasEarnings = typeof body.earningsResultsEnabled === "boolean";
-    const hasSuperinvestor = typeof body.superinvestorActivityEnabled === "boolean";
-    const hasSlides = typeof body.slidesEnabled === "boolean";
-    const hasReports = typeof body.reportsEnabled === "boolean";
-    if (!hasEarnings && !hasSuperinvestor && !hasSlides && !hasReports) {
-      return NextResponse.json(
-        {
-          error:
-            "Provide earningsResultsEnabled, superinvestorActivityEnabled, slidesEnabled, and/or reportsEnabled",
-        },
-        { status: 400 },
-      );
-    }
-
-    let preferences = await getNotificationPreferences(supabase, user.id);
-    if (hasEarnings) {
-      preferences = await setEarningsResultsEnabled(
-        supabase,
-        user.id,
-        body.earningsResultsEnabled as boolean,
-      );
-    }
-    if (hasSuperinvestor) {
-      preferences = await setSuperinvestorActivityEnabled(
-        supabase,
-        user.id,
-        body.superinvestorActivityEnabled as boolean,
-      );
-    }
-    if (hasSlides) {
-      preferences = await setSlidesEnabled(supabase, user.id, body.slidesEnabled as boolean);
-    }
-    if (hasReports) {
-      preferences = await setReportsEnabled(supabase, user.id, body.reportsEnabled as boolean);
-    }
-
-    return NextResponse.json(jsonPreferences(preferences, true));
+    const preferences = await updateNotificationPreferences(supabase, user.id, patch);
+    return NextResponse.json(jsonPreferences(preferences, gate.canUseActivityAlerts));
   } catch (e) {
     if (e instanceof AuthRequiredError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

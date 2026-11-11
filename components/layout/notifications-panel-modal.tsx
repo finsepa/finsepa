@@ -22,6 +22,8 @@ import {
 import { NotificationsEmptyIllustration } from "@/components/portfolio-home/portfolio-empty-illustration";
 import { EarningsNotificationCard } from "@/components/layout/earnings-notification-card";
 import { SuperinvestorActivityNotificationCard } from "@/components/layout/superinvestor-activity-notification-card";
+import { MarketAlertNotificationCard } from "@/components/layout/market-alert-notification-card";
+import { isMarketAlertKind } from "@/lib/notifications/market-alerts-model";
 import { Spinner } from "@/components/ui/spinner";
 import { PillSwitch } from "@/components/ui/pill-switch";
 import {
@@ -94,6 +96,37 @@ function NotificationPillSwitch({
   );
 }
 
+const settingsSectionTitleClass = "-mb-2 text-[12px] font-semibold uppercase leading-4 tracking-wide text-fg-muted";
+
+function FreeAlertRow({
+  title,
+  description,
+  pressed,
+  onPressedChange,
+  disabled,
+}: {
+  title: string;
+  description: string;
+  pressed: boolean;
+  onPressedChange: (next: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-[12px] py-1">
+      <div className="min-w-0">
+        <p className="text-[14px] font-medium leading-5 text-fg">{title}</p>
+        <p className="mt-0.5 text-[13px] leading-5 text-fg-muted">{description}</p>
+      </div>
+      <NotificationPillSwitch
+        pressed={pressed}
+        onPressedChange={onPressedChange}
+        disabled={disabled}
+        aria-label={`${title} notifications`}
+      />
+    </div>
+  );
+}
+
 export function NotificationsPanelModal({
   open,
   onClose,
@@ -119,12 +152,16 @@ export function NotificationsPanelModal({
     superinvestorActivityEnabled,
     slidesEnabled,
     reportsEnabled,
+    marketHighLowEnabled,
+    priceAlertsEnabled,
     loading: preferencesLoading,
     saving: preferencesSaving,
     setEarningsResults,
     setSuperinvestorActivity,
     setSlides,
     setReports,
+    setMarketHighLow,
+    setPriceAlerts,
     refresh: refreshPreferences,
   } = useNotificationPreferences({ enabled: open });
 
@@ -191,6 +228,16 @@ export function NotificationsPanelModal({
           typeof item.href === "string" && item.href.trim()
             ? item.href.trim()
             : `/superinvestors/${encodeURIComponent(item.ticker)}?tab=activity`;
+        router.push(href);
+        return;
+      }
+      if (isMarketAlertKind(item.kind)) {
+        void markRead(item.id);
+        onClose();
+        const href =
+          typeof item.href === "string" && item.href.trim()
+            ? item.href.trim()
+            : `/stock/${encodeURIComponent(item.ticker)}`;
         router.push(href);
         return;
       }
@@ -297,6 +344,23 @@ export function NotificationsPanelModal({
                 </div>
               ) : (
                 <div className="flex min-h-0 flex-1 flex-col gap-5">
+                  <p className={settingsSectionTitleClass}>Market</p>
+                  <FreeAlertRow
+                    title="High-Low prices"
+                    description="All-time and 52-week high and low prices for companies you follow"
+                    pressed={marketHighLowEnabled}
+                    onPressedChange={(next) => void setMarketHighLow(next)}
+                    disabled={preferencesSaving}
+                  />
+                  <FreeAlertRow
+                    title="Price alerts"
+                    description="Significant price changes for stocks you follow"
+                    pressed={priceAlertsEnabled}
+                    onPressedChange={(next) => void setPriceAlerts(next)}
+                    disabled={preferencesSaving}
+                  />
+
+                  <p className={cn(settingsSectionTitleClass, "mt-3")}>Activity</p>
                   <div
                     className={cn(
                       "flex items-center justify-between gap-4 rounded-[12px] py-1",
@@ -534,8 +598,8 @@ export function NotificationsPanelModal({
                   <NotificationsEmptyIllustration className="mb-6" />
                   <EmptyTitle>No notifications yet</EmptyTitle>
                   <EmptyDescription className="max-w-[260px]">
-                    Alerts for watchlist earnings, slides, SEC reports, and followed
-                    superinvestors will appear here.
+                    Price moves, new highs and lows, earnings, slides, SEC reports, and
+                    followed superinvestors will appear here.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
@@ -551,6 +615,8 @@ export function NotificationsPanelModal({
                       >
                         {item.kind === SUPERINVESTOR_ACTIVITY_KIND ? (
                           <SuperinvestorActivityNotificationCard item={item} />
+                        ) : isMarketAlertKind(item.kind) ? (
+                          <MarketAlertNotificationCard item={item} />
                         ) : (
                           <EarningsNotificationCard item={item} />
                         )}

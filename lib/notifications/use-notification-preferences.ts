@@ -8,6 +8,8 @@ type PreferencesResponse = {
   superinvestorActivityEnabled?: boolean;
   slidesEnabled?: boolean;
   reportsEnabled?: boolean;
+  marketHighLowEnabled?: boolean;
+  priceAlertsEnabled?: boolean;
   error?: string;
 };
 
@@ -17,6 +19,8 @@ export function useNotificationPreferences(options?: { enabled?: boolean }) {
   const [superinvestorActivityEnabled, setSuperinvestorActivityEnabled] = useState(true);
   const [slidesEnabled, setSlidesEnabled] = useState(true);
   const [reportsEnabled, setReportsEnabled] = useState(true);
+  const [marketHighLowEnabled, setMarketHighLowEnabled] = useState(true);
+  const [priceAlertsEnabled, setPriceAlertsEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -38,6 +42,12 @@ export function useNotificationPreferences(options?: { enabled?: boolean }) {
         }
         if (typeof json.reportsEnabled === "boolean") {
           setReportsEnabled(json.reportsEnabled);
+        }
+        if (typeof json.marketHighLowEnabled === "boolean") {
+          setMarketHighLowEnabled(json.marketHighLowEnabled);
+        }
+        if (typeof json.priceAlertsEnabled === "boolean") {
+          setPriceAlertsEnabled(json.priceAlertsEnabled);
         }
       }
     } catch {
@@ -141,6 +151,36 @@ export function useNotificationPreferences(options?: { enabled?: boolean }) {
     [reportsEnabled, patchPreference],
   );
 
+  const setMarketHighLow = useCallback(
+    async (next: boolean) => {
+      const prev = marketHighLowEnabled;
+      await patchPreference(
+        { marketHighLowEnabled: next },
+        () => setMarketHighLowEnabled(next),
+        () => setMarketHighLowEnabled(prev),
+        "High-Low price alerts turned on.",
+        "High-Low price alerts turned off.",
+        next,
+      );
+    },
+    [marketHighLowEnabled, patchPreference],
+  );
+
+  const setPriceAlerts = useCallback(
+    async (next: boolean) => {
+      const prev = priceAlertsEnabled;
+      await patchPreference(
+        { priceAlertsEnabled: next },
+        () => setPriceAlertsEnabled(next),
+        () => setPriceAlertsEnabled(prev),
+        "Price alerts turned on.",
+        "Price alerts turned off.",
+        next,
+      );
+    },
+    [priceAlertsEnabled, patchPreference],
+  );
+
   useEffect(() => {
     if (!enabled) return;
     void refresh();
@@ -151,6 +191,8 @@ export function useNotificationPreferences(options?: { enabled?: boolean }) {
     superinvestorActivityEnabled,
     slidesEnabled,
     reportsEnabled,
+    marketHighLowEnabled,
+    priceAlertsEnabled,
     loading,
     saving,
     refresh,
@@ -158,5 +200,7 @@ export function useNotificationPreferences(options?: { enabled?: boolean }) {
     setSuperinvestorActivity,
     setSlides,
     setReports,
+    setMarketHighLow,
+    setPriceAlerts,
   };
 }

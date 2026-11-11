@@ -9,6 +9,7 @@ import { filterUserIdsWithActivityAlerts } from "@/lib/account/activity-alerts-e
 import { loadEarningsNotificationsDisabledUserIds } from "@/lib/notifications/notification-preferences-store";
 import { listDevicePushTokensForUsers } from "@/lib/notifications/device-push-tokens-store";
 import { sendEarningsApnsToDevices } from "@/lib/notifications/apns-push";
+import { pickProcessEnv } from "@/lib/env/pick-process-env";
 
 export async function insertEarningsReleaseNotifications(
   admin: SupabaseClient,
@@ -27,16 +28,7 @@ export async function insertEarningsReleaseNotifications(
     filterUserIdsWithActivityAlerts(admin, [...interestedUserIds]),
   ]);
 
-  const rows: {
-    user_id: string;
-    kind: string;
-    ticker: string;
-    title: string;
-    body: string;
-    href: string;
-    payload: Record<string, unknown>;
-    dedupe_key: string;
-  }[] = [];
+  const rows: NewUserNotificationRow[] = [];
 
   for (const release of releases) {
     const users = interest.get(release.row.ticker);
@@ -59,11 +51,45 @@ export async function insertEarningsReleaseNotifications(
     }
   }
 
+  return insertUserNotificationsAndPush(admin, rows);
+}
+
+export type NewUserNotificationRow = {
+  user_id: string;
+  kind: string;
+  ticker: string;
+  title: string;
+  body: string;
+  href: string;
+  payload: Record<string, unknown>;
+  dedupe_key: string;
+};
+
+function appOrigin(): string {
+  const raw =
+    pickProcessEnv("NEXT_PUBLIC_APP_URL") ?? pickProcessEnv("NEXT_PUBLIC_SITE_URL") ?? "https://app.finsepa.com";
+  return raw.trim().replace(/\/+$/, "");
+}
+
+/** The iOS notification extension downloads the image itself, so it needs an absolute https URL. */
+function absolutePushLogoUrl(raw: unknown): string | undefined {
+  if (typeof raw !== "string" || !raw.trim()) return undefined;
+  const url = raw.trim();
+  if (/^https:\/\//i.test(url)) return url;
+  if (url.startsWith("/")) return `${appOrigin()}${url}`;
+  return undefined;
+}
+
+/** Insert in-app rows (duplicates ignored) and push only the rows that are new. Returns the inserted count. */
+export async function insertUserNotificationsAndPush(
+  admin: SupabaseClient,
+  rows: readonly NewUserNotificationRow[],
+): Promise<number> {
   if (rows.length === 0) return 0;
 
   const { data, error } = await admin
     .from("user_notifications")
-    .upsert(rows, { onConflict: "user_id,kind,dedupe_key", ignoreDuplicates: true })
+    .upsert([...rows], { onConflict: "user_id,kind,dedupe_key", ignoreDuplicates: true })
     .select("id,user_id,ticker,title,body,kind,payload");
 
   if (error) throw new Error(`user_notifications_insert_failed: ${error.message}`);
@@ -77,37 +103,31 @@ export async function insertEarningsReleaseNotifications(
     kind: string;
     payload: Record<string, unknown> | null;
   }[];
+  if (inserted.length === 0) return 0;
 
-  // Push only newly inserted rows (ignoreDuplicates means updates aren't returned).
-  if (inserted.length > 0) {
-    const userIds = [...new Set(inserted.map((row) => row.user_id))];
-    const devices = await listDevicePushTokensForUsers(admin, userIds);
-    if (devices.length > 0) {
-      const devicesByUser = new Map<string, typeof devices>();
-      for (const device of devices) {
-        const list = devicesByUser.get(device.user_id) ?? [];
-        list.push(device);
-        devicesByUser.set(device.user_id, list);
-      }
-      await Promise.all(
-        inserted.map(async (row) => {
-          const userDevices = devicesByUser.get(row.user_id) ?? [];
-          if (userDevices.length === 0) return;
-          const logoUrl =
-            typeof row.payload?.logoUrl === "string" && row.payload.logoUrl.trim()
-              ? row.payload.logoUrl.trim()
-              : undefined;
-          await sendEarningsApnsToDevices(admin, userDevices, {
-            title: row.title,
-            body: row.body,
-            ticker: row.ticker,
-            kind: row.kind,
-            notificationId: row.id,
-            logoUrl,
-          });
-        }),
-      );
+  const userIds = [...new Set(inserted.map((row) => row.user_id))];
+  const devices = await listDevicePushTokensForUsers(admin, userIds);
+  if (devices.length > 0) {
+    const devicesByUser = new Map<string, typeof devices>();
+    for (const device of devices) {
+      const list = devicesByUser.get(device.user_id) ?? [];
+      list.push(device);
+      devicesByUser.set(device.user_id, list);
     }
+    await Promise.all(
+      inserted.map(async (row) => {
+        const userDevices = devicesByUser.get(row.user_id) ?? [];
+        if (userDevices.length === 0) return;
+        await sendEarningsApnsToDevices(admin, userDevices, {
+          title: row.title,
+          body: row.body,
+          ticker: row.ticker,
+          kind: row.kind,
+          notificationId: row.id,
+          logoUrl: absolutePushLogoUrl(row.payload?.logoUrl),
+        });
+      }),
+    );
   }
 
   return inserted.length;

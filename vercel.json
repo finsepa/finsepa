@@ -45,6 +45,10 @@
       "schedule": "7,22,37,52 * * * *"
     },
     {
+      "path": "/api/cron/market-alerts",
+      "schedule": "4,19,34,49 13-21 * * 1-5"
+    },
+    {
       "path": "/api/cron/earnings-document-cache-warm?shard=0",
       "schedule": "0 5 * * 0"
     },
