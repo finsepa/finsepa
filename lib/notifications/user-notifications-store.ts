@@ -72,7 +72,7 @@ function appOrigin(): string {
 }
 
 /** The iOS notification extension downloads the image itself, so it needs an absolute https URL. */
-function absolutePushLogoUrl(raw: unknown): string | undefined {
+export function absolutePushLogoUrl(raw: unknown): string | undefined {
   if (typeof raw !== "string" || !raw.trim()) return undefined;
   const url = raw.trim();
   if (/^https:\/\//i.test(url)) return url;
