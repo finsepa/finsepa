@@ -3,7 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { tryConsumeLogoDevUpstreamSlot } from "@/lib/market/logo-dev-upstream-budget";
-import { LOGO_TILE_VERSION, renderLogoTile } from "@/lib/media/logo-tile";
+import { LOGO_TILE_CONTENT_TYPE, LOGO_TILE_VERSION, renderLogoTile } from "@/lib/media/logo-tile";
 
 /**
  * Logos change rarely — long TTLs mean one Logo.dev fetch per symbol benefits all users (Next Data Cache +
@@ -121,7 +121,7 @@ const getCachedLogoTileInner = unstable_cache(
     if (!src) return null;
     try {
       const tile = await renderLogoTile(Buffer.from(src.base64, "base64"));
-      return tile ? { contentType: "image/png", base64: tile.toString("base64") } : null;
+      return tile ? { contentType: LOGO_TILE_CONTENT_TYPE, base64: tile.toString("base64") } : null;
     } catch {
       return src;
     }

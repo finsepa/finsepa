@@ -16,7 +16,7 @@ const TICKER_RE = /^[A-Z0-9][A-Z0-9.-]{0,11}$/i;
  * Cache-busting version on every proxy URL (browsers/CDN keep logos 30 days). Bump after changing tile
  * rendering or `LOGO_TILE_OVERRIDES` so every surface picks up the new images.
  */
-export const LOGO_PROXY_VERSION = "2";
+export const LOGO_PROXY_VERSION = "3";
 
 const LOGO_PROXY_PATH = "/api/media/logo";
 

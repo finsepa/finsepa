@@ -3,7 +3,7 @@ import "server-only";
 import sharp from "sharp";
 
 /** Bump when tile rendering changes so cached tiles regenerate. */
-export const LOGO_TILE_VERSION = 2;
+export const LOGO_TILE_VERSION = 3;
 
 export const LOGO_TILE_SIZE = 256;
 /**
@@ -158,12 +158,30 @@ async function encodeRaw(raw: Raw): Promise<sharp.Sharp> {
   return sharp(raw.data, { raw: { width: raw.width, height: raw.height, channels: 4 } });
 }
 
+/** Largest on-screen use is ~48pt @3x (iOS asset header); lists show 20–40px. */
+export const LOGO_TILE_OUTPUT_SIZE = 160;
+export const LOGO_TILE_CONTENT_TYPE = "image/webp";
+
+/** Final encode for every served tile — ~2 KB vs ~17 KB for a 256px PNG, no visible loss at UI sizes. */
+export async function encodeLogoTile(image: Buffer): Promise<Buffer> {
+  return sharp(image)
+    .resize(LOGO_TILE_OUTPUT_SIZE, LOGO_TILE_OUTPUT_SIZE, { fit: "cover" })
+    .webp({ quality: 85, smartSubsample: true, effort: 6 })
+    .toBuffer();
+}
+
 /**
  * TipRanks-style uniform tile: every logo becomes a filled square (brand or neutral color) with the
  * mark centered at a consistent size, so lists look even in light and dark mode alike.
  * Returns null when the source has no visible mark.
  */
 export async function renderLogoTile(input: Buffer): Promise<Buffer | null> {
+  const png = await renderTilePng(input);
+  return png ? encodeLogoTile(png) : null;
+}
+
+/** Composes at 256px so edge detection / anti-aliasing stay clean before the final downscale. */
+async function renderTilePng(input: Buffer): Promise<Buffer | null> {
   const { data, info } = await sharp(input)
     .ensureAlpha()
     .resize(LOGO_TILE_SIZE, LOGO_TILE_SIZE, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })

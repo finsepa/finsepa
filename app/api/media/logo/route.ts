@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { googleFaviconHostForCryptoSymbol } from "@/lib/crypto/crypto-logo-url";
-import sharp from "sharp";
-
 import { LOGO_TILE_OVERRIDES } from "@/lib/media/logo-overrides";
-import { renderLogoTile } from "@/lib/media/logo-tile";
+import { encodeLogoTile, LOGO_TILE_CONTENT_TYPE, renderLogoTile } from "@/lib/media/logo-tile";
 import {
   getCachedLogoFromUpstream,
   getCachedLogoTile,
@@ -96,10 +94,10 @@ export async function GET(req: Request) {
   const normId = parsed.kind === "stock" || parsed.kind === "crypto" ? parsed.id : parsed.id.toLowerCase();
   const override = LOGO_TILE_OVERRIDES[`${parsed.kind}:${normId}`];
   if (override) {
-    const png = await sharp(Buffer.from(override)).png().toBuffer();
-    return new NextResponse(new Uint8Array(png), {
+    const tile = await encodeLogoTile(Buffer.from(override));
+    return new NextResponse(new Uint8Array(tile), {
       status: 200,
-      headers: { "Content-Type": "image/png", "Cache-Control": LOGO_PROXY_CACHE_CONTROL },
+      headers: { "Content-Type": LOGO_TILE_CONTENT_TYPE, "Cache-Control": LOGO_PROXY_CACHE_CONTROL },
     });
   }
   const row = parsed.tile
@@ -122,7 +120,7 @@ export async function GET(req: Request) {
           const tiled = await renderLogoTile(bytes).catch(() => null);
           if (tiled) {
             bytes = tiled;
-            type = "image/png";
+            type = LOGO_TILE_CONTENT_TYPE;
           }
         }
         // Tiny favicons can be <32 bytes; still usable for UI / export.
