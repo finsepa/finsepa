@@ -144,6 +144,12 @@ describe("detectHighLow", () => {
     assert.deepEqual(detectHighLow(100, ex), []);
   });
 
+  it("ignores a cent past yesterday's record close", () => {
+    const atRecord = { high52w: 428.26, low52w: 300, allTimeHigh: 428.26, allTimeLow: 50 };
+    assert.deepEqual(detectHighLow(428.28, atRecord), []);
+    assert.equal(detectHighLow(431, atRecord)[0]?.level, "all_time_high");
+  });
+
   it("keys one high and one low per ISO week", () => {
     assert.equal(isoWeekKey("2026-11-11"), "2026-W46");
     assert.equal(isoWeekKey("2027-01-01"), "2026-W53");

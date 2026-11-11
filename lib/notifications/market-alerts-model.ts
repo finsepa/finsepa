@@ -156,14 +156,19 @@ export type HighLowLevel = "all_time_high" | "52w_high" | "all_time_low" | "52w_
 
 export type HighLowHit = { level: HighLowLevel; side: "high" | "low"; previous: number };
 
+/** A stock that closed at a record ticks past it by a cent the next morning — that is not news. */
+export const HIGH_LOW_BREAK_MARGIN = 0.005;
+
 /** Strongest level the price broke through on each side (an all-time high is also a 52-week high — report once). */
 export function detectHighLow(price: number, extremes: PriceExtremes): HighLowHit[] {
   if (!Number.isFinite(price) || price <= 0) return [];
+  const above = (level: number) => price > level * (1 + HIGH_LOW_BREAK_MARGIN);
+  const below = (level: number) => price < level * (1 - HIGH_LOW_BREAK_MARGIN);
   const hits: HighLowHit[] = [];
-  if (price > extremes.allTimeHigh) hits.push({ level: "all_time_high", side: "high", previous: extremes.allTimeHigh });
-  else if (price > extremes.high52w) hits.push({ level: "52w_high", side: "high", previous: extremes.high52w });
-  if (price < extremes.allTimeLow) hits.push({ level: "all_time_low", side: "low", previous: extremes.allTimeLow });
-  else if (price < extremes.low52w) hits.push({ level: "52w_low", side: "low", previous: extremes.low52w });
+  if (above(extremes.allTimeHigh)) hits.push({ level: "all_time_high", side: "high", previous: extremes.allTimeHigh });
+  else if (above(extremes.high52w)) hits.push({ level: "52w_high", side: "high", previous: extremes.high52w });
+  if (below(extremes.allTimeLow)) hits.push({ level: "all_time_low", side: "low", previous: extremes.allTimeLow });
+  else if (below(extremes.low52w)) hits.push({ level: "52w_low", side: "low", previous: extremes.low52w });
   return hits;
 }
 
