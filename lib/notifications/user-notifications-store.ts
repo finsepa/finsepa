@@ -65,10 +65,21 @@ export type NewUserNotificationRow = {
   dedupe_key: string;
 };
 
+const DEFAULT_APP_ORIGIN = "https://app.finsepa.com";
+
+/** First configured value that is a real https origin (prod env has held placeholder text). */
 function appOrigin(): string {
-  const raw =
-    pickProcessEnv("NEXT_PUBLIC_APP_URL") ?? pickProcessEnv("NEXT_PUBLIC_SITE_URL") ?? "https://app.finsepa.com";
-  return raw.trim().replace(/\/+$/, "");
+  for (const name of ["NEXT_PUBLIC_APP_URL", "NEXT_PUBLIC_SITE_URL"] as const) {
+    const raw = pickProcessEnv(name)?.trim();
+    if (!raw) continue;
+    try {
+      const url = new URL(raw);
+      if (url.protocol === "https:") return url.origin;
+    } catch {
+      // not a URL
+    }
+  }
+  return DEFAULT_APP_ORIGIN;
 }
 
 /** The iOS notification extension downloads the image itself, so it needs an absolute https URL. */
