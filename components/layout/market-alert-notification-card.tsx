@@ -36,8 +36,6 @@ export function MarketAlertNotificationCard({ item, className }: { item: Notific
   const changePct = num(payload.changePct);
   const levelRaw = str(payload.level);
   const level = HIGH_LOW_LEVELS.find((l) => l === levelRaw) ?? null;
-  const previousExtreme = num(payload.previousExtreme);
-
   const isHighLow = item.kind === MARKET_HIGH_LOW_KIND && level != null;
   const up = isHighLow ? level.endsWith("high") : (changePct ?? 0) >= 0;
   const headline = isHighLow
@@ -69,11 +67,6 @@ export function MarketAlertNotificationCard({ item, className }: { item: Notific
               </span>
             ) : null}
           </p>
-          {isHighLow && previousExtreme != null ? (
-            <p className={metaTextClass}>
-              Previous {up ? "high" : "low"} {formatUsdPrice(previousExtreme)}
-            </p>
-          ) : null}
         </div>
       ) : null}
     </div>
