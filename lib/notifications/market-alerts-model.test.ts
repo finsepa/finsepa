@@ -160,9 +160,13 @@ describe("detectHighLow", () => {
 
 describe("copy", () => {
   it("formats moves and new highs", () => {
+    assert.deepEqual(priceMoveCopy({ ticker: "GLXY", companyName: "Galaxy Digital", price: 15.86, changePct: 12.4 }), {
+      title: "GLXY Price Alert",
+      body: "GLXY is up 12.40% to $15.86",
+    });
     assert.deepEqual(priceMoveCopy({ ticker: "NVDA", companyName: "NVIDIA", price: 212.4, changePct: -6.18 }), {
-      title: "NVDA is down 6.2% today",
-      body: "NVIDIA · $212.40",
+      title: "NVDA Price Alert",
+      body: "NVDA is down 6.18% to $212.40",
     });
     assert.deepEqual(
       highLowCopy({
@@ -171,7 +175,7 @@ describe("copy", () => {
         price: 260,
         hit: { level: "all_time_high", side: "high", previous: 255.5 },
       }),
-      { title: "AAPL hit a new all-time high", body: "Apple · $260.00 · previous high $255.50" },
+      { title: "AAPL All-Time High", body: "AAPL hit a new all-time high of $260.00" },
     );
   });
 });

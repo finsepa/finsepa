@@ -208,30 +208,37 @@ export function highLowLevelLabel(level: HighLowLevel): string {
   return LEVEL_LABEL[level];
 }
 
+const LEVEL_TITLE: Record<HighLowLevel, string> = {
+  all_time_high: "All-Time High",
+  "52w_high": "52-Week High",
+  all_time_low: "All-Time Low",
+  "52w_low": "52-Week Low",
+};
+
+/** `GLXY Price Alert` / `GLXY is up 12.40% to $15.86`. */
 export function priceMoveCopy(input: {
   ticker: string;
   companyName: string;
   price: number;
   changePct: number;
 }): { title: string; body: string } {
-  const pct = Math.abs(input.changePct).toFixed(1);
+  const pct = Math.abs(input.changePct).toFixed(2);
   const verb = input.changePct > 0 ? "up" : "down";
   return {
-    title: `${input.ticker} is ${verb} ${pct}% today`,
-    body: `${input.companyName} · ${formatUsdPrice(input.price)}`,
+    title: `${input.ticker} Price Alert`,
+    body: `${input.ticker} is ${verb} ${pct}% to ${formatUsdPrice(input.price)}`,
   };
 }
 
+/** `AAPL 52-Week High` / `AAPL hit a new 52-week high of $353.60`. */
 export function highLowCopy(input: {
   ticker: string;
   companyName: string;
   price: number;
   hit: HighLowHit;
 }): { title: string; body: string } {
-  const label = LEVEL_LABEL[input.hit.level];
-  const prevLabel = input.hit.side === "high" ? "previous high" : "previous low";
   return {
-    title: `${input.ticker} hit a new ${label}`,
-    body: `${input.companyName} · ${formatUsdPrice(input.price)} · ${prevLabel} ${formatUsdPrice(input.hit.previous)}`,
+    title: `${input.ticker} ${LEVEL_TITLE[input.hit.level]}`,
+    body: `${input.ticker} hit a new ${LEVEL_LABEL[input.hit.level]} of ${formatUsdPrice(input.price)}`,
   };
 }
