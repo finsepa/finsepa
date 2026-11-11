@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 
-import { logoDevDomainLogoUrl, withLogoDevTheme } from "@/lib/screener/company-logo-url";
-import { useLogoDevTheme } from "@/lib/theme/use-logo-dev-theme";
+import { logoDevDomainLogoUrl, logoTileUrl } from "@/lib/screener/company-logo-url";
 import { cn } from "@/lib/utils";
 
 /** Prefer root brand host when Logo.dev is weaker on a subdomain (e.g. finance.yahoo.com). */
@@ -29,11 +28,10 @@ export function NewsSourceLogo({
   articleUrl: string;
   className?: string;
 }) {
-  const logoTheme = useLogoDevTheme();
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const host = newsSourceHostFromArticleUrl(articleUrl);
   const base = host ? logoDevDomainLogoUrl(host) : null;
-  const src = base ? withLogoDevTheme(base, logoTheme) : null;
+  const src = base ? logoTileUrl(base) : null;
   const failed = src != null && failedSrc === src;
 
   if (!src || failed) return null;

@@ -8,8 +8,9 @@ import { MobileAssetHeaderPrice } from "@/components/chart/mobile-asset-header-p
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { isPositivePriceChange, reconcilePriceChangePair } from "@/lib/chart/reconcile-price-change";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
-import { withLogoDevTheme } from "@/lib/screener/company-logo-url";
-import { useClientMounted, useLogoDevTheme } from "@/lib/theme/use-logo-dev-theme";
+import { isLogoProxyUrl, logoTileUrl } from "@/lib/screener/company-logo-url";
+import { useClientMounted } from "@/lib/theme/use-logo-dev-theme";
+import { cn } from "@/lib/utils";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { formatCryptoUsdChangeAbs } from "@/lib/market/format-crypto-usd";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
@@ -75,7 +76,6 @@ export function CryptoHeader({
   headerLoading,
   stockStyleLayout = false,
 }: Props) {
-  const logoTheme = useLogoDevTheme();
   const mounted = useClientMounted();
   const sym = symbol.trim().toUpperCase();
   const pairLabel = eodhdCryptoSpotTickerDisplay(sym);
@@ -85,7 +85,8 @@ export function CryptoHeader({
   const memLogo = mounted ? (readLogoMemory(sym)?.trim() ?? "") : "";
   const imgFailed = imgFailedForKey === logoFailureKey;
   const logoBase = imgFailed ? "" : serverLogo || memLogo;
-  const logoSrc = logoBase ? withLogoDevTheme(logoBase, logoTheme) : "";
+  const logoSrc = logoBase ? logoTileUrl(logoBase) : "";
+  const logoIsTile = isLogoProxyUrl(logoSrc);
 
   useEffect(() => {
     if (serverLogo) mergeLogoMemory(sym, serverLogo);
@@ -129,8 +130,8 @@ export function CryptoHeader({
           alt=""
           width={48}
           height={48}
-          className="absolute inset-0 h-full w-full object-contain"
-          style={{ transform: `scale(${cryptoHeaderLogoScale(sym)})` }}
+          className={cn("absolute inset-0 h-full w-full", logoIsTile ? "object-cover" : "object-contain")}
+          style={logoIsTile ? undefined : { transform: `scale(${cryptoHeaderLogoScale(sym)})` }}
           onError={() => {
             setImgFailedForKey(logoFailureKey);
             mergeLogoMemory(sym, null);

@@ -6,11 +6,45 @@
  * Server holds `LOGO_DEV_PUBLISHABLE_KEY`; the browser never sees the token. Do not point `<img>` at
  * `img.logo.dev` directly — always use these URL builders.
  *
- * Logo.dev supports `theme=light|dark` (+ `format=png`). Pass `theme` on the proxy URL (see
- * {@link withLogoDevTheme}) so dark UI gets inverted/adjusted marks.
+ * The proxy returns a uniform tile (same in light + dark) by default — render via {@link logoTileUrl}.
+ * Wordmark-style surfaces that need raw Logo.dev artwork use {@link withLogoDevTheme} (`raw=1&theme=`).
  */
 
 const TICKER_RE = /^[A-Z0-9][A-Z0-9.-]{0,11}$/i;
+
+/**
+ * Cache-busting version on every proxy URL (browsers/CDN keep logos 30 days). Bump after changing tile
+ * rendering or `LOGO_TILE_OVERRIDES` so every surface picks up the new images.
+ */
+export const LOGO_PROXY_VERSION = "2";
+
+const LOGO_PROXY_PATH = "/api/media/logo";
+
+export function isLogoProxyUrl(url: string): boolean {
+  return url.trim().startsWith(LOGO_PROXY_PATH);
+}
+
+function withProxyParams(url: string, edit: (params: URLSearchParams) => void): string {
+  const raw = url.trim();
+  if (!isLogoProxyUrl(raw)) return raw;
+  try {
+    const u = new URL(raw, "https://finsepa.local");
+    edit(u.searchParams);
+    u.searchParams.set("v", LOGO_PROXY_VERSION);
+    return `${u.pathname}?${u.searchParams.toString()}`;
+  } catch {
+    return raw;
+  }
+}
+
+/** Normalize any stored / server-built proxy URL to the current uniform tile. Non-proxy URLs pass through. */
+export function logoTileUrl(url: string): string {
+  return withProxyParams(url, (p) => {
+    p.delete("theme");
+    p.delete("raw");
+    p.delete("tile");
+  });
+}
 
 export type LogoDevTheme = "light" | "dark";
 
@@ -26,7 +60,7 @@ function isReasonableHost(host: string): boolean {
 export function logoDevDomainLogoUrl(domain: string): string | null {
   const host = domain.trim().toLowerCase().replace(/^www\./, "");
   if (!isReasonableHost(host)) return null;
-  return `/api/media/logo?kind=domain&h=${encodeURIComponent(host)}`;
+  return `/api/media/logo?kind=domain&h=${encodeURIComponent(host)}&v=${LOGO_PROXY_VERSION}`;
 }
 
 /** Logo.dev ticker slugs use hyphens for share classes (e.g. `BF.B` → `BF-B`). */
@@ -38,21 +72,21 @@ export function logoDevTickerSlug(ticker: string): string {
 export function logoDevStockLogoUrl(ticker: string): string | null {
   const t = logoDevTickerSlug(ticker);
   if (!TICKER_RE.test(t)) return null;
-  return `/api/media/logo?kind=stock&t=${encodeURIComponent(t)}`;
+  return `/api/media/logo?kind=stock&t=${encodeURIComponent(t)}&v=${LOGO_PROXY_VERSION}`;
 }
 
 /** @returns Same-origin path for crypto Logo.dev artwork. */
 export function logoDevCryptoLogoUrl(symbol: string): string | null {
   const c = symbol.trim().toUpperCase();
   if (!/^[A-Z0-9]{1,12}$/.test(c)) return null;
-  return `/api/media/logo?kind=crypto&c=${encodeURIComponent(c)}`;
+  return `/api/media/logo?kind=crypto&c=${encodeURIComponent(c)}&v=${LOGO_PROXY_VERSION}`;
 }
 
 /**
- * Append / replace `theme` on a same-origin Logo.dev proxy URL.
- * Non-proxy URLs (favicons, etc.) are returned unchanged.
+ * Raw Logo.dev artwork (no tile) with `theme` — only for wordmark-style surfaces (stock profile).
+ * Everything else should render {@link logoTileUrl}. Non-proxy URLs (favicons, etc.) pass through.
  *
- * Some marks (Alphabet, Ferrari) look better as Logo.dev’s light/white tile even on dark UI —
+ * Some marks (Alphabet, Ferrari) look better as Logo.dev’s light/white artwork even on dark UI —
  * pass {@link symbol} so those tickers stay `theme=light` when the app is dark.
  */
 export function withLogoDevTheme(
@@ -60,16 +94,11 @@ export function withLogoDevTheme(
   theme: LogoDevTheme,
   symbol?: string,
 ): string {
-  const raw = url.trim();
-  if (!raw.startsWith("/api/media/logo")) return raw;
   const resolved = resolveLogoDevThemeForSymbol(symbol, theme);
-  try {
-    const u = new URL(raw, "https://finsepa.local");
-    u.searchParams.set("theme", resolved === "dark" ? "dark" : "light");
-    return `${u.pathname}?${u.searchParams.toString()}`;
-  } catch {
-    return raw;
-  }
+  return withProxyParams(url, (p) => {
+    p.set("raw", "1");
+    p.set("theme", resolved === "dark" ? "dark" : "light");
+  });
 }
 
 /**

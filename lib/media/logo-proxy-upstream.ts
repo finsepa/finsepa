@@ -3,6 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 
 import { tryConsumeLogoDevUpstreamSlot } from "@/lib/market/logo-dev-upstream-budget";
+import { LOGO_TILE_VERSION, renderLogoTile } from "@/lib/media/logo-tile";
 
 /**
  * Logos change rarely — long TTLs mean one Logo.dev fetch per symbol benefits all users (Next Data Cache +
@@ -30,44 +31,68 @@ export function buildLogoDevUpstreamUrl(
   kind: LogoProxyKind,
   id: string,
   theme: LogoDevTheme = "light",
+  size = 128,
 ): string | null {
   const key = serverLogoDevToken();
   if (!key) return null;
   const tok = encodeURIComponent(key);
-  const themeQ = `&format=png&theme=${theme === "dark" ? "dark" : "light"}`;
+  const themeQ = `&size=${size}&format=png&theme=${theme === "dark" ? "dark" : "light"}`;
   if (kind === "stock") {
     const sym = id.trim().toLowerCase().replace(/\./g, "-");
     if (!sym) return null;
-    return `https://img.logo.dev/ticker/${encodeURIComponent(sym)}?token=${tok}&size=128${themeQ}`;
+    return `https://img.logo.dev/ticker/${encodeURIComponent(sym)}?token=${tok}${themeQ}`;
   }
   if (kind === "crypto") {
     const c = id.trim().toLowerCase();
     if (!c) return null;
-    return `https://img.logo.dev/crypto/${encodeURIComponent(c)}?token=${tok}&size=128${themeQ}`;
+    return `https://img.logo.dev/crypto/${encodeURIComponent(c)}?token=${tok}${themeQ}`;
   }
   const host = id.trim().toLowerCase().replace(/^www\./, "");
   if (!host) return null;
-  return `https://img.logo.dev/${encodeURIComponent(host)}?token=${tok}&size=128${themeQ}`;
+  return `https://img.logo.dev/${encodeURIComponent(host)}?token=${tok}${themeQ}`;
 }
 
 async function fetchLogoUpstreamUncached(
   kind: LogoProxyKind,
   normId: string,
   theme: LogoDevTheme,
+  size = 128,
 ): Promise<{ contentType: string; base64: string } | null> {
-  const url = buildLogoDevUpstreamUrl(kind, normId, theme);
+  const url = buildLogoDevUpstreamUrl(kind, normId, theme, size);
   if (!url) return null;
-  if (!tryConsumeLogoDevUpstreamSlot()) return null;
+  if (!tryConsumeLogoDevUpstreamSlot()) throw new LogoUpstreamTransientError("budget");
+  let res: Response;
   try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return null;
-    const contentType = res.headers.get("content-type")?.split(";")[0]?.trim() || "image/png";
-    if (!contentType.startsWith("image/")) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    if (buf.length < 32 || buf.length > 2_000_000) return null;
-    return { contentType, base64: buf.toString("base64") };
+    res = await fetch(url, { cache: "no-store" });
   } catch {
-    return null;
+    throw new LogoUpstreamTransientError("network");
+  }
+  if (res.status === 429 || res.status >= 500) throw new LogoUpstreamTransientError(String(res.status));
+  if (!res.ok) return null;
+  const contentType = res.headers.get("content-type")?.split(";")[0]?.trim() || "image/png";
+  if (!contentType.startsWith("image/")) return null;
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length < 32 || buf.length > 2_000_000) return null;
+  return { contentType, base64: buf.toString("base64") };
+}
+
+/**
+ * Rate limits / outages must not be cached as "no logo" for 30 days — throwing keeps
+ * `unstable_cache` from storing the miss, so the next request retries.
+ */
+class LogoUpstreamTransientError extends Error {
+  constructor(reason: string) {
+    super(`logo upstream transient: ${reason}`);
+  }
+}
+
+/** `null` = definite miss (cached); `"transient"` = rate limit / outage (not cached — caller should not long-cache). */
+async function uncachedOnTransient<T>(load: () => Promise<T | null>): Promise<T | null | "transient"> {
+  try {
+    return await load();
+  } catch (e) {
+    if (e instanceof Error && e.message.startsWith("logo upstream transient")) return "transient";
+    throw e;
   }
 }
 
@@ -75,9 +100,36 @@ async function fetchLogoUpstreamUncached(
  * One Logo.dev fetch per (kind, id, theme) per revalidate window — shared by all users
  * (browser hits `/api/media/logo` only).
  */
-export const getCachedLogoFromUpstream = unstable_cache(
+const getCachedLogoFromUpstreamInner = unstable_cache(
   async (kind: LogoProxyKind, normId: string, theme: LogoDevTheme = "light") =>
     fetchLogoUpstreamUncached(kind, normId, theme),
   [LOGO_PROXY_UNSTABLE_CACHE_KEY],
   { revalidate: LOGO_PROXY_CACHE_MAX_AGE_SEC },
 );
+
+export function getCachedLogoFromUpstream(kind: LogoProxyKind, normId: string, theme: LogoDevTheme = "light") {
+  return uncachedOnTransient(() => getCachedLogoFromUpstreamInner(kind, normId, theme));
+}
+
+/**
+ * Uniform tile (same in light + dark): light-theme artwork at 256px, normalized by
+ * {@link renderLogoTile}. Falls back to the untouched upstream bytes if rendering fails.
+ */
+const getCachedLogoTileInner = unstable_cache(
+  async (kind: LogoProxyKind, normId: string): Promise<{ contentType: string; base64: string } | null> => {
+    const src = await fetchLogoUpstreamUncached(kind, normId, "light", 256);
+    if (!src) return null;
+    try {
+      const tile = await renderLogoTile(Buffer.from(src.base64, "base64"));
+      return tile ? { contentType: "image/png", base64: tile.toString("base64") } : null;
+    } catch {
+      return src;
+    }
+  },
+  [`finsepa-logo-tile-v${LOGO_TILE_VERSION}`],
+  { revalidate: LOGO_PROXY_CACHE_MAX_AGE_SEC },
+);
+
+export function getCachedLogoTile(kind: LogoProxyKind, normId: string) {
+  return uncachedOnTransient(() => getCachedLogoTileInner(kind, normId));
+}

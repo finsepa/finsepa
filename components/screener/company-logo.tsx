@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import { readScreenerCompanyIdentity } from "@/lib/screener/screener-company-identity-storage";
-import { withLogoDevTheme } from "@/lib/screener/company-logo-url";
+import { isLogoProxyUrl, logoTileUrl } from "@/lib/screener/company-logo-url";
 import { indexLogoPublicPath } from "@/lib/market/index-logo-url";
-import { useClientMounted, useLogoDevTheme } from "@/lib/theme/use-logo-dev-theme";
+import { useClientMounted } from "@/lib/theme/use-logo-dev-theme";
 import { cn } from "@/lib/utils";
 import { logoColors } from "./data";
 
@@ -206,7 +206,6 @@ export function CompanyLogo({
   eagerLoad?: boolean;
   className?: string;
 }) {
-  const logoTheme = useLogoDevTheme();
   const mounted = useClientMounted();
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
 
@@ -216,7 +215,7 @@ export function CompanyLogo({
   const fromServer = typeof logoUrl === "string" ? logoUrl.trim() : "";
   const fromMem = mounted && symbol ? readLogoMemory(symbol) : undefined;
   const effectiveBase = (fromServer || cachedIdentity?.logoUrl || (fromMem ?? "")).trim();
-  const effective = withLogoDevTheme(effectiveBase, logoTheme, symbol);
+  const effective = logoTileUrl(effectiveBase);
   const failed = failedSrc === effective;
 
   useEffect(() => {
@@ -260,6 +259,24 @@ export function CompanyLogo({
   };
 
   const imgLoading = eagerLoad ? "eager" : "lazy";
+
+  // Proxy logos arrive as finished tiles (brand / neutral fill, centered mark) — no per-ticker fixes.
+  if (isLogoProxyUrl(effective)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- same-origin logo tile with onError fallback
+      <img
+        src={effective}
+        alt=""
+        width={px}
+        height={px}
+        loading={imgLoading}
+        decoding="async"
+        fetchPriority={eagerLoad ? "high" : undefined}
+        className={cn(imgBox, "shrink-0 border border-stroke-muted object-cover", className)}
+        onError={onLogoError}
+      />
+    );
+  }
 
   if (useFillFrame) {
     return (
