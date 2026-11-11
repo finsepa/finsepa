@@ -15,7 +15,7 @@ import {
   earningsDocumentPreviewKind,
   isEarningsSlidesPreviewUrl,
 } from "@/lib/market/earnings-document-url";
-import { getEarningsTranscript } from "@/lib/market/earnings-transcript";
+import { findEarningsTranscriptRef } from "@/lib/market/earnings-transcript-catalog";
 import type { EarningsTranscript } from "@/lib/market/earnings-transcript-types";
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 import { secondaryOutlineButtonClassName } from "@/components/design-system";
@@ -85,14 +85,25 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
   const eightKUrl = previewable(row.eightKUrl) ? row.eightKUrl : null;
   const form10Url = previewable(row.form10Url) ? row.form10Url : null;
   const form10Label = row.form10Kind === "10-K" ? "10-K" : "10-Q";
-  const transcript = getEarningsTranscript(listingTicker, row);
+  const transcriptRef = findEarningsTranscriptRef(listingTicker, row);
   const [preview, setPreview] = useState<PreviewState>(null);
   const [transcriptOpen, setTranscriptOpen] = useState<EarningsTranscript | null>(null);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
 
   const showSlides = released && previewable(slidesUrl);
   const showReportsPair = released && eightKUrl && form10Url;
   const showReportSingle = released && !showReportsPair && (eightKUrl != null || form10Url != null);
-  const showTranscript = transcript != null;
+  const showTranscript = transcriptRef != null;
+
+  const openTranscript = () => {
+    if (!transcriptRef || transcriptLoading) return;
+    setTranscriptLoading(true);
+    transcriptRef
+      .load()
+      .then(setTranscriptOpen)
+      .catch(() => {})
+      .finally(() => setTranscriptLoading(false));
+  };
 
   /** Free: every Transcript / Slides / Reports open is soft-gated (incl. latest). */
   const proGate = plan?.isPro !== true;
@@ -127,7 +138,7 @@ export function EarningsReportRowActions({ row, listingTicker }: Props) {
       />
       <div className="flex shrink-0 flex-nowrap items-center justify-end gap-2">
         {showTranscript ? (
-          <ActionButton label="Transcript" onClick={() => setTranscriptOpen(transcript)}>
+          <ActionButton label="Transcript" onClick={openTranscript}>
             <FileText className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden />
           </ActionButton>
         ) : null}

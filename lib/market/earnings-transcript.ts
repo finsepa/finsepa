@@ -1,27 +1,10 @@
 import type { StockEarningsHistoryRow } from "@/lib/market/stock-earnings-types";
 import type { EarningsTranscript } from "@/lib/market/earnings-transcript-types";
+import { earningsTranscriptMatchesRow } from "@/lib/market/earnings-transcript-catalog";
 import { NVDA_EARNINGS_TRANSCRIPTS } from "@/lib/market/nvda-earnings-transcript-fixture";
 import { AAPL_EARNINGS_TRANSCRIPTS } from "@/lib/market/aapl-earnings-transcript-fixture";
 import { GOOGL_EARNINGS_TRANSCRIPTS } from "@/lib/market/googl-earnings-transcript-fixture";
 import { MSFT_EARNINGS_TRANSCRIPTS } from "@/lib/market/msft-earnings-transcript-fixture";
-
-/** Normalize `Q2 2027` / `Q2 FY2027` / `Q2FY2027` → `Q2|2027`. */
-function normalizeQuarterKey(label: string | null | undefined): string | null {
-  const m = label?.trim().match(/^Q([1-4])\s*(?:FY)?\s*(\d{4})$/i);
-  if (!m) return null;
-  return `Q${m[1]}|${m[2]}`;
-}
-
-function matchesFiscalLabel(rowLabel: string | null | undefined, fixtureLabel: string): boolean {
-  const a = normalizeQuarterKey(rowLabel);
-  const b = normalizeQuarterKey(fixtureLabel);
-  return a != null && b != null && a === b;
-}
-
-function matchesEventDate(rowYmd: string | null | undefined, fixtureYmd: string): boolean {
-  const a = rowYmd?.trim() ?? "";
-  return a.length > 0 && a === fixtureYmd;
-}
 
 const BY_TICKER: Record<string, readonly EarningsTranscript[]> = {
   NVDA: NVDA_EARNINGS_TRANSCRIPTS,
@@ -43,10 +26,7 @@ export function getEarningsTranscript(
   if (!row.reported) return null;
   const list = listEarningsTranscripts(listingTicker);
   for (const fixture of list) {
-    if (
-      matchesFiscalLabel(row.fiscalPeriodLabel, fixture.fiscalPeriodLabel) ||
-      matchesEventDate(row.reportDateYmd, fixture.eventDateYmd)
-    ) {
+    if (earningsTranscriptMatchesRow(row, fixture.fiscalPeriodLabel, fixture.eventDateYmd)) {
       return fixture;
     }
   }

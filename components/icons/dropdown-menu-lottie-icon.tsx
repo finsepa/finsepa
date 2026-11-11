@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import Lottie, { type LottieRefCurrentProps } from "lottie-react";
+import dynamic from "next/dynamic";
+import type { LottieRefCurrentProps } from "lottie-react";
 
 import { cn } from "@/lib/utils";
+
+/** Menus render these only when opened — keep lottie-web (~300 KB) off every page's first load. */
+const Lottie = dynamic(() => import("lottie-react"), { ssr: false });
 
 type DropdownMenuLottieIconProps = {
   animationData: unknown;
@@ -161,6 +165,8 @@ export function DropdownMenuLottieIcon({
     [animationData, iconRgba],
   );
 
+  const [lottieReady, setLottieReady] = useState(false);
+
   useEffect(() => {
     const anim = lottieRef.current;
     if (!anim) return;
@@ -169,7 +175,7 @@ export function DropdownMenuLottieIcon({
     } else {
       anim.goToAndStop(0, true);
     }
-  }, [playing, tintedAnimation]);
+  }, [playing, tintedAnimation, lottieReady]);
 
   return (
     <span
@@ -183,7 +189,10 @@ export function DropdownMenuLottieIcon({
           animationData={tintedAnimation}
           loop={false}
           autoplay={false}
-          onDOMLoaded={() => lottieRef.current?.goToAndStop(0, true)}
+          onDOMLoaded={() => {
+            lottieRef.current?.goToAndStop(0, true);
+            setLottieReady(true);
+          }}
           style={{ width: "100%", height: "100%" }}
         />
       </span>
