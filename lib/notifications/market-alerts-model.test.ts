@@ -7,6 +7,7 @@ import {
   lastCloseBefore,
   looksLikeUnadjustedSplit,
   referenceCloseMatchesHistory,
+  splitAdjustedCloses,
   detectHighLow,
   highLowCopy,
   highLowEventKey,
@@ -84,6 +85,33 @@ describe("split guard", () => {
   it("formats sub-cent prices", () => {
     assert.equal(formatUsdPrice(0.00001234), "$0.00001234");
     assert.equal(formatUsdPrice(0.5), "$0.50");
+  });
+});
+
+describe("splitAdjustedCloses", () => {
+  it("restates splits but keeps dividends out of history", () => {
+    // 2:1 split on 11-05; a 1% dividend went ex on 11-09 (adjusted dips 1% before it).
+    const raw = [
+      { date: "2026-11-03", close: 200, adjustedClose: 99 },
+      { date: "2026-11-04", close: 210, adjustedClose: 103.95 },
+      { date: "2026-11-05", close: 104, adjustedClose: 102.96 },
+      { date: "2026-11-06", close: 106, adjustedClose: 104.94 },
+      { date: "2026-11-09", close: 105, adjustedClose: 105 },
+    ];
+    const out = splitAdjustedCloses(raw).map((b) => Math.round(b.close * 100) / 100);
+    assert.deepEqual(out, [100, 105, 104, 106, 105]);
+  });
+
+  it("does not let a dividend-lowered history fake a new high", () => {
+    // Raw high 100 a year ago; dividends since lower its adjusted value to 97. Today's price 99.
+    const raw = bars(400, "2026-11-10", (i) => (i === 50 ? 100 : 90)).map((b, i) => ({
+      date: b.date,
+      close: b.close,
+      adjustedClose: b.close * (i < 300 ? 0.97 : 1),
+    }));
+    const ex = priceExtremesFromCloses(splitAdjustedCloses(raw), "2026-11-11");
+    assert.ok(ex);
+    assert.deepEqual(detectHighLow(99, ex), []);
   });
 });
 

@@ -48,7 +48,7 @@ function nyWeekdayAndMinutes(now: Date): { weekday: string; minutes: number } {
 }
 
 /** Latest US trading day whose daily bar should already be published (America/New_York). */
-function latestPublishedUsEodYmd(now: Date): string {
+export function latestPublishedUsEodYmd(now: Date): string {
   const lagged = new Date(now.getTime() - US_EOD_PUBLISH_LAG_MS);
   const ymd = nyCalendarYmd(lagged);
   const { weekday, minutes } = nyWeekdayAndMinutes(lagged);

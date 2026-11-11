@@ -1,8 +1,10 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 
 import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
+import { fetchEodhdEodDailyBothCloses } from "@/lib/market/eodhd-eod";
 import { getCryptoLiveQuotes } from "@/lib/market/crypto-live-quotes";
 import { cryptoUtcDayChangePct } from "@/lib/market/crypto-live-quotes-shared";
 import { ALL_CRYPTO_METAS } from "@/lib/market/crypto-meta";
@@ -30,6 +32,8 @@ import {
   priceMoveEventKeys,
   priceMoveTier,
   referenceCloseMatchesHistory,
+  splitAdjustedCloses,
+  type CloseBar,
   type HighLowHit,
   type PriceExtremes,
 } from "@/lib/notifications/market-alerts-model";
@@ -39,7 +43,10 @@ import {
   insertUserNotificationsAndPush,
   type NewUserNotificationRow,
 } from "@/lib/notifications/user-notifications-store";
-import { loadPortfolioSymbolEodBars } from "@/lib/portfolio/data/load-portfolio-eod-bars";
+import {
+  latestPublishedUsEodYmd,
+  loadPortfolioSymbolEodBars,
+} from "@/lib/portfolio/data/load-portfolio-eod-bars";
 import { nyCalendarYmd } from "@/lib/screener/screener-us-market-cache";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { WATCHLIST_CRYPTO_PREFIX } from "@/lib/watchlist/constants";
@@ -114,10 +121,28 @@ function dailyHistoryRange(now: Date): { from: string; to: string } {
 
 type History = { extremes: PriceExtremes | null; lastClose: number | null };
 
-async function loadHistory(symbol: string, dayYmd: string, now: Date): Promise<History> {
-  const { from, to } = dailyHistoryRange(now);
+const STOCK_HISTORY_FROM_YMD = "1900-01-01";
+
+/** Keyed by the latest published EOD date, so each stock's full history is fetched once per session. */
+const getSplitAdjustedStockCloses = unstable_cache(
+  async (symbol: string, publishedEodYmd: string): Promise<CloseBar[]> => {
+    const bars = await fetchEodhdEodDailyBothCloses(symbol, STOCK_HISTORY_FROM_YMD, publishedEodYmd);
+    if (!bars?.length) throw new Error("no_daily_bars");
+    return splitAdjustedCloses(bars);
+  },
+  ["market-alerts-split-adjusted-closes-v1"],
+  { revalidate: 6 * 60 * 60 },
+);
+
+async function loadHistory(assetKind: AssetKind, symbol: string, dayYmd: string, now: Date): Promise<History> {
   try {
-    const bars = await loadPortfolioSymbolEodBars(symbol, from, to);
+    let bars: readonly CloseBar[];
+    if (assetKind === "stock") {
+      bars = await getSplitAdjustedStockCloses(symbol, latestPublishedUsEodYmd(now));
+    } else {
+      const { from, to } = dailyHistoryRange(now);
+      bars = await loadPortfolioSymbolEodBars(symbol, from, to);
+    }
     return { extremes: priceExtremesFromCloses(bars, dayYmd), lastClose: lastCloseBefore(bars, dayYmd) };
   } catch {
     return { extremes: null, lastClose: null };
@@ -279,7 +304,9 @@ async function runScope(
   const base = { skipped: false, followed: interest.size, quoted: quoted.length };
   if (quoted.length === 0) return emptyScope("no_quotes", { followed: interest.size });
 
-  const histories = await mapWithConcurrency(quoted, BARS_CONCURRENCY, (q) => loadHistory(q.key, q.dayYmd, now));
+  const histories = await mapWithConcurrency(quoted, BARS_CONCURRENCY, (q) =>
+    loadHistory(config.assetKind, q.key, q.dayYmd, now),
+  );
 
   let guarded = 0;
   const candidates: Candidate[] = [];

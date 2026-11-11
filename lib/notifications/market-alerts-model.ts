@@ -93,6 +93,35 @@ export type PriceExtremes = {
   allTimeLow: number;
 };
 
+/** A bar-to-bar change in the adjustment factor beyond this is a split; smaller steps are dividends. */
+const SPLIT_FACTOR_STEP = 1.3;
+
+/**
+ * As-traded closes restated for splits only. Provider "adjusted" closes also take dividends out of
+ * history, which lowers past highs — a dividend payer would then "break" its all-time high while
+ * still below the price it actually traded at. Split steps are recovered from the adjusted/raw
+ * ratio: dividends move it by a few percent at most, splits by 2× or more.
+ */
+export function splitAdjustedCloses(
+  bars: readonly { date: string; close: number; adjustedClose: number }[],
+): CloseBar[] {
+  const n = bars.length;
+  const out = new Array<CloseBar>(n);
+  let factor = 1;
+  let nextRatio: number | null = null;
+  for (let i = n - 1; i >= 0; i--) {
+    const b = bars[i]!;
+    const ratio = b.close > 0 && b.adjustedClose > 0 ? b.adjustedClose / b.close : null;
+    if (ratio != null && nextRatio != null) {
+      const step = ratio / nextRatio;
+      if (step > SPLIT_FACTOR_STEP || step < 1 / SPLIT_FACTOR_STEP) factor *= step;
+    }
+    if (ratio != null) nextRatio = ratio;
+    out[i] = { date: b.date, close: b.close * factor };
+  }
+  return out;
+}
+
 /** A year of sessions — younger listings make every move a "record", so they get no high/low alerts. */
 export const MIN_BARS_FOR_EXTREMES = 250;
 
