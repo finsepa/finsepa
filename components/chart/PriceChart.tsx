@@ -484,15 +484,16 @@ const Y_AXIS_LABEL_COUNT = 6;
 
 const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
 
+/** Y-axis price label plus a faint gridline across the plot (fainter than the x-axis border line). */
 function yAxisLabelOnlyOptions(labelBg: string) {
   return {
-    color: "transparent",
+    color: resolveFsColorWithAlpha("--fs-stroke", 0.6),
     lineWidth: 1 as const,
     lineStyle: LineStyle.Solid,
     axisLabelVisible: true,
     axisLabelColor: labelBg,
     axisLabelTextColor: resolveFsColor("--fs-fg-muted"),
-    lineVisible: false,
+    lineVisible: true,
     title: "",
   };
 }
@@ -3694,6 +3695,8 @@ export function PriceChart({
           className={cn(
             "relative w-full shrink-0 overflow-visible",
             screenshotPreviewMode && "z-30",
+            // Labels from a half-loaded series flash behind the skeleton; keep the row height only.
+            showSkeleton && "invisible",
           )}
           style={{ height: axisRowPx }}
           aria-hidden={periodAxisLabels.length === 0 && !activeBottomAxisLabel}
