@@ -6,7 +6,6 @@ import {
   ColorType,
   CrosshairMode,
   HistogramSeries,
-  LineSeries,
   LineStyle,
   TickMarkType,
   createChart,
@@ -34,22 +33,14 @@ import { cn } from "@/lib/utils";
 
 const FONT_FAMILY = "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif";
 
-/** Room above the plot for the MA legend row. */
-const LEGEND_HEIGHT_PX = 22;
+/** Card height beyond `height`; the plot fills all of it. */
+const EXTRA_PLOT_HEIGHT_PX = 22;
 const VOLUME_PANE_PX = 72;
 /** Bybit-like muted volume — readable without competing with candles. */
 const VOLUME_BAR_ALPHA = 0.28;
-const VOLUME_MA_PERIOD = 20;
 /** Candles shown on first paint — older history stays one drag away. */
 const INITIAL_VISIBLE_BARS = 120;
 
-const MOVING_AVERAGES = [
-  { period: 5, color: "#F59E0B" },
-  { period: 10, color: "#A855F7" },
-  { period: 20, color: "#3B82F6" },
-  { period: 30, color: "#EC4899" },
-] as const;
-const VOLUME_MA_COLOR = "#F59E0B";
 
 /** Visible-range high/low callout — leader line points inward so edge candles never clip the price. */
 type HighLowLabel = { x: number; y: number; text: string; side: "left" | "right" };
@@ -93,18 +84,6 @@ function legendTime(sec: number, interval: CryptoCandleInterval): string {
   return formatTime(sec, { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
-/** Simple moving average of closes; `null` until enough candles exist. */
-function movingAverage(values: readonly number[], period: number): (number | null)[] {
-  const out: (number | null)[] = [];
-  let sum = 0;
-  for (let i = 0; i < values.length; i++) {
-    sum += values[i]!;
-    if (i >= period) sum -= values[i - period]!;
-    out.push(i >= period - 1 ? sum / period : null);
-  }
-  return out;
-}
-
 const INTERVAL_OPTIONS: readonly SegmentedControlOption<CryptoCandleInterval>[] = CRYPTO_CANDLE_INTERVALS.map(
   (value) => ({ value, label: value }),
 );
@@ -138,20 +117,6 @@ export function CryptoCandleIntervalControl({
   );
 }
 
-/** MA values for the hovered (or latest) candle, above the plot. */
-function MovingAverageLegend({ maValues }: { maValues: (number | null)[] }) {
-  return (
-    <div className="pointer-events-none absolute left-0 top-0 z-[11] flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[12px] leading-4">
-      <span className="text-fg-muted">MA({MOVING_AVERAGES.map((m) => m.period).join(",")})</span>
-      {MOVING_AVERAGES.map((ma, i) => (
-        <span key={ma.period} className="whitespace-nowrap tabular-nums" style={{ color: ma.color }}>
-          MA{ma.period}: {maValues[i] != null ? formatPrice(maValues[i]!) : "—"}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 export function CryptoCandleChart({
   symbol,
   interval,
@@ -171,13 +136,12 @@ export function CryptoCandleChart({
   const wrapRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const maSeriesRef = useRef<ISeriesApi<"Line">[]>([]);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
-  const volumeMaSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const candlesRef = useRef<OhlcBar[]>([]);
   const refreshHighLowRef = useRef<() => void>(() => {});
   const initialRangeKeyRef = useRef<string | null>(null);
 
+  const plotHeight = height + EXTRA_PLOT_HEIGHT_PX;
   const requestKey = `${symbol}|${interval}`;
   const [loaded, setLoaded] = useState<{ key: string; data: CryptoCandlesResponse | null } | null>(null);
   const [hoveredTime, setHoveredTime] = useState<number | null>(null);
@@ -241,16 +205,6 @@ export function CryptoCandleChart({
     ];
   }, [data, live, liveSpotUsd, liveQuotedAtSec, interval]);
 
-  const maLines = useMemo(() => {
-    const closes = candles.map((c) => c.close);
-    return MOVING_AVERAGES.map((ma) => movingAverage(closes, ma.period));
-  }, [candles]);
-
-  const volumeMa = useMemo(() => {
-    const volumes = candles.map((c) => c.volume ?? 0);
-    return movingAverage(volumes, VOLUME_MA_PERIOD);
-  }, [candles]);
-
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
@@ -261,7 +215,7 @@ export function CryptoCandleChart({
     const axisLabelBg = resolveFsColor("--fs-surface-muted");
     const chart = createChart(el, {
       width: Math.max(2, el.clientWidth),
-      height,
+      height: plotHeight,
       layout: {
         background: { type: ColorType.Solid, color: "#00000000" },
         textColor: resolveFsColor("--fs-fg-muted"),
@@ -338,16 +292,6 @@ export function CryptoCandleChart({
       lastValueVisible: true,
     });
 
-    maSeriesRef.current = MOVING_AVERAGES.map((ma) =>
-      chart.addSeries(LineSeries, {
-        color: ma.color,
-        lineWidth: 1,
-        priceLineVisible: false,
-        lastValueVisible: false,
-        crosshairMarkerVisible: false,
-      }),
-    );
-
     const volumePriceFormat = {
       type: "custom" as const,
       minMove: 1,
@@ -356,18 +300,6 @@ export function CryptoCandleChart({
     const volumeSeries = chart.addSeries(
       HistogramSeries,
       { priceFormat: volumePriceFormat, priceLineVisible: false, lastValueVisible: false },
-      1,
-    );
-    const volumeMaSeries = chart.addSeries(
-      LineSeries,
-      {
-        color: VOLUME_MA_COLOR,
-        lineWidth: 1,
-        priceFormat: volumePriceFormat,
-        priceLineVisible: false,
-        lastValueVisible: false,
-        crosshairMarkerVisible: false,
-      },
       1,
     );
     const volumePane = chart.panes()[1];
@@ -439,7 +371,6 @@ export function CryptoCandleChart({
     chartRef.current = chart;
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
-    volumeMaSeriesRef.current = volumeMaSeries;
     return () => {
       setHoveredTime(null);
       setHighLow(null);
@@ -454,19 +385,16 @@ export function CryptoCandleChart({
       chart.remove();
       chartRef.current = null;
       candleSeriesRef.current = null;
-      maSeriesRef.current = [];
       volumeSeriesRef.current = null;
-      volumeMaSeriesRef.current = null;
       initialRangeKeyRef.current = null;
     };
-  }, [height, interval]);
+  }, [plotHeight, interval]);
 
   useEffect(() => {
     const chart = chartRef.current;
     const candleSeries = candleSeriesRef.current;
     const volumeSeries = volumeSeriesRef.current;
-    const volumeMaSeries = volumeMaSeriesRef.current;
-    if (!chart || !candleSeries || !volumeSeries || !volumeMaSeries) return;
+    if (!chart || !candleSeries || !volumeSeries) return;
 
     candlesRef.current = candles;
     const refClose = candles.at(-1)?.close ?? candles[0]?.close ?? 1;
@@ -474,14 +402,6 @@ export function CryptoCandleChart({
     candleSeries.setData(
       candles.map((c) => ({ time: c.time as UTCTimestamp, open: c.open, high: c.high, low: c.low, close: c.close })),
     );
-    maSeriesRef.current.forEach((series, i) => {
-      const values = maLines[i] ?? [];
-      series.setData(
-        candles.map((c, j) =>
-          values[j] != null ? { time: c.time as UTCTimestamp, value: values[j]! } : { time: c.time as UTCTimestamp },
-        ),
-      );
-    });
 
     const volumeUp = resolveFsColorWithAlpha("--fs-up", VOLUME_BAR_ALPHA);
     const volumeDown = resolveFsColorWithAlpha("--fs-down", VOLUME_BAR_ALPHA);
@@ -489,13 +409,6 @@ export function CryptoCandleChart({
       candles.map((c) =>
         c.volume != null
           ? { time: c.time as UTCTimestamp, value: c.volume, color: c.close >= c.open ? volumeUp : volumeDown }
-          : { time: c.time as UTCTimestamp },
-      ),
-    );
-    volumeMaSeries.setData(
-      candles.map((c, j) =>
-        volumeMa[j] != null && c.volume != null
-          ? { time: c.time as UTCTimestamp, value: volumeMa[j]! }
           : { time: c.time as UTCTimestamp },
       ),
     );
@@ -509,24 +422,21 @@ export function CryptoCandleChart({
       initialRangeKeyRef.current = requestKey;
     }
     refreshHighLowRef.current();
-  }, [candles, maLines, volumeMa, requestKey]);
+  }, [candles, requestKey]);
 
   const hoveredIndex = hoveredTime != null ? candles.findIndex((c) => c.time === hoveredTime) : -1;
   const legendIndex = hoveredIndex >= 0 ? hoveredIndex : candles.length - 1;
   const legendCandle = legendIndex >= 0 ? candles[legendIndex] : undefined;
-  const legendMa = maLines.map((values) => values[legendIndex] ?? null);
   const legendVolume = legendCandle?.volume;
-  const legendVolumeMa = legendIndex >= 0 ? volumeMa[legendIndex] : null;
 
   return (
-    <div className="relative w-full" style={{ height: height + LEGEND_HEIGHT_PX }}>
-      {legendCandle && !loading ? <MovingAverageLegend maValues={legendMa} /> : null}
+    <div className="relative w-full" style={{ height: plotHeight }}>
       <div
         className={cn("pointer-events-none absolute inset-x-0 bottom-0 z-0", CHART_PLOT_BACKGROUND_CLASS)}
-        style={{ height }}
+        style={{ height: plotHeight }}
         aria-hidden
       />
-      <div ref={wrapRef} className="absolute inset-x-0 bottom-0 z-10" style={{ height }} />
+      <div ref={wrapRef} className="absolute inset-x-0 bottom-0 z-10" style={{ height: plotHeight }} />
       {!loading && highLow
         ? (["high", "low"] as const).map((key) => {
             const label = highLow[key];
@@ -539,7 +449,7 @@ export function CryptoCandleChart({
                 label.side === "left" && "flex-row-reverse",
               )}
               style={{
-                top: LEGEND_HEIGHT_PX + label.y,
+                top: label.y,
                 left: label.x,
                 transform: `translate(${label.side === "left" ? "-100%" : "0"}, -50%)`,
               }}
@@ -553,19 +463,16 @@ export function CryptoCandleChart({
       {!loading && volumeLegendTop != null && candles.length > 0 ? (
         <div
           className="pointer-events-none absolute left-0 z-[11] flex items-center gap-3 text-[12px] leading-4"
-          style={{ top: LEGEND_HEIGHT_PX + volumeLegendTop + 4 }}
+          style={{ top: volumeLegendTop + 4 }}
         >
           <span className="text-fg-muted">
             Volume <span className="tabular-nums text-fg">{legendVolume != null ? volumeFormatter.format(legendVolume) : "—"}</span>
-          </span>
-          <span className="tabular-nums" style={{ color: VOLUME_MA_COLOR }}>
-            MA{VOLUME_MA_PERIOD}: {legendVolumeMa != null && legendVolume != null ? volumeFormatter.format(legendVolumeMa) : "—"}
           </span>
         </div>
       ) : null}
       {loading ? (
         <div className="absolute inset-0 z-10">
-          <AssetChartSkeleton heightPx={height + LEGEND_HEIGHT_PX} className="h-full" />
+          <AssetChartSkeleton heightPx={plotHeight} className="h-full" />
         </div>
       ) : candles.length === 0 ? (
         <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-fg-muted">
