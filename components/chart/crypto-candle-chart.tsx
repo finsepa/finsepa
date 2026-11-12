@@ -42,6 +42,12 @@ const VOLUME_BAR_ALPHA = 0.28;
 const INITIAL_VISIBLE_BARS = 120;
 
 
+/**
+ * Empty future slots after the last candle. Lightweight-charts only draws vertical grid lines and
+ * time labels at data points, so without these the grid stops at the last candle.
+ */
+const FUTURE_WHITESPACE_BARS = 300;
+
 /** Visible-range high/low callout — leader line points inward so edge candles never clip the price. */
 type HighLowLabel = { x: number; y: number; text: string; side: "left" | "right" };
 
@@ -60,6 +66,21 @@ function bucketStart(sec: number, interval: CryptoCandleInterval): number {
   const size = BUCKET_SEC[interval];
   if (interval === "1W") return Math.floor((sec - WEEK_ANCHOR_SEC) / size) * size + WEEK_ANCHOR_SEC;
   return Math.floor(sec / size) * size;
+}
+
+function futureWhitespace(lastTime: number, interval: CryptoCandleInterval): { time: UTCTimestamp }[] {
+  const step = BUCKET_SEC[interval];
+  return Array.from({ length: FUTURE_WHITESPACE_BARS }, (_, i) => ({
+    time: (lastTime + step * (i + 1)) as UTCTimestamp,
+  }));
+}
+
+/** Latest candles plus a little room on the right (not the far end of the future whitespace). */
+function showLatestCandles(chart: IChartApi, candleCount: number) {
+  chart.timeScale().setVisibleLogicalRange({
+    from: Math.max(0, candleCount - INITIAL_VISIBLE_BARS),
+    to: candleCount - 1 + 4,
+  });
 }
 
 function refreshMs(interval: CryptoCandleInterval, live: boolean): number | null {
@@ -348,10 +369,19 @@ export function CryptoCandleChart({
       if (e.buttons) refreshHighLowRef.current();
     };
     const onScaleGesture = () => refreshHighLowRef.current();
+    // Axis double-click resets to the series end, which is now the far edge of the future whitespace.
+    const onDoubleClick = () => {
+      requestAnimationFrame(() => {
+        const count = candlesRef.current.length;
+        const range = chart.timeScale().getVisibleLogicalRange();
+        if (count && range && range.from > count - 1) showLatestCandles(chart, count);
+        refreshHighLowRef.current();
+      });
+    };
     el.addEventListener("pointermove", onPointerMove);
     el.addEventListener("pointerup", onScaleGesture);
     el.addEventListener("wheel", onScaleGesture, { passive: true });
-    el.addEventListener("dblclick", onScaleGesture);
+    el.addEventListener("dblclick", onDoubleClick);
 
     chart.subscribeCrosshairMove((param) => {
       setHoveredTime(param.time != null && param.seriesData.get(candleSeries) ? (param.time as number) : null);
@@ -381,7 +411,7 @@ export function CryptoCandleChart({
       el.removeEventListener("pointermove", onPointerMove);
       el.removeEventListener("pointerup", onScaleGesture);
       el.removeEventListener("wheel", onScaleGesture);
-      el.removeEventListener("dblclick", onScaleGesture);
+      el.removeEventListener("dblclick", onDoubleClick);
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(updateHighLow);
       refreshHighLowRef.current = () => {};
       chart.remove();
@@ -401,9 +431,11 @@ export function CryptoCandleChart({
     candlesRef.current = candles;
     const refClose = candles.at(-1)?.close ?? candles[0]?.close ?? 1;
     candleSeries.applyOptions({ priceFormat: cryptoUsdPriceFormat(refClose, formatPrice) });
-    candleSeries.setData(
-      candles.map((c) => ({ time: c.time as UTCTimestamp, open: c.open, high: c.high, low: c.low, close: c.close })),
-    );
+    const last = candles.at(-1);
+    candleSeries.setData([
+      ...candles.map((c) => ({ time: c.time as UTCTimestamp, open: c.open, high: c.high, low: c.low, close: c.close })),
+      ...(last ? futureWhitespace(last.time, interval) : []),
+    ]);
 
     const volumeUp = resolveFsColorWithAlpha("--fs-up", VOLUME_BAR_ALPHA);
     const volumeDown = resolveFsColorWithAlpha("--fs-down", VOLUME_BAR_ALPHA);
@@ -415,16 +447,12 @@ export function CryptoCandleChart({
       ),
     );
 
-    const timeScale = chart.timeScale();
     if (candles.length && initialRangeKeyRef.current !== requestKey) {
-      timeScale.setVisibleLogicalRange({
-        from: Math.max(0, candles.length - INITIAL_VISIBLE_BARS),
-        to: candles.length - 1 + 4,
-      });
+      showLatestCandles(chart, candles.length);
       initialRangeKeyRef.current = requestKey;
     }
     refreshHighLowRef.current();
-  }, [candles, requestKey]);
+  }, [candles, requestKey, interval]);
 
   const hoveredIndex = hoveredTime != null ? candles.findIndex((c) => c.time === hoveredTime) : -1;
   const legendIndex = hoveredIndex >= 0 ? hoveredIndex : candles.length - 1;
