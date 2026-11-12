@@ -174,11 +174,31 @@ export function overviewCrosshairShowsDateTime(range: StockChartRange): boolean 
   );
 }
 
+/** `Intl.DateTimeFormat` construction is slow; per-bar callers run over hundreds of points. */
+const cachedDateFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function cachedIntlDateFormat(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale}|${JSON.stringify(options)}`;
+  let f = cachedDateFormatters.get(key);
+  if (!f) {
+    f = new Intl.DateTimeFormat(locale, options);
+    cachedDateFormatters.set(key, f);
+  }
+  return f;
+}
+
+function cachedDateFormatter(
+  locale: string,
+  timeZone: string,
+  options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  return cachedIntlDateFormat(locale, { ...options, timeZone });
+}
+
 function sessionDayKeyForPoint(p: StockChartPoint, timeZone: string): string {
   const sd = p.sessionDate?.trim();
   if (sd) return sd;
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone,
+  return cachedDateFormatter("en-CA", timeZone, {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -192,7 +212,7 @@ function formatOverviewAxisWeekdayLabel(p: StockChartPoint, timeZone: string): s
       new Date(Date.parse(`${sd}T12:00:00.000Z`))
     : new Date(p.time * 1000);
   if (!Number.isFinite(d.getTime())) return "";
-  return new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone }).format(d);
+  return cachedIntlDateFormat("en-US", { weekday: "short", timeZone }).format(d);
 }
 
 /**
@@ -406,7 +426,7 @@ function sessionWeekBucketKey(unix: number, timeZone: string): string {
   const [y, m, d] = ymd.split("-").map((x) => Number(x));
   if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return ymd;
   const anchorMs = Date.UTC(y, m - 1, d, 12, 0, 0);
-  const wd = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short" }).format(new Date(anchorMs));
+  const wd = cachedIntlDateFormat("en-US", { timeZone, weekday: "short" }).format(new Date(anchorMs));
   const dow =
     wd.startsWith("Mon") ? 1
     : wd.startsWith("Tue") ? 2
@@ -416,7 +436,7 @@ function sessionWeekBucketKey(unix: number, timeZone: string): string {
     : wd.startsWith("Sat") ? 6
     : 0;
   const mondayMs = anchorMs - ((dow + 6) % 7) * 86400_000;
-  return new Intl.DateTimeFormat("en-CA", {
+  return cachedIntlDateFormat("en-CA", {
     timeZone,
     year: "numeric",
     month: "2-digit",
@@ -440,7 +460,7 @@ function overviewAxisShows1MWeeklyLabel(
 function formatOverviewAxisWeeklyLabel(unix: number, timeZone: string): string {
   const d = new Date(unix * 1000);
   if (!Number.isFinite(d.getTime())) return "";
-  return new Intl.DateTimeFormat("en-US", {
+  return cachedIntlDateFormat("en-US", {
     month: "short",
     day: "numeric",
     timeZone,
@@ -449,7 +469,7 @@ function formatOverviewAxisWeeklyLabel(unix: number, timeZone: string): string {
 
 /** `YYYY-MM` in the chart display timezone (6M / YTD idle axis — one label per month). */
 function sessionMonthBucketKey(unix: number, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
+  const parts = cachedIntlDateFormat("en-US", {
     timeZone,
     year: "numeric",
     month: "2-digit",
@@ -475,11 +495,11 @@ function overviewAxisShowsMonthlySlotLabel(
 function formatOverviewAxisMonthlyLabel(unix: number, timeZone: string): string {
   const d = new Date(unix * 1000);
   if (!Number.isFinite(d.getTime())) return "";
-  return new Intl.DateTimeFormat("en-US", { month: "short", timeZone }).format(d);
+  return cachedIntlDateFormat("en-US", { month: "short", timeZone }).format(d);
 }
 
 function sessionYearBucketKey(unix: number, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
+  const parts = cachedIntlDateFormat("en-US", {
     timeZone,
     year: "numeric",
   }).formatToParts(new Date(unix * 1000));
@@ -644,7 +664,7 @@ function buildTriMonthlyAxisLabelIndices(
 
 /** Hour bucket in the chart display timezone (1D idle axis — one label per hour). */
 function sessionHourBucketKey(unix: number, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
+  const parts = cachedIntlDateFormat("en-US", {
     timeZone,
     year: "numeric",
     month: "2-digit",
@@ -816,7 +836,7 @@ function cryptoLive1DAxisHourStep(
 const CRYPTO_1D_TICK_MAX_OFFSET_SEC = 5 * 60;
 
 function secondsIntoHour(unix: number, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
+  const parts = cachedIntlDateFormat("en-US", {
     timeZone,
     minute: "2-digit",
     second: "2-digit",
@@ -868,7 +888,7 @@ export function buildCryptoLive1DAxisLabels(
 
 /** Idle 1D axis: compact hour ticks like `10AM`, `12PM` (position = first bar in that hour). */
 function formatOverviewAxisHourTickLabel(unix: number, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat("en-US", {
+  const parts = cachedIntlDateFormat("en-US", {
     timeZone,
     hour: "numeric",
     hour12: true,
@@ -930,7 +950,7 @@ function formatOverviewAxisIdleLabel(
     return String(d.getFullYear());
   }
   if (d.getMonth() !== prev.getMonth() || d.getDate() === 1) {
-    return new Intl.DateTimeFormat("en-US", { month: "short", timeZone }).format(d);
+    return cachedIntlDateFormat("en-US", { month: "short", timeZone }).format(d);
   }
   return String(d.getDate());
 }
@@ -938,17 +958,15 @@ function formatOverviewAxisIdleLabel(
 function formatOverviewCrosshairBottomDateAtTime(unix: number, timeZone: string): string {
   const d = new Date(unix * 1000);
   if (!Number.isFinite(d.getTime())) return "";
-  const dateStr = new Intl.DateTimeFormat("en-US", {
+  const dateStr = cachedDateFormatter("en-US", timeZone, {
     month: "short",
     day: "numeric",
     year: "numeric",
-    timeZone,
   }).format(d);
-  const timeStr = new Intl.DateTimeFormat("en-US", {
+  const timeStr = cachedDateFormatter("en-US", timeZone, {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-    timeZone,
   }).format(d);
   return `${dateStr} at ${timeStr}`;
 }
@@ -959,7 +977,7 @@ export function formatOverviewCrosshairBottomDate(unix: number, timeZone: string
   }
   const d = new Date(unix * 1000);
   if (!Number.isFinite(d.getTime())) return "";
-  return new Intl.DateTimeFormat("en-US", {
+  return cachedIntlDateFormat("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -974,14 +992,28 @@ export function formatTwoSlotDayCrosshairLabelForPoint(
   range: StockChartRange,
 ): string {
   const dayKey = sessionDayKeyForPoint(point, timeZone);
-  const dayPts = points
-    .filter((p) => isFiniteNumber(p.time) && sessionDayKeyForPoint(p, timeZone) === dayKey)
-    .sort((a, b) => a.time - b.time);
+  let first = Infinity;
+  let last = -Infinity;
+  let count = 0;
+  for (const p of points) {
+    if (!isFiniteNumber(p.time) || sessionDayKeyForPoint(p, timeZone) !== dayKey) continue;
+    count++;
+    if (p.time < first) first = p.time;
+    if (p.time > last) last = p.time;
+  }
+  return twoSlotDayCrosshairLabel(point, dayKey, { first, last, count }, timeZone);
+}
+
+type SessionDaySpan = { first: number; last: number; count: number };
+
+function twoSlotDayCrosshairLabel(
+  point: StockChartPoint,
+  dayKey: string,
+  span: SessionDaySpan,
+  timeZone: string,
+): string {
   const ymd = point.sessionDate?.trim() || dayKey;
-  const afternoon =
-    dayPts.length >= 2 &&
-    point.time === dayPts[dayPts.length - 1]!.time &&
-    point.time !== dayPts[0]!.time;
+  const afternoon = span.count >= 2 && point.time === span.last && point.time !== span.first;
   const displayUnix = afternoon
     ? usSessionWallClockUnix(ymd, 13, 30, timeZone)
     : usSessionWallClockUnix(ymd, 9, 30, timeZone);
@@ -992,13 +1024,27 @@ export function formatTwoSlotDayCrosshairLabelForPoint(
 export function buildTwoSlotDayCrosshairLabelByBarTime(
   points: readonly StockChartPoint[],
   timeZone: string,
-  range: StockChartRange,
+  _range: StockChartRange,
 ): Map<number, string> {
+  const valid = points.filter((p) => isFiniteNumber(p.time));
+  const dayKeys = valid.map((p) => sessionDayKeyForPoint(p, timeZone));
+  const spans = new Map<string, SessionDaySpan>();
+  valid.forEach((p, i) => {
+    const key = dayKeys[i]!;
+    const span = spans.get(key);
+    if (!span) {
+      spans.set(key, { first: p.time, last: p.time, count: 1 });
+    } else {
+      span.count++;
+      if (p.time < span.first) span.first = p.time;
+      if (p.time > span.last) span.last = p.time;
+    }
+  });
   const out = new Map<number, string>();
-  for (const p of points) {
-    if (!isFiniteNumber(p.time)) continue;
-    out.set(p.time, formatTwoSlotDayCrosshairLabelForPoint(p, points, timeZone, range));
-  }
+  valid.forEach((p, i) => {
+    const key = dayKeys[i]!;
+    out.set(p.time, twoSlotDayCrosshairLabel(p, key, spans.get(key)!, timeZone));
+  });
   return out;
 }
 
