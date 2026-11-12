@@ -83,6 +83,7 @@ import { isStock1DLiveMinuteChartTicker, usesStock1DLiveWsMinutePipeline, usesSt
 import { isCryptoLive1DSymbol, usesCryptoLogPriceScale } from "@/lib/market/crypto-live-1d-tickers";
 import { pinCryptoLive1DChartTip } from "@/lib/chart/crypto-live-1d-chart-tip";
 import { clearPriceGridlines, priceGridlinesFor } from "@/lib/chart/price-gridlines-primitive";
+import { clearDashedPriceLine, dashedPriceLineFor } from "@/lib/chart/dashed-price-line-primitive";
 import {
   hollowInBarCircleMarkers,
   scheduleScaledInBarMarkers,
@@ -478,7 +479,9 @@ function applyLiveSessionSeriesPriceLineOptions(
 const HOLDINGS_QUARTER_BAND_HEIGHT_RATIO = 0.14;
 const HOLDINGS_EARLIER_BAND_WIDTH_PX = 58;
 const HOLDINGS_EARLIER_BAND_HEIGHT = "42%";
-const BASELINE_LINE = "rgba(113, 113, 122, 0.55)";
+const BASELINE_LINE = "rgba(113, 113, 122, 0.58)";
+/** Baseline dash and gap length (LWC `LargeDashed` is 6px; ~10% more dashes). */
+const BASELINE_DASH_PX = 5.5;
 
 /** Plain right-axis price labels (no horizontal rules). Panel fill so pills match chart backdrop. */
 const Y_AXIS_LABEL_COUNT = 6;
@@ -2924,6 +2927,7 @@ export function PriceChart({
       if (baselinePriceLineRef.current) {
         try {
           bundle.mid.removePriceLine(baselinePriceLineRef.current);
+          clearDashedPriceLine(bundle.mid);
         } catch {
           /* ignore */
         }
@@ -2948,6 +2952,7 @@ export function PriceChart({
       if (baselinePriceLineRef.current) {
         try {
           s.removePriceLine(baselinePriceLineRef.current);
+          clearDashedPriceLine(s);
         } catch {
           /* ignore */
         }
@@ -3082,12 +3087,13 @@ export function PriceChart({
           lineWidth: 1,
           lineStyle: LineStyle.LargeDashed,
           axisLabelVisible: false,
-          lineVisible: true,
+          lineVisible: false,
         });
         baselinePriceLineRef.current = bl;
       } else {
         bl.applyOptions({ price: open });
       }
+      dashedPriceLineFor(series).setLine(open, BASELINE_LINE, BASELINE_DASH_PX);
       holdingsFillUnderlayRef.current?.setData(data);
       series.setData(data);
       fitContentWithMobilePlotGutter(
@@ -3277,12 +3283,13 @@ export function PriceChart({
         lineWidth: 1,
         lineStyle: LineStyle.LargeDashed,
         axisLabelVisible: false,
-        lineVisible: true,
+        lineVisible: false,
       });
       baselinePriceLineRef.current = bl;
     } else {
       bl.applyOptions({ price: open });
     }
+    dashedPriceLineFor(single).setLine(open, BASELINE_LINE, BASELINE_DASH_PX);
 
     const lastValued = [...data]
       .reverse()
