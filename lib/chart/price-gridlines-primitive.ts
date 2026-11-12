@@ -62,8 +62,10 @@ export class PriceGridlinesPrimitive implements ISeriesPrimitive<Time> {
           const y = series.priceToCoordinate(price);
           if (y == null || !Number.isFinite(y)) continue;
           const top = Math.round(y * verticalPixelRatio) - Math.floor(lineHeight / 2);
-          if (top < 0 || top >= bitmapSize.height) continue;
-          context.fillRect(0, top, bitmapSize.width, lineHeight);
+          // Outer axis numbers sit exactly on the pane edges — clamp those lines inside, skip the rest.
+          if (top < -lineHeight || top > bitmapSize.height) continue;
+          const clampedTop = Math.min(Math.max(0, top), bitmapSize.height - lineHeight);
+          context.fillRect(0, clampedTop, bitmapSize.width, lineHeight);
         }
       });
     },
