@@ -704,6 +704,7 @@ export function CryptoPageContent({
               }
               liveSpotUsd={range === "1D" ? cryptoLiveWsTipSpot : null}
               liveQuotedAtSec={range === "1D" ? cryptoLiveWsTipQuotedAtSec : null}
+              livePriceBadgeUsd={isLiveCrypto ? headerLiveSpotClient : null}
             />
             </div>
             {showCandles ? (

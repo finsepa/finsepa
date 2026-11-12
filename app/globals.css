@@ -485,41 +485,6 @@
     radial-gradient(circle, var(--fs-chart-dot) 1px, transparent 1px);
 }
 
-/** Live last-point dot on 24/7 charts: solid dot plus an expanding ring (`currentColor`). */
-.chart-live-dot {
-  width: 8px;
-  height: 8px;
-  margin: -4px 0 0 -4px;
-  border-radius: 9999px;
-  background: currentColor;
-}
-
-.chart-live-dot::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: currentColor;
-  animation: chart-live-dot-pulse 1.6s ease-out infinite;
-}
-
-@keyframes chart-live-dot-pulse {
-  from {
-    transform: scale(1);
-    opacity: 0.5;
-  }
-  to {
-    transform: scale(3.2);
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .chart-live-dot::after {
-    animation: none;
-  }
-}
-
 /** Overlay vignette (no mask) for html-to-image / screenshot export. */
 .chart-plot-dots--export {
   pointer-events: none;

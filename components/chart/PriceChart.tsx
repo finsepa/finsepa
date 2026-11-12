@@ -388,6 +388,8 @@ type Props = {
    * Crypto 24H + stock live-WS allowlist: pin only the chart tip to match the header.
    */
   liveQuotedAtSec?: number | null;
+  /** Crypto: header live price, drawn as the up/down right-axis badge on every range. */
+  livePriceBadgeUsd?: number | null;
   /** Frozen AH quote timestamp (20:00 ET cap) — post-market allowlist chart tail only. */
   livePostMarketTailTimeUnix?: number | null;
   /**
@@ -532,6 +534,52 @@ function removeScaleBoundsPriceLines(
       /* ignore */
     }
     bottomRef.current = null;
+  }
+}
+
+type LivePriceBadgeLine = { series: MainPriceSeries; line: IPriceLine };
+
+function removeLivePriceBadgeLine(ref: RefObject<LivePriceBadgeLine | null>) {
+  const cur = ref.current;
+  if (!cur) return;
+  try {
+    cur.series.removePriceLine(cur.line);
+  } catch {
+    /* series already removed */
+  }
+  ref.current = null;
+}
+
+/** Right-axis tag at the live price, green/red vs the baseline like the line itself. */
+function syncLivePriceBadgeLine(
+  ref: RefObject<LivePriceBadgeLine | null>,
+  series: MainPriceSeries | null,
+  price: number | null,
+) {
+  if (!series || price == null || !Number.isFinite(price) || price <= 0) {
+    removeLivePriceBadgeLine(ref);
+    return;
+  }
+  if (ref.current && ref.current.series !== series) removeLivePriceBadgeLine(ref);
+  const base = (series.options() as { baseValue?: { price?: number } }).baseValue?.price;
+  const color =
+    base != null && Number.isFinite(base) && price < base
+      ? resolveFsColor("--fs-down")
+      : resolveFsColor("--fs-up");
+  const opts = {
+    price,
+    color,
+    lineWidth: 1 as const,
+    lineStyle: LineStyle.Solid,
+    lineVisible: false,
+    axisLabelVisible: true,
+    axisLabelColor: color,
+    title: "",
+  };
+  if (ref.current) {
+    ref.current.line.applyOptions(opts);
+  } else {
+    ref.current = { series, line: series.createPriceLine(opts) };
   }
 }
 
@@ -702,7 +750,7 @@ function overviewBaselineOptions(
     ...(hideLastValueTag
       ? { priceFormat: cryptoUsdPriceFormat(open > 0 ? open : 1, formatCryptoUsdAxis) }
       : {}),
-    // Crypto draws its live-tip pulse as a DOM overlay (the canvas clips it at the pane edge).
+    // Crypto shows the header's live price as an axis badge instead (`livePriceBadgeUsd`).
     lastPriceAnimation:
       lightweight || hideLastValueTag
         ? LastPriceAnimationMode.Disabled
@@ -922,6 +970,7 @@ export function PriceChart({
   liveSessionMinute: liveSessionMinuteProp,
   liveSpotUsd = null,
   liveQuotedAtSec = null,
+  livePriceBadgeUsd = null,
   livePostMarketTailTimeUnix = null,
   holdingsStyle = false,
   holdingsPlotBackdrop = "panel",
@@ -1237,8 +1286,9 @@ export function PriceChart({
   const [containerWidth, setContainerWidth] = useState(0);
   const [rangeOpenBadge, setRangeOpenBadge] = useState<RangeChartPriceBadge | null>(null);
   const [rangeHighBadge, setRangeHighBadge] = useState<RangeChartPriceBadge | null>(null);
-  /** Crypto live tip (24/7): pulsing dot as a DOM overlay so it can overhang the pane edge. */
-  const [liveTipDot, setLiveTipDot] = useState<{ left: number; top: number; up: boolean } | null>(null);
+  const livePriceBadgeUsdRef = useRef(livePriceBadgeUsd);
+  livePriceBadgeUsdRef.current = livePriceBadgeUsd;
+  const livePriceBadgeLineRef = useRef<LivePriceBadgeLine | null>(null);
   const [periodAxisLabels, setPeriodAxisLabels] = useState<OverviewAxisLabel[]>([]);
   const periodAxisLabelsRef = useRef<OverviewAxisLabel[]>([]);
   const [hoverAxisLabel, setHoverAxisLabel] = useState<{ leftPx: number; label: string } | null>(
@@ -1327,6 +1377,35 @@ export function PriceChart({
   useEffect(() => {
     liveSpotUsdRef.current = liveSpotUsd;
   }, [liveSpotUsd]);
+
+  const syncLivePriceBadgeRef = useRef<() => void>(() => {});
+  syncLivePriceBadgeRef.current = () => {
+    const s = seriesRef.current;
+    const show =
+      kindRef.current === "crypto" &&
+      !holdingsStyleRef.current &&
+      chartMetricSeriesRef.current === "price" &&
+      !hideMobileYAxisLabelsRef.current &&
+      (!screenshotPreviewModeRef.current || screenshotShowVerticalLegendRef.current);
+    if (!show) {
+      removeLivePriceBadgeLine(livePriceBadgeLineRef);
+      return;
+    }
+    let price = livePriceBadgeUsdRef.current;
+    if (price == null || !Number.isFinite(price) || price <= 0) {
+      const pts = pointsRef.current;
+      for (let i = pts.length - 1; i >= 0; i--) {
+        if (isFiniteNumber(pts[i]!.value)) {
+          price = pts[i]!.value;
+          break;
+        }
+      }
+    }
+    syncLivePriceBadgeLine(livePriceBadgeLineRef, s, price ?? null);
+  };
+  useEffect(() => {
+    syncLivePriceBadgeRef.current();
+  }, [livePriceBadgeUsd]);
 
   const periodAxisSyncOptions = useMemo(
     (): OverviewPeriodAxisSyncOptions => ({
@@ -1604,6 +1683,7 @@ export function PriceChart({
       } else {
         removeYAxisTickLabels(series, yAxisTickLinesRef);
       }
+      syncLivePriceBadgeRef.current();
       if (pointsRef.current.some((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value))) {
         fitChartTimeScale(chart, containerWidth, pointsRef.current.length);
       }
@@ -2386,21 +2466,7 @@ export function PriceChart({
         );
       }
 
-      const last = pts[pts.length - 1];
-      let tip: { left: number; top: number; up: boolean } | null = null;
-      if (kindRef.current === "crypto" && last) {
-        const x = chart.timeScale().timeToCoordinate(last.time as UTCTimestamp);
-        const y = s.priceToCoordinate(last.value);
-        const base = (s.options() as { baseValue?: { price?: number } }).baseValue?.price ?? first.value;
-        if (x != null && y != null && Number.isFinite(x) && Number.isFinite(y)) {
-          tip = { left: Math.round(x), top: Math.round(y), up: last.value >= base };
-        }
-      }
-      setLiveTipDot((prev) =>
-        prev && tip && prev.left === tip.left && prev.top === tip.top && prev.up === tip.up
-          ? prev
-          : tip,
-      );
+      syncLivePriceBadgeRef.current();
     };
     const syncBoundsLines = () => {
       const c = chartRef.current;
@@ -3639,17 +3705,6 @@ export function PriceChart({
               </div>
             ))
         : null}
-      {kind === "crypto" && !holdingsStyle && !showSkeleton && !loading && ready && !screenshotPreviewMode && liveTipDot ? (
-        <span
-          aria-hidden
-          className="chart-live-dot pointer-events-none absolute z-20"
-          style={{
-            left: liveTipDot.left,
-            top: liveTipDot.top,
-            color: liveTipDot.up ? "var(--color-up)" : "var(--color-down)",
-          }}
-        />
-      ) : null}
       {!holdingsStyle &&
       !screenshotPreviewMode &&
       !useMobileOverviewCrosshair &&
