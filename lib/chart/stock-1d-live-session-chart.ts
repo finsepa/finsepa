@@ -1310,16 +1310,11 @@ export function fitOverviewChartTimeScale(
   const neededBarSpacing =
     logicalPointCount > 1 && plotWidthPx > 0 ? plotWidthPx / logicalPointCount : 6;
   const minBarSpacing = Math.min(0.5, Math.max(0.02, neededBarSpacing));
-  const liveCryptoTip = ctx.kind === "crypto" && !ctx.holdingsStyle;
   chart.timeScale().applyOptions({
     ...mobileTimeScaleOptions(containerWidthPx),
-    ...(liveCryptoTip ? { fixRightEdge: false, rightOffsetPixels: CRYPTO_LIVE_TIP_RIGHT_PAD_PX } : {}),
     lockVisibleTimeRangeOnResize: false,
     barSpacing: 6,
     minBarSpacing,
   });
   fitContentWithMobilePlotGutter(chart, containerWidthPx, logicalPointCount);
 }
-
-/** Room for the continuous last-price pulse — flush to the pane edge, half the ring is clipped. */
-const CRYPTO_LIVE_TIP_RIGHT_PAD_PX = 14;

@@ -692,11 +692,10 @@ function overviewBaselineOptions(
     ...(hideLastValueTag
       ? { priceFormat: cryptoUsdPriceFormat(open > 0 ? open : 1, formatCryptoUsdAxis) }
       : {}),
-    // Crypto trades 24/7, so its tip is always live: pulse continuously. Stocks pulse on live updates.
-    lastPriceAnimation: lightweight
-      ? LastPriceAnimationMode.Disabled
-      : hideLastValueTag
-        ? LastPriceAnimationMode.Continuous
+    // Crypto draws its live-tip pulse as a DOM overlay (the canvas clips it at the pane edge).
+    lastPriceAnimation:
+      lightweight || hideLastValueTag
+        ? LastPriceAnimationMode.Disabled
         : LastPriceAnimationMode.OnDataUpdate,
   };
   if (variant === "bright") {
@@ -1228,6 +1227,8 @@ export function PriceChart({
   const [containerWidth, setContainerWidth] = useState(0);
   const [rangeOpenBadge, setRangeOpenBadge] = useState<RangeChartPriceBadge | null>(null);
   const [rangeHighBadge, setRangeHighBadge] = useState<RangeChartPriceBadge | null>(null);
+  /** Crypto live tip (24/7): pulsing dot as a DOM overlay so it can overhang the pane edge. */
+  const [liveTipDot, setLiveTipDot] = useState<{ left: number; top: number; up: boolean } | null>(null);
   const [periodAxisLabels, setPeriodAxisLabels] = useState<OverviewAxisLabel[]>([]);
   /** Plot pane width (excludes the price scale) — the axis line stops where the plot does. */
   const [axisLinePlotWidthPx, setAxisLinePlotWidthPx] = useState(0);
@@ -1561,15 +1562,14 @@ export function PriceChart({
           lastValueVisible: !hide && kindRef.current !== "crypto",
           relativeGradient: relGrad,
           lineType: LineType.Simple,
-          lastPriceAnimation: hide
-            ? LastPriceAnimationMode.Disabled
-            : kindRef.current === "crypto"
-              ? LastPriceAnimationMode.Continuous
-              : stock1DUsesLiveSessionClock(new Date(), {
-                    liveSessionMinute: liveSessionMinuteRef.current,
-                  })
-                ? LastPriceAnimationMode.OnDataUpdate
-                : LastPriceAnimationMode.Disabled,
+          lastPriceAnimation:
+            hide ||
+            kindRef.current === "crypto" ||
+            !stock1DUsesLiveSessionClock(new Date(), {
+              liveSessionMinute: liveSessionMinuteRef.current,
+            })
+              ? LastPriceAnimationMode.Disabled
+              : LastPriceAnimationMode.OnDataUpdate,
           crosshairMarkerVisible: !hide,
         });
         const sessionOpen = sessionOpenPriceRef.current;
@@ -2378,6 +2378,22 @@ export function PriceChart({
             : null,
         );
       }
+
+      const last = pts[pts.length - 1];
+      let tip: { left: number; top: number; up: boolean } | null = null;
+      if (kindRef.current === "crypto" && last) {
+        const x = chart.timeScale().timeToCoordinate(last.time as UTCTimestamp);
+        const y = s.priceToCoordinate(last.value);
+        const base = (s.options() as { baseValue?: { price?: number } }).baseValue?.price ?? first.value;
+        if (x != null && y != null && Number.isFinite(x) && Number.isFinite(y)) {
+          tip = { left: Math.round(x), top: Math.round(y), up: last.value >= base };
+        }
+      }
+      setLiveTipDot((prev) =>
+        prev && tip && prev.left === tip.left && prev.top === tip.top && prev.up === tip.up
+          ? prev
+          : tip,
+      );
     };
     const syncBoundsLines = () => {
       const c = chartRef.current;
@@ -3610,6 +3626,17 @@ export function PriceChart({
               </div>
             ))
         : null}
+      {kind === "crypto" && !holdingsStyle && !showSkeleton && !loading && ready && !screenshotPreviewMode && liveTipDot ? (
+        <span
+          aria-hidden
+          className="chart-live-dot pointer-events-none absolute z-20"
+          style={{
+            left: liveTipDot.left,
+            top: liveTipDot.top,
+            color: liveTipDot.up ? "var(--color-up)" : "var(--color-down)",
+          }}
+        />
+      ) : null}
       {!holdingsStyle &&
       !screenshotPreviewMode &&
       !useMobileOverviewCrosshair &&
