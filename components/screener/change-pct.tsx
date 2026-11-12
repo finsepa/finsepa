@@ -1,5 +1,6 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowDown01Icon } from "@hugeicons-pro/core-solid-standard";
+import { formatPercentNumberGrouped2dp } from "@/lib/market/key-stats-basic-format";
 import { cn } from "@/lib/utils";
 
 /**
@@ -32,7 +33,7 @@ export function ChangeCaretIcon({
 }
 
 export function formatSignedChangePct(value: number): string {
-  return `${Math.abs(value).toFixed(2)}%`;
+  return `${formatPercentNumberGrouped2dp(Math.abs(value))}%`;
 }
 
 /**

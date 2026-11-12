@@ -13,6 +13,7 @@ import { useClientMounted } from "@/lib/theme/use-logo-dev-theme";
 import { cn } from "@/lib/utils";
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
 import { formatCryptoUsdChangeAbs } from "@/lib/market/format-crypto-usd";
+import { formatPercentNumberGrouped2dp } from "@/lib/market/key-stats-basic-format";
 import { cryptoWatchlistKey } from "@/lib/watchlist/constants";
 
 /** Per-symbol zoom inside the fixed 48×48 header frame (crypto marks carry baked-in padding). */
@@ -163,7 +164,7 @@ export function CryptoHeader({
           >
             {chartLoading || !hasChange || anim.abs == null || anim.pct == null
               ? "—"
-              : `${isPositive ? "+" : ""}${formatCryptoUsdChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
+              : `${isPositive ? "+" : ""}${formatCryptoUsdChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${formatPercentNumberGrouped2dp(anim.pct)}%)`}
           </span>
           {chartRangeLabel ? <span className={periodLabelClass}>{chartRangeLabel}</span> : null}
           <span className={periodLabelClass} aria-hidden>
@@ -175,7 +176,7 @@ export function CryptoHeader({
               isSelPositive ? "text-up" : "text-down"
             }`}
           >
-            {`${isSelPositive ? "+" : ""}${formatCryptoUsdChangeAbs(selectionChangeAbs!, anim.price)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`}
+            {`${isSelPositive ? "+" : ""}${formatCryptoUsdChangeAbs(selectionChangeAbs!, anim.price)} (${isSelPositive ? "+" : ""}${formatPercentNumberGrouped2dp(selectionChangePct!)}%)`}
           </span>
           <span className={periodLabelClass}>Selected range</span>
         </>
@@ -189,7 +190,7 @@ export function CryptoHeader({
           >
             {chartLoading || !hasChange || anim.abs == null || anim.pct == null
               ? "—"
-              : `${isPositive ? "+" : ""}${formatCryptoUsdChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`}
+              : `${isPositive ? "+" : ""}${formatCryptoUsdChangeAbs(anim.abs, anim.price)} (${isPositive ? "+" : ""}${formatPercentNumberGrouped2dp(anim.pct)}%)`}
           </span>
           <span className={periodLabelClass}>{periodText}</span>
         </>
@@ -211,7 +212,7 @@ export function CryptoHeader({
   const stockStylePctText =
     chartLoading || !hasChange || anim.pct == null
       ? null
-      : `(${isPositive ? "+" : ""}${anim.pct.toFixed(2)}%)`;
+      : `(${isPositive ? "+" : ""}${formatPercentNumberGrouped2dp(anim.pct)}%)`;
 
   const buildStockStyleChangeChip = (periodText: string) => (
     <span className="inline-flex flex-wrap items-baseline gap-x-2 gap-y-0">
@@ -244,7 +245,7 @@ export function CryptoHeader({
           isSelPositive ? "text-up" : "text-down"
         }`}
       >
-        {`${isSelPositive ? "+" : ""}${formatCryptoUsdChangeAbs(selectionChangeAbs!, anim.price)} (${isSelPositive ? "+" : ""}${selectionChangePct!.toFixed(2)}%)`}
+        {`${isSelPositive ? "+" : ""}${formatCryptoUsdChangeAbs(selectionChangeAbs!, anim.price)} (${isSelPositive ? "+" : ""}${formatPercentNumberGrouped2dp(selectionChangePct!)}%)`}
       </span>
       <span className={periodLabelClass}>Selected range</span>
     </div>

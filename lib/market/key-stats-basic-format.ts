@@ -100,11 +100,21 @@ export function formatSignedUsdAmountGrouped2dp(n: number): string {
   return body;
 }
 
-/** Signed percent for headers — `+1.23%` / `-1.23%`. */
+const GROUPED_2DP = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** Percent body with thousands separators — `120,204,885.78` (no sign, no `%`). */
+export function formatPercentNumberGrouped2dp(n: number): string {
+  return GROUPED_2DP.format(n);
+}
+
+/** Signed percent for headers — `+1.23%` / `-1.23%` / `+12,345.67%`. */
 export function formatSignedPercent2dp(n: number): string {
   if (!Number.isFinite(n)) return "—";
-  if (n > 0) return `+${n.toFixed(2)}%`;
-  return `${n.toFixed(2)}%`;
+  if (n > 0) return `+${formatPercentNumberGrouped2dp(n)}%`;
+  return `${formatPercentNumberGrouped2dp(n)}%`;
 }
 
 export function formatBeta(n: number): string {
