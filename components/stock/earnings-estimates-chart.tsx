@@ -31,7 +31,6 @@ import type { FundamentalsSeriesMode } from "@/lib/market/charting-series-types"
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { StockEarningsEstimatesChart, StockEarningsEstimatesPoint } from "@/lib/market/stock-earnings-types";
 import { cn } from "@/lib/utils";
-import { ChartAxisLine } from "@/components/chart/chart-axis-line";
 
 /** Estimate bars are grey; actual bars use up/down/meet from beat vs miss. */
 const ESTIMATE_BAR = "#D4D4D8";
@@ -631,12 +630,11 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
 
             <div className="flex w-full min-w-0 overflow-visible" style={{ height: `${MULTICHART_AXIS_ROW_PX}px` }}>
               <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: `${MULTICHART_AXIS_ROW_PX}px` }}>
-                {periods.length > 0 ? <ChartAxisLine className="top-1.5" /> : null}
                 {periods.map((p, i) => {
                   return (
                     <div
                       key={`axis-${p.key}`}
-                      className="chart-axis-tick absolute top-1.5 flex max-w-[min(100%,5.5rem)] -translate-x-1/2 justify-center overflow-visible"
+                      className="absolute top-1.5 flex max-w-[min(100%,5.5rem)] -translate-x-1/2 justify-center overflow-visible"
                       style={{ left: `${periodCenterLeftPercent(i, n)}%` }}
                       title={p.title}
                     >

@@ -30,7 +30,6 @@ import {
   macroAxisLabelIndicesForTimes,
   macroChartAxisGranularity,
 } from "@/lib/macro/macro-chart-points";
-import { ChartAxisLine } from "@/components/chart/chart-axis-line";
 
 const BAR_WIDTH_MAX_PX = MULTICHART_BAR_WIDTH_PX;
 const BAR_WIDTH_DENSE_MAX_PX = 10;
@@ -432,13 +431,12 @@ export function MacroSparklineBars({
 
       <div className="flex w-full min-w-0 overflow-visible" style={{ height: AXIS_ROW_PX }}>
         <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: AXIS_ROW_PX }}>
-          {axisLabelIndexSet.size > 0 ? <ChartAxisLine className="top-1.5" /> : null}
           {barPoints.map((pt, i) => {
             const show = axisLabelIndexSet.has(i);
             return (
               <div
                 key={`axis-${pt.time}-${i}`}
-                className={`absolute top-1.5 flex -translate-x-1/2 justify-center overflow-visible${show ? " chart-axis-tick" : ""}`}
+                className="absolute top-1.5 flex -translate-x-1/2 justify-center overflow-visible"
                 style={{
                   left: `${periodCenterLeftPercent(i, n, AXIS_LABEL_INSET_LEFT_FRAC, AXIS_LABEL_INSET_RIGHT_FRAC)}%`,
                   width: `${macroColumnWidthPercent(n, AXIS_LABEL_INSET_LEFT_FRAC, AXIS_LABEL_INSET_RIGHT_FRAC)}%`,

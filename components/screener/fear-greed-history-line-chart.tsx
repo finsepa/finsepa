@@ -25,7 +25,6 @@ import {
   FEAR_GREED_ZONE_FILLS,
 } from "@/lib/screener/fear-greed-color";
 import { cn } from "@/lib/utils";
-import { ChartAxisLine } from "@/components/chart/chart-axis-line";
 
 export const FEAR_GREED_CHART_RANGES = ["1M", "6M", "YTD", "1Y", "5Y", "ALL"] as const;
 export type FearGreedChartRange = (typeof FEAR_GREED_CHART_RANGES)[number];
@@ -742,13 +741,12 @@ export function FearGreedHistoryLineChart({
 
         <div className="flex w-full min-w-0 overflow-visible" style={{ height: AXIS_ROW_PX }}>
           <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: AXIS_ROW_PX }}>
-            {horizontalXLabels && xTicks.length > 0 ? <ChartAxisLine className="top-1.5" /> : null}
             {xTicks.map((t, idx) => (
               <div
                 key={`${t.ts}-${idx}`}
                 className={cn(
                   "absolute flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible",
-                  horizontalXLabels ? "chart-axis-tick top-1.5" : "bottom-0.5",
+                  horizontalXLabels ? "top-1.5" : "bottom-0.5",
                 )}
                 style={{ left: `${t.leftPct}%` }}
                 title={t.label}

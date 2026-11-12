@@ -39,7 +39,6 @@ import {
   type OverviewBottomAxisMode,
   type PeriodAxisLabelAnchor,
 } from "@/components/chart/overview-bottom-axis";
-import { ChartAxisLine, PERIOD_AXIS_LABEL_TEXT_CLASS } from "@/components/chart/chart-axis-line";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { isCryptoOverviewSymbol } from "@/lib/crypto/crypto-picker-universe";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
@@ -154,7 +153,6 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
   const [ready, setReady] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
   const [periodAxisLabels, setPeriodAxisLabels] = useState<OverviewAxisLabel[]>([]);
-  const [axisLinePlotWidthPx, setAxisLinePlotWidthPx] = useState(0);
   const periodAxisLabelsRef = useRef<OverviewAxisLabel[]>([]);
   const [hoverAxisLabel, setHoverAxisLabel] = useState<{ leftPx: number; label: string } | null>(
     null,
@@ -194,8 +192,6 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
   }, [overviewBottomAxisMode]);
 
   const setPeriodAxisLabelsGuarded = (next: OverviewAxisLabel[]) => {
-    const paneWidth = chartRef.current?.paneSize(0).width ?? 0;
-    if (paneWidth > 0) setAxisLinePlotWidthPx(paneWidth);
     if (overviewAxisLabelsEqual(periodAxisLabelsRef.current, next)) return;
     periodAxisLabelsRef.current = next;
     setPeriodAxisLabels(next);
@@ -684,20 +680,12 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
             })()
           ) : (
             <>
-            {periodAxisLabels.length > 0 ? (
-              <ChartAxisLine
-                className="bottom-1"
-                labelClassName={PERIOD_AXIS_LABEL_TEXT_CLASS}
-                widthPx={axisLinePlotWidthPx}
-              />
-            ) : null}
             {periodAxisLabels.map((lab, i) => {
               const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
               return (
               <span
                 key={lab.key}
-                data-tick-anchor={anchor}
-                className={`chart-axis-tick absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
+                className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
                 style={periodAxisLabelLayoutStyle(lab.leftPx, anchor)}
               >
                 {lab.label}

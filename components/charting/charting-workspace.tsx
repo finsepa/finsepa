@@ -128,7 +128,6 @@ import {
 } from "@/lib/chart/fundamentals-chart-display-options";
 import { filterPointsForChartingFundamentalsLineChart } from "@/lib/chart/fundamentals-line-chart-series";
 import { chartingFundamentalsLineTimeRange } from "@/lib/chart/fundamentals-line-chart-config";
-import { ChartAxisLine } from "@/components/chart/chart-axis-line";
 
 export type { ChartTimeRange, ChartType } from "@/components/charting/charting-time-range";
 export {
@@ -4060,9 +4059,6 @@ export function ChartingWorkspace({
                 style={{ height: axisRowPx }}
               >
                 <div className="relative min-h-0 min-w-0 flex-1 overflow-visible">
-                  {horizontalPeriodAxisLabels && periodAxisLabels.length > 0 ? (
-                    <ChartAxisLine className={spacedHorizontalPeriodAxis ? "top-3" : "top-1.5"} />
-                  ) : null}
                   {periodAxisLabels.map((lab, i) => {
                     if (!fundamentalsPeriodAxisShowsLabel(i, periodAxisLabels.length, periodMode)) {
                       return null;
@@ -4077,8 +4073,8 @@ export function ChartingWorkspace({
                           "absolute inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
                           horizontalPeriodAxisLabels
                             ? spacedHorizontalPeriodAxis
-                              ? "chart-axis-tick top-3"
-                              : "chart-axis-tick top-1.5"
+                              ? "top-3"
+                              : "top-1.5"
                             : "bottom-1",
                         )}
                         style={{

@@ -485,45 +485,6 @@
     radial-gradient(circle, var(--fs-chart-dot) 1px, transparent 1px);
 }
 
-/**
- * X-axis tick: short vertical mark centered above a period label. The label must be positioned
- * (absolute/relative). `data-tick-anchor="left"` pins it to the left edge of left-aligned labels.
- */
-.chart-axis-tick::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 3px);
-  width: 1px;
-  height: 6px;
-  background: var(--color-stroke);
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-
-.chart-axis-tick[data-tick-anchor="left"]::before {
-  left: 0;
-  transform: none;
-}
-
-.chart-axis-tick[data-tick-anchor="right"]::before {
-  left: auto;
-  right: 0;
-  transform: none;
-}
-
-/** Axis line through the tick tops — see `ChartAxisLine` (sits where the row's labels sit). */
-.chart-axis-line::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(100% + 9px);
-  height: 1px;
-  background: var(--color-stroke);
-  pointer-events: none;
-}
-
 /** Live last-point dot on 24/7 charts: solid dot plus an expanding ring (`currentColor`). */
 .chart-live-dot {
   width: 8px;

@@ -32,7 +32,6 @@ import {
   type OverviewBottomAxisMode,
   type PeriodAxisLabelAnchor,
 } from "@/components/chart/overview-bottom-axis";
-import { ChartAxisLine, PERIOD_AXIS_LABEL_TEXT_CLASS } from "@/components/chart/chart-axis-line";
 import {
   LineSeries,
   AreaSeries,
@@ -1241,8 +1240,6 @@ export function PriceChart({
   /** Crypto live tip (24/7): pulsing dot as a DOM overlay so it can overhang the pane edge. */
   const [liveTipDot, setLiveTipDot] = useState<{ left: number; top: number; up: boolean } | null>(null);
   const [periodAxisLabels, setPeriodAxisLabels] = useState<OverviewAxisLabel[]>([]);
-  /** Plot pane width (excludes the price scale) — the axis line stops where the plot does. */
-  const [axisLinePlotWidthPx, setAxisLinePlotWidthPx] = useState(0);
   const periodAxisLabelsRef = useRef<OverviewAxisLabel[]>([]);
   const [hoverAxisLabel, setHoverAxisLabel] = useState<{ leftPx: number; label: string } | null>(
     null,
@@ -1438,8 +1435,6 @@ export function PriceChart({
   }, [overviewBottomAxisMode]);
 
   const setPeriodAxisLabelsGuarded = (next: OverviewAxisLabel[]) => {
-    const paneWidth = chartRef.current?.paneSize(0).width ?? 0;
-    if (paneWidth > 0) setAxisLinePlotWidthPx(paneWidth);
     if (overviewAxisLabelsEqual(periodAxisLabelsRef.current, next)) return;
     periodAxisLabelsRef.current = next;
     setPeriodAxisLabels(next);
@@ -3721,21 +3716,13 @@ export function PriceChart({
           {holdingsStyle ? (
             <>
               <div ref={holdingsPeriodAxisRowRef} className="absolute inset-0">
-                {visiblePeriodAxisLabels.length > 0 ? (
-                  <ChartAxisLine
-                    className="bottom-1"
-                    labelClassName={PERIOD_AXIS_LABEL_TEXT_CLASS}
-                    widthPx={axisLinePlotWidthPx}
-                  />
-                ) : null}
                 {visiblePeriodAxisLabels.map((lab, i) => {
                   const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
                   return (
                   <span
                     key={lab.key}
-                    data-tick-anchor={anchor}
                     className={cn(
-                      "chart-axis-tick absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
+                      "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
                       periodAxisLabelMaxWidthClass(anchor),
                       periodAxisLabelTransformClass(anchor),
                     )}
@@ -3773,13 +3760,6 @@ export function PriceChart({
             </span>
           ) : (
             <>
-            {visiblePeriodAxisLabels.length > 0 ? (
-              <ChartAxisLine
-                className="top-1/2 -translate-y-1/2"
-                labelClassName="text-[11px] sm:text-[12px]"
-                widthPx={axisLinePlotWidthPx}
-              />
-            ) : null}
             {visiblePeriodAxisLabels.map((lab, i) => {
               const isLive1DLabel = lab.key.startsWith("live-1d-");
               const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, {
@@ -3788,9 +3768,8 @@ export function PriceChart({
               return (
               <span
                 key={lab.key}
-                data-tick-anchor={anchor}
                 className={cn(
-                  "chart-axis-tick absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] tabular-nums leading-none",
+                  "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] tabular-nums leading-none",
                   cryptoLive1DAxis
                     ? "text-[12px] font-medium text-[#8A8A8A]"
                     : "text-[11px] font-normal text-fg-muted sm:text-[12px]",

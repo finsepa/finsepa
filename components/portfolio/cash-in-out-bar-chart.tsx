@@ -48,7 +48,6 @@ import { dropdownTriggerFieldClassName } from "@/components/design-system/text-i
 import { cn } from "@/lib/utils";
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { ChartAxisLine, PERIOD_AXIS_LABEL_TEXT_CLASS } from "@/components/chart/chart-axis-line";
 
 /** Figma Color/Blue/600 + Color/Orange/600 (Charting bar pair). */
 const WITHDRAWAL = "#EA580C";
@@ -510,16 +509,13 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
           style={{ height: FUNDAMENTALS_CHART_AXIS_ROW_PX }}
         >
           <div className="relative min-w-0 flex-1 overflow-visible">
-            {!rotateXLabels && n > 0 ? (
-              <ChartAxisLine className="bottom-0 pb-0.5" labelClassName={PERIOD_AXIS_LABEL_TEXT_CLASS} />
-            ) : null}
             {buckets.map((b, i) => {
               if (!shouldDrawXLabel(i, n, xLabelStep)) return null;
               const leftPct = ((i + 0.5) / n) * 100;
               return (
                 <div
                   key={`axis-${b.key}`}
-                  className={`absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5 pb-0.5${rotateXLabels ? "" : " chart-axis-tick"}`}
+                  className="absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5 pb-0.5"
                   style={{ left: `${leftPct}%` }}
                   title={b.label}
                 >

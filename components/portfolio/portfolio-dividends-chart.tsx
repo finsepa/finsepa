@@ -17,7 +17,6 @@ import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { PortfolioDividendScheduleMonth } from "@/lib/portfolio/portfolio-dividends-schedule-types";
 import { cn } from "@/lib/utils";
-import { ChartAxisLine, PERIOD_AXIS_LABEL_TEXT_CLASS } from "@/components/chart/chart-axis-line";
 
 const BAR_COLOR = fundamentalsBarSolidAtIndex(0);
 /** Current calendar month — brand orange (`--fs-orange` / `text-orange`). */
@@ -316,13 +315,10 @@ function PortfolioDividendsChartInner({
 
         <div className="flex w-full min-w-0 overflow-visible" style={{ height: MULTICHART_AXIS_ROW_PX }}>
           <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
-            {periods.length > 0 ? (
-              <ChartAxisLine className="bottom-0.5" labelClassName={PERIOD_AXIS_LABEL_TEXT_CLASS} />
-            ) : null}
             {periods.map((p, i) => (
               <div
                 key={`axis-${p.key}`}
-                className="chart-axis-tick absolute bottom-0.5 flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible"
+                className="absolute bottom-0.5 flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible"
                 style={{ left: `${periodCenterLeftPercent(i, n)}%` }}
                 title={p.title}
               >

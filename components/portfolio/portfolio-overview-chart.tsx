@@ -67,7 +67,6 @@ import {
   resolvePeriodAxisLabelAnchor,
   type OverviewAxisLabel,
 } from "@/components/chart/overview-bottom-axis";
-import { ChartAxisLine, PERIOD_AXIS_LABEL_TEXT_CLASS } from "@/components/chart/chart-axis-line";
 import {
   dropdownMenuPanelClassName,
   dropdownMenuPlainItemRowClassName,
@@ -3619,27 +3618,13 @@ export function PortfolioValueHistoryChartPane({
           {hoverAxisLabel.label}
         </span>
       )
-    : [
-      periodAxisLabels.length > 0 ? (
-        <ChartAxisLine
-          key="axis-line"
-          className="top-1/2 -translate-y-1/2"
-          labelClassName={PERIOD_AXIS_LABEL_TEXT_CLASS}
-          widthPx={
-            yAxisColumn && axisPlotWidthPx > FUNDAMENTALS_CHART_Y_AXIS_W_PX
-              ? axisPlotWidthPx - FUNDAMENTALS_CHART_Y_AXIS_W_PX
-              : axisPlotWidthPx
-          }
-        />
-      ) : null,
-      ...periodAxisLabels.map((lab, i) => {
+    : periodAxisLabels.map((lab, i) => {
         const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
         return (
           <span
             key={lab.key}
-            data-tick-anchor={anchor}
             className={cn(
-              "chart-axis-tick absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] text-[11px] tabular-nums leading-none text-fg-muted sm:text-[12px]",
+              "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] text-[11px] tabular-nums leading-none text-fg-muted sm:text-[12px]",
               isGoalPlotLayout ? "font-medium" : "font-normal",
               periodAxisLabelMaxWidthClass(anchor),
               periodAxisLabelTransformClass(anchor),
@@ -3649,8 +3634,7 @@ export function PortfolioValueHistoryChartPane({
             {lab.label}
           </span>
         );
-      }),
-    ];
+      });
 
   return (
     <div

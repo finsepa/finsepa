@@ -52,7 +52,6 @@ import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { MOBILE_MODAL_SHEET_OVERLAY_CLASS } from "@/components/ui/mobile-bottom-sheet";
 import { Download } from "@/lib/icons";
 import { cn } from "@/lib/utils";
-import { ChartAxisLine } from "@/components/chart/chart-axis-line";
 
 const KEY_STATS_DESKTOP_MODAL_WIDTH_CLASS = "w-full max-w-[960px]";
 const MOBILE_KEY_STATS_CHART_HEIGHT_PX = 268;
@@ -670,13 +669,10 @@ function DrawdownHistoryChart({
 
         <div className="flex w-full min-w-0 gap-3" style={{ height: FUNDAMENTALS_CHART_AXIS_ROW_PX }}>
           <div className="relative min-w-0 flex-1">
-          {xTicks.length > 0 ? (
-            <ChartAxisLine className="bottom-[10px]" labelClassName="text-[11px] leading-4" />
-          ) : null}
           {xTicks.map(({ ts, leftPct, label }) => (
             <span
               key={ts}
-              className="chart-axis-tick absolute bottom-[10px] -translate-x-1/2 text-[11px] leading-4 text-fg-muted"
+              className="absolute bottom-[10px] -translate-x-1/2 text-[11px] leading-4 text-fg-muted"
               style={{ left: `${leftPct}%` }}
             >
               {label}
