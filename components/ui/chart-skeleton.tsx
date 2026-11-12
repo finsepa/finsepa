@@ -14,19 +14,13 @@ type ChartSkeletonProps = {
   fill?: boolean;
   /**
    * `detailed` — grid, axis tick pills, blue area preview (Overview-style), no outer chrome.
-   * `minimal` — muted sparkline mirroring the live chart: gridlines, dashed baseline, right-axis pills.
+   * `minimal` — muted sparkline only (no gridlines, baseline or axis pills).
    */
   variant?: "detailed" | "minimal";
 };
 
 const SPARK_VIEW_W = 400;
 const SPARK_VIEW_H = 120;
-const SPARK_GRIDLINE_COUNT = 6;
-/** Gridline / axis pill rows, inset like the live chart's top and bottom price labels. */
-const SPARK_GRID_TOPS = Array.from(
-  { length: SPARK_GRIDLINE_COUNT },
-  (_, i) => 6 + (i * 88) / (SPARK_GRIDLINE_COUNT - 1),
-);
 
 /** Deterministic jagged walk so SSR and client paint the same placeholder line. */
 const SPARK_POINTS: readonly (readonly [number, number])[] = (() => {
@@ -49,10 +43,6 @@ const SPARK_POINTS: readonly (readonly [number, number])[] = (() => {
 
 const SPARK_LINE_PATH = SPARK_POINTS.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
 const SPARK_AREA_PATH = `${SPARK_LINE_PATH} L${SPARK_VIEW_W},${SPARK_VIEW_H} L0,${SPARK_VIEW_H} Z`;
-const SPARK_BASELINE_TOP_PCT = (SPARK_POINTS[0]![1] / SPARK_VIEW_H) * 100;
-
-const SPARK_DASH_BG =
-  "repeating-linear-gradient(90deg, color-mix(in srgb, var(--fs-fg-muted) 45%, transparent) 0 5.5px, transparent 5.5px 11px)";
 
 function SparklineChartSkeleton({
   className,
@@ -77,13 +67,6 @@ function SparklineChartSkeleton({
       role="presentation"
     >
       <div className="relative min-w-0 flex-1">
-        {SPARK_GRID_TOPS.map((top) => (
-          <div
-            key={top}
-            className="absolute inset-x-0 h-px"
-            style={{ top: `${top}%`, background: "color-mix(in srgb, var(--fs-stroke) 60%, transparent)" }}
-          />
-        ))}
         <svg
           className="absolute inset-0 h-full w-full"
           viewBox={`0 0 ${SPARK_VIEW_W} ${SPARK_VIEW_H}`}
@@ -107,20 +90,9 @@ function SparklineChartSkeleton({
             vectorEffect="non-scaling-stroke"
           />
         </svg>
-        <div
-          className="absolute inset-x-0 h-px"
-          style={{ top: `${SPARK_BASELINE_TOP_PCT}%`, backgroundImage: SPARK_DASH_BG }}
-        />
       </div>
-      <div className="relative w-14 shrink-0">
-        {SPARK_GRID_TOPS.map((top) => (
-          <div
-            key={top}
-            className="skeleton absolute right-1.5 h-2 w-10 -translate-y-1/2 rounded-sm"
-            style={{ top: `${top}%` }}
-          />
-        ))}
-      </div>
+      {/* Price-axis gutter so the placeholder line ends where the live line will. */}
+      <div className="w-14 shrink-0" />
     </div>
   );
 }
