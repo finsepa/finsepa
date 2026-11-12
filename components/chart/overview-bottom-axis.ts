@@ -195,15 +195,46 @@ function formatOverviewAxisWeekdayLabel(p: StockChartPoint, timeZone: string): s
   return new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone }).format(d);
 }
 
+/**
+ * 5D: one label at the first bar of each day. The last bar shares its day's label (no repeat), and a
+ * partial first day (a rolling 24/7 window starts mid-day) gets none — its tick would sit beside the next.
+ */
 function overviewAxisShows5DWeekdayLabel(
   index: number,
   total: number,
   data: readonly StockChartPoint[],
   timeZone: string,
+  firstDayPartial: boolean,
 ): boolean {
   if (total <= 1) return true;
-  if (index === 0 || index === total - 1) return true;
+  if (index === 0) return !firstDayPartial;
   return sessionDayKeyForPoint(data[index]!, timeZone) !== sessionDayKeyForPoint(data[index - 1]!, timeZone);
+}
+
+/**
+ * First day covers well under a typical day's time span (a rolling window starts mid-day).
+ * Spans, not bar counts: provider gaps make counts uneven, and a stock's first session spans the
+ * same ~6.5h as the others.
+ */
+function firstSessionDayIsPartial(data: readonly StockChartPoint[], timeZone: string): boolean {
+  const spans: { start: number; end: number }[] = [];
+  let prevKey: string | null = null;
+  for (const p of data) {
+    const key = sessionDayKeyForPoint(p, timeZone);
+    if (key !== prevKey) {
+      spans.push({ start: p.time, end: p.time });
+      prevKey = key;
+    } else {
+      spans[spans.length - 1]!.end = p.time;
+    }
+  }
+  if (spans.length < 3) return false;
+  const full = spans
+    .slice(1, -1)
+    .map((s) => s.end - s.start)
+    .sort((a, b) => a - b);
+  const median = full[Math.floor(full.length / 2)]!;
+  return spans[0]!.end - spans[0]!.start < median * 0.85;
 }
 
 const MOBILE_5D_WEEKDAY_LABEL_MAX = 5;
@@ -1051,6 +1082,7 @@ export function syncOverviewPeriodAxisLabels(
     axisMode === "hour" && !mobileOneDayAxis
       ? oneDayAxisHourStep(plotWidthPx, countDistinctSessionHours(data, timeZone))
       : 1;
+  const weekdayFirstDayPartial = axisMode === "weekday" && firstSessionDayIsPartial(data, timeZone);
   const triMonthlyLabelIndices =
     axisMode === "triMonthly" ? buildTriMonthlyAxisLabelIndices(data, timeZone) : null;
   const allYearLabelIndices =
@@ -1066,7 +1098,7 @@ export function syncOverviewPeriodAxisLabels(
     if (axisMode === "hour") {
       if (!overviewAxisShows1DHourLabel(i, n, data, timeZone, hourStep)) continue;
     } else if (axisMode === "weekday") {
-      if (!overviewAxisShows5DWeekdayLabel(i, n, data, timeZone)) continue;
+      if (!overviewAxisShows5DWeekdayLabel(i, n, data, timeZone, weekdayFirstDayPartial)) continue;
     } else if (axisMode === "weekly") {
       if (!overviewAxisShows1MWeeklyLabel(i, n, data, timeZone)) continue;
     } else if (axisMode === "monthly") {

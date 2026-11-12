@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { cryptoMarketCapPointsFromPricePoints, getCryptoChartPoints } from "@/lib/market/crypto-chart-data";
 import { loadCryptoLive1DMinuteChartPoints } from "@/lib/market/crypto-1d-live-minute-chart";
+import { appendCrypto5DLiveTail } from "@/lib/market/crypto-5d-live-tail";
 import { getCryptoChartPointsViaStockPipeline } from "@/lib/market/crypto-stock-pipeline-experiment.server";
 import { usesCryptoStockPipelineExperiment } from "@/lib/market/crypto-stock-pipeline-experiment";
 import { isCryptoLive1DSymbol, normalizeCryptoBaseSymbol } from "@/lib/market/crypto-live-1d-tickers";
@@ -48,6 +49,11 @@ export async function GET(request: Request, { params }: Ctx) {
       ? await loadCryptoLive1DMinuteChartPoints(routeSymbol)
       : await getCryptoChartPoints(routeSymbol, range));
 
+  const liveCrypto5D = range === "5D" && isCryptoLive1DSymbol(routeSymbol);
+  if (liveCrypto5D) {
+    points = await appendCrypto5DLiveTail(routeSymbol, points);
+  }
+
   if (series === "return") {
     points = pricePointsToReturnIndexPoints(points);
   } else if (series === "marketCap") {
@@ -67,7 +73,7 @@ export async function GET(request: Request, { params }: Ctx) {
     });
   }
 
-  const headers = liveCrypto1D
+  const headers = liveCrypto1D || liveCrypto5D
     ? { "Cache-Control": CACHE_CONTROL_PRIVATE_NO_STORE }
     : useStockPipeline
       ? { "Cache-Control": CACHE_CONTROL_PRIVATE_CHART_STREAM }
