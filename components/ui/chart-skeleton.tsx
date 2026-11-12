@@ -91,8 +91,6 @@ function SparklineChartSkeleton({
           />
         </svg>
       </div>
-      {/* Price-axis gutter so the placeholder line ends where the live line will. */}
-      <div className="w-14 shrink-0" />
     </div>
   );
 }
