@@ -692,10 +692,11 @@ function overviewBaselineOptions(
     ...(hideLastValueTag
       ? { priceFormat: cryptoUsdPriceFormat(open > 0 ? open : 1, formatCryptoUsdAxis) }
       : {}),
-    // Crypto: no pulsing last-price dot (header carries live price). Stocks keep OnDataUpdate.
-    lastPriceAnimation:
-      lightweight || hideLastValueTag
-        ? LastPriceAnimationMode.Disabled
+    // Crypto trades 24/7, so its tip is always live: pulse continuously. Stocks pulse on live updates.
+    lastPriceAnimation: lightweight
+      ? LastPriceAnimationMode.Disabled
+      : hideLastValueTag
+        ? LastPriceAnimationMode.Continuous
         : LastPriceAnimationMode.OnDataUpdate,
   };
   if (variant === "bright") {
@@ -1560,13 +1561,15 @@ export function PriceChart({
           lastValueVisible: !hide && kindRef.current !== "crypto",
           relativeGradient: relGrad,
           lineType: LineType.Simple,
-          lastPriceAnimation:
-            hide ||
-            !stock1DUsesLiveSessionClock(new Date(), {
-              liveSessionMinute: liveSessionMinuteRef.current,
-            })
-              ? LastPriceAnimationMode.Disabled
-              : LastPriceAnimationMode.OnDataUpdate,
+          lastPriceAnimation: hide
+            ? LastPriceAnimationMode.Disabled
+            : kindRef.current === "crypto"
+              ? LastPriceAnimationMode.Continuous
+              : stock1DUsesLiveSessionClock(new Date(), {
+                    liveSessionMinute: liveSessionMinuteRef.current,
+                  })
+                ? LastPriceAnimationMode.OnDataUpdate
+                : LastPriceAnimationMode.Disabled,
           crosshairMarkerVisible: !hide,
         });
         const sessionOpen = sessionOpenPriceRef.current;
