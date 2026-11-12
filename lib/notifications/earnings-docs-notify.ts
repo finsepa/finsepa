@@ -22,6 +22,7 @@ import {
   canonicalNotifyTicker,
   isEarningsNotifiableTicker,
 } from "@/lib/notifications/ticker-notify-eligibility";
+import { absolutePushLogoUrl } from "@/lib/notifications/user-notifications-store";
 import { parsePersistedPortfolioUnknown } from "@/lib/portfolio/portfolio-storage";
 
 async function loadInterestedUserIdsForTicker(
@@ -176,10 +177,8 @@ export async function notifyEarningsDocsAvailable(
         inserted.map(async (row) => {
           const userDevices = devicesByUser.get(row.user_id) ?? [];
           if (userDevices.length === 0) return;
-          const logoUrl =
-            typeof row.payload?.logoUrl === "string" && row.payload.logoUrl.trim()
-              ? row.payload.logoUrl.trim()
-              : undefined;
+          // Payload logos are proxy paths (`/api/media/logo…`); APNs needs an absolute URL.
+          const logoUrl = absolutePushLogoUrl(row.payload?.logoUrl);
           await sendEarningsApnsToDevices(admin, userDevices, {
             title: row.title,
             body: row.body,
