@@ -1140,6 +1140,7 @@ export function syncOverviewPeriodAxisLabels(
         )
       : null;
   const out: OverviewAxisLabel[] = [];
+  const outIsEdge: boolean[] = [];
   for (let i = 0; i < n; i++) {
     if (axisMode === "hour") {
       if (!overviewAxisShows1DHourLabel(i, n, data, timeZone, hourStep)) continue;
@@ -1168,8 +1169,50 @@ export function syncOverviewPeriodAxisLabels(
       leftPx: x,
       label: formatOverviewAxisIdleLabel(displayUnix, prevDisplayUnix, timeZone, axisMode, p),
     });
+    outIsEdge.push(i === 0 || i === n - 1);
   }
-  return out;
+  return dropCollidingEdgeAxisLabels(out, outIsEdge);
+}
+
+let axisLabelMeasureCtx: CanvasRenderingContext2D | null | undefined;
+
+/** Idle-label width at the 12px Inter axis font (canvas-measured; char estimate off the DOM). */
+function approxAxisLabelWidthPx(label: string): number {
+  if (axisLabelMeasureCtx === undefined) {
+    axisLabelMeasureCtx =
+      typeof document !== "undefined" ? document.createElement("canvas").getContext("2d") : null;
+    if (axisLabelMeasureCtx) {
+      axisLabelMeasureCtx.font = "400 12px Inter, ui-sans-serif, system-ui, sans-serif";
+    }
+  }
+  return axisLabelMeasureCtx ? axisLabelMeasureCtx.measureText(label).width : label.length * 7.5;
+}
+
+/**
+ * First/last-bar labels mark a partial period (5Y starting in November, 1Y ending mid-month).
+ * When one lands on a neighbouring boundary label or repeats its text, drop the edge label.
+ */
+function dropCollidingEdgeAxisLabels(
+  labels: readonly OverviewAxisLabel[],
+  isEdge: readonly boolean[],
+): OverviewAxisLabel[] {
+  const kept: { label: OverviewAxisLabel; edge: boolean; start: number; end: number }[] = [];
+  labels.forEach((label, i) => {
+    const edge = isEdge[i] ?? false;
+    const w = approxAxisLabelWidthPx(label.label);
+    const anchor = resolvePeriodAxisLabelAnchor(label.leftPx, { isLeftmost: kept.length === 0 });
+    const start =
+      anchor === "left" ? Math.max(PERIOD_AXIS_LEFT_EDGE_PX, label.leftPx) : label.leftPx - w / 2;
+    const end = start + w;
+    const prev = kept.at(-1);
+    if (prev) {
+      const collides = start < prev.end + 6 || label.label === prev.label.label;
+      if (collides && edge) return;
+      if (collides && prev.edge) kept.pop();
+    }
+    kept.push({ label, edge, start, end });
+  });
+  return kept.map((k) => k.label);
 }
 
 /** Precompute bottom-axis hover copy once per series (avoids Intl work on every crosshair move). */
