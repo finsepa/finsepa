@@ -1958,7 +1958,7 @@ export function PriceChart({
           dataTimeZoneRef.current,
           overviewBottomAxisModeRef.current,
           containerWidthRef.current,
-          { stock1DLiveSession: false },
+          periodAxisSyncOptionsRef.current,
         ),
       );
     };
