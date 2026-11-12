@@ -187,6 +187,8 @@ export function CryptoCandleChart({
     const last = base[base.length - 1]!;
     const nowBucket = liveQuotedAtSec != null ? bucketStart(liveQuotedAtSec, interval) : last.time;
     if (nowBucket < last.time) return base;
+    // Stale history: bridging the gap with one candle would paint a giant fake move.
+    if (nowBucket - last.time > 2 * BUCKET_SEC[interval]) return base;
     if (nowBucket === last.time) {
       return [
         ...base.slice(0, -1),

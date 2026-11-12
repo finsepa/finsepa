@@ -134,6 +134,7 @@ function mergeLiveTail(
 async function loadCryptoCandlesUncached(
   base: string,
   requestedInterval: CryptoCandleInterval,
+  freshHistory = false,
 ): Promise<CryptoCandlesResponse> {
   const live = isCryptoLive1DSymbol(base);
   const interval: CryptoCandleInterval =
@@ -145,7 +146,9 @@ async function loadCryptoCandlesUncached(
 
   let sourceBars: OhlcBar[] = [];
   for (const pair of eodhdSymbolsForMeta(meta)) {
-    sourceBars = await getHistorySourceBars(pair, interval);
+    sourceBars = freshHistory
+      ? await fetchHistorySourceBars(pair, interval)
+      : await getHistorySourceBars(pair, interval);
     if (sourceBars.length) break;
   }
 
@@ -175,9 +178,27 @@ async function loadCryptoCandlesUncached(
   };
 }
 
-const getCryptoCandlesCached = unstable_cache(loadCryptoCandlesUncached, ["crypto-candles-v2"], {
-  revalidate: REVALIDATE_STOCK_1D_LIVE_SPOT,
-});
+const getCryptoCandlesCached = unstable_cache(
+  (base: string, interval: CryptoCandleInterval) => loadCryptoCandlesUncached(base, interval),
+  ["crypto-candles-v2"],
+  { revalidate: REVALIDATE_STOCK_1D_LIVE_SPOT },
+);
+
+/** Normal provider lag past the last candle: EODHD intraday trails ~15–18h, dailies close a day late. */
+const INTRADAY_HISTORY_MAX_LAG_SEC = 36 * 3_600;
+const DAILY_HISTORY_MAX_LAG_SEC = 3 * DAY_SEC;
+
+/**
+ * `unstable_cache` serves an expired entry while it revalidates, which can be days old after idle time.
+ * Candles that far behind would render a gap bridged by one huge live candle — refetch instead.
+ */
+function candlesLookStale(payload: CryptoCandlesResponse): boolean {
+  const last = payload.candles[payload.candles.length - 1];
+  if (!last) return false;
+  const { source, bucketSec } = INTERVAL_CONFIG[payload.interval];
+  const maxLag = bucketSec + (source === "d" ? DAILY_HISTORY_MAX_LAG_SEC : INTRADAY_HISTORY_MAX_LAG_SEC);
+  return Math.floor(Date.now() / 1000) - last.time > maxLag;
+}
 
 /** OHLC candles for the crypto overview candle view — one shared cache entry per coin + interval. */
 export async function loadCryptoCandles(
@@ -186,5 +207,15 @@ export async function loadCryptoCandles(
 ): Promise<CryptoCandlesResponse> {
   const base = normalizeCryptoBaseSymbol(symbol);
   if (!base) return { symbol: symbol.trim().toUpperCase(), interval, candles: [], live: false };
-  return getCryptoCandlesCached(base, interval);
+  const cached = await getCryptoCandlesCached(base, interval);
+  if (!candlesLookStale(cached)) return cached;
+  // Genuinely lagging provider data stays stale after a refetch; don't hit EODHD on every request.
+  const key = `${base}|${interval}`;
+  const now = Date.now();
+  if (now - (staleRefetchAt.get(key) ?? 0) < STALE_REFETCH_MIN_MS) return cached;
+  staleRefetchAt.set(key, now);
+  return loadCryptoCandlesUncached(base, interval, true);
 }
+
+const STALE_REFETCH_MIN_MS = 60_000;
+const staleRefetchAt = new Map<string, number>();
