@@ -17,7 +17,7 @@ import {
 } from "lightweight-charts";
 
 import { SegmentedControl, type SegmentedControlOption } from "@/components/design-system";
-import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
+import { CandleChartSkeleton } from "@/components/ui/chart-skeleton";
 import { CHART_PLOT_BACKGROUND_CLASS } from "@/lib/chart/fundamentals-chart-surface";
 import {
   CRYPTO_CANDLE_INTERVALS,
@@ -472,7 +472,7 @@ export function CryptoCandleChart({
       ) : null}
       {loading ? (
         <div className="absolute inset-0 z-10">
-          <AssetChartSkeleton heightPx={plotHeight} className="h-full" />
+          <CandleChartSkeleton heightPx={plotHeight} className="h-full" />
         </div>
       ) : candles.length === 0 ? (
         <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-fg-muted">

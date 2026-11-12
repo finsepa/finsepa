@@ -95,6 +95,121 @@ function SparklineChartSkeleton({
   );
 }
 
+const CANDLE_VIEW_W = 400;
+const CANDLE_PRICE_TOP = 8;
+const CANDLE_PRICE_BOTTOM = 88;
+const CANDLE_VOLUME_TOP = 98;
+const CANDLE_VIEW_H = 120;
+
+type SkeletonCandle = {
+  x: number;
+  bodyW: number;
+  wickTop: number;
+  wickBottom: number;
+  bodyTop: number;
+  bodyH: number;
+  up: boolean;
+  volumeH: number;
+};
+
+/** Deterministic candles so SSR and client paint the same placeholder. */
+const SKELETON_CANDLES: readonly SkeletonCandle[] = (() => {
+  let seed = 23;
+  const rand = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
+  const n = 56;
+  const raw: { o: number; c: number; h: number; l: number; v: number }[] = [];
+  let price = 100;
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    const drift = 0.5 * Math.sin(t * Math.PI * 2.3) - 0.2;
+    const o = price;
+    const c = o + drift + (rand() - 0.5) * 3.2;
+    const h = Math.max(o, c) + rand() * 1.2;
+    const l = Math.min(o, c) - rand() * 1.2;
+    raw.push({ o, c, h, l, v: 0.15 + rand() * 0.6 });
+    price = c;
+  }
+  const hi = Math.max(...raw.map((r) => r.h));
+  const lo = Math.min(...raw.map((r) => r.l));
+  const y = (p: number) =>
+    CANDLE_PRICE_TOP + ((hi - p) / (hi - lo)) * (CANDLE_PRICE_BOTTOM - CANDLE_PRICE_TOP);
+  const slot = CANDLE_VIEW_W / n;
+  return raw.map((r, i) => {
+    const top = y(Math.max(r.o, r.c));
+    const bottom = y(Math.min(r.o, r.c));
+    return {
+      x: slot * i + slot / 2,
+      bodyW: slot * 0.62,
+      wickTop: y(r.h),
+      wickBottom: y(r.l),
+      bodyTop: top,
+      bodyH: Math.max(0.8, bottom - top),
+      up: r.c >= r.o,
+      volumeH: r.v * (CANDLE_VIEW_H - CANDLE_VOLUME_TOP),
+    };
+  });
+})();
+
+const CANDLE_UP_FILL = "color-mix(in srgb, var(--fs-fg) 16%, transparent)";
+const CANDLE_DOWN_FILL = "color-mix(in srgb, var(--fs-fg) 9%, transparent)";
+const CANDLE_VOLUME_FILL = "color-mix(in srgb, var(--fs-fg) 6%, transparent)";
+
+/** Candlestick view loading chrome — muted candles + volume bars (shimmer kept). */
+export function CandleChartSkeleton({
+  className,
+  heightPx = 320,
+}: {
+  className?: string;
+  heightPx?: number;
+}) {
+  return (
+    <div
+      className={cn(
+        "chart-skeleton-shimmer relative w-full min-w-0 overflow-hidden bg-transparent px-1 py-1",
+        className,
+      )}
+      style={{ height: heightPx }}
+      aria-hidden
+      role="presentation"
+    >
+      <svg
+        className="h-full w-full"
+        viewBox={`0 0 ${CANDLE_VIEW_W} ${CANDLE_VIEW_H}`}
+        preserveAspectRatio="none"
+        aria-hidden
+      >
+        {SKELETON_CANDLES.map((c) => {
+          const fill = c.up ? CANDLE_UP_FILL : CANDLE_DOWN_FILL;
+          return (
+            <g key={c.x}>
+              <line
+                x1={c.x}
+                x2={c.x}
+                y1={c.wickTop}
+                y2={c.wickBottom}
+                style={{ stroke: fill }}
+                strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
+              />
+              <rect x={c.x - c.bodyW / 2} y={c.bodyTop} width={c.bodyW} height={c.bodyH} style={{ fill }} />
+              <rect
+                x={c.x - c.bodyW / 2}
+                y={CANDLE_VIEW_H - c.volumeH}
+                width={c.bodyW}
+                height={c.volumeH}
+                style={{ fill: CANDLE_VOLUME_FILL }}
+              />
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
 /**
  * Asset / stock {@link PriceChart} loading chrome — muted sparkline placeholder.
  */

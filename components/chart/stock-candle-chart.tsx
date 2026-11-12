@@ -15,7 +15,7 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 
-import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
+import { CandleChartSkeleton } from "@/components/ui/chart-skeleton";
 import { CHART_PLOT_BACKGROUND_CLASS } from "@/lib/chart/fundamentals-chart-surface";
 import type { StockCandleInterval, StockCandlesResponse } from "@/lib/market/stock-candles";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
@@ -377,7 +377,7 @@ export function StockCandleChart({
       <div ref={wrapRef} className="absolute inset-x-0 bottom-0 z-10" style={{ height }} />
       {loading ? (
         <div className="absolute inset-0 z-10">
-          <AssetChartSkeleton heightPx={height + 20} className="h-full" />
+          <CandleChartSkeleton heightPx={height + 20} className="h-full" />
         </div>
       ) : candles.length === 0 ? (
         <div className="absolute inset-0 z-10 flex items-center justify-center text-sm text-fg-muted">
