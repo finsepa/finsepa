@@ -82,6 +82,7 @@ import {
 import { isStock1DLiveMinuteChartTicker, usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
 import { isCryptoLive1DSymbol, usesCryptoLogPriceScale } from "@/lib/market/crypto-live-1d-tickers";
 import { pinCryptoLive1DChartTip } from "@/lib/chart/crypto-live-1d-chart-tip";
+import { clearPriceGridlines, priceGridlinesFor } from "@/lib/chart/price-gridlines-primitive";
 import {
   hollowInBarCircleMarkers,
   scheduleScaledInBarMarkers,
@@ -484,18 +485,22 @@ const Y_AXIS_LABEL_COUNT = 6;
 
 const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
 
-/** Y-axis price label plus a faint gridline across the plot (fainter than the x-axis border line). */
 function yAxisLabelOnlyOptions(labelBg: string) {
   return {
-    color: resolveFsColorWithAlpha("--fs-stroke", 0.6),
+    color: "transparent",
     lineWidth: 1 as const,
     lineStyle: LineStyle.Solid,
     axisLabelVisible: true,
     axisLabelColor: labelBg,
     axisLabelTextColor: resolveFsColor("--fs-fg-muted"),
-    lineVisible: true,
+    lineVisible: false,
     title: "",
   };
+}
+
+/** Gridlines at the y-axis label prices — fainter than the x-axis border line. */
+function yAxisGridlineColor(): string {
+  return resolveFsColorWithAlpha("--fs-stroke", 0.6);
 }
 
 type MainPriceSeries = ISeriesApi<"Baseline"> | ISeriesApi<"Area"> | ISeriesApi<"Line">;
@@ -555,6 +560,7 @@ function removeYAxisTickLabels(series: MainPriceSeries | null, ticksRef: RefObje
     ticksRef.current = [];
     return;
   }
+  clearPriceGridlines(series);
   for (const line of ticksRef.current) {
     try {
       series.removePriceLine(line);
@@ -643,6 +649,7 @@ function syncYAxisTickLabels(
       ticksRef.current.push(series.createPriceLine({ price, ...opts }));
     }
   }
+  priceGridlinesFor(series).setPrices(prices, yAxisGridlineColor());
 }
 
 /**
