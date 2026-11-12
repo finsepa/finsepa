@@ -14,13 +14,119 @@ type ChartSkeletonProps = {
   fill?: boolean;
   /**
    * `detailed` — grid, axis tick pills, blue area preview (Overview-style), no outer chrome.
-   * `minimal` — single soft gray area shape only (no grid/axes), for compact toolbars.
+   * `minimal` — muted sparkline mirroring the live chart: gridlines, dashed baseline, right-axis pills.
    */
   variant?: "detailed" | "minimal";
 };
 
+const SPARK_VIEW_W = 400;
+const SPARK_VIEW_H = 120;
+const SPARK_GRIDLINE_COUNT = 6;
+/** Gridline / axis pill rows, inset like the live chart's top and bottom price labels. */
+const SPARK_GRID_TOPS = Array.from(
+  { length: SPARK_GRIDLINE_COUNT },
+  (_, i) => 6 + (i * 88) / (SPARK_GRIDLINE_COUNT - 1),
+);
+
+/** Deterministic jagged walk so SSR and client paint the same placeholder line. */
+const SPARK_POINTS: readonly (readonly [number, number])[] = (() => {
+  let seed = 11;
+  const rand = () => {
+    seed = (seed * 16807) % 2147483647;
+    return seed / 2147483647;
+  };
+  const n = 132;
+  const pts: [number, number][] = [];
+  let walk = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1);
+    walk = walk * 0.86 + (rand() - 0.5) * 7;
+    const y = 50 + 22 * t - 10 * Math.sin(t * Math.PI * 1.3) + 7 * Math.sin(t * Math.PI * 6.2) + walk;
+    pts.push([t * SPARK_VIEW_W, Math.min(108, Math.max(14, y))]);
+  }
+  return pts;
+})();
+
+const SPARK_LINE_PATH = SPARK_POINTS.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+const SPARK_AREA_PATH = `${SPARK_LINE_PATH} L${SPARK_VIEW_W},${SPARK_VIEW_H} L0,${SPARK_VIEW_H} Z`;
+const SPARK_BASELINE_TOP_PCT = (SPARK_POINTS[0]![1] / SPARK_VIEW_H) * 100;
+
+const SPARK_DASH_BG =
+  "repeating-linear-gradient(90deg, color-mix(in srgb, var(--fs-fg-muted) 45%, transparent) 0 5.5px, transparent 5.5px 11px)";
+
+function SparklineChartSkeleton({
+  className,
+  heightPx,
+  fill,
+  areaGradId,
+}: {
+  className?: string;
+  heightPx: number;
+  fill?: boolean;
+  areaGradId: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "chart-skeleton-shimmer relative flex w-full min-w-0 overflow-hidden bg-transparent",
+        fill && "h-full min-h-0",
+        className,
+      )}
+      style={fill ? undefined : { height: heightPx }}
+      aria-hidden
+      role="presentation"
+    >
+      <div className="relative min-w-0 flex-1">
+        {SPARK_GRID_TOPS.map((top) => (
+          <div
+            key={top}
+            className="absolute inset-x-0 h-px"
+            style={{ top: `${top}%`, background: "color-mix(in srgb, var(--fs-stroke) 60%, transparent)" }}
+          />
+        ))}
+        <svg
+          className="absolute inset-0 h-full w-full"
+          viewBox={`0 0 ${SPARK_VIEW_W} ${SPARK_VIEW_H}`}
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          <defs>
+            <linearGradient id={areaGradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" style={{ stopColor: "var(--fs-fg)", stopOpacity: 0.07 }} />
+              <stop offset="100%" style={{ stopColor: "var(--fs-fg)", stopOpacity: 0 }} />
+            </linearGradient>
+          </defs>
+          <path d={SPARK_AREA_PATH} fill={`url(#${areaGradId})`} />
+          <path
+            d={SPARK_LINE_PATH}
+            fill="none"
+            style={{ stroke: "color-mix(in srgb, var(--fs-fg) 16%, transparent)" }}
+            strokeWidth="2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        <div
+          className="absolute inset-x-0 h-px"
+          style={{ top: `${SPARK_BASELINE_TOP_PCT}%`, backgroundImage: SPARK_DASH_BG }}
+        />
+      </div>
+      <div className="relative w-14 shrink-0">
+        {SPARK_GRID_TOPS.map((top) => (
+          <div
+            key={top}
+            className="skeleton absolute right-1.5 h-2 w-10 -translate-y-1/2 rounded-sm"
+            style={{ top: `${top}%` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /**
- * Asset / stock {@link PriceChart} loading chrome — soft area shape only (no axis tick pills or grid).
+ * Asset / stock {@link PriceChart} loading chrome — muted sparkline placeholder.
  */
 export function AssetChartSkeleton({
   className,
@@ -57,38 +163,16 @@ export function ChartSkeleton({
   variant = "detailed",
 }: ChartSkeletonProps) {
   const gradId = `chartSkeletonArea-${useId().replace(/:/g, "")}`;
-  const blobId = `chartSkeletonBlob-${useId().replace(/:/g, "")}`;
+  const sparkAreaId = `chartSkeletonSpark-${useId().replace(/:/g, "")}`;
 
   if (variant === "minimal") {
     return (
-      <div
-        className={cn(
-          "chart-skeleton-shimmer relative w-full min-w-0 overflow-hidden bg-transparent",
-          fill && "h-full min-h-0",
-          className,
-        )}
-        style={fill ? undefined : { height: heightPx }}
-        aria-hidden
-        role="presentation"
-      >
-        <svg
-          className="h-full w-full"
-          viewBox="0 0 400 120"
-          preserveAspectRatio="none"
-          aria-hidden
-        >
-          <defs>
-            <linearGradient id={blobId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--fs-chart-skeleton-top)" stopOpacity="0.95" />
-              <stop offset="100%" stopColor="var(--fs-chart-skeleton-bottom)" stopOpacity="0.9" />
-            </linearGradient>
-          </defs>
-          <path
-            fill={`url(#${blobId})`}
-            d="M0,120 L0,88 L32,92 L58,76 L88,82 L118,64 L152,71 L188,52 L222,58 L258,42 L292,48 L328,34 L362,38 L400,28 L400,120 Z"
-          />
-        </svg>
-      </div>
+      <SparklineChartSkeleton
+        className={className}
+        heightPx={heightPx}
+        fill={fill}
+        areaGradId={sparkAreaId}
+      />
     );
   }
 
