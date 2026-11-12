@@ -2128,17 +2128,18 @@ export function PriceChart({
       clearMobileOverviewCrosshairDom();
     };
 
-    /** Baseline hover dot: green above the baseline, red below (LWC paints one fixed marker color). */
-    let markerSideSeries: MainPriceSeries | null = null;
-    let markerSide: "up" | "down" | null = null;
+    /**
+     * Baseline hover dot: green above the baseline, red below (LWC paints one fixed marker color).
+     * Compared against the live option, not a cached side — data refreshes (live ticks) re-apply
+     * the series options and reset the marker to green.
+     */
     const syncBaselineMarkerColor = (series: MainPriceSeries, value: number) => {
-      const base = (series.options() as { baseValue?: { price?: number } }).baseValue?.price;
+      const opts = series.options() as { baseValue?: { price?: number }; crosshairMarkerBorderColor?: string };
+      const base = opts.baseValue?.price;
       if (typeof base !== "number" || !Number.isFinite(base)) return;
-      const side = value >= base ? "up" : "down";
-      if (series === markerSideSeries && side === markerSide) return;
-      markerSideSeries = series;
-      markerSide = side;
-      series.applyOptions({ crosshairMarkerBorderColor: resolveFsColor(side === "up" ? "--fs-up" : "--fs-down") });
+      const color = resolveFsColor(value >= base ? "--fs-up" : "--fs-down");
+      if (opts.crosshairMarkerBorderColor === color) return;
+      series.applyOptions({ crosshairMarkerBorderColor: color });
     };
     const onCrosshairMove = (param: MouseEventParams) => {
       const s = seriesRef.current;
@@ -3204,6 +3205,8 @@ export function PriceChart({
         relGrad,
         kindRef.current === "crypto",
       ),
+      // Live ticks re-apply options mid-hover: keep the up/down marker color the hover set.
+      crosshairMarkerBorderColor: single.options().crosshairMarkerBorderColor,
       ...(hideBottomFill ? { bottomFillColor1: "rgba(0,0,0,0)", bottomFillColor2: "rgba(0,0,0,0)" } : {}),
       ...(hideTopFill ? { topFillColor1: "rgba(0,0,0,0)", topFillColor2: "rgba(0,0,0,0)" } : {}),
       // Keep the prior-close baseline on screen even when the whole session traded above/below it.
