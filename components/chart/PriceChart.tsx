@@ -3752,7 +3752,7 @@ export function PriceChart({
           ) : activeBottomAxisLabel ? (
             <span
               className={cn(
-                "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-fg sm:text-[12px]",
+                "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] text-[11px] font-medium tabular-nums leading-none text-fg sm:text-[12px]",
                 periodAxisLabelMaxWidthClass(activeBottomAxisAnchor),
                 periodAxisLabelTransformClass(activeBottomAxisAnchor),
               )}
