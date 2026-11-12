@@ -3625,7 +3625,11 @@ export function PortfolioValueHistoryChartPane({
           key="axis-line"
           className="top-1/2 -translate-y-1/2"
           labelClassName={PERIOD_AXIS_LABEL_TEXT_CLASS}
-          widthPx={axisPlotWidthPx}
+          widthPx={
+            yAxisColumn && axisPlotWidthPx > FUNDAMENTALS_CHART_Y_AXIS_W_PX
+              ? axisPlotWidthPx - FUNDAMENTALS_CHART_Y_AXIS_W_PX
+              : axisPlotWidthPx
+          }
         />
       ) : null,
       ...periodAxisLabels.map((lab, i) => {
