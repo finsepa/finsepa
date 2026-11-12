@@ -1228,6 +1228,8 @@ export function PriceChart({
   const [rangeOpenBadge, setRangeOpenBadge] = useState<RangeChartPriceBadge | null>(null);
   const [rangeHighBadge, setRangeHighBadge] = useState<RangeChartPriceBadge | null>(null);
   const [periodAxisLabels, setPeriodAxisLabels] = useState<OverviewAxisLabel[]>([]);
+  /** Plot pane width (excludes the price scale) — the axis line stops where the plot does. */
+  const [axisLinePlotWidthPx, setAxisLinePlotWidthPx] = useState(0);
   const periodAxisLabelsRef = useRef<OverviewAxisLabel[]>([]);
   const [hoverAxisLabel, setHoverAxisLabel] = useState<{ leftPx: number; label: string } | null>(
     null,
@@ -1423,6 +1425,8 @@ export function PriceChart({
   }, [overviewBottomAxisMode]);
 
   const setPeriodAxisLabelsGuarded = (next: OverviewAxisLabel[]) => {
+    const paneWidth = chartRef.current?.paneSize(0).width ?? 0;
+    if (paneWidth > 0) setAxisLinePlotWidthPx(paneWidth);
     if (overviewAxisLabelsEqual(periodAxisLabelsRef.current, next)) return;
     periodAxisLabelsRef.current = next;
     setPeriodAxisLabels(next);
@@ -3668,7 +3672,11 @@ export function PriceChart({
             <>
               <div ref={holdingsPeriodAxisRowRef} className="absolute inset-0">
                 {visiblePeriodAxisLabels.length > 0 ? (
-                  <ChartAxisLine className="bottom-1" labelClassName={PERIOD_AXIS_LABEL_TEXT_CLASS} />
+                  <ChartAxisLine
+                    className="bottom-1"
+                    labelClassName={PERIOD_AXIS_LABEL_TEXT_CLASS}
+                    widthPx={axisLinePlotWidthPx}
+                  />
                 ) : null}
                 {visiblePeriodAxisLabels.map((lab, i) => {
                   const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
@@ -3716,7 +3724,11 @@ export function PriceChart({
           ) : (
             <>
             {visiblePeriodAxisLabels.length > 0 ? (
-              <ChartAxisLine className="top-1/2 -translate-y-1/2" labelClassName="text-[11px] sm:text-[12px]" />
+              <ChartAxisLine
+                className="top-1/2 -translate-y-1/2"
+                labelClassName="text-[11px] sm:text-[12px]"
+                widthPx={axisLinePlotWidthPx}
+              />
             ) : null}
             {visiblePeriodAxisLabels.map((lab, i) => {
               const isLive1DLabel = lab.key.startsWith("live-1d-");
