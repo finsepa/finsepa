@@ -18,6 +18,11 @@ import {
 
 import { SegmentedControl, type SegmentedControlOption } from "@/components/design-system";
 import { CandleChartSkeleton } from "@/components/ui/chart-skeleton";
+import {
+  fetchChartJsonCached,
+  prefetchChartJsonWhenIdle,
+  primeChartJsonCache,
+} from "@/lib/chart/client-chart-json-cache";
 import { CHART_PLOT_BACKGROUND_CLASS } from "@/lib/chart/fundamentals-chart-surface";
 import {
   CRYPTO_CANDLE_INTERVALS,
@@ -81,6 +86,20 @@ function showLatestCandles(chart: IChartApi, candleCount: number) {
     from: Math.max(0, candleCount - INITIAL_VISIBLE_BARS),
     to: candleCount - 1 + 4,
   });
+}
+
+function candlesApiPath(symbol: string, interval: CryptoCandleInterval): string {
+  return `/api/crypto/${encodeURIComponent(symbol)}/candles?interval=${encodeURIComponent(interval)}`;
+}
+
+/** Client reuse window — about one candle refresh for intraday, longer for daily/weekly. */
+function candlesCacheTtlMs(interval: CryptoCandleInterval): number {
+  return isCryptoIntradayCandleInterval(interval) ? 30_000 : 5 * 60_000;
+}
+
+/** Older candles may paint instantly; the live refresh timer replaces them within seconds. */
+function candlesCacheStaleMs(interval: CryptoCandleInterval): number {
+  return isCryptoIntradayCandleInterval(interval) ? 2 * 60_000 : 30 * 60_000;
 }
 
 function refreshMs(interval: CryptoCandleInterval, live: boolean): number | null {
@@ -172,13 +191,26 @@ export function CryptoCandleChart({
   useEffect(() => {
     const ctrl = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const load = (isRefresh: boolean): Promise<void> =>
-      fetch(`/api/crypto/${encodeURIComponent(symbol)}/candles?interval=${encodeURIComponent(interval)}`, {
-        credentials: "include",
-        signal: ctrl.signal,
-      })
+    const path = candlesApiPath(symbol, interval);
+    const request = (isRefresh: boolean): Promise<CryptoCandlesResponse | null> => {
+      if (!isRefresh) {
+        return fetchChartJsonCached<CryptoCandlesResponse>(
+          path,
+          candlesCacheTtlMs(interval),
+          candlesCacheStaleMs(interval),
+        );
+      }
+      return fetch(path, { credentials: "include", signal: ctrl.signal })
         .then((r) => (r.ok ? (r.json() as Promise<CryptoCandlesResponse>) : null))
         .then((json) => {
+          if (json) primeChartJsonCache(path, json);
+          return json;
+        });
+    };
+    const load = (isRefresh: boolean): Promise<void> =>
+      request(isRefresh)
+        .then((json) => {
+          if (ctrl.signal.aborted) return;
           if (json || !isRefresh) setLoaded({ key: requestKey, data: json });
           const ms = refreshMs(interval, json?.live ?? false);
           if (ms != null) timer = setTimeout(() => void load(true), ms);
@@ -198,6 +230,14 @@ export function CryptoCandleChart({
   const loading = loaded?.key !== requestKey;
   const data = loading ? null : loaded.data;
   const live = data?.live ?? false;
+
+  // Warm the other intervals once candles are on screen so interval switches are near-instant.
+  useEffect(() => {
+    if (loading) return;
+    const intervals = live ? CRYPTO_CANDLE_INTERVALS : CRYPTO_DAILY_CANDLE_INTERVALS;
+    const paths = intervals.filter((iv) => iv !== interval).map((iv) => candlesApiPath(symbol, iv));
+    return prefetchChartJsonWhenIdle(paths, 30_000);
+  }, [loading, live, symbol, interval]);
 
   /** Server candles with the forming candle patched from the header live price. */
   const candles = useMemo(() => {

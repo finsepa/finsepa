@@ -8,6 +8,58 @@ function defaultTimeZoneForKind(kind: "stock" | "crypto"): string {
 }
 
 const sessionWallClockUnixCache = new Map<string, number>();
+const wallClockFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function wallClockFormatter(timeZone: string): Intl.DateTimeFormat {
+  let f = wallClockFormatters.get(timeZone);
+  if (!f) {
+    f = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23",
+    });
+    wallClockFormatters.set(timeZone, f);
+  }
+  return f;
+}
+
+function wallClockParts(formatter: Intl.DateTimeFormat, sec: number) {
+  const parts = formatter.formatToParts(new Date(sec * 1000));
+  const get = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((p) => p.type === type)?.value ?? NaN);
+  return {
+    year: get("year"),
+    month: get("month"),
+    day: get("day"),
+    hour: get("hour") % 24,
+    minute: get("minute"),
+    second: get("second"),
+  };
+}
+
+/** Zone offset (seconds east of UTC) at instant `sec`. */
+function zoneOffsetSec(formatter: Intl.DateTimeFormat, sec: number): number {
+  const p = wallClockParts(formatter, sec);
+  const wallAsUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) / 1000;
+  return Math.round((wallAsUtc - sec) / 60) * 60;
+}
+
+function wallClockMatches(
+  formatter: Intl.DateTimeFormat,
+  sec: number,
+  y: number,
+  m: number,
+  d: number,
+  hour24: number,
+  minute: number,
+): boolean {
+  const p = wallClockParts(formatter, sec);
+  return p.year === y && p.month === m && p.day === d && p.hour === hour24 && p.minute === minute;
+}
 
 /**
  * UNIX seconds for a wall-clock time on a US equity `YYYY-MM-DD` session date (DST-aware via Intl).
@@ -28,16 +80,20 @@ export function usSessionWallClockUnix(
     sessionWallClockUnixCache.set(cacheKey, fallback);
     return fallback;
   }
+  const formatter = wallClockFormatter(timeZone);
+  // Wall clock read as UTC, shifted by the zone offset (twice, so a DST change in between settles).
+  const wallAsUtc = Math.floor(Date.UTC(y, m - 1, d, hour24, minute, 0) / 1000);
+  let guess = wallAsUtc - zoneOffsetSec(formatter, wallAsUtc);
+  guess = wallAsUtc - zoneOffsetSec(formatter, guess);
+  if (wallClockMatches(formatter, guess, y, m, d, hour24, minute)) {
+    // Repeated hour when clocks fall back: use the first occurrence.
+    if (wallClockMatches(formatter, guess - 3600, y, m, d, hour24, minute)) guess -= 3600;
+    sessionWallClockUnixCache.set(cacheKey, guess);
+    return guess;
+  }
+
+  // Wall time skipped by a DST jump: keep the old nearest-minute scan.
   const anchor = Math.floor(Date.UTC(y, m - 1, d, 17, 0, 0) / 1000);
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
   let resolved = anchor;
   for (let delta = -20 * 3600; delta <= 20 * 3600; delta += 60) {
     const sec = anchor + delta;

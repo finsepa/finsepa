@@ -16,6 +16,11 @@ import {
 } from "lightweight-charts";
 
 import { CandleChartSkeleton } from "@/components/ui/chart-skeleton";
+import {
+  fetchChartJsonCached,
+  prefetchChartJsonWhenIdle,
+  primeChartJsonCache,
+} from "@/lib/chart/client-chart-json-cache";
 import { CHART_PLOT_BACKGROUND_CLASS } from "@/lib/chart/fundamentals-chart-surface";
 import type { StockCandleInterval, StockCandlesResponse } from "@/lib/market/stock-candles";
 import type { StockChartRange } from "@/lib/market/stock-chart-types";
@@ -25,6 +30,22 @@ import { cn } from "@/lib/utils";
 type Candle = StockCandlesResponse["candles"][number];
 
 /** Match crypto candle refresh: faster while live so forming candles keep up with the header. */
+const STOCK_CANDLE_PREFETCH_RANGES: readonly StockChartRange[] = ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"];
+
+function stockCandlesApiPath(ticker: string, range: StockChartRange): string {
+  return `/api/stocks/${encodeURIComponent(ticker)}/candles?range=${encodeURIComponent(range)}`;
+}
+
+/** Client reuse window — intraday candles go stale faster than daily/weekly. */
+function stockCandlesCacheTtlMs(range: StockChartRange): number {
+  return range === "1D" || range === "5D" ? 30_000 : 5 * 60_000;
+}
+
+/** Older candles may paint instantly; live refreshes replace intraday data within seconds. */
+function stockCandlesCacheStaleMs(range: StockChartRange): number {
+  return range === "1D" || range === "5D" ? 2 * 60_000 : 30 * 60_000;
+}
+
 function liveRefreshMs(interval: StockCandleInterval, live: boolean): number {
   if (!live) return 5 * 60_000;
   return interval === "5m" ? 15_000 : 30_000;
@@ -153,13 +174,26 @@ export function StockCandleChart({
     const scheduleRefresh = (interval: StockCandleInterval, live: boolean) => {
       timer = setTimeout(() => void load(true), liveRefreshMs(interval, live));
     };
-    const load = (isRefresh: boolean): Promise<void> =>
-      fetch(`/api/stocks/${encodeURIComponent(ticker)}/candles?range=${encodeURIComponent(range)}`, {
-        credentials: "include",
-        signal: ctrl.signal,
-      })
+    const path = stockCandlesApiPath(ticker, range);
+    const request = (isRefresh: boolean): Promise<StockCandlesResponse | null> => {
+      if (!isRefresh) {
+        return fetchChartJsonCached<StockCandlesResponse>(
+          path,
+          stockCandlesCacheTtlMs(range),
+          stockCandlesCacheStaleMs(range),
+        );
+      }
+      return fetch(path, { credentials: "include", signal: ctrl.signal })
         .then((r) => (r.ok ? (r.json() as Promise<StockCandlesResponse>) : null))
         .then((json) => {
+          if (json) primeChartJsonCache(path, json);
+          return json;
+        });
+    };
+    const load = (isRefresh: boolean): Promise<void> =>
+      request(isRefresh)
+        .then((json) => {
+          if (ctrl.signal.aborted) return;
           if (json || !isRefresh) setLoaded({ key: requestKey, data: json });
           if (json?.live || (isRefresh && !json)) {
             scheduleRefresh(json?.interval ?? "5m", Boolean(json?.live));
@@ -181,6 +215,15 @@ export function StockCandleChart({
   const data = loading ? null : loaded.data;
   const interval = data?.interval ?? "1d";
   const live = data?.live ?? false;
+
+  // Warm the other ranges once candles are on screen so range switches are near-instant.
+  useEffect(() => {
+    if (loading) return;
+    const paths = STOCK_CANDLE_PREFETCH_RANGES.filter((r) => r !== range).map((r) =>
+      stockCandlesApiPath(ticker, r),
+    );
+    return prefetchChartJsonWhenIdle(paths, 60_000);
+  }, [loading, ticker, range]);
 
   /** Server candles with the forming candle patched from the header live price (crypto-style). */
   const candles = useMemo(() => {

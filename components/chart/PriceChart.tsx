@@ -57,6 +57,7 @@ import {
 
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import { pinCryptoRangeTipToLive } from "@/lib/chart/crypto-range-live-tip";
+import { fetchChartJsonCached, prefetchChartJsonWhenIdle } from "@/lib/chart/client-chart-json-cache";
 import { computeChartHeaderMetrics } from "@/components/chart/chart-display-metrics";
 import {
   horzTimeToUnixSeconds,
@@ -201,6 +202,28 @@ type RangeChartPriceBadge = {
  * Intentionally scoped to reference live tickers (not necessarily every allowlist member).
  */
 const SKELETON_ON_1D_REFRESH_TICKERS = new Set(["AAPL", "NVDA", "GOOGL"]);
+
+/** Client reuse window per range — live-ish ranges go stale faster. */
+function chartRangeCacheTtlMs(range: StockChartRange): number {
+  if (range === "1D") return 15_000;
+  if (range === "5D") return 30_000;
+  return 60_000;
+}
+
+/** How long an older response may still paint instantly while it refreshes in the background. */
+function chartRangeCacheStaleMs(range: StockChartRange): number {
+  if (range === "1D") return 15_000;
+  if (range === "5D") return 5 * 60_000;
+  return 15 * 60_000;
+}
+
+/** Ranges warmed in the background once a chart is up (1D refreshes live, so it is never prefetched). */
+const PREFETCH_CHART_RANGES: readonly StockChartRange[] = ["5D", "1M", "6M", "YTD", "1Y", "5Y", "ALL"];
+
+function chartApiPath(kind: "stock" | "crypto", symbol: string, range: StockChartRange, series: string): string {
+  const base = kind === "stock" ? "stocks" : "crypto";
+  return `/api/${base}/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}`;
+}
 
 type Stock1DChartJson = { points?: StockChartPoint[]; liveSessionMinute?: boolean };
 
@@ -2850,18 +2873,17 @@ export function PriceChart({
           ? `/api/stocks/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}${cadenceQ}`
           : `/api/crypto/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}`;
       try {
-        const res = await fetch(path, { credentials: "include" });
-        if (!res.ok) {
+        const json = await fetchChartJsonCached<{
+          points?: StockChartPoint[];
+          liveSessionMinute?: boolean;
+        }>(path, chartRangeCacheTtlMs(range), chartRangeCacheStaleMs(range));
+        if (!json) {
           if (!mounted) return;
           setPoints([]);
           setLoading(false);
           setReady(true); readyRef.current = true;
           return;
         }
-        const json = (await res.json()) as {
-          points?: StockChartPoint[];
-          liveSessionMinute?: boolean;
-        };
         if (!mounted) return;
         const nextPoints = Array.isArray(json.points) ? json.points : [];
         if (typeof json.liveSessionMinute === "boolean") {
@@ -2893,6 +2915,16 @@ export function PriceChart({
       mounted = false;
     };
   }, [kind, symbol, range, series, initialChart, chartDataCadence]);
+
+  // After the visible range is up, warm the other ranges so switching is near-instant.
+  useEffect(() => {
+    if (!ready || loading || holdingsStyle || screenshotPreviewMode) return;
+    if (chartDataCadence === "daily") return;
+    const paths = PREFETCH_CHART_RANGES.filter((r) => r !== range).map((r) =>
+      chartApiPath(kind, symbol, r, series),
+    );
+    return prefetchChartJsonWhenIdle(paths, 60_000);
+  }, [ready, loading, holdingsStyle, screenshotPreviewMode, chartDataCadence, kind, symbol, series, range]);
 
   // Refresh 1D during live regular session — ~60s (Supabase WS minute bars). Price only.
   useEffect(() => {
