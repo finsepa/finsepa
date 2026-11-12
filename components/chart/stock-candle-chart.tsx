@@ -248,7 +248,7 @@ export function StockCandleChart({
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.12, bottom: 0.26 } },
       timeScale: {
         borderVisible: true,
-        borderColor: resolveFsColorWithAlpha("--fs-fg-muted", 0.5),
+        borderColor: resolveFsColor("--fs-stroke"),
         ticksVisible: true,
         rightOffset: 2,
         fixLeftEdge: true,

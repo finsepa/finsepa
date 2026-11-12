@@ -496,8 +496,7 @@
   bottom: calc(100% + 3px);
   width: 1px;
   height: 6px;
-  background: var(--color-fg-muted);
-  opacity: 0.5;
+  background: var(--color-stroke);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -521,8 +520,7 @@
   right: 0;
   bottom: calc(100% + 9px);
   height: 1px;
-  background: var(--color-fg-muted);
-  opacity: 0.5;
+  background: var(--color-stroke);
   pointer-events: none;
 }
 

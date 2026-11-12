@@ -281,7 +281,7 @@ export function CryptoCandleChart({
       rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.14, bottom: 0.06 } },
       timeScale: {
         borderVisible: true,
-        borderColor: resolveFsColorWithAlpha("--fs-fg-muted", 0.5),
+        borderColor: resolveFsColor("--fs-stroke"),
         ticksVisible: true,
         rightOffset: 4,
         timeVisible: intraday,
