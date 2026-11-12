@@ -46,6 +46,7 @@ import {
   fundamentalsBarSolidAtIndex,
 } from "@/lib/colors/fundamentals-multi-bar-colors";
 import { cn } from "@/lib/utils";
+import { ChartAxisLine } from "@/components/chart/chart-axis-line";
 
 /** Gutter between plot edge and Y-axis tick labels (px). Absolute ticks ignore parent padding. */
 const MACRO_Y_AXIS_W_PX = 72;
@@ -525,6 +526,7 @@ function MacroProminentLineChart({
 
         <div className="flex w-full min-w-0 overflow-visible" style={{ height: AXIS_ROW_PX }}>
           <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: AXIS_ROW_PX }}>
+            {axisLabelIndexSet.size > 0 ? <ChartAxisLine className="top-1.5" /> : null}
             {cleaned.map((pt, i) => {
               const show = axisLabelIndexSet.has(i);
               const leftPct = periodCenterLeftPercent(
@@ -536,7 +538,7 @@ function MacroProminentLineChart({
               return (
                 <div
                   key={`axis-${pt.time}-${i}`}
-                  className="absolute top-1.5 flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible"
+                  className={`absolute top-1.5 flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible${show ? " chart-axis-tick" : ""}`}
                   style={{ left: `${leftPct}%` }}
                   title={formatMacroTooltipTime(pt.time)}
                 >

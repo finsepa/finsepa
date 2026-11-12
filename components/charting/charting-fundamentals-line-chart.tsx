@@ -54,6 +54,7 @@ import {
   fundamentalsBarEnterProgress,
   runFundamentalsBarEnterAnimation,
 } from "@/lib/chart/fundamentals-bar-enter-animation";
+import { ChartAxisLine } from "@/components/chart/chart-axis-line";
 
 const MULTICHART_AXIS_ROW_PX = 32;
 const MULTICHART_AXIS_BOTTOM_PAD_PX = 10;
@@ -533,6 +534,7 @@ function ChartingMultiMetricFundamentalsLineChart({
           className="relative w-full min-w-0 pt-1.5"
           style={{ height: MULTICHART_AXIS_ROW_PX + MULTICHART_AXIS_BOTTOM_PAD_PX }}
         >
+          {axisLabels.some(Boolean) ? <ChartAxisLine className="top-1.5" /> : null}
           {periodEnds.map((pe, i) => {
             const label = axisLabels[i] ?? "";
             if (!label) return null;
@@ -540,7 +542,7 @@ function ChartingMultiMetricFundamentalsLineChart({
             return (
               <span
                 key={pe}
-                className="absolute top-1.5 inline-block -translate-x-1/2 whitespace-nowrap text-[12px] tabular-nums leading-none text-fg-muted"
+                className="chart-axis-tick absolute top-1.5 inline-block -translate-x-1/2 whitespace-nowrap text-[12px] tabular-nums leading-none text-fg-muted"
                 style={{ left: `${leftPct}%` }}
               >
                 {label}

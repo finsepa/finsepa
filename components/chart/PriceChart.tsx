@@ -32,6 +32,7 @@ import {
   type OverviewBottomAxisMode,
   type PeriodAxisLabelAnchor,
 } from "@/components/chart/overview-bottom-axis";
+import { ChartAxisLine, PERIOD_AXIS_LABEL_TEXT_CLASS } from "@/components/chart/chart-axis-line";
 import {
   LineSeries,
   AreaSeries,
@@ -3666,13 +3667,17 @@ export function PriceChart({
           {holdingsStyle ? (
             <>
               <div ref={holdingsPeriodAxisRowRef} className="absolute inset-0">
+                {visiblePeriodAxisLabels.length > 0 ? (
+                  <ChartAxisLine className="bottom-1" labelClassName={PERIOD_AXIS_LABEL_TEXT_CLASS} />
+                ) : null}
                 {visiblePeriodAxisLabels.map((lab, i) => {
                   const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
                   return (
                   <span
                     key={lab.key}
+                    data-tick-anchor={anchor}
                     className={cn(
-                      "absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
+                      "chart-axis-tick absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px]",
                       periodAxisLabelMaxWidthClass(anchor),
                       periodAxisLabelTransformClass(anchor),
                     )}
@@ -3709,7 +3714,11 @@ export function PriceChart({
               {activeBottomAxisLabel.label}
             </span>
           ) : (
-            visiblePeriodAxisLabels.map((lab, i) => {
+            <>
+            {visiblePeriodAxisLabels.length > 0 ? (
+              <ChartAxisLine className="top-1/2 -translate-y-1/2" labelClassName="text-[11px] sm:text-[12px]" />
+            ) : null}
+            {visiblePeriodAxisLabels.map((lab, i) => {
               const isLive1DLabel = lab.key.startsWith("live-1d-");
               const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, {
                 isLeftmost: !isLive1DLabel && i === 0,
@@ -3717,8 +3726,9 @@ export function PriceChart({
               return (
               <span
                 key={lab.key}
+                data-tick-anchor={anchor}
                 className={cn(
-                  "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] tabular-nums leading-none",
+                  "chart-axis-tick absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] tabular-nums leading-none",
                   cryptoLive1DAxis
                     ? "text-[12px] font-medium text-[#8A8A8A]"
                     : "text-[11px] font-normal text-fg-muted sm:text-[12px]",
@@ -3734,7 +3744,8 @@ export function PriceChart({
                 {lab.label}
               </span>
               );
-            })
+            })}
+            </>
           )}
         </div>
       ) : null}

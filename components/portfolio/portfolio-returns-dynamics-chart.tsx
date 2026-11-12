@@ -49,6 +49,7 @@ import {
   portfolioPeriodReturnYears,
 } from "@/lib/portfolio/portfolio-period-returns-years";
 import { cn } from "@/lib/utils";
+import { ChartAxisLine, PERIOD_AXIS_LABEL_TEXT_CLASS } from "@/components/chart/chart-axis-line";
 
 const BENCHMARK_SPY_BAR = "#EA580C";
 const BENCHMARK_NASDAQ_BAR = "#9333EA";
@@ -667,6 +668,9 @@ function DynamicsSvg({
           style={{ height: FUNDAMENTALS_CHART_AXIS_ROW_PX }}
         >
           <div className="relative min-w-0 flex-1 overflow-visible">
+            {bars.length > 0 && bars.length <= 16 ? (
+              <ChartAxisLine className="bottom-0 pb-0.5" labelClassName={PERIOD_AXIS_LABEL_TEXT_CLASS} />
+            ) : null}
             {bars.map((b, i) => {
               const leftPct = ((i + 0.5) / n) * 100;
               const label =
@@ -675,7 +679,7 @@ function DynamicsSvg({
               return (
                 <div
                   key={`axis-${b.periodStart}-${b.periodEnd}`}
-                  className="absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5 pb-0.5"
+                  className={`absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5 pb-0.5${rotate ? "" : " chart-axis-tick"}`}
                   style={{ left: `${leftPct}%` }}
                   title={b.label}
                 >

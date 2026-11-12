@@ -31,6 +31,7 @@ import {
 } from "@/lib/portfolio/use-portfolio-holding-display-names";
 import { cn } from "@/lib/utils";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
+import { ChartAxisLine } from "@/components/chart/chart-axis-line";
 
 const PROFIT_BAR = "#22C55E";
 const LOSS_BAR = "#EF4444";
@@ -411,6 +412,7 @@ function HoldingsPerformanceBarChart({
           <div className="flex w-full min-w-0" style={{ height: FUNDAMENTALS_CHART_AXIS_ROW_PX }}>
             <div className="shrink-0" style={{ width: Y_LABEL_W_PX }} aria-hidden />
             <div className="relative min-w-0 flex-1 overflow-hidden">
+              {ticks.length > 0 ? <ChartAxisLine className="top-2" /> : null}
               {ticks.map((tick, tickIndex) => {
                 const leftPct = xMax > 0 ? (tick / xMax) * 100 : 0;
                 const isFirst = tickIndex === 0;
@@ -418,8 +420,9 @@ function HoldingsPerformanceBarChart({
                 return (
                   <span
                     key={tick}
+                    data-tick-anchor={isFirst ? "left" : isLast ? "right" : undefined}
                     className={cn(
-                      "absolute top-2 text-[11px] font-normal tabular-nums leading-4 text-fg-muted",
+                      "chart-axis-tick absolute top-2 text-[11px] font-normal tabular-nums leading-4 text-fg-muted",
                       isFirst && "left-0",
                       isLast && "right-0",
                       !isFirst && !isLast && "-translate-x-1/2",

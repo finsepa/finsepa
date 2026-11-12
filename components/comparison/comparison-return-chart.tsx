@@ -20,6 +20,7 @@ import {
 } from "@/lib/chart/fundamentals-chart-surface";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import { cn } from "@/lib/utils";
+import { ChartAxisLine } from "@/components/chart/chart-axis-line";
 
 const RETURN_CHART_PLOT_HEIGHT_PX = 288;
 const RETURN_CHART_AXIS_ROW_PX = 32;
@@ -530,14 +531,15 @@ export function ComparisonReturnChart({
                 style={{ height: RETURN_CHART_AXIS_ROW_PX }}
               >
                 <div
-                  className="grid min-w-0 flex-1"
+                  className="relative grid min-w-0 flex-1"
                   style={{
                     gridTemplateColumns: `repeat(${chartYears.length}, minmax(0, 1fr))`,
                   }}
                 >
+                  <ChartAxisLine className="top-0" />
                   {chartYears.map((year) => (
                     <div key={year} className="min-w-0 px-0.5 text-center">
-                      <span className="text-balance font-['Inter'] text-[11px] font-normal leading-snug text-fg-muted sm:text-[12px]">
+                      <span className="chart-axis-tick relative inline-block text-balance font-['Inter'] text-[11px] font-normal leading-snug text-fg-muted sm:text-[12px]">
                         {year}
                       </span>
                     </div>

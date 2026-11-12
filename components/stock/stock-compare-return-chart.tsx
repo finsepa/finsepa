@@ -39,6 +39,7 @@ import {
   type OverviewBottomAxisMode,
   type PeriodAxisLabelAnchor,
 } from "@/components/chart/overview-bottom-axis";
+import { ChartAxisLine, PERIOD_AXIS_LABEL_TEXT_CLASS } from "@/components/chart/chart-axis-line";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { isCryptoOverviewSymbol } from "@/lib/crypto/crypto-picker-universe";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
@@ -679,18 +680,24 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
               );
             })()
           ) : (
-            periodAxisLabels.map((lab, i) => {
+            <>
+            {periodAxisLabels.length > 0 ? (
+              <ChartAxisLine className="bottom-1" labelClassName={PERIOD_AXIS_LABEL_TEXT_CLASS} />
+            ) : null}
+            {periodAxisLabels.map((lab, i) => {
               const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
               return (
               <span
                 key={lab.key}
-                className={`absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
+                data-tick-anchor={anchor}
+                className={`chart-axis-tick absolute bottom-1 inline-block whitespace-nowrap font-['Inter'] text-[11px] font-normal tabular-nums leading-none text-fg-muted sm:text-[12px] ${periodAxisLabelMaxWidthClass(anchor)} ${periodAxisLabelTransformClass(anchor)}`}
                 style={periodAxisLabelLayoutStyle(lab.leftPx, anchor)}
               >
                 {lab.label}
               </span>
               );
-            })
+            })}
+            </>
           )}
         </div>
       ) : null}

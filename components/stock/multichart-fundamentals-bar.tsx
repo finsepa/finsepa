@@ -75,6 +75,7 @@ import {
 } from "@/lib/chart/fundamentals-line-chart-series";
 import type { FundamentalsChartTimeRange } from "@/lib/market/fundamentals-chart-time-range";
 import { cn } from "@/lib/utils";
+import { ChartAxisLine } from "@/components/chart/chart-axis-line";
 
 /** Default bar width (px); extra horizontal space becomes even gaps between columns. */
 export const MULTICHART_BAR_WIDTH_PX = 14;
@@ -1197,6 +1198,9 @@ export function MultichartFundamentalsBar({
             className="relative mb-1 min-w-0 flex-1 px-0"
             style={{ height: MULTICHART_AXIS_ROW_PX }}
           >
+            {effectiveHorizontalPeriodAxisLabels && axisLabels.length > 0 ? (
+              <ChartAxisLine className="top-1.5" />
+            ) : null}
             {axisLabels.map((axisLab, i) => {
               const showAxisText = lineAxisMode
                 ? axisLab.length > 0
@@ -1214,7 +1218,7 @@ export function MultichartFundamentalsBar({
                   key={`${labels[i]}-${i}`}
                   className={cn(
                     "absolute flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible",
-                    effectiveHorizontalPeriodAxisLabels ? "top-1.5" : "bottom-0.5",
+                    effectiveHorizontalPeriodAxisLabels ? "chart-axis-tick top-1.5" : "bottom-0.5",
                   )}
                   style={{ left: `${leftPct}%` }}
                   title={labels[i]}

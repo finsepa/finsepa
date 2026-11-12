@@ -33,6 +33,7 @@ import {
   useState,
   type MouseEvent,
 } from "react";
+import { ChartAxisLine } from "@/components/chart/chart-axis-line";
 
 const AXIS_ROW_PX = 32;
 const AXIS_BOTTOM_PAD_PX = 10;
@@ -629,6 +630,7 @@ export function PortfolioGoalProjectionChart({
           style={{ height: AXIS_ROW_PX + AXIS_BOTTOM_PAD_PX }}
         >
           <div className="relative min-w-0 flex-1 overflow-visible">
+            {years.length > 0 ? <ChartAxisLine className="top-1.5" /> : null}
             {years.map((year, i) => {
               const isCrossingYear = crossingYearIndexes.has(i);
               const label = isCrossingYear ? String(year) : goalYearAxisLabel(year, years, i);
@@ -638,7 +640,7 @@ export function PortfolioGoalProjectionChart({
                 <span
                   key={year}
                   className={cn(
-                    "absolute top-1.5 inline-block -translate-x-1/2 whitespace-nowrap text-[12px] tabular-nums leading-none",
+                    "chart-axis-tick absolute top-1.5 inline-block -translate-x-1/2 whitespace-nowrap text-[12px] tabular-nums leading-none",
                     isCrossingYear
                       ? "font-semibold text-fg"
                       : "font-medium text-fg-muted",
