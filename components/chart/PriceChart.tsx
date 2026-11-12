@@ -510,6 +510,8 @@ const BASELINE_DASH_PX = 5.5;
 
 /** Plain right-axis price labels (no horizontal rules). Panel fill so pills match chart backdrop. */
 const Y_AXIS_LABEL_COUNT = 6;
+/** About half an axis label's height — keeps the top/bottom numbers centred on their gridlines. */
+const Y_AXIS_EDGE_INSET_PX = 10;
 
 const HIDE_NATIVE_Y_AXIS_TICK_LABELS = (priceValue: readonly number[]) => priceValue.map(() => "");
 
@@ -659,8 +661,10 @@ function syncYAxisTickLabels(
     return;
   }
 
-  const topPrice = series.coordinateToPrice(0);
-  const bottomPrice = series.coordinateToPrice(h);
+  // Inset the outer numbers so lightweight-charts doesn't nudge their labels off the gridlines.
+  const inset = h > Y_AXIS_EDGE_INSET_PX * 4 ? Y_AXIS_EDGE_INSET_PX : 0;
+  const topPrice = series.coordinateToPrice(inset);
+  const bottomPrice = series.coordinateToPrice(h - inset);
   if (topPrice == null || bottomPrice == null) {
     removeYAxisTickLabels(series, ticksRef);
     return;
@@ -1297,11 +1301,10 @@ export function PriceChart({
       liveSessionChartOptions,
     );
   }, [kind, range, holdingsStyle, liveSessionMinute, series, symbol, chartSourcePoints, liveSpotUsd, liveQuotedAtSec, livePriceBadgeUsd, livePostMarketTailTimeUnix, sessionNowMs, liveSessionChartOptions]);
-  /** Point count without the appended crypto live tip, so its arrival doesn't re-show the skeleton. */
-  const skeletonPointCount =
-    kind === "crypto" && range !== "1D"
-      ? Math.min(chartPoints.length, chartSourcePoints.length)
-      : chartPoints.length;
+  const hasChartPoints = chartPoints.length > 0;
+  /** Series identity — live ticks within it never bring the skeleton back. */
+  const skeletonDataKey = `${kind}|${symbol}|${range}|${series}`;
+  const skeletonRevealedKeyRef = useRef<string | null>(null);
   const [hoverPrice, setHoverPrice] = useState<number | null>(null);
   const [hoverTimeUnix, setHoverTimeUnix] = useState<number | null>(null);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
@@ -3524,11 +3527,17 @@ export function PriceChart({
       skeletonRevealRafRef.current = 0;
     }
     if (loading || !ready) {
+      skeletonRevealedKeyRef.current = null;
       setShowSkeleton(true);
       return;
     }
     // Confirmed empty range — drop skeleton and show the empty message.
-    if (chartPoints.length === 0) {
+    if (!hasChartPoints) {
+      setShowSkeleton(false);
+      return;
+    }
+    // Already on screen for this series: live ticks just repaint the line.
+    if (skeletonRevealedKeyRef.current === skeletonDataKey) {
       setShowSkeleton(false);
       return;
     }
@@ -3540,7 +3549,9 @@ export function PriceChart({
       skeletonRevealRafRef.current = requestAnimationFrame(() => {
         skeletonRevealRafRef.current = 0;
         revealTimer = setTimeout(() => {
-          if (!cancelled) setShowSkeleton(false);
+          if (cancelled) return;
+          skeletonRevealedKeyRef.current = skeletonDataKey;
+          setShowSkeleton(false);
         }, 50);
       });
     });
@@ -3552,7 +3563,7 @@ export function PriceChart({
         skeletonRevealRafRef.current = 0;
       }
     };
-  }, [loading, ready, skeletonPointCount]);
+  }, [loading, ready, hasChartPoints, skeletonDataKey]);
 
   const overviewHoverTooltip = useMemo(() => {
     if (holdingsStyle || !overviewHover) return null;
