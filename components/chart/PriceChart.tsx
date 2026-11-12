@@ -1411,6 +1411,27 @@ export function PriceChart({
     liveSpotUsdRef.current = liveSpotUsd;
   }, [liveSpotUsd]);
 
+  /**
+   * `setData` autoscales on the next frame, so axis numbers placed right after it use the old
+   * range — a new low/high then runs past the outer labels. Re-place them once the scale settles.
+   */
+  const yAxisResyncRafRef = useRef(0);
+  const resyncYAxisAfterAutoscaleRef = useRef<() => void>(() => {});
+  resyncYAxisAfterAutoscaleRef.current = () => {
+    cancelAnimationFrame(yAxisResyncRafRef.current);
+    yAxisResyncRafRef.current = requestAnimationFrame(() => {
+      yAxisResyncRafRef.current = requestAnimationFrame(() => {
+        yAxisResyncRafRef.current = 0;
+        const c = chartRef.current;
+        const s = seriesRef.current;
+        if (!c || !s || hideMobileYAxisLabelsRef.current) return;
+        if (screenshotPreviewModeRef.current && !screenshotShowVerticalLegendRef.current) return;
+        syncYAxisTickLabels(c, s, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
+      });
+    });
+  };
+  useEffect(() => () => cancelAnimationFrame(yAxisResyncRafRef.current), []);
+
   const syncLivePriceBadgeRef = useRef<() => void>(() => {});
   syncLivePriceBadgeRef.current = () => {
     const s = seriesRef.current;
@@ -3282,6 +3303,7 @@ export function PriceChart({
       } else {
         removeYAxisTickLabels(series, yAxisTickLinesRef);
       }
+      resyncYAxisAfterAutoscaleRef.current();
       return;
     }
 
@@ -3456,6 +3478,7 @@ export function PriceChart({
     } else {
       removeYAxisTickLabels(single, yAxisTickLinesRef);
     }
+    resyncYAxisAfterAutoscaleRef.current();
     if (!useLiveSessionChart) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
