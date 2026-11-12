@@ -33,12 +33,18 @@ export type PeriodAxisLabelAnchor = "left" | "center";
 const PERIOD_AXIS_LEFT_EDGE_PX = 0;
 const PERIOD_AXIS_RIGHT_EDGE_PX = 8;
 
-/** Left-align only the first tick so long labels are not clipped off-plot. */
+/** A centered label closer than this to the left edge would be clipped (~half a `2026` / `12PM`). */
+const PERIOD_AXIS_CENTER_MIN_LEFT_PX = 20;
+
+/**
+ * Left-align the first tick only when it sits at the plot's left edge (a centered label would clip).
+ * Further in, it centers on its tick like every other label so it marks its real time.
+ */
 export function resolvePeriodAxisLabelAnchor(
   leftPx: number,
   options: { isLeftmost?: boolean },
 ): PeriodAxisLabelAnchor {
-  if (options.isLeftmost) return "left";
+  if (options.isLeftmost && leftPx < PERIOD_AXIS_CENTER_MIN_LEFT_PX) return "left";
   if (leftPx <= PERIOD_AXIS_LEFT_EDGE_PX + 2) return "left";
   return "center";
 }
@@ -49,7 +55,7 @@ export function periodAxisLabelLayoutStyle(
   plotWidthPx = 0,
 ): { left: string } {
   if (anchor === "left") {
-    return { left: `${PERIOD_AXIS_LEFT_EDGE_PX}px` };
+    return { left: `${Math.max(PERIOD_AXIS_LEFT_EDGE_PX, leftPx)}px` };
   }
   if (plotWidthPx > 0) {
     const clamped = Math.min(
@@ -775,6 +781,20 @@ function cryptoLive1DAxisHourStep(
   return 12;
 }
 
+/** An hour tick needs a bar this close to the top of the hour, so the label matches the hover time. */
+const CRYPTO_1D_TICK_MAX_OFFSET_SEC = 5 * 60;
+
+function secondsIntoHour(unix: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(new Date(unix * 1000));
+  const minute = Number(parts.find((p) => p.type === "minute")?.value ?? 0);
+  const second = Number(parts.find((p) => p.type === "second")?.value ?? 0);
+  return minute * 60 + second;
+}
+
 export function buildCryptoLive1DAxisLabels(
   chart: IChartApi,
   data: readonly StockChartPoint[],
@@ -798,6 +818,8 @@ export function buildCryptoLive1DAxisLabels(
     lastHourKey = hourKey;
     const hour = hourFromSessionBucketKey(hourKey);
     if (hour % step !== 0) continue;
+    // The rolling 24h window starts mid-hour (e.g. 12:18): its first bar is not "12PM".
+    if (secondsIntoHour(p.time, timeZone) > CRYPTO_1D_TICK_MAX_OFFSET_SEC) continue;
     const x = chart.timeScale().timeToCoordinate(p.time as UTCTimestamp);
     if (x == null || !Number.isFinite(x)) continue;
     out.push({
