@@ -165,8 +165,8 @@ export function ChartControls({
         {compareSlot || downloadSlot || chartTypeSlot ?
           <div className="flex shrink-0 items-center gap-2">
             {compareSlot ? <div className="shrink-0">{compareSlot}</div> : null}
-            {chartTypeSlot ? <div className="shrink-0">{chartTypeSlot}</div> : null}
             {downloadSlot ? <div className="shrink-0">{downloadSlot}</div> : null}
+            {chartTypeSlot ? <div className="shrink-0">{chartTypeSlot}</div> : null}
           </div>
         : null}
       </div>
@@ -200,8 +200,8 @@ export function ChartControls({
             {compareSlot}
           </div>
         ) : null}
-        {chartTypeSlot ? <div className="hidden shrink-0 sm:block">{chartTypeSlot}</div> : null}
         {downloadSlot ? <div className="hidden shrink-0 sm:block">{downloadSlot}</div> : null}
+        {chartTypeSlot ? <div className="hidden shrink-0 sm:block">{chartTypeSlot}</div> : null}
         <div className="shrink-0 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0">
           {rangeSlot ?? (
             <SegmentedControl
