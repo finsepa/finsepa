@@ -3080,7 +3080,7 @@ export function PriceChart({
           price: open,
           color: BASELINE_LINE,
           lineWidth: 1,
-          lineStyle: LineStyle.Dashed,
+          lineStyle: LineStyle.LargeDashed,
           axisLabelVisible: false,
           lineVisible: true,
         });
@@ -3275,7 +3275,7 @@ export function PriceChart({
         price: open,
         color: BASELINE_LINE,
         lineWidth: 1,
-        lineStyle: LineStyle.Dashed,
+        lineStyle: LineStyle.LargeDashed,
         axisLabelVisible: false,
         lineVisible: true,
       });
