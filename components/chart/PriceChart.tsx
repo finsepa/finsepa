@@ -56,6 +56,7 @@ import {
 } from "lightweight-charts";
 
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+import { pinCryptoRangeTipToLive } from "@/lib/chart/crypto-range-live-tip";
 import { computeChartHeaderMetrics } from "@/components/chart/chart-display-metrics";
 import {
   horzTimeToUnixSeconds,
@@ -1172,6 +1173,10 @@ export function PriceChart({
     ) {
       return pinCryptoLive1DChartTip(chartSourcePoints, liveSpotUsd, liveQuotedAtSec);
     }
+    if (kind === "crypto" && range !== "1D" && !holdingsStyle && series === "price") {
+      return pinCryptoRangeTipToLive(chartSourcePoints, livePriceBadgeUsd, Math.floor(Date.now() / 1000))
+        .points;
+    }
     // Live share-price pin only for Price series — market cap / return stay last-session EODHD.
     if (
       kind === "stock" &&
@@ -1268,7 +1273,12 @@ export function PriceChart({
       now,
       liveSessionChartOptions,
     );
-  }, [kind, range, holdingsStyle, liveSessionMinute, series, symbol, chartSourcePoints, liveSpotUsd, liveQuotedAtSec, livePostMarketTailTimeUnix, sessionNowMs, liveSessionChartOptions]);
+  }, [kind, range, holdingsStyle, liveSessionMinute, series, symbol, chartSourcePoints, liveSpotUsd, liveQuotedAtSec, livePriceBadgeUsd, livePostMarketTailTimeUnix, sessionNowMs, liveSessionChartOptions]);
+  /** Point count without the appended crypto live tip, so its arrival doesn't re-show the skeleton. */
+  const skeletonPointCount =
+    kind === "crypto" && range !== "1D"
+      ? Math.min(chartPoints.length, chartSourcePoints.length)
+      : chartPoints.length;
   const [hoverPrice, setHoverPrice] = useState<number | null>(null);
   const [hoverTimeUnix, setHoverTimeUnix] = useState<number | null>(null);
   const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number } | null>(null);
@@ -3487,7 +3497,7 @@ export function PriceChart({
         skeletonRevealRafRef.current = 0;
       }
     };
-  }, [loading, ready, chartPoints.length]);
+  }, [loading, ready, skeletonPointCount]);
 
   const overviewHoverTooltip = useMemo(() => {
     if (holdingsStyle || !overviewHover) return null;
