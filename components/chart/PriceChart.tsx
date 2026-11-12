@@ -178,11 +178,28 @@ function formatReturnAxis(n: number): string {
   return `${sign}${Math.abs(rel).toFixed(2)}%`;
 }
 
+/** FX quotes: 4 decimals for majors (1.1089), 3 for JPY-style pairs (150.123). No currency sign. */
+function fxPriceDecimals(reference: number): number {
+  return Math.abs(reference) >= 50 ? 3 : 4;
+}
+
+function formatFxValue(value: number, reference: number = value): string {
+  const decimals = fxPriceDecimals(reference);
+  return value.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function fxPriceFormat(reference: number) {
+  const precision = fxPriceDecimals(reference);
+  return { type: "price" as const, precision, minMove: 1 / 10 ** precision };
+}
+
 function formatOverviewChartAxisValue(
   value: number,
   kind: "stock" | "crypto",
   chartSeries: StockChartSeries,
+  fx = false,
 ): string {
+  if (fx && chartSeries === "price") return formatFxValue(value);
   if (kind === "stock" && chartSeries === "marketCap") return formatMarketCapAxis(value);
   if (kind === "stock" && chartSeries === "return") return formatReturnAxis(value);
   if (kind === "crypto" && chartSeries === "price") return formatCryptoUsd(value);
@@ -414,6 +431,11 @@ type Props = {
   liveQuotedAtSec?: number | null;
   /** Crypto: header live price, drawn as the up/down right-axis badge on every range. */
   livePriceBadgeUsd?: number | null;
+  /**
+   * `fx`: currency pair on the stock pipeline — 24h market (no US-session 1D layout) and
+   * pip-precision values without a `$` sign.
+   */
+  valueStyle?: "usd" | "fx";
   /** Frozen AH quote timestamp (20:00 ET cap) — post-market allowlist chart tail only. */
   livePostMarketTailTimeUnix?: number | null;
   /**
@@ -999,6 +1021,7 @@ export function PriceChart({
   liveSpotUsd = null,
   liveQuotedAtSec = null,
   livePriceBadgeUsd = null,
+  valueStyle = "usd",
   livePostMarketTailTimeUnix = null,
   holdingsStyle = false,
   holdingsPlotBackdrop = "panel",
@@ -1018,6 +1041,9 @@ export function PriceChart({
   const holdingsPlotBackdropRef = useRef(holdingsPlotBackdrop);
   const chartMetricSeriesRef = useRef(series);
   const kindRef = useRef(kind);
+  const fx = valueStyle === "fx";
+  const fxRef = useRef(fx);
+  fxRef.current = fx;
   const rangeRef = useRef(range);
   const loadingRef = useRef(true);
   const screenshotPreviewModeRef = useRef(screenshotPreviewMode);
@@ -1189,6 +1215,7 @@ export function PriceChart({
   );
 
   const chartPoints = useMemo(() => {
+    if (fx) return chartSourcePoints;
     const now = new Date(sessionNowMs);
     // Crypto 24H: keep 2m history; pin only the tip to the header's live WS price + timestamp.
     if (
@@ -1300,7 +1327,7 @@ export function PriceChart({
       now,
       liveSessionChartOptions,
     );
-  }, [kind, range, holdingsStyle, liveSessionMinute, series, symbol, chartSourcePoints, liveSpotUsd, liveQuotedAtSec, livePriceBadgeUsd, livePostMarketTailTimeUnix, sessionNowMs, liveSessionChartOptions]);
+  }, [fx, kind, range, holdingsStyle, liveSessionMinute, series, symbol, chartSourcePoints, liveSpotUsd, liveQuotedAtSec, livePriceBadgeUsd, livePostMarketTailTimeUnix, sessionNowMs, liveSessionChartOptions]);
   const hasChartPoints = chartPoints.length > 0;
   /** Series identity — live ticks within it never bring the skeleton back. */
   const skeletonDataKey = `${kind}|${symbol}|${range}|${series}`;
@@ -1372,8 +1399,8 @@ export function PriceChart({
   const tooltipByDateRef = useRef<Map<string, string[]>>(new Map());
   const dimOverlayRef = useRef<HTMLDivElement>(null);
   const stock1DLiveSession = useMemo(
-    () => shouldUseStock1DLiveSessionChart(kind, range, points, holdingsStyle),
-    [kind, range, points, holdingsStyle],
+    () => !fx && shouldUseStock1DLiveSessionChart(kind, range, points, holdingsStyle),
+    [fx, kind, range, points, holdingsStyle],
   );
 
   /** Live 24/7 crypto 1D (BTC): Google-Finance-style rolling-24h hour axis + subtle gridlines. */
@@ -2497,7 +2524,7 @@ export function PriceChart({
         openLayout
           ? {
               ...openLayout,
-              label: formatOverviewChartAxisValue(first.value, kindRef.current, metric),
+              label: formatOverviewChartAxisValue(first.value, kindRef.current, metric, fxRef.current),
               anchor: "start",
             }
           : null,
@@ -2516,7 +2543,7 @@ export function PriceChart({
           highLayout
             ? {
                 ...highLayout,
-                label: formatOverviewChartAxisValue(highPt.value, kindRef.current, metric),
+                label: formatOverviewChartAxisValue(highPt.value, kindRef.current, metric, fxRef.current),
                 anchor: "center",
               }
             : null,
@@ -3341,6 +3368,7 @@ export function PriceChart({
       ),
       // Live ticks re-apply options mid-hover: keep the up/down marker color the hover set.
       crosshairMarkerBorderColor: single.options().crosshairMarkerBorderColor,
+      ...(fxRef.current && chartMetricSeriesRef.current === "price" ? { priceFormat: fxPriceFormat(open) } : {}),
       ...(hideBottomFill ? { bottomFillColor1: "rgba(0,0,0,0)", bottomFillColor2: "rgba(0,0,0,0)" } : {}),
       ...(hideTopFill ? { topFillColor1: "rgba(0,0,0,0)", topFillColor2: "rgba(0,0,0,0)" } : {}),
       // Keep the prior-close baseline on screen even when the whole session traded above/below it.
@@ -3570,7 +3598,9 @@ export function PriceChart({
     const hoverPrice = overviewHover.price;
     if (!Number.isFinite(hoverPrice)) return null;
     const valueLabel =
-      kind === "stock" && series === "marketCap"
+      fx && series === "price"
+        ? formatFxValue(hoverPrice)
+        : kind === "stock" && series === "marketCap"
         ? formatMarketCapAxis(hoverPrice)
         : kind === "stock" && series === "return"
           ? formatReturnAxis(hoverPrice)
@@ -3597,7 +3627,7 @@ export function PriceChart({
       changeLabel: formatSignedPercent2dp(changePct),
       changePct,
     };
-  }, [holdingsStyle, overviewHover, kind, series, chartPoints, range, previousCloseBaseline]);
+  }, [holdingsStyle, overviewHover, fx, kind, series, chartPoints, range, previousCloseBaseline]);
 
   const overviewMetricTitle =
     series === "marketCap" ? "Market cap" : series === "return" ? "Return" : "Price";

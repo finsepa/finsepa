@@ -17,6 +17,7 @@ import { usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } fro
 import { isStockChartRange, sliceStockChartPointsForRange } from "@/lib/market/stock-chart-api";import { isStockChartSeries, type StockChartRange, type StockChartSeries } from "@/lib/market/stock-chart-types";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
 import { getNvdaChartPoints } from "@/lib/fixtures/nvda";
+import { getCurrencyChartPoints } from "@/lib/market/currency-page-initial-data";
 
 /** Portfolio overview benchmark fetch must still work in single-asset demo mode. */
 const BENCHMARK_CHART_TICKERS = new Set(["SPY", "QQQ", "DIA", "IWM", "VTI"]);
@@ -65,6 +66,17 @@ export async function GET(request: Request, { params }: Ctx) {
   }
 
   const cadenceDaily = url.searchParams.get("cadence") === "daily";
+
+  // FX trades ~24h: same loader as the currency page (no US RTH filters / live-session pipeline).
+  if (/\.FOREX$/i.test(routeUpper) && !cadenceDaily) {
+    let fxPoints = await getCurrencyChartPoints(routeUpper, range);
+    if (series === "return") fxPoints = pricePointsToReturnIndexPoints(fxPoints);
+    return NextResponse.json(
+      { ticker: routeTicker, range, series, points: fxPoints, liveSessionMinute: false },
+      { headers: { "Cache-Control": CACHE_CONTROL_PRIVATE_CHART_STREAM } },
+    );
+  }
+
   const loadChartPoints = cadenceDaily ? getSuperinvestorHoldingStockChartPoints : getStockChartPointsForApi;
   const rawPoints = await loadChartPoints(routeTicker, range, series);
   const points = sliceStockChartPointsForRange(rawPoints, range);

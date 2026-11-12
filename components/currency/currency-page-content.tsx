@@ -21,7 +21,15 @@ import {
   type CurrencyPageInitialData,
 } from "@/lib/market/currency-page-shared";
 import { clearPendingAssetShellIfMatch } from "@/lib/navigation/pending-asset-shell";
-import type { StockChartSeries } from "@/lib/market/stock-chart-types";
+import type { StockChartPoint, StockChartSeries } from "@/lib/market/stock-chart-types";
+
+/** Longest gap a 1D FX seed may have (covers the weekend close). */
+const FX_SEED_MAX_AGE_SEC = 4 * 86_400;
+
+function isFreshFxSeed(points: readonly StockChartPoint[]): boolean {
+  const last = points.at(-1);
+  return last != null && Date.now() / 1000 - last.time <= FX_SEED_MAX_AGE_SEC;
+}
 
 const EMPTY_CHART_DISPLAY: ChartDisplayState = {
   loading: true,
@@ -67,15 +75,22 @@ function CurrencyPageContentInner({
   const displayCode = serverMatch?.displayCode ?? symKey;
   const performance = serverMatch?.performance ?? null;
 
+  // FX trades ~24h: once the chart has data it drives the header (same last price, same change
+  // anchor as the line), instead of the US-session EOD merge used for equities.
   const headerUi = useMemo(
-    () => mergeSessionHeaderWithPerformanceSpot(sessionHeaderUi, performance, chartSeries, null),
+    () =>
+      sessionHeaderUi.displayPrice != null
+        ? sessionHeaderUi
+        : mergeSessionHeaderWithPerformanceSpot(sessionHeaderUi, performance, chartSeries, null),
     [sessionHeaderUi, performance, chartSeries],
   );
 
-  const initialChartMemo = useMemo(
-    () => (serverMatch ? { range: serverMatch.chart.range, points: serverMatch.chart.points } : null),
-    [serverMatch],
-  );
+  const initialChartMemo = useMemo(() => {
+    if (!serverMatch) return null;
+    // Durable page snapshots can lag days behind — fetch instead of painting a stale seed.
+    if (!isFreshFxSeed(serverMatch.chart.points)) return null;
+    return { range: serverMatch.chart.range, points: serverMatch.chart.points };
+  }, [serverMatch]);
 
   const periodLabel = range === "YTD" ? "YTD" : range;
 
@@ -121,6 +136,7 @@ function CurrencyPageContentInner({
         >
           <PriceChart
             kind="stock"
+            valueStyle="fx"
             symbol={symKey}
             range={range}
             series={chartSeries}
