@@ -9,6 +9,11 @@ import type {
   Time,
 } from "lightweight-charts";
 
+/** Shared baseline look for overview charts (asset + portfolio). */
+export const CHART_BASELINE_DASH_COLOR = "rgba(113, 113, 122, 0.58)";
+/** Dash and gap length (LWC `LargeDashed` is 6px; ~10% more dashes). */
+export const CHART_BASELINE_DASH_PX = 5.5;
+
 /**
  * Dashed horizontal line at a price with a custom dash pattern (LWC price lines only offer fixed
  * patterns), in the bottom layer so the series line and hover marker paint above it.

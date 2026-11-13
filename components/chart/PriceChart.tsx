@@ -84,7 +84,12 @@ import { isStock1DLiveMinuteChartTicker, usesStock1DLiveWsMinutePipeline, usesSt
 import { isCryptoLive1DSymbol, usesCryptoLogPriceScale } from "@/lib/market/crypto-live-1d-tickers";
 import { pinCryptoLive1DChartTip } from "@/lib/chart/crypto-live-1d-chart-tip";
 import { clearPriceGridlines, priceGridlinesFor } from "@/lib/chart/price-gridlines-primitive";
-import { clearDashedPriceLine, dashedPriceLineFor } from "@/lib/chart/dashed-price-line-primitive";
+import {
+  CHART_BASELINE_DASH_COLOR,
+  CHART_BASELINE_DASH_PX,
+  clearDashedPriceLine,
+  dashedPriceLineFor,
+} from "@/lib/chart/dashed-price-line-primitive";
 import {
   hollowInBarCircleMarkers,
   scheduleScaledInBarMarkers,
@@ -526,9 +531,8 @@ function applyLiveSessionSeriesPriceLineOptions(
 const HOLDINGS_QUARTER_BAND_HEIGHT_RATIO = 0.14;
 const HOLDINGS_EARLIER_BAND_WIDTH_PX = 58;
 const HOLDINGS_EARLIER_BAND_HEIGHT = "42%";
-const BASELINE_LINE = "rgba(113, 113, 122, 0.58)";
-/** Baseline dash and gap length (LWC `LargeDashed` is 6px; ~10% more dashes). */
-const BASELINE_DASH_PX = 5.5;
+const BASELINE_LINE = CHART_BASELINE_DASH_COLOR;
+const BASELINE_DASH_PX = CHART_BASELINE_DASH_PX;
 
 /** Plain right-axis price labels (no horizontal rules). Panel fill so pills match chart backdrop. */
 const Y_AXIS_LABEL_COUNT = 6;

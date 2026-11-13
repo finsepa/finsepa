@@ -55,7 +55,6 @@ import {
 
 import { horzTimeToUnixSeconds, nearestPointByTime } from "@/components/chart/chart-selection-utils";
 import {
-  CHART_PLOT_DOTS_PATTERN_CLASS,
   formatOverviewCrosshairBottomDate,
   overviewAxisLabelsEqual,
   overviewChartAxisRowPx,
@@ -83,6 +82,11 @@ import {
   sortBenchmarkChartPoints,
 } from "@/lib/portfolio/benchmark/benchmark-chart-points";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
+import {
+  CHART_BASELINE_DASH_COLOR,
+  CHART_BASELINE_DASH_PX,
+  dashedPriceLineFor,
+} from "@/lib/chart/dashed-price-line-primitive";
 import { PillSwitch } from "@/components/ui/pill-switch";
 import type { StockChartPoint, StockChartRange } from "@/lib/market/stock-chart-types";
 import {
@@ -107,9 +111,10 @@ import {
   STOCK_OVERVIEW_SECTION_HEADING_CLASS,
 } from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
-import type {
-  PortfolioChartRange,
-  PortfolioValueHistoryPoint,
+import {
+  PORTFOLIO_CHART_RANGES,
+  type PortfolioChartRange,
+  type PortfolioValueHistoryPoint,
 } from "@/lib/portfolio/portfolio-chart-types";
 import {
   fetchPortfolioValueHistoryCached,
@@ -1508,6 +1513,8 @@ function syncOverviewYAxisLabelsFromMinMax(
 }
 
 const OVERVIEW_CHART_PLOT_BACKDROP_INSET_CLASS = "top-[12%] bottom-[8%]";
+/** Matches asset-chart y gridlines (`--fs-stroke` at 60%), fainter than borders. */
+const OVERVIEW_Y_GRIDLINE_COLOR = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 
 function formatAxisUsd(n: number): string {
   if (!Number.isFinite(n)) return "$0";
@@ -2505,7 +2512,7 @@ export function PortfolioValueHistoryChartPane({
       relativeGradient: false,
       ...baselineUpDownFillColors("bright"),
       lineWidth: 2,
-      lineType: LineType.Curved,
+      lineType: LineType.Simple,
       priceLineVisible: false,
       lastPriceAnimation,
       crosshairMarkerVisible: true,
@@ -2524,7 +2531,7 @@ export function PortfolioValueHistoryChartPane({
           topColor: fill.top,
           bottomColor: fill.bottom,
           lineWidth: 2,
-          lineType: LineType.Curved,
+          lineType: LineType.Simple,
           priceLineVisible: false,
           lastPriceAnimation,
           lastValueVisible: showNativeLastValueBadges,
@@ -2548,10 +2555,13 @@ export function PortfolioValueHistoryChartPane({
           : {}),
           baseValue: { type: "price" as const, price: 0 },
         });
+    if (metric === "return" || metric === "profit") {
+      dashedPriceLineFor(series).setLine(0, CHART_BASELINE_DASH_COLOR, CHART_BASELINE_DASH_PX);
+    }
 
     const compareLineOpts = {
       lineWidth: 2,
-      lineType: LineType.Curved,
+      lineType: LineType.Simple,
       priceLineVisible: false,
       lastPriceAnimation,
       crosshairMarkerVisible: false,
@@ -3122,7 +3132,7 @@ export function PortfolioValueHistoryChartPane({
         if (!s) {
           s = chart.addSeries(LineSeries, {
             lineWidth: 2,
-            lineType: plotLayoutRef.current === "goal" ? LineType.Simple : LineType.Curved,
+            lineType: LineType.Simple,
             priceLineVisible: false,
             lastPriceAnimation: LastPriceAnimationMode.Disabled,
             priceScaleId: "right",
@@ -3241,12 +3251,14 @@ export function PortfolioValueHistoryChartPane({
       const c = chartRef.current;
       if (!c) return;
       const plugins = lastPointMarkersRef.current;
+      // Overview lines end in their value badge only (like asset charts); goal layout keeps dots.
+      const endDots = plotLayoutRef.current === "goal";
       applyLastPointCircleMarkers(
         c,
         plugins.main,
         data,
         overviewLastPointStroke(metric, data),
-        showPortfolio,
+        showPortfolio && endDots,
       );
       const spySeries = compareSeriesRefs.current.spy;
       applyLastPointCircleMarkers(
@@ -3254,7 +3266,7 @@ export function PortfolioValueHistoryChartPane({
         plugins.spy,
         spySeries ? (spySeries.data() as { time: Time; value: number }[]) : [],
         BENCHMARK_SPY_LINE,
-        drawCompareSpy,
+        drawCompareSpy && endDots,
       );
       const nasdaqSeries = compareSeriesRefs.current.nasdaq;
       applyLastPointCircleMarkers(
@@ -3262,7 +3274,7 @@ export function PortfolioValueHistoryChartPane({
         plugins.nasdaq,
         nasdaqSeries ? (nasdaqSeries.data() as { time: Time; value: number }[]) : [],
         BENCHMARK_NASDAQ_LINE,
-        drawCompareNasdaq,
+        drawCompareNasdaq && endDots,
       );
       for (const o of overlaySeries) {
         const overlayApi = overlaySeriesRefs.current.get(o.id);
@@ -3397,7 +3409,21 @@ export function PortfolioValueHistoryChartPane({
   const plotSurface = (
     <>
       <div className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)} aria-hidden>
-            <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+            {/* Gridlines at the right-axis numbers (same look as asset charts), under the series. */}
+            {!loading && !(isGoalPlotLayout && !showGoalYAxisColumn) ? (
+              <div
+                className={cn("absolute left-0", OVERVIEW_CHART_PLOT_BACKDROP_INSET_CLASS)}
+                style={{ right: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
+              >
+                {yAxisLabels.map((lab) => (
+                  <div
+                    key={lab.key}
+                    className="absolute inset-x-0 h-px"
+                    style={{ top: `${lab.topPct}%`, background: OVERVIEW_Y_GRIDLINE_COLOR }}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
           <div
             ref={wrapRef}
@@ -3782,6 +3808,35 @@ function PortfolioOverviewChartInner({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Once the visible range is painted, warm the other ranges one at a time while idle
+  // (same idea as asset charts) so range switches read the client cache instantly.
+  useEffect(() => {
+    if (loading || fixedRange != null || !canLoad) return;
+    const queue = PORTFOLIO_CHART_RANGES.filter((r) => r !== range && r !== "1d");
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const runNext = () => {
+      if (cancelled) return;
+      const next = queue.shift();
+      if (!next) return;
+      if (document.hidden || peekPortfolioValueHistoryCached(next, transactions)) {
+        timer = setTimeout(runNext, document.hidden ? 2_000 : 0);
+        if (document.hidden) queue.unshift(next);
+        return;
+      }
+      void fetchPortfolioValueHistoryCached(next, transactions)
+        .catch(() => null)
+        .finally(() => {
+          if (!cancelled) timer = setTimeout(runNext, 300);
+        });
+    };
+    timer = setTimeout(runNext, 1_500);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [loading, fixedRange, canLoad, range, transactions]);
 
   /** Mobile range row omits YTD — match asset `ChartControls`. */
   useEffect(() => {
