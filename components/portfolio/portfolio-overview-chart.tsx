@@ -281,6 +281,103 @@ function overviewLastPointStroke(metric: MetricMode, data: readonly { value: num
   return typeof last === "number" && last < 0 ? resolveFsColor("--fs-down") : resolveFsColor("--fs-up");
 }
 
+type PortfolioRangeBadge = {
+  key: "open" | "high" | "low";
+  left: number;
+  top: number;
+  label: string;
+};
+
+const RANGE_BADGE_CLASS =
+  "inline-block whitespace-nowrap rounded-[6px] bg-stroke px-1.5 py-0.5 text-[11px] font-medium leading-4 tabular-nums text-fg";
+const RANGE_BADGE_H_PX = 24;
+const RANGE_BADGE_CENTER_INSET_PX = 44;
+
+function estimateRangeBadgeWidthPx(label: string): number {
+  return label.length * 6.5 + 12;
+}
+
+/** Open / high / low badges for the visible portfolio line (same chrome as asset charts). */
+function computePortfolioRangeBadges(
+  chart: IChartApi,
+  series: OverviewMainSeries,
+  metric: MetricMode,
+): PortfolioRangeBadge[] {
+  const data = (series.data() as { time: Time; value?: number }[]).filter(
+    (d): d is { time: Time; value: number } => typeof d.value === "number" && Number.isFinite(d.value),
+  );
+  if (data.length < 2) return [];
+  const first = data[0]!;
+  let high = first;
+  let low = first;
+  for (const d of data) {
+    if (d.value >= high.value) high = d;
+    if (d.value < low.value) low = d;
+  }
+  const { width: plotW, height: paneH } = chart.paneSize(0);
+  if (plotW < 12 || paneH < 12) return [];
+
+  const place = (pt: { time: Time; value: number }) => {
+    const x = chart.timeScale().timeToCoordinate(pt.time);
+    const y = series.priceToCoordinate(pt.value);
+    if (x == null || y == null || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+    if (y < 0 || y > paneH) return null;
+    return { x, y };
+  };
+  const label = (v: number) => overviewTooltipValue(metric, v).valueLabel;
+
+  type Box = { l: number; r: number; t: number; b: number };
+  const out: PortfolioRangeBadge[] = [];
+  const boxes: Box[] = [];
+  const overlaps = (b: Box) => boxes.some((o) => b.l < o.r && b.r > o.l && b.t < o.b && b.b > o.t);
+
+  const openPos = place(first);
+  if (openPos) {
+    const text = label(first.value);
+    const left = Math.max(0, Math.round(openPos.x));
+    const top = Math.round(openPos.y);
+    out.push({ key: "open", left, top, label: text });
+    boxes.push({ l: left, r: left + estimateRangeBadgeWidthPx(text), t: top - RANGE_BADGE_H_PX, b: top });
+  }
+
+  const addExtreme = (key: "high" | "low", pt: { time: Time; value: number }) => {
+    if (pt === first || Math.abs(pt.value - first.value) < 1e-9) return;
+    const pos = place(pt);
+    if (!pos) return;
+    const text = label(pt.value);
+    const w = estimateRangeBadgeWidthPx(text);
+    const left = Math.round(
+      Math.max(RANGE_BADGE_CENTER_INSET_PX, Math.min(plotW - RANGE_BADGE_CENTER_INSET_PX, pos.x)),
+    );
+    // High sits above its point; low sits below (kept inside the pane).
+    const top =
+      key === "high" ?
+        Math.max(RANGE_BADGE_H_PX, Math.round(pos.y))
+      : Math.min(paneH - RANGE_BADGE_H_PX, Math.round(pos.y));
+    const box: Box =
+      key === "high" ?
+        { l: left - w / 2, r: left + w / 2, t: top - RANGE_BADGE_H_PX, b: top }
+      : { l: left - w / 2, r: left + w / 2, t: top, b: top + RANGE_BADGE_H_PX };
+    if (overlaps(box)) return;
+    out.push({ key, left, top, label: text });
+    boxes.push(box);
+  };
+  addExtreme("high", high);
+  addExtreme("low", low);
+  return out;
+}
+
+function portfolioRangeBadgesEqual(a: PortfolioRangeBadge[], b: PortfolioRangeBadge[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i]!;
+    const y = b[i]!;
+    if (x.key !== y.key || x.left !== y.left || x.top !== y.top || x.label !== y.label) return false;
+  }
+  return true;
+}
+
 function overviewYAxisLabelsEqual(a: OverviewYAxisLabel[], b: OverviewYAxisLabel[]): boolean {
   if (a === b) return true;
   if (a.length !== b.length) return false;
@@ -2149,6 +2246,8 @@ export function PortfolioValueHistoryChartPane({
   const [yAxisLabels, setYAxisLabels] = useState<OverviewYAxisLabel[]>([]);
   const [goalEndBadges, setGoalEndBadges] = useState<GoalYAxisEndBadge[]>([]);
   const [goalAchievementDots, setGoalAchievementDots] = useState<GoalAchievementDot[]>([]);
+  const [rangeBadges, setRangeBadges] = useState<PortfolioRangeBadge[]>([]);
+  const rangeBadgesRafRef = useRef(0);
   const goalYAxisBadgesRef = useRef<HTMLDivElement | null>(null);
   const chartRangeRef = useRef<PortfolioChartRange>(range);
   const chartPointsRef = useRef<StockChartPoint[]>([]);
@@ -2294,8 +2393,24 @@ export function PortfolioValueHistoryChartPane({
     }
   }, []);
 
+  const syncRangeBadges = useCallback(() => {
+    const chart = chartRef.current;
+    const s = seriesRef.current;
+    const next =
+      chart && s && plotLayoutRef.current !== "goal" && showPortfolioRef.current ?
+        computePortfolioRangeBadges(chart, s, metricRef.current)
+      : [];
+    setRangeBadges((prev) => (portfolioRangeBadgesEqual(prev, next) ? prev : next));
+  }, []);
+
   const syncPaneYAxisChrome = useCallback(() => {
     const s = seriesRef.current;
+    syncRangeBadges();
+    // setData autoscale lands on the next paint — re-place badges once coordinates settle.
+    cancelAnimationFrame(rangeBadgesRafRef.current);
+    rangeBadgesRafRef.current = requestAnimationFrame(() => {
+      rangeBadgesRafRef.current = requestAnimationFrame(syncRangeBadges);
+    });
     if (!s || s.data().length === 0) return;
     const goalBadgeSpecs =
       plotLayoutRef.current === "goal"
@@ -2375,7 +2490,9 @@ export function PortfolioValueHistoryChartPane({
       );
       setGoalAchievementDots((prev) => (goalAchievementDotsEqual(prev, nextAchievement) ? prev : nextAchievement));
     }
-  }, []);
+  }, [syncRangeBadges]);
+
+  useEffect(() => () => cancelAnimationFrame(rangeBadgesRafRef.current), []);
 
   useEffect(() => {
     setTradeTooltipMounted(true);
@@ -2875,6 +2992,7 @@ export function PortfolioValueHistoryChartPane({
       });
       lineAnimKeyRef.current = "";
       setYAxisLabels([]);
+      setRangeBadges([]);
       setGoalEndBadges([]);
       setGoalAchievementDots([]);
       chart.remove();
@@ -2992,7 +3110,9 @@ export function PortfolioValueHistoryChartPane({
         aggressiveStrokeColor: "",
       };
       goalYAxisExtentsRef.current = null;
+      if (metric === "value") dashedPriceLineFor(series).setLine(null, "transparent", 0);
       setYAxisLabels([]);
+      setRangeBadges([]);
       setGoalEndBadges([]);
       setGoalAchievementDots([]);
       periodAxisLabelsRef.current = [];
@@ -3093,6 +3213,11 @@ export function PortfolioValueHistoryChartPane({
       lineAnimKey.length > 0 && lineAnimKey === lineAnimKeyRef.current;
     if (!samePortfolioLine) {
       series.setData(data);
+    }
+    // Return / profit keep their dashed zero line; Value marks where the range opened.
+    if (metric === "value") {
+      const openValue = plotLayoutRef.current === "goal" || !showPortfolio ? null : data[0]!.value;
+      dashedPriceLineFor(series).setLine(openValue, CHART_BASELINE_DASH_COLOR, CHART_BASELINE_DASH_PX);
     }
     series.applyOptions({
       visible: showPortfolio,
@@ -3434,6 +3559,23 @@ export function PortfolioValueHistoryChartPane({
                 : "opacity-100 transition-opacity duration-300 ease-out",
             )}
           />
+          {!loading && !isGoalPlotLayout ?
+            rangeBadges.map((badge) => (
+              <div
+                key={badge.key}
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute z-[12]",
+                  badge.key === "open" ? "-translate-y-full pb-1"
+                  : badge.key === "high" ? "-translate-x-1/2 -translate-y-full pb-1"
+                  : "-translate-x-1/2 pt-1",
+                )}
+                style={{ left: badge.left, top: badge.top }}
+              >
+                <span className={RANGE_BADGE_CLASS}>{badge.label}</span>
+              </div>
+            ))
+          : null}
           {loading && !isGoalPlotLayout ? (
             <div className="absolute inset-0 z-20 flex flex-col px-1 py-1">
               <ChartSkeleton fill variant="minimal" />
