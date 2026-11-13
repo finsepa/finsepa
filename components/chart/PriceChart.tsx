@@ -491,38 +491,14 @@ const EMPTY_TRADE_MARKERS: readonly HoldingsTradeMarker[] = [];
 const EMPTY_HOLDINGS_QUARTER_BANDS: readonly HoldingsQuarterTradeBand[] = [];
 
 
-function sessionLivePriceLineColor(livePrice: number, openPrice: number): string {
-  return livePrice >= openPrice ? resolveFsColor("--fs-up") : resolveFsColor("--fs-down");
-}
-
-function resolveSessionLiveSpotPrice(
-  liveSpotUsd: number | null | undefined,
-  fallback: number | undefined,
-  open: number,
-): number {
-  if (liveSpotUsd != null && Number.isFinite(liveSpotUsd) && liveSpotUsd > 0) {
-    return liveSpotUsd;
-  }
-  if (fallback != null && Number.isFinite(fallback)) {
-    return fallback;
-  }
-  return open;
-}
-
-function applyLiveSessionSeriesPriceLineOptions(
+/** Stock 1D session: last-price badge only — no last-price line across the plot (same as crypto). */
+function applyLiveSessionSeriesBadgeOptions(
   series: ISeriesApi<"Baseline"> | ISeriesApi<"Area">,
-  open: number,
-  liveSpotUsd: number | null | undefined,
-  fallbackPrice: number | undefined,
   hideYAxisLabels: boolean,
 ) {
-  const livePrice = resolveSessionLiveSpotPrice(liveSpotUsd, fallbackPrice, open);
-  const color = sessionLivePriceLineColor(livePrice, open);
   series.applyOptions({
     lastValueVisible: !hideYAxisLabels,
-    priceLineVisible: true,
-    priceLineStyle: LineStyle.Dashed,
-    priceLineColor: color,
+    priceLineVisible: false,
     lineType: LineType.Simple,
   });
 }
@@ -1747,19 +1723,7 @@ export function PriceChart({
         });
         const sessionOpen = sessionOpenPriceRef.current;
         if (stock1DLiveSessionRef.current && sessionOpen != null && Number.isFinite(sessionOpen)) {
-          const pts = pointsRef.current.filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value));
-          const chartLiveSpot = stock1DUsesLiveSessionClock(new Date(), {
-            liveSessionMinute: liveSessionMinuteRef.current,
-          })
-            ? liveSpotUsdRef.current
-            : null;
-          applyLiveSessionSeriesPriceLineOptions(
-            series,
-            sessionOpen,
-            chartLiveSpot,
-            pts.at(-1)?.value,
-            hide,
-          );
+          applyLiveSessionSeriesBadgeOptions(series, hide);
         } else {
           series.applyOptions({ priceLineVisible: false });
         }
@@ -3451,26 +3415,9 @@ export function PriceChart({
     }
     dashedPriceLineFor(single).setLine(open, BASELINE_LINE, BASELINE_DASH_PX);
 
-    const lastValued = [...data]
-      .reverse()
-      .find((p): p is { time: UTCTimestamp; value: number } => "value" in p && isFiniteNumber(p.value));
     if (useLiveSessionChart) {
       sessionOpenPriceRef.current = open;
-      const chartLiveSpot =
-        liveSessionMinuteRef.current
-          ? null
-          : stock1DUsesLiveSessionClock(new Date(), {
-              liveSessionMinute: liveSessionMinuteRef.current,
-            })
-            ? liveSpotUsdRef.current
-            : null;
-      applyLiveSessionSeriesPriceLineOptions(
-        single,
-        open,
-        chartLiveSpot,
-        lastValued?.value,
-        hideMobileYAxisLabelsRef.current,
-      );
+      applyLiveSessionSeriesBadgeOptions(single, hideMobileYAxisLabelsRef.current);
     } else {
       sessionOpenPriceRef.current = null;
       single.applyOptions({ priceLineVisible: false });
@@ -3533,23 +3480,6 @@ export function PriceChart({
       });
     }
   }, [chartPoints, holdingsStyle, tradeMarkers, holdingsQuarterBands, costBasisPrice, previousCloseBaseline, kind, series, symbol, screenshotPreviewMode, chartThemePaintKey]);
-
-  useEffect(() => {
-    if (!stock1DLiveSession || holdingsStyle) return;
-    if (liveSessionMinute) return;
-    if (!stock1DUsesLiveSessionClock(new Date(), { liveSessionMinute })) return;
-    const s = seriesRef.current;
-    const openPrice = sessionOpenPriceRef.current;
-    if (!s || openPrice == null || !Number.isFinite(openPrice)) return;
-    const pts = pointsRef.current.filter((p) => isFiniteNumber(p.time) && isFiniteNumber(p.value));
-    applyLiveSessionSeriesPriceLineOptions(
-      s,
-      openPrice,
-      liveSpotUsd,
-      pts.at(-1)?.value,
-      hideMobileYAxisLabelsRef.current,
-    );
-  }, [stock1DLiveSession, liveSpotUsd, holdingsStyle, liveSessionMinute]);
 
   const empty = !loading && chartPoints.length === 0;
 
