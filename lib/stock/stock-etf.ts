@@ -6,7 +6,7 @@ import { STOCK_DETAIL_TAB_ITEMS } from "@/lib/stock/stock-detail-tab-items";
 const POPULAR_ETF_TICKERS = new Set(POPULAR_US_ETFS.map((e) => e.ticker.trim().toUpperCase()));
 
 /** Tabs shown on `/stock/[ticker]` when the symbol is an ETF. */
-export const ETF_STOCK_DETAIL_TAB_IDS = ["overview", "etf-holdings", "holdings"] as const satisfies readonly StockDetailTabId[];
+export const ETF_STOCK_DETAIL_TAB_IDS = ["overview", "holdings"] as const satisfies readonly StockDetailTabId[];
 
 export function isEtfFromHeaderMeta(meta: StockDetailHeaderMeta | null | undefined): boolean {
   if (!meta) return false;
@@ -30,15 +30,16 @@ export function isStockDetailEtf(ticker: string, meta?: StockDetailHeaderMeta | 
   return isEtfFromHeaderMeta(meta);
 }
 
-/** In-page + mobile top bar tab list: ETFs get Overview / Holdings / Portfolio; stocks never see ETF Holdings. */
+/** In-page + mobile top bar tab list: ETFs get Overview (incl. fund holdings) / Portfolio. */
 export function stockDetailTabItemsFor(isEtf: boolean): typeof STOCK_DETAIL_TAB_ITEMS {
   return isEtf
     ? STOCK_DETAIL_TAB_ITEMS.filter((t) => (ETF_STOCK_DETAIL_TAB_IDS as readonly string[]).includes(t.id))
     : STOCK_DETAIL_TAB_ITEMS.filter((t) => t.id !== "etf-holdings");
 }
 
+/** Old `?tab=etf-holdings` links land on Overview, where the holdings table now lives. */
 export function coerceStockDetailTabForEtf(tab: StockDetailTabId): StockDetailTabId {
-  if (tab === "overview" || tab === "etf-holdings" || tab === "holdings") return tab;
+  if (tab === "overview" || tab === "holdings") return tab;
   return "overview";
 }
 

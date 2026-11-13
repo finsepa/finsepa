@@ -19,7 +19,7 @@ import { parseStockDetailTabQuery } from "@/lib/stock/stock-detail-tab";
 import { coerceStockDetailTabForEtf, isStockDetailEtf, normalizeStockDetailTab } from "@/lib/stock/stock-etf";
 import { clearPendingAssetShellIfMatch } from "@/lib/navigation/pending-asset-shell";
 import { AssetPortfolioHoldingsTab } from "@/components/portfolio/asset-portfolio-holdings-tab";
-import { EtfHoldingsTab } from "@/components/stock/etf-holdings-tab";
+import { EtfHoldingsTable } from "@/components/stock/etf-holdings-table";
 import { EtfKeyStats } from "@/components/stock/etf-key-stats";
 import { StockDetailTabNav } from "./stock-detail-tab-nav";
 import { useRegisterStockDetailTabHost } from "./stock-detail-tab-host-context";
@@ -1474,6 +1474,7 @@ export function StockPageContent({
             />
           ) : null}
           {isEtf ? <EtfKeyStats ticker={ticker} /> : null}
+          {isEtf ? <EtfHoldingsTable ticker={ticker} isActive={displayTab === "overview"} /> : null}
           <StockOverviewMetricActionsProvider
             value={{
               onOpenMetricChart: openRevenueProfitMetricModal,
@@ -1617,17 +1618,6 @@ export function StockPageContent({
             initialPageData={initialPageData?.ticker === ticker ? initialPageData : undefined}
             isActive={displayTab === "peers"}
           />
-        </div>
-      ) : null}
-
-      {tabsMounted["etf-holdings"] ? (
-        <div
-          role="tabpanel"
-          id="stock-tab-etf-holdings"
-          aria-hidden={displayTab !== "etf-holdings"}
-          className={displayTab === "etf-holdings" ? "block" : "hidden"}
-        >
-          <EtfHoldingsTab ticker={ticker} isActive={displayTab === "etf-holdings"} />
         </div>
       ) : null}
 
