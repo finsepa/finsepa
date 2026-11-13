@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 
-import { AllocationWeightValue } from "@/components/portfolio/allocation-weight-pie";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
   DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
@@ -25,13 +24,13 @@ const MAX_LISTED_HOLDINGS = 20;
 
 /** Holding + numerics — same column rhythm as the portfolio holdings table. */
 const HOLDINGS_GRID_CLASS =
-  "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(88px,160px)_minmax(104px,160px)] items-center gap-x-2";
+  "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(88px,160px)_minmax(160px,280px)] items-center gap-x-2";
 
 /** Matches screener / portfolio asset column — ticker, underline on row hover. */
 const HOLDING_TICKER_CLASS =
   "truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline";
 
-function HoldingRow({ holding }: { holding: EtfHolding }) {
+function HoldingRow({ holding, maxWeight }: { holding: EtfHolding; maxWeight: number }) {
   const cells = (
     <div
       className={cn(
@@ -55,13 +54,16 @@ function HoldingRow({ holding }: { holding: EtfHolding }) {
       >
         {holding.valueUsd != null ? formatUsdCompact(holding.valueUsd) : "—"}
       </div>
-      <div
-        className={cn(
-          "min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
-          TABLE_END_ALIGNED_PAD_CLASS,
-        )}
-      >
-        <AllocationWeightValue pct={holding.weightPct} label={holding.weightPct.toFixed(2)} />
+      <div className={cn("flex min-w-0 w-full items-center gap-3", TABLE_END_ALIGNED_PAD_CLASS)}>
+        <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-muted">
+          <span
+            className="block h-full rounded-full bg-fg"
+            style={{ width: `${Math.max(1, (holding.weightPct / maxWeight) * 100)}%` }}
+          />
+        </span>
+        <span className="w-14 shrink-0 whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg">
+          {holding.weightPct.toFixed(2)}%
+        </span>
       </div>
     </div>
   );
@@ -86,6 +88,7 @@ function HoldingRow({ holding }: { holding: EtfHolding }) {
 }
 
 function HoldingsTable({ holdings }: { holdings: EtfHolding[] }) {
+  const maxWeight = Math.max(...holdings.map((h) => h.weightPct), 0) || 1;
   return (
     <ScreenerTableScroll>
       <div className="bg-surface">
@@ -107,7 +110,7 @@ function HoldingsTable({ holdings }: { holdings: EtfHolding[] }) {
           <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
         </div>
         {holdings.map((h) => (
-          <HoldingRow key={h.code} holding={h} />
+          <HoldingRow key={h.code} holding={h} maxWeight={maxWeight} />
         ))}
       </div>
     </ScreenerTableScroll>
