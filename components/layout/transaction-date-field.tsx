@@ -59,9 +59,12 @@ function YearFirstCaptionDropdownNav({
 export function TransactionDateField({
   date,
   onDateChange,
+  pillClassName,
 }: {
   date: Date;
   onDateChange: (next: Date) => void;
+  /** Compact pill trigger (`14 Nov 2026`) instead of the full-width form field. */
+  pillClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => startOfCalendarMonth(date));
@@ -86,20 +89,26 @@ export function TransactionDateField({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "flex w-full items-center justify-between gap-2 rounded-[10px] px-3 text-left text-sm font-normal text-fg",
-            dropdownTriggerFieldClassName,
-          )}
-        >
-          <span className="tabular-nums">{format(date, "MM/dd/yyyy")}</span>
-          <CalendarIcon className="h-5 w-5 shrink-0 text-fg" aria-hidden />
-        </button>
+        {pillClassName ? (
+          <button type="button" className={pillClassName} aria-label={`Date, ${format(date, "d MMMM yyyy")}`}>
+            <span className="tabular-nums">{format(date, "d MMM yyyy")}</span>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={cn(
+              "flex w-full items-center justify-between gap-2 rounded-[10px] px-3 text-left text-sm font-normal text-fg",
+              dropdownTriggerFieldClassName,
+            )}
+          >
+            <span className="tabular-nums">{format(date, "MM/dd/yyyy")}</span>
+            <CalendarIcon className="h-5 w-5 shrink-0 text-fg" aria-hidden />
+          </button>
+        )}
       </PopoverTrigger>
       <PopoverContent
         className="min-w-[280px] w-[min(100vw-2rem,320px)] shrink-0 overflow-hidden"
-        align="start"
+        align={pillClassName ? "center" : "start"}
         sideOffset={8}
       >
         <Calendar

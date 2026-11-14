@@ -3,1137 +3,853 @@
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { format, startOfDay } from "date-fns";
+import { useRouter } from "next/navigation";
+
 import type { CompanyPick } from "@/components/charting/company-picker";
-import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import { ChevronsUpDownIcon } from "@/components/chevrons-up-down-icon";
+import { SegmentedControl, whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import {
-  AppModalFooter,
-  AppModalShell,
-  APP_MODAL_RULE_CLASS,
-  appModalCancelButtonClass,
-  appModalPrimaryButtonClass,
-} from "@/components/ui/app-modal-shell";
-import { SpinnerLabel } from "@/components/ui/spinner";
-import { cn } from "@/lib/utils";
-import { ClearableInput } from "@/components/layout/clearable-input";
-import { UsdMoneyClearableInput } from "@/components/layout/usd-money-clearable-input";
-import { TransactionCompanyField } from "@/components/layout/transaction-company-field";
-import { TransactionDateField } from "@/components/layout/transaction-date-field";
-import {
-  TransactionIncomeOperationSelect,
-  type IncomeOperation,
-} from "@/components/layout/transaction-income-operation-select";
-import {
-  TransactionExpenseOperationSelect,
-  type ExpenseOperation,
-} from "@/components/layout/transaction-expense-operation-select";
-import {
-  TransactionOperationField,
-  type Operation,
-} from "@/components/layout/transaction-operation-field";
-import { TransactionPortfolioField } from "@/components/portfolio/transaction-portfolio-field";
-import { newHoldingId, newTransactionRowId, type PortfolioTransaction } from "@/components/portfolio/portfolio-types";
-import { SegmentedControl } from "@/components/design-system";
-import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
+  dropdownMenuPanelClassName,
+  dropdownMenuPlainItemClassName,
+} from "@/components/design-system/dropdown-menu-styles";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
+import { ClearableInput } from "@/components/layout/clearable-input";
+import { TransactionAssetPickStep } from "@/components/layout/transaction-asset-pick-step";
+import { TransactionDateField } from "@/components/layout/transaction-date-field";
+import { UsdMoneyClearableInput } from "@/components/layout/usd-money-clearable-input";
+import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import {
-  freeHoldingsLimitMessage,
-  wouldExceedFreeHoldingsCap,
-} from "@/lib/account/free-plan-asset-limits";
+  newHoldingId,
+  newTransactionRowId,
+  portfolioIsDemo,
+  type PortfolioTransaction,
+} from "@/components/portfolio/portfolio-types";
+import { CompanyLogo } from "@/components/screener/company-logo";
+import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
+import { AppModalCloseButton, AppModalShell, APP_MODAL_RULE_CLASS } from "@/components/ui/app-modal-shell";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { SpinnerLabel } from "@/components/ui/spinner";
+import { freeHoldingsLimitMessage, wouldExceedFreeHoldingsCap } from "@/lib/account/free-plan-asset-limits";
 import { FREE_MAX_HOLDINGS_PER_PORTFOLIO } from "@/lib/account/plan-entitlements";
 import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
 import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
-import { useRouter } from "next/navigation";
-import { customPortfolioSymbolFromName } from "@/lib/portfolio/custom-asset-symbol";
-import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
-import { fetchLiveMarketPriceClient, fetchPriceOnDateClient } from "@/lib/portfolio/client-symbol-quotes";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
-import { portfolioSymbolMatchesAssetRoute } from "@/lib/portfolio/portfolio-asset-route-match";
-import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-transaction";
+import { Check, ChevronLeft, Lock } from "@/lib/icons";
+import { parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
+import { fetchLiveMarketPriceClient, fetchPriceOnDateClient } from "@/lib/portfolio/client-symbol-quotes";
+import { customPortfolioSymbolFromName } from "@/lib/portfolio/custom-asset-symbol";
 import { lotUnrealizedPnL, mergeBuyIntoPosition } from "@/lib/portfolio/holding-position";
+import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
+import { portfolioSymbolMatchesAssetRoute } from "@/lib/portfolio/portfolio-asset-route-match";
+import { refreshHoldingMarketPrices, replayTradeTransactionsToHoldings } from "@/lib/portfolio/rebuild-holdings-from-trades";
+import { splitRatioFromTransaction } from "@/lib/portfolio/split-ratio-from-transaction";
 import {
-  CashDirectionSelect,
-  cashOperationLabel,
-  cashSignedAmount,
-  type CashDirection,
-} from "@/components/layout/cash-direction-select";
-import {
-  formatCashToastDescription,
   formatExpenseToastDescription,
   formatIncomeToastDescription,
   formatTradeToastDescription,
   toastTransactionAdded,
 } from "@/lib/portfolio/transaction-added-toast";
-import { refreshHoldingMarketPrices, replayTradeTransactionsToHoldings } from "@/lib/portfolio/rebuild-holdings-from-trades";
-import { parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
+import { cn } from "@/lib/utils";
 
-const TABS = ["Trades", "Incomes", "Expenses", "Cash"] as const;
+type Intent = "Buy" | "Sell" | "More";
+const INTENT_OPTIONS = [
+  { value: "Buy" as const, label: "Buy" },
+  { value: "Sell" as const, label: "Sell" },
+  { value: "More" as const, label: "More" },
+];
 
-const TRADE_ASSET_TABS = [
-  { value: "listed" as const, label: "Ticker" },
-  { value: "custom" as const, label: "Custom Asset" },
-] as const;
-type TradeAssetSource = (typeof TRADE_ASSET_TABS)[number]["value"];
-
-function formatPriceInputFromApi(n: number): string {
-  if (!Number.isFinite(n)) return "";
-  return n.toFixed(4).replace(/\.?0+$/, "") || "0";
+/** iOS “More” menu — credits go to the income ledger, the rest to expenses. */
+const OTHER_TYPES = ["Dividends", "Other income", "Fee", "Tax", "Other expense"] as const;
+type OtherType = (typeof OTHER_TYPES)[number];
+const OTHER_TYPE_LEDGER_OPERATION: Record<OtherType, string> = {
+  Dividends: "Dividend",
+  "Other income": "Other income",
+  Fee: "Fees",
+  Tax: "Tax",
+  "Other expense": "Other expense",
+};
+function isCreditType(t: OtherType): boolean {
+  return t === "Dividends" || t === "Other income";
 }
 
-const usdFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
-const usdBalance = new Intl.NumberFormat("en-US", {
+type FormTab = "trade" | "income" | "expense";
+type AssetChoice = { kind: "listed"; pick: CompanyPick } | { kind: "custom" };
+
+const usd2 = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+const qtyFormatter = new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 6 });
 
-function formatSharesHint(n: number, symbol: string): string {
-  const qty = new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 8 }).format(n);
-  // Crypto uses unit tickers (BTC, ETH, ...); equities read better as "shares".
-  const base = cryptoRouteBase(symbol);
-  if (base !== symbol.trim().toUpperCase()) return `${qty} ${base}`;
-  if (symbol.trim().toUpperCase() === "USD") return `${qty} USD`;
-  return `${qty} shares`;
+/** Grouped live typing (`1,234.5`) — digits + one dot, capped fraction digits. */
+function sanitizeAmountTyping(raw: string, maxFraction: number): string {
+  let s = raw.replace(/[^0-9.]/g, "");
+  const dot = s.indexOf(".");
+  if (dot >= 0) s = s.slice(0, dot + 1) + s.slice(dot + 1).replace(/\./g, "");
+  const [intRaw = "", frac] = s.split(".");
+  const intPart = intRaw.replace(/^0+(?=\d)/, "");
+  const grouped = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  if (frac == null) return grouped;
+  return `${grouped || "0"}.${frac.slice(0, maxFraction)}`;
 }
 
-/** Ledger sums can be ±ε; round to cents so ~0 shows as $0.00 (not red / minus). */
+function priceTextFromApi(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return "";
+  const fixed = n >= 1 ? n.toFixed(2) : n.toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+  return sanitizeAmountTyping(fixed, 6);
+}
+
+function tickerLabel(symbol: string): string {
+  const base = cryptoRouteBase(symbol);
+  return base || symbol.trim().toUpperCase();
+}
+
+/** Ledger sums can be ±ε; round to cents so ~0 shows as $0.00. */
 function roundUsdForDisplay(n: number): number {
   if (!Number.isFinite(n)) return 0;
   const cents = Math.round(n * 100);
-  if (cents === 0) return 0;
-  return cents / 100;
+  return cents === 0 ? 0 : cents / 100;
 }
+
+const PILL_CLASS = cn(
+  "inline-flex h-9 max-w-full shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-fg transition-colors hover:bg-surface-muted dark:hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
+  whiteSurfaceButtonChromeClass,
+);
 
 type Props = {
   open: boolean;
-  /** When provided, pre-selects the ticker/company in the Trades tab on open. */
+  /** When provided, skips the asset pick step and opens the form on this ticker. */
   presetCompany?: CompanyPick | null;
   onClose: () => void;
 };
 
-/**
- * New Transaction — matches Figma Web-App-Design node 8615:33802 (New Transaction modal).
- */
+/** Add Transaction — same flow as iOS: pick an asset, then Buy / Sell / More with a hero amount. */
 export function NewTransactionModal({ open, presetCompany = null, onClose }: Props) {
+  if (!open) return null;
+  return <NewTransactionModalContent presetCompany={presetCompany} onClose={onClose} />;
+}
+
+function NewTransactionModalContent({
+  presetCompany,
+  onClose,
+}: {
+  presetCompany: CompanyPick | null;
+  onClose: () => void;
+}) {
   const titleId = useId();
+  const [asset, setAsset] = useState<AssetChoice | null>(() =>
+    presetCompany ? { kind: "listed", pick: presetCompany } : null,
+  );
+  const canGoBack = presetCompany == null;
+
+  return (
+    <AppModalOverlay open onClose={onClose} zIndex={100}>
+      {asset == null ? (
+        <AppModalShell titleId={titleId} title="Add Transaction" onClose={onClose} bodyClassName="px-4 pb-4 pt-4">
+          <TransactionAssetPickStep
+            onPick={(pick) => setAsset({ kind: "listed", pick })}
+            onPickCustom={() => setAsset({ kind: "custom" })}
+          />
+        </AppModalShell>
+      ) : (
+        <TransactionForm
+          key={asset.kind === "listed" ? asset.pick.symbol : "custom"}
+          titleId={titleId}
+          asset={asset}
+          onBack={canGoBack ? () => setAsset(null) : null}
+          onClose={onClose}
+        />
+      )}
+    </AppModalOverlay>
+  );
+}
+
+function TransactionForm({
+  titleId,
+  asset,
+  onBack,
+  onClose,
+}: {
+  titleId: string;
+  asset: AssetChoice;
+  onBack: (() => void) | null;
+  onClose: () => void;
+}) {
   const router = useRouter();
   const plan = usePlanAccessOptional();
   const {
     portfolios,
     selectedPortfolioId,
+    setSelectedPortfolioId,
+    isFreePortfolioAccessible,
     holdingsByPortfolioId,
     transactionsByPortfolioId,
-    addHolding,
-    setPortfolioHoldings,
     addTransaction,
+    setPortfolioHoldings,
     setPortfolioTransactions,
   } = usePortfolioWorkspace();
 
-  const [transactionTab, setTransactionTab] = useState<(typeof TABS)[number]>("Trades");
-  const [operation, setOperation] = useState<Operation>("Buy");
-  const [selectedCompany, setSelectedCompany] = useState<CompanyPick | null>(null);
+  const isCustom = asset.kind === "custom";
+  const listed = asset.kind === "listed" ? asset.pick : null;
+  const listedSymbol = listed?.symbol.trim().toUpperCase() ?? "";
+  const displayTicker = listed ? tickerLabel(listedSymbol) : "";
+
+  const [intent, setIntent] = useState<Intent>("Buy");
+  const [otherType, setOtherType] = useState<OtherType>("Dividends");
   const [transactionDate, setTransactionDate] = useState<Date>(() => startOfDay(new Date()));
-  const [shares, setShares] = useState("");
-  const [price, setPrice] = useState("");
-  const [fees, setFees] = useState("");
-  const [incomeOperation, setIncomeOperation] = useState<IncomeOperation>("Dividend");
-  const [incomeTotalReceived, setIncomeTotalReceived] = useState("");
-  const [incomePerShare, setIncomePerShare] = useState("");
-  const [incomeFees, setIncomeFees] = useState("");
-  const [expenseOperation, setExpenseOperation] = useState<ExpenseOperation>("Other expense");
-  const [expenseAmount, setExpenseAmount] = useState("");
-  const [cashDirection, setCashDirection] = useState<CashDirection>("in");
-  const [cashAmount, setCashAmount] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [tradeAssetSource, setTradeAssetSource] = useState<TradeAssetSource>("listed");
   const [customAssetName, setCustomAssetName] = useState("");
+  const [fees, setFees] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const selectedHoldingShares = useMemo(() => {
-    if (selectedPortfolioId == null) return null;
-    if (tradeAssetSource !== "listed") return null;
-    const sym = selectedCompany?.symbol?.trim();
-    if (!sym) return null;
-    const key = cryptoRouteBase(sym).toUpperCase();
-    const list = holdingsByPortfolioId[selectedPortfolioId] ?? [];
-    for (const h of list) {
-      const hKey = cryptoRouteBase(h.symbol).toUpperCase();
-      if (hKey === key) return h.shares;
-    }
-    return 0;
-  }, [holdingsByPortfolioId, selectedCompany?.symbol, selectedPortfolioId, tradeAssetSource]);
+  const [tradeMode, setTradeMode] = useState<"price" | "shares">("price");
+  const [shares, setShares] = useState("");
+  /** User-typed unit price, scoped to the symbol + date it was typed for (a new date refetches). */
+  const [priceOverride, setPriceOverride] = useState<{ key: string; value: string } | null>(null);
 
-  /** Mark-to-market of owned shares using the Price field (Sell tip). */
-  const selectedHoldingWorthUsd = useMemo(() => {
-    if (selectedHoldingShares == null) return null;
-    if (!price.trim()) return null;
-    const px = parseUsdStyleNumber(price);
-    if (!(px >= 0) || !Number.isFinite(selectedHoldingShares)) return null;
-    return roundUsdForDisplay(selectedHoldingShares * px);
-  }, [price, selectedHoldingShares]);
+  const [incomeMode, setIncomeMode] = useState<"perShare" | "shares">("perShare");
+  const [incomePerShare, setIncomePerShare] = useState("");
+  /** `null` = follow the holding’s share count. */
+  const [incomeSharesTyped, setIncomeSharesTyped] = useState<string | null>(null);
+  const [expenseAmount, setExpenseAmount] = useState("");
 
-  const transactionTotal = useMemo(() => {
-    const line = parseUsdStyleNumber(shares) * parseUsdStyleNumber(price);
-    const fee = parseUsdStyleNumber(fees);
-    if (operation === "Sell") return Math.max(0, line - fee);
-    return line + fee;
-  }, [shares, price, fees, operation]);
+  const tab: FormTab = intent === "More" ? (isCreditType(otherType) ? "income" : "expense") : "trade";
 
-  /** Same net cash as Portfolio → Cash tab (sum of ledger `sum`). */
-  const currentCashBalanceUsd = useMemo(() => {
-    if (selectedPortfolioId == null) return 0;
-    const txs = transactionsByPortfolioId[selectedPortfolioId] ?? [];
-    return txs.reduce((acc, t) => acc + t.sum, 0);
-  }, [selectedPortfolioId, transactionsByPortfolioId]);
+  const pickerPortfolios = useMemo(() => portfolios.filter((p) => !portfolioIsDemo(p)), [portfolios]);
+  const selectedPortfolio =
+    pickerPortfolios.find((p) => p.id === selectedPortfolioId) ?? pickerPortfolios[0] ?? null;
+  const portfolioId = selectedPortfolio?.id ?? null;
 
-  const priceFetchGen = useRef(0);
-  const selectedPortfolioIdRef = useRef<string | null>(null);
-  const transactionsByPortfolioIdRef = useRef(transactionsByPortfolioId);
-
+  // Demo books are view-only — the form always targets a real portfolio.
   useEffect(() => {
-    selectedPortfolioIdRef.current = selectedPortfolioId;
-    transactionsByPortfolioIdRef.current = transactionsByPortfolioId;
-  }, [selectedPortfolioId, transactionsByPortfolioId]);
+    if (portfolioId && portfolioId !== selectedPortfolioId) setSelectedPortfolioId(portfolioId);
+  }, [portfolioId, selectedPortfolioId, setSelectedPortfolioId]);
 
-  useEffect(() => {
-    if (!open || transactionTab !== "Trades" || tradeAssetSource !== "listed") return;
-    const sym = selectedCompany?.symbol?.trim();
-    if (!sym) {
-      setPrice("");
-      return;
-    }
-
-    const ymd = format(transactionDate, "yyyy-MM-dd");
-    const gen = ++priceFetchGen.current;
-
-    void (async () => {
-      const p = await fetchPriceOnDateClient(sym, ymd);
-      if (gen !== priceFetchGen.current) return;
-      if (p != null) {
-        const pid = selectedPortfolioIdRef.current;
-        const txs = pid ? transactionsByPortfolioIdRef.current[pid] ?? [] : [];
-        let splitFactor = 1;
-        for (const t of txs) {
-          const ratio = splitRatioFromTransaction(t);
-          if (ratio == null) continue;
-          if (!portfolioSymbolMatchesAssetRoute({ holdingSymbol: t.symbol, routeKey: sym, kind: "stock" })) continue;
-          if (t.date <= ymd) continue;
-          splitFactor *= ratio;
-        }
-        const adj =
-          splitFactor > 0 && Number.isFinite(splitFactor) && splitFactor !== 1 ? p / splitFactor : p;
-        setPrice(formatPriceInputFromApi(adj));
-      } else {
-        setPrice("");
-      }
-    })();
-  }, [open, transactionTab, tradeAssetSource, selectedCompany?.symbol, transactionDate]);
-
-  useEffect(() => {
-    if (!open) return;
-    setTransactionTab("Trades");
-    setOperation("Buy");
-    setSelectedCompany(presetCompany);
-    setTransactionDate(startOfDay(new Date()));
-    setShares("");
-    setPrice("");
-    setFees("");
-    setIncomeOperation("Dividend");
-    setIncomeTotalReceived("");
-    setIncomePerShare("");
-    setIncomeFees("");
-    setExpenseOperation("Other expense");
-    setExpenseAmount("");
-    setCashDirection("in");
-    setCashAmount("");
-    setSubmitting(false);
-    setTradeAssetSource("listed");
-    setCustomAssetName("");
-  }, [open, presetCompany]);
-
-  const hasSelectedPortfolio =
-    selectedPortfolioId != null &&
-    portfolios.some((p) => p.id === selectedPortfolioId);
-
-  const incomeTotalNum = useMemo(() => parseUsdStyleNumber(incomeTotalReceived), [incomeTotalReceived]);
-  /** Second field: share count; gross = per-share amount × shares (e.g. 50 × 2 = 100). */
-  const incomeShareCountNum = useMemo(() => parseUsdStyleNumber(incomePerShare), [incomePerShare]);
-  const incomeFeeNum = useMemo(() => parseUsdStyleNumber(incomeFees), [incomeFees]);
-  const incomeGrossUsd = useMemo(() => {
-    if (incomeTotalNum <= 0 || incomeShareCountNum <= 0) return 0;
-    return incomeTotalNum * incomeShareCountNum;
-  }, [incomeTotalNum, incomeShareCountNum]);
-  const incomeNetUsd = useMemo(
-    () => Math.max(0, incomeGrossUsd - incomeFeeNum),
-    [incomeGrossUsd, incomeFeeNum],
+  const heldShares = useCallback(
+    (pid: string | null): number => {
+      if (!pid || !listedSymbol) return 0;
+      const key = cryptoRouteBase(listedSymbol).toUpperCase();
+      const h = (holdingsByPortfolioId[pid] ?? []).find((x) => cryptoRouteBase(x.symbol).toUpperCase() === key);
+      return h?.shares ?? 0;
+    },
+    [holdingsByPortfolioId, listedSymbol],
   );
+  const heldInSelected = heldShares(portfolioId);
 
-  const expenseAmountNum = useMemo(() => parseUsdStyleNumber(expenseAmount), [expenseAmount]);
-  const cashAmountNum = useMemo(() => parseUsdStyleNumber(cashAmount), [cashAmount]);
+  const cashBalanceUsd = useMemo(() => {
+    if (!portfolioId) return 0;
+    return roundUsdForDisplay((transactionsByPortfolioId[portfolioId] ?? []).reduce((acc, t) => acc + t.sum, 0));
+  }, [portfolioId, transactionsByPortfolioId]);
+
+  // --- Unit price (market on the trade date; the hero can override it) ---
+  const ymd = format(transactionDate, "yyyy-MM-dd");
+  const priceKey = tab === "trade" && listedSymbol ? `${listedSymbol}|${ymd}` : null;
+  const priceOverrideKey = priceKey ?? "custom";
+  const [fetchedPrice, setFetchedPrice] = useState<{ key: string; price: number | null } | null>(null);
+  const transactionsRef = useRef(transactionsByPortfolioId);
+  const portfolioIdRef = useRef(portfolioId);
+  useEffect(() => {
+    transactionsRef.current = transactionsByPortfolioId;
+    portfolioIdRef.current = portfolioId;
+  }, [transactionsByPortfolioId, portfolioId]);
+
+  useEffect(() => {
+    if (!priceKey) return;
+    const [sym, day] = priceKey.split("|") as [string, string];
+    let cancelled = false;
+    void (async () => {
+      const p = await fetchPriceOnDateClient(sym, day);
+      if (cancelled) return;
+      if (p == null) {
+        setFetchedPrice({ key: priceKey, price: null });
+        return;
+      }
+      // Later splits in this book restate the historical price to post-split shares.
+      const pid = portfolioIdRef.current;
+      let splitFactor = 1;
+      for (const t of pid ? transactionsRef.current[pid] ?? [] : []) {
+        const ratio = splitRatioFromTransaction(t);
+        if (ratio == null) continue;
+        if (!portfolioSymbolMatchesAssetRoute({ holdingSymbol: t.symbol, routeKey: sym, kind: "stock" })) continue;
+        if (t.date <= day) continue;
+        splitFactor *= ratio;
+      }
+      const adj = splitFactor > 0 && Number.isFinite(splitFactor) && splitFactor !== 1 ? p / splitFactor : p;
+      setFetchedPrice({ key: priceKey, price: adj });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [priceKey]);
+
+  const loadingPrice = priceKey != null && fetchedPrice?.key !== priceKey;
+  const priceText =
+    priceOverride?.key === priceOverrideKey ? priceOverride.value
+    : priceKey && fetchedPrice?.key === priceKey && fetchedPrice.price != null ? priceTextFromApi(fetchedPrice.price)
+    : "";
+  const priceNum = parseUsdStyleNumber(priceText);
+  const sharesNum = parseUsdStyleNumber(shares);
+  const feesNum = parseUsdStyleNumber(fees);
+
+  const incomeSharesText =
+    incomeSharesTyped ?? (heldInSelected > 0 ? sanitizeAmountTyping(String(+heldInSelected.toFixed(6)), 6) : "");
+  const incomePerShareNum = parseUsdStyleNumber(incomePerShare);
+  const incomeSharesNum = parseUsdStyleNumber(incomeSharesText);
+  const incomeGross = incomePerShareNum * incomeSharesNum;
+  const expenseNum = parseUsdStyleNumber(expenseAmount);
+
+  const isSell = tab === "trade" && intent === "Sell";
+  const sellOverHolding = isSell && sharesNum > heldInSelected + 1e-9;
 
   const canAdd = useMemo(() => {
-    if (!hasSelectedPortfolio) return false;
-    if (transactionTab === "Trades") {
-      const sh = parseUsdStyleNumber(shares);
-      const pr = parseUsdStyleNumber(price);
-      if (sh <= 0 || pr <= 0) return false;
-      if (operation === "Sell") {
-        if (tradeAssetSource !== "listed") return false;
-        if (!selectedCompany?.symbol?.trim()) return false;
-        if (selectedHoldingShares == null) return false;
-        return sh <= selectedHoldingShares + 1e-9;
-      }
-      if (tradeAssetSource === "listed") return Boolean(selectedCompany?.symbol?.trim());
-      return customAssetName.trim().length > 0;
+    if (!portfolioId) return false;
+    if (tab === "trade") {
+      if (sharesNum <= 0 || priceNum <= 0) return false;
+      if (isCustom) return intent === "Buy" && customAssetName.trim().length > 0;
+      if (intent === "Sell") return !sellOverHolding;
+      return true;
     }
-    if (transactionTab === "Incomes") {
-      if (!selectedCompany?.symbol?.trim()) return false;
-      return (
-        incomeTotalNum > 0 &&
-        incomeShareCountNum > 0 &&
-        incomeFeeNum >= 0 &&
-        incomeNetUsd > 0
-      );
-    }
-    if (transactionTab === "Expenses") {
-      if (!selectedCompany?.symbol?.trim()) return false;
-      return expenseAmountNum > 0;
-    }
-    if (transactionTab === "Cash") {
-      return cashAmountNum > 0;
-    }
-    return false;
+    if (!listed) return false;
+    if (tab === "income") return incomeGross > 0 && incomeGross - feesNum > 0;
+    return expenseNum > 0;
   }, [
-    transactionTab,
-    hasSelectedPortfolio,
-    selectedCompany?.symbol,
-    tradeAssetSource,
+    portfolioId,
+    tab,
+    sharesNum,
+    priceNum,
+    isCustom,
+    intent,
     customAssetName,
-    operation,
-    shares,
-    price,
-    incomeTotalNum,
-    incomeShareCountNum,
-    incomeFeeNum,
-    incomeNetUsd,
-    expenseAmountNum,
-    cashAmountNum,
-    selectedHoldingShares,
+    sellOverHolding,
+    listed,
+    incomeGross,
+    feesNum,
+    expenseNum,
   ]);
 
-  const balanceAfterIncomeUsd = useMemo(
-    () => roundUsdForDisplay(currentCashBalanceUsd + incomeNetUsd),
-    [currentCashBalanceUsd, incomeNetUsd],
-  );
-
-  const balanceAfterExpenseUsd = useMemo(
-    () => roundUsdForDisplay(currentCashBalanceUsd - expenseAmountNum),
-    [currentCashBalanceUsd, expenseAmountNum],
-  );
-
-  const cashDeltaUsd = useMemo(
-    () => (cashAmountNum > 0 ? cashSignedAmount(cashDirection, cashAmountNum) : 0),
-    [cashAmountNum, cashDirection],
-  );
-
-  const balanceAfterCashUsd = useMemo(
-    () => roundUsdForDisplay(currentCashBalanceUsd + cashDeltaUsd),
-    [currentCashBalanceUsd, cashDeltaUsd],
-  );
-
-  const currentCashBalanceDisplayUsd = useMemo(
-    () => roundUsdForDisplay(currentCashBalanceUsd),
-    [currentCashBalanceUsd],
-  );
-
-  const handleAddIncome = useCallback(() => {
-    if (transactionTab !== "Incomes" || !canAdd || !selectedPortfolioId || !selectedCompany) return;
-    const perShareAmt = incomeTotalNum;
-    const shareCt = incomeShareCountNum;
-    const gross = perShareAmt * shareCt;
-    const fee = incomeFeeNum;
-    const net = gross - fee;
-    if (gross <= 0 || net <= 0) return;
-
-    const sharesLedger = shareCt;
-    const priceLedger = perShareAmt;
-
-    setSubmitting(true);
-    try {
-      const sym = selectedCompany.symbol.trim().toUpperCase();
-      const resolvedLogo = displayLogoUrlForPortfolioSymbol(sym).trim();
-      const logoUrl = resolvedLogo ? resolvedLogo : null;
-      const dateStr = format(transactionDate, "yyyy-MM-dd");
-      const opLabel = incomeOperation === "Dividend" ? "Dividend" : "Other income";
-
-      addTransaction(selectedPortfolioId, {
+  const addIncomeOrExpense = useCallback(() => {
+    if (!portfolioId || !listed) return;
+    const sym = listedSymbol;
+    const resolvedLogo = displayLogoUrlForPortfolioSymbol(sym).trim();
+    const logoUrl = resolvedLogo || null;
+    const dateStr = format(transactionDate, "yyyy-MM-dd");
+    const operation = OTHER_TYPE_LEDGER_OPERATION[otherType];
+    if (tab === "income") {
+      const net = incomeGross - feesNum;
+      addTransaction(portfolioId, {
         id: newTransactionRowId(),
-        portfolioId: selectedPortfolioId,
+        portfolioId,
         kind: "income",
-        operation: opLabel,
+        operation,
         symbol: sym,
-        name: selectedCompany.name,
+        name: listed.name,
         logoUrl,
         date: dateStr,
-        shares: sharesLedger,
-        price: priceLedger,
-        fee,
+        shares: incomeSharesNum,
+        price: incomePerShareNum,
+        fee: feesNum,
         sum: net,
         profitPct: null,
         profitUsd: null,
       });
-      toastTransactionAdded(
-        "Income added",
-        formatIncomeToastDescription(opLabel, sym, net),
-      );
-      onClose();
-    } finally {
-      setSubmitting(false);
-    }
-  }, [
-    addTransaction,
-    canAdd,
-    incomeFeeNum,
-    incomeOperation,
-    incomeShareCountNum,
-    incomeTotalNum,
-    onClose,
-    selectedCompany,
-    selectedPortfolioId,
-    transactionDate,
-    transactionTab,
-  ]);
-
-  const handleAddExpense = useCallback(() => {
-    if (transactionTab !== "Expenses" || !canAdd || !selectedPortfolioId || !selectedCompany) return;
-    const amt = expenseAmountNum;
-    if (amt <= 0) return;
-
-    setSubmitting(true);
-    try {
-      const sym = selectedCompany.symbol.trim().toUpperCase();
-      const resolvedLogo = displayLogoUrlForPortfolioSymbol(sym).trim();
-      const logoUrl = resolvedLogo ? resolvedLogo : null;
-      const dateStr = format(transactionDate, "yyyy-MM-dd");
-
-      addTransaction(selectedPortfolioId, {
+      toastTransactionAdded("Income added", formatIncomeToastDescription(operation, sym, net));
+    } else {
+      addTransaction(portfolioId, {
         id: newTransactionRowId(),
-        portfolioId: selectedPortfolioId,
+        portfolioId,
         kind: "expense",
-        operation: expenseOperation,
+        operation,
         symbol: sym,
-        name: selectedCompany.name,
+        name: listed.name,
         logoUrl,
         date: dateStr,
-        shares: amt,
+        shares: expenseNum,
         price: 1,
         fee: 0,
-        sum: -amt,
+        sum: -expenseNum,
         profitPct: null,
         profitUsd: null,
       });
-      toastTransactionAdded(
-        "Expense recorded",
-        formatExpenseToastDescription(expenseOperation, sym, amt),
-      );
-      onClose();
-    } finally {
-      setSubmitting(false);
+      toastTransactionAdded("Expense recorded", formatExpenseToastDescription(operation, sym, expenseNum));
     }
+    onClose();
   }, [
     addTransaction,
-    canAdd,
-    expenseAmountNum,
-    expenseOperation,
+    expenseNum,
+    feesNum,
+    incomeGross,
+    incomePerShareNum,
+    incomeSharesNum,
+    listed,
+    listedSymbol,
     onClose,
-    selectedCompany,
-    selectedPortfolioId,
+    otherType,
+    portfolioId,
+    tab,
     transactionDate,
-    transactionTab,
   ]);
 
-  const handleAddCash = useCallback(() => {
-    if (transactionTab !== "Cash" || !canAdd || !selectedPortfolioId) return;
-    const n = cashAmountNum;
-    if (n <= 0) return;
-
-    setSubmitting(true);
-    try {
-      const dateStr = format(transactionDate, "yyyy-MM-dd");
-      const opLabel = cashOperationLabel(cashDirection);
-      addTransaction(selectedPortfolioId, {
-        id: newTransactionRowId(),
-        portfolioId: selectedPortfolioId,
-        kind: "cash",
-        operation: opLabel,
-        symbol: "USD",
-        name: "US Dollar",
-        logoUrl: null,
-        date: dateStr,
-        shares: n,
-        price: 1,
-        fee: 0,
-        sum: cashSignedAmount(cashDirection, n),
-        profitPct: null,
-        profitUsd: null,
-      });
-      toastTransactionAdded(
-        cashDirection === "in"
-          ? "Cash deposited"
-          : cashDirection === "out"
-            ? "Cash withdrawn"
-            : "Cash recorded",
-        formatCashToastDescription(cashDirection, n),
-      );
-      onClose();
-    } finally {
-      setSubmitting(false);
-    }
-  }, [
-    addTransaction,
-    canAdd,
-    cashAmountNum,
-    cashDirection,
-    onClose,
-    selectedPortfolioId,
-    transactionDate,
-    transactionTab,
-  ]);
-
-  const handleAdd = useCallback(async () => {
-    if (transactionTab === "Incomes") {
-      handleAddIncome();
-      return;
-    }
-    if (transactionTab === "Expenses") {
-      handleAddExpense();
-      return;
-    }
-    if (transactionTab === "Cash") {
-      handleAddCash();
-      return;
-    }
-    if (transactionTab !== "Trades") return;
-    if (!canAdd || !selectedPortfolioId) return;
-    const sh = parseUsdStyleNumber(shares);
-    const pr = parseUsdStyleNumber(price);
-    const fee = parseUsdStyleNumber(fees);
-    if (sh <= 0 || pr <= 0) return;
+  const addTrade = useCallback(async () => {
+    if (!portfolioId) return;
+    const operation = intent === "Sell" ? "Sell" : "Buy";
+    const sh = sharesNum;
+    const pr = priceNum;
+    const fee = feesNum;
 
     let symUpper: string;
     let assetName: string;
     let logoUrl: string | null;
     let marketPrice: number;
-
-    // Flip the button label to "Adding" immediately (before any quote fetch).
-    setSubmitting(true);
-    if (tradeAssetSource === "custom") {
+    if (isCustom) {
       const nameRaw = customAssetName.trim();
-      if (!nameRaw) {
-        setSubmitting(false);
-        return;
-      }
       symUpper = customPortfolioSymbolFromName(nameRaw).toUpperCase();
       assetName = nameRaw;
       logoUrl = null;
       marketPrice = pr;
     } else {
-      if (!selectedCompany?.symbol?.trim()) {
-        setSubmitting(false);
-        return;
-      }
-      const sym = selectedCompany.symbol.trim();
-      symUpper = sym.toUpperCase();
-      assetName = selectedCompany.name;
-      const live = await fetchLiveMarketPriceClient(sym);
-      marketPrice = live ?? pr;
-      const resolvedLogo = displayLogoUrlForPortfolioSymbol(sym).trim();
-      logoUrl = resolvedLogo ? resolvedLogo : null;
+      symUpper = listedSymbol;
+      assetName = listed!.name;
+      marketPrice = (await fetchLiveMarketPriceClient(listedSymbol)) ?? pr;
+      const resolvedLogo = displayLogoUrlForPortfolioSymbol(listedSymbol).trim();
+      logoUrl = resolvedLogo || null;
     }
 
-    try {
-      const gross = sh * pr;
-      const dateStr = format(transactionDate, "yyyy-MM-dd");
+    const gross = sh * pr;
+    const dateStr = format(transactionDate, "yyyy-MM-dd");
+    const existing =
+      holdingsByPortfolioId[portfolioId]?.find((h) => h.symbol.toUpperCase() === symUpper) ?? null;
 
-      const existing =
-        holdingsByPortfolioId[selectedPortfolioId]?.find(
-          (h) => h.symbol.toUpperCase() === symUpper,
-        ) ?? null;
+    if (
+      operation === "Buy" &&
+      plan?.isFree === true &&
+      wouldExceedFreeHoldingsCap({
+        holdings: holdingsByPortfolioId[portfolioId],
+        symbol: symUpper,
+        maxHoldings: plan.maxHoldingsPerPortfolio ?? FREE_MAX_HOLDINGS_PER_PORTFOLIO,
+      })
+    ) {
+      toastProUpgrade({
+        title: "Free plan limit",
+        description: freeHoldingsLimitMessage(plan.maxHoldingsPerPortfolio ?? FREE_MAX_HOLDINGS_PER_PORTFOLIO),
+        onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
+      });
+      return;
+    }
 
-      if (
-        operation === "Buy" &&
-        plan?.isFree === true &&
-        wouldExceedFreeHoldingsCap({
-          holdings: holdingsByPortfolioId[selectedPortfolioId],
-          symbol: symUpper,
-          maxHoldings: plan.maxHoldingsPerPortfolio ?? FREE_MAX_HOLDINGS_PER_PORTFOLIO,
-        })
-      ) {
-        toastProUpgrade({
-          title: "Free plan limit",
-          description: freeHoldingsLimitMessage(
-            plan.maxHoldingsPerPortfolio ?? FREE_MAX_HOLDINGS_PER_PORTFOLIO,
-          ),
-          onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
-        });
-        return;
-      }
-      const positionId = existing?.id ?? newHoldingId();
-
-      let holdingIdForTx = positionId;
-      let profitUsd: number | null = null;
-      let profitPct: number | null = null;
-
-      if (operation === "Sell") {
-        if (!existing) return;
-        const available = existing.shares;
-        if (!Number.isFinite(available) || available <= 0) return;
-        if (sh - available > 1e-9) return;
-
-        const costRemoved = (sh / available) * existing.costBasis;
-        const realized = gross - fee - costRemoved;
-        profitUsd = Number.isFinite(realized) ? realized : null;
-        profitPct =
-          costRemoved > 0 && Number.isFinite(realized) ? (realized / costRemoved) * 100 : null;
-
-        // Holdings are rebuilt from the ledger right after we append the transaction (single source of truth).
-      } else {
-        const merged = mergeBuyIntoPosition(existing, {
-          id: positionId,
-          symbol: symUpper,
-          name: assetName,
-          logoUrl,
-          shares: sh,
-          price: pr,
-          fee,
-          marketPrice,
-        });
-
-        const pnl = lotUnrealizedPnL({
-          shares: sh,
-          price: pr,
-          fee,
-          marketPrice,
-        });
-        profitUsd = pnl.profitUsd;
-        profitPct = pnl.profitPct;
-        holdingIdForTx = merged.id;
-
-        // Holdings are rebuilt from the ledger right after we append the transaction (single source of truth).
-      }
-
-      const nextTx: PortfolioTransaction = {
-        id: newTransactionRowId(),
-        portfolioId: selectedPortfolioId,
-        kind: "trade",
-        operation,
+    let holdingIdForTx = existing?.id ?? newHoldingId();
+    let profitUsd: number | null = null;
+    let profitPct: number | null = null;
+    if (operation === "Sell") {
+      if (!existing) return;
+      const available = existing.shares;
+      if (!Number.isFinite(available) || available <= 0 || sh - available > 1e-9) return;
+      const costRemoved = (sh / available) * existing.costBasis;
+      const realized = gross - fee - costRemoved;
+      profitUsd = Number.isFinite(realized) ? realized : null;
+      profitPct = costRemoved > 0 && Number.isFinite(realized) ? (realized / costRemoved) * 100 : null;
+    } else {
+      const merged = mergeBuyIntoPosition(existing, {
+        id: holdingIdForTx,
         symbol: symUpper,
         name: assetName,
         logoUrl,
-        date: dateStr,
         shares: sh,
         price: pr,
         fee,
-        sum: operation === "Sell" ? gross - fee : -(gross + fee),
-        profitPct,
-        profitUsd,
-        holdingId: holdingIdForTx,
-      };
-
-      const prevTx = transactionsByPortfolioId[selectedPortfolioId] ?? [];
-      const nextTxList = [...prevTx, nextTx];
-      setPortfolioTransactions(selectedPortfolioId, nextTxList);
-
-      // Rebuild holdings so sell transactions correctly reduce remaining quantity/cost basis,
-      // ensuring unrealized P&L always uses remaining shares only.
-      const rebuilt = replayTradeTransactionsToHoldings(nextTxList);
-      const quoted = await refreshHoldingMarketPrices(rebuilt);
-      setPortfolioHoldings(selectedPortfolioId, quoted);
-
-      toastTransactionAdded(
-        "Transaction added",
-        formatTradeToastDescription(operation, sh, symUpper),
-      );
-      onClose();
-    } finally {
-      setSubmitting(false);
+        marketPrice,
+      });
+      const pnl = lotUnrealizedPnL({ shares: sh, price: pr, fee, marketPrice });
+      profitUsd = pnl.profitUsd;
+      profitPct = pnl.profitPct;
+      holdingIdForTx = merged.id;
     }
+
+    const nextTx: PortfolioTransaction = {
+      id: newTransactionRowId(),
+      portfolioId,
+      kind: "trade",
+      operation,
+      symbol: symUpper,
+      name: assetName,
+      logoUrl,
+      date: dateStr,
+      shares: sh,
+      price: pr,
+      fee,
+      sum: operation === "Sell" ? gross - fee : -(gross + fee),
+      profitPct,
+      profitUsd,
+      holdingId: holdingIdForTx,
+    };
+    const nextTxList = [...(transactionsByPortfolioId[portfolioId] ?? []), nextTx];
+    setPortfolioTransactions(portfolioId, nextTxList);
+    // Holdings are rebuilt from the ledger so sells reduce remaining quantity / cost basis.
+    const quoted = await refreshHoldingMarketPrices(replayTradeTransactionsToHoldings(nextTxList));
+    setPortfolioHoldings(portfolioId, quoted);
+
+    toastTransactionAdded("Transaction added", formatTradeToastDescription(operation, sh, symUpper));
+    onClose();
   }, [
-    addHolding,
-    addTransaction,
-    canAdd,
     customAssetName,
-    fees,
+    feesNum,
     holdingsByPortfolioId,
+    intent,
+    isCustom,
+    listed,
+    listedSymbol,
     onClose,
-    operation,
     plan,
-    price,
+    portfolioId,
+    priceNum,
     router,
-    selectedCompany,
-    selectedPortfolioId,
     setPortfolioHoldings,
     setPortfolioTransactions,
-    shares,
-    tradeAssetSource,
+    sharesNum,
     transactionDate,
-    transactionTab,
-    handleAddIncome,
-    handleAddExpense,
-    handleAddCash,
     transactionsByPortfolioId,
   ]);
 
-  if (!open) return null;
+  const submit = useCallback(async () => {
+    if (!canAdd || submitting) return;
+    setSubmitting(true);
+    try {
+      if (tab === "trade") await addTrade();
+      else addIncomeOrExpense();
+    } finally {
+      setSubmitting(false);
+    }
+  }, [addIncomeOrExpense, addTrade, canAdd, submitting, tab]);
 
-  return (
-    <AppModalOverlay open={open} onClose={onClose} zIndex={100}>
-      <AppModalShell
-        titleId={titleId}
-        title="Add Manual Transaction"
-        onClose={onClose}
-        bodyClassName="px-5 pb-5 pt-5"
-        footer={
-          <AppModalFooter>
-            <button type="button" onClick={onClose} className={appModalCancelButtonClass}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={!canAdd || submitting}
-              onClick={() => void handleAdd()}
-              className={appModalPrimaryButtonClass(canAdd && !submitting)}
-            >
-              {transactionTab === "Trades" ? (
-                submitting ? (
-                  <SpinnerLabel>{operation === "Sell" ? "Selling..." : "Adding"}</SpinnerLabel>
-                ) : (
-                  operation === "Sell" ? "Sell" : "Add"
-                )
-              ) : submitting ? (
-                <SpinnerLabel>Adding</SpinnerLabel>
-              ) : (
-                "Add"
-              )}
-            </button>
-          </AppModalFooter>
-        }
-      >
-          <div className="flex flex-col gap-5">
-            <Field label="Portfolio">
-              <TransactionPortfolioField excludeDemoPortfolios />
-            </Field>
+  // --- Copy ---
+  const sellHoldingLabel = (() => {
+    const qty = `${qtyFormatter.format(heldInSelected)} ${displayTicker}`;
+    if (heldInSelected <= 0 || priceNum <= 0) return qty;
+    return `${qty} · ${usd2.format(heldInSelected * priceNum)}`;
+  })();
+  const portfolioPillLabel = selectedPortfolio
+    ? `${selectedPortfolio.name} · ${isSell ? sellHoldingLabel : usd2.format(cashBalanceUsd)}`
+    : "No portfolio";
 
-            <TransactionTypeTabs active={transactionTab} onChange={setTransactionTab} />
+  const summaryLine: ReactNode =
+    sellOverHolding ?
+      <span className="text-down">
+        {heldInSelected > 0
+          ? `Only ${qtyFormatter.format(heldInSelected)} ${displayTicker} available`
+          : `No ${displayTicker} in ${selectedPortfolio?.name ?? "this portfolio"}`}
+      </span>
+    : tab === "trade" ? `Total amount: ${usd2.format(sharesNum * priceNum)}`
+    : tab === "income" ? `Total amount: ${usd2.format(incomeGross)}`
+    : null;
 
-            {transactionTab === "Trades" ? (
-              <>
-                <SegmentedControl
-                  fullWidth
-                  aria-label="Asset source"
-                  options={TRADE_ASSET_TABS}
-                  value={tradeAssetSource}
-                  onChange={(v) => {
-                    setTradeAssetSource(v);
-                    if (v === "custom") {
-                      setSelectedCompany(null);
-                      setPrice("");
-                    } else {
-                      setCustomAssetName("");
-                    }
-                  }}
-                />
+  const primaryLabel = tab === "trade" ? intent : "Add";
+  const primaryToneClass =
+    tab === "trade" && intent === "Buy" ? "bg-up text-white"
+    : tab === "trade" && intent === "Sell" ? "bg-down text-white"
+    : "bg-fg text-surface";
 
-                {tradeAssetSource === "listed" ? (
-                  <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
-                ) : (
-                  <Field label="Asset name">
-                    <ClearableInput
-                      type="text"
-                      value={customAssetName}
-                      onChange={setCustomAssetName}
-                      placeholder="e.g. Private loan, Collectible"
-                      clearLabel="Clear name"
-                    />
-                  </Field>
-                )}
+  const feesPillLabel = feesNum > 0 ? `Fees: ${usd2.format(feesNum)}` : "Add Fee";
 
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Operation">
-                    <TransactionOperationField value={operation} onChange={setOperation} />
-                  </Field>
-                  <Field label="Date">
-                    <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
-                  </Field>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Shares">
-                    <ClearableInput
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      value={shares}
-                      onChange={setShares}
-                      placeholder="Shares"
-                      clearLabel="Clear shares"
-                    />
-                    {operation === "Sell" && selectedHoldingShares != null ? (
-                      <div className="mt-1 text-[12px] leading-4 text-fg-muted">
-                        You have{" "}
-                        <span className="font-medium text-fg">
-                          {formatSharesHint(selectedHoldingShares, selectedCompany?.symbol ?? "")}
-                        </span>
-                        {selectedHoldingWorthUsd != null ? (
-                          <>
-                            {" "}
-                            worth of{" "}
-                            <span className="font-medium tabular-nums text-fg">
-                              {usdBalance.format(selectedHoldingWorthUsd)}
-                            </span>
-                          </>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </Field>
-                  <Field label="Price">
-                    <ClearableInput
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      value={price}
-                      onChange={setPrice}
-                      placeholder="0.00"
-                      clearLabel="Clear price"
-                      leadingAdornment="$"
-                    />
-                  </Field>
-                </div>
-
-                <Field label="Fees">
-                  <UsdMoneyClearableInput
-                    value={fees}
-                    onChange={setFees}
-                    placeholder="0.00"
-                    clearLabel="Clear fees"
-                  />
-                </Field>
-              </>
-            ) : null}
-
-            {transactionTab === "Incomes" ? (
-              <>
-                <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Operation">
-                    <TransactionIncomeOperationSelect value={incomeOperation} onChange={setIncomeOperation} />
-                  </Field>
-                  <Field label="Date">
-                    <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
-                  </Field>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="Total received">
-                    <UsdMoneyClearableInput
-                      value={incomeTotalReceived}
-                      onChange={setIncomeTotalReceived}
-                      placeholder="0.00"
-                      clearLabel="Clear amount"
-                    />
-                  </Field>
-                  <Field label="Per share">
-                    <UsdMoneyClearableInput
-                      value={incomePerShare}
-                      onChange={setIncomePerShare}
-                      placeholder="0.00"
-                      clearLabel="Clear per share"
-                    />
-                  </Field>
-                </div>
-
-                <Field label="Fees">
-                  <UsdMoneyClearableInput
-                    value={incomeFees}
-                    onChange={setIncomeFees}
-                    placeholder="0.00"
-                    clearLabel="Clear fees"
-                  />
-                </Field>
-              </>
-            ) : null}
-
-            {transactionTab === "Expenses" ? (
-              <>
-                <Field label="Operation">
-                  <TransactionExpenseOperationSelect value={expenseOperation} onChange={setExpenseOperation} />
-                </Field>
-
-                <TransactionCompanyField value={selectedCompany} onChange={setSelectedCompany} />
-
-                <Field label="Date">
-                  <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
-                </Field>
-
-                <Field label="Amount">
-                  <UsdMoneyClearableInput
-                    value={expenseAmount}
-                    onChange={setExpenseAmount}
-                    placeholder="0.00"
-                    clearLabel="Clear amount"
-                  />
-                </Field>
-              </>
-            ) : null}
-
-            {transactionTab === "Cash" ? (
-              <>
-                <Field label="Operation">
-                  <CashDirectionSelect value={cashDirection} onChange={setCashDirection} />
-                </Field>
-
-                <Field label="Date">
-                  <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} />
-                </Field>
-
-                <Field label="Amount">
-                  <UsdMoneyClearableInput
-                    value={cashAmount}
-                    onChange={setCashAmount}
-                    placeholder="0.00"
-                    clearLabel="Clear amount"
-                  />
-                </Field>
-              </>
-            ) : null}
-
-            <div className="pt-1">
-              <div className="flex items-center gap-1 border-b border-dashed border-stroke py-2.5 text-sm">
-                <span className="flex-1 font-medium text-fg-muted">Current cash balance</span>
-                <span
-                  className={cn(
-                    "shrink-0 font-semibold tabular-nums",
-                    currentCashBalanceDisplayUsd < 0
-                      ? "text-down"
-                      : currentCashBalanceDisplayUsd > 0
-                        ? "text-up"
-                        : "text-fg",
-                  )}
-                >
-                  {usdBalance.format(currentCashBalanceDisplayUsd)}
-                </span>
-              </div>
-              {transactionTab === "Trades" ? (
-                <div className="flex items-center gap-1 py-2.5 text-sm">
-                  <span className="flex-1 font-medium text-fg-muted">Total</span>
-                  <span className="shrink-0 font-semibold tabular-nums text-fg">
-                    {usdFormatter.format(transactionTotal)}
-                  </span>
-                </div>
-              ) : null}
-              {transactionTab === "Incomes" && incomeGrossUsd > 0 && incomeNetUsd > 0 ? (
-                <>
-                  <div className="flex items-center gap-1 border-b border-dashed border-stroke py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-fg-muted">Net to cash</span>
-                    <span className="shrink-0 font-semibold tabular-nums text-up">
-                      {usdFormatter.format(incomeNetUsd)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-fg-muted">Balance after</span>
-                    <span
-                      className={cn(
-                        "shrink-0 font-semibold tabular-nums",
-                        balanceAfterIncomeUsd < 0
-                          ? "text-down"
-                          : balanceAfterIncomeUsd > 0
-                            ? "text-up"
-                            : "text-fg",
-                      )}
-                    >
-                      {usdBalance.format(balanceAfterIncomeUsd)}
-                    </span>
-                  </div>
-                </>
-              ) : null}
-              {transactionTab === "Expenses" && expenseAmountNum > 0 ? (
-                <>
-                  <div className="flex items-center gap-1 border-b border-dashed border-stroke py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-fg-muted">Cash out</span>
-                    <span className="shrink-0 font-semibold tabular-nums text-down">
-                      {usdFormatter.format(-expenseAmountNum)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-fg-muted">Balance after</span>
-                    <span
-                      className={cn(
-                        "shrink-0 font-semibold tabular-nums",
-                        balanceAfterExpenseUsd < 0
-                          ? "text-down"
-                          : balanceAfterExpenseUsd > 0
-                            ? "text-up"
-                            : "text-fg",
-                      )}
-                    >
-                      {usdBalance.format(balanceAfterExpenseUsd)}
-                    </span>
-                  </div>
-                </>
-              ) : null}
-              {transactionTab === "Cash" && cashAmountNum > 0 ? (
-                <>
-                  <div className="flex items-center gap-1 border-b border-dashed border-stroke py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-fg-muted">
-                      {cashDeltaUsd >= 0 ? "Cash in" : "Cash out"}
-                    </span>
-                    <span
-                      className={cn(
-                        "shrink-0 font-semibold tabular-nums",
-                        cashDeltaUsd >= 0 ? "text-up" : "text-down",
-                      )}
-                    >
-                      {usdFormatter.format(cashDeltaUsd)}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1 py-2.5 text-sm">
-                    <span className="flex-1 font-medium text-fg-muted">Balance after</span>
-                    <span
-                      className={cn(
-                        "shrink-0 font-semibold tabular-nums",
-                        balanceAfterCashUsd < 0
-                          ? "text-down"
-                          : balanceAfterCashUsd > 0
-                            ? "text-up"
-                            : "text-fg",
-                      )}
-                    >
-                      {usdBalance.format(balanceAfterCashUsd)}
-                    </span>
-                  </div>
-                </>
-              ) : null}
-            </div>
-          </div>
-      </AppModalShell>
-    </AppModalOverlay>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex w-full flex-col gap-2">
-      <span className="text-sm font-medium leading-5 text-fg">{label}</span>
-      {children}
+  const header = (
+    <div className="flex w-full items-center gap-2">
+      {onBack ? (
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-fg transition-colors hover:bg-surface-hover"
+          aria-label="Back to assets"
+        >
+          <ChevronLeft className="h-5 w-5" strokeWidth={2} aria-hidden />
+        </button>
+      ) : null}
+      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+        {listed ? (
+          <CompanyLogo
+            name={listed.name}
+            logoUrl={displayLogoUrlForPortfolioSymbol(listedSymbol)}
+            symbol={listedSymbol}
+            size="sm"
+          />
+        ) : null}
+        <div className="min-w-0">
+          <h2 id={titleId} className="truncate text-base font-semibold leading-5 text-fg">
+            {listed ? displayTicker : "Custom asset"}
+          </h2>
+          {listed ? <p className="truncate text-[12px] leading-4 text-fg-muted">{listed.name}</p> : null}
+        </div>
+      </div>
+      <AppModalCloseButton onClick={onClose} disabled={submitting} />
     </div>
   );
-}
 
-const TRANSACTION_TAB_MOTION_MS = 280;
-const TRANSACTION_TAB_MOTION_EASE = "cubic-bezier(0.33, 1, 0.68, 1)";
-
-function TransactionTypeTabs({
-  active,
-  onChange,
-}: {
-  active: (typeof TABS)[number];
-  onChange: (tab: (typeof TABS)[number]) => void;
-}) {
-  const navRef = useRef<HTMLElement>(null);
-  const tabRefs = useRef(new Map<(typeof TABS)[number], HTMLButtonElement>());
-  const [indicator, setIndicator] = useState({ left: 0, width: 0 });
-  const [indicatorMotionEnabled, setIndicatorMotionEnabled] = useState(false);
-  const hasPositionedOnceRef = useRef(false);
-
-  const measureIndicator = useCallback(() => {
-    const nav = navRef.current;
-    const btn = tabRefs.current.get(active);
-    if (!nav || !btn) return;
-    const navRect = nav.getBoundingClientRect();
-    const btnRect = btn.getBoundingClientRect();
-    const width = Math.round(btnRect.width);
-    if (width <= 0) return;
-    const left = Math.round(btnRect.left - navRect.left + nav.scrollLeft);
-    setIndicator((prev) => {
-      if (prev.left === left && prev.width === width) return prev;
-      return { left, width };
-    });
-  }, [active]);
-
-  useLayoutEffect(() => {
-    measureIndicator();
-    if (hasPositionedOnceRef.current) return;
-    let raf2 = 0;
-    const raf1 = requestAnimationFrame(() => {
-      measureIndicator();
-      raf2 = requestAnimationFrame(() => {
-        if (hasPositionedOnceRef.current) return;
-        const btn = tabRefs.current.get(active);
-        if (!btn || btn.getBoundingClientRect().width <= 0) return;
-        hasPositionedOnceRef.current = true;
-        setIndicatorMotionEnabled(true);
-      });
-    });
-    return () => {
-      cancelAnimationFrame(raf1);
-      if (raf2) cancelAnimationFrame(raf2);
-    };
-  }, [measureIndicator, active]);
-
-  useLayoutEffect(() => {
-    const nav = navRef.current;
-    if (!nav) return;
-    const ro = new ResizeObserver(measureIndicator);
-    ro.observe(nav);
-    window.addEventListener("resize", measureIndicator);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measureIndicator);
-    };
-  }, [measureIndicator]);
+  const footer = (
+    <div className={cn("flex shrink-0 flex-col gap-3 border-t px-5 pb-5 pt-4", APP_MODAL_RULE_CLASS)}>
+      {summaryLine != null ? (
+        <p className="text-center text-sm tabular-nums text-fg-muted" aria-live="polite">
+          {summaryLine}
+        </p>
+      ) : null}
+      <button
+        type="button"
+        disabled={!canAdd || submitting}
+        onClick={() => void submit()}
+        className={cn(
+          "inline-flex h-11 w-full items-center justify-center rounded-full text-[15px] font-semibold transition-opacity",
+          primaryToneClass,
+          (!canAdd || submitting) && "cursor-not-allowed opacity-40",
+        )}
+      >
+        {submitting ? <SpinnerLabel>{intent === "Sell" && tab === "trade" ? "Selling…" : "Adding…"}</SpinnerLabel> : primaryLabel}
+      </button>
+    </div>
+  );
 
   return (
-    <div className={`w-full border-b ${APP_MODAL_RULE_CLASS}`}>
-      <nav
-        ref={navRef}
-        className="relative flex w-full flex-nowrap items-start gap-4 overflow-x-auto pb-px sm:gap-5"
-        aria-label="Transaction type"
-      >
-        {TABS.map((tab) => {
-          const isOn = tab === active;
-          return (
-            <button
-              key={tab}
-              ref={(el) => {
-                if (el) tabRefs.current.set(tab, el);
-                else tabRefs.current.delete(tab);
-              }}
-              type="button"
-              onClick={() => onChange(tab)}
-              className={cn(
-                "-mb-px shrink-0 cursor-pointer border-b-2 border-transparent py-2 text-sm font-medium leading-6 transition-[color,opacity] duration-100 hover:opacity-100",
-                isOn ? "font-semibold text-fg opacity-100" : "text-fg opacity-80",
-              )}
-            >
-              {tab}
-            </button>
-          );
-        })}
-        <span
-          className="pointer-events-none absolute bottom-0 z-[1] h-0.5 rounded-full bg-fg motion-reduce:transition-none"
-          style={{
-            height: 3,
-            left: indicator.left,
-            width: indicator.width,
-            opacity: indicator.width > 0 ? 1 : 0,
-            transitionProperty: indicatorMotionEnabled ? "left, width" : "none",
-            transitionDuration: indicatorMotionEnabled ? `${TRANSACTION_TAB_MOTION_MS}ms` : "0ms",
-            transitionTimingFunction: TRANSACTION_TAB_MOTION_EASE,
-          }}
-          aria-hidden
+    <AppModalShell header={header} footer={footer} bodyClassName="px-5 py-5">
+      <div className="flex flex-col items-center gap-7">
+        <SegmentedControl
+          fullWidth
+          aria-label="Operation"
+          options={INTENT_OPTIONS.map((o) => ({
+            ...o,
+            disabled: isCustom && o.value !== "Buy",
+          }))}
+          value={intent}
+          onChange={setIntent}
         />
-      </nav>
-    </div>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <button type="button" className={PILL_CLASS} aria-label="Portfolio">
+              <span className="min-w-0 truncate tabular-nums">{portfolioPillLabel}</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="center" sideOffset={6} className="w-[min(calc(100vw-2rem),300px)] p-0">
+            <div className={dropdownMenuPanelClassName()} role="listbox" aria-label="Portfolio">
+              {pickerPortfolios.map((p) => {
+                const isOn = p.id === portfolioId;
+                const locked = !isFreePortfolioAccessible(p.id);
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    role="option"
+                    aria-selected={isOn}
+                    onClick={() => setSelectedPortfolioId(p.id)}
+                    className={cn(dropdownMenuPlainItemClassName({ selected: isOn }), "justify-between")}
+                  >
+                    <span className="flex min-w-0 flex-col items-start">
+                      <span className="truncate">{p.name}</span>
+                      {isSell ? (
+                        <span className="text-[12px] tabular-nums text-fg-muted">
+                          {qtyFormatter.format(heldShares(p.id))} {displayTicker}
+                        </span>
+                      ) : null}
+                    </span>
+                    {isOn ? (
+                      <Check className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                    ) : locked ? (
+                      <Lock className="h-3.5 w-3.5 shrink-0 text-fg-muted" strokeWidth={2} aria-hidden />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {tab === "trade" ? (
+          <HeroEntry
+            value={tradeMode === "price" ? priceText : shares}
+            onChange={(v) =>
+              tradeMode === "price" ?
+                setPriceOverride({ key: priceOverrideKey, value: sanitizeAmountTyping(v, 6) })
+              : setShares(sanitizeAmountTyping(v, 8))
+            }
+            prefix={tradeMode === "price" ? "$" : undefined}
+            suffix={tradeMode === "price" ? "per share" : displayTicker || undefined}
+            ariaLabel={tradeMode === "price" ? "Price per share" : "Shares"}
+            secondary={
+              tradeMode === "price" ?
+                `${sharesNum > 0 ? shares : "0.00"} ${displayTicker || "shares"}`
+              : loadingPrice && priceNum <= 0 ? "Loading price…"
+              : priceNum <= 0 ? (isCustom ? "Set a price per share" : "Set a trade date to load price")
+              : `${usd2.format(priceNum)} per share`
+            }
+            onToggle={() => setTradeMode((m) => (m === "price" ? "shares" : "price"))}
+            toggleLabel={tradeMode === "price" ? "Switch to enter shares" : "Switch to enter price per share"}
+            dimmed={loadingPrice && tradeMode === "price" && !priceText}
+          />
+        ) : tab === "income" ? (
+          <HeroEntry
+            value={incomeMode === "perShare" ? incomePerShare : incomeSharesText}
+            onChange={(v) =>
+              incomeMode === "perShare" ?
+                setIncomePerShare(sanitizeAmountTyping(v, 6))
+              : setIncomeSharesTyped(sanitizeAmountTyping(v, 8))
+            }
+            prefix={incomeMode === "perShare" ? "$" : undefined}
+            suffix={incomeMode === "perShare" ? "per share" : displayTicker || undefined}
+            ariaLabel={incomeMode === "perShare" ? "Per share" : "Shares"}
+            secondary={
+              incomeMode === "perShare" ?
+                `${incomeSharesNum > 0 ? incomeSharesText : "0.00"} ${displayTicker}`
+              : `${usd2.format(incomePerShareNum)} per share`
+            }
+            onToggle={() => setIncomeMode((m) => (m === "perShare" ? "shares" : "perShare"))}
+            toggleLabel={incomeMode === "perShare" ? "Switch to enter shares" : "Switch to enter per share"}
+          />
+        ) : (
+          <HeroEntry
+            value={expenseAmount}
+            onChange={(v) => setExpenseAmount(sanitizeAmountTyping(v, 2))}
+            prefix="$"
+            ariaLabel="Amount"
+            secondary="Amount"
+          />
+        )}
+
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {intent === "More" ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className={PILL_CLASS} aria-label={`Type, ${otherType}`}>
+                  {otherType}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="center" sideOffset={6} className="w-[200px] p-0">
+                <div className={dropdownMenuPanelClassName()} role="listbox" aria-label="Type">
+                  {OTHER_TYPES.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      role="option"
+                      aria-selected={t === otherType}
+                      onClick={() => setOtherType(t)}
+                      className={cn(dropdownMenuPlainItemClassName({ selected: t === otherType }), "justify-between")}
+                    >
+                      <span>{t}</span>
+                      {t === otherType ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden /> : null}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : null}
+          {tab !== "expense" ? (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button type="button" className={PILL_CLASS}>
+                  <span className="tabular-nums">{feesPillLabel}</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="center" sideOffset={6} className="w-[240px] p-3">
+                <p className="mb-2 text-[12px] font-medium text-fg-muted">Fees</p>
+                <UsdMoneyClearableInput value={fees} onChange={setFees} placeholder="0.00" clearLabel="Clear fees" />
+              </PopoverContent>
+            </Popover>
+          ) : null}
+          <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} pillClassName={PILL_CLASS} />
+        </div>
+
+        {isCustom ? (
+          <div className="w-full">
+            <ClearableInput
+              type="text"
+              value={customAssetName}
+              onChange={setCustomAssetName}
+              placeholder="Asset name (e.g. Private loan, Collectible)"
+              clearLabel="Clear name"
+            />
+          </div>
+        ) : null}
+      </div>
+    </AppModalShell>
   );
 }
 
+const HERO_DIGITS_CLASS = "text-[40px] font-semibold leading-[48px] tracking-[-0.02em] tabular-nums";
+
+/** iOS hero amount — big centered digits with `$` / `per share`, plus a toggle for the linked value. */
+function HeroEntry({
+  value,
+  onChange,
+  prefix,
+  suffix,
+  ariaLabel,
+  secondary,
+  onToggle,
+  toggleLabel,
+  dimmed = false,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  prefix?: string;
+  suffix?: string;
+  ariaLabel: string;
+  secondary: string;
+  onToggle?: () => void;
+  toggleLabel?: string;
+  dimmed?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+  const placeholder = "0.00";
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, [ariaLabel]);
+
+  // Hug the digits so `$` / `per share` sit right beside them (no ch-based slack).
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    const measure = measureRef.current;
+    if (!input || !measure) return;
+    input.style.width = `${Math.ceil(measure.getBoundingClientRect().width) + 2}px`;
+  }, [value]);
+
+  return (
+    <div className={cn("flex w-full flex-col items-center gap-1.5 transition-opacity", dimmed && "opacity-55")}>
+      <div
+        className="relative flex max-w-full cursor-text items-baseline justify-center gap-2"
+        onClick={() => inputRef.current?.focus()}
+      >
+        {prefix ? <span className="text-[17px] font-medium text-fg-muted">{prefix}</span> : null}
+        <span
+          ref={measureRef}
+          aria-hidden
+          className={cn(HERO_DIGITS_CLASS, "pointer-events-none invisible absolute whitespace-pre")}
+        >
+          {value || placeholder}
+        </span>
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          inputMode="decimal"
+          placeholder={placeholder}
+          aria-label={ariaLabel}
+          autoComplete="off"
+          className={cn(
+            HERO_DIGITS_CLASS,
+            "min-w-0 max-w-[260px] bg-transparent text-center text-fg caret-fg outline-none placeholder:text-fg-muted",
+          )}
+        />
+        {suffix ? <span className="whitespace-nowrap text-[17px] font-medium text-fg-muted">{suffix}</span> : null}
+      </div>
+      <div className="flex items-center justify-center gap-1 text-[15px] tabular-nums text-fg-muted">
+        <span>{secondary}</span>
+        {onToggle ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label={toggleLabel}
+            className="ml-0.5 flex size-[22px] items-center justify-center rounded-full bg-surface-muted text-fg transition-colors hover:bg-surface-hover"
+          >
+            <ChevronsUpDownIcon className="h-3 w-3" aria-hidden />
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
