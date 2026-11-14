@@ -71,6 +71,18 @@ function ProtectedAppChrome({
   const [edgeHandleActive, setEdgeHandleActive] = useState(false);
 
   const mainRef = useRef<HTMLElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Hairline under the glass top bar only once content has scrolled beneath it (macOS toolbar).
+  useEffect(() => {
+    const main = mainRef.current;
+    const panel = panelRef.current;
+    if (!main || !panel) return;
+    const sync = () => panel.toggleAttribute("data-main-scrolled", main.scrollTop > 0);
+    sync();
+    main.addEventListener("scroll", sync, { passive: true });
+    return () => main.removeEventListener("scroll", sync);
+  }, []);
 
   useMobileTopbarScrollBlur();
 
@@ -145,6 +157,7 @@ function ProtectedAppChrome({
         style={chromeColumnStyle}
       >
         <div
+          ref={panelRef}
           suppressHydrationWarning
           className={cn(
             "shell-desktop-panel relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden max-md:min-h-[var(--app-vh)] max-md:overflow-visible max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
@@ -164,7 +177,6 @@ function ProtectedAppChrome({
             suppressHydrationWarning
             className={cn(
               "shell-desktop-panel__header mobile-topbar-shell z-30 min-w-0 w-full max-w-full shrink-0 max-md:bg-transparent max-md:shadow-none",
-              SHELL_DESKTOP_PANEL_BG_MD_CLASS,
             )}
           >
             <div aria-hidden className="mobile-topbar-blur-fade md:hidden" />
@@ -192,6 +204,8 @@ function ProtectedAppChrome({
               style={{ paddingRight: railReservedPx }}
               className={cn(
                 "relative z-0 min-h-0 min-w-0 w-full max-w-full flex-1 max-md:overflow-visible max-md:pb-[var(--mobile-bottom-nav-main-clearance)] md:overflow-x-hidden md:overflow-y-auto md:overscroll-y-contain",
+                // Desktop top bar overlays <main> (glass); content starts below it and scrolls underneath.
+                "md:pt-[var(--shell-chrome-header-height)] md:scroll-pt-[var(--shell-chrome-header-height)]",
                 "max-md:!pr-0 md:transition-[padding] md:duration-[280ms] md:ease-[cubic-bezier(0.33,1,0.68,1)] motion-reduce:transition-none",
                 SHELL_DESKTOP_PANEL_BG_MD_CLASS,
                 // Scope mobile grey to max-md so it cannot override desktop panel fill.
@@ -203,16 +217,6 @@ function ProtectedAppChrome({
             >
               {children}
             </main>
-            <div
-              aria-hidden
-              className="shell-top-progressive-blur hidden md:block"
-              style={{ right: `calc(var(--shell-main-scrollbar-w, 0px) + ${railReservedPx}px)` }}
-            >
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
             <Suspense fallback={null}>
               <WatchlistRail />
             </Suspense>

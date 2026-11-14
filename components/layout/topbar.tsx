@@ -35,7 +35,6 @@ import { parseMobileAssetTopbarRoute } from "@/lib/layout/mobile-asset-topbar-ro
 import { isScreenerRoute } from "@/lib/layout/is-screener-route";
 import { useMobileMarketsTopbarLayout } from "@/lib/layout/use-mobile-markets-topbar-layout";
 import { useMobileStockTopbarLayout } from "@/lib/layout/use-mobile-stock-topbar-layout";
-import { SHELL_DESKTOP_PANEL_BG_MD_CLASS } from "@/components/design-system/card-surface-styles";
 import { cn } from "@/lib/utils";
 
 /** lottie-react markup is client-only — avoids hydration mismatch on the always-visible topbar bell. */
@@ -100,8 +99,7 @@ export function Topbar({
         <header
           suppressHydrationWarning
           className={cn(
-            "flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden max-md:bg-transparent max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:gap-3 md:pl-9 md:pr-[calc(2.25rem+var(--shell-main-scrollbar-w,0px))] md:py-3",
-            SHELL_DESKTOP_PANEL_BG_MD_CLASS,
+            "flex min-w-0 flex-nowrap items-center gap-2 overflow-hidden bg-transparent max-md:px-4 md:min-h-[var(--shell-chrome-header-height)] md:gap-3 md:pl-9 md:pr-[calc(2.25rem+var(--shell-main-scrollbar-w,0px))] md:py-3",
             headerRouteChromeClass,
           )}
         >

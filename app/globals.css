@@ -591,9 +591,21 @@ html:not(.dark) .fs-primary-button-gradient-stroke {
     overflow: hidden;
   }
 
+  /* macOS-style toolbar material: <main> scrolls underneath (it pads its top by the bar height). */
   .shell-desktop-panel__header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     overflow: hidden;
-    background: var(--fs-panel);
+    background: color-mix(in srgb, var(--fs-panel) 72%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    transition: box-shadow 150ms ease-out;
+  }
+
+  .shell-desktop-panel[data-main-scrolled] .shell-desktop-panel__header {
+    box-shadow: 0 1px 0 var(--fs-stroke-shell);
   }
 
   .shell-desktop-panel__content {
@@ -1097,11 +1109,10 @@ body {
   background: transparent;
 }
 
+/* Desktop position / glass fill come from `.shell-desktop-panel__header`. */
 @media (min-width: 768px) {
   .mobile-topbar-shell {
-    position: static;
     padding-top: 0;
-    background: var(--fs-panel);
   }
 }
 
@@ -1826,47 +1837,5 @@ body {
     --left-mask-width: 0px;
     --right-mask-width: 0px;
     mask-image: none;
-  }
-}
-
-/* Desktop: progressive blur where main content scrolls up into the top bar. */
-@media (min-width: 768px) {
-  .shell-top-progressive-blur {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 5;
-    height: 28px;
-    pointer-events: none;
-  }
-  .shell-top-progressive-blur > span {
-    position: absolute;
-    inset: 0;
-  }
-  .shell-top-progressive-blur > span:nth-child(1) {
-    -webkit-backdrop-filter: blur(1px);
-    backdrop-filter: blur(1px);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%);
-  }
-  .shell-top-progressive-blur > span:nth-child(2) {
-    -webkit-backdrop-filter: blur(3px);
-    backdrop-filter: blur(3px);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 70%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 70%);
-  }
-  .shell-top-progressive-blur > span:nth-child(3) {
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 15%, transparent 45%);
-    mask-image: linear-gradient(to bottom, #000 0%, #000 15%, transparent 45%);
-  }
-  .shell-top-progressive-blur > span:nth-child(4) {
-    background: linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--fs-panel) 90%, transparent) 0%,
-      color-mix(in srgb, var(--fs-panel) 45%, transparent) 50%,
-      transparent 100%
-    );
   }
 }
