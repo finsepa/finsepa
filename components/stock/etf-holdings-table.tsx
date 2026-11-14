@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
@@ -22,9 +23,11 @@ import { cn } from "@/lib/utils";
 
 const MAX_LISTED_HOLDINGS = 20;
 
-/** Holding + numerics — same column rhythm as the portfolio holdings table. */
-const HOLDINGS_GRID_CLASS =
-  "grid w-full min-w-0 grid-cols-[minmax(0,1fr)_minmax(88px,160px)_minmax(160px,280px)] items-center gap-x-2";
+/** Holding | Allocation bar | Value | Weight — same row rhythm as the portfolio holdings table. */
+const HOLDINGS_GRID_CLASS = "grid w-full min-w-0 items-center gap-x-2";
+const HOLDINGS_GRID_STYLE: CSSProperties = {
+  gridTemplateColumns: "minmax(0,1.4fr) minmax(96px,1fr) minmax(88px,140px) minmax(72px,104px)",
+};
 
 /** Matches screener / portfolio asset column — ticker, underline on row hover. */
 const HOLDING_TICKER_CLASS =
@@ -38,12 +41,21 @@ function HoldingRow({ holding, maxWeight }: { holding: EtfHolding; maxWeight: nu
         "min-h-[56px] text-[14px] font-normal leading-5",
         SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
       )}
+      style={HOLDINGS_GRID_STYLE}
     >
       <div className={cn("flex min-w-0 items-center gap-3 pr-2", TABLE_START_ALIGNED_PAD_CLASS)}>
         <CompanyLogo name={holding.name} logoUrl={holding.logoUrl} symbol={holding.code} />
         <div className="min-w-0 text-left">
           <div className={HOLDING_TICKER_CLASS}>{holding.code}</div>
           <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{holding.name}</div>
+        </div>
+      </div>
+      <div className="min-w-0 px-2">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
+          <div
+            className="h-full rounded-full bg-fg"
+            style={{ width: `${Math.max(1, (holding.weightPct / maxWeight) * 100)}%` }}
+          />
         </div>
       </div>
       <div
@@ -54,16 +66,13 @@ function HoldingRow({ holding, maxWeight }: { holding: EtfHolding; maxWeight: nu
       >
         {holding.valueUsd != null ? formatUsdCompact(holding.valueUsd) : "—"}
       </div>
-      <div className={cn("flex min-w-0 w-full items-center gap-3", TABLE_END_ALIGNED_PAD_CLASS)}>
-        <span className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-muted">
-          <span
-            className="block h-full rounded-full bg-fg"
-            style={{ width: `${Math.max(1, (holding.weightPct / maxWeight) * 100)}%` }}
-          />
-        </span>
-        <span className="w-14 shrink-0 whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg">
-          {holding.weightPct.toFixed(2)}%
-        </span>
+      <div
+        className={cn(
+          "min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
+          TABLE_END_ALIGNED_PAD_CLASS,
+        )}
+      >
+        {holding.weightPct.toFixed(2)}%
       </div>
     </div>
   );
@@ -101,8 +110,12 @@ function HoldingsTable({ holdings }: { holdings: EtfHolding[] }) {
           )}
         >
           <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
-            <div className={cn(HOLDINGS_GRID_CLASS, "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted")}>
+            <div
+              className={cn(HOLDINGS_GRID_CLASS, "min-h-[44px] text-[14px] font-medium leading-5 text-fg-muted")}
+              style={HOLDINGS_GRID_STYLE}
+            >
               <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Holding</div>
+              <div className="min-w-0 px-2 text-left">Allocation</div>
               <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Value</div>
               <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Weight</div>
             </div>
