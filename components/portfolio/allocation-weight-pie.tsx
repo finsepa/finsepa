@@ -49,6 +49,36 @@ export function AllocationWeightPie({ pct, className, size = 14 }: AllocationWei
   );
 }
 
+/** Room after the longest bar for its percentage label (gap + "100.00%"). */
+const ALLOCATION_BAR_LABEL_RESERVE_PX = 60;
+
+type AllocationBarValueProps = {
+  /** Allocation 0–100. */
+  pct: number;
+  /** Largest allocation in the table — that row's bar fills the cell. */
+  maxPct: number;
+  /** Already-formatted percent digits without `%` (e.g. `11.89`). */
+  label: string;
+  className?: string;
+};
+
+/** Left-aligned allocation bar with its `11.89%` label right after the bar end. */
+export function AllocationBarValue({ pct, maxPct, label, className }: AllocationBarValueProps) {
+  const ratio = maxPct > 0 && Number.isFinite(pct) ? Math.min(1, Math.max(0.01, pct / maxPct)) : 0.01;
+  return (
+    <span className={cn("flex min-w-0 items-center gap-2", className)}>
+      <span
+        className="h-1.5 shrink-0 rounded-full bg-fg"
+        style={{ width: `calc((100% - ${ALLOCATION_BAR_LABEL_RESERVE_PX}px) * ${ratio})` }}
+        aria-hidden
+      />
+      <span className="shrink-0 whitespace-nowrap font-['Inter'] text-[12px] tabular-nums text-fg-muted">
+        {label}%
+      </span>
+    </span>
+  );
+}
+
 type AllocationWeightValueProps = {
   pct: number;
   /** Already-formatted percent digits without `%` (e.g. `11.89`). */

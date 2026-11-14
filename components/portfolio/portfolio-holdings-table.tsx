@@ -21,7 +21,7 @@ import {
   TABLE_START_ALIGNED_PAD_CLASS,
   ScreenerTableScroll,
 } from "@/components/screener/screener-table-scroll";
-import { AllocationWeightValue } from "@/components/portfolio/allocation-weight-pie";
+import { AllocationBarValue } from "@/components/portfolio/allocation-weight-pie";
 import { HoldingRowActionsMenu } from "@/components/portfolio/holding-row-actions-menu";
 import { ChangeCaretIcon } from "@/components/screener/change-pct";
 import { displayLogoUrlForPortfolioSymbol } from "@/lib/portfolio/portfolio-asset-display-logo";
@@ -58,7 +58,7 @@ const HOLDING_COMPANY_NAME_CLASS =
 
 /** Desktop holdings columns — asset + numerics (+ actions). Fluid so card 8px inset isn’t clipped. */
 const HOLDINGS_GRID_CLASS = "grid w-full min-w-0 items-center gap-x-2";
-const HOLDINGS_GRID_COLUMNS = "minmax(0,2.2fr) minmax(0,0.9fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,0.85fr)";
+const HOLDINGS_GRID_COLUMNS = "minmax(0,2.2fr) minmax(0,0.9fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,1.3fr)";
 /** Inline so the layout never depends on an arbitrary Tailwind class being generated. */
 const HOLDINGS_GRID_STYLE_BASE: CSSProperties = { gridTemplateColumns: HOLDINGS_GRID_COLUMNS };
 const HOLDINGS_GRID_STYLE_WITH_ACTIONS: CSSProperties = {
@@ -272,19 +272,29 @@ function HoldingsSortHeader({
   activeKey,
   dir,
   onSort,
+  align = "end",
 }: {
   label: string;
   sortKey: HoldingsSortKey;
   activeKey: HoldingsSortKey;
   dir: "asc" | "desc";
   onSort: (key: HoldingsSortKey) => void;
+  align?: "start" | "end";
 }) {
   const active = activeKey === sortKey;
   return (
-    <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>
+    <div
+      className={cn(
+        "min-w-0 w-full",
+        align === "start" ? "px-2 text-left" : cn("text-right", TABLE_END_ALIGNED_PAD_CLASS),
+      )}
+    >
       <button
         type="button"
-        className="inline-flex w-full items-center justify-end gap-1 rounded text-[14px] font-medium leading-5 text-fg-muted hover:text-fg"
+        className={cn(
+          "inline-flex w-full items-center gap-1 rounded text-[14px] font-medium leading-5 text-fg-muted hover:text-fg",
+          align === "start" ? "justify-start" : "justify-end",
+        )}
         onClick={() => onSort(sortKey)}
         aria-label={`Sort by ${label}`}
       >
@@ -406,6 +416,11 @@ function PortfolioHoldingsTableInner({
       return { holding: h, retUsd, weightPct };
     });
   }, [holdings, allocationDenomUsd]);
+
+  const maxAllocationPct = useMemo(
+    () => Math.max(cashWeightPct, ...rows.map((r) => r.weightPct)),
+    [rows, cashWeightPct],
+  );
 
   const sorted = useMemo(() => {
     const dir = sort.dir === "desc" ? -1 : 1;
@@ -563,11 +578,12 @@ function PortfolioHoldingsTableInner({
                     onSort={onSort}
                   />
                   <HoldingsSortHeader
-                    label="Weight"
+                    label="Allocation"
                     sortKey="weight"
                     activeKey={sort.key}
                     dir={sort.dir}
                     onSort={onSort}
+                    align="start"
                   />
                   {!selectedPortfolioReadOnly ? (
                     <div className={cn("w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)} aria-label="Actions" />
@@ -682,14 +698,12 @@ function PortfolioHoldingsTableInner({
                           realizedUsd={realizedUsd}
                         />
                       </div>
-                      <div
-                        className={cn(
-                          "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
-                          TABLE_END_ALIGNED_PAD_CLASS,
-                        )}
-                      >
-                        <AllocationWeightValue pct={weightPct} label={pct.format(weightPct)} />
-                      </div>
+                      <AllocationBarValue
+                        pct={weightPct}
+                        maxPct={maxAllocationPct}
+                        label={pct.format(weightPct)}
+                        className="relative z-[1] px-2"
+                      />
                       {!selectedPortfolioReadOnly ? (
                         <div
                           className={cn("relative z-[2] flex justify-end", TABLE_END_ALIGNED_PAD_CLASS)}
@@ -782,14 +796,12 @@ function PortfolioHoldingsTableInner({
                     <div className="text-[14px] font-medium tabular-nums text-fg-muted">{EM_DASH}</div>
                     <div className="text-[12px] font-medium tabular-nums text-fg-muted">{EM_DASH}</div>
                   </div>
-                  <div
-                    className={cn(
-                      "relative z-[1] min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
-                      TABLE_END_ALIGNED_PAD_CLASS,
-                    )}
-                  >
-                    <AllocationWeightValue pct={cashWeightPct} label={pct.format(cashWeightPct)} />
-                  </div>
+                  <AllocationBarValue
+                    pct={cashWeightPct}
+                    maxPct={maxAllocationPct}
+                    label={pct.format(cashWeightPct)}
+                    className="relative z-[1] px-2"
+                  />
                   {!selectedPortfolioReadOnly ? (
                     <div className={TABLE_END_ALIGNED_PAD_CLASS} aria-hidden />
                   ) : null}

@@ -128,7 +128,7 @@ function PortfolioHoldingsTableSkeleton() {
   return (
     <div className="w-full min-w-0" aria-hidden>
       <div className="hidden border-b border-table-row-stroke sm:grid sm:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))] sm:gap-4 sm:px-5 sm:py-3">
-        {["Asset", "Price", "Holdings", "Avg. Buy Price", "Profit/Loss", "Weight"].map((label) => (
+        {["Asset", "Price", "Holdings", "Avg. Buy Price", "Profit/Loss", "Allocation"].map((label) => (
           <Pulse key={label} className="h-3 w-16 bg-skeleton" />
         ))}
       </div>

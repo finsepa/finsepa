@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 
+import { AllocationBarValue } from "@/components/portfolio/allocation-weight-pie";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import {
   DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
@@ -25,8 +26,6 @@ const MAX_LISTED_HOLDINGS = 20;
 
 /** Holding | Allocation bar | Value — same row rhythm as the portfolio holdings table. */
 const HOLDINGS_GRID_CLASS = "grid w-full min-w-0 items-center gap-x-2";
-/** Room after the longest bar for its percentage label (gap + "100.00%"). */
-const ALLOCATION_LABEL_RESERVE_PX = 60;
 const HOLDINGS_GRID_STYLE: CSSProperties = {
   gridTemplateColumns: "minmax(0,1.4fr) minmax(96px,1fr) minmax(88px,140px)",
 };
@@ -52,17 +51,12 @@ function HoldingRow({ holding, maxWeight }: { holding: EtfHolding; maxWeight: nu
           <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{holding.name}</div>
         </div>
       </div>
-      <div className="flex min-w-0 items-center gap-2 px-2">
-        <div
-          className="h-1.5 shrink-0 rounded-full bg-fg"
-          style={{
-            width: `calc((100% - ${ALLOCATION_LABEL_RESERVE_PX}px) * ${Math.max(0.01, holding.weightPct / maxWeight)})`,
-          }}
-        />
-        <span className="shrink-0 whitespace-nowrap font-['Inter'] text-[12px] tabular-nums text-fg-muted">
-          {holding.weightPct.toFixed(2)}%
-        </span>
-      </div>
+      <AllocationBarValue
+        pct={holding.weightPct}
+        maxPct={maxWeight}
+        label={holding.weightPct.toFixed(2)}
+        className="px-2"
+      />
       <div
         className={cn(
           "min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
