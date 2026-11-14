@@ -25,6 +25,8 @@ const MAX_LISTED_HOLDINGS = 20;
 
 /** Holding | Allocation bar | Value | Weight — same row rhythm as the portfolio holdings table. */
 const HOLDINGS_GRID_CLASS = "grid w-full min-w-0 items-center gap-x-2";
+/** Room after the longest bar for its percentage label (gap + "100.00%"). */
+const ALLOCATION_LABEL_RESERVE_PX = 60;
 const HOLDINGS_GRID_STYLE: CSSProperties = {
   gridTemplateColumns: "minmax(0,1.4fr) minmax(96px,1fr) minmax(88px,140px) minmax(72px,104px)",
 };
@@ -50,13 +52,16 @@ function HoldingRow({ holding, maxWeight }: { holding: EtfHolding; maxWeight: nu
           <div className="truncate text-[12px] font-normal leading-4 text-fg-muted">{holding.name}</div>
         </div>
       </div>
-      <div className="min-w-0 px-2">
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
-          <div
-            className="h-full rounded-full bg-fg"
-            style={{ width: `${Math.max(1, (holding.weightPct / maxWeight) * 100)}%` }}
-          />
-        </div>
+      <div className="flex min-w-0 items-center gap-2 px-2">
+        <div
+          className="h-1.5 shrink-0 rounded-full bg-fg"
+          style={{
+            width: `calc((100% - ${ALLOCATION_LABEL_RESERVE_PX}px) * ${Math.max(0.01, holding.weightPct / maxWeight)})`,
+          }}
+        />
+        <span className="shrink-0 whitespace-nowrap font-['Inter'] text-[12px] tabular-nums text-fg-muted">
+          {holding.weightPct.toFixed(2)}%
+        </span>
       </div>
       <div
         className={cn(
