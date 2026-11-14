@@ -23,12 +23,12 @@ import { cn } from "@/lib/utils";
 
 const MAX_LISTED_HOLDINGS = 20;
 
-/** Holding | Allocation bar | Value | Weight — same row rhythm as the portfolio holdings table. */
+/** Holding | Allocation bar | Value — same row rhythm as the portfolio holdings table. */
 const HOLDINGS_GRID_CLASS = "grid w-full min-w-0 items-center gap-x-2";
 /** Room after the longest bar for its percentage label (gap + "100.00%"). */
 const ALLOCATION_LABEL_RESERVE_PX = 60;
 const HOLDINGS_GRID_STYLE: CSSProperties = {
-  gridTemplateColumns: "minmax(0,1.4fr) minmax(96px,1fr) minmax(88px,140px) minmax(72px,104px)",
+  gridTemplateColumns: "minmax(0,1.4fr) minmax(96px,1fr) minmax(88px,140px)",
 };
 
 /** Matches screener / portfolio asset column — ticker, underline on row hover. */
@@ -70,14 +70,6 @@ function HoldingRow({ holding, maxWeight }: { holding: EtfHolding; maxWeight: nu
         )}
       >
         {holding.valueUsd != null ? formatUsdCompact(holding.valueUsd) : "—"}
-      </div>
-      <div
-        className={cn(
-          "min-w-0 w-full whitespace-nowrap text-right font-['Inter'] tabular-nums text-fg",
-          TABLE_END_ALIGNED_PAD_CLASS,
-        )}
-      >
-        {holding.weightPct.toFixed(2)}%
       </div>
     </div>
   );
@@ -122,7 +114,6 @@ function HoldingsTable({ holdings }: { holdings: EtfHolding[] }) {
               <div className={cn("text-left", TABLE_START_ALIGNED_PAD_CLASS)}>Holding</div>
               <div className="min-w-0 px-2 text-left">Allocation</div>
               <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Value</div>
-              <div className={cn("min-w-0 w-full text-right", TABLE_END_ALIGNED_PAD_CLASS)}>Weight</div>
             </div>
           </div>
           <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
