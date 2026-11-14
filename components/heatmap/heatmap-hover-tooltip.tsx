@@ -46,12 +46,23 @@ function assetHref(market: HeatmapMarket, ticker: string): string {
 const TOOLTIP_W = 300;
 const TOOLTIP_H = 420;
 const VIEW_PAD = 12;
-const CURSOR_OFF = 14;
+const GROUP_GAP = 6;
 
-function clampTooltipPos(clientX: number, clientY: number) {
+/** Viewport rect of the hovered industry / sector group (the yellow outline). */
+export type HeatmapHoverAnchorRect = { left: number; top: number; right: number; bottom: number };
+
+/** Beside the group (right, else left, else inside its right edge), top-aligned — fixed per group. */
+function placeBesideGroup(r: HeatmapHoverAnchorRect, w: number, h: number) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let left = r.right + GROUP_GAP;
+  if (left + w > vw - VIEW_PAD) {
+    const leftSide = r.left - GROUP_GAP - w;
+    left = leftSide >= VIEW_PAD ? leftSide : r.right - GROUP_GAP - w;
+  }
   return {
-    left: Math.max(VIEW_PAD, Math.min(clientX + CURSOR_OFF, window.innerWidth - TOOLTIP_W - VIEW_PAD)),
-    top: Math.max(VIEW_PAD, Math.min(clientY + CURSOR_OFF, window.innerHeight - TOOLTIP_H - VIEW_PAD)),
+    left: Math.max(VIEW_PAD, Math.min(left, vw - w - VIEW_PAD)),
+    top: Math.max(VIEW_PAD, Math.min(r.top, vh - h - VIEW_PAD)),
   };
 }
 
@@ -62,15 +73,13 @@ export function HeatmapHoverTooltip({
   onTooltipEnter,
   onTooltipLeave,
   onTooltipClick,
-  pinned = false,
 }: {
   market: HeatmapMarket;
   allLeaves: HeatmapLeaf[];
-  hover: { sector: string; featured: HeatmapLeaf; anchorX: number; anchorY: number } | null;
+  hover: { sector: string; featured: HeatmapLeaf; anchorRect: HeatmapHoverAnchorRect } | null;
   onTooltipEnter: () => void;
   onTooltipLeave: () => void;
   onTooltipClick?: () => void;
-  pinned?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -93,51 +102,21 @@ export function HeatmapHoverTooltip({
   }, [allLeaves, peerSector]);
 
   const wrapRef = useRef<HTMLDivElement | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const pendingRef = useRef({ x: 0, y: 0 });
-  const followCursorRef = useRef(true);
+  const anchor = hover?.anchorRect ?? null;
 
+  // Re-place with the card's real size (rows vary) — still anchored to the group, not the cursor.
   useLayoutEffect(() => {
-    if (!hover) return;
-    followCursorRef.current = !pinned;
     const el = wrapRef.current;
-
-    const apply = (cx: number, cy: number) => {
-      const p = clampTooltipPos(cx, cy);
-      if (el) {
-        el.style.left = `${p.left}px`;
-        el.style.top = `${p.top}px`;
-      }
-    };
-
-    apply(hover.anchorX, hover.anchorY);
-    pendingRef.current = { x: hover.anchorX, y: hover.anchorY };
-
-    const onMove = (e: PointerEvent) => {
-      if (!followCursorRef.current) return;
-      pendingRef.current = { x: e.clientX, y: e.clientY };
-      if (rafRef.current != null) return;
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        const { x, y } = pendingRef.current;
-        apply(x, y);
-      });
-    };
-
-    window.addEventListener("pointermove", onMove, { passive: true });
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      if (rafRef.current != null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
-  });
+    if (!el || !anchor) return;
+    const p = placeBesideGroup(anchor, el.offsetWidth, el.offsetHeight);
+    el.style.left = `${p.left}px`;
+    el.style.top = `${p.top}px`;
+  }, [anchor, mounted]);
 
   if (!mounted || !hover) return null;
 
   const f = hover.featured;
-  const p0 = clampTooltipPos(hover.anchorX, hover.anchorY);
+  const p0 = placeBesideGroup(hover.anchorRect, TOOLTIP_W, TOOLTIP_H);
   const title =
     market === "crypto"
       ? (peerSector ?? "").trim().toUpperCase()
@@ -154,14 +133,8 @@ export function HeatmapHoverTooltip({
         dropdownMenuSurfaceClassName("fixed z-[200] w-[min(100vw-24px,300px)] overflow-hidden"),
       )}
       style={{ left: p0.left, top: p0.top }}
-      onMouseEnter={() => {
-        followCursorRef.current = false;
-        onTooltipEnter();
-      }}
-      onMouseLeave={() => {
-        followCursorRef.current = true;
-        onTooltipLeave();
-      }}
+      onMouseEnter={onTooltipEnter}
+      onMouseLeave={onTooltipLeave}
       onClick={(e) => {
         e.stopPropagation();
         onTooltipClick?.();

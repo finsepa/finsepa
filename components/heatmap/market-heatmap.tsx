@@ -17,7 +17,7 @@ import {
   heatmapCellTextClass,
 } from "@/lib/heatmap/heatmap-colors";
 import { heatmapLeavesForTreemapLayout } from "@/lib/heatmap/heatmap-treemap-weight";
-import { HeatmapHoverTooltip } from "@/components/heatmap/heatmap-hover-tooltip";
+import { HeatmapHoverTooltip, type HeatmapHoverAnchorRect } from "@/components/heatmap/heatmap-hover-tooltip";
 import { cn } from "@/lib/utils";
 
 /** Gap between sector cards (treemap padding + visible gutter). */
@@ -526,12 +526,15 @@ function sectorCardRadius(sec: SectorLayout): number {
   return Math.min(SECTOR_RADIUS, w / 2, h / 2);
 }
 
+type HeatmapTileEnterEvent = { currentTarget: Element };
+type HeatmapTileEnterHandler = (leaf: HeatmapLeaf, e: HeatmapTileEnterEvent, sec: SectorLayout) => void;
+
 function renderSectorGroup(
   sec: SectorLayout,
   clipId: string,
   market: HeatmapMarket,
   hover: { sector: string; featured: HeatmapLeaf } | null,
-  onTileEnter: (leaf: HeatmapLeaf, e: { clientX: number; clientY: number }) => void,
+  onTileEnter: HeatmapTileEnterHandler,
   scheduleClearHover: () => void,
 ) {
   const sw = sec.outerX1 - sec.outerX0;
@@ -605,7 +608,7 @@ function renderSectorGroup(
                   ry={INDUSTRY_HEADER_RADIUS}
                   fill={ind.headerFill}
                   className="cursor-pointer"
-                  onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e)}
+                  onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e, sec)}
                   onMouseLeave={scheduleClearHover}
                 />
                 {label ? (
@@ -619,18 +622,18 @@ function renderSectorGroup(
                     style={{ fontFamily: "inherit" }}
                     className="uppercase"
                     clipPath={`url(#${clipId}-ind-${indIndex})`}
-                    onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e)}
+                    onMouseEnter={(e) => onTileEnter(ind.featuredLeaf, e, sec)}
                     onMouseLeave={scheduleClearHover}
                   >
                     <title>{ind.name}</title>
                     {label}
                   </text>
                 ) : null}
-                {ind.tiles.map((t) => renderTile(t, market, onTileEnter, scheduleClearHover))}
+                {ind.tiles.map((t) => renderTile(t, sec, market, onTileEnter, scheduleClearHover))}
               </g>
             );
             })
-          : sec.tiles.map((t) => renderTile(t, market, onTileEnter, scheduleClearHover))}
+          : sec.tiles.map((t) => renderTile(t, sec, market, onTileEnter, scheduleClearHover))}
         {hoverRect ? (
           <rect
             x={hoverRect.x}
@@ -650,8 +653,9 @@ function renderSectorGroup(
 
 function renderTile(
   t: Tile,
+  sec: SectorLayout,
   market: HeatmapMarket,
-  onTileEnter: (leaf: HeatmapLeaf, e: { clientX: number; clientY: number }) => void,
+  onTileEnter: HeatmapTileEnterHandler,
   scheduleClearHover: () => void,
 ) {
   const w = t.x1 - t.x0;
@@ -678,7 +682,7 @@ function renderTile(
       key={t.leaf.id}
       href={href}
       className="cursor-pointer focus:outline-none"
-      onMouseEnter={(e) => onTileEnter(t.leaf, e)}
+      onMouseEnter={(e) => onTileEnter(t.leaf, e, sec)}
       onMouseLeave={scheduleClearHover}
     >
       <rect
@@ -750,14 +754,22 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
   const [hover, setHover] = useState<{
     sector: string;
     featured: HeatmapLeaf;
-    anchorX: number;
-    anchorY: number;
+    anchorRect: HeatmapHoverAnchorRect;
   } | null>(null);
+  const hoverRef = useRef(hover);
+  useLayoutEffect(() => {
+    hoverRef.current = hover;
+  }, [hover]);
+  const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearLeaveTimer = useCallback(() => {
     if (leaveTimerRef.current) {
       clearTimeout(leaveTimerRef.current);
       leaveTimerRef.current = null;
+    }
+    if (switchTimerRef.current) {
+      clearTimeout(switchTimerRef.current);
+      switchTimerRef.current = null;
     }
   }, []);
 
@@ -770,15 +782,38 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
   }, [clearLeaveTimer, tooltipPinned]);
 
   const onTileEnter = useCallback(
-    (leaf: HeatmapLeaf, e: { clientX: number; clientY: number }) => {
+    (leaf: HeatmapLeaf, e: HeatmapTileEnterEvent, sec: SectorLayout) => {
       if (tooltipPinned) return;
       clearLeaveTimer();
-      setHover({
+      const prev = hoverRef.current;
+      const sameGroup =
+        prev != null &&
+        prev.sector === leaf.sector &&
+        (!sec.nestIndustries || leafIndustryGroupKey(prev.featured) === leafIndustryGroupKey(leaf));
+      // Same group: the card stays exactly where it is.
+      if (sameGroup) return;
+      const rect = highlightRectForHover(sec, { sector: leaf.sector, featured: leaf });
+      const svgBox = e.currentTarget.closest("svg")?.getBoundingClientRect();
+      if (!rect || !svgBox) return;
+      const next = {
         sector: leaf.sector,
         featured: leaf,
-        anchorX: e.clientX,
-        anchorY: e.clientY,
-      });
+        anchorRect: {
+          left: svgBox.left + rect.x,
+          top: svgBox.top + rect.y,
+          right: svgBox.left + rect.x + rect.width,
+          bottom: svgBox.top + rect.y + rect.height,
+        },
+      };
+      if (prev == null) {
+        setHover(next);
+        return;
+      }
+      // Brief intent delay so moving toward the card across other tiles doesn't re-anchor it.
+      switchTimerRef.current = setTimeout(() => {
+        switchTimerRef.current = null;
+        setHover(next);
+      }, 120);
     },
     [clearLeaveTimer, tooltipPinned],
   );
@@ -868,7 +903,6 @@ export function MarketHeatmap({ leaves, market }: { leaves: HeatmapLeaf[]; marke
           setHover(null);
         }}
         onTooltipClick={() => setTooltipPinned((p) => !p)}
-        pinned={tooltipPinned}
       />
       {size.w < 520 ? (
         <div className="w-full">
