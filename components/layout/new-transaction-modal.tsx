@@ -606,7 +606,8 @@ function TransactionForm({
 
   return (
     <AppModalShell header={header} footer={footer} bodyClassName="px-5 py-5">
-      <div className="flex flex-col items-center gap-7">
+      {/* Fixed sheet height (iOS): switching Buy / Sell / More never resizes the modal. */}
+      <div className="flex flex-col items-center" style={{ minHeight: FORM_BODY_MIN_H_PX }}>
         <SegmentedControl
           fullWidth
           aria-label="Operation"
@@ -618,138 +619,143 @@ function TransactionForm({
           onChange={setIntent}
         />
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <button type="button" className={PILL_CLASS} aria-label="Portfolio">
-              <span className="min-w-0 truncate tabular-nums">{portfolioPillLabel}</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="center" sideOffset={6} className="w-[min(calc(100vw-2rem),300px)] p-0">
-            <div className={dropdownMenuPanelClassName()} role="listbox" aria-label="Portfolio">
-              {pickerPortfolios.map((p) => {
-                const isOn = p.id === portfolioId;
-                const locked = !isFreePortfolioAccessible(p.id);
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    role="option"
-                    aria-selected={isOn}
-                    onClick={() => setSelectedPortfolioId(p.id)}
-                    className={cn(dropdownMenuPlainItemClassName({ selected: isOn }), "justify-between")}
-                  >
-                    <span className="flex min-w-0 flex-col items-start">
-                      <span className="truncate">{p.name}</span>
-                      {isSell ? (
-                        <span className="text-[12px] tabular-nums text-fg-muted">
-                          {qtyFormatter.format(heldShares(p.id))} {displayTicker}
-                        </span>
-                      ) : null}
-                    </span>
-                    {isOn ? (
-                      <Check className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-                    ) : locked ? (
-                      <Lock className="h-3.5 w-3.5 shrink-0 text-fg-muted" strokeWidth={2} aria-hidden />
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {tab === "trade" ? (
-          <HeroEntry
-            value={tradeMode === "price" ? priceText : shares}
-            onChange={(v) =>
-              tradeMode === "price" ?
-                setPriceOverride({ key: priceOverrideKey, value: sanitizeAmountTyping(v, 6) })
-              : setShares(sanitizeAmountTyping(v, 8))
-            }
-            prefix={tradeMode === "price" ? "$" : undefined}
-            suffix={tradeMode === "price" ? "per share" : displayTicker || undefined}
-            ariaLabel={tradeMode === "price" ? "Price per share" : "Shares"}
-            secondary={
-              tradeMode === "price" ?
-                `${sharesNum > 0 ? shares : "0.00"} ${displayTicker || "shares"}`
-              : loadingPrice && priceNum <= 0 ? "Loading price…"
-              : priceNum <= 0 ? (isCustom ? "Set a price per share" : "Set a trade date to load price")
-              : `${usd2.format(priceNum)} per share`
-            }
-            onToggle={() => setTradeMode((m) => (m === "price" ? "shares" : "price"))}
-            toggleLabel={tradeMode === "price" ? "Switch to enter shares" : "Switch to enter price per share"}
-            dimmed={loadingPrice && tradeMode === "price" && !priceText}
-          />
-        ) : tab === "income" ? (
-          <HeroEntry
-            value={incomeMode === "perShare" ? incomePerShare : incomeSharesText}
-            onChange={(v) =>
-              incomeMode === "perShare" ?
-                setIncomePerShare(sanitizeAmountTyping(v, 6))
-              : setIncomeSharesTyped(sanitizeAmountTyping(v, 8))
-            }
-            prefix={incomeMode === "perShare" ? "$" : undefined}
-            suffix={incomeMode === "perShare" ? "per share" : displayTicker || undefined}
-            ariaLabel={incomeMode === "perShare" ? "Per share" : "Shares"}
-            secondary={
-              incomeMode === "perShare" ?
-                `${incomeSharesNum > 0 ? incomeSharesText : "0.00"} ${displayTicker}`
-              : `${usd2.format(incomePerShareNum)} per share`
-            }
-            onToggle={() => setIncomeMode((m) => (m === "perShare" ? "shares" : "perShare"))}
-            toggleLabel={incomeMode === "perShare" ? "Switch to enter shares" : "Switch to enter per share"}
-          />
-        ) : (
-          <HeroEntry
-            value={expenseAmount}
-            onChange={(v) => setExpenseAmount(sanitizeAmountTyping(v, 2))}
-            prefix="$"
-            ariaLabel="Amount"
-            secondary="Amount"
-          />
-        )}
-
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {intent === "More" ? (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button type="button" className={PILL_CLASS} aria-label={`Type, ${otherType}`}>
-                  {otherType}
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="center" sideOffset={6} className="w-[200px] p-0">
-                <div className={dropdownMenuPanelClassName()} role="listbox" aria-label="Type">
-                  {OTHER_TYPES.map((t) => (
+        <div
+          className="flex w-full flex-1 flex-col items-center justify-center"
+          style={{ gap: FORM_SECTION_GAP_PX, paddingTop: FORM_SECTION_GAP_PX, paddingBottom: FORM_SECTION_GAP_PX }}
+        >
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" className={PILL_CLASS} aria-label="Portfolio">
+                <span className="min-w-0 truncate tabular-nums">{portfolioPillLabel}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="center" sideOffset={6} className="w-[min(calc(100vw-2rem),300px)] p-0">
+              <div className={dropdownMenuPanelClassName()} role="listbox" aria-label="Portfolio">
+                {pickerPortfolios.map((p) => {
+                  const isOn = p.id === portfolioId;
+                  const locked = !isFreePortfolioAccessible(p.id);
+                  return (
                     <button
-                      key={t}
+                      key={p.id}
                       type="button"
                       role="option"
-                      aria-selected={t === otherType}
-                      onClick={() => setOtherType(t)}
-                      className={cn(dropdownMenuPlainItemClassName({ selected: t === otherType }), "justify-between")}
+                      aria-selected={isOn}
+                      onClick={() => setSelectedPortfolioId(p.id)}
+                      className={cn(dropdownMenuPlainItemClassName({ selected: isOn }), "justify-between")}
                     >
-                      <span>{t}</span>
-                      {t === otherType ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden /> : null}
+                      <span className="flex min-w-0 flex-col items-start">
+                        <span className="truncate">{p.name}</span>
+                        {isSell ? (
+                          <span className="text-[12px] tabular-nums text-fg-muted">
+                            {qtyFormatter.format(heldShares(p.id))} {displayTicker}
+                          </span>
+                        ) : null}
+                      </span>
+                      {isOn ? (
+                        <Check className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                      ) : locked ? (
+                        <Lock className="h-3.5 w-3.5 shrink-0 text-fg-muted" strokeWidth={2} aria-hidden />
+                      ) : null}
                     </button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-          ) : null}
-          {tab !== "expense" ? (
-            <Popover>
-              <PopoverTrigger asChild>
-                <button type="button" className={PILL_CLASS}>
-                  <span className="tabular-nums">{feesPillLabel}</span>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="center" sideOffset={6} className="w-[240px] p-3">
-                <p className="mb-2 text-[12px] font-medium text-fg-muted">Fees</p>
-                <UsdMoneyClearableInput value={fees} onChange={setFees} placeholder="0.00" clearLabel="Clear fees" />
-              </PopoverContent>
-            </Popover>
-          ) : null}
-          <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} pillClassName={PILL_CLASS} />
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {tab === "trade" ? (
+            <HeroEntry
+              value={tradeMode === "price" ? priceText : shares}
+              onChange={(v) =>
+                tradeMode === "price" ?
+                  setPriceOverride({ key: priceOverrideKey, value: sanitizeAmountTyping(v, 6) })
+                : setShares(sanitizeAmountTyping(v, 8))
+              }
+              prefix={tradeMode === "price" ? "$" : undefined}
+              suffix={tradeMode === "price" ? "per share" : displayTicker || undefined}
+              ariaLabel={tradeMode === "price" ? "Price per share" : "Shares"}
+              secondary={
+                tradeMode === "price" ?
+                  `${sharesNum > 0 ? shares : "0.00"} ${displayTicker || "shares"}`
+                : loadingPrice && priceNum <= 0 ? "Loading price…"
+                : priceNum <= 0 ? (isCustom ? "Set a price per share" : "Set a trade date to load price")
+                : `${usd2.format(priceNum)} per share`
+              }
+              onToggle={() => setTradeMode((m) => (m === "price" ? "shares" : "price"))}
+              toggleLabel={tradeMode === "price" ? "Switch to enter shares" : "Switch to enter price per share"}
+              dimmed={loadingPrice && tradeMode === "price" && !priceText}
+            />
+          ) : tab === "income" ? (
+            <HeroEntry
+              value={incomeMode === "perShare" ? incomePerShare : incomeSharesText}
+              onChange={(v) =>
+                incomeMode === "perShare" ?
+                  setIncomePerShare(sanitizeAmountTyping(v, 6))
+                : setIncomeSharesTyped(sanitizeAmountTyping(v, 8))
+              }
+              prefix={incomeMode === "perShare" ? "$" : undefined}
+              suffix={incomeMode === "perShare" ? "per share" : displayTicker || undefined}
+              ariaLabel={incomeMode === "perShare" ? "Per share" : "Shares"}
+              secondary={
+                incomeMode === "perShare" ?
+                  `${incomeSharesNum > 0 ? incomeSharesText : "0.00"} ${displayTicker}`
+                : `${usd2.format(incomePerShareNum)} per share`
+              }
+              onToggle={() => setIncomeMode((m) => (m === "perShare" ? "shares" : "perShare"))}
+              toggleLabel={incomeMode === "perShare" ? "Switch to enter shares" : "Switch to enter per share"}
+            />
+          ) : (
+            <HeroEntry
+              value={expenseAmount}
+              onChange={(v) => setExpenseAmount(sanitizeAmountTyping(v, 2))}
+              prefix="$"
+              ariaLabel="Amount"
+              secondary="Amount"
+            />
+          )}
+
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {intent === "More" ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className={PILL_CLASS} aria-label={`Type, ${otherType}`}>
+                    {otherType}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="center" sideOffset={6} className="w-[200px] p-0">
+                  <div className={dropdownMenuPanelClassName()} role="listbox" aria-label="Type">
+                    {OTHER_TYPES.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        role="option"
+                        aria-selected={t === otherType}
+                        onClick={() => setOtherType(t)}
+                        className={cn(dropdownMenuPlainItemClassName({ selected: t === otherType }), "justify-between")}
+                      >
+                        <span>{t}</span>
+                        {t === otherType ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden /> : null}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            ) : null}
+            {tab !== "expense" ? (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button type="button" className={PILL_CLASS}>
+                    <span className="tabular-nums">{feesPillLabel}</span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="center" sideOffset={6} className="w-[240px] p-3">
+                  <p className="mb-2 text-[12px] font-medium text-fg-muted">Fees</p>
+                  <UsdMoneyClearableInput value={fees} onChange={setFees} placeholder="0.00" clearLabel="Clear fees" />
+                </PopoverContent>
+              </Popover>
+            ) : null}
+            <TransactionDateField date={transactionDate} onDateChange={setTransactionDate} pillClassName={PILL_CLASS} />
+          </div>
         </div>
 
         {isCustom ? (
@@ -768,7 +774,11 @@ function TransactionForm({
   );
 }
 
-const HERO_DIGITS_CLASS = "text-[40px] font-semibold leading-[48px] tracking-[-0.02em] tabular-nums";
+/** Form body height + section rhythm (iOS sheet: 32pt between portfolio, amount and pills). */
+const FORM_BODY_MIN_H_PX = 420;
+const FORM_SECTION_GAP_PX = 32;
+
+const HERO_DIGITS_CLASS = "text-[48px] font-semibold leading-[56px] tracking-[-0.02em] tabular-nums";
 
 /** iOS hero amount — big centered digits with `$` / `per share`, plus a toggle for the linked value. */
 function HeroEntry({
