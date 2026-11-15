@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { ComparisonReturnChartSkeleton } from "@/components/comparison/comparison-skeletons";
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import {
@@ -15,11 +14,14 @@ import {
   FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC,
   FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   FUNDAMENTALS_CHART_Y_AXIS_LABEL_COUNT,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
 import { cn } from "@/lib/utils";
+
+/** Match asset / portfolio charts — faint solid y-gridlines. */
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 
 const RETURN_CHART_PLOT_HEIGHT_PX = 288;
 const RETURN_CHART_AXIS_ROW_PX = 32;
@@ -158,6 +160,16 @@ function returnTickTopPercent(tick: number, scale: ReturnChartScale): number {
   const span = scale.maxPos + scale.maxNeg;
   if (span <= 0) return 100;
   return 100 - ((tick + scale.maxNeg) / span) * 100;
+}
+
+/** Y tick / gridline top % of the full plot column (includes 8%/4% band insets). */
+function returnTickTopPercentFull(tick: number, scale: ReturnChartScale): number {
+  const band = returnTickTopPercent(tick, scale) / 100;
+  return (
+    (FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC +
+      band * (1 - FUNDAMENTALS_CHART_PLOT_INSET_TOP_FRAC - FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC)) *
+    100
+  );
 }
 
 function tooltipFromEvent(
@@ -388,11 +400,27 @@ export function ComparisonReturnChart({
                   onPointerLeave={clearHover}
                 >
                   <div
-                    className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0"
+                    className="pointer-events-none absolute inset-0 z-0"
                     style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
                     aria-hidden
                   >
-                    <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+                    {yTicks.map((t, i) => (
+                      <div
+                        key={`grid-${t}-${i}`}
+                        className="absolute inset-x-0 border-t"
+                        style={{
+                          top: `${returnTickTopPercentFull(t, scale)}%`,
+                          borderColor: Y_AXIS_GRIDLINE_BORDER,
+                        }}
+                      />
+                    ))}
+                    <div
+                      className="absolute inset-x-0 border-t"
+                      style={{
+                        top: `${returnTickTopPercentFull(0, scale)}%`,
+                        borderColor: CHART_BASELINE_COLOR,
+                      }}
+                    />
                   </div>
 
                   <div
@@ -401,14 +429,6 @@ export function ComparisonReturnChart({
                       gridTemplateColumns: `repeat(${Math.max(1, chartYears.length)}, minmax(0, 1fr))`,
                     }}
                   >
-                    <div
-                      className="pointer-events-none absolute inset-x-0 border-t"
-                      style={{
-                        top: `${returnTickTopPercent(0, scale)}%`,
-                        borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
-                      }}
-                      aria-hidden
-                    />
                     {yearColumns.map((col) => {
                       if (!col.bars.length) {
                         return <div key={col.year} className="min-w-0" aria-hidden />;
@@ -504,24 +524,19 @@ export function ComparisonReturnChart({
                 </div>
 
                 <div
-                  className="relative h-full shrink-0 pl-1.5 text-left font-['Inter'] text-[12px] tabular-nums leading-none text-fg-muted"
+                  className="relative h-full shrink-0 pl-1.5 text-left text-[12px] tabular-nums leading-none text-fg-muted"
                   style={{ width: RETURN_CHART_Y_AXIS_W_PX }}
                   aria-hidden
                 >
-                  <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%]">
-                    {yTicks.map((t, i) => (
-                      <span
-                        key={i}
-                        className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px"
-                        style={{
-                          top: `${returnTickTopPercent(t, scale)}%`,
-                          backgroundColor: "var(--fs-chart-plot-bg)",
-                        }}
-                      >
-                        {formatReturnAxisTick(t)}
-                      </span>
-                    ))}
-                  </div>
+                  {yTicks.map((t, i) => (
+                    <span
+                      key={i}
+                      className="absolute left-1.5 z-[1] block -translate-y-1/2"
+                      style={{ top: `${returnTickTopPercentFull(t, scale)}%` }}
+                    >
+                      {formatReturnAxisTick(t)}
+                    </span>
+                  ))}
                 </div>
               </div>
 
