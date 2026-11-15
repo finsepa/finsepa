@@ -44,7 +44,9 @@ import {
   type ChartTimeRange,
   type ChartType,
 } from "@/components/charting/charting-time-range";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
+
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
 import { CompanyRailCard } from "@/components/layout/company-rail";
@@ -66,7 +68,6 @@ import {
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   fundamentalsChartScaleMarginTop,
   HIDE_NATIVE_Y_AXIS_TICK_LABELS,
 } from "@/lib/chart/fundamentals-chart-surface";
@@ -1896,7 +1897,15 @@ export function ChartingCompareWorkspace({
                           CHARTING_PLOT_BACKDROP_INSET_CLASS,
                         )}
                       >
-                        <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+                        {(yGridTickTopsPx ?? []).map((topPx, i) =>
+                          Number.isFinite(topPx) ? (
+                            <div
+                              key={`grid-${i}`}
+                              className="absolute inset-x-0 border-t"
+                              style={{ top: topPx, borderColor: Y_AXIS_GRIDLINE_BORDER }}
+                            />
+                          ) : null,
+                        )}
                       </div>
                       {(() => {
                         const zeroTop =
@@ -1909,7 +1918,7 @@ export function ChartingCompareWorkspace({
                             className="absolute inset-x-0 border-t"
                             style={{
                               top: zeroTop,
-                              borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+                              borderColor: CHART_BASELINE_COLOR,
                             }}
                           />
                         );
