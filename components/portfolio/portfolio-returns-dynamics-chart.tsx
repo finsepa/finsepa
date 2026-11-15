@@ -19,7 +19,6 @@ import {
 } from "@/components/design-system/card-surface-styles";
 import { SecondaryTabs, type SecondaryTabItem } from "@/components/ui/secondary-tabs";
 import { PortfolioUpDownLegendSwatch } from "@/components/chart/portfolio-up-down-legend-swatch";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
@@ -29,8 +28,11 @@ import {
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
 } from "@/lib/chart/fundamentals-chart-surface";
+import {
+  CHART_BASELINE_DASH_COLOR,
+  CHART_BASELINE_DASH_PX,
+} from "@/lib/chart/dashed-price-line-primitive";
 import {
   Empty,
   EmptyDescription,
@@ -55,6 +57,8 @@ const BENCHMARK_NASDAQ_BAR = "#9333EA";
 /** Light: soft rose wash. Dark: `--fs-down-soft` (#49080e). */
 const NEGATIVE_ZONE_CLASS = "bg-[rgba(254,242,242,0.92)] dark:bg-down-soft";
 const NEGATIVE_ZONE_FILL_CLASS = "fill-[rgba(254,242,242,0.92)] dark:fill-down-soft";
+/** Match asset / portfolio charts — `resolveFsColorWithAlpha("--fs-stroke", 0.6)`. */
+const Y_AXIS_GRIDLINE_STROKE = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 
 /** Total chart height — plot band plus slanted period labels (matches Charting). */
 const CHART_TOTAL_HEIGHT_PX = 320;
@@ -229,24 +233,31 @@ function tickTopPercent(tick: number, yMin: number, yMax: number): number {
   return insetTop + ((yMax - tick) / span) * band;
 }
 
-/** Loading UI aligned with {@link DynamicsSvg}: dot grid, right Y-axis, negative band, bar slots. */
+/** Loading UI aligned with {@link DynamicsSvg}: y-gridlines, right Y-axis, negative band, bar slots. */
 function ReturnsDynamicsChartSkeleton() {
   const barCount = 6;
   /** Pixel heights from baseline — scaled for {@link CHART_PLOT_HEIGHT_PX} plot. */
   const barHeightsPx = [119, 162, 96, 186, 126, 140];
+  const skeletonTicks = [30, 20, 10, 0, -10, -20];
   return (
     <div className="chart-skeleton-shimmer w-full" role="presentation" aria-hidden>
       <div style={{ height: CHART_TOTAL_HEIGHT_PX }}>
         <div className="flex w-full min-w-0" style={{ height: CHART_PLOT_HEIGHT_PX }}>
           <div className="relative min-w-0 flex-1">
             <div
-              className={cn(
-                "pointer-events-none absolute inset-x-0 z-0",
-                CHART_PLOT_BACKDROP_INSET_CLASS,
-              )}
+              className="pointer-events-none absolute inset-0 z-0"
               style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
             >
-              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+              {skeletonTicks.map((t) => (
+                <div
+                  key={t}
+                  className="absolute inset-x-0 border-t"
+                  style={{
+                    top: `${tickTopPercent(t, -20, 30)}%`,
+                    borderColor: Y_AXIS_GRIDLINE_STROKE,
+                  }}
+                />
+              ))}
             </div>
             <div
               className={cn(
@@ -276,11 +287,11 @@ function ReturnsDynamicsChartSkeleton() {
             style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
           >
             <div className={cn("pointer-events-none absolute inset-x-0", CHART_PLOT_BACKDROP_INSET_CLASS)}>
-              {Array.from({ length: Y_AXIS_TICK_COUNT }).map((_, i) => (
+              {skeletonTicks.map((t) => (
                 <div
-                  key={i}
+                  key={t}
                   className="skeleton absolute right-0 h-2.5 w-9 -translate-y-1/2 rounded-sm"
-                  style={{ top: `${tickTopPercent(30 - i * 10, -20, 30)}%` }}
+                  style={{ top: `${tickTopPercent(t, -20, 30)}%` }}
                 />
               ))}
             </div>
@@ -482,15 +493,10 @@ function DynamicsSvg({
         <div className="flex min-h-0 w-full overflow-visible" style={{ height: CHART_PLOT_HEIGHT_PX }}>
           <div ref={plotRef} className="relative min-h-0 min-w-0 flex-1 overflow-visible">
             <div
-              className={cn(
-                "pointer-events-none absolute inset-x-0 z-0",
-                CHART_PLOT_BACKDROP_INSET_CLASS,
-              )}
+              className="pointer-events-none absolute inset-0 z-0"
               style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
-            >
-              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
-            </div>
+            />
 
             <svg
               width={plotWidth}
@@ -499,6 +505,20 @@ function DynamicsSvg({
               aria-hidden
             >
               <title>Portfolio and benchmark period returns</title>
+              {ticks.map((t) => {
+                const y = yFor(t);
+                return (
+                  <line
+                    key={`grid-${t}`}
+                    x1={padL}
+                    x2={padL + innerW}
+                    y1={y}
+                    y2={y}
+                    stroke={Y_AXIS_GRIDLINE_STROKE}
+                    strokeWidth={1}
+                  />
+                );
+              })}
               <rect
                 x={padL}
                 y={y0}
@@ -511,8 +531,9 @@ function DynamicsSvg({
                 x2={padL + innerW}
                 y1={y0}
                 y2={y0}
-                stroke={FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER}
+                stroke={CHART_BASELINE_DASH_COLOR}
                 strokeWidth={1}
+                strokeDasharray={`${CHART_BASELINE_DASH_PX} ${CHART_BASELINE_DASH_PX}`}
               />
 
               {hover != null ? (
