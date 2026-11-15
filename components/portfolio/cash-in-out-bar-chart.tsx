@@ -5,7 +5,6 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BarChart3, Check, ChevronDown } from "@/lib/icons";
 
 import { SegmentedControl } from "@/components/design-system/segmented-control";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   dropdownMenuMobileSheetBodyClassName,
   dropdownMenuPlainItemRowClassName,
@@ -20,8 +19,8 @@ import {
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
 import {
   eachMonthOfInterval,
   eachYearOfInterval,
@@ -54,8 +53,9 @@ const WITHDRAWAL = "#EA580C";
 
 const CHART_TOTAL_HEIGHT_PX = 320;
 const CHART_PLOT_HEIGHT_PX = CHART_TOTAL_HEIGHT_PX - FUNDAMENTALS_CHART_AXIS_ROW_PX;
-const CHART_PLOT_BACKDROP_INSET_CLASS = "top-[8%] bottom-[4%]";
 const Y_AXIS_TICK_COUNT = 6;
+/** Match asset / portfolio charts — `resolveFsColorWithAlpha("--fs-stroke", 0.6)`. */
+const Y_AXIS_GRIDLINE_STROKE = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 
 type CashChartRange = "all" | "ytd" | "1y" | "3y";
 type Granularity = "month" | "year";
@@ -349,12 +349,10 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
         <div className="flex min-h-0 w-full overflow-visible" style={{ height: CHART_PLOT_HEIGHT_PX }}>
           <div ref={plotRef} className="relative min-h-0 min-w-0 flex-1 overflow-visible">
             <div
-              className={cn("pointer-events-none absolute inset-x-0 z-0", CHART_PLOT_BACKDROP_INSET_CLASS)}
+              className="pointer-events-none absolute inset-0 z-0"
               style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
-            >
-              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
-            </div>
+            />
 
             <svg
               width={plotWidth}
@@ -363,12 +361,26 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
               aria-hidden
             >
               <title>Cash in and cash out by period</title>
+              {ticks.map((t) => {
+                const y = yFor(t);
+                return (
+                  <line
+                    key={`grid-${t}`}
+                    x1={padL}
+                    x2={padL + innerW}
+                    y1={y}
+                    y2={y}
+                    stroke={Y_AXIS_GRIDLINE_STROKE}
+                    strokeWidth={1}
+                  />
+                );
+              })}
               <line
                 x1={padL}
                 x2={padL + innerW}
                 y1={baseY}
                 y2={baseY}
-                stroke={FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER}
+                stroke={CHART_BASELINE_COLOR}
                 strokeWidth={1}
               />
 
@@ -490,11 +502,12 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
             style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
             aria-hidden
           >
-            <div className={cn("pointer-events-none absolute inset-x-0", CHART_PLOT_BACKDROP_INSET_CLASS)}>
+            {/* Full plot height — `tickTopPercent` already includes the 8%/4% band insets (matches SVG `yFor`). */}
+            <div className="pointer-events-none absolute inset-0">
               {ticks.map((t) => (
                 <span
                   key={t}
-                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px"
+                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px leading-none"
                   style={{ top: `${tickTopPercent(t, yMax)}%`, backgroundColor: "var(--fs-chart-plot-bg)" }}
                 >
                   {formatAxisUsd(t)}
