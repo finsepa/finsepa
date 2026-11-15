@@ -96,6 +96,7 @@ export function SnaptradeUpdateFromDateField({
           captionLayout="dropdown"
           hideNavigation
           captionDropdownStretch
+          selectedTone="neutral"
           showOutsideDays
           startMonth={startMonth}
           endMonth={endMonth}
