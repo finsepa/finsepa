@@ -94,7 +94,6 @@ import {
   formatFundamentalsAxisTickLabel,
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   FUNDAMENTALS_CHART_SCALE_MARGIN_BOTTOM_BARS,
   FUNDAMENTALS_CHART_SCALE_MARGIN_BOTTOM_LINE,
   FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
@@ -115,8 +114,9 @@ import {
   FundamentalsRoundedBarsPrimitive,
   type FundamentalsRoundedBarItem,
 } from "@/lib/chart/fundamentals-rounded-bar-primitive";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
-import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
+
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import { fetchChartingFundamentalsSeriesCached } from "@/lib/charting/charting-fundamentals-client-cache";
 import {
   ChartingFundamentalsLineChart,
@@ -3771,7 +3771,15 @@ export function ChartingWorkspace({
                       className={cn("absolute inset-x-0", CHARTING_PLOT_BACKDROP_INSET_CLASS)}
                       style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
                     >
-                      <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+                      {(yGridTickTopsPx ?? []).map((topPx, i) =>
+                        Number.isFinite(topPx) ? (
+                          <div
+                            key={`grid-${i}`}
+                            className="absolute inset-x-0 border-t"
+                            style={{ top: topPx, borderColor: Y_AXIS_GRIDLINE_BORDER }}
+                          />
+                        ) : null,
+                      )}
                     </div>
                     {(() => {
                       const zeroTop =
@@ -3784,13 +3792,12 @@ export function ChartingWorkspace({
                           className="absolute inset-x-0 border-t"
                           style={{
                             top: zeroTop,
-                            borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+                            borderColor: CHART_BASELINE_COLOR,
                           }}
                         />
                       );
                     })()}
                   </div>
-                  <ChartBrandWatermark size={screenshotPreviewMode ? "compact" : "default"} />
                   <div ref={lineChartRevealRef} className="absolute inset-0 z-[2]">
                     <div ref={chartPlotRef} className="h-full w-full" />
                     {chartType === "line" && visibleBarValueLabels.length > 0

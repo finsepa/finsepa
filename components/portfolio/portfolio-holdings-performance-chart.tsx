@@ -7,11 +7,13 @@ import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ChartSpline } from "@/lib/icons";
 
 import { SegmentedControl } from "@/components/design-system/segmented-control";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
 } from "@/lib/chart/fundamentals-chart-surface";
+
+/** Matches newest chart chrome — faint solid gridlines (no plot dots). */
+const X_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import {
   Empty,
   EmptyDescription,
@@ -297,20 +299,17 @@ function HoldingsPerformanceBarChart({
                 style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
                 aria-hidden
               >
-                <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+                {ticks.map((tick) => {
+                  const leftPct = xMax > 0 ? (tick / xMax) * 100 : 0;
+                  return (
+                    <div
+                      key={tick}
+                      className="absolute inset-y-0 border-l"
+                      style={{ left: `${leftPct}%`, borderColor: X_AXIS_GRIDLINE_BORDER }}
+                    />
+                  );
+                })}
               </div>
-
-              {ticks.map((tick) => {
-                const leftPct = xMax > 0 ? (tick / xMax) * 100 : 0;
-                return (
-                  <div
-                    key={tick}
-                    className="pointer-events-none absolute inset-y-0 z-[1] w-px border-l border-dashed border-stroke-shell"
-                    style={{ left: `${leftPct}%` }}
-                    aria-hidden
-                  />
-                );
-              })}
 
               {rows.map((row, i) => {
                 const value = rowValue(row, metric);

@@ -1,6 +1,5 @@
 "use client";
 
-import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
 import {
   CHARTING_LINE_POINT_MARKER_BORDER_PX,
   CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
@@ -467,7 +466,6 @@ export function PortfolioGoalProjectionChart({
                 />
               ) : null}
             </div>
-            <ChartBrandWatermark />
             {achievedYearCrosshairs.map((hair) => (
               <div
                 key={`achieved-${hair.yearIndex}`}

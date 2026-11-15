@@ -43,13 +43,13 @@ import {
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
-import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
-import { smoothLinePathD } from "@/lib/chart/smooth-line-path";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
+import { straightLinePathD } from "@/lib/chart/smooth-line-path";
+
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import {
   fundamentalsBarEnterProgress,
   runFundamentalsBarEnterAnimation,
@@ -238,7 +238,7 @@ function ChartingMultiMetricFundamentalsLineChart({
       return {
         id: s.id,
         color: s.color,
-        d: smoothLinePathD(curvePts),
+        d: straightLinePathD(curvePts),
         pts,
         maxPt,
       };
@@ -361,17 +361,30 @@ function ChartingMultiMetricFundamentalsLineChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0"
+              className="pointer-events-none absolute inset-0 z-0"
               style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
             >
-              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+              {yTicks.map((t, i) => {
+                const nt = yTicks.length;
+                const pct = nt <= 1 ? 0 : i / (nt - 1);
+                const top = `${(PLOT_INSET_TOP_FRAC + pct * (1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC)) * 100}%`;
+                return (
+                  <div
+                    key={`grid-${t}-${i}`}
+                    className="absolute inset-x-0 border-t"
+                    style={{ top, borderColor: Y_AXIS_GRIDLINE_BORDER }}
+                  />
+                );
+              })}
               <div
-                className="absolute inset-x-0 bottom-0 border-t"
-                style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
+                className="absolute inset-x-0 border-t"
+                style={{
+                  top: `${(1 - PLOT_INSET_BOTTOM_FRAC) * 100}%`,
+                  borderColor: CHART_BASELINE_COLOR,
+                }}
               />
             </div>
-            <ChartBrandWatermark />
             {lineHoverCrosshair ? (
               <div
                 aria-hidden
