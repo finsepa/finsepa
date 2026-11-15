@@ -11,8 +11,8 @@ import {
 import { TransactionDateField } from "@/components/layout/transaction-date-field";
 import { SegmentedControl, whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import {
-  dropdownMenuPanelClassName,
-  dropdownMenuPlainItemClassName,
+  dropdownMenuPanelBodyClassName,
+  dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { newTransactionRowId, portfolioIsCombined, portfolioIsDemo } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
@@ -249,8 +249,8 @@ export function AddCashModal({ open, onClose }: Props) {
                     <span className="min-w-0 truncate tabular-nums">{portfolioPillLabel}</span>
                   </button>
                 </PopoverTrigger>
-                <PopoverContent align="center" sideOffset={6} className="w-[min(calc(100vw-2rem),300px)] p-0">
-                  <div className={dropdownMenuPanelClassName()} role="listbox" aria-label="Portfolio">
+                <PopoverContent align="center" sideOffset={6} className="w-[min(calc(100vw-2rem),300px)] overflow-hidden p-0">
+                  <div className={dropdownMenuPanelBodyClassName} role="listbox" aria-label="Portfolio">
                     {standardPortfolios.map((p) => {
                       const isOn = p.id === resolvedCashPortfolioId;
                       const locked = !isFreePortfolioAccessible(p.id);
@@ -261,14 +261,16 @@ export function AddCashModal({ open, onClose }: Props) {
                           role="option"
                           aria-selected={isOn}
                           onClick={() => setCashPortfolioId(p.id)}
-                          className={cn(dropdownMenuPlainItemClassName({ selected: isOn }), "justify-between")}
+                          className={dropdownMenuPlainItemRowClassName({ selected: isOn })}
                         >
-                          <span className="truncate">{p.name}</span>
-                          {isOn ? (
-                            <Check className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-                          ) : locked ? (
-                            <Lock className="h-3.5 w-3.5 shrink-0 text-fg-muted" strokeWidth={2} aria-hidden />
-                          ) : null}
+                          <span className="min-w-0 flex-1 truncate text-left">{p.name}</span>
+                          <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                            {isOn ? (
+                              <Check className="h-4 w-4 text-fg" strokeWidth={2} />
+                            ) : locked ? (
+                              <Lock className="h-3.5 w-3.5 text-fg-muted" strokeWidth={2} />
+                            ) : null}
+                          </span>
                         </button>
                       );
                     })}
@@ -294,8 +296,8 @@ export function AddCashModal({ open, onClose }: Props) {
                       {otherKindLabel}
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent align="center" sideOffset={6} className="w-[200px] p-0">
-                    <div className={dropdownMenuPanelClassName()} role="listbox" aria-label="Type">
+                  <PopoverContent align="center" sideOffset={6} className="w-[200px] overflow-hidden p-0">
+                    <div className={dropdownMenuPanelBodyClassName} role="listbox" aria-label="Type">
                       {OTHER_KIND_OPTIONS.map((o) => (
                         <button
                           key={o.value}
@@ -303,15 +305,14 @@ export function AddCashModal({ open, onClose }: Props) {
                           role="option"
                           aria-selected={o.value === otherKind}
                           onClick={() => setOtherKind(o.value)}
-                          className={cn(
-                            dropdownMenuPlainItemClassName({ selected: o.value === otherKind }),
-                            "justify-between",
-                          )}
+                          className={dropdownMenuPlainItemRowClassName({ selected: o.value === otherKind })}
                         >
-                          <span>{o.label}</span>
-                          {o.value === otherKind ? (
-                            <Check className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-                          ) : null}
+                          <span className="min-w-0 flex-1 truncate text-left">{o.label}</span>
+                          <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                            {o.value === otherKind ? (
+                              <Check className="h-4 w-4 text-fg" strokeWidth={2} />
+                            ) : null}
+                          </span>
                         </button>
                       ))}
                     </div>

@@ -153,7 +153,7 @@ function FinsepaCalendarDropdown({
             <span className="min-w-0 flex-1 truncate text-left">{opt.label}</span>
             <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
               <Check
-                className={cn("h-4 w-4 text-accent", !selected && "invisible")}
+                className={cn("h-4 w-4 text-fg", !selected && "invisible")}
                 strokeWidth={2}
               />
             </span>
@@ -181,7 +181,7 @@ function FinsepaCalendarDropdown({
           setOpen((v) => !v);
         }}
         className={cn(
-          cn("relative flex w-full cursor-pointer items-center rounded-[10px] text-left text-sm font-normal text-fg focus-visible:ring-2 focus-visible:ring-accent/25", dropdownTriggerFieldClassName),
+          cn("relative flex w-full cursor-pointer items-center rounded-[10px] text-left text-sm font-normal text-fg focus-visible:ring-2 focus-visible:ring-fg/10", dropdownTriggerFieldClassName),
           stretch ? "min-w-0 px-3" : "min-w-[6.5rem] max-w-[10rem] pl-3 pr-9",
           disabled && "cursor-not-allowed opacity-60 hover:bg-surface-subtle",
         )}

@@ -8,8 +8,9 @@ import { useRouter } from "next/navigation";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { SegmentedControl, whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import {
-  dropdownMenuPanelClassName,
+  dropdownMenuPanelBodyClassName,
   dropdownMenuPlainItemClassName,
+  dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { ClearableInput } from "@/components/layout/clearable-input";
@@ -628,8 +629,8 @@ function TransactionForm({
                 <span className="min-w-0 truncate tabular-nums">{portfolioPillLabel}</span>
               </button>
             </PopoverTrigger>
-            <PopoverContent align="center" sideOffset={6} className="w-[min(calc(100vw-2rem),300px)] p-0">
-              <div className={dropdownMenuPanelClassName()} role="listbox" aria-label="Portfolio">
+            <PopoverContent align="center" sideOffset={6} className="w-[min(calc(100vw-2rem),300px)] overflow-hidden p-0">
+              <div className={dropdownMenuPanelBodyClassName} role="listbox" aria-label="Portfolio">
                 {pickerPortfolios.map((p) => {
                   const isOn = p.id === portfolioId;
                   const locked = !isFreePortfolioAccessible(p.id);
@@ -640,7 +641,11 @@ function TransactionForm({
                       role="option"
                       aria-selected={isOn}
                       onClick={() => setSelectedPortfolioId(p.id)}
-                      className={cn(dropdownMenuPlainItemClassName({ selected: isOn }), "justify-between")}
+                      className={cn(
+                        isSell
+                          ? cn(dropdownMenuPlainItemClassName({ selected: isOn }), "!h-auto min-h-10 justify-between py-2")
+                          : dropdownMenuPlainItemRowClassName({ selected: isOn }),
+                      )}
                     >
                       <span className="flex min-w-0 flex-col items-start">
                         <span className="truncate">{p.name}</span>
@@ -650,11 +655,13 @@ function TransactionForm({
                           </span>
                         ) : null}
                       </span>
-                      {isOn ? (
-                        <Check className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-                      ) : locked ? (
-                        <Lock className="h-3.5 w-3.5 shrink-0 text-fg-muted" strokeWidth={2} aria-hidden />
-                      ) : null}
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                        {isOn ? (
+                          <Check className="h-4 w-4 text-fg" strokeWidth={2} />
+                        ) : locked ? (
+                          <Lock className="h-3.5 w-3.5 text-fg-muted" strokeWidth={2} />
+                        ) : null}
+                      </span>
                     </button>
                   );
                 })}
@@ -721,8 +728,8 @@ function TransactionForm({
                     {otherType}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent align="center" sideOffset={6} className="w-[200px] p-0">
-                  <div className={dropdownMenuPanelClassName()} role="listbox" aria-label="Type">
+                <PopoverContent align="center" sideOffset={6} className="w-[200px] overflow-hidden p-0">
+                  <div className={dropdownMenuPanelBodyClassName} role="listbox" aria-label="Type">
                     {OTHER_TYPES.map((t) => (
                       <button
                         key={t}
@@ -730,10 +737,12 @@ function TransactionForm({
                         role="option"
                         aria-selected={t === otherType}
                         onClick={() => setOtherType(t)}
-                        className={cn(dropdownMenuPlainItemClassName({ selected: t === otherType }), "justify-between")}
+                        className={dropdownMenuPlainItemRowClassName({ selected: t === otherType })}
                       >
-                        <span>{t}</span>
-                        {t === otherType ? <Check className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden /> : null}
+                        <span className="min-w-0 flex-1 truncate text-left">{t}</span>
+                        <span className="flex h-4 w-4 shrink-0 items-center justify-center" aria-hidden>
+                          {t === otherType ? <Check className="h-4 w-4 text-fg" strokeWidth={2} /> : null}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -747,9 +756,11 @@ function TransactionForm({
                     <span className="tabular-nums">{feesPillLabel}</span>
                   </button>
                 </PopoverTrigger>
-                <PopoverContent align="center" sideOffset={6} className="w-[240px] p-3">
-                  <p className="mb-2 text-[12px] font-medium text-fg-muted">Fees</p>
-                  <UsdMoneyClearableInput value={fees} onChange={setFees} placeholder="0.00" clearLabel="Clear fees" />
+                <PopoverContent align="center" sideOffset={6} className="w-[240px] overflow-hidden p-0">
+                  <div className={cn(dropdownMenuPanelBodyClassName, "gap-2 p-2")}>
+                    <p className="px-2 pt-0.5 text-[12px] font-medium text-fg-muted">Fees</p>
+                    <UsdMoneyClearableInput value={fees} onChange={setFees} placeholder="0.00" clearLabel="Clear fees" />
+                  </div>
                 </PopoverContent>
               </Popover>
             ) : null}
