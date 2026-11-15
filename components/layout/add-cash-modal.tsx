@@ -338,6 +338,7 @@ function CashHeroAmount({
   const inputRef = useRef<HTMLInputElement>(null);
   const measureRef = useRef<HTMLSpanElement>(null);
   const placeholder = "0.00";
+  const isEmpty = value.length === 0;
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -364,19 +365,26 @@ function CashHeroAmount({
         >
           {value || placeholder}
         </span>
-        <input
-          ref={inputRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          inputMode="decimal"
-          placeholder={placeholder}
-          aria-label="Amount"
-          autoComplete="off"
-          className={cn(
-            HERO_DIGITS_CLASS,
-            "min-w-0 max-w-[260px] bg-transparent text-center text-fg caret-fg outline-none placeholder:text-fg-muted",
-          )}
-        />
+        <span className="relative inline-flex max-w-[260px] items-baseline">
+          {isEmpty ? (
+            <span aria-hidden className={cn(HERO_DIGITS_CLASS, "pointer-events-none text-fg-muted")}>
+              {placeholder}
+            </span>
+          ) : null}
+          <input
+            ref={inputRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            inputMode="decimal"
+            aria-label="Amount"
+            autoComplete="off"
+            className={cn(
+              HERO_DIGITS_CLASS,
+              "min-w-0 bg-transparent text-left text-fg caret-fg outline-none",
+              isEmpty ? "absolute inset-0 w-full" : "relative max-w-[260px]",
+            )}
+          />
+        </span>
       </div>
       <p className="text-[15px] text-fg-muted">Amount</p>
     </div>
