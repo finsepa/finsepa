@@ -18,10 +18,7 @@ import {
   fundamentalsBarEnterProgress,
   runFundamentalsBarEnterAnimation,
 } from "@/lib/chart/fundamentals-bar-enter-animation";
-import {
-  CHART_BASELINE_DASH_COLOR,
-  CHART_BASELINE_DASH_PX,
-} from "@/lib/chart/dashed-price-line-primitive";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
 import { straightLinePathD } from "@/lib/chart/smooth-line-path";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { cn } from "@/lib/utils";
@@ -462,11 +459,10 @@ export function PortfolioGoalProjectionChart({
               })}
               {zeroBaselineTopPct != null ? (
                 <div
-                  className="absolute inset-x-0 h-px"
+                  className="absolute inset-x-0 border-t"
                   style={{
                     top: `${zeroBaselineTopPct}%`,
-                    // Match LWC dashed baseline (~5.5px dash/gap).
-                    backgroundImage: `repeating-linear-gradient(to right, ${CHART_BASELINE_DASH_COLOR} 0 ${CHART_BASELINE_DASH_PX}px, transparent ${CHART_BASELINE_DASH_PX}px ${CHART_BASELINE_DASH_PX * 2}px)`,
+                    borderColor: CHART_BASELINE_COLOR,
                   }}
                 />
               ) : null}

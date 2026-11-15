@@ -11,10 +11,7 @@ import {
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   formatFundamentalsAxisTickLabel,
 } from "@/lib/chart/fundamentals-chart-surface";
-import {
-  CHART_BASELINE_DASH_COLOR,
-  CHART_BASELINE_DASH_PX,
-} from "@/lib/chart/dashed-price-line-primitive";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
 import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { PortfolioDividendScheduleMonth } from "@/lib/portfolio/portfolio-dividends-schedule-types";
@@ -209,10 +206,10 @@ function PortfolioDividendsChartInner({
                 />
               ))}
               <div
-                className="absolute inset-x-0 h-px"
+                className="absolute inset-x-0 border-t"
                 style={{
                   top: `${(1 - PLOT_INSET_BOTTOM_FRAC) * 100}%`,
-                  backgroundImage: `repeating-linear-gradient(to right, ${CHART_BASELINE_DASH_COLOR} 0 ${CHART_BASELINE_DASH_PX}px, transparent ${CHART_BASELINE_DASH_PX}px ${CHART_BASELINE_DASH_PX * 2}px)`,
+                  borderColor: CHART_BASELINE_COLOR,
                 }}
               />
             </div>

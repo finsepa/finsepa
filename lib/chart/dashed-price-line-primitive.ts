@@ -11,12 +11,15 @@ import type {
 
 /** Shared baseline look for overview charts (asset + portfolio). */
 export const CHART_BASELINE_DASH_COLOR = "rgba(113, 113, 122, 0.58)";
-/** Dash and gap length (LWC `LargeDashed` is 6px; ~10% more dashes). */
+/** Alias — same stroke; use with solid `$0` / `0%` baselines (`dashPx: 0`). */
+export const CHART_BASELINE_COLOR = CHART_BASELINE_DASH_COLOR;
+/** Dash and gap length (LWC `LargeDashed` is 6px; ~10% more dashes). Pass `0` for a solid line. */
 export const CHART_BASELINE_DASH_PX = 5.5;
 
 /**
- * Dashed horizontal line at a price with a custom dash pattern (LWC price lines only offer fixed
- * patterns), in the bottom layer so the series line and hover marker paint above it.
+ * Horizontal price line with optional dash pattern (LWC price lines only offer fixed patterns),
+ * in the bottom layer so the series line and hover marker paint above it.
+ * `dashPx <= 0` draws a solid stroke (use for `$0` / `0%` baselines).
  */
 export class DashedPriceLinePrimitive implements ISeriesPrimitive<Time> {
   private _series: ISeriesApi<SeriesType, Time> | null = null;
@@ -61,11 +64,15 @@ export class DashedPriceLinePrimitive implements ISeriesPrimitive<Time> {
       target.useBitmapCoordinateSpace(({ context, bitmapSize, horizontalPixelRatio, verticalPixelRatio }) => {
         const lineWidth = Math.max(1, Math.floor(verticalPixelRatio));
         const yPx = Math.round(y * verticalPixelRatio) + (lineWidth % 2 ? 0.5 : 0);
-        const dash = this._dashPx * horizontalPixelRatio;
         context.save();
         context.strokeStyle = this._color;
         context.lineWidth = lineWidth;
-        context.setLineDash([dash, dash]);
+        if (this._dashPx > 0) {
+          const dash = this._dashPx * horizontalPixelRatio;
+          context.setLineDash([dash, dash]);
+        } else {
+          context.setLineDash([]);
+        }
         context.beginPath();
         context.moveTo(0, yPx);
         context.lineTo(bitmapSize.width, yPx);

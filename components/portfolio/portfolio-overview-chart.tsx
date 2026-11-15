@@ -2673,7 +2673,8 @@ export function PortfolioValueHistoryChartPane({
           baseValue: { type: "price" as const, price: 0 },
         });
     if (metric === "return" || metric === "profit") {
-      dashedPriceLineFor(series).setLine(0, CHART_BASELINE_DASH_COLOR, CHART_BASELINE_DASH_PX);
+      // Solid $0 / 0% baseline (open-range lines stay dashed).
+      dashedPriceLineFor(series).setLine(0, CHART_BASELINE_DASH_COLOR, 0);
     }
 
     const compareLineOpts = {

@@ -29,10 +29,7 @@ import {
   FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
 } from "@/lib/chart/fundamentals-chart-surface";
-import {
-  CHART_BASELINE_DASH_COLOR,
-  CHART_BASELINE_DASH_PX,
-} from "@/lib/chart/dashed-price-line-primitive";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
 import {
   Empty,
   EmptyDescription,
@@ -531,9 +528,8 @@ function DynamicsSvg({
                 x2={padL + innerW}
                 y1={y0}
                 y2={y0}
-                stroke={CHART_BASELINE_DASH_COLOR}
+                stroke={CHART_BASELINE_COLOR}
                 strokeWidth={1}
-                strokeDasharray={`${CHART_BASELINE_DASH_PX} ${CHART_BASELINE_DASH_PX}`}
               />
 
               {hover != null ? (
