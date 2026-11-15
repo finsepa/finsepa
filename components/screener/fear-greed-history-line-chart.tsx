@@ -2,8 +2,6 @@
 
 import { resolveFsColor } from "@/lib/theme/resolve-fs-color";
 import { useCallback, useId, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
-import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
 import { MULTICHART_LINE_STROKE_WIDTH_PX } from "@/components/stock/multichart-fundamentals-bar";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -15,10 +13,12 @@ import {
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
 import { smoothAreaPathD, smoothLinePathD } from "@/lib/chart/smooth-line-path";
+
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import type { CryptoFearGreedHistoryPoint } from "@/lib/market/alternative-fear-greed";
 import {
   fearGreedColorForValue,
@@ -489,7 +489,6 @@ export function FearGreedHistoryLineChart({
               className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-panel"
               aria-hidden
             >
-              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
               {/* Extreme Greed / Extreme Fear bands — only when Fear & Greed index is visible */}
               {visibleFg ? (
                 <>
@@ -511,14 +510,22 @@ export function FearGreedHistoryLineChart({
                   />
                 </>
               ) : null}
+              {Y_TICKS.map((t) => (
+                <div
+                  key={`grid-${t}`}
+                  className="absolute inset-x-0 border-t"
+                  style={{
+                    top: `${valueToPlotBandTopPercent(t, Y_MIN, Y_MAX)}%`,
+                    borderColor: Y_AXIS_GRIDLINE_BORDER,
+                  }}
+                />
+              ))}
               <div
                 className="absolute inset-x-0 bottom-0 border-t"
-                style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
+                style={{ borderColor: CHART_BASELINE_COLOR }}
                 aria-hidden
               />
             </div>
-
-            <ChartBrandWatermark />
 
             {hoveredPt ? (
               <div

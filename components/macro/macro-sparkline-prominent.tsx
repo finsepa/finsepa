@@ -11,8 +11,6 @@ import {
   type MouseEvent,
 } from "react";
 
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
-import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
 import type { MacroChartVariant } from "@/components/macro/macro-sparkline";
 import { MacroSparklineBars } from "@/components/macro/macro-sparkline-bars";
 import type { MacroRangeId } from "@/components/macro/macro-range";
@@ -28,9 +26,11 @@ import {
   CHARTING_LINE_POINT_MARKER_RADIUS_PX,
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
+
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import {
   buildMacroChartYAxisDomain,
   formatMacroChartAxisTick,
@@ -323,18 +323,25 @@ function MacroProminentLineChart({
               style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
             >
-              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+              {yTicks.map((t, i) => (
+                <div
+                  key={`grid-${t}-${i}`}
+                  className="absolute inset-x-0 border-t"
+                  style={{
+                    top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%`,
+                    borderColor: Y_AXIS_GRIDLINE_BORDER,
+                  }}
+                />
+              ))}
               <div
                 className="absolute inset-x-0 border-t"
                 style={{
-                  borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+                  borderColor: CHART_BASELINE_COLOR,
                   top: yBipolar ? `${valueToPlotBandTopPercent(0, yMin, yMax)}%` : undefined,
                   bottom: yBipolar ? undefined : 0,
                 }}
               />
             </div>
-
-            <ChartBrandWatermark />
 
             {lineHoverCrosshair ? (
               <div

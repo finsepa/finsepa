@@ -6,7 +6,6 @@ import { AppModalOverlay } from "@/components/ui/app-modal-overlay";
 import { AppModalShell, APP_MODAL_RULE_CLASS } from "@/components/ui/app-modal-shell";
 import { Spinner } from "@/components/ui/spinner";
 
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
@@ -17,9 +16,11 @@ import {
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
+
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import { fundamentalsBarStaggerDelaySec } from "@/lib/chart/fundamentals-bar-enter-animation";
 import { fundamentalsBarColorAtIndex, fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 import { formatEconomyMetric } from "@/lib/market/economy-format-display";
@@ -203,11 +204,20 @@ function EconomyHistoryBarChart({
               style={{ top: plotInsetTop, bottom: plotInsetBottom }}
               aria-hidden
             >
-              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+              {yTicks.map((t, i) => (
+                <div
+                  key={`grid-${t}-${i}`}
+                  className="absolute inset-x-0 border-t"
+                  style={{
+                    top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%`,
+                    borderColor: Y_AXIS_GRIDLINE_BORDER,
+                  }}
+                />
+              ))}
               <div
                 className="absolute inset-x-0 border-t"
                 style={{
-                  borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
+                  borderColor: CHART_BASELINE_COLOR,
                   top: yBipolar ? `${valueToPlotBandTopPercent(0, yMin, yMax)}%` : undefined,
                   bottom: yBipolar ? undefined : 0,
                 }}

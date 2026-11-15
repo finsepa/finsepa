@@ -18,7 +18,6 @@ import {
 
 import {
   CHART_AXIS_ROW_PX,
-  CHART_PLOT_DOTS_PATTERN_CLASS,
   formatOverviewCrosshairBottomDate,
   periodAxisLabelLayoutStyle,
   periodAxisLabelMaxWidthClass,
@@ -579,7 +578,6 @@ export function SuperinvestorPerformanceChart({ profileSlug }: { profileSlug: st
           )}
           style={{ height: PLOT_HEIGHT_PX }}
         >
-          <div className={CHART_PLOT_DOTS_PATTERN_CLASS} aria-hidden />
           <div ref={hostRef} className="absolute inset-0 z-[1]" />
           {hover && tooltipPos ? (
             <div

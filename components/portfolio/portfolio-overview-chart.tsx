@@ -3215,7 +3215,7 @@ export function PortfolioValueHistoryChartPane({
     if (!samePortfolioLine) {
       series.setData(data);
     }
-    // Return / profit keep their dashed zero line; Value marks where the range opened.
+    // Value marks where the range opened (dashed); return/profit zero is solid (set on mount).
     if (metric === "value") {
       const openValue = plotLayoutRef.current === "goal" || !showPortfolio ? null : data[0]!.value;
       dashedPriceLineFor(series).setLine(openValue, CHART_BASELINE_DASH_COLOR, CHART_BASELINE_DASH_PX);

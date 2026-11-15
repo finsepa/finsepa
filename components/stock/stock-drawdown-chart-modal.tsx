@@ -15,7 +15,6 @@ import {
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import { topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { CompanyLogo } from "@/components/screener/company-logo";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { MULTICHART_LINE_STROKE_WIDTH_PX } from "@/components/stock/multichart-fundamentals-bar";
 import {
   fundamentalsBarEnterProgress,
@@ -37,7 +36,10 @@ import {
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
   valueToPlotBandTopPercent,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
 import { smoothAreaPathD, smoothLinePathD } from "@/lib/chart/smooth-line-path";
+
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import type { DrawdownSeriesPoint } from "@/lib/market/drawdown-series-types";
 import {
   FUNDAMENTALS_CHART_TIME_RANGE_LABELS,
@@ -462,15 +464,24 @@ function DrawdownHistoryChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0 bg-[var(--fs-chart-plot-bg)]"
+              className="pointer-events-none absolute inset-0 z-0 bg-[var(--fs-chart-plot-bg)]"
               aria-hidden
             >
-              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+              {yDomain.ticks.map((tick) => (
+                <div
+                  key={`grid-${tick}`}
+                  className="absolute inset-x-0 border-t"
+                  style={{
+                    top: `${plotValueTopPercent(tick)}%`,
+                    borderColor: Y_AXIS_GRIDLINE_BORDER,
+                  }}
+                />
+              ))}
             </div>
 
             <div
-              className="pointer-events-none absolute inset-x-0 z-[3] border-t border-dashed border-fg-subtle"
-              style={{ top: `${zeroBaselineTopPct}%` }}
+              className="pointer-events-none absolute inset-x-0 z-[3] border-t"
+              style={{ top: `${zeroBaselineTopPct}%`, borderColor: CHART_BASELINE_COLOR }}
               aria-hidden
             />
 

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { SegmentedControl } from "@/components/design-system";
 import { MULTICHART_BAR_WIDTH_WIDE_PX } from "@/components/stock/multichart-fundamentals-bar";
 import {
@@ -16,9 +15,11 @@ import {
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   formatFundamentalsAxisTickLabel,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
+
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import {
   estimatesChartBarValues,
   isAnnualForecastPoint,
@@ -471,14 +472,31 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
             <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: `${plotHeight}px` }}>
               <div ref={plotAreaRef} className="relative min-h-0 min-w-0 flex-1" onPointerLeave={clearHover}>
                 <div
-                  className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0"
+                  className="pointer-events-none absolute inset-0 z-0"
                   style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
                   aria-hidden
                 >
-                  <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+                  {yTicks.map((t, i) => {
+                    const nt = yTicks.length;
+                    const pct = nt <= 1 ? 0 : i / (nt - 1);
+                    const insetSpan = 0.92;
+                    return (
+                      <div
+                        key={`grid-${t}-${i}`}
+                        className="absolute inset-x-0 border-t"
+                        style={{
+                          top: `${(PLOT_INSET_TOP_FRAC + pct * insetSpan) * 100}%`,
+                          borderColor: Y_AXIS_GRIDLINE_BORDER,
+                        }}
+                      />
+                    );
+                  })}
                   <div
-                    className="absolute inset-x-0 bottom-0 border-t"
-                    style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
+                    className="absolute inset-x-0 border-t"
+                    style={{
+                      top: `${(1 - PLOT_INSET_BOTTOM_FRAC) * 100}%`,
+                      borderColor: CHART_BASELINE_COLOR,
+                    }}
                   />
                 </div>
 

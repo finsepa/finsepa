@@ -23,7 +23,6 @@ import { useChartThemePaintKey } from "@/lib/theme/use-logo-dev-theme";
 import { horzTimeToUnixSeconds, nearestPointByTime } from "@/components/chart/chart-selection-utils";
 import {
   overviewChartAxisRowPx,
-  CHART_PLOT_DOTS_PATTERN_CLASS,
   buildTwoSlotDayCrosshairLabelByBarTime,
   chartPointDisplayUnix,
   formatOverviewCrosshairBottomLabel,
@@ -602,9 +601,7 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       }}
     >
       <div className="relative min-h-0 min-w-0 flex-1" style={{ height: plotHeight }}>
-        <div className="pointer-events-none absolute inset-0 z-0 bg-[var(--fs-chart-plot-bg)]" aria-hidden>
-          <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
-        </div>
+        <div className="pointer-events-none absolute inset-0 z-0 bg-[var(--fs-chart-plot-bg)]" aria-hidden />
         <div
           ref={wrapRef}
           className={cn(
