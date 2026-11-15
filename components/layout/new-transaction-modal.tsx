@@ -6,7 +6,6 @@ import { format, startOfDay } from "date-fns";
 import { useRouter } from "next/navigation";
 
 import type { CompanyPick } from "@/components/charting/company-picker";
-import { ChevronsUpDownIcon } from "@/components/chevrons-up-down-icon";
 import { SegmentedControl, whiteSurfaceButtonChromeClass } from "@/components/design-system";
 import {
   dropdownMenuPanelClassName,
@@ -34,7 +33,7 @@ import { FREE_MAX_HOLDINGS_PER_PORTFOLIO } from "@/lib/account/plan-entitlements
 import { toastProUpgrade } from "@/lib/account/toast-pro-upgrade";
 import { PATH_ACCOUNT_PLANS } from "@/lib/auth/routes";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
-import { Check, ChevronLeft, Lock } from "@/lib/icons";
+import { ArrowUpDown, Check, ChevronLeft, Lock } from "@/lib/icons";
 import { parseUsdStyleNumber } from "@/lib/portfolio/amount-input-format";
 import { fetchLiveMarketPriceClient, fetchPriceOnDateClient } from "@/lib/portfolio/client-symbol-quotes";
 import { customPortfolioSymbolFromName } from "@/lib/portfolio/custom-asset-symbol";
@@ -819,47 +818,47 @@ function HeroEntry({
   }, [value]);
 
   return (
-    <div className={cn("flex w-full flex-col items-center gap-0.5 transition-opacity", dimmed && "opacity-55")}>
-      <div
-        className="relative flex max-w-full cursor-text items-baseline justify-center gap-0.5"
-        onClick={() => inputRef.current?.focus()}
-      >
-        {prefix ? <span className="text-[17px] font-medium text-fg-muted">{prefix}</span> : null}
-        <span
-          ref={measureRef}
-          aria-hidden
-          className={cn(HERO_DIGITS_CLASS, "pointer-events-none invisible absolute whitespace-pre")}
+    <div className={cn("relative w-full transition-opacity", dimmed && "opacity-55")}>
+      <div className="flex w-full flex-col items-center gap-0.5 px-11">
+        <div
+          className="relative flex max-w-full cursor-text items-baseline justify-center gap-0.5"
+          onClick={() => inputRef.current?.focus()}
         >
-          {value || placeholder}
-        </span>
-        <input
-          ref={inputRef}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          inputMode="decimal"
-          placeholder={placeholder}
-          aria-label={ariaLabel}
-          autoComplete="off"
-          className={cn(
-            HERO_DIGITS_CLASS,
-            "min-w-0 max-w-[260px] bg-transparent text-center text-fg caret-fg outline-none placeholder:text-fg-muted",
-          )}
-        />
-        {suffix ? <span className="whitespace-nowrap text-[17px] font-medium text-fg-muted">{suffix}</span> : null}
-      </div>
-      <div className="relative flex w-full items-center justify-center px-10 text-[15px] tabular-nums text-fg-muted">
-        <span>{secondary}</span>
-        {onToggle ? (
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-label={toggleLabel}
-            className="absolute right-0 top-1/2 flex size-[22px] -translate-y-1/2 items-center justify-center rounded-full bg-surface-muted text-fg transition-colors hover:bg-surface-hover"
+          {prefix ? <span className="text-[17px] font-medium text-fg-muted">{prefix}</span> : null}
+          <span
+            ref={measureRef}
+            aria-hidden
+            className={cn(HERO_DIGITS_CLASS, "pointer-events-none invisible absolute whitespace-pre")}
           >
-            <ChevronsUpDownIcon className="h-3 w-3" aria-hidden />
-          </button>
-        ) : null}
+            {value || placeholder}
+          </span>
+          <input
+            ref={inputRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            inputMode="decimal"
+            placeholder={placeholder}
+            aria-label={ariaLabel}
+            autoComplete="off"
+            className={cn(
+              HERO_DIGITS_CLASS,
+              "min-w-0 max-w-[260px] bg-transparent text-center text-fg caret-fg outline-none placeholder:text-fg-muted",
+            )}
+          />
+          {suffix ? <span className="whitespace-nowrap text-[17px] font-medium text-fg-muted">{suffix}</span> : null}
+        </div>
+        <p className="text-[15px] tabular-nums text-fg-muted">{secondary}</p>
       </div>
+      {onToggle ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={toggleLabel}
+          className="absolute right-0 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-surface-muted text-fg shadow-sm transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
+        >
+          <ArrowUpDown className="h-4 w-4" aria-hidden />
+        </button>
+      ) : null}
     </div>
   );
 }

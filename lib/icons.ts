@@ -256,6 +256,7 @@ export {
   Stop,
   Sun,
   SwitchHorizontal01 as ArrowLeftRight,
+  SwitchVertical01 as ArrowUpDown,
   Table as FileSpreadsheet,
   Trash01 as Trash2,
   TrendDown01 as TrendingDown,
