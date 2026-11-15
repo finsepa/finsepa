@@ -676,10 +676,10 @@ function TransactionForm({
               ariaLabel={tradeMode === "price" ? "Price per share" : "Shares"}
               secondary={
                 tradeMode === "price" ?
-                  `${sharesNum > 0 ? shares : "0.00"} ${displayTicker || "shares"}`
+                  `${sharesNum > 0 ? shares : "0.00"}\u2009${displayTicker || "shares"}`
                 : loadingPrice && priceNum <= 0 ? "Loading price…"
                 : priceNum <= 0 ? (isCustom ? "Set a price per share" : "Set a trade date to load price")
-                : `${usd2.format(priceNum)} per share`
+                : `${usd2.format(priceNum)}\u2009per share`
               }
               onToggle={() => setTradeMode((m) => (m === "price" ? "shares" : "price"))}
               toggleLabel={tradeMode === "price" ? "Switch to enter shares" : "Switch to enter price per share"}
@@ -698,8 +698,8 @@ function TransactionForm({
               ariaLabel={incomeMode === "perShare" ? "Per share" : "Shares"}
               secondary={
                 incomeMode === "perShare" ?
-                  `${incomeSharesNum > 0 ? incomeSharesText : "0.00"} ${displayTicker}`
-                : `${usd2.format(incomePerShareNum)} per share`
+                  `${incomeSharesNum > 0 ? incomeSharesText : "0.00"}\u2009${displayTicker}`
+                : `${usd2.format(incomePerShareNum)}\u2009per share`
               }
               onToggle={() => setIncomeMode((m) => (m === "perShare" ? "shares" : "perShare"))}
               toggleLabel={incomeMode === "perShare" ? "Switch to enter shares" : "Switch to enter per share"}
@@ -819,9 +819,9 @@ function HeroEntry({
   }, [value]);
 
   return (
-    <div className={cn("flex w-full flex-col items-center gap-1.5 transition-opacity", dimmed && "opacity-55")}>
+    <div className={cn("flex w-full flex-col items-center gap-0.5 transition-opacity", dimmed && "opacity-55")}>
       <div
-        className="relative flex max-w-full cursor-text items-baseline justify-center gap-1"
+        className="relative flex max-w-full cursor-text items-baseline justify-center gap-0.5"
         onClick={() => inputRef.current?.focus()}
       >
         {prefix ? <span className="text-[17px] font-medium text-fg-muted">{prefix}</span> : null}
