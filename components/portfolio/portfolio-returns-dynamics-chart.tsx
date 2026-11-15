@@ -286,7 +286,7 @@ function ReturnsDynamicsChartSkeleton() {
             className={cn("relative shrink-0", FUNDAMENTALS_CHART_Y_AXIS_PADDING_CLASS)}
             style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
           >
-            <div className={cn("pointer-events-none absolute inset-x-0", CHART_PLOT_BACKDROP_INSET_CLASS)}>
+            <div className="pointer-events-none absolute inset-0">
               {skeletonTicks.map((t) => (
                 <div
                   key={t}
@@ -669,11 +669,12 @@ function DynamicsSvg({
             style={{ width: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
             aria-hidden
           >
-            <div className={cn("pointer-events-none absolute inset-x-0", CHART_PLOT_BACKDROP_INSET_CLASS)}>
+            {/* Full plot height — `tickTopPercent` already includes the 8%/4% band insets (matches SVG `yFor`). */}
+            <div className="pointer-events-none absolute inset-0">
               {ticks.map((t) => (
                 <span
                   key={t}
-                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px"
+                  className="absolute right-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px leading-none"
                   style={{ top: `${tickTopPercent(t, yMin, yMax)}%`, backgroundColor: "var(--fs-chart-plot-bg)" }}
                 >
                   {formatPctAxis(t)}
