@@ -1109,10 +1109,19 @@ body {
   background: transparent;
 }
 
-/* Desktop position / glass fill come from `.shell-desktop-panel__header`. */
+/*
+ * Desktop: undo the mobile `position: fixed` / full-bleed insets so
+ * `.shell-desktop-panel__header` can own absolute glass positioning inside the panel.
+ * (Leaving `fixed` here pinned the topbar to the viewport and broke watchlist rail layout.)
+ */
 @media (min-width: 768px) {
   .mobile-topbar-shell {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     padding-top: 0;
+    background: transparent;
   }
 }
 

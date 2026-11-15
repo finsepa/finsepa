@@ -391,20 +391,27 @@ export function WatchlistRail() {
       suppressHydrationWarning
       className={cn(
         // Overlays <main>'s reserved right padding, left of its scrollbar, so the page scrollbar sits at the panel edge.
-        "absolute bottom-0 top-[var(--shell-chrome-header-height)] z-10 hidden overflow-hidden md:flex",
+        // Full column height; pad below the glass top bar so the card sits under the header (not mid/bottom).
+        "absolute inset-y-0 z-10 hidden overflow-hidden md:flex md:flex-col md:items-stretch",
         SHELL_DESKTOP_PANEL_BG_CLASS,
         WATCHLIST_RAIL_WIDTH_MOTION_CLASS,
       )}
       style={{
         right: "var(--shell-main-scrollbar-w, 0px)",
         width: `${watchlistRailReservedWidthPx(pathname, outerWidthPx)}px`,
-        padding: `${RAIL_CARD_INSET.top}px ${RAIL_CARD_INSET.right}px ${RAIL_CARD_INSET.bottom}px ${RAIL_CARD_INSET.left}px`,
+        paddingTop: `calc(var(--shell-chrome-header-height) + ${RAIL_CARD_INSET.top}px)`,
+        paddingRight: `${RAIL_CARD_INSET.right}px`,
+        paddingBottom: `${RAIL_CARD_INSET.bottom}px`,
+        paddingLeft: `${RAIL_CARD_INSET.left}px`,
       }}
       aria-label="Watchlist panel"
     >
         <div
           suppressHydrationWarning
-          className={cn("flex max-h-full min-h-0 shrink-0 flex-col self-start overflow-hidden p-2", MOBILE_ELEVATED_CARD_CLASS)}
+          className={cn(
+            "flex max-h-full min-h-0 w-full shrink-0 flex-col self-start overflow-hidden p-2",
+            MOBILE_ELEVATED_CARD_CLASS,
+          )}
           style={{ width: `${WATCHLIST_PANEL_WIDTH_PX}px` }}
         >
           <div className="mb-1 flex shrink-0 items-center justify-between gap-2 pl-3">
