@@ -1,7 +1,6 @@
 "use client";
 
 import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   CHARTING_LINE_POINT_MARKER_BORDER_PX,
   CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
@@ -10,7 +9,6 @@ import {
   FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   buildFundamentalsYAxisDomain,
   computeFundamentalsChartTooltipPlacement,
   formatFundamentalsAxisTickLabel,
@@ -20,7 +18,11 @@ import {
   fundamentalsBarEnterProgress,
   runFundamentalsBarEnterAnimation,
 } from "@/lib/chart/fundamentals-bar-enter-animation";
-import { smoothLinePathD } from "@/lib/chart/smooth-line-path";
+import {
+  CHART_BASELINE_DASH_COLOR,
+  CHART_BASELINE_DASH_PX,
+} from "@/lib/chart/dashed-price-line-primitive";
+import { straightLinePathD } from "@/lib/chart/smooth-line-path";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import { cn } from "@/lib/utils";
 import {
@@ -41,8 +43,9 @@ const PLOT_INSET_BOTTOM_FRAC = 0.04;
 const HOVER_DOT_HALO_RADIUS_PX = 14;
 const HOVER_DOT_HALO_ALPHA = 0.14;
 const LINE_STROKE_WIDTH_PX = 2;
-const END_DOT_RADIUS_PX = 3.5;
 const CHART_HEIGHT_PX = 320;
+/** Match asset / portfolio charts — `resolveFsColorWithAlpha("--fs-stroke", 0.6)`. */
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 
 /** First year-end that reaches `target` (skip if the series already starts at/above). */
 function firstYearIndexCrossingTarget(
@@ -262,12 +265,21 @@ export function PortfolioGoalProjectionChart({
       return {
         id: s.id,
         color: s.color,
-        d: smoothLinePathD(pts.map((p) => ({ x: p.x, y: p.y }))),
+        d: straightLinePathD(pts.map((p) => ({ x: p.x, y: p.y }))),
         pts,
         endPt: pts.at(-1) ?? null,
       };
     });
   }, [aligned, linePlotPx.h, linePlotPx.w, years.length, yMin, yMax]);
+
+  const zeroBaselineTopPct = useMemo(() => {
+    if (!(yMin <= 0 && yMax >= 0)) return null;
+    const bandTop = valueToPlotBandTopPercent(0, yMin, yMax);
+    return (
+      (PLOT_INSET_TOP_FRAC + (bandTop / 100) * (1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC)) *
+      100
+    );
+  }, [yMin, yMax]);
 
   const crossingLinePts = useMemo(() => {
     if (!(typeof targetUsd === "number" && targetUsd > 0)) return [];
@@ -431,15 +443,33 @@ export function PortfolioGoalProjectionChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0"
+              className="pointer-events-none absolute inset-0 z-0"
               style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
             >
-              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
-              <div
-                className="absolute inset-x-0 bottom-0 border-t"
-                style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
-              />
+              {/* Y gridlines at axis ticks — same language as asset / portfolio charts (no plot dots). */}
+              {yTicks.map((t, i) => {
+                const nt = yTicks.length;
+                const pct = nt <= 1 ? 0 : i / (nt - 1);
+                const top = `${(PLOT_INSET_TOP_FRAC + pct * (1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC)) * 100}%`;
+                return (
+                  <div
+                    key={`grid-${t}-${i}`}
+                    className="absolute inset-x-0 border-t"
+                    style={{ top, borderColor: Y_AXIS_GRIDLINE_BORDER }}
+                  />
+                );
+              })}
+              {zeroBaselineTopPct != null ? (
+                <div
+                  className="absolute inset-x-0 h-px"
+                  style={{
+                    top: `${zeroBaselineTopPct}%`,
+                    // Match LWC dashed baseline (~5.5px dash/gap).
+                    backgroundImage: `repeating-linear-gradient(to right, ${CHART_BASELINE_DASH_COLOR} 0 ${CHART_BASELINE_DASH_PX}px, transparent ${CHART_BASELINE_DASH_PX}px ${CHART_BASELINE_DASH_PX * 2}px)`,
+                  }}
+                />
+              ) : null}
             </div>
             <ChartBrandWatermark />
             {achievedYearCrosshairs.map((hair) => (
@@ -508,17 +538,6 @@ export function PortfolioGoalProjectionChart({
                           strokeWidth={LINE_STROKE_WIDTH_PX}
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                        />
-                      ) : null,
-                    )}
-                    {linePaths.map((lp) =>
-                      lp.endPt ? (
-                        <circle
-                          key={`end-dot-${lp.id}`}
-                          cx={lp.endPt.x}
-                          cy={lp.endPt.y}
-                          r={END_DOT_RADIUS_PX}
-                          fill={lp.color}
                         />
                       ) : null,
                     )}

@@ -1,5 +1,17 @@
 export type SmoothLinePoint = { x: number; y: number };
 
+/** Straight polyline — matches Lightweight Charts `LineType.Simple` (asset / portfolio charts). */
+export function straightLinePathD(points: readonly SmoothLinePoint[]): string {
+  const n = points.length;
+  if (n === 0) return "";
+  if (n === 1) return `M ${points[0]!.x} ${points[0]!.y}`;
+  let d = `M ${points[0]!.x} ${points[0]!.y}`;
+  for (let i = 1; i < n; i++) {
+    d += ` L ${points[i]!.x} ${points[i]!.y}`;
+  }
+  return d;
+}
+
 /**
  * Smooth SVG path through points — approximates Lightweight Charts `LineType.Curved`
  * (Catmull–Rom → cubic Bézier).
