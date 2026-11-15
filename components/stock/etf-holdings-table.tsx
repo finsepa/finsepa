@@ -132,18 +132,15 @@ export function EtfHoldingsTable({ ticker, isActive }: { ticker: string; isActiv
   return (
     <section aria-label="Holdings" className="space-y-2">
       <HoldingsTable holdings={holdings} />
-      <p className="px-1 text-[12px] leading-4 text-fg-muted">
-        {lookThrough ? (
-          <>
-            This fund holds{" "}
-            <Link href={`/stock/${encodeURIComponent(lookThrough.viaCode)}`} prefetch={false} className="font-medium text-fg hover:underline">
-              {lookThrough.viaCode}
-            </Link>
-            ; holdings shown through it, weighted by this fund&apos;s exposure.{" "}
-          </>
-        ) : null}
-        Value is the holding&apos;s weight × fund AUM.
-      </p>
+      {lookThrough ? (
+        <p className="px-1 text-[12px] leading-4 text-fg-muted">
+          This fund holds{" "}
+          <Link href={`/stock/${encodeURIComponent(lookThrough.viaCode)}`} prefetch={false} className="font-medium text-fg hover:underline">
+            {lookThrough.viaCode}
+          </Link>
+          ; holdings shown through it, weighted by this fund&apos;s exposure.
+        </p>
+      ) : null}
     </section>
   );
 }
