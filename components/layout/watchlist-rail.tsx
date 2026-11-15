@@ -290,7 +290,7 @@ export function WatchlistRailScrollContent({
 }
 
 /** Rail card insets inside the shell: 4px left keeps the card shadow unclipped, 36px right matches the topbar gutter. */
-const RAIL_CARD_INSET = { top: 20, right: 36, bottom: 20, left: 4 } as const;
+const RAIL_CARD_INSET = { top: 0, right: 36, bottom: 20, left: 4 } as const;
 
 /** Header icon buttons above the open rail card — same as the home watchlist header. */
 const RAIL_HEADER_ICON_BUTTON_CLASS =
