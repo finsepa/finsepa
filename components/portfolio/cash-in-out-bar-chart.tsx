@@ -302,32 +302,52 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
     [granularity, n, plotWidth],
   );
 
+  /** Center a lone deposit/withdrawal bar in the period column; pair when both exist. */
+  const groupBarXs = useCallback(
+    (b: Bucket, i: number): { inX: number | null; outX: number | null } => {
+      const gx = padL + i * groupW + groupW / 2;
+      const hasIn = b.inAmount > 0;
+      const hasOut = b.outAmount > 0;
+      const count = (hasIn ? 1 : 0) + (hasOut ? 1 : 0);
+      if (count === 0) return { inX: null, outX: null };
+      const totalW = count === 2 ? barW * 2 + gap : barW;
+      let x = gx - totalW / 2;
+      let inX: number | null = null;
+      let outX: number | null = null;
+      if (hasIn) {
+        inX = x;
+        x += barW + (hasOut ? gap : 0);
+      }
+      if (hasOut) outX = x;
+      return { inX, outX };
+    },
+    [padL, groupW, barW, gap],
+  );
+
   const barValueLabels = useMemo(() => {
     const labels: { key: string; leftPx: number; topPx: number; text: string }[] = [];
     for (let i = 0; i < buckets.length; i++) {
       const b = buckets[i]!;
-      const gx = padL + i * groupW + groupW / 2;
-      const pairW = barW * 2 + gap;
-      const startX = gx - pairW / 2;
-      if (b.inAmount > 0) {
+      const { inX, outX } = groupBarXs(b, i);
+      if (inX != null) {
         labels.push({
           key: `in-${i}`,
-          leftPx: startX + barW / 2,
+          leftPx: inX + barW / 2,
           topPx: yFor(b.inAmount) - 4,
           text: formatBarLabelUsd(b.inAmount),
         });
       }
-      if (b.outAmount > 0) {
+      if (outX != null) {
         labels.push({
           key: `out-${i}`,
-          leftPx: startX + barW + gap + barW / 2,
+          leftPx: outX + barW / 2,
           topPx: yFor(b.outAmount) - 4,
           text: formatBarLabelUsd(b.outAmount),
         });
       }
     }
     return labels;
-  }, [buckets, padL, groupW, barW, gap, yFor]);
+  }, [buckets, groupBarXs, barW, yFor]);
 
   const updateHoverFromEvent = useCallback((i: number, clientX: number, clientY: number) => {
     const el = wrapRef.current;
@@ -395,16 +415,14 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
               ) : null}
 
               {buckets.map((b, i) => {
-                const gx = padL + i * groupW + groupW / 2;
-                const pairW = barW * 2 + gap;
-                const startX = gx - pairW / 2;
+                const { inX, outX } = groupBarXs(b, i);
                 const inH = yMax > 0 ? ((b.inAmount / yMax) * innerH) : 0;
                 const outH = yMax > 0 ? ((b.outAmount / yMax) * innerH) : 0;
                 return (
                   <g key={b.key}>
-                    {inH > 0 ? (
+                    {inX != null && inH > 0 ? (
                       <rect
-                        x={startX}
+                        x={inX}
                         y={baseY - inH}
                         width={barW}
                         height={Math.max(inH, 1)}
@@ -413,9 +431,9 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
                         fill={resolveFsColor("--fs-accent")}
                       />
                     ) : null}
-                    {outH > 0 ? (
+                    {outX != null && outH > 0 ? (
                       <rect
-                        x={startX + barW + gap}
+                        x={outX}
                         y={baseY - outH}
                         width={barW}
                         height={Math.max(outH, 1)}
