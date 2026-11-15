@@ -3,16 +3,18 @@
 import { memo, useMemo, useRef, useState, type MouseEvent } from "react";
 import { format, parseISO } from "date-fns";
 
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   buildFundamentalsYAxisTicks,
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   formatFundamentalsAxisTickLabel,
 } from "@/lib/chart/fundamentals-chart-surface";
+import {
+  CHART_BASELINE_DASH_COLOR,
+  CHART_BASELINE_DASH_PX,
+} from "@/lib/chart/dashed-price-line-primitive";
 import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { PortfolioDividendScheduleMonth } from "@/lib/portfolio/portfolio-dividends-schedule-types";
@@ -26,10 +28,19 @@ const FUTURE_BAR_COLOR = "var(--fs-fg-subtle)";
 
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
+const PLOT_BAND_FRAC = 1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC;
+/** Match asset / portfolio charts — `resolveFsColorWithAlpha("--fs-stroke", 0.6)`. */
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 const MULTICHART_AXIS_ROW_PX = 28;
 const MULTICHART_AXIS_BOTTOM_PAD_PX = 8;
 const Y_AXIS_W_PX = 50;
 const CHART_HEIGHT_PX = 268;
+
+/** Y tick / gridline top % of the full plot column (includes 8%/4% band insets). */
+function tickTopPercent(index: number, tickCount: number): number {
+  const pct = tickCount <= 1 ? 0 : index / (tickCount - 1);
+  return (PLOT_INSET_TOP_FRAC + pct * PLOT_BAND_FRAC) * 100;
+}
 
 /** Match fundamentals / charting single-metric bar width. */
 const BAR_WIDTH_PX = 18;
@@ -183,14 +194,26 @@ function PortfolioDividendsChartInner({
             onPointerLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0"
+              className="pointer-events-none absolute inset-0 z-0"
               style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
             >
-              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+              {yTicks.map((t, i) => (
+                <div
+                  key={`grid-${t}-${i}`}
+                  className="absolute inset-x-0 border-t"
+                  style={{
+                    top: `${tickTopPercent(i, yTicks.length)}%`,
+                    borderColor: Y_AXIS_GRIDLINE_BORDER,
+                  }}
+                />
+              ))}
               <div
-                className="absolute inset-x-0 bottom-0 border-t"
-                style={{ borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER }}
+                className="absolute inset-x-0 h-px"
+                style={{
+                  top: `${(1 - PLOT_INSET_BOTTOM_FRAC) * 100}%`,
+                  backgroundImage: `repeating-linear-gradient(to right, ${CHART_BASELINE_DASH_COLOR} 0 ${CHART_BASELINE_DASH_PX}px, transparent ${CHART_BASELINE_DASH_PX}px ${CHART_BASELINE_DASH_PX * 2}px)`,
+                }}
               />
             </div>
 
@@ -292,23 +315,18 @@ function PortfolioDividendsChartInner({
             aria-hidden
           >
             <div className="pointer-events-none absolute inset-0">
-              {yTicks.map((t, i) => {
-                const nt = yTicks.length;
-                const pct = nt <= 1 ? 0 : i / (nt - 1);
-                const insetSpan = 0.92;
-                return (
-                  <span
-                    key={i}
-                    className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px"
-                    style={{
-                      top: `${(PLOT_INSET_TOP_FRAC + pct * insetSpan) * 100}%`,
-                      backgroundColor: "var(--fs-chart-plot-bg)",
-                    }}
-                  >
-                    {formatFundamentalsAxisTickLabel("usd", t)}
-                  </span>
-                );
-              })}
+              {yTicks.map((t, i) => (
+                <span
+                  key={i}
+                  className="absolute left-0 z-[1] block -translate-y-1/2 rounded-sm px-0.5 py-px leading-none"
+                  style={{
+                    top: `${tickTopPercent(i, yTicks.length)}%`,
+                    backgroundColor: "var(--fs-chart-plot-bg)",
+                  }}
+                >
+                  {formatFundamentalsAxisTickLabel("usd", t)}
+                </span>
+              ))}
             </div>
           </div>
         </div>
