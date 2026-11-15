@@ -43,10 +43,10 @@ import {
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_REFERENCE_BADGE_CLASS,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
-  FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
   valueToPlotBandTopPercent,
   type FundamentalsChartReferenceKind,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
 import {
   formatChartingPeriodAxisLabel,
   formatChartingPeriodLabel,
@@ -59,8 +59,6 @@ import {
   formatUsdCompact,
   formatUsdPrice,
 } from "@/lib/market/key-stats-basic-format";
-import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
-import { ChartBrandWatermark } from "@/components/chart/chart-brand-watermark";
 import { smoothAreaPathD, smoothLinePathD } from "@/lib/chart/smooth-line-path";
 import {
   fundamentalsBarColorAtIndex,
@@ -206,6 +204,15 @@ function periodColumnWidthPercent(
 /** Insets (% of plot height): top breathing room; bottom gap above x-axis labels. */
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
+const PLOT_BAND_FRAC = 1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC;
+/** Match asset / portfolio charts — `resolveFsColorWithAlpha("--fs-stroke", 0.6)`. */
+const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
+
+/** Y tick / gridline top % of the full plot column (includes 8%/4% band insets). */
+function tickTopPercentFull(v: number, yMin: number, yMax: number): number {
+  const band = valueToPlotBandTopPercent(v, yMin, yMax) / 100;
+  return (PLOT_INSET_TOP_FRAC + band * PLOT_BAND_FRAC) * 100;
+}
 
 /** Bottom row for period labels (px) — room for {@link AXIS_LABEL_ROTATE_DEG}-rotated text. */
 const MULTICHART_AXIS_ROW_PX = 32;
@@ -327,7 +334,7 @@ type Props = {
   showLinePointMarkers?: boolean;
   /** Value labels above line points when Values is on (default on; off in Key Stats metric modal). */
   enableLineValueLabels?: boolean;
-  /** Centered Finsepa mark behind the series (Key Stats modal + screenshot export). */
+  /** @deprecated Unused — brand watermark removed from chart plots. */
   showBrandWatermark?: boolean;
   /**
    * Plot canvas + Y-axis label chip fill. Defaults to shell panel `#FCFCFD`.
@@ -470,10 +477,10 @@ export function MultichartFundamentalsBar({
   screenshotExportMode = false,
   showLinePointMarkers = true,
   enableLineValueLabels = true,
-  showBrandWatermark = false,
+  showBrandWatermark: _showBrandWatermark = false,
   plotBackgroundClass = CHART_PLOT_BACKGROUND_CLASS,
 }: Props) {
-  const brandWatermark = showBrandWatermark || screenshotExportMode;
+  void _showBrandWatermark;
   const lineAxisMode = visual === "line" && lineTimeRange != null;
   const effectiveHorizontalPeriodAxisLabels = horizontalPeriodAxisLabels || lineAxisMode;
   const display = displayOptionsProp ?? DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS;
@@ -738,27 +745,31 @@ export function MultichartFundamentalsBar({
             onPointerCancel={onBarPlotPointerUp}
             onPointerLeave={clearChartHover}
           >
-            {/* Dot grid + single $0 baseline (no other horizontal rules). */}
+            {/* Y-gridlines + solid $0 baseline (newest chart chrome; no brand watermark). */}
             <div
-              className={cn(
-                "pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%] z-0",
-                plotBackgroundClass,
-              )}
+              className={cn("pointer-events-none absolute inset-0 z-0", plotBackgroundClass)}
               aria-hidden
             >
-              <div className={CHART_PLOT_DOTS_PATTERN_CLASS} />
+              {yTicks.map((t, i) => (
+                <div
+                  key={`grid-${t}-${i}`}
+                  className="absolute inset-x-0 border-t"
+                  style={{
+                    top: `${tickTopPercentFull(t, yMin, yMax)}%`,
+                    borderColor: Y_AXIS_GRIDLINE_BORDER,
+                  }}
+                />
+              ))}
               <div
                 className="absolute inset-x-0 border-t"
                 style={{
-                  borderColor: FUNDAMENTALS_CHART_ZERO_BASELINE_BORDER,
-                  top: yBipolar ? `${valueToPlotBandTopPercent(0, yMin, yMax)}%` : undefined,
-                  bottom: yBipolar ? undefined : 0,
+                  borderColor: CHART_BASELINE_COLOR,
+                  top: yBipolar
+                    ? `${tickTopPercentFull(0, yMin, yMax)}%`
+                    : `${(1 - PLOT_INSET_BOTTOM_FRAC) * 100}%`,
                 }}
               />
             </div>
-            {brandWatermark ? (
-              <ChartBrandWatermark size={screenshotExportMode ? "compact" : "default"} />
-            ) : null}
             {lineHoverCrosshair ? (
               <div
                 aria-hidden
@@ -1171,16 +1182,16 @@ export function MultichartFundamentalsBar({
             style={{ width: yAxisWidthPx }}
             aria-hidden
           >
-            <div className="pointer-events-none absolute inset-x-0 top-[8%] bottom-[4%]">
+            <div className="pointer-events-none absolute inset-0">
               {yTicks.map((t, i) => (
                 <span
                   key={i}
                   className={cn(
-                    "absolute left-0 z-[1] block -translate-y-1/2 rounded-sm py-px",
+                    "absolute left-0 z-[1] block -translate-y-1/2 rounded-sm py-px leading-none",
                     plotBackgroundClass,
                     yAxisLabelPadClass,
                   )}
-                  style={{ top: `${valueToPlotBandTopPercent(t, yMin, yMax)}%` }}
+                  style={{ top: `${tickTopPercentFull(t, yMin, yMax)}%` }}
                 >
                   {formatAxisValue(kind, t)}
                 </span>

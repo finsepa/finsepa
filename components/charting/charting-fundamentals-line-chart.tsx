@@ -588,7 +588,6 @@ export function ChartingFundamentalsLineChart({
         lineTimeRange={lineTimeRange}
         periodPlotMargins={{ left: 0, right: 0 }}
         showLinePointMarkers={false}
-        showBrandWatermark
       />
     );
   }

@@ -197,7 +197,6 @@ export const ChartScreenshotPreview = forwardRef<HTMLDivElement, ChartScreenshot
                       lineTimeRange={snapshot.keyStatsMetric!.lineTimeRange}
                       periodPlotMargins={KEY_STATS_SCREENSHOT_PERIOD_MARGINS}
                       screenshotExportMode
-                      showBrandWatermark
                     />
                   ) : isStockOverview ? (
                     <PriceChart

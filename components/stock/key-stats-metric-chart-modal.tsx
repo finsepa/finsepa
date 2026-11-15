@@ -496,7 +496,6 @@ export function KeyStatsMetricChartModal({
           periodPlotMargins={periodPlotMargins}
           showLinePointMarkers={chartVisual !== "line"}
           enableLineValueLabels={chartVisual !== "line"}
-          showBrandWatermark
         />
         {!isMobile && metricId === "forward_pe" ? (
           <p className="mt-3 text-[12px] leading-5 text-fg-muted">
