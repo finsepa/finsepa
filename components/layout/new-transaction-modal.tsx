@@ -863,7 +863,10 @@ function HeroEntry({
           type="button"
           onClick={onToggle}
           aria-label={toggleLabel}
-          className="absolute right-0 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-surface-muted text-fg shadow-sm transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
+          className={cn(
+            "absolute right-0 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full text-fg transition-colors hover:bg-surface-muted dark:hover:bg-dropdown-item-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
+            whiteSurfaceButtonChromeClass,
+          )}
         >
           <ArrowUpDown className="h-4 w-4" aria-hidden />
         </button>
