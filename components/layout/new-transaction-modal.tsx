@@ -821,7 +821,7 @@ function HeroEntry({
   return (
     <div className={cn("flex w-full flex-col items-center gap-1.5 transition-opacity", dimmed && "opacity-55")}>
       <div
-        className="relative flex max-w-full cursor-text items-baseline justify-center gap-2"
+        className="relative flex max-w-full cursor-text items-baseline justify-center gap-1"
         onClick={() => inputRef.current?.focus()}
       >
         {prefix ? <span className="text-[17px] font-medium text-fg-muted">{prefix}</span> : null}
