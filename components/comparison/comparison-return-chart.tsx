@@ -152,7 +152,19 @@ function buildReturnChartYAxisTicks(maxPos: number, maxNeg: number): number[] {
   }
   const span = maxPos + maxNeg;
   const n = FUNDAMENTALS_CHART_Y_AXIS_LABEL_COUNT;
-  return Array.from({ length: n }, (_, i) => maxPos - (i / (n - 1)) * span);
+  const ticks = Array.from({ length: n }, (_, i) => maxPos - (i / (n - 1)) * span);
+  // Keep an exact 0% tick (and solid baseline) when the scale crosses zero.
+  let nearest = 0;
+  let nearestAbs = Math.abs(ticks[0] ?? 0);
+  for (let i = 1; i < ticks.length; i += 1) {
+    const a = Math.abs(ticks[i] ?? 0);
+    if (a < nearestAbs) {
+      nearest = i;
+      nearestAbs = a;
+    }
+  }
+  ticks[nearest] = 0;
+  return ticks;
 }
 
 /** Map tick value to % from top of the plot band (0 = top, 100 = bottom). */
@@ -414,14 +426,28 @@ export function ComparisonReturnChart({
                         }}
                       />
                     ))}
+                  </div>
+
+                  {/* Solid 0% baseline above the grid so it stays visible between bars. */}
+                  {scale.maxNeg > 0 ? (
                     <div
-                      className="absolute inset-x-0 border-t"
+                      className="pointer-events-none absolute inset-x-0 z-[3] border-t"
                       style={{
                         top: `${returnTickTopPercentFull(0, scale)}%`,
                         borderColor: CHART_BASELINE_COLOR,
                       }}
+                      aria-hidden
                     />
-                  </div>
+                  ) : (
+                    <div
+                      className="pointer-events-none absolute inset-x-0 z-[3] border-t"
+                      style={{
+                        top: `${(1 - FUNDAMENTALS_CHART_PLOT_INSET_BOTTOM_FRAC) * 100}%`,
+                        borderColor: CHART_BASELINE_COLOR,
+                      }}
+                      aria-hidden
+                    />
+                  )}
 
                   <div
                     className="absolute inset-x-0 top-[8%] bottom-[4%] z-[1] grid h-full min-h-0 w-full min-w-0 overflow-hidden"
