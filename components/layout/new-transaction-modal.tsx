@@ -847,14 +847,14 @@ function HeroEntry({
         />
         {suffix ? <span className="whitespace-nowrap text-[17px] font-medium text-fg-muted">{suffix}</span> : null}
       </div>
-      <div className="flex items-center justify-center gap-1 text-[15px] tabular-nums text-fg-muted">
+      <div className="relative flex w-full items-center justify-center px-10 text-[15px] tabular-nums text-fg-muted">
         <span>{secondary}</span>
         {onToggle ? (
           <button
             type="button"
             onClick={onToggle}
             aria-label={toggleLabel}
-            className="ml-0.5 flex size-[22px] items-center justify-center rounded-full bg-surface-muted text-fg transition-colors hover:bg-surface-hover"
+            className="absolute right-0 top-1/2 flex size-[22px] -translate-y-1/2 items-center justify-center rounded-full bg-surface-muted text-fg transition-colors hover:bg-surface-hover"
           >
             <ChevronsUpDownIcon className="h-3 w-3" aria-hidden />
           </button>
