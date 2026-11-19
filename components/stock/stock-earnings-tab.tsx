@@ -49,7 +49,7 @@ import {
   TABLE_END_ALIGNED_PAD_CLASS,
 } from "@/components/screener/screener-table-scroll";
 import { ChangePct, ChangePctParen } from "@/components/screener/change-pct";
-import { parseEarningsReportYmd } from "@/lib/market/earnings-countdown";
+import { earningsDaysLeftFromYmd, parseEarningsReportYmd } from "@/lib/market/earnings-countdown";
 import { cn } from "@/lib/utils";
 import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
 
@@ -182,22 +182,21 @@ function EarningsCountdownStats({
   forwardPeDisplay?: string | null;
 }) {
   /** Compute "today" on the client only so the SSR seed can't disagree on the day boundary. */
-  const [nowUtcMs, setNowUtcMs] = useState<number | null>(null);
+  const [todayTick, setTodayTick] = useState(0);
   useEffect(() => {
-    const now = new Date();
-    setNowUtcMs(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+    setTodayTick(1);
   }, []);
 
   const info = useMemo<EarningsCountdownInfo | null>(() => {
+    if (todayTick === 0) return null;
     const parsed = parseEarningsReportYmd(reportDateYmd);
-    if (!parsed || nowUtcMs == null) return null;
-    const daysLeft = Math.round((parsed.utcMs - nowUtcMs) / 86_400_000);
-    if (daysLeft < 0) return null;
+    const daysLeft = earningsDaysLeftFromYmd(reportDateYmd);
+    if (!parsed || daysLeft == null) return null;
     return {
       nextEarningsLabel: formatNextEarningsLabel(parsed.monthIdx, parsed.day, fiscalPeriodLabel),
       daysLeft,
     };
-  }, [reportDateYmd, fiscalPeriodLabel, nowUtcMs]);
+  }, [reportDateYmd, fiscalPeriodLabel, todayTick]);
 
   const revenueEstimate =
     revenueEstimateDisplay != null && String(revenueEstimateDisplay).trim() !== ""

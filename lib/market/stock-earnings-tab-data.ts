@@ -770,12 +770,16 @@ function earningsHistoryReportYmd(r: Record<string, unknown>): string | null {
   );
 }
 
-/** True when the row’s report date is after today (UTC calendar day). Upcoming quarters often ship `epsActual: 0` as a placeholder — treat as not yet reported. */
-function isEarningsReportDateStrictlyFuture(r: Record<string, unknown>): boolean {
+/**
+ * True when the row’s report date is today or later (UTC calendar day).
+ * Upcoming quarters often ship `epsActual: 0` as a placeholder — treat as not yet reported,
+ * including **today** (strict `>` wrongly marked same-day reports as already released).
+ */
+function isEarningsReportDateOnOrAfterToday(r: Record<string, unknown>): boolean {
   const ymd = earningsHistoryReportYmd(r);
   if (!ymd) return false;
   const todayYmd = toYmdUtc(new Date());
-  return ymd > todayYmd;
+  return ymd >= todayYmd;
 }
 
 function rowHasEpsActualField(r: Record<string, unknown>): boolean {
@@ -790,7 +794,7 @@ function rowHasRevenueActualField(r: Record<string, unknown>): boolean {
 }
 
 function rowIsReported(r: Record<string, unknown>): boolean {
-  if (isEarningsReportDateStrictlyFuture(r)) return false;
+  if (isEarningsReportDateOnOrAfterToday(r)) return false;
   if (rowHasEpsActualField(r)) return true;
   /** EODHD sometimes lags `epsActual` while revenue / GAAP lines are already present. */
   return rowHasRevenueActualField(r);
@@ -857,12 +861,77 @@ function pickCalendarTimingForReport(
   for (const r of rows) {
     const code = r.code?.trim().toUpperCase();
     if (!code || code !== wantCode) continue;
-    const cal = normalizeCalendarReportYmd(r.report_date) ?? normalizeCalendarReportYmd(r.date);
+    /** Match announcement date only — `date` is fiscal period end. */
+    const cal = normalizeCalendarReportYmd(r.report_date);
     if (cal === reportYmd) {
       return r.before_after_market ?? null;
     }
   }
   return null;
+}
+
+/** Soonest calendar announcement on/after today for this listing (same feed as the earnings week UI). */
+function pickNextCalendarReport(
+  rows: EodhdRawEarningRow[],
+  wantCode: string,
+): { reportYmd: string; beforeAfter: string | null } | null {
+  const todayYmd = toYmdUtc(new Date());
+  let best: { reportYmd: string; beforeAfter: string | null } | null = null;
+  for (const r of rows) {
+    const code = r.code?.trim().toUpperCase();
+    if (!code || code !== wantCode) continue;
+    const cal = normalizeCalendarReportYmd(r.report_date);
+    if (!cal || cal < todayYmd) continue;
+    if (!best || cal < best.reportYmd) {
+      best = { reportYmd: cal, beforeAfter: r.before_after_market ?? null };
+    }
+  }
+  return best;
+}
+
+/**
+ * Fill missing Next earnings / Days left from the EODHD calendar when History/Trend
+ * invent an upcoming quarter without a report date (EPS estimate shows, date stays TBA).
+ */
+function applyCalendarDateAndTiming(
+  upcoming: StockEarningsUpcoming | null,
+  cal: EodhdRawEarningRow[],
+  wantCode: string,
+): StockEarningsUpcoming | null {
+  const next = pickNextCalendarReport(cal, wantCode);
+
+  if (!upcoming) {
+    if (!next) return null;
+    const t = timingFromCalendar(next.beforeAfter);
+    return {
+      reportDateDisplay: formatEarningsDateEnUS(next.reportYmd),
+      reportDateYmd: next.reportYmd,
+      timing: t.timing,
+      timingShortLabel: t.timingShortLabel,
+      timingPhrase: t.timingPhrase,
+      fiscalPeriodLabel: null,
+      epsEstimateDisplay: null,
+      revenueEstimateDisplay: null,
+    };
+  }
+
+  const reportDateYmd = upcoming.reportDateYmd ?? next?.reportYmd ?? null;
+  const reportDateDisplay =
+    upcoming.reportDateDisplay ??
+    (reportDateYmd ? formatEarningsDateEnUS(reportDateYmd) : null);
+  const timingRaw =
+    pickCalendarTimingForReport(cal, wantCode, reportDateYmd) ??
+    (reportDateYmd && next && reportDateYmd === next.reportYmd ? next.beforeAfter : null);
+  const t = timingFromCalendar(timingRaw);
+
+  return {
+    ...upcoming,
+    reportDateYmd,
+    reportDateDisplay,
+    timing: t.timing || upcoming.timing,
+    timingShortLabel: t.timingShortLabel || upcoming.timingShortLabel,
+    timingPhrase: t.timingPhrase || upcoming.timingPhrase,
+  };
 }
 
 function historyRowFromRaw(
@@ -1929,7 +1998,7 @@ export type StockEarningsTabFetchMode = "full" | "preview" | "ir_only";
  * Earnings tab: `Earnings.History` from fundamentals plus optional calendar timing (BMO/AMC).
  * Cached per ticker so the first viewer pays EODHD/SEC cost and others reuse the payload.
  *
- * `preview` skips SEC index crawls, IR seed HTTP, earnings-calendar timing, and post-report
+ * `preview` skips SEC index crawls, IR seed HTTP, and post-report
  * 1D returns — used for a fast first paint (calendar modal + streamed `?tab=earnings` seed).
  * Documents come from DB cache + curated URLs only; full SEC/IR + 1D returns still run on
  * the stock earnings tab (`full` mode).
@@ -2173,7 +2242,8 @@ async function fetchStockEarningsTabPayloadUncached(
       epsTrendMaps.quarterly,
       quarterlyEpsByLabel,
     );
-    const [enrichedChart, calendarTiming] = await Promise.all([
+    const listingCode = eodhdListingCode(ticker);
+    const [enrichedChart, calendarRows] = await Promise.all([
       enrichEstimatesChartWithFundamentals(
         ticker,
         estimatesChart,
@@ -2181,11 +2251,10 @@ async function fetchStockEarningsTabPayloadUncached(
         epsTrendMaps,
         historyParsed,
       ),
-      !preview && !irOnly && upcomingForCalendar?.reportDateYmd
-        ? fetchEodhdEarningsCalendarForSymbol(eodhdListingCode(ticker)).then((cal) =>
-            pickCalendarTimingForReport(cal, eodhdListingCode(ticker), upcomingForCalendar.reportDateYmd!),
-          )
-        : Promise.resolve(null),
+      // Preview used to skip calendar → Next earnings/Days left stayed TBA while EPS estimate painted.
+      !irOnly
+        ? fetchEodhdEarningsCalendarForSymbol(listingCode)
+        : Promise.resolve([] as EodhdRawEarningRow[]),
     ]);
     estimatesChart = enrichedChart;
 
@@ -2204,25 +2273,11 @@ async function fetchStockEarningsTabPayloadUncached(
     historyParsed = irOnly || preview
       ? historyParsed
       : await attachPostReportOneDayReturns(ticker, historyParsed);
-    if (calendarTiming && upcoming?.reportDateYmd) {
-      const t = timingFromCalendar(calendarTiming);
-      return {
-        ticker,
-        upcoming: {
-          ...upcoming,
-          timing: t.timing,
-          timingShortLabel: t.timingShortLabel,
-          timingPhrase: t.timingPhrase,
-        },
-        history: historyParsed,
-        estimatesChart,
-        documentHub,
-        lastPrice,
-      };
-    }
+    upcoming = applyCalendarDateAndTiming(upcoming, calendarRows, listingCode);
     return { ticker, upcoming, history: historyParsed, estimatesChart, documentHub, lastPrice };
   }
 
+  const listingCode = eodhdListingCode(ticker);
   let upcoming = pickUpcomingFromHistory(
     rawRows,
     null,
@@ -2245,16 +2300,9 @@ async function fetchStockEarningsTabPayloadUncached(
   historyParsed = irOnly || preview
     ? historyParsed
     : await attachPostReportOneDayReturns(ticker, historyParsed);
-  if (!preview && !irOnly && upcoming?.reportDateYmd) {
-    const cal = await fetchEodhdEarningsCalendarForSymbol(eodhdListingCode(ticker));
-    const calendarTiming = pickCalendarTimingForReport(cal, eodhdListingCode(ticker), upcoming.reportDateYmd);
-    const t = timingFromCalendar(calendarTiming);
-    upcoming = {
-      ...upcoming,
-      timing: t.timing,
-      timingShortLabel: t.timingShortLabel,
-      timingPhrase: t.timingPhrase,
-    };
+  if (!irOnly) {
+    const calendarRows = await fetchEodhdEarningsCalendarForSymbol(listingCode);
+    upcoming = applyCalendarDateAndTiming(upcoming, calendarRows, listingCode);
   }
 
   return { ticker, upcoming, history: historyParsed, estimatesChart, documentHub, lastPrice };
@@ -2267,14 +2315,14 @@ async function fetchStockEarningsTabPayloadUncached(
  */
 const fetchStockEarningsTabPreviewCached = unstable_cache(
   (ticker: string) => fetchStockEarningsTabPayloadUncached(ticker, "preview"),
-  ["stock-earnings-tab-preview-v70-history-sticky"],
+  ["stock-earnings-tab-preview-v71-calendar-date"],
   { revalidate: REVALIDATE_STATIC },
 );
 
-/** Full = docs + calendar timing + 1D returns; warmer so IR/SEC fill-in and estimates rotate. */
+/** Full = docs + calendar date/timing + 1D returns; warmer so IR/SEC fill-in and estimates rotate. */
 const fetchStockEarningsTabFullCached = unstable_cache(
   (ticker: string) => fetchStockEarningsTabPayloadUncached(ticker, "full"),
-  ["stock-earnings-tab-full-v70-sec-reports-high"],
+  ["stock-earnings-tab-full-v71-calendar-date"],
   { revalidate: REVALIDATE_WARM_LONG },
 );
 

@@ -179,10 +179,11 @@ function earningsHistoryReportYmd(r: Record<string, unknown>): string | null {
   );
 }
 
-function isEarningsReportDateStrictlyFuture(r: Record<string, unknown>): boolean {
+/** Today or later — same rule as stock earnings tab (placeholder epsActual on report day). */
+function isEarningsReportDateOnOrAfterToday(r: Record<string, unknown>): boolean {
   const ymd = earningsHistoryReportYmd(r);
   if (!ymd) return false;
-  return ymd > toYmdUtc(new Date());
+  return ymd >= toYmdUtc(new Date());
 }
 
 function rowHasEpsActualField(r: Record<string, unknown>): boolean {
@@ -197,7 +198,7 @@ function rowHasRevenueActualField(r: Record<string, unknown>): boolean {
 }
 
 function rowIsReported(r: Record<string, unknown>): boolean {
-  if (isEarningsReportDateStrictlyFuture(r)) return false;
+  if (isEarningsReportDateOnOrAfterToday(r)) return false;
   if (rowHasEpsActualField(r)) return true;
   return rowHasRevenueActualField(r);
 }
