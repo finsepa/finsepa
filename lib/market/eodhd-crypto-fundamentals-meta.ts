@@ -23,6 +23,7 @@ export type CryptoFundamentalsMeta = {
   whitepaper: string | null;
   github: string | null;
   twitter: string | null;
+  facebook: string | null;
   reddit: string | null;
   telegram: string | null;
   discord: string | null;
@@ -86,13 +87,30 @@ function isHttpUrl(s: string): boolean {
 
 function categorizeUrl(nk: string, url: string): keyof Pick<
   CryptoFundamentalsMeta,
-  "website" | "whitepaper" | "github" | "twitter" | "reddit" | "telegram" | "discord"
+  | "website"
+  | "whitepaper"
+  | "github"
+  | "twitter"
+  | "facebook"
+  | "reddit"
+  | "telegram"
+  | "discord"
 > | "explorer" | "wallet" | null {
   const u = url.toLowerCase();
   const key = nk.toLowerCase();
-  if (key.includes("whitepaper") || u.includes("whitepaper")) return "whitepaper";
-  if (key.includes("github") || u.includes("github.com")) return "github";
-  if (key.includes("twitter") || key.includes("x.com") || u.includes("twitter.com") || u.includes("x.com")) return "twitter";
+  if (
+    key.includes("whitepaper") ||
+    key.includes("technicaldoc") ||
+    u.includes("whitepaper") ||
+    (key.includes("technical") && u.endsWith(".pdf"))
+  ) {
+    return "whitepaper";
+  }
+  if (key.includes("github") || key.includes("sourcecode") || u.includes("github.com")) return "github";
+  if (key.includes("twitter") || key.includes("x.com") || u.includes("twitter.com") || u.includes("x.com")) {
+    return "twitter";
+  }
+  if (key.includes("facebook") || u.includes("facebook.com")) return "facebook";
   if (key.includes("reddit") || u.includes("reddit.com")) return "reddit";
   if (key.includes("telegram") || u.includes("t.me")) return "telegram";
   if (key.includes("discord") || u.includes("discord")) return "discord";
@@ -102,10 +120,13 @@ function categorizeUrl(nk: string, url: string): keyof Pick<
     key.includes("blockchain") ||
     key.includes("scan") ||
     u.includes("explorer")
-  )
+  ) {
     return "explorer";
+  }
   if (key.includes("wallet")) return "wallet";
-  if (key.includes("website") || key.includes("weburl") || key.includes("homepage") || key === "web") return "website";
+  if (key.includes("website") || key.includes("weburl") || key.includes("homepage") || key === "web") {
+    return "website";
+  }
   return null;
 }
 
@@ -176,6 +197,7 @@ export function extractCryptoFundamentalsMeta(root: Record<string, unknown>): Cr
   let whitepaper: string | null = null;
   let github: string | null = null;
   let twitter: string | null = null;
+  let facebook: string | null = null;
   let reddit: string | null = null;
   let telegram: string | null = null;
   let discord: string | null = null;
@@ -200,6 +222,7 @@ export function extractCryptoFundamentalsMeta(root: Record<string, unknown>): Cr
     else if (cat === "whitepaper" && !whitepaper) whitepaper = url;
     else if (cat === "github" && !github) github = url;
     else if (cat === "twitter" && !twitter) twitter = url;
+    else if (cat === "facebook" && !facebook) facebook = url;
     else if (cat === "reddit" && !reddit) reddit = url;
     else if (cat === "telegram" && !telegram) telegram = url;
     else if (cat === "discord" && !discord) discord = url;
@@ -219,6 +242,7 @@ export function extractCryptoFundamentalsMeta(root: Record<string, unknown>): Cr
     whitepaper,
     github,
     twitter,
+    facebook,
     reddit,
     telegram,
     discord,
@@ -264,6 +288,6 @@ async function fetchEodhdCryptoFundamentalsMetaHttp(eodhdCryptoSymbol: string): 
  */
 export const fetchEodhdCryptoFundamentalsMeta = unstable_cache(
   fetchEodhdCryptoFundamentalsMetaHttp,
-  ["eodhd-crypto-fundamentals-cc-by-symbol-v2"],
+  ["eodhd-crypto-fundamentals-cc-by-symbol-v3"],
   { revalidate: REVALIDATE_WARM_LONG },
 );

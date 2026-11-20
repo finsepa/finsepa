@@ -213,6 +213,7 @@ export {
   FileSearch01 as FileSearch,
   FilterLines as Filter,
   FlipBackward as RotateCcw,
+  Folder,
   GitMerge,
   Globe01 as Globe,
   HelpCircle as CircleQuestionMark,

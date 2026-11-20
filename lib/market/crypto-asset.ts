@@ -26,6 +26,7 @@ export type CryptoAssetLinks = {
   whitepaper: string | null;
   github: string | null;
   twitter: string | null;
+  facebook: string | null;
   reddit: string | null;
   telegram: string | null;
   discord: string | null;
@@ -85,6 +86,7 @@ function mapLinks(fund: CryptoFundamentalsMeta | null): CryptoAssetLinks {
       whitepaper: null,
       github: null,
       twitter: null,
+      facebook: null,
       reddit: null,
       telegram: null,
       discord: null,
@@ -97,6 +99,7 @@ function mapLinks(fund: CryptoFundamentalsMeta | null): CryptoAssetLinks {
     whitepaper: fund.whitepaper,
     github: fund.github,
     twitter: fund.twitter,
+    facebook: fund.facebook,
     reddit: fund.reddit,
     telegram: fund.telegram,
     discord: fund.discord,
@@ -212,6 +215,6 @@ async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAs
   return buildCryptoAssetRowFromDailyBars(meta, dailyBars);
 }
 
-export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v9-about"], {
+export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v10-about"], {
   revalidate: REVALIDATE_HOT,
 });

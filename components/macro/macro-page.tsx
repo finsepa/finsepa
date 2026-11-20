@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, startTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, startTransition, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Check, ChevronDown } from "@/lib/icons";
+import { Check, ChevronDown, Folder } from "@/lib/icons";
 
 import { TabSwitcher } from "@/components/design-system";
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
@@ -23,18 +23,14 @@ import {
 } from "@/components/macro/macro-range";
 import { MacroFearGreedChart } from "@/components/macro/macro-fear-greed-chart";
 import { MacroSparkline, type MacroChartVariant } from "@/components/macro/macro-sparkline";
-import {
-  chartingRailRowClass,
-  companyRailListClass,
-  companyRailRowClass,
-  companyRailTitleClass,
-} from "@/components/charting/charting-rail-row-styles";
+import { chartingRailRowClass } from "@/components/charting/charting-rail-row-styles";
 import { SIDEBAR_OUTER_EXPANDED_PX } from "@/components/layout/sidebar-layout-context";
 import {
   DEFAULT_MACRO_CHART_ID,
   groupMacroChartCards,
   resolveMacroChartId,
   sortMacroChartCards,
+  type MacroChartSectionId,
 } from "@/lib/macro/macro-chart-order";
 import { MultichartVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import type { MultichartVisual } from "@/components/stock/multichart-fundamentals-bar";
@@ -50,6 +46,43 @@ import { dropdownTriggerFieldClassName } from "@/components/design-system/text-i
 import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
 import { fearGreedColorForValue } from "@/lib/screener/fear-greed-color";
 import { cn } from "@/lib/utils";
+
+const MACRO_SECTION_EXPANDED_KEY = "finsepa-macro-rail-expanded";
+/** Row `px-3` (12px) + half the 20px folder icon − half the 1px line — matches Portfolio guide. */
+const MACRO_GUIDE_LINE_INSET_PX = 21;
+const macroSectionListeners = new Set<() => void>();
+
+function subscribeMacroSectionExpanded(listener: () => void): () => void {
+  macroSectionListeners.add(listener);
+  return () => macroSectionListeners.delete(listener);
+}
+
+function readMacroSectionExpandedMap(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(MACRO_SECTION_EXPANDED_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return {};
+    return parsed as Record<string, boolean>;
+  } catch {
+    return {};
+  }
+}
+
+function writeMacroSectionExpanded(sectionId: string, expanded: boolean): void {
+  try {
+    const next = { ...readMacroSectionExpandedMap(), [sectionId]: expanded };
+    localStorage.setItem(MACRO_SECTION_EXPANDED_KEY, JSON.stringify(next));
+  } catch {
+    /* ignore */
+  }
+  macroSectionListeners.forEach((l) => l());
+}
+
+function isMacroSectionExpanded(sectionId: string): boolean {
+  const map = readMacroSectionExpandedMap();
+  return map[sectionId] !== false;
+}
 
 const RANGE_OPTIONS = MACRO_RANGE_IDS.map((id) => ({
   value: id,
@@ -69,9 +102,6 @@ const macroRailCardClass =
 
 const macroRailBodyClass =
   "flex max-h-[calc(100dvh-5rem)] flex-col overflow-y-auto overscroll-y-contain p-2";
-
-/** Matches Charting Company / Metric divider. */
-const macroRailDividerClass = "mx-3 my-2 h-px shrink-0 bg-stroke-subtle";
 
 /** Mobile macro chart picker — always opens a profile-menu-style bottom sheet (never a floating popover). */
 function MacroChartMobileSelect({
@@ -117,8 +147,9 @@ function MacroChartMobileSelect({
               {sectionIndex > 0 ? (
                 <div className="mx-3 my-1 h-px shrink-0 bg-dropdown-divider" aria-hidden />
               ) : null}
-              <div className="px-4 pb-1 pt-2 text-[12px] font-medium leading-4 text-fg-muted">
-                {section.title}
+              <div className="flex items-center gap-2 px-4 pb-1 pt-2 text-[12px] font-medium leading-4 text-fg-muted">
+                <Folder className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="truncate">{section.title}</span>
               </div>
               {section.items.map((item) => {
                 const selected = item.id === value;
@@ -148,6 +179,106 @@ function MacroChartMobileSelect({
           ))}
         </div>
       </MobileBottomSheet>
+    </div>
+  );
+}
+
+type MacroRailSection = {
+  id: MacroChartSectionId | "other";
+  title: string;
+  items: { id: string; title: string }[];
+};
+
+/** Portfolio-style collapsible group: folder label + chevron + vertical guide for charts. */
+function MacroRailSectionGroup({
+  section,
+  selectedId,
+  onSelect,
+}: {
+  section: MacroRailSection;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  const expanded = useSyncExternalStore(
+    subscribeMacroSectionExpanded,
+    () => isMacroSectionExpanded(section.id),
+    () => true,
+  );
+  const toggleExpanded = useCallback(() => {
+    writeMacroSectionExpanded(section.id, !isMacroSectionExpanded(section.id));
+  }, [section.id]);
+
+  const containsSelected = section.items.some((item) => item.id === selectedId);
+
+  useEffect(() => {
+    if (containsSelected && !isMacroSectionExpanded(section.id)) {
+      writeMacroSectionExpanded(section.id, true);
+    }
+  }, [containsSelected, section.id]);
+
+  return (
+    <div>
+      <div className="relative flex w-full">
+        <button
+          type="button"
+          onClick={toggleExpanded}
+          aria-expanded={expanded}
+          aria-label={expanded ? `Collapse ${section.title}` : `Expand ${section.title}`}
+          className={cn(
+            "flex h-9 w-full shrink-0 items-center gap-2 overflow-hidden rounded-lg px-3 py-2 text-sm font-medium leading-5 text-fg",
+            containsSelected && !expanded
+              ? "bg-surface-muted"
+              : "opacity-70 hover:bg-surface-muted hover:opacity-100",
+          )}
+        >
+          <Folder className="h-5 w-5 shrink-0 text-fg" aria-hidden />
+          <span className="min-w-0 flex-1 truncate text-left">{section.title}</span>
+          <ChevronDown
+            className={cn(
+              "size-3.5 shrink-0 text-fg-muted transition-transform duration-200",
+              !expanded && "-rotate-90",
+            )}
+            strokeWidth={2.25}
+            aria-hidden
+          />
+        </button>
+      </div>
+
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] duration-200 motion-reduce:transition-none",
+          expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div
+            className="mt-0.5 flex flex-col gap-0.5 border-l border-stroke py-1"
+            style={{ marginLeft: MACRO_GUIDE_LINE_INSET_PX, paddingLeft: 12 }}
+          >
+            {section.items.map((item) => {
+              const active = item.id === selectedId;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onSelect(item.id)}
+                  aria-current={active ? "true" : undefined}
+                  tabIndex={expanded ? undefined : -1}
+                  className={cn(
+                    chartingRailRowClass,
+                    "w-full text-left",
+                    active
+                      ? "bg-surface-muted text-fg opacity-100"
+                      : "opacity-70 hover:opacity-100",
+                  )}
+                >
+                  <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -243,68 +374,48 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
   const changeDelta = change?.abs ?? null;
 
   const chartList = (
-    <div className="flex flex-col">
-      {sections.map((section, index) => (
-        <div key={section.id}>
-          {index > 0 ? <div className={macroRailDividerClass} aria-hidden /> : null}
-          <div className={companyRailRowClass}>
-            <span className={companyRailTitleClass}>
-              <span className="truncate">{section.title}</span>
-            </span>
-          </div>
-          <div className={companyRailListClass}>
-            {section.items.map((item) => {
-              const active = item.id === selectedId;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => selectChart(item.id)}
-                  aria-current={active ? "true" : undefined}
-                  className={cn(chartingRailRowClass, "w-full text-left", active && "bg-surface-muted")}
-                >
-                  <span className="min-w-0 flex-1 truncate">{item.title}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+    <div className="flex flex-col gap-0.5">
+      {sections.map((section) => (
+        <MacroRailSectionGroup
+          key={section.id}
+          section={section}
+          selectedId={selectedId}
+          onSelect={selectChart}
+        />
       ))}
+    </div>
+  );
+
+  const chartToolbar = (
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+      <TabSwitcher
+        size="sm"
+        options={rangeOptions}
+        value={rangeId}
+        onChange={setRangeId}
+        aria-label="Date range"
+      />
+      {selected?.id !== "crypto_fear_greed" ? (
+        <MultichartVisualSwitcher
+          variant="icon"
+          value={chartVisual}
+          onChange={(next) => setChartVariant(next === "bar" ? "bar" : "area")}
+        />
+      ) : null}
     </div>
   );
 
   return (
     <div className="flex min-w-0 flex-col gap-5 px-4 py-4 sm:px-9 sm:py-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-        <h1 className="hidden min-w-0 shrink-0 text-2xl font-semibold leading-9 tracking-tight text-fg md:block sm:flex-1">
-          Macro
-        </h1>
-        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
-          {sorted.length > 0 ? (
-            <div className="min-w-0 w-full flex-1 basis-full md:hidden sm:basis-auto sm:w-auto">
-              <MacroChartMobileSelect
-                sections={sections}
-                value={selectedId ?? sorted[0]?.id ?? ""}
-                onChange={selectChart}
-              />
-            </div>
-          ) : null}
-          <TabSwitcher
-            size="sm"
-            options={rangeOptions}
-            value={rangeId}
-            onChange={setRangeId}
-            aria-label="Date range"
+      {sorted.length > 0 ? (
+        <div className="min-w-0 md:hidden">
+          <MacroChartMobileSelect
+            sections={sections}
+            value={selectedId ?? sorted[0]?.id ?? ""}
+            onChange={selectChart}
           />
-          {selected?.id !== "crypto_fear_greed" ? (
-            <MultichartVisualSwitcher
-              variant="icon"
-              value={chartVisual}
-              onChange={(next) => setChartVariant(next === "bar" ? "bar" : "area")}
-            />
-          ) : null}
         </div>
-      </div>
+      ) : null}
 
       <div className="flex items-start gap-5">
         <div className="min-w-0 flex-1 space-y-5">
@@ -314,43 +425,46 @@ export function MacroPage({ initialItems }: { initialItems: MacroCardModel[] }) 
             </div>
           ) : selected && windowedModel ? (
             <div className={cn("min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
-              <div className="mb-4 min-w-0">
-                <h2 className="mb-2 text-xl font-semibold leading-7 tracking-tight text-fg">
-                  {selected.title}
-                </h2>
-                {latestValue != null && Number.isFinite(latestValue) ? (
-                  <div className="flex min-w-0 flex-col items-start gap-0.5">
-                    <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                      <span
-                        className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}
-                        style={
-                          selected.id === "crypto_fear_greed"
-                            ? { color: fearGreedColorForValue(latestValue) }
-                            : undefined
-                        }
-                      >
-                        {latestText}
-                      </span>
-                      {selected.id !== "crypto_fear_greed" && change && changeDelta != null ? (
-                        <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 font-['Inter'] text-[14px] font-medium leading-5">
-                          <MacroChangeDisplay
-                            kind={windowedModel.kind}
-                            abs={change.abs}
-                            pct={change.pct}
-                          />
-                          {priorPeriodLabel ? (
-                            <span className={EARNINGS_CARD_PRIOR_LINE_CLASS}>vs {priorPeriodLabel}</span>
-                          ) : null}
+              <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                <div className="min-w-0">
+                  <h2 className="mb-2 text-xl font-semibold leading-7 tracking-tight text-fg">
+                    {selected.title}
+                  </h2>
+                  {latestValue != null && Number.isFinite(latestValue) ? (
+                    <div className="flex min-w-0 flex-col items-start gap-0.5">
+                      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span
+                          className={`${EARNINGS_CARD_VALUE_CLASS} tabular-nums`}
+                          style={
+                            selected.id === "crypto_fear_greed"
+                              ? { color: fearGreedColorForValue(latestValue) }
+                              : undefined
+                          }
+                        >
+                          {latestText}
                         </span>
+                        {selected.id !== "crypto_fear_greed" && change && changeDelta != null ? (
+                          <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5 font-['Inter'] text-[14px] font-medium leading-5">
+                            <MacroChangeDisplay
+                              kind={windowedModel.kind}
+                              abs={change.abs}
+                              pct={change.pct}
+                            />
+                            {priorPeriodLabel ? (
+                              <span className={EARNINGS_CARD_PRIOR_LINE_CLASS}>vs {priorPeriodLabel}</span>
+                            ) : null}
+                          </span>
+                        ) : null}
+                      </div>
+                      {latestDateLabel ? (
+                        <p className={EARNINGS_CARD_PRIOR_LINE_CLASS}>As on {latestDateLabel}</p>
                       ) : null}
                     </div>
-                    {latestDateLabel ? (
-                      <p className={EARNINGS_CARD_PRIOR_LINE_CLASS}>As on {latestDateLabel}</p>
-                    ) : null}
-                  </div>
-                ) : (
-                  <p className="text-[14px] leading-5 text-fg-muted">No data for this range.</p>
-                )}
+                  ) : (
+                    <p className="text-[14px] leading-5 text-fg-muted">No data for this range.</p>
+                  )}
+                </div>
+                {chartToolbar}
               </div>
 
               {selected.id === "crypto_fear_greed" ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement } from "react";
+import { createElement, useState } from "react";
 import type { AppIcon } from "@/lib/icons";
 import {
   FileCode,
@@ -17,7 +17,6 @@ import {
 import {
   MOBILE_ELEVATED_CARD_CLASS,
   STOCK_OVERVIEW_SECTION_HEADING_CLASS,
-  STOCK_OVERVIEW_SECTION_TITLE_CLASS,
 } from "@/components/design-system/card-surface-styles";
 import type { CryptoAssetLinks } from "@/lib/market/crypto-asset";
 import { cn } from "@/lib/utils";
@@ -29,24 +28,25 @@ function iconForLabel(label: string): AppIcon {
   if (l.includes("github")) return FileCode;
   if (l.includes("explorer")) return Search;
   if (l.includes("wallet")) return Wallet;
-  if (l.includes("twitter")) return Share2;
+  if (l.includes("twitter") || l === "x") return Share2;
+  if (l.includes("facebook")) return Share2;
   if (l.includes("reddit")) return MessagesSquare;
   if (l.includes("telegram")) return Send;
-  if (l.includes("discord")) return MessageCircle;
+  if (l.includes("discord") || l.includes("chat")) return MessageCircle;
   return Globe;
 }
 
-function LinkPill({ href, label }: { href: string; label: string }) {
+function LinkRow({ href, label }: { href: string; label: string }) {
   const Icon = iconForLabel(label);
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex max-w-full items-center gap-2 rounded-full bg-surface-muted px-3 py-2 text-[13px] font-medium text-fg transition-colors hover:bg-surface-hover"
+      className="inline-flex max-w-full items-center gap-2 text-[14px] font-medium text-fg transition-colors hover:text-fg-muted"
     >
       {createElement(Icon, {
-        className: "h-3.5 w-3.5 shrink-0 text-fg-muted",
+        className: "h-4 w-4 shrink-0 text-fg",
         "aria-hidden": true,
       })}
       <span className="min-w-0 truncate">{label}</span>
@@ -54,60 +54,84 @@ function LinkPill({ href, label }: { href: string; label: string }) {
   );
 }
 
-function Column({ title, items }: { title: string; items: { label: string; href: string }[] }) {
-  if (items.length === 0) return null;
-  return (
-    <div className="min-w-0">
-      <h3 className={cn("mb-3", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>{title}</h3>
-      <div className="flex flex-wrap gap-2">
-        {items.map((item) => (
-          <LinkPill key={item.href + item.label} href={item.href} label={item.label} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function buildLinkColumns(links: CryptoAssetLinks) {
-  const official: { label: string; href: string }[] = [];
-  if (links.website) official.push({ label: "Website", href: links.website });
-  if (links.whitepaper) official.push({ label: "Whitepaper", href: links.whitepaper });
-  if (links.github) official.push({ label: "GitHub", href: links.github });
-
-  const network: { label: string; href: string }[] = [];
+function buildLinkItems(links: CryptoAssetLinks) {
+  const items: { label: string; href: string }[] = [];
+  if (links.website) items.push({ label: "Website", href: links.website });
+  if (links.whitepaper) items.push({ label: "Whitepaper", href: links.whitepaper });
+  if (links.facebook) items.push({ label: "Facebook", href: links.facebook });
+  if (links.twitter) items.push({ label: "X", href: links.twitter });
+  if (links.reddit) items.push({ label: "Reddit", href: links.reddit });
+  if (links.github) items.push({ label: "Github", href: links.github });
+  if (links.telegram) items.push({ label: "Telegram", href: links.telegram });
+  if (links.discord) items.push({ label: "Chat", href: links.discord });
   links.explorers.forEach((url, i) => {
-    network.push({
-      label: links.explorers.length > 1 ? `Chain Explorers ${i + 1}` : "Chain Explorers",
+    items.push({
+      label: links.explorers.length > 1 ? `Explorer ${i + 1}` : "Explorer",
       href: url,
     });
   });
   links.wallets.forEach((url, i) => {
-    network.push({
-      label: links.wallets.length > 1 ? `Supported Wallets ${i + 1}` : "Supported Wallets",
+    items.push({
+      label: links.wallets.length > 1 ? `Wallet ${i + 1}` : "Wallet",
       href: url,
     });
   });
-
-  const social: { label: string; href: string }[] = [];
-  if (links.twitter) social.push({ label: "Twitter", href: links.twitter });
-  if (links.reddit) social.push({ label: "Reddit", href: links.reddit });
-  if (links.telegram) social.push({ label: "Telegram", href: links.telegram });
-  if (links.discord) social.push({ label: "Chat", href: links.discord });
-
-  return { official, network, social };
+  return items;
 }
 
-export function CryptoLinksSection({ links }: { links: CryptoAssetLinks }) {
-  const { official, network, social } = buildLinkColumns(links);
-  if (official.length === 0 && network.length === 0 && social.length === 0) return null;
+function AboutDescription({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const needsMore = text.length > 220 || text.split(/\n/).length > 3;
+  return (
+    <div className="space-y-2">
+      <p
+        className={cn(
+          "text-[14px] leading-5 text-fg",
+          !expanded && needsMore ? "line-clamp-3" : null,
+        )}
+      >
+        {text}
+      </p>
+      {needsMore ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="text-[14px] font-semibold text-fg underline underline-offset-2"
+        >
+          {expanded ? "Show less" : "Read More"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Crypto Overview About — description + official/social links.
+ * Hides empty link rows; hides the whole block when both are empty.
+ */
+export function CryptoLinksSection({
+  links,
+  description,
+}: {
+  links: CryptoAssetLinks;
+  description?: string | null;
+}) {
+  const items = buildLinkItems(links);
+  const blurb = description?.trim() ?? "";
+  if (!blurb && items.length === 0) return null;
 
   return (
     <div className="pt-2">
-      <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Links</h2>
-      <div className={cn("grid grid-cols-1 gap-6 p-4 sm:p-5 md:grid-cols-3 md:gap-10", MOBILE_ELEVATED_CARD_CLASS)}>
-        <Column title="Official Links" items={official} />
-        <Column title="Network information" items={network} />
-        <Column title="Socials" items={social} />
+      <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Asset & Team Info</h2>
+      <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+        {blurb ? <AboutDescription text={blurb} /> : null}
+        {items.length > 0 ? (
+          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+            {items.map((item) => (
+              <LinkRow key={item.href + item.label} href={item.href} label={item.label} />
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

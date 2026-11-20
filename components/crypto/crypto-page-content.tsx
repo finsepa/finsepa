@@ -783,7 +783,7 @@ export function CryptoPageContent({
               <div className="max-md:pt-0 md:pt-2">
                 <CryptoKeyStats row={safeRow} />
               </div>
-              <CryptoLinksSection links={safeRow.links} />
+              <CryptoLinksSection links={safeRow.links} description={safeRow.description} />
               <div className="pt-2">
                 <LatestNews ticker={symUpper} initialItems={initialNews} variant="crypto" />
               </div>

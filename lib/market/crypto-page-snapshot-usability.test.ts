@@ -84,6 +84,7 @@ test("isUsableCryptoPageSnapshot accepts asset or performance price", () => {
           whitepaper: null,
           github: null,
           twitter: null,
+          facebook: null,
           reddit: null,
           telegram: null,
           discord: null,

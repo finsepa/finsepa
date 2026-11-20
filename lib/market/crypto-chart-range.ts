@@ -1,18 +1,23 @@
-import { isStockChartRange } from "@/lib/market/stock-chart-api";
-import type { StockChartRange } from "@/lib/market/stock-chart-types";
+import { STOCK_CHART_RANGES, type StockChartRange } from "@/lib/market/stock-chart-types";
 
 /**
  * Crypto week slot — UI keeps the `5D` control value (same segmented set as stocks);
  * API query + display use `1W` (7 calendar days). Matches iOS `AssetChartRange.apiRangeParam`.
+ *
+ * Client-safe — do not import `@/lib/market/stock-chart-api` (server-only).
  */
 export const CRYPTO_WEEK_RANGE_API = "1W" as const;
 
 /** Rolling week window for crypto `5D` / `1W` charts (24/7, not US sessions). */
 export const CRYPTO_WEEK_LOOKBACK_SEC = 7 * 86400;
 
+function isStockChartRangeParam(v: string | null): v is StockChartRange {
+  return v != null && (STOCK_CHART_RANGES as readonly string[]).includes(v);
+}
+
 export function parseCryptoChartRangeParam(v: string | null): StockChartRange {
   if (v === CRYPTO_WEEK_RANGE_API) return "5D";
-  if (isStockChartRange(v)) return v;
+  if (isStockChartRangeParam(v)) return v;
   return "1Y";
 }
 
