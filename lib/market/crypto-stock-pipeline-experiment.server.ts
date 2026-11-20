@@ -17,7 +17,7 @@ const getCached = unstable_cache(
   async (providerSymbol: string, range: StockChartRange): Promise<StockChartPoint[]> => {
     return loadStockStyleChartPointsForProviderSymbol(providerSymbol, range);
   },
-  ["crypto-stock-pipeline-v3-universe-no-rth"],
+  ["crypto-stock-pipeline-v4-1w"],
   { revalidate: REVALIDATE_HOT },
 );
 

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 
 import { CACHE_CONTROL_PRIVATE_HOT } from "@/lib/data/cache-policy";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { emptyAnnualReturns } from "@/lib/market/stock-annual-returns";
 import { getStockPerformance } from "@/lib/market/stock-performance";
 import { isSingleAssetMode, isSupportedAsset } from "@/lib/features/single-asset";
@@ -18,11 +18,8 @@ const getCachedPerformance = unstable_cache(
   { revalidate: 60 },
 );
 
-export async function GET(_request: Request, { params }: Ctx) {
-  const supabase = await getSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export async function GET(request: Request, { params }: Ctx) {
+  const user = await resolveAuthUserFromRequest(request);
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

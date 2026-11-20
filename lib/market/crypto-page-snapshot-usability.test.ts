@@ -78,6 +78,7 @@ test("isUsableCryptoPageSnapshot accepts asset or performance price", () => {
         volumeToMarketCap24h: "-",
         sparkline5d: [],
         logoUrl: "",
+        description: null,
         links: {
           website: null,
           whitepaper: null,

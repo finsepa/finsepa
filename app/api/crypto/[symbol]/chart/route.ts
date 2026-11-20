@@ -12,11 +12,8 @@ import {
   CACHE_CONTROL_PRIVATE_NO_STORE,
 } from "@/lib/data/cache-policy";
 import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
-import { isStockChartSeries, STOCK_CHART_RANGES, type StockChartRange, type StockChartSeries } from "@/lib/market/stock-chart-types";
-
-function isRange(v: string | null): v is StockChartRange {
-  return v != null && (STOCK_CHART_RANGES as readonly string[]).includes(v);
-}
+import { CRYPTO_WEEK_LOOKBACK_SEC, parseCryptoChartRangeParam } from "@/lib/market/crypto-chart-range";
+import { isStockChartSeries, type StockChartSeries } from "@/lib/market/stock-chart-types";
 
 type Ctx = { params: Promise<{ symbol: string }> };
 
@@ -32,7 +29,8 @@ export async function GET(request: Request, { params }: Ctx) {
 
   const url = new URL(request.url);
   const rangeParam = url.searchParams.get("range");
-  const range: StockChartRange = isRange(rangeParam) ? rangeParam : "1Y";
+  /** `1W` (iOS / crypto week) normalizes to internal `5D` slot. */
+  const range = parseCryptoChartRangeParam(rangeParam);
   const seriesParam = url.searchParams.get("series");
   const series: StockChartSeries = isStockChartSeries(seriesParam) ? seriesParam : "price";
 
@@ -48,6 +46,13 @@ export async function GET(request: Request, { params }: Ctx) {
     (liveCrypto1D
       ? await loadCryptoLive1DMinuteChartPoints(routeSymbol)
       : await getCryptoChartPoints(routeSymbol, range));
+
+  // Crypto week slot: rolling 7 calendar days (API `1W` / internal `5D`), even when stock pipeline
+  // returns session-based bars.
+  if (range === "5D" && points.length) {
+    const weekStart = Math.floor(Date.now() / 1000) - CRYPTO_WEEK_LOOKBACK_SEC;
+    points = points.filter((p) => p.time >= weekStart);
+  }
 
   const liveCrypto5D = range === "5D" && isCryptoLive1DSymbol(routeSymbol);
   if (liveCrypto5D) {

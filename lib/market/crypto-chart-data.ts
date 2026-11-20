@@ -7,7 +7,7 @@ import type { EodhdDailyBar } from "@/lib/market/eodhd-eod";
 import { fetchCryptoMarketCapUsdForMeta, fetchEodhdCryptoDailyBars } from "@/lib/market/eodhd-crypto";
 import { resolveCryptoMetaForProvider } from "@/lib/market/crypto-meta-resolver";
 import { fetchEodhdIntraday } from "@/lib/market/eodhd-intraday";
-import { rangeStartUnixSeconds } from "@/lib/market/stock-chart-api";
+import { CRYPTO_WEEK_LOOKBACK_SEC } from "@/lib/market/crypto-chart-range";
 import { minGapDownsampleChartPoints } from "@/lib/market/stock-chart-data";
 import { STOCK_CHART_ALL_LOOKBACK_YEARS, type StockChartPoint, type StockChartRange } from "@/lib/market/stock-chart-types";
 
@@ -96,10 +96,10 @@ export async function fetchCryptoChartPointsUncached(symbol: string, range: Stoc
   }
 
   // Mid ranges: one cheap intraday call (or daily), never a sequential 5m/1m waterfall.
-  // The old multi-strategy loops added multi-second latency on every 5D/1M/6M/YTD switch.
+  // Crypto week slot (`5D` / API `1W`): rolling 7 calendar days (24/7), not US sessions.
   if (range === "5D") {
     const tenMin = 10 * 60;
-    const start = rangeStartUnixSeconds("5D", now);
+    const start = nowSec - CRYPTO_WEEK_LOOKBACK_SEC;
     const bars5m = await fetchEodhdIntraday(pair, nowSec - 10 * 86400, nowSec, "5m");
     if (bars5m?.length) {
       let pts = dedupeAndSort(
@@ -111,7 +111,7 @@ export async function fetchCryptoChartPointsUncached(symbol: string, range: Stoc
           })
           .filter(Boolean) as StockChartPoint[],
       );
-      if (start != null) pts = pts.filter((p) => p.time >= start);
+      pts = pts.filter((p) => p.time >= start);
       pts = minGapDownsampleChartPoints(pts, tenMin);
       if (pts.length) return pts;
     }
@@ -126,7 +126,7 @@ export async function fetchCryptoChartPointsUncached(symbol: string, range: Stoc
         })
         .filter(Boolean) as StockChartPoint[],
     );
-    if (start != null) pts = pts.filter((p) => p.time >= start);
+    pts = pts.filter((p) => p.time >= start);
     return pts;
   }
 
@@ -206,6 +206,6 @@ export async function cryptoMarketCapPointsFromPricePoints(
 
 export const getCryptoChartPoints = unstable_cache(
   async (symbol: string, range: StockChartRange) => fetchCryptoChartPointsUncached(symbol, range),
-  ["crypto-chart-points-v13-fast-midrange"],
+  ["crypto-chart-points-v14-1w"],
   { revalidate: REVALIDATE_HOT },
 );

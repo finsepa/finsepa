@@ -17,6 +17,8 @@ export type CryptoFundamentalsMeta = {
   volume24hUsd: number | null;
   /** volume_24h / market_cap when both exist */
   volumeToMarketCap24h: number | null;
+  /** Project blurb when EODHD / provider includes it (About section). */
+  description: string | null;
   website: string | null;
   whitepaper: string | null;
   github: string | null;
@@ -177,10 +179,20 @@ export function extractCryptoFundamentalsMeta(root: Record<string, unknown>): Cr
   let reddit: string | null = null;
   let telegram: string | null = null;
   let discord: string | null = null;
+  let description: string | null = null;
 
   for (const { nk, v } of pairs) {
-    if (typeof v !== "string" || !isHttpUrl(v)) continue;
-    const url = v.trim();
+    if (typeof v !== "string") continue;
+    const raw = v.trim();
+    if (!raw) continue;
+
+    if (!description && isAboutDescription(nk, raw)) {
+      description = raw;
+      continue;
+    }
+
+    if (!isHttpUrl(raw)) continue;
+    const url = raw;
     const cat = categorizeUrl(nk, url);
     if (cat === "explorer") explorers.add(url);
     else if (cat === "wallet") wallets.add(url);
@@ -202,6 +214,7 @@ export function extractCryptoFundamentalsMeta(root: Record<string, unknown>): Cr
     maxSupply,
     volume24hUsd,
     volumeToMarketCap24h,
+    description,
     website,
     whitepaper,
     github,
@@ -212,6 +225,18 @@ export function extractCryptoFundamentalsMeta(root: Record<string, unknown>): Cr
     explorers: [...explorers],
     wallets: [...wallets],
   };
+}
+
+/** Prefer a real project blurb — skip URLs and tiny labels. */
+function isAboutDescription(nk: string, value: string): boolean {
+  if (isHttpUrl(value) || value.length < 40) return false;
+  return (
+    nk === "description" ||
+    nk === "aboutdescription" ||
+    nk.includes("description") ||
+    nk === "about" ||
+    nk.includes("summary")
+  );
 }
 
 async function fetchEodhdCryptoFundamentalsMetaHttp(eodhdCryptoSymbol: string): Promise<CryptoFundamentalsMeta | null> {
@@ -239,6 +264,6 @@ async function fetchEodhdCryptoFundamentalsMetaHttp(eodhdCryptoSymbol: string): 
  */
 export const fetchEodhdCryptoFundamentalsMeta = unstable_cache(
   fetchEodhdCryptoFundamentalsMetaHttp,
-  ["eodhd-crypto-fundamentals-cc-by-symbol-v1"],
+  ["eodhd-crypto-fundamentals-cc-by-symbol-v2"],
   { revalidate: REVALIDATE_WARM_LONG },
 );

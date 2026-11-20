@@ -36,6 +36,11 @@ import { mergeSessionHeaderWithPerformanceSpot } from "@/lib/chart/merge-session
 import { mergeLogoMemory, readLogoMemory } from "@/lib/logos/logo-memory";
 import type { CryptoAssetRow } from "@/lib/market/crypto-asset";
 import type { CryptoPageInitialData } from "@/lib/market/crypto-page-initial-data";
+import {
+  cryptoChartApiRangeParam,
+  cryptoChartRangeDisplayLabel,
+  cryptoChartRangeLabels,
+} from "@/lib/market/crypto-chart-range";
 import { isCryptoLive1DSymbol } from "@/lib/market/crypto-live-1d-tickers";
 import { usesCryptoStockPipelineExperiment } from "@/lib/market/crypto-stock-pipeline-experiment";
 import { clearPendingAssetShellIfMatch } from "@/lib/navigation/pending-asset-shell";
@@ -512,7 +517,7 @@ export function CryptoPageContent({
     if (comparePicks.length > 0 || overviewDownloadFetching) return;
     setOverviewDownloadFetching(true);
     try {
-      const path = `/api/crypto/${encodeURIComponent(symUpper)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(chartSeries)}`;
+      const path = `/api/crypto/${encodeURIComponent(symUpper)}/chart?range=${encodeURIComponent(cryptoChartApiRangeParam(range))}&series=${encodeURIComponent(chartSeries)}`;
       const res = await fetch(path, { credentials: "include" });
       if (!res.ok) return;
       const json = (await res.json()) as { points?: StockChartPoint[] };
@@ -596,9 +601,21 @@ export function CryptoPageContent({
           displayName={displayName}
           logoUrl={headerLogoUrl}
           logoLetter={safeRow.symbol}
-          periodLabel={isLiveCrypto ? (btcRangeHeader ? range : "Past 24 Hours") : "Past 24 Hours"}
+          periodLabel={
+            isLiveCrypto
+              ? btcRangeHeader
+                ? cryptoChartRangeDisplayLabel(range, { live24h: true })
+                : "Past 24 Hours"
+              : "Past 24 Hours"
+          }
           periodLabelOverride={headerUi.periodLabelOverride}
-          chartRangeLabel={isLiveCrypto ? (btcRangeHeader ? range : "24H") : range}
+          chartRangeLabel={
+            isLiveCrypto
+              ? btcRangeHeader
+                ? cryptoChartRangeDisplayLabel(range, { live24h: true })
+                : "24H"
+              : cryptoChartRangeDisplayLabel(range)
+          }
           stockStyleLayout
           price={headerUi.displayPrice}
           changePct={headerUi.displayChangePct}
@@ -617,7 +634,7 @@ export function CryptoPageContent({
         <ChartControls
           activeRange={range}
           onRangeChange={setRange}
-          rangeLabels={isLiveCrypto ? { "1D": "24H" } : undefined}
+          rangeLabels={cryptoChartRangeLabels({ live24h: isLiveCrypto })}
           chartSeries={chartSeries}
           onChartSeriesChange={setChartSeries}
           seriesSelectDisabled={comparePicks.length > 0}

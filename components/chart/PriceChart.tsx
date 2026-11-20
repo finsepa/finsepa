@@ -81,6 +81,7 @@ import {
   writeStock1DSessionBarsToStorage,
 } from "@/lib/chart/stock-1d-session-bars-storage";
 import { isStock1DLiveMinuteChartTicker, usesStock1DLiveWsMinutePipeline, usesStock1DLiveWsPostMarketChart } from "@/lib/market/stock-1d-live-minute-chart-tickers";
+import { cryptoChartApiRangeParam } from "@/lib/market/crypto-chart-range";
 import { isCryptoLive1DSymbol, usesCryptoLogPriceScale } from "@/lib/market/crypto-live-1d-tickers";
 import { pinCryptoLive1DChartTip } from "@/lib/chart/crypto-live-1d-chart-tip";
 import { clearPriceGridlines, priceGridlinesFor } from "@/lib/chart/price-gridlines-primitive";
@@ -244,7 +245,8 @@ const PREFETCH_CHART_RANGES: readonly StockChartRange[] = ["5D", "1M", "6M", "YT
 
 function chartApiPath(kind: "stock" | "crypto", symbol: string, range: StockChartRange, series: string): string {
   const base = kind === "stock" ? "stocks" : "crypto";
-  return `/api/${base}/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}`;
+  const rangeParam = kind === "crypto" ? cryptoChartApiRangeParam(range) : range;
+  return `/api/${base}/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(rangeParam)}&series=${encodeURIComponent(series)}`;
 }
 
 type Stock1DChartJson = { points?: StockChartPoint[]; liveSessionMinute?: boolean };
@@ -2890,7 +2892,7 @@ export function PriceChart({
       const path =
         kind === "stock"
           ? `/api/stocks/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}${cadenceQ}`
-          : `/api/crypto/${encodeURIComponent(symbol)}/chart?range=${encodeURIComponent(range)}&series=${encodeURIComponent(series)}`;
+          : chartApiPath("crypto", symbol, range, series);
       try {
         const json = await fetchChartJsonCached<{
           points?: StockChartPoint[];

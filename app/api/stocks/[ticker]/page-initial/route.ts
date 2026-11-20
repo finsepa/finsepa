@@ -53,10 +53,13 @@ export async function GET(request: Request, { params }: Ctx) {
       performance: {
         price: data.performance.price,
         d1: data.performance.d1,
+        d5: data.performance.d5,
         m1: data.performance.m1,
+        m6: data.performance.m6,
         ytd: data.performance.ytd,
         y1: data.performance.y1,
         y5: data.performance.y5,
+        all: data.performance.all,
       },
       headerLiveSpotUsd: data.headerLiveSpotUsd,
       headerPriorCloseUsd: data.headerPriorCloseUsd,

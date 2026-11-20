@@ -50,6 +50,8 @@ export type CryptoAssetRow = {
   volumeToMarketCap24h: string;
   sparkline5d: number[];
   logoUrl: string;
+  /** Project blurb for About — null when the provider omits it. */
+  description: string | null;
   links: CryptoAssetLinks;
 };
 
@@ -112,6 +114,7 @@ function mapFundamentals(fund: CryptoFundamentalsMeta | null): Pick<
   | "maxSupply"
   | "volume24h"
   | "volumeToMarketCap24h"
+  | "description"
   | "links"
 > {
   return {
@@ -122,6 +125,7 @@ function mapFundamentals(fund: CryptoFundamentalsMeta | null): Pick<
     maxSupply: fmtSupplyDisplay(fund?.maxSupply ?? null),
     volume24h: fmtUsdDisplay(fund?.volume24hUsd ?? null),
     volumeToMarketCap24h: fmtRatioDisplay(fund?.volumeToMarketCap24h ?? null),
+    description: fund?.description?.trim() || null,
     links: mapLinks(fund),
   };
 }
@@ -208,6 +212,6 @@ async function loadCryptoAssetUncached(symbolOrTicker: string): Promise<CryptoAs
   return buildCryptoAssetRowFromDailyBars(meta, dailyBars);
 }
 
-export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v8-sane-mcap"], {
+export const getCryptoAsset = unstable_cache(loadCryptoAssetUncached, ["crypto-asset-v9-about"], {
   revalidate: REVALIDATE_HOT,
 });

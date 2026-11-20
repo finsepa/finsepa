@@ -40,6 +40,7 @@ import {
 } from "@/components/chart/overview-bottom-axis";
 import type { CompanyPick } from "@/components/charting/company-picker";
 import { isCryptoOverviewSymbol } from "@/lib/crypto/crypto-picker-universe";
+import { cryptoChartApiRangeParam } from "@/lib/market/crypto-chart-range";
 import { ChartSkeleton } from "@/components/ui/chart-skeleton";
 import {
   fitContentWithMobilePlotGutter,
@@ -98,10 +99,11 @@ function isFiniteNumber(v: unknown): v is number {
 
 function overviewCompareReturnChartUrl(symbol: string, range: StockChartRange): string {
   const sym = symbol.trim().toUpperCase();
-  const q = `range=${encodeURIComponent(range)}&series=return`;
   if (isCryptoOverviewSymbol(sym)) {
+    const q = `range=${encodeURIComponent(cryptoChartApiRangeParam(range))}&series=return`;
     return `/api/crypto/${encodeURIComponent(sym)}/chart?${q}`;
   }
+  const q = `range=${encodeURIComponent(range)}&series=return`;
   return `/api/stocks/${encodeURIComponent(sym)}/chart?${q}`;
 }
 

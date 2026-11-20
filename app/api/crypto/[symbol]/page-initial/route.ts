@@ -4,6 +4,7 @@ import { CACHE_CONTROL_PRIVATE_MAX_0_MUST_REVALIDATE } from "@/lib/data/cache-po
 import { resolveAuthUserFromRequest } from "@/lib/auth/resolve-auth-user";
 import { cryptoRouteBase } from "@/lib/crypto/crypto-symbol-base";
 import { loadCryptoPageInitialData, loadCryptoPageInitialDataUncached } from "@/lib/market/crypto-page-initial-data";
+import { getCryptoScreenerRankForSymbol } from "@/lib/screener/crypto-screener-rank";
 
 type Ctx = { params: Promise<{ symbol: string }> };
 
@@ -39,6 +40,8 @@ export async function GET(request: Request, { params }: Ctx) {
     }
   }
 
+  const screenerRank = await getCryptoScreenerRankForSymbol(routeSymbol);
+
   const asset = page.asset
     ? {
         symbol: page.asset.symbol,
@@ -51,10 +54,14 @@ export async function GET(request: Request, { params }: Ctx) {
         maxSupply: page.asset.maxSupply,
         volume24h: page.asset.volume24h,
         volumeToMarketCap24h: page.asset.volumeToMarketCap24h,
+        screenerRank,
+        // About blurb + official/social links (iOS Overview). Empty fields stay null / [].
+        description: page.asset.description,
+        links: page.asset.links,
       }
     : null;
 
-  // Slim DTO — omit chart points / news / links (client fetches chart separately).
+  // Slim DTO — omit chart points / news (client fetches chart separately).
   return NextResponse.json(
     {
       routeSymbol: page.routeSymbol,
