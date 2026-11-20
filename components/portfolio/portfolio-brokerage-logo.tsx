@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GitMerge } from "@/lib/icons";
 
 import { FinsepaLogo } from "@/components/brand/finsepa-logo";
 import {
@@ -49,7 +48,7 @@ function portfolioLogoShellClass(size: PortfolioLogoSize, className?: string) {
   return cn(portfolioListLogoShellClass, portfolioListLogoSizeClass[size], className);
 }
 
-/** Logo in portfolio picker rows — brokerage image, Finsepa tile for manual/demo, icon for combined. */
+/** Logo in portfolio picker rows — brokerage image; Finsepa tile for manual / combined / demo. */
 export function PortfolioListLogo({
   portfolio,
   className,
@@ -60,18 +59,10 @@ export function PortfolioListLogo({
   size?: PortfolioLogoSize;
 }) {
   const shellClass = portfolioLogoShellClass(size, className);
-  const iconClass = size === "topbar" ? "h-[18px] w-[18px]" : "h-4 w-4";
   const brandMarkSize = size === "topbar" ? 20 : 18;
 
-  if (portfolioIsCombined(portfolio)) {
-    return (
-      <div className={shellClass} aria-hidden>
-        <GitMerge className={cn(iconClass, "text-fg-muted")} strokeWidth={2} />
-      </div>
-    );
-  }
-
-  if (portfolio.snaptrade) {
+  // Combined / manual / demo share the Finsepa brand tile (iOS parity).
+  if (!portfolioIsCombined(portfolio) && portfolio.snaptrade) {
     return <PortfolioBrokerageLogo snaptrade={portfolio.snaptrade} size={size} className={className} />;
   }
 
