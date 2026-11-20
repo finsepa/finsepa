@@ -10,16 +10,16 @@ import {
   prefersReducedFundamentalsBarMotion,
   runFundamentalsBarEnterAnimation,
 } from "@/lib/chart/fundamentals-bar-enter-animation";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   buildFundamentalsYAxisTicks,
+  CHART_PLOT_BACKGROUND_CLASS,
   computeFundamentalsChartTooltipPlacement,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   formatFundamentalsAxisTickLabel,
 } from "@/lib/chart/fundamentals-chart-surface";
 import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
-
-const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import {
   estimatesChartBarValues,
   isAnnualForecastPoint,
@@ -472,25 +472,9 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
             <div className="flex min-h-0 w-full min-w-0 flex-1" style={{ height: `${plotHeight}px` }}>
               <div ref={plotAreaRef} className="relative min-h-0 min-w-0 flex-1" onPointerLeave={clearHover}>
                 <div
-                  className="pointer-events-none absolute inset-0 z-0"
-                  style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
+                  className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)}
                   aria-hidden
                 >
-                  {yTicks.map((t, i) => {
-                    const nt = yTicks.length;
-                    const pct = nt <= 1 ? 0 : i / (nt - 1);
-                    const insetSpan = 0.92;
-                    return (
-                      <div
-                        key={`grid-${t}-${i}`}
-                        className="absolute inset-x-0 border-t"
-                        style={{
-                          top: `${(PLOT_INSET_TOP_FRAC + pct * insetSpan) * 100}%`,
-                          borderColor: Y_AXIS_GRIDLINE_BORDER,
-                        }}
-                      />
-                    );
-                  })}
                   <div
                     className="absolute inset-x-0 border-t"
                     style={{
@@ -499,11 +483,12 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
                     }}
                   />
                 </div>
+                <div className={cn("pointer-events-none absolute inset-0 z-[1]", CHART_PLOT_DOTS_PATTERN_CLASS)} aria-hidden />
 
                 {/* Bars + beat/miss markers (anchored just above the actual bar). */}
                 <div
                   key={`${period}-${metric}-${n}`}
-                  className="absolute inset-x-0 top-[8%] bottom-[4%] min-h-0 w-full min-w-0 overflow-visible"
+                  className="absolute inset-x-0 top-[8%] bottom-[4%] z-[2] min-h-0 w-full min-w-0 overflow-visible"
                   role="img"
                   aria-label={metricConfig.ariaLabel}
                 >
@@ -647,12 +632,28 @@ export function EarningsEstimatesChart({ data, period, metric }: Props) {
             </div>
 
             <div className="flex w-full min-w-0 overflow-visible" style={{ height: `${MULTICHART_AXIS_ROW_PX}px` }}>
-              <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: `${MULTICHART_AXIS_ROW_PX}px` }}>
+              <div className="relative min-w-0 flex-1 px-0" style={{ height: `${MULTICHART_AXIS_ROW_PX}px` }}>
+                {periods.map((p, i) => {
+                  const leftPct = periodCenterLeftPercent(i, n);
+                  const major = i === 0 || i === n - 1 || i % 2 === 0;
+                  return (
+                    <span
+                      key={`tick-${p.key}`}
+                      className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
+                      style={{
+                        left: `${leftPct}%`,
+                        height: major ? 9 : 5,
+                        transform: "translateX(-50%)",
+                      }}
+                      aria-hidden
+                    />
+                  );
+                })}
                 {periods.map((p, i) => {
                   return (
                     <div
                       key={`axis-${p.key}`}
-                      className="absolute top-1.5 flex max-w-[min(100%,5.5rem)] -translate-x-1/2 justify-center overflow-visible"
+                      className="absolute top-1/2 flex max-w-[min(100%,5.5rem)] -translate-x-1/2 -translate-y-1/2 justify-center overflow-visible"
                       style={{ left: `${periodCenterLeftPercent(i, n)}%` }}
                       title={p.title}
                     >

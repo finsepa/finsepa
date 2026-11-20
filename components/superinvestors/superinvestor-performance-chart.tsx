@@ -33,7 +33,7 @@ import type {
   SuperinvestorPerformancePoint,
   SuperinvestorPerformanceSeries,
 } from "@/lib/superinvestors/superinvestor-performance-types";
-import { chartMarkerDiscFillColor, resolveFsColor } from "@/lib/theme/resolve-fs-color";
+import { chartMarkerDiscFillColor, resolveFsColor, resolveFsColorWithAlpha } from "@/lib/theme/resolve-fs-color";
 import { useChartThemePaintKey } from "@/lib/theme/use-logo-dev-theme";
 import { cn } from "@/lib/utils";
 
@@ -362,10 +362,11 @@ export function SuperinvestorPerformanceChart({ profileSlug }: { profileSlug: st
       crosshair: {
         mode: CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(20, 20, 20, 0.28)",
+          color: resolveFsColorWithAlpha("--fs-fg-muted", 0.55),
           labelVisible: false,
           width: 1,
           style: LineStyle.Dashed,
+          visible: true,
         },
         horzLine: {
           visible: false,

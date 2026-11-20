@@ -1294,21 +1294,7 @@ export function StockPageContent({
         <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} embedded />
       </div>
 
-      <div className="max-md:hidden border-b border-solid border-stroke">
-        <StockDetailTabNav
-          activeTab={displayTab}
-          onTabChange={handleTabChange}
-          onTabIntent={handleTabIntent}
-          isEtf={isEtf}
-          sticky={displayTab !== "financials"}
-          embedded
-        />
-      </div>
-
-      <div
-        className={cn(ASSET_HERO_CARD_CLASS, displayTab !== "overview" && ASSET_HERO_OFFSCREEN_DESKTOP_CLASS)}
-        aria-hidden={displayTab !== "overview" ? true : undefined}
-      >
+      <div className={ASSET_HERO_CARD_CLASS}>
       <StockHeader
         ticker={ticker}
         periodLabel={headerPeriodLabel}
@@ -1339,6 +1325,21 @@ export function StockPageContent({
         }
       />
 
+      <div className="max-md:hidden">
+        <StockDetailTabNav
+          activeTab={displayTab}
+          onTabChange={handleTabChange}
+          onTabIntent={handleTabIntent}
+          isEtf={isEtf}
+          sticky={false}
+          embedded
+        />
+      </div>
+
+      <div
+        className={cn(displayTab !== "overview" && ASSET_HERO_OFFSCREEN_DESKTOP_CLASS)}
+        aria-hidden={displayTab !== "overview" ? true : undefined}
+      >
       {stockChartDrivesHeader ? (
         <div className={OFFSCREEN_PRICE_CHART} aria-hidden>
           <PriceChart
@@ -1453,6 +1454,7 @@ export function StockPageContent({
               </div>
             )}
           </ChartControls>
+      </div>
       </div>
       </div>
 

@@ -448,29 +448,29 @@ export function StockInsidersTab({ ticker }: { ticker: string }) {
 
   return (
     <div className="space-y-5">
-      <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_PANEL_CARD_CLASS)}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Insiders</h2>
-        <SegmentedControl
-          className="shrink-0"
-          options={INSIDERS_CHART_RANGES.map((r) => ({ value: r, label: r }))}
-          value={insidersChartRange}
-          onChange={setInsidersChartRange}
-          size="sm"
-          aria-label="Insiders chart range"
-        />
-      </div>
+      <div className="space-y-5 [--fs-chart-plot-bg:var(--fs-panel)]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Insiders</h2>
+          <SegmentedControl
+            className="shrink-0"
+            options={INSIDERS_CHART_RANGES.map((r) => ({ value: r, label: r }))}
+            value={insidersChartRange}
+            onChange={setInsidersChartRange}
+            size="sm"
+            aria-label="Insiders chart range"
+          />
+        </div>
 
-      <div className="overflow-visible">
-        <PriceChart
-          kind="stock"
-          symbol={sym}
-          range={insidersChartRange}
-          holdingsStyle
-          tradeMarkers={insiderTradeMarkers}
-          tradeTooltipItems={insiderTradeTooltipItems}
-        />
-      </div>
+        <div className="overflow-visible">
+          <PriceChart
+            kind="stock"
+            symbol={sym}
+            range={insidersChartRange}
+            holdingsStyle
+            tradeMarkers={insiderTradeMarkers}
+            tradeTooltipItems={insiderTradeTooltipItems}
+          />
+        </div>
       </div>
 
       {loading ? (

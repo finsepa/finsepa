@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 
-import { CompanyLogo } from "@/components/screener/company-logo";
 import { AssetBreadcrumbBar } from "@/components/stock/asset-breadcrumb-bar";
 import { SCREENER_INDICES_HREF } from "@/lib/screener/screener-market-url";
 
 export function IndexBreadcrumbs({
-  symbol,
+  symbol: _symbol,
   displayName,
   embedded = false,
 }: {
@@ -15,7 +14,6 @@ export function IndexBreadcrumbs({
   displayName: string;
   embedded?: boolean;
 }) {
-  const sym = symbol.trim().toUpperCase();
   const breadcrumbLinkClass = "min-w-0 truncate transition-colors hover:text-fg hover:underline";
   const breadcrumbSep = (
     <span className="shrink-0 select-none" aria-hidden>
@@ -30,12 +28,7 @@ export function IndexBreadcrumbs({
           Indices
         </Link>
         {breadcrumbSep}
-        <span
-          className="inline-flex min-w-0 shrink-0 items-center gap-1.5 truncate font-medium text-fg"
-          title={displayName}
-          aria-current="page"
-        >
-          <CompanyLogo name={displayName} logoUrl="" symbol={sym} size="xs" />
+        <span className="min-w-0 truncate font-medium text-fg" title={displayName} aria-current="page">
           {displayName}
         </span>
       </div>

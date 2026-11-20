@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 
-import { CompanyLogo } from "@/components/screener/company-logo";
 import { AssetBreadcrumbBar } from "@/components/stock/asset-breadcrumb-bar";
 import { UsEquityMarketSessionBadge } from "@/components/stock/us-equity-market-session-badge";
 import { getStockDetailMetaFromTicker } from "@/lib/market/stock-detail-meta";
@@ -11,6 +10,7 @@ import { mapProviderSectorToCanonical } from "@/lib/screener/screener-gics-secto
 import { SCREENER_ETFS_HREF } from "@/lib/screener/screener-market-url";
 import { screenerIndustryDrillHref } from "@/lib/screener/screener-industry-url";
 import { screenerSectorCompaniesHref } from "@/lib/screener/screener-sector-url";
+
 type Props = {
   ticker: string;
   headerMeta: StockDetailHeaderMeta | null;
@@ -86,17 +86,7 @@ export function StockBreadcrumbs({ ticker, headerMeta, isEtf = false, embedded =
         </>
       ) : null}
       {breadcrumbSep}
-      <span
-        className="inline-flex shrink-0 items-center gap-1.5 font-medium text-fg"
-        title={breadcrumbSymbol}
-        aria-current="page"
-      >
-        <CompanyLogo
-          name={meta.name ?? breadcrumbSymbol}
-          logoUrl={headerMeta?.logoUrl ?? meta.logoUrl ?? ""}
-          symbol={breadcrumbSymbol}
-          size="xs"
-        />
+      <span className="min-w-0 truncate font-medium text-fg" title={breadcrumbSymbol} aria-current="page">
         {breadcrumbSymbol}
       </span>
       </div>

@@ -89,7 +89,7 @@ function ManagePortfolioRow({
       dragListener={false}
       dragControls={controls}
       role="row"
-      className={SCREENER_TABLE_DATA_ROW_CLASS}
+      className={cn(SCREENER_TABLE_DATA_ROW_CLASS, "bg-transparent")}
       whileDrag={{
         zIndex: 1,
         boxShadow: "0 8px 20px -6px rgba(var(--fs-shadow-rgb), var(--fs-shadow-a-12))",
@@ -221,7 +221,7 @@ function ManagePortfoliosDialog({ onClose }: { onClose: () => void }) {
       title="Manage portfolios"
       onClose={onClose}
       maxWidthClass="w-full max-w-2xl"
-      bodyClassName="bg-surface pb-2"
+      bodyClassName="pb-2"
       footer={
         <AppModalFooter className="justify-end">
           <div className="flex shrink-0 items-center gap-2">

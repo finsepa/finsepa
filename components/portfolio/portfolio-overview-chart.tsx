@@ -1,6 +1,6 @@
 "use client";
 
-import { chartPlotBackdropColor, resolveFsColor } from "@/lib/theme/resolve-fs-color";
+import { chartPlotBackdropColor, resolveFsColor, resolveFsColorWithAlpha } from "@/lib/theme/resolve-fs-color";
 import {
   memo,
   useCallback,
@@ -55,6 +55,7 @@ import {
 
 import { horzTimeToUnixSeconds, nearestPointByTime } from "@/components/chart/chart-selection-utils";
 import {
+  CHART_PLOT_DOTS_PATTERN_CLASS,
   formatOverviewCrosshairBottomDate,
   overviewAxisLabelsEqual,
   overviewChartAxisRowPx,
@@ -1610,8 +1611,6 @@ function syncOverviewYAxisLabelsFromMinMax(
 }
 
 const OVERVIEW_CHART_PLOT_BACKDROP_INSET_CLASS = "top-[12%] bottom-[8%]";
-/** Matches asset-chart y gridlines (`--fs-stroke` at 60%), fainter than borders. */
-const OVERVIEW_Y_GRIDLINE_COLOR = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 
 function formatAxisUsd(n: number): string {
   if (!Number.isFinite(n)) return "$0";
@@ -2593,10 +2592,12 @@ export function PortfolioValueHistoryChartPane({
       crosshair: {
         mode: CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(20, 20, 20, 0.28)",
+          // Theme-aware grey — hard-coded dark rgba was invisible on dark panels.
+          color: resolveFsColorWithAlpha("--fs-fg-muted", 0.55),
           labelVisible: false,
           width: 1,
           style: LineStyle.Dashed,
+          visible: true,
         },
         horzLine: {
           visible: false,
@@ -3534,23 +3535,11 @@ export function PortfolioValueHistoryChartPane({
 
   const plotSurface = (
     <>
-      <div className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)} aria-hidden>
-            {/* Gridlines at the right-axis numbers (same look as asset charts), under the series. */}
-            {!loading && !(isGoalPlotLayout && !showGoalYAxisColumn) ? (
-              <div
-                className={cn("absolute left-0", OVERVIEW_CHART_PLOT_BACKDROP_INSET_CLASS)}
-                style={{ right: FUNDAMENTALS_CHART_Y_AXIS_W_PX }}
-              >
-                {yAxisLabels.map((lab) => (
-                  <div
-                    key={lab.key}
-                    className="absolute inset-x-0 h-px"
-                    style={{ top: `${lab.topPct}%`, background: OVERVIEW_Y_GRIDLINE_COLOR }}
-                  />
-                ))}
-              </div>
-            ) : null}
-          </div>
+      <div className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)} aria-hidden />
+      {/* Same asset-page chrome: vignette dots, no horizontal gridlines. */}
+      {!loading ? (
+        <div className={cn("z-[1]", CHART_PLOT_DOTS_PATTERN_CLASS)} aria-hidden />
+      ) : null}
           <div
             ref={wrapRef}
             className={cn(
@@ -3787,23 +3776,42 @@ export function PortfolioValueHistoryChartPane({
           {hoverAxisLabel.label}
         </span>
       )
-    : periodAxisLabels.map((lab, i) => {
-        const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
-        return (
-          <span
-            key={lab.key}
-            className={cn(
-              "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] text-[11px] tabular-nums leading-none text-fg-muted sm:text-[12px]",
-              isGoalPlotLayout ? "font-medium" : "font-normal",
-              periodAxisLabelMaxWidthClass(anchor),
-              periodAxisLabelTransformClass(anchor),
-            )}
-            style={periodAxisLabelLayoutStyle(lab.leftPx, anchor, axisPlotWidthPx)}
-          >
-            {lab.label}
-          </span>
-        );
-      });
+    : (
+        <>
+          {periodAxisLabels.map((lab, i) => {
+            const major = i === 0 || i === periodAxisLabels.length - 1 || i % 2 === 0;
+            return (
+              <span
+                key={`tick-${lab.key}`}
+                className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
+                style={{
+                  left: lab.leftPx,
+                  height: major ? 9 : 5,
+                  transform: "translateX(-50%)",
+                }}
+                aria-hidden
+              />
+            );
+          })}
+          {periodAxisLabels.map((lab, i) => {
+            const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
+            return (
+              <span
+                key={lab.key}
+                className={cn(
+                  "absolute top-1/2 inline-block -translate-y-1/2 whitespace-nowrap font-['Inter'] text-[11px] tabular-nums leading-none text-fg-muted sm:text-[12px]",
+                  isGoalPlotLayout ? "font-medium" : "font-normal",
+                  periodAxisLabelMaxWidthClass(anchor),
+                  periodAxisLabelTransformClass(anchor),
+                )}
+                style={periodAxisLabelLayoutStyle(lab.leftPx, anchor, axisPlotWidthPx)}
+              >
+                {lab.label}
+              </span>
+            );
+          })}
+        </>
+      );
 
   return (
     <div
@@ -3856,7 +3864,7 @@ function PortfolioOverviewChartInner({
   hideChrome?: boolean;
   /** Lock the chart to a single range (no range picker). */
   fixedRange?: PortfolioChartRange | null;
-  /** Portfolio page Overview: title, controls and chart in one elevated card. */
+  /** Optional elevated card chrome (asset pages stay flush; portfolio Overview is flush by default). */
   card?: boolean;
 }) {
   const metric: PortfolioChartMetricMode = "value";
@@ -4045,7 +4053,7 @@ function PortfolioOverviewChartInner({
   return (
     <section
       className={cn(
-        "relative z-10 w-full min-w-0",
+        "relative z-10 w-full min-w-0 [--fs-chart-plot-bg:var(--fs-panel)]",
         hideChrome ? "mb-0 max-md:mb-0" : "mb-6 max-md:mb-4",
         card && cn("p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS),
       )}

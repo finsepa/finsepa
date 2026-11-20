@@ -1,10 +1,12 @@
 "use client";
 
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   CHARTING_LINE_POINT_MARKER_BORDER_PX,
   CHARTING_LINE_POINT_MARKER_DIAMETER_PX,
   CHARTING_LINE_POINT_MARKER_FILL,
   CHARTING_LINE_POINT_MARKER_RADIUS_PX,
+  CHART_PLOT_BACKGROUND_CLASS,
   FUNDAMENTALS_CHART_BAR_VALUE_LABEL_HEIGHT_PX,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   FUNDAMENTALS_CHART_Y_AXIS_W_PX,
@@ -32,7 +34,7 @@ import {
   type MouseEvent,
 } from "react";
 
-const AXIS_ROW_PX = 32;
+const AXIS_ROW_PX = 36;
 const AXIS_BOTTOM_PAD_PX = 10;
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
@@ -40,8 +42,6 @@ const HOVER_DOT_HALO_RADIUS_PX = 14;
 const HOVER_DOT_HALO_ALPHA = 0.14;
 const LINE_STROKE_WIDTH_PX = 2;
 const CHART_HEIGHT_PX = 320;
-/** Match asset / portfolio charts — `resolveFsColorWithAlpha("--fs-stroke", 0.6)`. */
-const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 
 /** First year-end that reaches `target` (skip if the series already starts at/above). */
 function firstYearIndexCrossingTarget(
@@ -439,23 +439,9 @@ export function PortfolioGoalProjectionChart({
             onMouseLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-0 z-0"
-              style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
+              className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)}
               aria-hidden
             >
-              {/* Y gridlines at axis ticks — same language as asset / portfolio charts (no plot dots). */}
-              {yTicks.map((t, i) => {
-                const nt = yTicks.length;
-                const pct = nt <= 1 ? 0 : i / (nt - 1);
-                const top = `${(PLOT_INSET_TOP_FRAC + pct * (1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC)) * 100}%`;
-                return (
-                  <div
-                    key={`grid-${t}-${i}`}
-                    className="absolute inset-x-0 border-t"
-                    style={{ top, borderColor: Y_AXIS_GRIDLINE_BORDER }}
-                  />
-                );
-              })}
               {zeroBaselineTopPct != null ? (
                 <div
                   className="absolute inset-x-0 border-t"
@@ -466,12 +452,13 @@ export function PortfolioGoalProjectionChart({
                 />
               ) : null}
             </div>
+            <div className={cn("pointer-events-none absolute inset-0 z-[1]", CHART_PLOT_DOTS_PATTERN_CLASS)} aria-hidden />
             {achievedYearCrosshairs.map((hair) => (
               <div
                 key={`achieved-${hair.yearIndex}`}
                 aria-hidden
                 className={cn(
-                  "pointer-events-none absolute z-[1] w-0 border-l border-dashed transition-colors duration-100",
+                  "pointer-events-none absolute z-[2] w-0 border-l border-dashed transition-colors duration-100",
                   hoveredIndex === hair.yearIndex ? "border-fg-muted" : "border-fg-muted/40",
                 )}
                 style={{
@@ -484,7 +471,7 @@ export function PortfolioGoalProjectionChart({
             {lineHoverCrosshair ? (
               <div
                 aria-hidden
-                className="pointer-events-none absolute z-[1] w-0 border-l border-dashed border-accent"
+                className="pointer-events-none absolute z-[2] w-0 border-l border-dashed border-accent"
                 style={{
                   left: lineHoverCrosshair.left,
                   top: plotCrosshairBand.top,
@@ -647,11 +634,31 @@ export function PortfolioGoalProjectionChart({
               const label = isCrossingYear ? String(year) : goalYearAxisLabel(year, years, i);
               if (!label) return null;
               const leftPct = resolvePeriodCenterLeftPercent(i, years.length, LINE_PERIOD_MARGINS);
+              const n = years.length;
+              const major = i === 0 || i === n - 1 || i % 2 === 0;
+              return (
+                <span
+                  key={`tick-${year}`}
+                  className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
+                  style={{
+                    left: `${leftPct}%`,
+                    height: major ? 9 : 5,
+                    transform: "translateX(-50%)",
+                  }}
+                  aria-hidden
+                />
+              );
+            })}
+            {years.map((year, i) => {
+              const isCrossingYear = crossingYearIndexes.has(i);
+              const label = isCrossingYear ? String(year) : goalYearAxisLabel(year, years, i);
+              if (!label) return null;
+              const leftPct = resolvePeriodCenterLeftPercent(i, years.length, LINE_PERIOD_MARGINS);
               return (
                 <span
                   key={year}
                   className={cn(
-                    "absolute top-1.5 inline-block -translate-x-1/2 whitespace-nowrap text-[12px] tabular-nums leading-none",
+                    "absolute top-1/2 inline-block -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[12px] tabular-nums leading-none",
                     isCrossingYear
                       ? "font-semibold text-fg"
                       : "font-medium text-fg-muted",

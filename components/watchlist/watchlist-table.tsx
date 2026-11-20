@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { eodhdCryptoSpotTickerDisplay } from "@/lib/crypto/eodhd-crypto-ticker-display";
+import { CurrencyPairLogo } from "@/components/currency/currency-pair-logo";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { ChangeCaretIcon, ChangePct, formatSignedChangePct } from "@/components/screener/change-pct";
 import { IntentPrefetchLink } from "@/components/layout/intent-prefetch-link";
@@ -275,7 +276,11 @@ function WatchlistTableRow({
                 TABLE_START_ALIGNED_PAD_CLASS,
               )}
             >
-              <CompanyLogo name={row.name} logoUrl={row.logoUrl ?? ""} symbol={row.symbol} />
+              {row.kind === "forex" ? (
+                <CurrencyPairLogo symbol={row.symbol} />
+              ) : (
+                <CompanyLogo name={row.name} logoUrl={row.logoUrl ?? ""} symbol={row.symbol} />
+              )}
               <div className="min-w-0">
                 <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover:underline">
                   {row.kind === "crypto" ? eodhdCryptoSpotTickerDisplay(row.symbol) : row.symbol}

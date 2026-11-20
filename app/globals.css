@@ -591,16 +591,14 @@ html:not(.dark) .fs-primary-button-gradient-stroke {
     overflow: hidden;
   }
 
-  /* macOS-style toolbar material: <main> scrolls underneath (it pads its top by the bar height). */
+  /* Solid top bar — same fill as the panel (no frosted glass / gradient wash). */
   .shell-desktop-panel__header {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     overflow: hidden;
-    background: color-mix(in srgb, var(--fs-panel) 72%, transparent);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    backdrop-filter: saturate(180%) blur(20px);
+    background: var(--fs-panel);
     transition: box-shadow 150ms ease-out;
   }
 

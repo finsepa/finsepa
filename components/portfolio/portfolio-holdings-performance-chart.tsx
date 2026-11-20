@@ -7,13 +7,12 @@ import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ChartSpline } from "@/lib/icons";
 
 import { SegmentedControl } from "@/components/design-system/segmented-control";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
+  CHART_PLOT_BACKGROUND_CLASS,
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
 } from "@/lib/chart/fundamentals-chart-surface";
-
-/** Matches newest chart chrome — faint solid gridlines (no plot dots). */
-const X_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import {
   Empty,
   EmptyDescription,
@@ -295,21 +294,10 @@ function HoldingsPerformanceBarChart({
 
             <div className="relative min-w-0 flex-1 overflow-hidden">
               <div
-                className="pointer-events-none absolute inset-0 z-0"
-                style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
+                className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)}
                 aria-hidden
-              >
-                {ticks.map((tick) => {
-                  const leftPct = xMax > 0 ? (tick / xMax) * 100 : 0;
-                  return (
-                    <div
-                      key={tick}
-                      className="absolute inset-y-0 border-l"
-                      style={{ left: `${leftPct}%`, borderColor: X_AXIS_GRIDLINE_BORDER }}
-                    />
-                  );
-                })}
-              </div>
+              />
+              <div className={cn("pointer-events-none absolute inset-0 z-[1]", CHART_PLOT_DOTS_PATTERN_CLASS)} aria-hidden />
 
               {rows.map((row, i) => {
                 const value = rowValue(row, metric);
@@ -414,11 +402,29 @@ function HoldingsPerformanceBarChart({
                 const leftPct = xMax > 0 ? (tick / xMax) * 100 : 0;
                 const isFirst = tickIndex === 0;
                 const isLast = tickIndex === ticks.length - 1;
+                const major = isFirst || isLast || tickIndex % 2 === 0;
+                return (
+                  <span
+                    key={`tick-${tick}`}
+                    className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
+                    style={{
+                      left: isFirst ? 0 : isLast ? "100%" : `${leftPct}%`,
+                      height: major ? 9 : 5,
+                      transform: isFirst ? undefined : isLast ? "translateX(-100%)" : "translateX(-50%)",
+                    }}
+                    aria-hidden
+                  />
+                );
+              })}
+              {ticks.map((tick, tickIndex) => {
+                const leftPct = xMax > 0 ? (tick / xMax) * 100 : 0;
+                const isFirst = tickIndex === 0;
+                const isLast = tickIndex === ticks.length - 1;
                 return (
                   <span
                     key={tick}
                     className={cn(
-                      "absolute top-2 text-[11px] font-normal tabular-nums leading-4 text-fg-muted",
+                      "absolute top-1/2 -translate-y-1/2 text-[11px] font-normal tabular-nums leading-4 text-fg-muted",
                       isFirst && "left-0",
                       isLast && "right-0",
                       !isFirst && !isLast && "-translate-x-1/2",

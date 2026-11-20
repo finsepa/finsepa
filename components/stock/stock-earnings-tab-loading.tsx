@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 export function StockEarningsTabLoading() {
   return (
     <div className="min-w-0 space-y-5" aria-busy aria-label="Loading earnings">
-      <div className={cn("min-w-0 space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+      <div className="min-w-0 space-y-5 [--fs-chart-plot-bg:var(--fs-panel)]">
         <div className="flex flex-wrap items-stretch gap-x-6 gap-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className={cn("flex flex-col gap-1.5", i < 4 && "border-r border-stroke pr-6")}>

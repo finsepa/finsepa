@@ -499,7 +499,7 @@ function PortfolioDividendsPanelInner({
   if (loading && !payload) {
     return (
       <div className="animate-pulse space-y-5">
-        <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+        <div className="space-y-4 [--fs-chart-plot-bg:var(--fs-panel)]">
           <div className="h-9 w-48 rounded-full bg-surface-muted" />
           <div className="h-[260px] rounded-md bg-surface-muted" />
         </div>
@@ -527,7 +527,7 @@ function PortfolioDividendsPanelInner({
 
   return (
     <div className="w-full min-w-0 pb-8">
-      <div className={cn("mb-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+      <div className="mb-5 space-y-4 [--fs-chart-plot-bg:var(--fs-panel)]">
         <DividendsYearTabs
           year={selectedYear}
           minYear={navMinYear}

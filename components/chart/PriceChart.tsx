@@ -20,6 +20,7 @@ import {
   overviewChartAxisRowPx,
   buildOverviewCrosshairLabelByBarTime,
   chartPointDisplayUnix,
+  CHART_PLOT_DOTS_PATTERN_CLASS,
   overviewAxisLabelsEqual,
   resolveOverviewBottomAxisMode,
   syncOverviewPeriodAxisLabels,
@@ -493,14 +494,19 @@ const EMPTY_TRADE_MARKERS: readonly HoldingsTradeMarker[] = [];
 const EMPTY_HOLDINGS_QUARTER_BANDS: readonly HoldingsQuarterTradeBand[] = [];
 
 
-/** Stock 1D session: last-price badge only — no last-price line across the plot (same as crypto). */
+/**
+ * Stock 1D live session: colored last-price axis badge + dashed horizontal line from the tip
+ * to the right scale (TradingView-style connector).
+ */
 function applyLiveSessionSeriesBadgeOptions(
   series: ISeriesApi<"Baseline"> | ISeriesApi<"Area">,
   hideYAxisLabels: boolean,
 ) {
   series.applyOptions({
     lastValueVisible: !hideYAxisLabels,
-    priceLineVisible: false,
+    priceLineVisible: !hideYAxisLabels,
+    priceLineWidth: 1,
+    priceLineStyle: LineStyle.Dashed,
     lineType: LineType.Simple,
   });
 }
@@ -538,6 +544,23 @@ function yAxisGridlineColor(): string {
 }
 
 type MainPriceSeries = ISeriesApi<"Baseline"> | ISeriesApi<"Area"> | ISeriesApi<"Line">;
+
+/** Tip marker + last-price dashed line share up/down color vs session baseline. */
+function syncLiveSessionTipChrome(series: MainPriceSeries, value: number) {
+  const opts = series.options() as {
+    baseValue?: { price?: number };
+    crosshairMarkerBorderColor?: string;
+    priceLineColor?: string;
+  };
+  const base = opts.baseValue?.price;
+  if (typeof base !== "number" || !Number.isFinite(base)) return;
+  const color = resolveFsColor(value >= base ? "--fs-up" : "--fs-down");
+  if (opts.crosshairMarkerBorderColor === color && opts.priceLineColor === color) return;
+  series.applyOptions({
+    crosshairMarkerBorderColor: color,
+    priceLineColor: color,
+  });
+}
 
 function removeScaleBoundsPriceLines(
   series: MainPriceSeries | null,
@@ -658,6 +681,8 @@ function syncYAxisTickLabels(
   ticksRef: RefObject<IPriceLine[]>,
   tickCount: number = Y_AXIS_LABEL_COUNT,
   axisBackdrop: "panel" | "surface" = "panel",
+  /** BTC chrome test — keep axis numbers, drop the solid horizontal grid. */
+  hideHorzGridlines = false,
 ) {
   const h = chart.paneSize(0).height;
   if (!Number.isFinite(h) || h <= 0 || tickCount < 2) {
@@ -731,7 +756,11 @@ function syncYAxisTickLabels(
       ticksRef.current.push(series.createPriceLine({ price, ...opts }));
     }
   }
-  priceGridlinesFor(series).setPrices(prices, yAxisGridlineColor());
+  if (hideHorzGridlines) {
+    clearPriceGridlines(series);
+  } else {
+    priceGridlinesFor(series).setPrices(prices, yAxisGridlineColor());
+  }
 }
 
 /**
@@ -1392,6 +1421,19 @@ export function PriceChart({
   );
 
   /**
+   * Asset plot chrome: hide horz price grid, vignette dots, bottom-axis ruler ticks.
+   * Gate DOM chrome until after mount so SSR HTML matches the first client paint (avoids hydration mismatch).
+   */
+  const assetPlotChrome = true;
+  const assetPlotChromeRef = useRef(assetPlotChrome);
+  assetPlotChromeRef.current = assetPlotChrome;
+  const [assetPlotChromeMounted, setAssetPlotChromeMounted] = useState(false);
+  useEffect(() => {
+    setAssetPlotChromeMounted(true);
+  }, []);
+  const showAssetPlotChrome = assetPlotChrome && assetPlotChromeMounted;
+
+  /**
    * Log price axis for long crypto ranges (BTC 5Y/ALL): $0.06 → $150k spans ~6 orders of
    * magnitude, so a linear axis flattens years of early history. Price/marketCap only —
    * the return series is already normalized to a 100-based index.
@@ -1438,7 +1480,14 @@ export function PriceChart({
         const s = seriesRef.current;
         if (!c || !s || hideMobileYAxisLabelsRef.current) return;
         if (screenshotPreviewModeRef.current && !screenshotShowVerticalLegendRef.current) return;
-        syncYAxisTickLabels(c, s, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
+        syncYAxisTickLabels(
+          c,
+          s,
+          yAxisTickLinesRef,
+          Y_AXIS_LABEL_COUNT,
+          holdingsPlotBackdropRef.current,
+          assetPlotChromeRef.current,
+        );
       });
     });
   };
@@ -1733,7 +1782,14 @@ export function PriceChart({
       if (hide) {
         removeYAxisTickLabels(series, yAxisTickLinesRef);
       } else if (!screenshotPreviewModeRef.current || screenshotShowVerticalLegendRef.current) {
-        syncYAxisTickLabels(chart, series, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
+        syncYAxisTickLabels(
+        chart,
+        series,
+        yAxisTickLinesRef,
+        Y_AXIS_LABEL_COUNT,
+        holdingsPlotBackdropRef.current,
+        assetPlotChromeRef.current,
+      );
       } else {
         removeYAxisTickLabels(series, yAxisTickLinesRef);
       }
@@ -1758,7 +1814,14 @@ export function PriceChart({
       !shouldHideMobileYAxisLabels(containerWidthRef.current) &&
       (!screenshotPreviewModeRef.current || screenshotShowVerticalLegendRef.current)
     ) {
-      syncYAxisTickLabels(chart, series, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
+      syncYAxisTickLabels(
+        chart,
+        series,
+        yAxisTickLinesRef,
+        Y_AXIS_LABEL_COUNT,
+        holdingsPlotBackdropRef.current,
+        assetPlotChromeRef.current,
+      );
     }
   }, [logPriceScale]);
 
@@ -2261,17 +2324,12 @@ export function PriceChart({
     };
 
     /**
-     * Baseline hover dot: green above the baseline, red below (LWC paints one fixed marker color).
-     * Compared against the live option, not a cached side — data refreshes (live ticks) re-apply
-     * the series options and reset the marker to green.
+     * Baseline hover tip + live dashed last-price line: green above the baseline, red below
+     * (LWC paints one fixed marker/line color). Live ticks re-apply series options and can reset
+     * the marker to green — always sync from the live tip value.
      */
     const syncBaselineMarkerColor = (series: MainPriceSeries, value: number) => {
-      const opts = series.options() as { baseValue?: { price?: number }; crosshairMarkerBorderColor?: string };
-      const base = opts.baseValue?.price;
-      if (typeof base !== "number" || !Number.isFinite(base)) return;
-      const color = resolveFsColor(value >= base ? "--fs-up" : "--fs-down");
-      if (opts.crosshairMarkerBorderColor === color) return;
-      series.applyOptions({ crosshairMarkerBorderColor: color });
+      syncLiveSessionTipChrome(series, value);
     };
     const onCrosshairMove = (param: MouseEventParams) => {
       const s = seriesRef.current;
@@ -2535,7 +2593,14 @@ export function PriceChart({
           !hideMobileYAxisLabelsRef.current &&
           (!screenshotPreviewModeRef.current || screenshotShowVerticalLegendRef.current);
         if (showYAxisLabels) {
-          syncYAxisTickLabels(c2, s2, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
+          syncYAxisTickLabels(
+            c2,
+            s2,
+            yAxisTickLinesRef,
+            Y_AXIS_LABEL_COUNT,
+            holdingsPlotBackdropRef.current,
+            assetPlotChromeRef.current,
+          );
         } else {
           removeYAxisTickLabels(s2, yAxisTickLinesRef);
         }
@@ -2656,7 +2721,14 @@ export function PriceChart({
     if (!chart || !series) return;
     const hide = shouldHideMobileYAxisLabels(containerWidth);
     if (!hide && screenshotShowVerticalLegend) {
-      syncYAxisTickLabels(chart, series, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
+      syncYAxisTickLabels(
+        chart,
+        series,
+        yAxisTickLinesRef,
+        Y_AXIS_LABEL_COUNT,
+        holdingsPlotBackdropRef.current,
+        assetPlotChromeRef.current,
+      );
     } else {
       removeYAxisTickLabels(series, yAxisTickLinesRef);
     }
@@ -3201,23 +3273,15 @@ export function PriceChart({
       series = seriesRef.current;
       if (!series) return;
       removeSessionHighLowPriceLines(series, sessionHighPriceLineRef, sessionLowPriceLineRef);
-      // Portfolio chart should also show the dashed "open" baseline line (same as Overview).
-      // Reuse `baselinePriceLineRef` so it is cleaned up when the chart re-inits.
-      let bl = baselinePriceLineRef.current;
-      if (!bl) {
-        bl = series.createPriceLine({
-          price: open,
-          color: BASELINE_LINE,
-          lineWidth: 1,
-          lineStyle: LineStyle.LargeDashed,
-          axisLabelVisible: false,
-          lineVisible: false,
-        });
-        baselinePriceLineRef.current = bl;
-      } else {
-        bl.applyOptions({ price: open });
+      if (baselinePriceLineRef.current) {
+        try {
+          series.removePriceLine(baselinePriceLineRef.current);
+        } catch {
+          /* ignore */
+        }
+        baselinePriceLineRef.current = null;
       }
-      dashedPriceLineFor(series).setLine(open, BASELINE_LINE, BASELINE_DASH_PX);
+      clearDashedPriceLine(series);
       holdingsFillUnderlayRef.current?.setData(data);
       series.setData(data);
       fitContentWithMobilePlotGutter(
@@ -3299,7 +3363,14 @@ export function PriceChart({
       // Portfolio chart: hide top/bottom plot border lines (keep right-axis numbers).
       removeScaleBoundsPriceLines(series, scaleTopPriceLineRef, scaleBottomPriceLineRef);
       if (!hideMobileYAxisLabelsRef.current) {
-        syncYAxisTickLabels(chart, series, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
+        syncYAxisTickLabels(
+        chart,
+        series,
+        yAxisTickLinesRef,
+        Y_AXIS_LABEL_COUNT,
+        holdingsPlotBackdropRef.current,
+        assetPlotChromeRef.current,
+      );
       } else {
         removeYAxisTickLabels(series, yAxisTickLinesRef);
       }
@@ -3336,8 +3407,9 @@ export function PriceChart({
         relGrad,
         kindRef.current === "crypto",
       ),
-      // Live ticks re-apply options mid-hover: keep the up/down marker color the hover set.
+      // Live ticks re-apply options mid-hover: keep tip + dashed last-price line colors.
       crosshairMarkerBorderColor: single.options().crosshairMarkerBorderColor,
+      priceLineColor: (single.options() as { priceLineColor?: string }).priceLineColor,
       ...(fxRef.current && chartMetricSeriesRef.current === "price" ? { priceFormat: fxPriceFormat(open) } : {}),
       ...(hideBottomFill ? { bottomFillColor1: "rgba(0,0,0,0)", bottomFillColor2: "rgba(0,0,0,0)" } : {}),
       ...(hideTopFill ? { topFillColor1: "rgba(0,0,0,0)", topFillColor2: "rgba(0,0,0,0)" } : {}),
@@ -3401,6 +3473,7 @@ export function PriceChart({
 
     single.setData(baselineData);
 
+    // Range/session open — dashed horizontal across the plot (all asset overview charts).
     let bl = baselinePriceLineRef.current;
     if (!bl) {
       bl = single.createPriceLine({
@@ -3420,6 +3493,8 @@ export function PriceChart({
     if (useLiveSessionChart) {
       sessionOpenPriceRef.current = open;
       applyLiveSessionSeriesBadgeOptions(single, hideMobileYAxisLabelsRef.current);
+      const tip = valuedLineData.at(-1)?.value;
+      if (tip != null && Number.isFinite(tip)) syncLiveSessionTipChrome(single, tip);
     } else {
       sessionOpenPriceRef.current = null;
       single.applyOptions({ priceLineVisible: false });
@@ -3458,7 +3533,14 @@ export function PriceChart({
     removeScaleBoundsPriceLines(single, scaleTopPriceLineRef, scaleBottomPriceLineRef);
     removeSessionHighLowPriceLines(single, sessionHighPriceLineRef, sessionLowPriceLineRef);
     if (!hideMobileYAxisLabelsRef.current) {
-      syncYAxisTickLabels(chart, single, yAxisTickLinesRef, Y_AXIS_LABEL_COUNT, holdingsPlotBackdropRef.current);
+      syncYAxisTickLabels(
+        chart,
+        single,
+        yAxisTickLinesRef,
+        Y_AXIS_LABEL_COUNT,
+        holdingsPlotBackdropRef.current,
+        assetPlotChromeRef.current,
+      );
     } else {
       removeYAxisTickLabels(single, yAxisTickLinesRef);
     }
@@ -3676,6 +3758,9 @@ export function PriceChart({
     >
       <div className={cn("relative min-h-0", useCustomBottomAxis ? "min-w-0 flex-1" : "absolute inset-0")} style={useCustomBottomAxis ? { height: plotHeight } : undefined}>
       <div className={cn("pointer-events-none absolute inset-0 z-0", holdingsStyle && holdingsPlotBackdrop === "surface" ? "bg-surface" : CHART_PLOT_BACKGROUND_CLASS)} aria-hidden />
+      {showAssetPlotChrome ? (
+        <div className={cn("z-[1]", CHART_PLOT_DOTS_PATTERN_CLASS)} aria-hidden />
+      ) : null}
       {showHoldingsActivityOverlay ? (
         <HoldingsQuarterBandsOverlay
           layouts={quarterBandLayouts}
@@ -3857,6 +3942,24 @@ export function PriceChart({
             </span>
           ) : (
             <>
+            {showAssetPlotChrome
+              ? visiblePeriodAxisLabels.map((lab, i) => {
+                  // Ruler-style ticks under the legend: longer at ends / major cadence.
+                  const major = i === 0 || i === visiblePeriodAxisLabels.length - 1 || i % 2 === 0;
+                  return (
+                    <span
+                      key={`btc-tick-${lab.key}`}
+                      className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
+                      style={{
+                        left: lab.leftPx,
+                        height: major ? 9 : 5,
+                        transform: "translateX(-50%)",
+                      }}
+                      aria-hidden
+                    />
+                  );
+                })
+              : null}
             {visiblePeriodAxisLabels.map((lab, i) => {
               const isLive1DLabel = lab.key.startsWith("live-1d-");
               const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, {

@@ -1038,7 +1038,7 @@ export function StockEarningsTabContent({
     <div className="min-w-0 space-y-5">
       {loading ? (
         <>
-          <div className={cn("min-w-0 space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+          <div className="min-w-0 space-y-5 [--fs-chart-plot-bg:var(--fs-panel)]">
             <EstimatesHeaderSkeleton />
             <EstimatesChartSkeleton />
           </div>
@@ -1072,37 +1072,37 @@ export function StockEarningsTabContent({
       ) : null}
 
       {!loading && data?.estimatesChart ? (
-        <div className={cn("min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
-        <EarningsEstimatesSection
-          data={data.estimatesChart}
-          aboveHeader={
-            summaryForCards ? (
-              <EarningsCountdownStats
-                reportDateYmd={summaryForCards.reportDateYmd}
-                fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
-                revenueEstimateDisplay={summaryForCards.upcomingRevenueFallback}
-                epsEstimateDisplay={summaryForCards.upcomingEpsFallback}
-                revenueEstimateChangePct={summaryForCards.revenueEstimateChangePct}
-                epsEstimateChangePct={summaryForCards.epsEstimateChangePct}
-                forwardPeDisplay={summaryForCards.forwardPeDisplay}
-              />
-            ) : null
-          }
-        />
+        <div className="min-w-0 [--fs-chart-plot-bg:var(--fs-panel)]">
+          <EarningsEstimatesSection
+            data={data.estimatesChart}
+            aboveHeader={
+              summaryForCards ? (
+                <EarningsCountdownStats
+                  reportDateYmd={summaryForCards.reportDateYmd}
+                  fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
+                  revenueEstimateDisplay={summaryForCards.upcomingRevenueFallback}
+                  epsEstimateDisplay={summaryForCards.upcomingEpsFallback}
+                  revenueEstimateChangePct={summaryForCards.revenueEstimateChangePct}
+                  epsEstimateChangePct={summaryForCards.epsEstimateChangePct}
+                  forwardPeDisplay={summaryForCards.forwardPeDisplay}
+                />
+              ) : null
+            }
+          />
         </div>
       ) : null}
 
       {!loading && !data?.estimatesChart && summaryForCards ? (
-        <div className={cn("min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
-        <EarningsCountdownStats
-          reportDateYmd={summaryForCards.reportDateYmd}
-          fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
-          revenueEstimateDisplay={summaryForCards.upcomingRevenueFallback}
-          epsEstimateDisplay={summaryForCards.upcomingEpsFallback}
-          revenueEstimateChangePct={summaryForCards.revenueEstimateChangePct}
-          epsEstimateChangePct={summaryForCards.epsEstimateChangePct}
-          forwardPeDisplay={summaryForCards.forwardPeDisplay}
-        />
+        <div className="min-w-0">
+          <EarningsCountdownStats
+            reportDateYmd={summaryForCards.reportDateYmd}
+            fiscalPeriodLabel={summaryForCards.fiscalPeriodLabel}
+            revenueEstimateDisplay={summaryForCards.upcomingRevenueFallback}
+            epsEstimateDisplay={summaryForCards.upcomingEpsFallback}
+            revenueEstimateChangePct={summaryForCards.revenueEstimateChangePct}
+            epsEstimateChangePct={summaryForCards.epsEstimateChangePct}
+            forwardPeDisplay={summaryForCards.forwardPeDisplay}
+          />
         </div>
       ) : null}
 

@@ -11,7 +11,9 @@ import {
   FUNDAMENTALS_CHART_TOOLTIP_CLASS,
   formatFundamentalsAxisTickLabel,
 } from "@/lib/chart/fundamentals-chart-surface";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
+import { CHART_PLOT_BACKGROUND_CLASS } from "@/lib/chart/fundamentals-chart-surface";
 import { fundamentalsBarSolidAtIndex } from "@/lib/colors/fundamentals-multi-bar-colors";
 import { formatUsdCompact } from "@/lib/market/key-stats-basic-format";
 import type { PortfolioDividendScheduleMonth } from "@/lib/portfolio/portfolio-dividends-schedule-types";
@@ -26,9 +28,7 @@ const FUTURE_BAR_COLOR = "var(--fs-fg-subtle)";
 const PLOT_INSET_TOP_FRAC = 0.08;
 const PLOT_INSET_BOTTOM_FRAC = 0.04;
 const PLOT_BAND_FRAC = 1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC;
-/** Match asset / portfolio charts — `resolveFsColorWithAlpha("--fs-stroke", 0.6)`. */
-const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
-const MULTICHART_AXIS_ROW_PX = 28;
+const MULTICHART_AXIS_ROW_PX = 36;
 const MULTICHART_AXIS_BOTTOM_PAD_PX = 8;
 const Y_AXIS_W_PX = 50;
 const CHART_HEIGHT_PX = 268;
@@ -191,20 +191,9 @@ function PortfolioDividendsChartInner({
             onPointerLeave={clearHover}
           >
             <div
-              className="pointer-events-none absolute inset-0 z-0"
-              style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
+              className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)}
               aria-hidden
             >
-              {yTicks.map((t, i) => (
-                <div
-                  key={`grid-${t}-${i}`}
-                  className="absolute inset-x-0 border-t"
-                  style={{
-                    top: `${tickTopPercent(i, yTicks.length)}%`,
-                    borderColor: Y_AXIS_GRIDLINE_BORDER,
-                  }}
-                />
-              ))}
               <div
                 className="absolute inset-x-0 border-t"
                 style={{
@@ -213,9 +202,10 @@ function PortfolioDividendsChartInner({
                 }}
               />
             </div>
+            <div className={cn("pointer-events-none absolute inset-0 z-[1]", CHART_PLOT_DOTS_PATTERN_CLASS)} aria-hidden />
 
             <div
-              className="absolute inset-x-0 top-[8%] bottom-[4%] z-[1] min-h-0 w-full min-w-0 overflow-visible"
+              className="absolute inset-x-0 top-[8%] bottom-[4%] z-[2] min-h-0 w-full min-w-0 overflow-visible"
               role="img"
               aria-label={`Monthly dividend payouts for ${year}`}
             >
@@ -329,11 +319,27 @@ function PortfolioDividendsChartInner({
         </div>
 
         <div className="flex w-full min-w-0 overflow-visible" style={{ height: MULTICHART_AXIS_ROW_PX }}>
-          <div className="relative mb-1 min-w-0 flex-1 px-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
+          <div className="relative min-w-0 flex-1 px-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
+            {periods.map((p, i) => {
+              const leftPct = periodCenterLeftPercent(i, n);
+              const major = i === 0 || i === n - 1 || i % 2 === 0;
+              return (
+                <span
+                  key={`tick-${p.key}`}
+                  className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
+                  style={{
+                    left: `${leftPct}%`,
+                    height: major ? 9 : 5,
+                    transform: "translateX(-50%)",
+                  }}
+                  aria-hidden
+                />
+              );
+            })}
             {periods.map((p, i) => (
               <div
                 key={`axis-${p.key}`}
-                className="absolute bottom-0.5 flex max-w-[min(100%,4.5rem)] -translate-x-1/2 justify-center overflow-visible"
+                className="absolute top-1/2 flex max-w-[min(100%,4.5rem)] -translate-x-1/2 -translate-y-1/2 justify-center overflow-visible"
                 style={{ left: `${periodCenterLeftPercent(i, n)}%` }}
                 title={p.title}
               >

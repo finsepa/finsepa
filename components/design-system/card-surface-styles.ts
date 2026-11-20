@@ -43,15 +43,20 @@ export const STOCK_OVERVIEW_SECTION_HEADING_CLASS = "text-[20px] font-semibold l
 /** Asset page (stock, ETF, crypto, index, currency) gutter + vertical rhythm. */
 export const ASSET_PAGE_SHELL_CLASS = "space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:pt-5 sm:pb-6";
 
-/** Desktop breadcrumb card at the top of asset pages. */
-export const ASSET_BREADCRUMB_CARD_CLASS = cn("px-4 py-3 max-md:hidden sm:px-5", MOBILE_ELEVATED_CARD_CLASS);
-
-/** Asset header + overview chart card. Flex gap (not `space-y`) so offscreen fixed charts add no trailing space. */
-export const ASSET_HERO_CARD_CLASS = cn("flex flex-col gap-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS);
+/** Desktop asset breadcrumbs — flush on the panel (no card). */
+export const ASSET_BREADCRUMB_CARD_CLASS = "max-md:hidden";
 
 /**
- * Desktop non-overview tabs show only breadcrumbs + tabs on top. The header/chart card stays mounted
- * (chart drives live header state) but moves offscreen — `hidden` would zero the chart's layout size.
+ * Asset header + overview chart — flush on the panel (no elevated card).
+ * Flex gap (not `space-y`) so offscreen fixed charts add no trailing space.
+ * Chart plot backdrop matches the shell panel (`--fs-panel`).
+ */
+export const ASSET_HERO_CARD_CLASS =
+  "flex flex-col gap-5 [--fs-chart-plot-bg:var(--fs-panel)]";
+
+/**
+ * Desktop non-overview tabs: keep header + tabs on screen; park the overview chart offscreen
+ * (still mounted so it can drive live header state). `hidden` would zero the chart's layout size.
  */
 export const ASSET_HERO_OFFSCREEN_DESKTOP_CLASS =
   "md:pointer-events-none md:fixed md:left-0 md:top-0 md:-z-10 md:w-[min(1200px,calc(100vw-4.5rem))] md:-translate-x-[120vw] md:opacity-0";

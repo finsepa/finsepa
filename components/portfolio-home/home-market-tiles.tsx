@@ -13,6 +13,7 @@ import type { IndexCardData } from "@/lib/screener/indices-today";
 import { fetchScreenerIndexCardsCached } from "@/lib/screener/screener-index-cards-cache";
 import { SCREENER_INDEX_CARD_LABELS } from "@/lib/screener/screener-index-card-fallbacks";
 import { cn } from "@/lib/utils";
+import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import { cryptoUtcDayChangePct, findCryptoLiveQuote } from "@/lib/market/crypto-live-quotes-shared";
 import { useCryptoLiveQuotes } from "@/lib/market/use-crypto-live-quotes";
 
@@ -123,6 +124,8 @@ export function HomeMarketTiles() {
           (liveBtc ? cryptoUtcDayChangePct(liveBtc.price, liveBtc.utcOpen) : null) ?? btc?.pct1d ?? null,
         href: BTC_HREF,
         flashTicks: true,
+        logoSymbol: "BTC",
+        logoUrl: getCryptoLogoUrl("BTC"),
       },
     ],
     [btc, liveBtc],

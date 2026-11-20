@@ -10,7 +10,9 @@ import {
   dropdownMenuPlainItemRowClassName,
 } from "@/components/design-system/dropdown-menu-styles";
 import { MobileBottomSheet } from "@/components/ui/mobile-bottom-sheet";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
+  CHART_PLOT_BACKGROUND_CLASS,
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
@@ -45,7 +47,6 @@ import {
 } from "@/components/ui/empty";
 import { dropdownTriggerFieldClassName } from "@/components/design-system/text-input-styles";
 import { cn } from "@/lib/utils";
-import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
 import type { PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 
 /** Figma Color/Blue/600 + Color/Orange/600 (Charting bar pair). */
@@ -54,8 +55,6 @@ const WITHDRAWAL = "#EA580C";
 const CHART_TOTAL_HEIGHT_PX = 320;
 const CHART_PLOT_HEIGHT_PX = CHART_TOTAL_HEIGHT_PX - FUNDAMENTALS_CHART_AXIS_ROW_PX;
 const Y_AXIS_TICK_COUNT = 6;
-/** Match asset / portfolio charts — `resolveFsColorWithAlpha("--fs-stroke", 0.6)`. */
-const Y_AXIS_GRIDLINE_STROKE = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 
 type CashChartRange = "all" | "ytd" | "1y" | "3y";
 type Granularity = "month" | "year";
@@ -369,32 +368,18 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
         <div className="flex min-h-0 w-full overflow-visible" style={{ height: CHART_PLOT_HEIGHT_PX }}>
           <div ref={plotRef} className="relative min-h-0 min-w-0 flex-1 overflow-visible">
             <div
-              className="pointer-events-none absolute inset-0 z-0"
-              style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
+              className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)}
               aria-hidden
             />
+            <div className={cn("pointer-events-none absolute inset-0 z-[1]", CHART_PLOT_DOTS_PATTERN_CLASS)} aria-hidden />
 
             <svg
               width={plotWidth}
               height={plotH}
-              className="relative z-[1] max-w-full"
+              className="relative z-[2] max-w-full"
               aria-hidden
             >
               <title>Cash in and cash out by period</title>
-              {ticks.map((t) => {
-                const y = yFor(t);
-                return (
-                  <line
-                    key={`grid-${t}`}
-                    x1={padL}
-                    x2={padL + innerW}
-                    y1={y}
-                    y2={y}
-                    stroke={Y_AXIS_GRIDLINE_STROKE}
-                    strokeWidth={1}
-                  />
-                );
-              })}
               <line
                 x1={padL}
                 x2={padL + innerW}
@@ -543,10 +528,27 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
             {buckets.map((b, i) => {
               if (!shouldDrawXLabel(i, n, xLabelStep)) return null;
               const leftPct = ((i + 0.5) / n) * 100;
+              const major = i === 0 || i === n - 1 || i % (xLabelStep * 2) === 0;
+              return (
+                <span
+                  key={`tick-${b.key}`}
+                  className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
+                  style={{
+                    left: `${leftPct}%`,
+                    height: major ? 9 : 5,
+                    transform: "translateX(-50%)",
+                  }}
+                  aria-hidden
+                />
+              );
+            })}
+            {buckets.map((b, i) => {
+              if (!shouldDrawXLabel(i, n, xLabelStep)) return null;
+              const leftPct = ((i + 0.5) / n) * 100;
               return (
                 <div
                   key={`axis-${b.key}`}
-                  className="absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5 pb-0.5"
+                  className="absolute top-1/2 flex min-h-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center overflow-visible px-0.5"
                   style={{ left: `${leftPct}%` }}
                   title={b.label}
                 >
@@ -605,7 +607,7 @@ function CashInOutBarChartSectionInner({ rows }: { rows: PortfolioTransaction[] 
   );
 
   return (
-    <div className={cn("mb-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+    <div className="mb-5 [--fs-chart-plot-bg:var(--fs-panel)]">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="hidden text-2xl font-semibold leading-9 tracking-tight text-fg sm:block">Cash</h2>
         <div className="flex w-full min-w-0 flex-nowrap items-center justify-between gap-2 sm:w-auto sm:flex-wrap sm:justify-end sm:gap-3 md:flex-nowrap">

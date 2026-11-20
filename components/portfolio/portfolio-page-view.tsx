@@ -63,8 +63,6 @@ import type { ChartScreenshotSnapshot } from "@/lib/chart/chart-screenshot-types
 import { imageSrcToDataUrl } from "@/lib/media/same-origin-remote-image";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
 import { cn } from "@/lib/utils";
-import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
-
 const EMPTY_PORTFOLIO_TRANSACTIONS: PortfolioTransaction[] = [];
 
 const PortfolioOverviewChart = dynamic(
@@ -79,7 +77,7 @@ const PortfolioOverviewChart = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className={cn("mb-6 p-4 max-md:mb-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+      <div className="mb-6 max-md:mb-4 [--fs-chart-plot-bg:var(--fs-panel)]">
         <div className="mb-4 h-9" aria-hidden />
         <div className="relative h-[240px] w-full sm:h-[320px]">
           <AssetChartSkeleton fill />
@@ -554,7 +552,6 @@ export function PortfolioPageView({
                     key={selectedPortfolioId ?? "none"}
                     transactions={transactions}
                     benchmarkInvestedUsd={benchmarkInvestedUsd}
-                    card
                   />
                   <div className="pt-0">
                     <div className="mb-5 flex items-center justify-between gap-3">

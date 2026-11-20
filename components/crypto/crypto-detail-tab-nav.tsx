@@ -16,7 +16,7 @@ export function CryptoDetailTabNav({
 }: {
   activeTab: CryptoDetailTabId;
   onTabChange: (tab: CryptoDetailTabId) => void;
-  /** Asset page shell: sits flush in the page gutter between the breadcrumbs and header cards. */
+  /** Asset page shell: sits under the header (above chart / tab panels). */
   embedded?: boolean;
 }) {
   return (

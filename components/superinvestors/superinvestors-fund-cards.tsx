@@ -334,7 +334,7 @@ export function SuperinvestorsFundCards({
       {quarterGroups ? (
         quarterGroups.map((group) => (
           <section key={group.key} className="flex min-w-0 flex-col gap-3" aria-label={group.label}>
-            <h3 className="border-b border-stroke pt-2 pb-2 text-[15px] font-semibold leading-6 text-fg">
+            <h3 className="pt-2 text-[15px] font-semibold leading-6 text-fg">
               {group.label}
             </h3>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">

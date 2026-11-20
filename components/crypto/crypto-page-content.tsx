@@ -25,7 +25,6 @@ import { topbarSquircleIconClass } from "@/components/design-system/topbar-contr
 import {
   ASSET_BREADCRUMB_CARD_CLASS,
   ASSET_HERO_CARD_CLASS,
-  ASSET_HERO_OFFSCREEN_DESKTOP_CLASS,
   ASSET_PAGE_SHELL_CLASS,
 } from "@/components/design-system/card-surface-styles";
 import { LatestNews } from "@/components/stock/latest-news";
@@ -347,8 +346,6 @@ export function CryptoPageContent({
     isLiveCrypto && headerLiveQuote?.source === "ws" ? headerLiveQuote.quotedAtSec : null;
 
   const showCandles = chartType === "candles" && chartSeries === "price" && comparePicks.length === 0;
-  /** Desktop non-overview tabs: header + chart card moves offscreen (still mounted), like the stock page. */
-  const heroOffscreen = row != null && activeTab !== "overview";
 
   const spotUi = useMemo(
     () =>
@@ -571,16 +568,7 @@ export function CryptoPageContent({
         <CryptoBreadcrumbs symbol={symUpper} logoUrl={headerLogoUrl} embedded />
       </div>
 
-      {safeRow ? (
-        <div className="max-md:hidden">
-          <CryptoDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} embedded />
-        </div>
-      ) : null}
-
-      <div
-        className={cn(ASSET_HERO_CARD_CLASS, heroOffscreen && ASSET_HERO_OFFSCREEN_DESKTOP_CLASS)}
-        aria-hidden={heroOffscreen || undefined}
-      >
+      <div className={ASSET_HERO_CARD_CLASS}>
 
       {loading ? (
         <div className="space-y-3">
@@ -630,6 +618,9 @@ export function CryptoPageContent({
           headerLoading={false}
         />
       )}
+      {safeRow ? (
+        <CryptoDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} embedded />
+      ) : null}
       {safeRow && activeTab === "overview" ? (
         <ChartControls
           activeRange={range}
@@ -740,10 +731,6 @@ export function CryptoPageContent({
 
       {safeRow ? (
         <>
-          <div className="md:hidden">
-            <CryptoDetailTabNav activeTab={activeTab} onTabChange={setTabInUrl} embedded />
-          </div>
-
           {/* Offscreen 1D header chart only when overview is not already driving the header. */}
           {needsOffscreenHeaderChart && mountHeaderChart ? (
             <div className={OFFSCREEN_PRICE_CHART} aria-hidden>

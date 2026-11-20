@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import {
   useEffect,
-  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -62,7 +61,7 @@ import {
 import { lifetimeEquityProfitUsd } from "@/lib/portfolio/realized-pnl-from-trades";
 import { useWatchlistEnrichedItems } from "@/lib/watchlist/use-watchlist-enriched-items";
 import { useWatchlist } from "@/lib/watchlist/use-watchlist-client";
-import { ChevronDown, Maximize2, Settings } from "@/lib/icons";
+import { Maximize2, Settings } from "@/lib/icons";
 import { ManagePortfoliosModal } from "@/components/portfolio-home/manage-portfolios-modal";
 import { topbarSquircleActiveClass, topbarSquircleIconClass } from "@/components/design-system/topbar-control-classes";
 import { ChartEmptyIllustration, PortfolioEmptyIllustration } from "@/components/portfolio-home/portfolio-empty-illustration";
@@ -87,77 +86,6 @@ const HOME_CHART_RANGE_OPTIONS: { value: PortfolioChartRange; label: string }[] 
 ];
 
 /** Drawing space only; the SVG stretches to the header block's height. */
-const SPARK_W = 240;
-const SPARK_H = 72;
-const SPARK_PAD = 2;
-const SPARK_WIDTH_CSS = `min(${SPARK_W}px, 40vw)`;
-
-/** Collapsed chart: a minimized net-worth line for the selected range. */
-function HomeNetWorthSparkline({ values }: { values: readonly number[] }) {
-  const gradientId = useId();
-  if (values.length < 2) {
-    return <div className="h-full shrink-0 rounded-md bg-surface-muted/60" style={{ width: SPARK_WIDTH_CSS }} aria-hidden />;
-  }
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const innerW = SPARK_W - 2 * SPARK_PAD;
-  const innerH = SPARK_H - 2 * SPARK_PAD;
-  const coords = values.map((v, i) => {
-    const x = SPARK_PAD + (i / (values.length - 1)) * innerW;
-    const y = max === min ? SPARK_PAD + innerH / 2 : SPARK_PAD + (1 - (v - min) / (max - min)) * innerH;
-    return [x, y] as const;
-  });
-  const line = coords.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
-  const area = `${line} L${coords[coords.length - 1]![0].toFixed(1)},${SPARK_H} L${coords[0]![0].toFixed(1)},${SPARK_H} Z`;
-  return (
-    <svg
-      width={SPARK_W}
-      height="100%"
-      viewBox={`0 0 ${SPARK_W} ${SPARK_H}`}
-      preserveAspectRatio="none"
-      className="block h-full shrink-0"
-      style={{ width: SPARK_WIDTH_CSS }}
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" style={{ stopColor: "var(--fs-accent)", stopOpacity: 0.18 }} />
-          <stop offset="100%" style={{ stopColor: "var(--fs-accent)", stopOpacity: 0 }} />
-        </linearGradient>
-      </defs>
-      <path d={area} fill={`url(#${gradientId})`} />
-      <path
-        d={line}
-        fill="none"
-        stroke="var(--fs-accent)"
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
-
-const NET_WORTH_CHART_COLLAPSED_KEY = "finsepa.home.net-worth-chart-collapsed.v1";
-
-function readNetWorthChartCollapsed(): boolean {
-  try {
-    return window.localStorage.getItem(NET_WORTH_CHART_COLLAPSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function writeNetWorthChartCollapsed(collapsed: boolean): void {
-  try {
-    if (collapsed) window.localStorage.setItem(NET_WORTH_CHART_COLLAPSED_KEY, "1");
-    else window.localStorage.removeItem(NET_WORTH_CHART_COLLAPSED_KEY);
-  } catch {
-    // private mode / quota — state just won't persist
-  }
-}
-
 type HomePortfolioChartProps = {
   transactions: PortfolioTransaction[];
   benchmarkInvestedUsd?: number | null;
@@ -362,27 +290,14 @@ export function PortfolioHomePage() {
   const [mounted, setMounted] = useState(false);
   const [chartRange, setChartRange] = useState<PortfolioChartRange>("all");
   const [periodSnap, setPeriodSnap] = useState<PortfolioChartPeriodSnapshot | null>(null);
-  const [chartCollapsed, setChartCollapsed] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
-  /** Off until the first toggle so a remembered collapsed state doesn't animate on load. */
-  const [animateCollapse, setAnimateCollapse] = useState(false);
   const asideRef = useRef<HTMLElement>(null);
   const asideStickyStyle = useViewportStickyAsideStyle(asideRef);
   const { collapsed: watchlistHidden } = useWatchlistRailLayout();
 
   useEffect(() => {
-    setChartCollapsed(readNetWorthChartCollapsed());
     setMounted(true);
   }, []);
-
-  const toggleChartCollapsed = () => {
-    setAnimateCollapse(true);
-    setChartCollapsed((prev) => {
-      const next = !prev;
-      writeNetWorthChartCollapsed(next);
-      return next;
-    });
-  };
 
   useEffect(() => {
     setPeriodSnap(null);
@@ -451,27 +366,13 @@ export function PortfolioHomePage() {
           <HomeMarketTiles />
         </section>
 
-        <section aria-label="Performance" className={cn("space-y-4 p-4", MOBILE_ELEVATED_CARD_CLASS)}>
+        <section
+          aria-label="Performance"
+          className="space-y-4 [--fs-chart-plot-bg:var(--fs-panel)]"
+        >
           <div className="flex items-start justify-between gap-3">
             <header className="flex min-w-0 flex-col items-start gap-1">
-              <button
-                type="button"
-                onClick={toggleChartCollapsed}
-                aria-expanded={!chartCollapsed}
-                aria-controls="home-net-worth-chart"
-                className="-mx-1 inline-flex items-center gap-1 rounded-md px-1 text-xs font-medium text-fg-muted transition-colors hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
-              >
-                Total net worth
-                <ChevronDown
-                  className={cn(
-                    "size-3.5 transition-transform duration-200",
-                    !chartCollapsed && "rotate-180",
-                  )}
-                  strokeWidth={2}
-                  aria-hidden
-                />
-                <span className="sr-only">{chartCollapsed ? "Show chart" : "Hide chart"}</span>
-              </button>
+              <p className="text-xs font-medium text-fg-muted">Total net worth</p>
               <h1
                 suppressHydrationWarning
                 className={cn(
@@ -502,91 +403,66 @@ export function PortfolioHomePage() {
               ) : null}
             </header>
 
-            {chartCollapsed ? (
-              <button
-                type="button"
-                onClick={toggleChartCollapsed}
-                aria-label="Show chart"
-                className="-m-1 shrink-0 self-stretch rounded-lg p-1 transition-colors hover:bg-surface-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15"
-              >
-                <HomeNetWorthSparkline values={periodSnap?.values ?? []} />
-              </button>
-            ) : (
-              <SegmentedControl
-                aria-label="Chart range"
-                options={HOME_CHART_RANGE_OPTIONS}
-                value={chartRange}
-                onChange={setChartRange}
-                size="sm"
-                className="hidden shrink-0 sm:inline-flex"
-              />
-            )}
-          </div>
-
-          {chartCollapsed ? null : (
             <SegmentedControl
               aria-label="Chart range"
-              options={HOME_CHART_RANGE_OPTIONS.filter((o) => o.value !== "ytd")}
+              options={HOME_CHART_RANGE_OPTIONS}
               value={chartRange}
               onChange={setChartRange}
               size="sm"
-              fullWidth
-              className="sm:hidden"
+              className="hidden shrink-0 sm:inline-flex"
             />
-          )}
+          </div>
 
-          <div
-            id="home-net-worth-chart"
-            className={cn(
-              "grid",
-              animateCollapse && "transition-[grid-template-rows,opacity] duration-300 ease-out",
-              chartCollapsed ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100",
-              chartCollapsed && "!mt-0",
+          <SegmentedControl
+            aria-label="Chart range"
+            options={HOME_CHART_RANGE_OPTIONS.filter((o) => o.value !== "ytd")}
+            value={chartRange}
+            onChange={setChartRange}
+            size="sm"
+            fullWidth
+            className="sm:hidden"
+          />
+
+          <div id="home-net-worth-chart">
+            {!ready ? (
+              <div className="relative h-[240px] w-full sm:h-[320px]">
+                <AssetChartSkeleton fill />
+              </div>
+            ) : netWorthPortfolios.length === 0 ? (
+              <Empty variant="card">
+                <EmptyHeader>
+                  <PortfolioEmptyIllustration className="mb-6" />
+                  <EmptyTitle>No portfolios yet</EmptyTitle>
+                  <EmptyDescription className="max-w-sm">
+                    Add a portfolio to track your net worth and performance.
+                  </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent className="mt-6">
+                  <PortfolioCreateMenu variant="button" aria-label="Add portfolio" />
+                </EmptyContent>
+              </Empty>
+            ) : aggregateTransactions.length === 0 ? (
+              <Empty variant="card">
+                <EmptyHeader>
+                  <ChartEmptyIllustration className="mb-6" />
+                  <EmptyTitle>No transactions yet</EmptyTitle>
+                  <EmptyDescription className="max-w-sm">
+                    {netWorthPortfolios.length === 1
+                      ? "Your portfolio has no trades or cash movements yet. Add some to see your net worth over time."
+                      : "None of your portfolios have trades or cash movements yet. Add some to see your net worth over time."}
+                  </EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : (
+              <PortfolioOverviewChart
+                key={`home-total-${netWorthPortfolios.map((p) => p.id).join(",")}`}
+                transactions={aggregateTransactions}
+                benchmarkInvestedUsd={chartBenchmarkInvested}
+                onPeriodSnapshot={setPeriodSnap}
+                hideChrome
+                fixedRange={chartRange}
+              />
             )}
-            inert={chartCollapsed}
-            aria-hidden={chartCollapsed || undefined}
-          >
-            <div className="min-h-0 overflow-hidden">
-              {!ready ? (
-                <div className="relative h-[240px] w-full sm:h-[320px]">
-                  <AssetChartSkeleton fill />
-                </div>
-              ) : netWorthPortfolios.length === 0 ? (
-                <Empty variant="card">
-                  <EmptyHeader>
-                    <PortfolioEmptyIllustration className="mb-6" />
-                    <EmptyTitle>No portfolios yet</EmptyTitle>
-                    <EmptyDescription className="max-w-sm">
-                      Add a portfolio to track your net worth and performance.
-                    </EmptyDescription>
-                  </EmptyHeader>
-                  <EmptyContent className="mt-6">
-                    <PortfolioCreateMenu variant="button" aria-label="Add portfolio" />
-                  </EmptyContent>
-                </Empty>
-              ) : aggregateTransactions.length === 0 ? (
-                <Empty variant="card">
-                  <EmptyHeader>
-                    <ChartEmptyIllustration className="mb-6" />
-                    <EmptyTitle>No transactions yet</EmptyTitle>
-                    <EmptyDescription className="max-w-sm">
-                      {netWorthPortfolios.length === 1
-                        ? "Your portfolio has no trades or cash movements yet. Add some to see your net worth over time."
-                        : "None of your portfolios have trades or cash movements yet. Add some to see your net worth over time."}
-                    </EmptyDescription>
-                  </EmptyHeader>
-                </Empty>
-              ) : (
-                <PortfolioOverviewChart
-                  key={`home-total-${netWorthPortfolios.map((p) => p.id).join(",")}`}
-                  transactions={aggregateTransactions}
-                  benchmarkInvestedUsd={chartBenchmarkInvested}
-                  onPeriodSnapshot={setPeriodSnap}
-                  hideChrome
-                  fixedRange={chartRange}
-                />
-              )}
-            </div>
           </div>
         </section>
 

@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { AssetPageHeaderActions } from "@/components/asset/asset-page-header-actions";
 import { useSpringTriplet } from "@/components/chart/use-spring-numbers";
 import { useSetMobileAssetTopbarSubtitle } from "@/components/layout/mobile-asset-topbar-context";
-import { CompanyLogo } from "@/components/screener/company-logo";
+import { CurrencyPairLogo } from "@/components/currency/currency-pair-logo";
 import { isPositivePriceChange, reconcilePriceChangePair } from "@/lib/chart/reconcile-price-change";
 import { formatSignedPercent2dp } from "@/lib/market/key-stats-basic-format";
 import { forexWatchlistKey } from "@/lib/watchlist/constants";
@@ -94,10 +94,8 @@ export function CurrencyHeader({
     chartHovering && scrubPeriodLabel?.trim() ? scrubPeriodLabel.trim() : desktopPeriodLabel;
 
   const logoMark = (
-    <CompanyLogo
-      name={displayName}
-      logoUrl=""
-      symbol={displayCode}
+    <CurrencyPairLogo
+      symbol={symbol}
       size="lg"
       className="shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]"
     />

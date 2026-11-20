@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { CurrencyPairLogo } from "@/components/currency/currency-pair-logo";
 import { ChangeCaretIcon, ChangePct, formatSignedChangePct } from "@/components/screener/change-pct";
 import { IntentPrefetchLink } from "@/components/layout/intent-prefetch-link";
 import { IndicesTableSkeleton } from "@/components/markets/markets-skeletons";
@@ -162,12 +163,15 @@ export function CurrenciesTable({
                         <span className="sr-only">{`Open ${r.name}`}</span>
                       </IntentPrefetchLink>
                       <div className={cn(mobileRankCellClass, "relative z-0")}>{rankOffset + i + 1}</div>
-                      <div className="relative z-0 min-w-0 w-full text-left">
-                        <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
-                          {r.code}
-                        </div>
-                        <div className="mt-0.5 truncate text-[12px] font-medium leading-4 text-fg-muted">
-                          {r.name}
+                      <div className="relative z-0 flex min-w-0 w-full items-center justify-start gap-[12px] text-left">
+                        <CurrencyPairLogo symbol={r.symbol} />
+                        <div className="min-w-0">
+                          <div className="truncate text-[14px] font-semibold leading-5 text-fg underline-offset-2 decoration-fg-muted group-hover/row:underline">
+                            {r.code}
+                          </div>
+                          <div className="mt-0.5 truncate text-[12px] font-medium leading-4 text-fg-muted">
+                            {r.name}
+                          </div>
                         </div>
                       </div>
                       <div className="relative z-0 block sm:hidden">

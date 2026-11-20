@@ -1,6 +1,6 @@
 "use client";
 
-import { chartMarkerDiscFillColor, resolveFsColor } from "@/lib/theme/resolve-fs-color";
+import { chartMarkerDiscFillColor, resolveFsColor, resolveFsColorWithAlpha } from "@/lib/theme/resolve-fs-color";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   AreaSeries,
@@ -369,10 +369,11 @@ export function StockCompareReturnChart({ primaryTicker, comparePicks, range, he
       crosshair: {
         mode: CrosshairMode.Magnet,
         vertLine: {
-          color: "rgba(20, 20, 20, 0.28)",
+          color: resolveFsColorWithAlpha("--fs-fg-muted", 0.55),
           labelVisible: false,
           width: 1,
           style: LineStyle.Dashed,
+          visible: true,
         },
         horzLine: { visible: false, labelVisible: false },
       },

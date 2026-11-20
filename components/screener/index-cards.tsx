@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, type CSSProperties, type Ref } from "react";
 
 import { ChangeCaretIcon } from "@/components/screener/change-pct";
+import { CompanyLogo } from "@/components/screener/company-logo";
 import { LiveDigitFlashText } from "@/components/chart/live-digit-flash-text";
 import { FadeIn } from "@/components/markets/skeleton";
 import { MOBILE_ELEVATED_CARD_CLASS } from "@/components/design-system/card-surface-styles";
+import { getCryptoLogoUrl } from "@/lib/crypto/crypto-logo-url";
 import type { IndexCardData } from "@/lib/screener/indices-today";
 import { MARKET_INDICES_TODAY } from "@/lib/screener/indices-config";
 import { indexAssetHref } from "@/lib/market/index-page-shared";
@@ -32,6 +34,9 @@ type IndexEntry = {
   positive: boolean;
   neutral: boolean;
   href: string | null;
+  /** Symbol for {@link CompanyLogo} (index EODHD key or crypto base). */
+  logoSymbol: string | null;
+  logoUrl: string;
 };
 
 /** Non-index tile appended after the index strip (e.g. BTC on Home). */
@@ -41,6 +46,8 @@ export type IndexCardExtra = {
   changePercent1D: number | null;
   href: string | null;
   flashTicks?: boolean;
+  logoSymbol?: string | null;
+  logoUrl?: string | null;
 };
 
 function formatIndexValue(price: number | null): string {
@@ -62,13 +69,24 @@ function toEntry(
   price: number | null,
   pct: number | null,
   href: string | null,
-  flashTicks = false,
+  opts?: { flashTicks?: boolean; logoSymbol?: string | null; logoUrl?: string | null },
 ): IndexEntry {
   const value = formatIndexValue(price);
   const change = formatChangePercent(pct);
   const neutral = change === "—" || value === "—";
   const positive = !neutral && (pct ?? 0) >= 0;
-  return { name, price, flashTicks, value, change, positive, neutral, href };
+  return {
+    name,
+    price,
+    flashTicks: opts?.flashTicks ?? false,
+    value,
+    change,
+    positive,
+    neutral,
+    href,
+    logoSymbol: opts?.logoSymbol?.trim() || null,
+    logoUrl: opts?.logoUrl?.trim() || "",
+  };
 }
 
 function entriesFromCards(cards: IndexCardData[], extras: readonly IndexCardExtra[]): IndexEntry[] {
@@ -76,14 +94,26 @@ function entriesFromCards(cards: IndexCardData[], extras: readonly IndexCardExtr
   const byName = new Map(merged.map((c) => [c.name, c] as const));
   const indexEntries = SCREENER_INDEX_CARD_LABELS.map((name) => {
     const c = byName.get(name);
-    const symbol = MARKET_INDICES_TODAY.find((row) => row.name === name)?.eodhdSymbol;
-    return toEntry(name, c?.price ?? null, c?.changePercent1D ?? null, symbol ? indexAssetHref(symbol) : null);
+    const symbol = MARKET_INDICES_TODAY.find((row) => row.name === name)?.eodhdSymbol ?? null;
+    return toEntry(name, c?.price ?? null, c?.changePercent1D ?? null, symbol ? indexAssetHref(symbol) : null, {
+      logoSymbol: symbol,
+    });
   });
   return [
     ...indexEntries,
-    ...extras.map((x) => toEntry(x.name, x.price, x.changePercent1D, x.href, x.flashTicks)),
+    ...extras.map((x) =>
+      toEntry(x.name, x.price, x.changePercent1D, x.href, {
+        flashTicks: x.flashTicks,
+        logoSymbol: x.logoSymbol,
+        logoUrl: x.logoUrl,
+      }),
+    ),
   ];
 }
+
+/** Match screener table {@link ChangePct} — 14px medium. */
+const INDEX_CARD_CHANGE_TEXT_CLASS =
+  "inline-flex shrink-0 items-center gap-0.5 text-[14px] font-medium leading-5 tabular-nums";
 
 export const INDEX_CARDS_GRID_CLASS =
   "flex w-max flex-nowrap gap-3 md:grid md:w-full md:max-w-full md:grid-cols-3 md:gap-3 lg:grid-cols-4 xl:grid-cols-5";
@@ -96,8 +126,8 @@ export const INDEX_CARDS_SCROLL_CLASS =
   "-mr-4 pl-1 pr-4 mobile-scroll-x md:mx-0 md:overflow-visible md:pl-0 md:pr-0 md:pb-0 md:mb-0";
 
 export const INDEX_CARD_SURFACE_CLASS = cn(
-  // Slightly less bottom pad: last row line-box leaves optical space under the % digits.
-  "flex w-[7.25625rem] shrink-0 flex-col items-start gap-0.5 overflow-hidden px-3 pt-3.5 pb-2.5 transition max-md:overflow-visible max-md:pt-3.5 max-md:pb-2.5 md:gap-1 sm:px-4 sm:pt-4 sm:pb-3 md:w-auto md:min-w-0 md:shrink",
+  // Logo + label + price; change % sits in a top-right badge.
+  "relative flex w-[7.25625rem] shrink-0 flex-col items-start gap-0.5 overflow-hidden px-3 pt-3.5 pb-2.5 transition max-md:overflow-visible max-md:pt-3.5 max-md:pb-2.5 md:gap-1 sm:px-4 sm:pt-4 sm:pb-3 md:w-auto md:min-w-0 md:shrink",
   MOBILE_ELEVATED_CARD_CLASS,
 );
 
@@ -178,33 +208,47 @@ export function IndexCards({
     <div className={outerClassName}>
       <div ref={scrollRef} className={scrollClassName} aria-label="Market indices">
         <div className={gridClassName} style={gridStyle}>
-        {entries.map(({ name, price, flashTicks, value, change, positive, neutral, href }) => {
+        {entries.map(({ name, price, flashTicks, value, change, positive, neutral, href, logoSymbol, logoUrl }) => {
+          const changeText = (
+            <FadeIn show={fadeIn}>
+              <span
+                className={cn(
+                  INDEX_CARD_CHANGE_TEXT_CLASS,
+                  neutral ? "text-fg-muted" : positive ? "text-up" : "text-down",
+                )}
+                suppressHydrationWarning
+              >
+                {neutral ? null : (
+                  <ChangeCaretIcon direction={positive ? "up" : "down"} />
+                )}
+                <span>{change}</span>
+              </span>
+            </FadeIn>
+          );
+
           const body = (
             <>
+              <div className="mb-2 sm:mb-2.5">
+                {logoSymbol ? (
+                  <CompanyLogo name={name} logoUrl={logoUrl} symbol={logoSymbol} size="sm" />
+                ) : (
+                  <span className="h-6 w-6 shrink-0" aria-hidden />
+                )}
+              </div>
               <p className="w-full truncate text-left text-[14px] font-medium leading-5 text-fg-muted group-hover:underline group-hover:underline-offset-2">
                 {name}
               </p>
-              <FadeIn show={fadeIn}>
-                <p
-                  className="w-full truncate text-left text-[15px] font-bold leading-5 tabular-nums text-fg sm:text-base sm:leading-6"
-                  suppressHydrationWarning
-                >
-                  {flashTicks ? <LiveDigitFlashText value={price} text={value} /> : value}
-                </p>
-              </FadeIn>
-              <FadeIn show={fadeIn}>
-                <div
-                  className={`inline-flex w-full items-center gap-1 text-left text-[13px] font-medium leading-none tabular-nums sm:text-[14px] ${
-                    neutral ? "text-fg-muted" : positive ? "text-up" : "text-down"
-                  }`}
-                  suppressHydrationWarning
-                >
-                  {neutral ? null : (
-                    <ChangeCaretIcon direction={positive ? "up" : "down"} />
-                  )}
-                  <span className="truncate">{change}</span>
-                </div>
-              </FadeIn>
+              <div className="flex w-full items-end justify-between gap-2">
+                <FadeIn show={fadeIn}>
+                  <p
+                    className="min-w-0 truncate text-left text-[15px] font-bold leading-5 tabular-nums text-fg sm:text-base sm:leading-6"
+                    suppressHydrationWarning
+                  >
+                    {flashTicks ? <LiveDigitFlashText value={price} text={value} /> : value}
+                  </p>
+                </FadeIn>
+                {changeText}
+              </div>
             </>
           );
           return href ? (

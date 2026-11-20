@@ -98,13 +98,18 @@ function CompanyCellSkeleton({ nameWidth }: { nameWidth: string }) {
   );
 }
 
-/** Matches {@link IndexCards} — stacked label / value / change, no sparkline. */
+/** Matches {@link IndexCards} — logo, label, price + bottom-right change badge. */
 export function IndexCardSkeleton({ name }: { name: string }) {
   return (
     <div className={`${INDEX_CARD_SURFACE_CLASS} min-h-[112px]`}>
+      <div className="mb-2 sm:mb-2.5">
+        <SkeletonBox className="h-6 w-6 shrink-0 rounded-full" />
+      </div>
       <span className="text-[14px] font-medium leading-5 text-fg-muted">{name}</span>
-      <SkeletonBox className="h-8 w-[7.5rem] max-w-full rounded-md" />
-      <TextSkeleton wClass="w-14" hClass="h-3.5" />
+      <div className="flex w-full items-end justify-between gap-2">
+        <SkeletonBox className="h-5 w-[4.5rem] max-w-full rounded-md" />
+        <SkeletonBox className="h-5 w-12 shrink-0 rounded-md" />
+      </div>
     </div>
   );
 }

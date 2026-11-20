@@ -271,7 +271,6 @@ export function AssetPortfolioHoldingsTab({
       transactions={transactions}
       titleSlot={portfolioTitleSlot}
       onChartDisplayChange={onChartDisplayChange}
-      chartCard
     />
   );
 }
@@ -287,6 +286,7 @@ export function AssetPositionDetail({
   onChartDisplayChange,
   chartCard = false,
   sectionCards = false,
+  unifiedPanel = false,
 }: {
   assetKind: "stock" | "crypto";
   routeKey: string;
@@ -300,6 +300,8 @@ export function AssetPositionDetail({
   chartCard?: boolean;
   /** Each section (title included) in one elevated card; My positions as one two-column card. */
   sectionCards?: boolean;
+  /** Portfolio asset modal: one modal-black panel wrapping chart + positions + transactions. */
+  unifiedPanel?: boolean;
 }) {
   const route = routeKey.trim().toUpperCase();
   const [holdingsChartRange, setHoldingsChartRange] = useState<StockChartRange>("1Y");
@@ -371,16 +373,35 @@ export function AssetPositionDetail({
   })();
 
   const profitTone = (n: number) => (n >= 0 ? "text-up" : "text-down");
+  /** Flat section chrome inside a shared panel (or modal section cards). */
+  const flatSections = sectionCards || unifiedPanel;
 
   return (
-    <div className="space-y-5">
-      <section className={cn("space-y-4", chartCard && cn("p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS))}>
+    <div
+      className={cn(
+        "space-y-5",
+        // Single black panel (no stroke) when used as a full-bleed modal inset.
+        unifiedPanel &&
+          "rounded-2xl bg-panel p-4 sm:p-5 [--fs-chart-plot-bg:var(--fs-panel)]",
+      )}
+    >
+      <section
+        className={cn(
+          "space-y-4",
+          !unifiedPanel && chartCard && cn("p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS),
+        )}
+      >
         <ChartControls
           activeRange={holdingsChartRange}
           onRangeChange={setHoldingsChartRange}
           titleSlot={titleSlot}
         >
-          <div className={cn("overflow-visible", !chartCard && "rounded-[12px] bg-panel")}>
+          <div
+            className={cn(
+              "overflow-visible",
+              !unifiedPanel && "[--fs-chart-plot-bg:var(--fs-panel)]",
+            )}
+          >
             <PriceChart
               kind={assetKind}
               symbol={route}
@@ -395,10 +416,10 @@ export function AssetPositionDetail({
         </ChartControls>
       </section>
 
-      <section className={cn(sectionCards && cn("p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS))}>
+      <section className={cn(!unifiedPanel && sectionCards && cn("p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS))}>
         <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>My positions</h2>
-        <div className={cn("grid grid-cols-1 lg:grid-cols-2", sectionCards ? "gap-x-10 gap-y-5" : "gap-3")}>
-          <div className={sectionCards ? "min-w-0" : KEY_STATS_CARD_CLASS}>
+        <div className={cn("grid grid-cols-1 lg:grid-cols-2", flatSections ? "gap-x-10 gap-y-5" : "gap-3")}>
+          <div className={flatSections ? "min-w-0" : KEY_STATS_CARD_CLASS}>
             <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>General</h3>
             <div>
               <PositionStat label="Shares">{sharesLabel}</PositionStat>
@@ -409,7 +430,7 @@ export function AssetPositionDetail({
             </div>
           </div>
 
-          <div className={sectionCards ? "min-w-0" : KEY_STATS_CARD_CLASS}>
+          <div className={flatSections ? "min-w-0" : KEY_STATS_CARD_CLASS}>
             <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>Return</h3>
             <div>
               <PositionStat label="Total profit">
@@ -433,35 +454,40 @@ export function AssetPositionDetail({
         </div>
       </section>
 
-      <div className={cn(sectionCards && cn("overflow-clip pb-2", MOBILE_ELEVATED_CARD_CLASS))}>
+      <div className={cn(!unifiedPanel && sectionCards && cn("overflow-clip pb-2", MOBILE_ELEVATED_CARD_CLASS))}>
         <h2
           className={cn(
             STOCK_OVERVIEW_SECTION_HEADING_CLASS,
-            sectionCards ? "mb-2 px-4 pt-4 sm:px-5 sm:pt-5" : "mb-4",
+            !unifiedPanel && sectionCards ? "mb-2 px-4 pt-4 sm:px-5 sm:pt-5" : "mb-4",
           )}
         >
           Transactions
         </h2>
         {tradeRows.length === 0 ? (
-          <p className={cn("text-[14px] leading-6 text-fg-muted", sectionCards && "px-4 pb-3 sm:px-5")}>
+          <p
+            className={cn(
+              "text-[14px] leading-6 text-fg-muted",
+              !unifiedPanel && sectionCards && "px-4 pb-3 sm:px-5",
+            )}
+          >
             No trades recorded for this symbol in this portfolio.
           </p>
         ) : (
           <div
             className={cn(
               "w-full min-w-0 max-w-full overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]",
-              !sectionCards &&
+              !flatSections &&
                 cn(
                   chartCard ? MOBILE_ELEVATED_CARD_CLASS : SCREENER_TABLE_OUTER_BORDER_CLASS,
                   SCREENER_TABLE_MOBILE_SURFACE_CLASS,
                 ),
             )}
           >
-            <div className="min-w-[640px] bg-surface">
+            <div className={cn("min-w-[640px]", unifiedPanel ? "bg-panel" : "bg-surface")}>
               <div
                 className={cn(
                   SCREENER_TABLE_HEADER_STICKY_CLASS,
-                  !sectionCards && SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+                  !flatSections && SCREENER_TABLE_ROUNDED_HEADER_CLASS,
                   SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
                   "md:border-b-0",
                 )}

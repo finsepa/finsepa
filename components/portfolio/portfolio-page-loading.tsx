@@ -241,7 +241,7 @@ export function PortfolioPageLoadingShell({
       <PortfolioOverviewCardsSkeleton />
       <PortfolioPageTabsSkeleton publicView={publicView} />
 
-      <section className={cn("mb-6 w-full min-w-0 p-4 max-md:mb-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)} aria-hidden>
+      <section className="mb-6 w-full min-w-0 max-md:mb-4 [--fs-chart-plot-bg:var(--fs-panel)]" aria-hidden>
         <PortfolioChartControlsSkeleton />
         <div className="relative h-[240px] sm:h-[320px]">
           <AssetChartSkeleton fill />

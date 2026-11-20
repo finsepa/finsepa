@@ -8,12 +8,12 @@ import {
   ASSET_BREADCRUMB_CARD_CLASS,
   ASSET_HERO_CARD_CLASS,
   ASSET_PAGE_SHELL_CLASS,
-  MOBILE_ELEVATED_CARD_CLASS,
   MOBILE_INSET_CARD_CLASS,
 } from "@/components/design-system/card-surface-styles";
 import { CryptoBreadcrumbs } from "@/components/crypto/crypto-breadcrumbs";
 import { CryptoDetailTabNav } from "@/components/crypto/crypto-detail-tab-nav";
 import { CurrencyBreadcrumbs } from "@/components/currency/currency-breadcrumbs";
+import { CurrencyPairLogo } from "@/components/currency/currency-pair-logo";
 import { ScreenerRankBadge } from "@/components/earnings/screener-rank-badge";
 import { IndexBreadcrumbs } from "@/components/index/index-breadcrumbs";
 import { SkeletonBox } from "@/components/markets/skeleton";
@@ -141,19 +141,31 @@ function ShellHeader({
           </h1>
           {priceBlock}
         </div>
-        <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={symbol} size="lg" />
+        {kind === "currency" ? (
+          <CurrencyPairLogo symbol={symbol} size="lg" />
+        ) : (
+          <CompanyLogo name={displayName} logoUrl={logoUrl} symbol={symbol} size="lg" />
+        )}
       </div>
 
       <div className="hidden space-y-5 md:block">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-1 items-center gap-4">
-            <CompanyLogo
-              name={displayName}
-              logoUrl={logoUrl}
-              symbol={symbol}
-              size="lg"
-              className="shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]"
-            />
+            {kind === "currency" ? (
+              <CurrencyPairLogo
+                symbol={symbol}
+                size="lg"
+                className="shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]"
+              />
+            ) : (
+              <CompanyLogo
+                name={displayName}
+                logoUrl={logoUrl}
+                symbol={symbol}
+                size="lg"
+                className="shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]"
+              />
+            )}
             <div className="min-w-0">
               <h1 className="text-[20px] font-semibold leading-7 text-fg">{titleWithRank}</h1>
               <p className="mt-0.5 text-[13px] leading-5 text-fg-muted">
@@ -247,14 +259,14 @@ export function StockPageSkeleton() {
     return (
       <div className="relative min-w-0" aria-busy aria-label={`Loading ${symbol}`}>
         <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:pt-5 sm:pb-6">
-          <div className={cn("px-4 py-3 max-md:hidden sm:px-5", MOBILE_ELEVATED_CARD_CLASS)}>
+          <div className={ASSET_BREADCRUMB_CARD_CLASS}>
             <StockBreadcrumbs ticker={symbol} headerMeta={null} embedded />
           </div>
-          <div className="max-md:hidden pointer-events-none border-b border-solid border-stroke">
-            <StockDetailTabNav activeTab="overview" onTabChange={noop} embedded />
-          </div>
-          <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+          <div className={ASSET_HERO_CARD_CLASS}>
             <ShellHeader kind={kind} symbol={symbol} pending={shellPending} />
+            <div className="max-md:hidden pointer-events-none">
+              <StockDetailTabNav activeTab="overview" onTabChange={noop} embedded />
+            </div>
             <div className="pointer-events-none">
               <ChartControls
                 activeRange="1D"
@@ -298,14 +310,13 @@ export function StockPageSkeleton() {
             <ShellBreadcrumbs kind={kind} symbol={symbol} pending={showOptimistic ? pending : null} />
           </div>
 
-          {kind === "crypto" ? (
-            <div className="pointer-events-none max-md:hidden">
-              <CryptoDetailTabNav activeTab="overview" onTabChange={noop} embedded />
-            </div>
-          ) : null}
-
           <div className={ASSET_HERO_CARD_CLASS}>
             <ShellHeader kind={kind} symbol={symbol} pending={showOptimistic ? pending : null} />
+            {kind === "crypto" ? (
+              <div className="pointer-events-none">
+                <CryptoDetailTabNav activeTab="overview" onTabChange={noop} embedded />
+              </div>
+            ) : null}
             <div className="pointer-events-none">
               <ChartControls
                 activeRange="1D"

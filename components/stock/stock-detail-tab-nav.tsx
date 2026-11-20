@@ -33,7 +33,7 @@ export function StockDetailTabNav({
   isEtf?: boolean;
   /** Off on Financials so the statement year row can stick to the top of the scroll area. */
   sticky?: boolean;
-  /** Inside the asset hero card: no page-gutter bleed, panel fill or stickiness. */
+  /** Under the asset header: no page-gutter bleed, panel fill or stickiness; keeps the tab rule. */
   embedded?: boolean;
 }) {
   const tabs = useMemo(() => stockDetailTabItemsFor(isEtf), [isEtf]);
@@ -109,7 +109,7 @@ export function StockDetailTabNav({
         sticky && !embedded ? `sticky top-0 z-40 max-md:top-[var(--mobile-topbar-offset)] ${shellClassName}` : shellClassName
       }
     >
-      <div className={cn("min-w-0", !embedded && "border-b border-solid border-stroke")}>
+      <div className="min-w-0 border-b border-solid border-stroke">
         <nav
           ref={navRef}
           className={cn(

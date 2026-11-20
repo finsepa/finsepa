@@ -8,10 +8,7 @@ import { LineChart } from "@/lib/icons";
 import { PortfolioHoldingsPerformanceChart } from "@/components/portfolio/portfolio-holdings-performance-chart";
 import { PortfolioReturnsDynamicsChart } from "@/components/portfolio/portfolio-returns-dynamics-chart";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import {
-  MOBILE_ELEVATED_CARD_CLASS,
-  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
-} from "@/components/design-system/card-surface-styles";
+import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { SegmentedControl } from "@/components/design-system/segmented-control";
 import {
   earliestBenchmarkCoverYmd,
@@ -299,7 +296,7 @@ function PerformanceChartSection({
   ) : null;
 
   return (
-    <section className={cn("mb-5 w-full min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+    <section className="mb-5 w-full min-w-0 [--fs-chart-plot-bg:var(--fs-panel)]">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className={cn("shrink-0", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>{title}</h2>
         <div className="hidden sm:flex">{rangeSwitcherDesktop}</div>
@@ -543,7 +540,7 @@ function PortfolioPerformancePanelInner({
 
       <PortfolioReturnsDynamicsChart transactions={transactions} canLoad={canLoad} />
 
-      <section className={cn("w-full min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+      <section className="w-full min-w-0 [--fs-chart-plot-bg:var(--fs-panel)]">
         <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
           Holdings performance
         </h2>

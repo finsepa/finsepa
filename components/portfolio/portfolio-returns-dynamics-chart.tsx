@@ -13,13 +13,12 @@ import {
 import { LineChart } from "@/lib/icons";
 
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
-import {
-  MOBILE_ELEVATED_CARD_CLASS,
-  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
-} from "@/components/design-system/card-surface-styles";
+import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
 import { SecondaryTabs, type SecondaryTabItem } from "@/components/ui/secondary-tabs";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { PortfolioUpDownLegendSwatch } from "@/components/chart/portfolio-up-down-legend-swatch";
 import {
+  CHART_PLOT_BACKGROUND_CLASS,
   FUNDAMENTALS_CHART_AXIS_LABEL_ROTATE_DEG,
   FUNDAMENTALS_CHART_AXIS_ROW_PX,
   FUNDAMENTALS_CHART_HOVER_BAND_BG,
@@ -54,8 +53,6 @@ const BENCHMARK_NASDAQ_BAR = "#9333EA";
 /** Light: soft rose wash. Dark: `--fs-down-soft` (#49080e). */
 const NEGATIVE_ZONE_CLASS = "bg-[rgba(254,242,242,0.92)] dark:bg-down-soft";
 const NEGATIVE_ZONE_FILL_CLASS = "fill-[rgba(254,242,242,0.92)] dark:fill-down-soft";
-/** Match asset / portfolio charts — `resolveFsColorWithAlpha("--fs-stroke", 0.6)`. */
-const Y_AXIS_GRIDLINE_STROKE = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 
 /** Total chart height — plot band plus slanted period labels (matches Charting). */
 const CHART_TOTAL_HEIGHT_PX = 320;
@@ -230,7 +227,7 @@ function tickTopPercent(tick: number, yMin: number, yMax: number): number {
   return insetTop + ((yMax - tick) / span) * band;
 }
 
-/** Loading UI aligned with {@link DynamicsSvg}: y-gridlines, right Y-axis, negative band, bar slots. */
+/** Loading UI aligned with {@link DynamicsSvg}: right Y-axis, negative band, bar slots. */
 function ReturnsDynamicsChartSkeleton() {
   const barCount = 6;
   /** Pixel heights from baseline — scaled for {@link CHART_PLOT_HEIGHT_PX} plot. */
@@ -242,20 +239,9 @@ function ReturnsDynamicsChartSkeleton() {
         <div className="flex w-full min-w-0" style={{ height: CHART_PLOT_HEIGHT_PX }}>
           <div className="relative min-w-0 flex-1">
             <div
-              className="pointer-events-none absolute inset-0 z-0"
-              style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
-            >
-              {skeletonTicks.map((t) => (
-                <div
-                  key={t}
-                  className="absolute inset-x-0 border-t"
-                  style={{
-                    top: `${tickTopPercent(t, -20, 30)}%`,
-                    borderColor: Y_AXIS_GRIDLINE_STROKE,
-                  }}
-                />
-              ))}
-            </div>
+              className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)}
+            />
+            <div className={cn("pointer-events-none absolute inset-0 z-[1]", CHART_PLOT_DOTS_PATTERN_CLASS)} />
             <div
               className={cn(
                 "pointer-events-none absolute inset-x-0 rounded-sm",
@@ -490,32 +476,18 @@ function DynamicsSvg({
         <div className="flex min-h-0 w-full overflow-visible" style={{ height: CHART_PLOT_HEIGHT_PX }}>
           <div ref={plotRef} className="relative min-h-0 min-w-0 flex-1 overflow-visible">
             <div
-              className="pointer-events-none absolute inset-0 z-0"
-              style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
+              className={cn("pointer-events-none absolute inset-0 z-0", CHART_PLOT_BACKGROUND_CLASS)}
               aria-hidden
             />
+            <div className={cn("pointer-events-none absolute inset-0 z-[1]", CHART_PLOT_DOTS_PATTERN_CLASS)} aria-hidden />
 
             <svg
               width={plotWidth}
               height={plotH}
-              className="relative z-[1] max-w-full"
+              className="relative z-[2] max-w-full"
               aria-hidden
             >
               <title>Portfolio and benchmark period returns</title>
-              {ticks.map((t) => {
-                const y = yFor(t);
-                return (
-                  <line
-                    key={`grid-${t}`}
-                    x1={padL}
-                    x2={padL + innerW}
-                    y1={y}
-                    y2={y}
-                    stroke={Y_AXIS_GRIDLINE_STROKE}
-                    strokeWidth={1}
-                  />
-                );
-              })}
               <rect
                 x={padL}
                 y={y0}
@@ -687,13 +659,29 @@ function DynamicsSvg({
           <div className="relative min-w-0 flex-1 overflow-visible">
             {bars.map((b, i) => {
               const leftPct = ((i + 0.5) / n) * 100;
+              const major = i === 0 || i === n - 1 || i % 2 === 0;
+              return (
+                <span
+                  key={`tick-${b.periodStart}-${b.periodEnd}`}
+                  className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
+                  style={{
+                    left: `${leftPct}%`,
+                    height: major ? 9 : 5,
+                    transform: "translateX(-50%)",
+                  }}
+                  aria-hidden
+                />
+              );
+            })}
+            {bars.map((b, i) => {
+              const leftPct = ((i + 0.5) / n) * 100;
               const label =
                 b.label.length > 14 && bars.length > 8 ? `${b.label.slice(0, 11)}…` : b.label;
               const rotate = bars.length > 16;
               return (
                 <div
                   key={`axis-${b.periodStart}-${b.periodEnd}`}
-                  className="absolute bottom-0 flex min-h-0 -translate-x-1/2 items-end justify-center overflow-visible px-0.5 pb-0.5"
+                  className="absolute top-1/2 flex min-h-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center overflow-visible px-0.5"
                   style={{ left: `${leftPct}%` }}
                   title={b.label}
                 >
@@ -845,7 +833,7 @@ function PortfolioReturnsDynamicsChartInner({
   }, [bars, granularity]);
 
   return (
-    <section className={cn("mb-5 w-full min-w-0 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
+    <section className="mb-5 w-full min-w-0 [--fs-chart-plot-bg:var(--fs-panel)]">
       <div className="mb-4 flex flex-col gap-3">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="flex min-w-0 items-start justify-between gap-3">
