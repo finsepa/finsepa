@@ -6,6 +6,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   MOBILE_ELEVATED_CARD_CLASS,
   MOBILE_INSET_CARD_CLASS,
+  OVERVIEW_SECTION_TITLE_GAP_CLASS,
   STOCK_OVERVIEW_SECTION_HEADING_CLASS,
 } from "@/components/design-system/card-surface-styles";
 import { SkeletonBox } from "@/components/markets/skeleton";
@@ -213,7 +214,7 @@ function LatestNewsHeader({
   showSeeAll: boolean;
 }) {
   return (
-    <div className="mb-5 flex items-center justify-between max-md:px-0">
+    <div className={cn(OVERVIEW_SECTION_TITLE_GAP_CLASS, "flex items-center justify-between max-md:px-0")}>
       <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>{title}</h2>
       {showSeeAll && seeAllHref ? (
         <Link

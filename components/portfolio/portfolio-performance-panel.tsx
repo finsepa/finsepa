@@ -8,7 +8,11 @@ import { LineChart } from "@/lib/icons";
 import { PortfolioHoldingsPerformanceChart } from "@/components/portfolio/portfolio-holdings-performance-chart";
 import { PortfolioReturnsDynamicsChart } from "@/components/portfolio/portfolio-returns-dynamics-chart";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
-import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  OVERVIEW_PAGE_SECTIONS_STACK_CLASS,
+  OVERVIEW_SECTION_TITLE_GAP_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { SegmentedControl } from "@/components/design-system/segmented-control";
 import {
   earliestBenchmarkCoverYmd,
@@ -296,8 +300,13 @@ function PerformanceChartSection({
   ) : null;
 
   return (
-    <section className="mb-5 w-full min-w-0 [--fs-chart-plot-bg:var(--fs-panel)]">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <section className="w-full min-w-0 [--fs-chart-plot-bg:var(--fs-panel)]">
+      <div
+        className={cn(
+          OVERVIEW_SECTION_TITLE_GAP_CLASS,
+          "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+        )}
+      >
         <h2 className={cn("shrink-0", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>{title}</h2>
         <div className="hidden sm:flex">{rangeSwitcherDesktop}</div>
       </div>
@@ -492,7 +501,7 @@ function PortfolioPerformancePanelInner({
   }, [range, applyRange]);
 
   return (
-    <>
+    <div className={OVERVIEW_PAGE_SECTIONS_STACK_CLASS}>
       <PerformanceChartSection
         title="Portfolio value"
         metric="value"
@@ -541,12 +550,12 @@ function PortfolioPerformancePanelInner({
       <PortfolioReturnsDynamicsChart transactions={transactions} canLoad={canLoad} />
 
       <section className="w-full min-w-0 [--fs-chart-plot-bg:var(--fs-panel)]">
-        <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
+        <h2 className={cn(OVERVIEW_SECTION_TITLE_GAP_CLASS, STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
           Holdings performance
         </h2>
         <PortfolioHoldingsPerformanceChart holdings={holdings} transactions={transactions} />
       </section>
-    </>
+    </div>
   );
 }
 

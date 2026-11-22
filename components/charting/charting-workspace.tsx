@@ -55,6 +55,7 @@ import {
   formatBarChartDataLabel,
   formatChartingTableCell,
 } from "@/components/charting/charting-individual-company-table";
+import { ChartingSelectedMetricsTable } from "@/components/charting/charting-selected-metrics-table";
 import {
   DEFAULT_CHART_TIME_RANGE,
   DEFAULT_CHART_TIME_RANGE_ORDER,
@@ -75,6 +76,7 @@ import {
   STOCK_OVERVIEW_SECTION_HEADING_CLASS,
 } from "@/components/design-system/card-surface-styles";
 import { ChartingMetricPickerMenu } from "@/components/charting/charting-metric-picker-menu";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { cn } from "@/lib/utils";
 import {
   fundamentalsBarColorAtIndex,
@@ -116,7 +118,6 @@ import {
 } from "@/lib/chart/fundamentals-rounded-bar-primitive";
 import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
 
-const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
 import { fetchChartingFundamentalsSeriesCached } from "@/lib/charting/charting-fundamentals-client-cache";
 import {
   ChartingFundamentalsLineChart,
@@ -1317,6 +1318,34 @@ type Props = {
    * Defaults to true (standalone `/charting` / first paint).
    */
   isActive?: boolean;
+  /**
+   * Notify parent when legend / picker changes selection (Financials checkboxes stay in sync).
+   * Does not make selection fully controlled — parent should update `metricParam` to match.
+   */
+  onSelectedMetricsChange?: (next: ChartingMetricId[]) => void;
+  /** Hide + Add Metric (e.g. Financials table checkboxes own selection). */
+  hideMetricPicker?: boolean;
+  /** Hide the fundamentals data table under the chart (Financials already has its statement table). */
+  hideDataTable?: boolean;
+  /** Hide legend chips under the plot (Financials uses {@link showSelectedMetricsTable} instead). */
+  hideLegendChips?: boolean;
+  /** Metrics-as-rows table with settings + remove after each name (Financials embed). */
+  showSelectedMetricsTable?: boolean;
+  /**
+   * Financials embed: parent owns Annual/Quarterly + range range (shared with the statement table).
+   * Hides those toggles in the chart toolbar; keeps chart type + download.
+   */
+  hidePeriodTimeRangeControls?: boolean;
+  /** Hide the entire chart header toolbar (Financials puts controls on one shared row). */
+  hideToolbar?: boolean;
+  /** When set, chart period follows the parent (Financials toolbar). */
+  controlledPeriodMode?: "annual" | "quarterly";
+  /** When set, chart time range follows the parent (Financials toolbar). */
+  controlledTimeRange?: ChartTimeRange;
+  /** When set, chart type follows the parent (Financials toolbar). */
+  controlledChartType?: ChartType;
+  /** Imperative download trigger for an external toolbar button. */
+  chartDownloadRef?: RefObject<{ openDownload: () => void } | null>;
 };
 
 const PERIOD_TAB_OPTIONS = [
@@ -1846,6 +1875,17 @@ export function ChartingWorkspace({
   assetLogoUrl,
   screenshotDisplayOptions,
   isActive = true,
+  onSelectedMetricsChange,
+  hideMetricPicker = false,
+  hideDataTable = false,
+  hideLegendChips = false,
+  showSelectedMetricsTable = false,
+  hidePeriodTimeRangeControls = false,
+  hideToolbar = false,
+  controlledPeriodMode,
+  controlledTimeRange,
+  controlledChartType,
+  chartDownloadRef,
 }: Props) {
   const router = useRouter();
   const chartPlotCleanupRef = useRef<(() => void) | null>(null);
@@ -1875,14 +1915,35 @@ export function ChartingWorkspace({
   );
 
   const [periodMode, setPeriodMode] = useState<"annual" | "quarterly">(
-    screenshotPreviewMode && previewLockedState ? previewLockedState.periodMode : "annual",
+    screenshotPreviewMode && previewLockedState
+      ? previewLockedState.periodMode
+      : (controlledPeriodMode ?? "annual"),
   );
   const [timeRange, setTimeRange] = useState<ChartTimeRange>(
-    screenshotPreviewMode && previewLockedState ? previewLockedState.timeRange : DEFAULT_CHART_TIME_RANGE,
+    screenshotPreviewMode && previewLockedState
+      ? previewLockedState.timeRange
+      : (controlledTimeRange ?? DEFAULT_CHART_TIME_RANGE),
   );
+
+  useEffect(() => {
+    if (controlledPeriodMode == null) return;
+    setPeriodMode(controlledPeriodMode);
+  }, [controlledPeriodMode]);
+
+  useEffect(() => {
+    if (controlledTimeRange == null) return;
+    setTimeRange(controlledTimeRange);
+  }, [controlledTimeRange]);
   const [chartType, setChartType] = useState<ChartType>(
-    screenshotPreviewMode && previewLockedState ? previewLockedState.chartType : "bars",
+    screenshotPreviewMode && previewLockedState
+      ? previewLockedState.chartType
+      : (controlledChartType ?? "bars"),
   );
+
+  useEffect(() => {
+    if (controlledChartType == null) return;
+    setChartType(controlledChartType);
+  }, [controlledChartType]);
   const [lineDisplayOptions, setLineDisplayOptions] = useState<FundamentalsChartDisplayOptions>(
     () => ({ ...DEFAULT_FUNDAMENTALS_CHART_DISPLAY_OPTIONS }),
   );
@@ -1962,14 +2023,15 @@ export function ChartingWorkspace({
     (next: ChartType) => {
       setChartType(next);
       if (next === "line") {
-        setPeriodMode("quarterly");
+        // Financials embed owns period via the statement toolbar — don't override it.
+        if (controlledPeriodMode == null) setPeriodMode("quarterly");
         setLineDisplayOptions((prev) => {
           if (!prev.showAvgLine) return prev;
           return { ...prev, showAvgLine: false };
         });
       }
     },
-    [timeRange],
+    [controlledPeriodMode],
   );
 
   const visibleBarValueLabels = useMemo(
@@ -2322,26 +2384,46 @@ export function ChartingWorkspace({
     setDownloadOpen(true);
   }, [ticker, assetDisplayName, assetLogoUrl, periodMode, timeRange, chartType, selected, fullSeries]);
 
+  useEffect(() => {
+    if (!chartDownloadRef) return;
+    chartDownloadRef.current = { openDownload: handleOpenDownload };
+    return () => {
+      chartDownloadRef.current = null;
+    };
+  }, [chartDownloadRef, handleOpenDownload]);
+
   const removeMetric = useCallback(
     (id: ChartingMetricId) => {
       const next = selected.filter((x) => x !== id);
       if (stockTabStartsEmptyMetrics) {
         setSelected(next);
+        onSelectedMetricsChange?.(next);
         return;
       }
       if (!fullPageCompanyChipSlot) {
         if (next.length === 0) return;
         setSelected(next);
+        onSelectedMetricsChange?.(next);
         return;
       }
       if (next.length === 0) {
+        onSelectedMetricsChange?.([]);
         router.replace(buildStandaloneChartPath(pathRoute, [ticker], []));
         return;
       }
       setSelected(next);
+      onSelectedMetricsChange?.(next);
       router.replace(buildStandaloneChartPath(pathRoute, [ticker], next));
     },
-    [fullPageCompanyChipSlot, pathRoute, router, selected, stockTabStartsEmptyMetrics, ticker],
+    [
+      fullPageCompanyChipSlot,
+      onSelectedMetricsChange,
+      pathRoute,
+      router,
+      selected,
+      stockTabStartsEmptyMetrics,
+      ticker,
+    ],
   );
 
   const addMetric = useCallback(
@@ -2353,13 +2435,14 @@ export function ChartingWorkspace({
       }
       const next = [...selected, id];
       setSelected(next);
+      onSelectedMetricsChange?.(next);
       if (fullPageCompanyChipSlot) {
         router.replace(buildStandaloneChartPath(pathRoute, [ticker], next));
       }
       setPickerOpen(false);
       setPickerQuery("");
     },
-    [fullPageCompanyChipSlot, pathRoute, router, selected, ticker],
+    [fullPageCompanyChipSlot, onSelectedMetricsChange, pathRoute, router, selected, ticker],
   );
 
   const canPlot = useMemo(() => {
@@ -3457,7 +3540,7 @@ export function ChartingWorkspace({
     useRailMetricPicker,
   );
 
-  const addMetricPicker = (
+  const addMetricPicker = hideMetricPicker ? null : (
     <div ref={pickerWrapRef} className={useRailMetricPicker ? "sr-only" : undefined}>
       {!useRailMetricPicker ? (
         <button
@@ -3549,7 +3632,7 @@ export function ChartingWorkspace({
           </h2>
           <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
             <div className="flex shrink-0 flex-nowrap items-center gap-2">
-              {chartType !== "line" ? (
+              {!hidePeriodTimeRangeControls && chartType !== "line" ? (
                 <TabSwitcher
                   size="sm"
                   options={PERIOD_TAB_OPTIONS}
@@ -3558,21 +3641,22 @@ export function ChartingWorkspace({
                   aria-label="Reporting period"
                 />
               ) : null}
-              {null}
               <ChartingVisualSwitcher value={chartType} onChange={handleChartTypeChange} />
             </div>
-            <div className="shrink-0">
-              <TabSwitcher
-                className="inline-flex w-max min-w-0 flex-nowrap"
-                size="sm"
-                options={timeRangeTabOptions}
-                value={timeRange}
-                onChange={(next) => {
-                  setTimeRange(next);
-                }}
-                aria-label="Time range"
-              />
-            </div>
+            {!hidePeriodTimeRangeControls ? (
+              <div className="shrink-0">
+                <TabSwitcher
+                  className="inline-flex w-max min-w-0 flex-nowrap"
+                  size="sm"
+                  options={timeRangeTabOptions}
+                  value={timeRange}
+                  onChange={(next) => {
+                    setTimeRange(next);
+                  }}
+                  aria-label="Time range"
+                />
+              </div>
+            ) : null}
             {enableScreenshotDownload ? (
               <button
                 type="button"
@@ -3589,6 +3673,7 @@ export function ChartingWorkspace({
               onClick={() => {
                 if (metricControlsPlacement === "legend") {
                   setSelected([]);
+                  onSelectedMetricsChange?.([]);
                   return;
                 }
                 router.replace(buildStandaloneChartPath(pathRoute, [], []), { scroll: false });
@@ -3624,14 +3709,19 @@ export function ChartingWorkspace({
         </div>
       ) : (
       <div className="flex flex-col gap-5">
+        {!hideToolbar ? (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-          <h2 className={cn("min-w-0 shrink-0 sm:flex-1", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
-            {workspaceTitle}
-          </h2>
+          {workspaceTitle.trim() ? (
+            <h2 className={cn("min-w-0 shrink-0 sm:flex-1", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>
+              {workspaceTitle}
+            </h2>
+          ) : (
+            <div className="min-w-0 flex-1" aria-hidden />
+          )}
           {!showStockTabMetricEmptyState ? (
           <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-nowrap sm:justify-end sm:overflow-x-auto sm:pb-0.5">
             <div className="flex shrink-0 flex-nowrap items-center gap-2">
-              {chartType !== "line" ? (
+              {!hidePeriodTimeRangeControls && chartType !== "line" ? (
                 <TabSwitcher
                   size="sm"
                   options={PERIOD_TAB_OPTIONS}
@@ -3640,21 +3730,22 @@ export function ChartingWorkspace({
                   aria-label="Reporting period"
                 />
               ) : null}
-              {null}
               <ChartingVisualSwitcher value={chartType} onChange={handleChartTypeChange} />
             </div>
-            <div className="shrink-0">
-              <TabSwitcher
-                className="inline-flex w-max min-w-0 flex-nowrap"
-                size="sm"
-                options={timeRangeTabOptions}
-                value={timeRange}
-                onChange={(next) => {
-                  setTimeRange(next);
-                }}
-                aria-label="Time range"
-              />
-            </div>
+            {!hidePeriodTimeRangeControls ? (
+              <div className="shrink-0">
+                <TabSwitcher
+                  className="inline-flex w-max min-w-0 flex-nowrap"
+                  size="sm"
+                  options={timeRangeTabOptions}
+                  value={timeRange}
+                  onChange={(next) => {
+                    setTimeRange(next);
+                  }}
+                  aria-label="Time range"
+                />
+              </div>
+            ) : null}
             {enableScreenshotDownload ? (
               <button
                 type="button"
@@ -3679,6 +3770,7 @@ export function ChartingWorkspace({
           </div>
           ) : null}
         </div>
+        ) : null}
 
         {!metricControlsInLegend || fullPageCompanyChipSlot ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -3719,7 +3811,7 @@ export function ChartingWorkspace({
 
       <div className={cn(useRailMetricPicker && !screenshotPreviewMode && "space-y-5")}>
       {showStockTabMetricEmptyState ? (
-        <Empty variant="card" className="min-h-[min(50vh,420px)] w-full">
+        <Empty variant="plain" className="min-h-[min(50vh,420px)] w-full">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <LineChart className="h-6 w-6" strokeWidth={1.75} aria-hidden />
@@ -3767,21 +3859,10 @@ export function ChartingWorkspace({
                   style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
                 >
                   <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-                    <div
-                      className={cn("absolute inset-x-0", CHARTING_PLOT_BACKDROP_INSET_CLASS)}
-                      style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
-                    >
-                      {(yGridTickTopsPx ?? []).map((topPx, i) =>
-                        Number.isFinite(topPx) ? (
-                          <div
-                            key={`grid-${i}`}
-                            className="absolute inset-x-0 border-t"
-                            style={{ top: topPx, borderColor: Y_AXIS_GRIDLINE_BORDER }}
-                          />
-                        ) : null,
-                      )}
-                    </div>
+                    <div className={cn("absolute inset-0", CHART_PLOT_DOTS_PATTERN_CLASS)} />
                     {(() => {
+                      // $0 baseline only — tick grids removed (dots backdrop); use full-pane coords
+                      // so the line stays aligned with Y-axis labels (not the old inset band).
                       const zeroTop =
                         yGridTickTopsPx != null && yGridTickTopsPx.length > 0
                           ? yGridTickTopsPx[yGridTickTopsPx.length - 1]
@@ -4109,7 +4190,10 @@ export function ChartingWorkspace({
               </div>
             </div>
           )}
-          {hasMetricSelection && !useRailMetricPicker && (!screenshotPreviewMode || screenshotShowHorizontalLegend) ? (
+          {hasMetricSelection &&
+          !useRailMetricPicker &&
+          !hideLegendChips &&
+          (!screenshotPreviewMode || screenshotShowHorizontalLegend) ? (
           <div className={cn("flex justify-center", screenshotPreviewMode && "-mt-1")}>
             <div className="flex flex-wrap items-center justify-center gap-2">
               {selected.map((id) =>
@@ -4164,13 +4248,37 @@ export function ChartingWorkspace({
             </div>
           </div>
           ) : null}
-          {!chartCard ? companyTable : null}
+          {showSelectedMetricsTable &&
+          hasMetricSelection &&
+          !drawdownOnly &&
+          !loading &&
+          !empty &&
+          !screenshotPreviewMode ? (
+            <ChartingSelectedMetricsTable
+              ordered={ordered}
+              selected={selected}
+              periodMode={periodMode}
+              metricColors={metricChipColorById}
+              isBarValuesVisible={isBarValuesVisible}
+              onShowBarValuesChange={setBarValuesVisibleForMetric}
+              onRemoveMetric={removeMetric}
+              removeDisabledWhenOne={!stockTabStartsEmptyMetrics}
+              className="mt-5"
+            />
+          ) : null}
+          {!chartCard && !hideDataTable ? companyTable : null}
         </>
       )}
       </div>
       </>,
       )}
-      {chartCard && companyTable && !showStockTabMetricEmptyState && !drawdownOnly && !loading && !empty ? (
+      {chartCard &&
+      !hideDataTable &&
+      companyTable &&
+      !showStockTabMetricEmptyState &&
+      !drawdownOnly &&
+      !loading &&
+      !empty ? (
         <div className="mt-5">{companyTable}</div>
       ) : null}
     </div>

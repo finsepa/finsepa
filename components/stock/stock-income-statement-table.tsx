@@ -1,5 +1,15 @@
 "use client";
 
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type UIEvent,
+} from "react";
+
 import type {
   IncomeStatementRowModel,
   IncomeStatementTableModel,
@@ -7,14 +17,18 @@ import type {
 } from "@/lib/market/stock-financials-income-table";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
 import { resolveFinancialsRowChartMetric } from "@/lib/market/stock-financials-row-chart";
+import { MOBILE_CARD_SURFACE_CLASS } from "@/components/design-system/card-surface-styles";
 import {
-  DEFAULT_TABLE_ROW_HOVER_PAD_CLASS,
   SCREENER_TABLE_DATA_ROW_CLASS,
   SCREENER_TABLE_HEADER_STICKY_CLASS,
   SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS,
   SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+  SCREENER_TABLE_OUTER_BORDER_CLASS,
   SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+  SCREENER_TABLE_ROW_HOVER_PAD_END_CLASS,
   SCREENER_TABLE_ROW_HOVER_SURFACE_CLASS,
+  SCREENER_TABLE_SCROLL_PAD_START_CLASS,
+  SCREENER_TABLE_STICKY_LABEL_RULE_CLASS,
   SCREENER_TABLE_STROKE_INSET_CLASS,
   ScreenerTableScroll,
   TABLE_END_ALIGNED_PAD_CLASS,
@@ -25,8 +39,15 @@ import {
   EARNINGS_FORECAST_BAND_BG_STYLE,
   EARNINGS_FORECAST_BAND_EDGE_STYLE,
 } from "@/components/stock/earnings-card-styles";
+import { AppCheckbox } from "@/components/ui/app-checkbox";
 import { cn } from "@/lib/utils";
-import type { CSSProperties } from "react";
+
+const H_SCROLL_CLASS = cn(
+  "overflow-x-auto overflow-y-hidden overscroll-x-contain [-webkit-overflow-scrolling:touch]",
+  "[scrollbar-width:thin] [scrollbar-color:#A1A1AA_transparent]",
+  "max-md:[-ms-overflow-style:none] max-md:[scrollbar-width:none]",
+  SCREENER_TABLE_SCROLL_PAD_START_CLASS,
+);
 
 /**
  * Shared label-column width for Financials / Earnings summary grids and Reports tables
@@ -143,7 +164,7 @@ const headerPeriodEndClass = cn(
 );
 
 /** Sticky label column — stays put on horizontal scroll inside the financials scroller.
- * 12px left inset via {@link TABLE_START_ALIGNED_PAD_CLASS}.
+ * Start inset comes from the scrollport pad; left radius matches the row hover wash.
  */
 const stickyLabelHeadClass = cn(
   "sticky left-0 z-40 flex min-h-full min-w-0 items-center self-stretch bg-surface pr-4 text-left font-['Inter'] text-[14px] font-medium leading-5 text-fg-muted",
@@ -151,13 +172,12 @@ const stickyLabelHeadClass = cn(
 );
 
 const stickyLabelBodyClass = cn(
-  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch bg-surface pr-4 text-left group-hover/row:bg-table-row-hover",
+  "sticky left-0 z-20 flex min-h-full min-w-0 items-center self-stretch bg-surface pr-4 text-left md:rounded-l-[10px] group-hover/row:bg-table-row-hover",
   TABLE_START_ALIGNED_PAD_CLASS,
 );
 
 /** Vertical rule between sticky labels and year columns — Financials only. */
-const stickyLabelColumnRuleClass =
-  "border-r border-table-row-stroke shadow-[1px_0_0_0_var(--fs-table-row-stroke)]";
+const stickyLabelColumnRuleClass = SCREENER_TABLE_STICKY_LABEL_RULE_CLASS;
 
 const headerValueCellClass = "relative z-[1] flex min-h-full min-w-0 items-center justify-end self-stretch bg-surface";
 
@@ -188,20 +208,29 @@ const incomeHeaderBorderClass = "border-b border-solid border-stroke";
 export function StockIncomeStatementTable({
   model,
   onMetricClick,
+  chartMetricSelection,
   showPeriodEndingRow = true,
   showLabelColumnRule = false,
-  viewportScroll = true,
+  viewportScroll = false,
   scrollAlignEnd = false,
 }: {
   model: IncomeStatementTableModel;
   /** Opens the same fundamentals chart modal as Overview Key Stats when the row maps to a charting metric. */
   onMetricClick?: (metricId: ChartingMetricId) => void;
+  /**
+   * Financials + chart: checkboxes on chartable rows. When set, row click toggles selection
+   * instead of opening the Key Stats modal.
+   */
+  chartMetricSelection?: {
+    selected: ReadonlySet<ChartingMetricId>;
+    onToggle: (metricId: ChartingMetricId) => void;
+  };
   showPeriodEndingRow?: boolean;
   /** Vertical divider after the sticky label column (Financials). Off for Earnings tables. */
   showLabelColumnRule?: boolean;
   /**
-   * Cap height to the viewport with nested overflow (Financials). Off for short Earnings
-   * summary tables — nested scrollports flash a scrollbar while the page scrolls.
+   * Nested viewport max-height scroll (legacy). Prefer `false` so Fiscal Year / Period Ending
+   * stick on page scroll like screener — header sits outside the body horizontal scroller.
    */
   viewportScroll?: boolean;
   /** Pin horizontal scroll to the latest / forecast columns (Earnings estimates summary). */
@@ -212,8 +241,90 @@ export function StockIncomeStatementTable({
   const ttmLeading = ttm?.placement === "leading";
   const dataColumnCount = columns.length + (ttm ? 1 : 0);
   const gridTemplateColumns = stockTableGridTemplateColumns(dataColumnCount);
+  const tableMinWidthPx = stockTableScrollMinWidthPx(dataColumnCount);
   const labelRule = showLabelColumnRule ? stickyLabelColumnRuleClass : undefined;
   const scrollAlignKey = `${periodHeaderLabel}:${columns.join("|")}`;
+
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+  const bodyScrollRef = useRef<HTMLDivElement>(null);
+  const syncingScrollRef = useRef(false);
+  const [canScrollX, setCanScrollX] = useState(false);
+
+  const pinScrollEnd = useCallback(() => {
+    for (const el of [headerScrollRef.current, bodyScrollRef.current]) {
+      if (!el) continue;
+      el.scrollLeft = Math.max(0, el.scrollWidth - el.clientWidth);
+    }
+  }, []);
+
+  const measureScrollX = useCallback(() => {
+    const el = bodyScrollRef.current ?? headerScrollRef.current;
+    if (!el) return;
+    setCanScrollX(el.scrollWidth > el.clientWidth + 1);
+  }, []);
+
+  const syncFrom = useCallback((source: HTMLDivElement) => {
+    if (syncingScrollRef.current) return;
+    const target =
+      source === headerScrollRef.current ? bodyScrollRef.current : headerScrollRef.current;
+    if (!target) return;
+    syncingScrollRef.current = true;
+    target.scrollLeft = source.scrollLeft;
+    requestAnimationFrame(() => {
+      syncingScrollRef.current = false;
+    });
+  }, []);
+
+  const onHeaderScroll = useCallback(
+    (e: UIEvent<HTMLDivElement>) => syncFrom(e.currentTarget),
+    [syncFrom],
+  );
+  const onBodyScroll = useCallback(
+    (e: UIEvent<HTMLDivElement>) => syncFrom(e.currentTarget),
+    [syncFrom],
+  );
+
+  useLayoutEffect(() => {
+    if (viewportScroll) return;
+    measureScrollX();
+    if (scrollAlignEnd) pinScrollEnd();
+  }, [viewportScroll, scrollAlignEnd, scrollAlignKey, measureScrollX, pinScrollEnd, rows.length]);
+
+  useEffect(() => {
+    if (viewportScroll) return;
+    const body = bodyScrollRef.current;
+    if (!body) return;
+    const ro = new ResizeObserver(() => {
+      measureScrollX();
+      if (!scrollAlignEnd) return;
+      const max = Math.max(0, body.scrollWidth - body.clientWidth);
+      if (body.scrollLeft >= max - 2) pinScrollEnd();
+    });
+    ro.observe(body);
+    const first = body.firstElementChild;
+    if (first) ro.observe(first);
+    return () => ro.disconnect();
+  }, [viewportScroll, scrollAlignEnd, scrollAlignKey, measureScrollX, pinScrollEnd]);
+
+  /** Hover + wheel → horizontal pan on the body scroller. */
+  useEffect(() => {
+    if (viewportScroll) return;
+    const el = bodyScrollRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 1) return;
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      if (e.deltaY === 0) return;
+      const next = Math.min(max, Math.max(0, el.scrollLeft + e.deltaY));
+      if (next === el.scrollLeft) return;
+      e.preventDefault();
+      el.scrollLeft = next;
+      syncFrom(el);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [viewportScroll, scrollAlignKey, syncFrom]);
 
   /** Align forecast opacity with annual value indices when TTM is leading or trailing. */
   const forecastByValueIndex = (() => {
@@ -271,91 +382,145 @@ export function StockIncomeStatementTable({
     <div className={cn(headerPeriodEndClass, headerValueCellClass)}>{ttm.periodEnd}</div>
   ) : null;
 
-  return (
-    <ScreenerTableScroll
-      mobileScroll
-      viewportScroll={viewportScroll}
-      scrollAlignEnd={scrollAlignEnd}
-      scrollAlignKey={scrollAlignKey}
-      tableMinWidthPx={
-        scrollAlignEnd || viewportScroll
-          ? stockTableScrollMinWidthPx(dataColumnCount)
-          : undefined
-      }
-    >
-      <div className="bg-surface">
+  const headerBlock = (
+    <>
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_END_CLASS}>
         <div
           className={cn(
-            viewportScroll
-              ? SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS
-              : SCREENER_TABLE_HEADER_STICKY_CLASS,
-            SCREENER_TABLE_ROUNDED_HEADER_CLASS,
-            SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
-            "border-b-0 md:border-b-0",
+            "grid items-stretch gap-x-2 bg-surface py-0 pr-0",
+            incomeHeaderBorderClass,
+            incomeHeaderRowClass,
           )}
+          style={{ gridTemplateColumns }}
         >
-          <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
-            <div
-              className={cn(
-                "grid items-stretch gap-x-2 bg-surface py-0 pr-0",
-                incomeHeaderBorderClass,
-                incomeHeaderRowClass,
-              )}
-              style={{ gridTemplateColumns }}
-            >
-              <div className={cn(stickyLabelHeadClass, labelRule)}>{periodHeaderLabel}</div>
-              {ttmLeading ? ttmYearHeader : null}
-              {yearHeaders}
-              {!ttmLeading ? ttmYearHeader : null}
-            </div>
-          </div>
-          {showPeriodEndingRow ? (
-            <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
-              <div
-                className={cn(
-                  "grid items-stretch gap-x-2 bg-surface py-0 pr-0",
-                  incomeHeaderRowClass,
-                )}
-                style={{ gridTemplateColumns }}
-              >
-                <div className={cn(stickyLabelHeadClass, labelRule)}>Period Ending</div>
-                {ttmLeading ? ttmPeriodHeader : null}
-                {periodHeaders}
-                {!ttmLeading ? ttmPeriodHeader : null}
-              </div>
-            </div>
-          ) : null}
-          <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
-        </div>
-
-        <div className="relative z-0">
-          {rows.map((row, index) => (
-            <IncomeRow
-              key={row.id}
-              row={row}
-              gridTemplateColumns={gridTemplateColumns}
-              columnIsForecast={forecastByValueIndex}
-              firstForecastIndex={firstForecastValueIndex}
-              onMetricClick={onMetricClick}
-              showLabelColumnRule={showLabelColumnRule}
-              showDivider={index < rows.length - 1}
-            />
-          ))}
-          {firstForecastValueIndex >= 0 && forecastColumnCount > 0 ? (
-            <div
-              className="pointer-events-none absolute inset-y-0 z-30 flex items-center justify-center"
-              style={{
-                left: `calc(${STOCK_TABLE_LABEL_COL_WIDTH} + ((100% - ${STOCK_TABLE_LABEL_COL_WIDTH}) * ${firstForecastValueIndex} / ${dataColumnCount}))`,
-                width: `calc((100% - ${STOCK_TABLE_LABEL_COL_WIDTH}) * ${forecastColumnCount} / ${dataColumnCount})`,
-              }}
-              aria-hidden
-            >
-              <span className={EARNINGS_FORECAST_BADGE_CLASS}>Forecast</span>
-            </div>
-          ) : null}
+          <div className={cn(stickyLabelHeadClass, labelRule)}>{periodHeaderLabel}</div>
+          {ttmLeading ? ttmYearHeader : null}
+          {yearHeaders}
+          {!ttmLeading ? ttmYearHeader : null}
         </div>
       </div>
-    </ScreenerTableScroll>
+      {showPeriodEndingRow ? (
+        <div className={SCREENER_TABLE_ROW_HOVER_PAD_END_CLASS}>
+          <div
+            className={cn("grid items-stretch gap-x-2 bg-surface py-0 pr-0", incomeHeaderRowClass)}
+            style={{ gridTemplateColumns }}
+          >
+            <div className={cn(stickyLabelHeadClass, labelRule)}>Period Ending</div>
+            {ttmLeading ? ttmPeriodHeader : null}
+            {periodHeaders}
+            {!ttmLeading ? ttmPeriodHeader : null}
+          </div>
+        </div>
+      ) : null}
+      <div className={SCREENER_TABLE_STROKE_INSET_CLASS} aria-hidden />
+    </>
+  );
+
+  const bodyBlock = (
+    <div className="relative z-0">
+      {rows.map((row, index) => (
+        <IncomeRow
+          key={row.id}
+          row={row}
+          gridTemplateColumns={gridTemplateColumns}
+          columnIsForecast={forecastByValueIndex}
+          firstForecastIndex={firstForecastValueIndex}
+          onMetricClick={onMetricClick}
+          chartMetricSelection={chartMetricSelection}
+          showLabelColumnRule={showLabelColumnRule}
+          showDivider={index < rows.length - 1}
+        />
+      ))}
+      {firstForecastValueIndex >= 0 && forecastColumnCount > 0 ? (
+        <div
+          className="pointer-events-none absolute inset-y-0 z-30 flex items-center justify-center"
+          style={{
+            left: `calc(${STOCK_TABLE_LABEL_COL_WIDTH} + ((100% - ${STOCK_TABLE_LABEL_COL_WIDTH}) * ${firstForecastValueIndex} / ${dataColumnCount}))`,
+            width: `calc((100% - ${STOCK_TABLE_LABEL_COL_WIDTH}) * ${forecastColumnCount} / ${dataColumnCount})`,
+          }}
+          aria-hidden
+        >
+          <span className={EARNINGS_FORECAST_BADGE_CLASS}>Forecast</span>
+        </div>
+      ) : null}
+    </div>
+  );
+
+  // Nested max-height scrollport (optional legacy).
+  if (viewportScroll) {
+    return (
+      <ScreenerTableScroll
+        mobileScroll
+        viewportScroll
+        scrollAlignEnd={scrollAlignEnd}
+        scrollAlignKey={scrollAlignKey}
+        tableMinWidthPx={tableMinWidthPx}
+      >
+        <div className="bg-surface">
+          <div
+            className={cn(
+              SCREENER_TABLE_HEADER_STICKY_SCROLLPORT_CLASS,
+              SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+              SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+              "border-b-0 md:border-b-0",
+            )}
+          >
+            {headerBlock}
+          </div>
+          {bodyBlock}
+        </div>
+      </ScreenerTableScroll>
+    );
+  }
+
+  // Page-sticky header (like screener) + synced horizontal body scroll — no fixed table height.
+  return (
+    <div
+      className={cn(
+        "w-full min-w-0 max-w-full rounded-2xl bg-surface",
+        SCREENER_TABLE_OUTER_BORDER_CLASS,
+        "md:border-transparent md:shadow-card",
+        MOBILE_CARD_SURFACE_CLASS,
+      )}
+    >
+      <div
+        className={cn(
+          SCREENER_TABLE_HEADER_STICKY_CLASS,
+          SCREENER_TABLE_ROUNDED_HEADER_CLASS,
+          SCREENER_TABLE_HEADER_STROKE_HOVER_CLASS,
+          // Clip header fill to the card radius (sticky escapes the outer card’s overflow-clip).
+          "overflow-hidden border-b-0 md:border-b-0",
+        )}
+      >
+        <div
+          ref={headerScrollRef}
+          onScroll={onHeaderScroll}
+          className={cn(
+            H_SCROLL_CLASS,
+            // Hide header scrollbar — body owns the track; scrollLeft stays synced.
+            "bg-surface [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          )}
+        >
+          <div className="bg-surface" style={{ minWidth: tableMinWidthPx }}>
+            {headerBlock}
+          </div>
+        </div>
+      </div>
+      <div
+        ref={bodyScrollRef}
+        onScroll={onBodyScroll}
+        className={cn(
+          H_SCROLL_CLASS,
+          "rounded-b-2xl",
+          canScrollX &&
+            "scroll-fade-effect-x-end [--mask-width:2.5rem] [--scroll-buffer:1.5rem]",
+        )}
+      >
+        <div className="bg-surface" style={{ minWidth: tableMinWidthPx }}>
+          {bodyBlock}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -365,6 +530,7 @@ function IncomeRow({
   columnIsForecast,
   firstForecastIndex,
   onMetricClick,
+  chartMetricSelection,
   showLabelColumnRule,
   showDivider,
 }: {
@@ -373,6 +539,10 @@ function IncomeRow({
   columnIsForecast?: boolean[];
   firstForecastIndex: number;
   onMetricClick?: (metricId: ChartingMetricId) => void;
+  chartMetricSelection?: {
+    selected: ReadonlySet<ChartingMetricId>;
+    onToggle: (metricId: ChartingMetricId) => void;
+  };
   showLabelColumnRule?: boolean;
   showDivider: boolean;
 }) {
@@ -384,7 +554,10 @@ function IncomeRow({
     row.id === "fcf_ps" || row.id === "fcf_margin" ? "pl-3 sm:pl-6" : "";
 
   const metricId = resolveFinancialsRowChartMetric(row);
-  const rowInteractive = typeof onMetricClick === "function" && metricId != null;
+  const selectionMode = chartMetricSelection != null && metricId != null;
+  const checked = selectionMode ? chartMetricSelection.selected.has(metricId) : false;
+  const rowInteractive =
+    !selectionMode && typeof onMetricClick === "function" && metricId != null;
 
   const labelCell = (
     <div
@@ -393,9 +566,23 @@ function IncomeRow({
         showLabelColumnRule && stickyLabelColumnRuleClass,
         nestedLabelPad,
         labelClass,
+        selectionMode && "gap-2.5",
         rowInteractive && "underline-offset-2 decoration-fg-muted group-hover/row:underline",
       )}
     >
+      {selectionMode ? (
+        <span
+          className="shrink-0"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <AppCheckbox
+            checked={checked}
+            onChange={() => chartMetricSelection.onToggle(metricId)}
+            aria-label={`Chart ${row.label}`}
+          />
+        </span>
+      ) : null}
       <span className="min-w-0 truncate">{row.label}</span>
     </div>
   );
@@ -450,7 +637,7 @@ function IncomeRow({
 
   return (
     <div className={SCREENER_TABLE_DATA_ROW_CLASS}>
-      <div className={DEFAULT_TABLE_ROW_HOVER_PAD_CLASS}>
+      <div className={SCREENER_TABLE_ROW_HOVER_PAD_END_CLASS}>
         {rowInteractive ? (
           <button
             type="button"
@@ -460,6 +647,19 @@ function IncomeRow({
             )}
             style={{ gridTemplateColumns }}
             onClick={() => onMetricClick?.(metricId)}
+          >
+            {labelCell}
+            {valueCells}
+          </button>
+        ) : selectionMode ? (
+          <button
+            type="button"
+            className={cn(
+              rowSurfaceClass,
+              "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-zinc-300",
+            )}
+            style={{ gridTemplateColumns }}
+            onClick={() => chartMetricSelection.onToggle(metricId)}
           >
             {labelCell}
             {valueCells}

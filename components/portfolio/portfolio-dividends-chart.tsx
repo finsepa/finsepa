@@ -320,22 +320,6 @@ function PortfolioDividendsChartInner({
 
         <div className="flex w-full min-w-0 overflow-visible" style={{ height: MULTICHART_AXIS_ROW_PX }}>
           <div className="relative min-w-0 flex-1 px-0" style={{ height: MULTICHART_AXIS_ROW_PX }}>
-            {periods.map((p, i) => {
-              const leftPct = periodCenterLeftPercent(i, n);
-              const major = i === 0 || i === n - 1 || i % 2 === 0;
-              return (
-                <span
-                  key={`tick-${p.key}`}
-                  className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
-                  style={{
-                    left: `${leftPct}%`,
-                    height: major ? 9 : 5,
-                    transform: "translateX(-50%)",
-                  }}
-                  aria-hidden
-                />
-              );
-            })}
             {periods.map((p, i) => (
               <div
                 key={`axis-${p.key}`}

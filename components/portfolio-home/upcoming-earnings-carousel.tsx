@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { MOBILE_ELEVATED_CARD_CLASS, STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  OVERVIEW_SECTION_TITLE_GAP_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import {
   whiteSurfaceButtonBorderClass,
   whiteSurfaceButtonShadowClass,
@@ -489,7 +493,9 @@ function UpcomingEventsSection({
 
   return (
     <section ref={sectionRef} className={cn("min-w-0", className)} aria-label={title}>
-      <h2 className={cn(STOCK_OVERVIEW_SECTION_HEADING_CLASS, "mb-5 min-w-0 truncate")}>{title}</h2>
+      <h2 className={cn(STOCK_OVERVIEW_SECTION_HEADING_CLASS, OVERVIEW_SECTION_TITLE_GAP_CLASS, "min-w-0 truncate")}>
+        {title}
+      </h2>
 
       {status === "loading" ? (
         <div className="flex w-full min-w-0 gap-3 overflow-hidden">

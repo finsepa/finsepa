@@ -11,6 +11,8 @@ import { ChartControls } from "@/components/stock/chart-controls";
 import { TabSwitcher, type TabSwitcherOption } from "@/components/design-system";
 import {
   MOBILE_ELEVATED_CARD_CLASS,
+  OVERVIEW_PAGE_SECTIONS_STACK_CLASS,
+  OVERVIEW_SECTION_TITLE_GAP_CLASS,
   STOCK_OVERVIEW_SECTION_HEADING_CLASS,
   STOCK_OVERVIEW_SECTION_TITLE_CLASS,
 } from "@/components/design-system/card-surface-styles";
@@ -379,7 +381,7 @@ export function AssetPositionDetail({
   return (
     <div
       className={cn(
-        "space-y-5",
+        OVERVIEW_PAGE_SECTIONS_STACK_CLASS,
         // Single black panel (no stroke) when used as a full-bleed modal inset.
         unifiedPanel &&
           "rounded-2xl bg-panel p-4 sm:p-5 [--fs-chart-plot-bg:var(--fs-panel)]",
@@ -417,7 +419,7 @@ export function AssetPositionDetail({
       </section>
 
       <section className={cn(!unifiedPanel && sectionCards && cn("p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS))}>
-        <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>My positions</h2>
+        <h2 className={cn(OVERVIEW_SECTION_TITLE_GAP_CLASS, STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>My positions</h2>
         <div className={cn("grid grid-cols-1 lg:grid-cols-2", flatSections ? "gap-x-10 gap-y-5" : "gap-3")}>
           <div className={flatSections ? "min-w-0" : KEY_STATS_CARD_CLASS}>
             <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>General</h3>

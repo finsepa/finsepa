@@ -402,24 +402,6 @@ function HoldingsPerformanceBarChart({
                 const leftPct = xMax > 0 ? (tick / xMax) * 100 : 0;
                 const isFirst = tickIndex === 0;
                 const isLast = tickIndex === ticks.length - 1;
-                const major = isFirst || isLast || tickIndex % 2 === 0;
-                return (
-                  <span
-                    key={`tick-${tick}`}
-                    className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
-                    style={{
-                      left: isFirst ? 0 : isLast ? "100%" : `${leftPct}%`,
-                      height: major ? 9 : 5,
-                      transform: isFirst ? undefined : isLast ? "translateX(-100%)" : "translateX(-50%)",
-                    }}
-                    aria-hidden
-                  />
-                );
-              })}
-              {ticks.map((tick, tickIndex) => {
-                const leftPct = xMax > 0 ? (tick / xMax) * 100 : 0;
-                const isFirst = tickIndex === 0;
-                const isLast = tickIndex === ticks.length - 1;
                 return (
                   <span
                     key={tick}

@@ -20,6 +20,7 @@ import {
 } from "@/components/screener/screener-table-scroll";
 import { ScreenerStocksSubTabMobileCard } from "@/components/screener/screener-stocks-sub-tab-mobile-card";
 import { SCREENER_COMPANIES_PAGE_SIZE } from "@/lib/screener/screener-markets-page-size";
+import { formatUsEquity1dMoveSessionLabel } from "@/lib/market/us-equity-market-session";
 import { cn } from "@/lib/utils";
 
 /** Star sits outside; matches live tables after chrome update. */
@@ -377,15 +378,16 @@ export function StocksGainersLosersSkeleton({
     </div>
   );
 
+  const asOf = formatUsEquity1dMoveSessionLabel();
   return (
     <div className="flex flex-col">
       {section(
-        "Top gainers (1D %)",
+        `Top gainers (${asOf})`,
         <StocksTableSkeleton rows={rows} {...tableChrome} />,
       )}
       <div className="mt-4 md:mt-5">
         {section(
-          "Top losers (1D %)",
+          `Top losers (${asOf})`,
           <StocksTableSkeleton rows={rows} {...tableChrome} />,
         )}
       </div>

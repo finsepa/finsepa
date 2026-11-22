@@ -3942,24 +3942,6 @@ export function PriceChart({
             </span>
           ) : (
             <>
-            {showAssetPlotChrome
-              ? visiblePeriodAxisLabels.map((lab, i) => {
-                  // Ruler-style ticks under the legend: longer at ends / major cadence.
-                  const major = i === 0 || i === visiblePeriodAxisLabels.length - 1 || i % 2 === 0;
-                  return (
-                    <span
-                      key={`btc-tick-${lab.key}`}
-                      className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
-                      style={{
-                        left: lab.leftPx,
-                        height: major ? 9 : 5,
-                        transform: "translateX(-50%)",
-                      }}
-                      aria-hidden
-                    />
-                  );
-                })
-              : null}
             {visiblePeriodAxisLabels.map((lab, i) => {
               const isLive1DLabel = lab.key.startsWith("live-1d-");
               const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, {

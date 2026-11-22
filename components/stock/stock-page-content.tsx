@@ -65,7 +65,7 @@ import {
   ASSET_HERO_CARD_CLASS,
   ASSET_HERO_OFFSCREEN_DESKTOP_CLASS,
   ASSET_PAGE_SHELL_CLASS,
-  MOBILE_ELEVATED_CARD_CLASS,
+  OVERVIEW_PAGE_SECTIONS_STACK_CLASS,
 } from "@/components/design-system/card-surface-styles";
 import { priorSessionDayChangeFromPerformance } from "@/lib/market/prior-session-day-change";
 import { getUsEquityMarketSession, isUsEquityExtendedHoursHeaderEligible, lastUsRegularSessionCloseUnix } from "@/lib/market/us-equity-market-session";
@@ -116,22 +116,6 @@ const StockTargetPriceTab = dynamic(
       <div className="w-full min-w-0 space-y-3">
         <div className="h-40 w-full animate-pulse rounded-2xl bg-surface-muted" />
         <div className="h-32 w-full animate-pulse rounded-2xl bg-surface-muted" />
-      </div>
-    ),
-  },
-);
-
-/** Same pattern as Multicharts — avoid pulling charting-workspace on every stock overview. */
-const StockChartingTab = dynamic(
-  () => import("./stock-charting-tab").then((m) => m.StockChartingTab),
-  {
-    ssr: false,
-    loading: () => (
-      <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)} aria-busy>
-        <div className="h-9" aria-hidden />
-        <div className="relative h-[422px] w-full">
-          <AssetChartSkeleton fill />
-        </div>
       </div>
     ),
   },
@@ -237,7 +221,7 @@ export function StockPageContent({
   routeTicker,
   initialPageData,
   initialActiveTab = "overview",
-  initialChartingMetric = null,
+  initialChartingMetric: _initialChartingMetric = null,
   overviewBelowFold = null,
   earningsPanel = null,
 }: {
@@ -319,12 +303,6 @@ export function StockPageContent({
     setDisplayTab(urlTab);
     setTabsMounted((m) => ({ ...m, [urlTab]: true }));
   }, [urlTab]);
-
-  const [chartingMetricParam, setChartingMetricParam] = useState<string | null>(initialChartingMetric);
-  useEffect(() => {
-    if (clientQuery === null) return;
-    setChartingMetricParam(new URLSearchParams(clientQuery).get("metric"));
-  }, [clientQuery]);
 
   const refetchHeaderMeta = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) setHeaderMetaLoading(true);
@@ -444,7 +422,7 @@ export function StockPageContent({
         params.delete("metric");
       } else {
         params.set("tab", next);
-        if (next !== "charting") params.delete("metric");
+        params.delete("metric");
       }
       const q = params.toString();
       router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
@@ -1290,11 +1268,10 @@ export function StockPageContent({
       <Suspense fallback={null}>
         <AssetPageTopLoader />
       </Suspense>
+      <div className={ASSET_HERO_CARD_CLASS}>
       <div className={ASSET_BREADCRUMB_CARD_CLASS}>
         <StockBreadcrumbs ticker={ticker} headerMeta={headerMeta} isEtf={isEtf} embedded />
       </div>
-
-      <div className={ASSET_HERO_CARD_CLASS}>
       <StockHeader
         ticker={ticker}
         periodLabel={headerPeriodLabel}
@@ -1463,7 +1440,7 @@ export function StockPageContent({
           role="tabpanel"
           id="stock-tab-overview"
           aria-hidden={displayTab !== "overview"}
-          className={displayTab === "overview" ? "space-y-5 max-md:-mt-2" : "hidden"}
+          className={displayTab === "overview" ? cn(OVERVIEW_PAGE_SECTIONS_STACK_CLASS, "max-md:-mt-2") : "hidden"}
         >
           {isEtf || comparePicks.length > 0 ? (
             <MiniTable
@@ -1503,7 +1480,8 @@ export function StockPageContent({
               initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
             }
             initialTtmPoint={initialPageData?.ticker === ticker ? initialPageData.fundamentalsTtmPoint : undefined}
-            onOpenMetricChart={openRevenueProfitMetricModal}
+            assetDisplayName={headerMeta?.fullName}
+            assetLogoUrl={headerMeta?.logoUrl}
           />
         </div>
       ) : null}
@@ -1582,29 +1560,6 @@ export function StockPageContent({
           className={displayTab === "superinvestors" ? "block" : "hidden"}
         >
           <StockSuperinvestorsTab ticker={ticker} />
-        </div>
-      ) : null}
-
-      {tabsMounted.charting ? (
-        <div
-          role="tabpanel"
-          id="stock-tab-charting"
-          aria-hidden={displayTab !== "charting"}
-          className={displayTab === "charting" ? "block" : "hidden"}
-        >
-          <StockChartingTab
-            ticker={ticker}
-            metricParam={chartingMetricParam}
-            initialAnnualPoints={initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesAnnual : undefined}
-            initialQuarterlyPoints={
-              initialPageData?.ticker === ticker ? initialPageData.fundamentalsSeriesQuarterly : undefined
-            }
-            initialTtmPoint={initialPageData?.ticker === ticker ? initialPageData.fundamentalsTtmPoint : undefined}
-            initialKeyStatsBundle={initialPageData?.ticker === ticker ? initialPageData.keyStatsBundle : null}
-            assetDisplayName={headerMeta?.fullName}
-            assetLogoUrl={headerMeta?.logoUrl}
-            isActive={displayTab === "charting"}
-          />
         </div>
       ) : null}
 

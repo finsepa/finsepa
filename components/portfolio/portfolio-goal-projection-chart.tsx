@@ -634,26 +634,6 @@ export function PortfolioGoalProjectionChart({
               const label = isCrossingYear ? String(year) : goalYearAxisLabel(year, years, i);
               if (!label) return null;
               const leftPct = resolvePeriodCenterLeftPercent(i, years.length, LINE_PERIOD_MARGINS);
-              const n = years.length;
-              const major = i === 0 || i === n - 1 || i % 2 === 0;
-              return (
-                <span
-                  key={`tick-${year}`}
-                  className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
-                  style={{
-                    left: `${leftPct}%`,
-                    height: major ? 9 : 5,
-                    transform: "translateX(-50%)",
-                  }}
-                  aria-hidden
-                />
-              );
-            })}
-            {years.map((year, i) => {
-              const isCrossingYear = crossingYearIndexes.has(i);
-              const label = isCrossingYear ? String(year) : goalYearAxisLabel(year, years, i);
-              if (!label) return null;
-              const leftPct = resolvePeriodCenterLeftPercent(i, years.length, LINE_PERIOD_MARGINS);
               return (
                 <span
                   key={year}

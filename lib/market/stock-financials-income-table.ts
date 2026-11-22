@@ -430,7 +430,7 @@ export function buildIncomeStatementTableModel(
       emphasize: true,
       format: "usd",
       values: ebit,
-      chartingMetricId: "operating_income",
+      chartingMetricId: "ebit",
     },
     {
       id: "ebit_margin",
@@ -438,7 +438,7 @@ export function buildIncomeStatementTableModel(
       emphasize: false,
       format: "pctMargin",
       values: ebitMarginPct,
-      chartingMetricId: "operating_margin",
+      chartingMetricId: "ebit_margin",
     },
     {
       id: "effective_tax_rate",

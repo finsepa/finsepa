@@ -14,6 +14,8 @@ export function AppCheckbox({
   "aria-label": ariaLabel,
   inputRef,
   className,
+  /** When checked, tint border/fill with this color (e.g. chart series) instead of accent. */
+  checkedColor,
 }: {
   checked: boolean;
   indeterminate?: boolean;
@@ -22,8 +24,10 @@ export function AppCheckbox({
   "aria-label": string;
   inputRef?: RefObject<HTMLInputElement | null>;
   className?: string;
+  checkedColor?: string;
 }) {
   const on = checked || !!indeterminate;
+  const useCustomChecked = on && Boolean(checkedColor);
   return (
     <span
       className={cn(
@@ -31,10 +35,17 @@ export function AppCheckbox({
         disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
         "focus-within:outline-none focus-within:ring-2 focus-within:ring-accent/30 focus-within:ring-offset-2",
         on
-          ? "border-accent bg-accent hover:bg-accent-hover"
+          ? useCustomChecked
+            ? "hover:brightness-110"
+            : "border-accent bg-accent hover:bg-accent-hover"
           : "border-stroke bg-surface hover:bg-surface-muted",
         className,
       )}
+      style={
+        useCustomChecked
+          ? { borderColor: checkedColor, backgroundColor: checkedColor }
+          : undefined
+      }
     >
       <input
         ref={inputRef}

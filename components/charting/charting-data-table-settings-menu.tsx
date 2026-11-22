@@ -16,9 +16,16 @@ type Props = {
   showBarValues: boolean;
   onShowBarValuesChange: (next: boolean) => void;
   metricLabel?: string;
-  /** `table` = data header; `rail` = company rail; `badge` = chart legend chip. */
-  variant?: "table" | "rail" | "badge";
+  /** `table` = data header; `rail` = company rail; `badge` = chart legend chip; `ghost` = inline row icon. */
+  variant?: "table" | "rail" | "badge" | "ghost";
 };
+
+/** Borderless icon — transparent until hover/open (Selected metrics rows). */
+const ghostSettingsTriggerClass = cn(
+  "inline-flex size-7 shrink-0 items-center justify-center rounded-md border-0 bg-transparent text-fg-muted",
+  "transition-colors hover:bg-surface-muted hover:text-fg",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
+);
 
 export function ChartingDataTableSettingsMenu({
   showBarValues,
@@ -49,6 +56,8 @@ export function ChartingDataTableSettingsMenu({
     };
   }, [open]);
 
+  const alignLeading = variant === "rail" || variant === "badge" || variant === "ghost";
+
   return (
     <>
       <button
@@ -71,18 +80,22 @@ export function ChartingDataTableSettingsMenu({
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-fg/15",
                   open && "bg-surface-muted text-fg",
                 )
-              : cn(
-                  "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-transparent text-fg-muted",
-                  "transition-colors hover:bg-surface-muted hover:text-fg",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
-                  open && "bg-surface-muted text-fg",
-                ),
+              : variant === "ghost"
+                ? cn(ghostSettingsTriggerClass, open && "bg-surface-muted text-fg")
+                : cn(
+                    "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-transparent text-fg-muted",
+                    "transition-colors hover:bg-surface-muted hover:text-fg",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fg/15",
+                    open && "bg-surface-muted text-fg",
+                  ),
         )}
       >
         <Settings
           className={cn(
             "shrink-0",
-            variant === "rail" || variant === "badge" ? "h-3.5 w-3.5" : "h-4 w-4",
+            variant === "rail" || variant === "badge" || variant === "ghost"
+              ? "h-3.5 w-3.5"
+              : "h-4 w-4",
           )}
           strokeWidth={2}
           aria-hidden
@@ -93,8 +106,8 @@ export function ChartingDataTableSettingsMenu({
           open={open}
           anchorRef={triggerRef}
           ref={menuPortalRef}
-          align={variant === "rail" || variant === "badge" ? "leading" : "trailing"}
-          placement={variant === "rail" || variant === "badge" ? "below" : "auto"}
+          align={alignLeading ? "leading" : "trailing"}
+          placement={alignLeading ? "below" : "auto"}
           className="w-[min(calc(100vw-2rem),240px)]"
         >
           <div

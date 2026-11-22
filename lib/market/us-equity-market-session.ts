@@ -240,6 +240,26 @@ export function lastCompletedUsRegularSessionYmd(
   return usSessionYmdFromUnixSeconds(closeSec);
 }
 
+/**
+ * Session calendar day for live 1D movers (gainers/losers titles).
+ * Regular + after-hours → today ET; otherwise the last completed regular session.
+ * e.g. `Nov 14, 2026`
+ */
+export function formatUsEquity1dMoveSessionLabel(now: Date = new Date()): string {
+  const session = getUsEquityMarketSession(now);
+  const ymd =
+    session === "regular" || session === "post"
+      ? nySessionYmdFromDate(now)
+      : lastCompletedUsRegularSessionYmd(now);
+  const [y, m, d] = ymd.split("-").map((x) => Number(x));
+  return new Date(Date.UTC(y!, m! - 1, d!)).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 /** Prior US trading session before `ymd` (skips Sat/Sun and full exchange holidays). */
 export function previousUsTradingSessionYmd(
   ymd: string,

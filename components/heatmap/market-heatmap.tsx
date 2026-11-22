@@ -12,7 +12,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 import type { HeatmapLeaf, HeatmapMarket } from "@/lib/heatmap/heatmap-types";
 import {
-  HEATMAP_TILE_STROKE,
   heatmapCellBackground,
   heatmapCellTextClass,
 } from "@/lib/heatmap/heatmap-colors";
@@ -34,8 +33,10 @@ const INDUSTRY_LABEL_H_PAD = 5;
 const INDUSTRY_LABEL_CHAR_PX = 5.5;
 /** Inner padding inside each sector card (all sides). */
 const PAD = 4;
-/** Corner radius for every company tile. */
-const TILE_CORNER_RADIUS = 8;
+/** Gap between company tiles (and between industry blocks). Matches earnings list density. */
+const TILE_GAP = 1;
+/** Corner radius for every company tile — small so gutters read as ~1px, not thick black seams. */
+const TILE_CORNER_RADIUS = 2;
 const SECTOR_SHADOW_FILTER_ID = "heatmap-sector-shadow";
 
 function leafIndustryGroupKey(L: HeatmapLeaf): string {
@@ -113,7 +114,7 @@ function layoutStocksInRect(
     .sum((d) => ("value" in d && typeof d.value === "number" ? d.value : 0))
     .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
 
-  treemap().tile(treemapSquarify).size([innerW, innerH]).paddingInner(1).round(true)(
+  treemap().tile(treemapSquarify).size([innerW, innerH]).paddingInner(TILE_GAP).round(true)(
     stockRoot as HierarchyNode<unknown>,
   );
 
@@ -202,7 +203,7 @@ function buildSectorLayout(
     .sum((d) => ("value" in d && typeof d.value === "number" ? d.value : 0))
     .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
 
-  treemap().tile(treemapSquarify).size([innerW, innerH]).paddingInner(1).round(true)(
+  treemap().tile(treemapSquarify).size([innerW, innerH]).paddingInner(TILE_GAP).round(true)(
     indRoot as HierarchyNode<unknown>,
   );
 
@@ -229,10 +230,10 @@ function buildSectorLayout(
     const featuredLeaf = indItem.stocks[0] ?? item.stocks[0];
     if (!featuredLeaf) continue;
 
-    const stockAreaH = Math.max(1, ih - INDUSTRY_HEADER_H - 1);
-    const stockAreaW = Math.max(1, iw - 2);
-    const stockOriginX = ix0 + 1;
-    const stockOriginY = iy0 + INDUSTRY_HEADER_H + 1;
+    const stockAreaH = Math.max(1, ih - INDUSTRY_HEADER_H - TILE_GAP);
+    const stockAreaW = Math.max(1, iw);
+    const stockOriginX = ix0;
+    const stockOriginY = iy0 + INDUSTRY_HEADER_H + TILE_GAP;
 
     const tiles =
       stockAreaW >= 8 && stockAreaH >= 8
@@ -406,7 +407,7 @@ function layoutNestedTreemap(
       .sum((d) => ("value" in d && typeof d.value === "number" ? d.value : 0))
       .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
 
-    treemap().tile(treemapSquarify).size([innerW, innerH]).paddingInner(1).round(true)(
+    treemap().tile(treemapSquarify).size([innerW, innerH]).paddingInner(TILE_GAP).round(true)(
       indRoot as HierarchyNode<unknown>,
     );
 
@@ -433,10 +434,10 @@ function layoutNestedTreemap(
       const featuredLeaf = indItem.stocks[0] ?? item.stocks[0];
       if (!featuredLeaf) continue;
 
-      const stockAreaH = Math.max(1, ih - INDUSTRY_HEADER_H - 1);
-      const stockAreaW = Math.max(1, iw - 2);
-      const stockOriginX = ix0 + 1;
-      const stockOriginY = iy0 + INDUSTRY_HEADER_H + 1;
+      const stockAreaH = Math.max(1, ih - INDUSTRY_HEADER_H - TILE_GAP);
+      const stockAreaW = Math.max(1, iw);
+      const stockOriginX = ix0;
+      const stockOriginY = iy0 + INDUSTRY_HEADER_H + TILE_GAP;
 
       const tiles =
         stockAreaW >= 8 && stockAreaH >= 8
@@ -693,8 +694,6 @@ function renderTile(
         rx={tileCornerRadius(w, h)}
         ry={tileCornerRadius(w, h)}
         fill={bg}
-        stroke={HEATMAP_TILE_STROKE}
-        strokeWidth={1}
       />
       {showTickerAndPct ? (
         <>

@@ -26,6 +26,7 @@ import {
   ASSET_BREADCRUMB_CARD_CLASS,
   ASSET_HERO_CARD_CLASS,
   ASSET_PAGE_SHELL_CLASS,
+  OVERVIEW_PAGE_SECTIONS_STACK_CLASS,
 } from "@/components/design-system/card-surface-styles";
 import { LatestNews } from "@/components/stock/latest-news";
 import { CryptoDetailTabNav } from "@/components/crypto/crypto-detail-tab-nav";
@@ -564,11 +565,10 @@ export function CryptoPageContent({
       <Suspense fallback={null}>
         <AssetPageTopLoader />
       </Suspense>
+      <div className={ASSET_HERO_CARD_CLASS}>
       <div className={ASSET_BREADCRUMB_CARD_CLASS}>
         <CryptoBreadcrumbs symbol={symUpper} logoUrl={headerLogoUrl} embedded />
       </div>
-
-      <div className={ASSET_HERO_CARD_CLASS}>
 
       {loading ? (
         <div className="space-y-3">
@@ -753,7 +753,7 @@ export function CryptoPageContent({
             <div
               role="tabpanel"
               id="crypto-tab-overview"
-              className="space-y-5 max-md:space-y-3"
+              className={OVERVIEW_PAGE_SECTIONS_STACK_CLASS}
             >
               {comparePicks.length > 0 ? (
                 <MiniTable

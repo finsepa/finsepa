@@ -40,8 +40,20 @@ export const STOCK_OVERVIEW_SECTION_TITLE_CLASS = "text-[14px] font-semibold lea
 /** Stock overview section headings (Latest news) — Inter Semi Bold 20/28, primary. */
 export const STOCK_OVERVIEW_SECTION_HEADING_CLASS = "text-[20px] font-semibold leading-7 text-fg";
 
+/** 20px — heading → content directly under it. */
+export const OVERVIEW_SECTION_TITLE_GAP_CLASS = "mb-5";
+
+/** 20px — vertical stack inside one section (title row + body). */
+export const OVERVIEW_SECTION_INNER_STACK_CLASS = "space-y-5";
+
+/** 40px — gap between stacked page sections. */
+export const OVERVIEW_PAGE_SECTIONS_STACK_CLASS = "space-y-10";
+
 /** Asset page (stock, ETF, crypto, index, currency) gutter + vertical rhythm. */
-export const ASSET_PAGE_SHELL_CLASS = "space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:pt-5 sm:pb-6";
+export const ASSET_PAGE_SHELL_CLASS = cn(
+  OVERVIEW_PAGE_SECTIONS_STACK_CLASS,
+  "px-4 py-0 max-md:pt-4 sm:px-9 sm:pt-5 sm:pb-6",
+);
 
 /** Desktop asset breadcrumbs — flush on the panel (no card). */
 export const ASSET_BREADCRUMB_CARD_CLASS = "max-md:hidden";

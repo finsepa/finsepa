@@ -1,4 +1,7 @@
-import { MOBILE_INSET_CARD_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_INSET_CARD_CLASS,
+  OVERVIEW_PAGE_SECTIONS_STACK_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { SkeletonBox } from "@/components/markets/skeleton";
 import { KeyIndicatorsSkeleton } from "@/components/stock/key-indicators-skeleton";
 import { cn } from "@/lib/utils";
@@ -39,7 +42,7 @@ function LatestNewsSkeleton() {
 export function StockOverviewBelowFoldSkeleton({ isEtf = false }: { isEtf?: boolean }) {
   if (isEtf) return null;
   return (
-    <div className="space-y-5">
+    <div className={OVERVIEW_PAGE_SECTIONS_STACK_CLASS}>
       <div>
         <KeyIndicatorsSkeleton />
         <KeyStatsCardsSkeleton />

@@ -1119,7 +1119,7 @@ body {
     left: 0;
     right: 0;
     padding-top: 0;
-    background: transparent;
+    /* Keep panel fill from `.shell-desktop-panel__header` — do not clear background here. */
   }
 }
 
@@ -1835,9 +1835,32 @@ body {
   animation-fill-mode: both;
 }
 
+/** Horizontal fade on the trailing edge only (sticky label tables use a solid rule on the start). */
+.scroll-fade-effect-x-end {
+  --mask-width: 64px;
+  --scroll-buffer: 2rem;
+  --left-mask-width: 0px;
+  mask-image:
+    linear-gradient(to right, transparent 0%, black 100%),
+    linear-gradient(black, black);
+  mask-size:
+    var(--right-mask-width) 100%,
+    100% 100%;
+  mask-repeat: no-repeat, no-repeat;
+  mask-position:
+    calc(100% - var(--mask-offset-right, 0px)) 0,
+    0 0;
+  mask-composite: exclude;
+  animation-name: hide-right-mask;
+  animation-timeline: scroll(self inline);
+  animation-range: calc(100% - var(--scroll-buffer)) 100%;
+  animation-fill-mode: both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scroll-fade-effect-y,
-  .scroll-fade-effect-x {
+  .scroll-fade-effect-x,
+  .scroll-fade-effect-x-end {
     animation: none;
     --top-mask-height: 0px;
     --bottom-mask-height: 0px;

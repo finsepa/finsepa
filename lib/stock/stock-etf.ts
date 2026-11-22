@@ -34,7 +34,7 @@ export function isStockDetailEtf(ticker: string, meta?: StockDetailHeaderMeta | 
 export function stockDetailTabItemsFor(isEtf: boolean): typeof STOCK_DETAIL_TAB_ITEMS {
   return isEtf
     ? STOCK_DETAIL_TAB_ITEMS.filter((t) => (ETF_STOCK_DETAIL_TAB_IDS as readonly string[]).includes(t.id))
-    : STOCK_DETAIL_TAB_ITEMS.filter((t) => t.id !== "etf-holdings");
+    : STOCK_DETAIL_TAB_ITEMS.filter((t) => t.id !== "etf-holdings" && t.id !== "charting");
 }
 
 /** Old `?tab=etf-holdings` links land on Overview, where the holdings table now lives. */
@@ -46,5 +46,7 @@ export function coerceStockDetailTabForEtf(tab: StockDetailTabId): StockDetailTa
 export function normalizeStockDetailTab(tab: StockDetailTabId | null | undefined, isEtf: boolean): StockDetailTabId {
   const base = tab ?? "overview";
   if (isEtf) return coerceStockDetailTabForEtf(base);
+  // Charting merged into Financials on the stock page (standalone `/charting` unchanged).
+  if (base === "charting") return "financials";
   return base === "etf-holdings" ? "overview" : base;
 }

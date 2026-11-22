@@ -51,6 +51,7 @@ import { MarketTabs, type MarketTab } from "@/components/screener/market-tabs";
 import { useRegisterMarketsTabHost } from "@/components/screener/markets-tab-host-context";
 import { UsMarketsSessionLabel } from "@/components/screener/us-markets-session-label";
 import { STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import { formatUsEquity1dMoveSessionLabel } from "@/lib/market/us-equity-market-session";
 import { cn } from "@/lib/utils";
 import { ScreenerIndustriesTable } from "@/components/screener/screener-industries-table";
 import { ScreenerSectorsTable } from "@/components/screener/screener-sectors-table";
@@ -102,6 +103,25 @@ import type { ScreenerSectorRow } from "@/lib/screener/screener-sectors-types";
 
 /** Rows per list on the Stocks → Gainers & Losers sub-tab. */
 const GAINERS_LOSERS_TOP_N = 10;
+
+const GAINERS_LOSERS_TITLE_CLASS =
+  "mb-3 text-[14px] font-semibold leading-5 text-fg-muted md:mb-5";
+
+/** `Top gainers (Nov 14, 2026)` — session day for the 1D move, refreshes every minute. */
+function GainersLosersSectionTitle({ kind }: { kind: "gainers" | "losers" }) {
+  const [asOf, setAsOf] = useState(() => formatUsEquity1dMoveSessionLabel());
+  useEffect(() => {
+    const tick = () => setAsOf(formatUsEquity1dMoveSessionLabel());
+    tick();
+    const id = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <div className={GAINERS_LOSERS_TITLE_CLASS}>
+      Top {kind === "gainers" ? "gainers" : "losers"} ({asOf})
+    </div>
+  );
+}
 
 function StocksTabBody({
   stocksTotalCount,
@@ -285,9 +305,7 @@ function StocksTabBody({
     panel = (
       <div className="flex flex-col">
         <div>
-          <div className="mb-3 text-[14px] font-semibold leading-5 text-fg-muted md:mb-5">
-            Top gainers (1D %)
-          </div>
+          <GainersLosersSectionTitle kind="gainers" />
           {useMobileStocksSubTabCard ? (
             <ScreenerStocksSubTabMobileCard>{gainerTable}</ScreenerStocksSubTabMobileCard>
           ) : (
@@ -295,9 +313,7 @@ function StocksTabBody({
           )}
         </div>
         <div className="mt-4 md:mt-5">
-          <div className="mb-3 text-[14px] font-semibold leading-5 text-fg-muted md:mb-5">
-            Top losers (1D %)
-          </div>
+          <GainersLosersSectionTitle kind="losers" />
           {useMobileStocksSubTabCard ? (
             <ScreenerStocksSubTabMobileCard>{loserTable}</ScreenerStocksSubTabMobileCard>
           ) : (

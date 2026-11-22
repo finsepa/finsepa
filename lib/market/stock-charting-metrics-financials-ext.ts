@@ -17,6 +17,8 @@ export const FINANCIALS_EXTRA_CHARTING_METRIC_IDS = [
   "dividends_per_share",
   "dividends_per_share_yoy",
   "effective_tax_rate",
+  "ebit",
+  "ebit_margin",
   "cash_equivalents",
   "short_term_investments",
   "cash_and_short_term_investments",
@@ -118,6 +120,8 @@ export const FINANCIALS_EXTRA_CHARTING_METRIC_FIELD: Record<
   dividends_per_share: "dividendsPerShare",
   dividends_per_share_yoy: "dividendsPerShareYoy",
   effective_tax_rate: "effectiveTaxRate",
+  ebit: "ebit",
+  ebit_margin: "ebit",
   cash_equivalents: "cashEquivalents",
   short_term_investments: "shortTermInvestments",
   cash_and_short_term_investments: "cashAndShortTermInvestments",
@@ -214,6 +218,8 @@ export const FINANCIALS_EXTRA_CHARTING_METRIC_LABEL: Record<FinancialsExtraChart
   dividends_per_share: "Dividends Per Share",
   dividends_per_share_yoy: "Dividend Growth",
   effective_tax_rate: "Effective Tax Rate",
+  ebit: "EBIT",
+  ebit_margin: "EBIT Margin",
   cash_equivalents: "Cash & Equivalents",
   short_term_investments: "Short-Term Investments",
   cash_and_short_term_investments: "Cash & Short-Term Investments",
@@ -310,6 +316,8 @@ export const FINANCIALS_EXTRA_CHARTING_METRIC_KIND: Record<FinancialsExtraCharti
   dividends_per_share: "eps",
   dividends_per_share_yoy: "percent",
   effective_tax_rate: "percent",
+  ebit: "usd",
+  ebit_margin: "percent",
   cash_equivalents: "usd",
   short_term_investments: "usd",
   cash_and_short_term_investments: "usd",
@@ -400,6 +408,19 @@ export function readFinancialsExtraChartingMetricValue(
   if (id === "cost_of_revenue") {
     if (row.revenue == null || row.grossProfit == null) return null;
     return row.revenue - row.grossProfit;
+  }
+  if (id === "ebit") {
+    const v = row.ebit ?? row.operatingIncome;
+    return typeof v === "number" && Number.isFinite(v) ? v : null;
+  }
+  if (id === "ebit_margin") {
+    const e = row.ebit ?? row.operatingIncome;
+    const rev = row.revenue;
+    if (e == null || rev == null || !Number.isFinite(e) || !Number.isFinite(rev) || Math.abs(rev) < 1e-9) {
+      return null;
+    }
+    // Same scale as operatingMargin / ebitdaMargin on ChartingSeriesPoint (fraction).
+    return e / rev;
   }
   if (id === "cash_equivalents") {
     const v = row.cashEquivalents ?? row.cashOnHand;

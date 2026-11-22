@@ -108,11 +108,10 @@ function IndexPageContentInner({
   return (
     <div className="min-w-0 pb-10">
       <div className={ASSET_PAGE_SHELL_CLASS}>
+        <div className={ASSET_HERO_CARD_CLASS}>
         <div className={ASSET_BREADCRUMB_CARD_CLASS}>
           <IndexBreadcrumbs symbol={symKey} displayName={displayName} embedded />
         </div>
-
-        <div className={ASSET_HERO_CARD_CLASS}>
         <IndexHeader
           symbol={symKey}
           displayName={displayName}

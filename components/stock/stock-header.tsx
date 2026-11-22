@@ -392,7 +392,7 @@ export function StockHeader({
         {logoMark}
       </div>
 
-      <div className="hidden space-y-5 md:block">
+      <div className="hidden flex-col gap-5 md:flex">
         <div className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-1 items-center gap-4">
             {logoMark}

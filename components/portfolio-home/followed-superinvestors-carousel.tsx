@@ -5,7 +5,11 @@ import { differenceInCalendarDays, format, isValid, parseISO } from "date-fns";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Search, UserRound } from "@/lib/icons";
 
-import { MOBILE_ELEVATED_CARD_CLASS, STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  OVERVIEW_SECTION_TITLE_GAP_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import {
   MAX_CARDS_PER_ROW,
   cardFlex,
@@ -277,7 +281,7 @@ export function FollowedSuperinvestorsCarousel({ className }: { className?: stri
 
   return (
     <section ref={sectionRef} className={cn("min-w-0", className)} aria-label="Superinvestor updates">
-      <div className="mb-5 flex items-center justify-between gap-2">
+      <div className={cn(OVERVIEW_SECTION_TITLE_GAP_CLASS, "flex items-center justify-between gap-2")}>
         <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Superinvestor updates</h2>
         {showArrows ? (
           <div className="flex items-center gap-0.5">

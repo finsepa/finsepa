@@ -14,7 +14,13 @@ import {
 import Link from "next/link";
 
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
-import { MOBILE_ELEVATED_CARD_CLASS, STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  OVERVIEW_PAGE_SECTIONS_STACK_CLASS,
+  OVERVIEW_SECTION_INNER_STACK_CLASS,
+  OVERVIEW_SECTION_TITLE_GAP_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { SegmentedControl } from "@/components/design-system/segmented-control";
 import { ChangeCaretIcon } from "@/components/screener/change-pct";
 import { CompanyLogo } from "@/components/screener/company-logo";
@@ -358,8 +364,8 @@ export function PortfolioHomePage() {
 
   return (
     <div className="flex w-full min-w-0 flex-col items-stretch gap-8 md:flex-row md:items-start md:gap-8">
-      <div className="min-w-0 flex-1 space-y-5">
-        <section aria-label="Markets" className="min-w-0 space-y-3">
+      <div className={cn("min-w-0 flex-1", OVERVIEW_PAGE_SECTIONS_STACK_CLASS)}>
+        <section aria-label="Markets" className={cn("min-w-0", OVERVIEW_SECTION_INNER_STACK_CLASS)}>
           <div className="flex h-8 items-center">
             <UsMarketsSessionLabel />
           </div>
@@ -368,7 +374,7 @@ export function PortfolioHomePage() {
 
         <section
           aria-label="Performance"
-          className="space-y-4 [--fs-chart-plot-bg:var(--fs-panel)]"
+          className={cn(OVERVIEW_SECTION_INNER_STACK_CLASS, "[--fs-chart-plot-bg:var(--fs-panel)]")}
         >
           <div className="flex items-start justify-between gap-3">
             <header className="flex min-w-0 flex-col items-start gap-1">
@@ -467,7 +473,7 @@ export function PortfolioHomePage() {
         </section>
 
         <section aria-label="My portfolios" className="min-w-0">
-          <div className="mb-5 flex items-center justify-between gap-2">
+          <div className={cn(OVERVIEW_SECTION_TITLE_GAP_CLASS, "flex items-center justify-between gap-2")}>
             <div className="flex min-w-0 items-center gap-2">
               <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>My portfolios</h2>
               {ready && freePortfoliosCountBadge ? (

@@ -3779,21 +3779,6 @@ export function PortfolioValueHistoryChartPane({
     : (
         <>
           {periodAxisLabels.map((lab, i) => {
-            const major = i === 0 || i === periodAxisLabels.length - 1 || i % 2 === 0;
-            return (
-              <span
-                key={`tick-${lab.key}`}
-                className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
-                style={{
-                  left: lab.leftPx,
-                  height: major ? 9 : 5,
-                  transform: "translateX(-50%)",
-                }}
-                aria-hidden
-              />
-            );
-          })}
-          {periodAxisLabels.map((lab, i) => {
             const anchor = resolvePeriodAxisLabelAnchor(lab.leftPx, { isLeftmost: i === 0 });
             return (
               <span

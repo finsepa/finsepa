@@ -52,6 +52,23 @@ export const SCREENER_TABLE_DATA_ROW_CLASS = cn(
 export const SCREENER_TABLE_ROW_HOVER_PAD_CLASS = "max-md:px-4 md:px-2";
 
 /**
+ * End-only row pad for wide sticky tables — start inset lives on the scrollport
+ * ({@link SCREENER_TABLE_SCROLL_PAD_START_CLASS}) so sticky `left-0` stays inset without
+ * a surface box-shadow gutter (which ghosted under rounded hover corners).
+ */
+export const SCREENER_TABLE_ROW_HOVER_PAD_END_CLASS = "max-md:pr-4 md:pr-2";
+
+/** Scrollport start inset matching {@link SCREENER_TABLE_ROW_HOVER_PAD_CLASS}. */
+export const SCREENER_TABLE_SCROLL_PAD_START_CLASS = "max-md:pl-4 md:pl-2";
+
+/**
+ * Vertical rule after the sticky label column (Financials / Selected) — solid divider instead of a
+ * leading scroll fade.
+ */
+export const SCREENER_TABLE_STICKY_LABEL_RULE_CLASS =
+  "border-r border-table-row-stroke shadow-[1px_0_0_0_var(--fs-table-row-stroke)]";
+
+/**
  * Alias of {@link SCREENER_TABLE_ROW_HOVER_PAD_CLASS} — same 8px desktop inset for all data tables
  * (portfolio, charting, news, earnings reports, etc.).
  */
@@ -120,14 +137,24 @@ function FinancialsViewportScrollFrame({
   children,
   className,
   embeddedInMobileCard,
+  scrollAlignEnd = false,
+  scrollAlignKey,
 }: {
   children: ReactNode;
   className?: string;
   embeddedInMobileCard: boolean;
+  scrollAlignEnd?: boolean;
+  scrollAlignKey?: string | number;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [maxHeightPx, setMaxHeightPx] = useState<number | null>(null);
   const [canScrollX, setCanScrollX] = useState(false);
+
+  const pinScrollEnd = useCallback(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    el.scrollLeft = Math.max(0, el.scrollWidth - el.clientWidth);
+  }, []);
 
   const measure = useCallback(() => {
     const root = rootRef.current;
@@ -142,20 +169,41 @@ function FinancialsViewportScrollFrame({
     measure();
   }, [measure, children]);
 
+  useLayoutEffect(() => {
+    if (!scrollAlignEnd) return;
+    pinScrollEnd();
+    const raf1 = requestAnimationFrame(() => {
+      pinScrollEnd();
+      requestAnimationFrame(() => {
+        pinScrollEnd();
+        measure();
+      });
+    });
+    return () => cancelAnimationFrame(raf1);
+  }, [scrollAlignEnd, scrollAlignKey, pinScrollEnd, measure, children]);
+
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
 
     window.addEventListener("resize", measure);
     window.visualViewport?.addEventListener("resize", measure);
-    const ro = new ResizeObserver(measure);
+    const ro = new ResizeObserver(() => {
+      measure();
+      if (!scrollAlignEnd) return;
+      const max = Math.max(0, root.scrollWidth - root.clientWidth);
+      if (root.scrollLeft >= max - 2) pinScrollEnd();
+    });
     ro.observe(root);
     const first = root.firstElementChild;
     if (first) ro.observe(first);
     // Remeasure when the Financials tab becomes visible (panel uses `hidden`).
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) measure();
+        if (entries.some((e) => e.isIntersecting)) {
+          measure();
+          if (scrollAlignEnd) pinScrollEnd();
+        }
       },
       { threshold: 0 },
     );
@@ -167,7 +215,7 @@ function FinancialsViewportScrollFrame({
       ro.disconnect();
       io.disconnect();
     };
-  }, [measure]);
+  }, [measure, scrollAlignEnd, pinScrollEnd]);
 
   return (
     <div
@@ -187,19 +235,14 @@ function FinancialsViewportScrollFrame({
         className={cn(
           "w-full min-w-0 overflow-auto overscroll-contain rounded-2xl [-webkit-overflow-scrolling:touch]",
           FINANCIALS_TABLE_VIEWPORT_SCROLLBAR_CLASS,
-          // Fade content only — offset right so the scrollbar track stays fully opaque.
+          SCREENER_TABLE_SCROLL_PAD_START_CLASS,
+          // Trailing fade only — leading edge uses the sticky label column rule.
           canScrollX &&
-            "scroll-fade-effect-x [--mask-width:2.5rem] [--scroll-buffer:1.5rem] [--mask-offset-right:10px]",
+            "scroll-fade-effect-x-end [--mask-width:2.5rem] [--scroll-buffer:1.5rem]",
           embeddedInMobileCard && "max-md:rounded-none",
         )}
         style={{
           maxHeight: maxHeightPx ?? "var(--financials-table-max-h)",
-          ...(canScrollX
-            ? ({
-                // Match sticky label col (`STOCK_TABLE_LABEL_COL_WIDTH`) so the left fade starts after labels.
-                ["--mask-offset-left" as string]: "14rem",
-              } as CSSProperties)
-            : null),
         }}
       >
         {children}
@@ -246,7 +289,11 @@ export function ScreenerTableScroll({
   const useViewportScroll = viewportScroll && scrollWide;
   /** Horizontal pan on small screens only — avoid `overflow-x` on desktop so sticky headers work in `<main>`. */
   const mobileHorizontalPan = mobileScroll && tableMinWidthPx == null;
+  /** Wide min-width tables (Financials / Selected / Earnings) need overflow-x on all breakpoints. */
+  const desktopHorizontalPan = tableMinWidthPx != null && tableMinWidthPx > 0;
+  const needsDesktopXScroll = scrollAlignEnd || desktopHorizontalPan;
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollX, setCanScrollX] = useState(false);
 
   const pinScrollEnd = useCallback(() => {
     const el = scrollRef.current;
@@ -254,15 +301,24 @@ export function ScreenerTableScroll({
     el.scrollLeft = Math.max(0, el.scrollWidth - el.clientWidth);
   }, []);
 
+  const measureScrollX = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollX(el.scrollWidth > el.clientWidth + 1);
+  }, []);
+
   useLayoutEffect(() => {
     if (!scrollAlignEnd || useViewportScroll) return;
     pinScrollEnd();
     const raf1 = requestAnimationFrame(() => {
       pinScrollEnd();
-      requestAnimationFrame(pinScrollEnd);
+      requestAnimationFrame(() => {
+        pinScrollEnd();
+        measureScrollX();
+      });
     });
     return () => cancelAnimationFrame(raf1);
-  }, [scrollAlignEnd, scrollAlignKey, useViewportScroll, pinScrollEnd, children]);
+  }, [scrollAlignEnd, scrollAlignKey, useViewportScroll, pinScrollEnd, measureScrollX, children]);
 
   useEffect(() => {
     if (!scrollAlignEnd || useViewportScroll) return;
@@ -273,13 +329,17 @@ export function ScreenerTableScroll({
       // avoids fighting the user after they scroll left to older columns.
       const max = Math.max(0, el.scrollWidth - el.clientWidth);
       if (el.scrollLeft >= max - 2) pinScrollEnd();
+      measureScrollX();
     });
     ro.observe(el);
     const first = el.firstElementChild;
     if (first) ro.observe(first);
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) pinScrollEnd();
+        if (entries.some((e) => e.isIntersecting)) {
+          pinScrollEnd();
+          measureScrollX();
+        }
       },
       { threshold: 0 },
     );
@@ -288,7 +348,46 @@ export function ScreenerTableScroll({
       ro.disconnect();
       io.disconnect();
     };
-  }, [scrollAlignEnd, scrollAlignKey, useViewportScroll, pinScrollEnd, children]);
+  }, [scrollAlignEnd, scrollAlignKey, useViewportScroll, pinScrollEnd, measureScrollX, children]);
+
+  useLayoutEffect(() => {
+    if (useViewportScroll || !needsDesktopXScroll) return;
+    measureScrollX();
+  }, [useViewportScroll, needsDesktopXScroll, measureScrollX, children, scrollAlignKey]);
+
+  useEffect(() => {
+    if (useViewportScroll || !needsDesktopXScroll) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(measureScrollX);
+    ro.observe(el);
+    const first = el.firstElementChild;
+    if (first) ro.observe(first);
+    window.addEventListener("resize", measureScrollX);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measureScrollX);
+    };
+  }, [useViewportScroll, needsDesktopXScroll, measureScrollX, children, scrollAlignKey]);
+
+  /** Hover + wheel → horizontal pan when the table overflows (trackpad δx still works natively). */
+  useEffect(() => {
+    if (useViewportScroll || !needsDesktopXScroll) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 1) return;
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      if (e.deltaY === 0) return;
+      const next = Math.min(max, Math.max(0, el.scrollLeft + e.deltaY));
+      if (next === el.scrollLeft) return;
+      e.preventDefault();
+      el.scrollLeft = next;
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [useViewportScroll, needsDesktopXScroll, scrollAlignKey, children]);
 
   const innerStyle =
     tableMinWidthPx != null || mobileTableMinWidthPx != null
@@ -320,9 +419,49 @@ export function ScreenerTableScroll({
 
   if (useViewportScroll) {
     return (
-      <FinancialsViewportScrollFrame className={className} embeddedInMobileCard={embeddedInMobileCard}>
+      <FinancialsViewportScrollFrame
+        className={className}
+        embeddedInMobileCard={embeddedInMobileCard}
+        scrollAlignEnd={scrollAlignEnd}
+        scrollAlignKey={scrollAlignKey}
+      >
         {inner}
       </FinancialsViewportScrollFrame>
+    );
+  }
+
+  // Wide tables: outer owns border/radius so scroll-fade mask never clips the card stroke.
+  if (needsDesktopXScroll) {
+    return (
+      <div
+        className={cn(
+          // Same chrome as {@link FinancialsViewportScrollFrame}: stroke on mobile,
+          // desktop uses transparent border + shadow-card only (avoids double top rim light).
+          "w-full min-w-0 max-w-full rounded-2xl bg-surface",
+          SCREENER_TABLE_OUTER_BORDER_CLASS,
+          "md:border-transparent md:shadow-card",
+          MOBILE_CARD_SURFACE_CLASS,
+          embeddedInMobileCard &&
+            "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
+          className,
+        )}
+      >
+        <div
+          ref={scrollRef}
+          className={cn(
+            "w-full min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-2xl [-webkit-overflow-scrolling:touch]",
+            "[scrollbar-width:thin] [scrollbar-color:#A1A1AA_transparent]",
+            "max-md:[-ms-overflow-style:none] max-md:[scrollbar-width:none]",
+            SCREENER_TABLE_SCROLL_PAD_START_CLASS,
+            embeddedInMobileCard && "max-md:rounded-none",
+            // Trailing fade only — leading edge uses the sticky label column rule.
+            canScrollX &&
+              "scroll-fade-effect-x-end [--mask-width:2.5rem] [--scroll-buffer:1.5rem]",
+          )}
+        >
+          {inner}
+        </div>
+      </div>
     );
   }
 
@@ -335,12 +474,7 @@ export function ScreenerTableScroll({
         SCREENER_TABLE_MOBILE_SURFACE_CLASS,
         embeddedInMobileCard &&
           "max-md:rounded-none max-md:border-0 max-md:bg-transparent max-md:shadow-none",
-        // `mobile-scroll-x` is mobile-only in CSS; earnings summary needs pan on all breakpoints.
-        scrollAlignEnd
-          ? "overflow-x-auto overflow-y-hidden overscroll-x-contain [-webkit-overflow-scrolling:touch] [scrollbar-width:thin] [scrollbar-color:#A1A1AA_transparent] max-md:[-ms-overflow-style:none] max-md:[scrollbar-width:none]"
-          : mobileHorizontalPan
-            ? "mobile-scroll-x"
-            : undefined,
+        mobileHorizontalPan ? "mobile-scroll-x" : undefined,
         className,
       )}
     >

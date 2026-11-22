@@ -528,23 +528,6 @@ function CashInOutBarChartSvg({ buckets, granularity }: { buckets: Bucket[]; gra
             {buckets.map((b, i) => {
               if (!shouldDrawXLabel(i, n, xLabelStep)) return null;
               const leftPct = ((i + 0.5) / n) * 100;
-              const major = i === 0 || i === n - 1 || i % (xLabelStep * 2) === 0;
-              return (
-                <span
-                  key={`tick-${b.key}`}
-                  className="absolute top-0 w-px bg-[color-mix(in_srgb,var(--fs-fg)_28%,transparent)]"
-                  style={{
-                    left: `${leftPct}%`,
-                    height: major ? 9 : 5,
-                    transform: "translateX(-50%)",
-                  }}
-                  aria-hidden
-                />
-              );
-            })}
-            {buckets.map((b, i) => {
-              if (!shouldDrawXLabel(i, n, xLabelStep)) return null;
-              const leftPct = ((i + 0.5) / n) * 100;
               return (
                 <div
                   key={`axis-${b.key}`}

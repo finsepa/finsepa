@@ -5,7 +5,11 @@ import { useEffect, useMemo, useState } from "react";
 
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
 import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
-import { MOBILE_ELEVATED_CARD_CLASS, STOCK_OVERVIEW_SECTION_HEADING_CLASS } from "@/components/design-system/card-surface-styles";
+import {
+  MOBILE_ELEVATED_CARD_CLASS,
+  OVERVIEW_SECTION_TITLE_GAP_CLASS,
+  STOCK_OVERVIEW_SECTION_HEADING_CLASS,
+} from "@/components/design-system/card-surface-styles";
 import { SegmentedControl } from "@/components/design-system/segmented-control";
 import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfolio/portfolio-types";
 import { ChangeCaretIcon } from "@/components/screener/change-pct";
@@ -414,7 +418,7 @@ export function BiggestContributors({
 
   return (
     <section aria-label="Biggest contributors" className="min-w-0">
-      <div className="mb-5 flex min-w-0 items-center gap-2">
+      <div className={cn(OVERVIEW_SECTION_TITLE_GAP_CLASS, "flex min-w-0 items-center gap-2")}>
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             <h2 className={STOCK_OVERVIEW_SECTION_HEADING_CLASS}>Biggest contributors</h2>

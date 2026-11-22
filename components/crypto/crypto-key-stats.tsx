@@ -3,6 +3,7 @@
 import { memo } from "react";
 
 import {
+  OVERVIEW_SECTION_TITLE_GAP_CLASS,
   STOCK_OVERVIEW_SECTION_HEADING_CLASS,
   STOCK_OVERVIEW_SECTION_TITLE_CLASS,
 } from "@/components/design-system/card-surface-styles";
@@ -40,7 +41,7 @@ function CryptoKeyStatsInner({ row }: { row: CryptoAssetRow }) {
 
   return (
     <div>
-      <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Key Stats</h2>
+      <h2 className={cn(OVERVIEW_SECTION_TITLE_GAP_CLASS, STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Key Stats</h2>
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         <div className={KEY_STATS_CARD_CLASS}>
           <h3 className={cn("mb-2", STOCK_OVERVIEW_SECTION_TITLE_CLASS)}>General</h3>

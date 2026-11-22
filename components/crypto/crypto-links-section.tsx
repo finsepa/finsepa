@@ -16,6 +16,7 @@ import {
 
 import {
   MOBILE_ELEVATED_CARD_CLASS,
+  OVERVIEW_SECTION_TITLE_GAP_CLASS,
   STOCK_OVERVIEW_SECTION_HEADING_CLASS,
 } from "@/components/design-system/card-surface-styles";
 import type { CryptoAssetLinks } from "@/lib/market/crypto-asset";
@@ -122,7 +123,7 @@ export function CryptoLinksSection({
 
   return (
     <div className="pt-2">
-      <h2 className={cn("mb-4", STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Asset & Team Info</h2>
+      <h2 className={cn(OVERVIEW_SECTION_TITLE_GAP_CLASS, STOCK_OVERVIEW_SECTION_HEADING_CLASS)}>Asset & Team Info</h2>
       <div className={cn("space-y-5 p-4 sm:p-5", MOBILE_ELEVATED_CARD_CLASS)}>
         {blurb ? <AboutDescription text={blurb} /> : null}
         {items.length > 0 ? (

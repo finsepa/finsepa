@@ -48,12 +48,12 @@ import {
 import { formatChartingTableCell } from "@/components/charting/charting-individual-company-table";
 import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
 import { straightLinePathD } from "@/lib/chart/smooth-line-path";
-
-const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import {
   fundamentalsBarEnterProgress,
   runFundamentalsBarEnterAnimation,
 } from "@/lib/chart/fundamentals-bar-enter-animation";
+import { cn } from "@/lib/utils";
 
 const MULTICHART_AXIS_ROW_PX = 32;
 const MULTICHART_AXIS_BOTTOM_PAD_PX = 10;
@@ -365,18 +365,7 @@ function ChartingMultiMetricFundamentalsLineChart({
               style={{ backgroundColor: "var(--fs-chart-plot-bg)" }}
               aria-hidden
             >
-              {yTicks.map((t, i) => {
-                const nt = yTicks.length;
-                const pct = nt <= 1 ? 0 : i / (nt - 1);
-                const top = `${(PLOT_INSET_TOP_FRAC + pct * (1 - PLOT_INSET_TOP_FRAC - PLOT_INSET_BOTTOM_FRAC)) * 100}%`;
-                return (
-                  <div
-                    key={`grid-${t}-${i}`}
-                    className="absolute inset-x-0 border-t"
-                    style={{ top, borderColor: Y_AXIS_GRIDLINE_BORDER }}
-                  />
-                );
-              })}
+              <div className={cn("absolute inset-0", CHART_PLOT_DOTS_PATTERN_CLASS)} />
               <div
                 className="absolute inset-x-0 border-t"
                 style={{

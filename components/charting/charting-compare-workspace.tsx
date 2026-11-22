@@ -28,7 +28,6 @@ import { formatChartingTableCell } from "@/components/charting/charting-individu
 import { ChartingCompareCompanyTable } from "@/components/charting/charting-compare-company-table";
 import {
   CHARTING_HEIGHT_PX,
-  CHARTING_PLOT_BACKDROP_INSET_CLASS,
   chartingAxisRowPx,
   chartingPlotHeightPx,
   chartingUsesHorizontalPeriodAxisLabels,
@@ -45,8 +44,7 @@ import {
   type ChartType,
 } from "@/components/charting/charting-time-range";
 import { CHART_BASELINE_COLOR } from "@/lib/chart/dashed-price-line-primitive";
-
-const Y_AXIS_GRIDLINE_BORDER = "color-mix(in srgb, var(--fs-stroke) 60%, transparent)";
+import { CHART_PLOT_DOTS_PATTERN_CLASS } from "@/components/chart/overview-bottom-axis";
 import { ChartingVisualSwitcher } from "@/components/stock/multichart-visual-switcher";
 import { DataFetchTopLoader } from "@/components/layout/data-fetch-top-loader";
 import { CompanyRailCard } from "@/components/layout/company-rail";
@@ -1891,22 +1889,7 @@ export function ChartingCompareWorkspace({
                 <div className="flex min-h-0 w-full overflow-visible" style={{ height: chartPlotHeight }}>
                   <div className="relative min-h-0 min-w-0 flex-1 overflow-visible bg-[var(--fs-chart-plot-bg)]">
                     <div className="pointer-events-none absolute inset-0 z-0" aria-hidden>
-                      <div
-                        className={cn(
-                          "absolute inset-x-0 bg-[var(--fs-chart-plot-bg)]",
-                          CHARTING_PLOT_BACKDROP_INSET_CLASS,
-                        )}
-                      >
-                        {(yGridTickTopsPx ?? []).map((topPx, i) =>
-                          Number.isFinite(topPx) ? (
-                            <div
-                              key={`grid-${i}`}
-                              className="absolute inset-x-0 border-t"
-                              style={{ top: topPx, borderColor: Y_AXIS_GRIDLINE_BORDER }}
-                            />
-                          ) : null,
-                        )}
-                      </div>
+                      <div className={cn("absolute inset-0", CHART_PLOT_DOTS_PATTERN_CLASS)} />
                       {(() => {
                         const zeroTop =
                           yGridTickTopsPx != null && yGridTickTopsPx.length > 0

@@ -22,8 +22,8 @@ export function FinancialsColumnOrderToggle({
       type="button"
       onClick={onToggle}
       aria-pressed={reversed}
-      aria-label={reversed ? "Show oldest years first" : "Show newest years first"}
-      title={reversed ? "Oldest → newest" : "Newest → oldest"}
+      aria-label="Reverse dates"
+      title="Reverse dates"
       className={cn(
         "inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-fg outline-none transition-colors duration-100 hover:bg-surface-muted active:bg-surface focus-visible:ring-2 focus-visible:ring-neutral-900/10 focus-visible:ring-offset-2",
         whiteSurfaceButtonChromeClass,

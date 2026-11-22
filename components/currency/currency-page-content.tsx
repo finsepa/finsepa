@@ -97,11 +97,10 @@ function CurrencyPageContentInner({
   return (
     <div className="min-w-0 pb-10">
       <div className={ASSET_PAGE_SHELL_CLASS}>
+        <div className={ASSET_HERO_CARD_CLASS}>
         <div className={ASSET_BREADCRUMB_CARD_CLASS}>
           <CurrencyBreadcrumbs symbol={symKey} displayName={displayName} displayCode={displayCode} embedded />
         </div>
-
-        <div className={ASSET_HERO_CARD_CLASS}>
         <CurrencyHeader
           symbol={symKey}
           displayName={displayName}

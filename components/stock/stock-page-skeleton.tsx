@@ -258,11 +258,11 @@ export function StockPageSkeleton() {
     const shellPending = showOptimistic ? pending : null;
     return (
       <div className="relative min-w-0" aria-busy aria-label={`Loading ${symbol}`}>
-        <div className="space-y-5 px-4 py-0 max-md:pt-4 sm:space-y-5 sm:px-9 sm:pt-5 sm:pb-6">
-          <div className={ASSET_BREADCRUMB_CARD_CLASS}>
-            <StockBreadcrumbs ticker={symbol} headerMeta={null} embedded />
-          </div>
+        <div className="space-y-10 px-4 py-0 max-md:pt-4 sm:px-9 sm:pt-5 sm:pb-6">
           <div className={ASSET_HERO_CARD_CLASS}>
+            <div className={ASSET_BREADCRUMB_CARD_CLASS}>
+              <StockBreadcrumbs ticker={symbol} headerMeta={null} embedded />
+            </div>
             <ShellHeader kind={kind} symbol={symbol} pending={shellPending} />
             <div className="max-md:hidden pointer-events-none">
               <StockDetailTabNav activeTab="overview" onTabChange={noop} embedded />
@@ -306,11 +306,10 @@ export function StockPageSkeleton() {
     return (
       <div className="relative min-w-0" aria-busy aria-label={`Loading ${symbol}`}>
         <div className={ASSET_PAGE_SHELL_CLASS}>
-          <div className={ASSET_BREADCRUMB_CARD_CLASS}>
-            <ShellBreadcrumbs kind={kind} symbol={symbol} pending={showOptimistic ? pending : null} />
-          </div>
-
           <div className={ASSET_HERO_CARD_CLASS}>
+            <div className={ASSET_BREADCRUMB_CARD_CLASS}>
+              <ShellBreadcrumbs kind={kind} symbol={symbol} pending={showOptimistic ? pending : null} />
+            </div>
             <ShellHeader kind={kind} symbol={symbol} pending={showOptimistic ? pending : null} />
             {kind === "crypto" ? (
               <div className="pointer-events-none">

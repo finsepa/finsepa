@@ -2,6 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 
+import { OVERVIEW_PAGE_SECTIONS_STACK_CLASS } from "@/components/design-system/card-surface-styles";
 import { KeyIndicators } from "@/components/stock/key-indicators";
 import { KeyStats } from "@/components/stock/key-stats";
 import { LatestNews } from "@/components/stock/latest-news";
@@ -58,7 +59,7 @@ export function StockOverviewBelowFold({
   if (isEtf) return null;
 
   return (
-    <div className="space-y-5">
+    <div className={OVERVIEW_PAGE_SECTIONS_STACK_CLASS}>
       <div>
         <KeyIndicators ticker={ticker} initial={keyIndicators} />
         <KeyStats
