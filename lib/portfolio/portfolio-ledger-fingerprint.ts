@@ -47,6 +47,8 @@ export function portfolioWorkspacePersistFingerprint(saved: PersistedPortfolioSt
         snap,
         // Appended only when set so fingerprints of existing workspaces stay unchanged.
         ...(p.sortOrder != null ? [`o${p.sortOrder}`] : []),
+        ...(p.accentColor ? [`c${p.accentColor}`] : []),
+        ...(p.iconId ? [`i${p.iconId}`] : []),
       ].join(":");
     })
     .sort()

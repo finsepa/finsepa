@@ -305,6 +305,7 @@ export {
   CheckVerified02 as VerifiedBadge,
   Play as PlaySolid,
   PlusCircle as PlusCircleSolid,
+  Stars01 as SparklesSolid,
   Stop as StopSolid,
   XCircle,
 } from "@untitledui-pro/icons/solid";

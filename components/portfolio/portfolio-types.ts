@@ -15,6 +15,10 @@ export type ConnectBrokerageCompletePayload = {
 export type PortfolioKind = "standard" | "combined" | "demo";
 
 import {
+  normalizePortfolioAccentColor,
+  normalizePortfolioIconId,
+} from "@/lib/portfolio/portfolio-appearance";
+import {
   normalizePortfolioSnaptradeSyncSettings,
   type PortfolioSnaptradeSyncSettings,
 } from "@/lib/snaptrade/sync-settings";
@@ -60,6 +64,16 @@ export type PortfolioEntry = {
    * this only marks a custom order so the persist fingerprint picks reorders up.
    */
   sortOrder?: number;
+  /**
+   * Manual portfolio accent (create flow). Omitted → classic Finsepa list tile.
+   * Brokerage portfolios ignore this and keep the brokerage logo.
+   */
+  accentColor?: string;
+  /**
+   * Manual portfolio icon id (`finsepa` = brand mark). Omitted → Finsepa default.
+   * @see {@link import("@/lib/portfolio/portfolio-appearance").PortfolioIconId}
+   */
+  iconId?: string;
 };
 
 export function portfolioIsCombined(p: PortfolioEntry | null | undefined): boolean {
@@ -127,6 +141,8 @@ export function normalizePortfolioEntry(p: {
   combinedFrom?: unknown;
   snaptrade?: unknown;
   sortOrder?: unknown;
+  accentColor?: unknown;
+  iconId?: unknown;
 }): PortfolioEntry {
   const privacy: PortfolioPrivacy = p.privacy === "public" ? "public" : "private";
   const isDemo = p.isDemo === true || p.kind === "demo";
@@ -135,12 +151,16 @@ export function normalizePortfolioEntry(p: {
     isDemo && (rawName === "" || LEGACY_DEMO_PORTFOLIO_NAMES.has(rawName))
       ? DEFAULT_DEMO_PORTFOLIO_NAME
       : rawName || "Portfolio";
+  const accentColor = normalizePortfolioAccentColor(p.accentColor);
+  const iconId = normalizePortfolioIconId(p.iconId);
   const base: PortfolioEntry = {
     id: p.id,
     name,
     privacy: isDemo ? "private" : privacy,
     ...(isDemo ? { isDemo: true, kind: "demo" as const } : {}),
     ...(typeof p.sortOrder === "number" && Number.isFinite(p.sortOrder) ? { sortOrder: p.sortOrder } : {}),
+    ...(!isDemo && accentColor ? { accentColor } : {}),
+    ...(!isDemo && iconId ? { iconId } : {}),
   };
 
   const snaptrade = normalizePortfolioSnaptradeLink(p.snaptrade);

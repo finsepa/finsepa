@@ -69,6 +69,16 @@ import {
   normalizeTransactionsProvenance,
 } from "@/lib/snaptrade/snaptrade-provenance";
 import { defaultSnaptradeUpdateFromYmd } from "@/lib/snaptrade/sync-update-from";
+import {
+  DEFAULT_PORTFOLIO_APPEARANCE,
+  PortfolioAppearancePicker,
+  PortfolioAppearancePreview,
+  type PortfolioAppearanceValue,
+} from "@/components/portfolio/portfolio-appearance-picker";
+import {
+  appearancePersistFields,
+  appearanceValueFromPortfolio,
+} from "@/lib/portfolio/portfolio-appearance";
 import { PortfolioPrivacySelect, PortfolioPrivacyFieldLabel } from "@/components/portfolio/portfolio-privacy-select";
 import { PortfolioSnaptradeConnectionInfo } from "@/components/portfolio/portfolio-snaptrade-connection-info";
 import type { CompanyPick } from "@/components/charting/company-picker";
@@ -229,8 +239,10 @@ function ModalField({ label, children }: { label: ReactNode; children: ReactNode
 function EditPortfolioModal({
   initialName,
   initialPrivacy,
+  initialAppearance,
   isCombined = false,
   isDemo = false,
+  showAppearance = false,
   allPortfolios,
   initialCombinedFromIds,
   snaptradeLink,
@@ -242,8 +254,11 @@ function EditPortfolioModal({
 }: {
   initialName: string;
   initialPrivacy: PortfolioPrivacy;
+  initialAppearance: PortfolioAppearanceValue;
   isCombined?: boolean;
   isDemo?: boolean;
+  /** Manual books get color/icon; brokerage / combined keep provider / Finsepa marks. */
+  showAppearance?: boolean;
   allPortfolios: PortfolioEntry[];
   initialCombinedFromIds?: string[];
   snaptradeLink?: PortfolioSnaptradeLink | null;
@@ -252,13 +267,19 @@ function EditPortfolioModal({
   /** e.g. Free plan cannot select Public. */
   privacyDisabledValues?: readonly PortfolioPrivacy[];
   onClose: () => void;
-  onSave: (name: string, privacy: PortfolioPrivacy, combinedSourceIds?: string[]) => void;
+  onSave: (
+    name: string,
+    privacy: PortfolioPrivacy,
+    appearance: PortfolioAppearanceValue,
+    combinedSourceIds?: string[],
+  ) => void;
   /** Opens delete confirmation; does not delete immediately. */
   onRequestDelete: () => void;
 }) {
   const titleId = useId();
   const [name, setName] = useState(initialName);
   const [privacy, setPrivacy] = useState<PortfolioPrivacy>(isDemo ? "private" : initialPrivacy);
+  const [appearance, setAppearance] = useState<PortfolioAppearanceValue>(initialAppearance);
 
   const standardPortfolios = useMemo(
     () => allPortfolios.filter((p) => p.kind !== "combined"),
@@ -292,7 +313,19 @@ function EditPortfolioModal({
     setPrivacy(isDemo ? "private" : initialPrivacy);
   }, [initialPrivacy, isDemo]);
 
-  const saveEnabled = !(isCombined && (name.trim().length === 0 || selectedSourceIds.length < 2));
+  const saveEnabled =
+    name.trim().length > 0 && !(isCombined && selectedSourceIds.length < 2);
+
+  const plan = usePlanAccessOptional();
+  const router = useRouter();
+  const appearanceLocked = plan?.isFree === true;
+  const onAppearanceLocked = useCallback(() => {
+    toastProUpgrade({
+      title: "Custom icons are on Pro",
+      description: "Upgrade to change portfolio color and icon.",
+      onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
+    });
+  }, [router]);
 
   return (
     <AppModalOverlay open onClose={onClose} zIndex={110}>
@@ -314,9 +347,9 @@ function EditPortfolioModal({
               type="button"
               disabled={!saveEnabled}
               onClick={() =>
-                isCombined ?
-                  onSave(name.trim(), privacy, selectedSourceIds)
-                : onSave(name, privacy)
+                isCombined
+                  ? onSave(name.trim(), privacy, appearance, selectedSourceIds)
+                  : onSave(name.trim(), privacy, appearance)
               }
               className={appModalPrimaryButtonClass(saveEnabled)}
             >
@@ -325,15 +358,32 @@ function EditPortfolioModal({
           </AppModalFooter>
         }
       >
-        <ModalField label="Name">
-          <ClearableInput
-            type="text"
-            value={name}
-            onChange={setName}
-            placeholder="Portfolio name"
-            clearLabel="Clear name"
-          />
-        </ModalField>
+        {showAppearance ? (
+          <>
+            <PortfolioAppearancePreview
+              name={name}
+              onNameChange={setName}
+              accentColor={appearance.accentColor}
+              iconId={appearance.iconId}
+            />
+            <PortfolioAppearancePicker
+              value={appearance}
+              onChange={setAppearance}
+              locked={appearanceLocked}
+              onLockedClick={onAppearanceLocked}
+            />
+          </>
+        ) : (
+          <ModalField label="Name">
+            <ClearableInput
+              type="text"
+              value={name}
+              onChange={setName}
+              placeholder="Portfolio name"
+              clearLabel="Clear name"
+            />
+          </ModalField>
+        )}
         {isCombined ? (
           <ModalField label="Portfolios to include">
             <CombinedPortfolioSourceHint />
@@ -363,17 +413,34 @@ function EditPortfolioModal({
 function CreatePortfolioModal({
   onClose,
   onAdd,
+  privacyDisabledValues,
 }: {
   onClose: () => void;
-  onAdd: (name: string) => void;
+  onAdd: (name: string, appearance: PortfolioAppearanceValue, privacy: PortfolioPrivacy) => void;
+  privacyDisabledValues?: readonly PortfolioPrivacy[];
 }) {
   const titleId = useId();
+  const router = useRouter();
+  const plan = usePlanAccessOptional();
   const [name, setName] = useState("");
+  const [privacy, setPrivacy] = useState<PortfolioPrivacy>("private");
+  const [appearance, setAppearance] = useState<PortfolioAppearanceValue>(DEFAULT_PORTFOLIO_APPEARANCE);
+  const appearanceLocked = plan?.isFree === true;
 
   const closeAll = useCallback(() => {
     setName("");
+    setPrivacy("private");
+    setAppearance(DEFAULT_PORTFOLIO_APPEARANCE);
     onClose();
   }, [onClose]);
+
+  const onAppearanceLocked = useCallback(() => {
+    toastProUpgrade({
+      title: "Custom icons are on Pro",
+      description: "Upgrade to change portfolio color and icon.",
+      onUpgrade: () => router.push(PATH_ACCOUNT_PLANS),
+    });
+  }, [router]);
 
   const canSubmit = name.trim().length > 0;
 
@@ -392,7 +459,7 @@ function CreatePortfolioModal({
             <button
               type="button"
               disabled={!canSubmit}
-              onClick={() => onAdd(name)}
+              onClick={() => onAdd(name, appearance, privacy)}
               className={appModalPrimaryButtonClass(canSubmit)}
             >
               Add
@@ -400,13 +467,23 @@ function CreatePortfolioModal({
           </AppModalFooter>
         }
       >
-        <ModalField label="Name">
-          <ClearableInput
-            type="text"
-            value={name}
-            onChange={setName}
-            placeholder="Enter name"
-            clearLabel="Clear name"
+        <PortfolioAppearancePreview
+          name={name}
+          onNameChange={setName}
+          accentColor={appearance.accentColor}
+          iconId={appearance.iconId}
+        />
+        <PortfolioAppearancePicker
+          value={appearance}
+          onChange={setAppearance}
+          locked={appearanceLocked}
+          onLockedClick={onAppearanceLocked}
+        />
+        <ModalField label={<PortfolioPrivacyFieldLabel />}>
+          <PortfolioPrivacySelect
+            value={privacy}
+            onChange={setPrivacy}
+            disabledValues={privacyDisabledValues}
           />
         </ModalField>
       </AppModalShell>
@@ -3126,8 +3203,20 @@ export function PortfolioWorkspaceProvider({
           key={editPortfolioId}
           initialName={portfolios.find((p) => p.id === editPortfolioId)?.name ?? ""}
           initialPrivacy={portfolios.find((p) => p.id === editPortfolioId)?.privacy ?? "private"}
+          initialAppearance={appearanceValueFromPortfolio(
+            portfolios.find((p) => p.id === editPortfolioId),
+          )}
           isCombined={portfolios.find((p) => p.id === editPortfolioId)?.kind === "combined"}
           isDemo={portfolioIsDemo(portfolios.find((p) => p.id === editPortfolioId))}
+          showAppearance={(() => {
+            const editing = portfolios.find((p) => p.id === editPortfolioId);
+            return (
+              !!editing &&
+              !portfolioIsDemo(editing) &&
+              !portfolioIsCombined(editing) &&
+              !editing.snaptrade
+            );
+          })()}
           allPortfolios={portfolios}
           initialCombinedFromIds={portfolios.find((p) => p.id === editPortfolioId)?.combinedFrom}
           snaptradeLink={portfolios.find((p) => p.id === editPortfolioId)?.snaptrade ?? null}
@@ -3141,10 +3230,11 @@ export function PortfolioWorkspaceProvider({
             setEditPortfolioOpen(false);
             setEditPortfolioId(null);
           }}
-          onSave={(name, nextPrivacy, combinedSourceIds) => {
+          onSave={(name, nextPrivacy, appearance, combinedSourceIds) => {
             const t = name.trim();
             const id = editPortfolioId;
             const editing = portfolios.find((p) => p.id === id);
+            const appearanceFields = appearancePersistFields(appearance);
             if (editing?.kind === "combined") {
               if (t.length === 0) return;
               const rawIds = combinedSourceIds ?? [];
@@ -3213,7 +3303,31 @@ export function PortfolioWorkspaceProvider({
                 });
                 return next;
               }
-              return prev.map((p) => (p.id === id ? { ...p, name: t, privacy: nextPrivacy } : p));
+              return prev.map((p) => {
+                if (p.id !== id) return p;
+                const { accentColor: _a, iconId: _i, ...rest } = p;
+                const manualAppearance =
+                  !portfolioIsDemo(p) && !portfolioIsCombined(p) && !p.snaptrade;
+                // Free can keep an existing Pro appearance, but cannot apply new picks.
+                const canEditAppearance = manualAppearance && plan?.isFree !== true;
+                const keepExistingAppearance =
+                  manualAppearance &&
+                  plan?.isFree === true &&
+                  (p.accentColor != null || p.iconId != null);
+                return {
+                  ...rest,
+                  name: t,
+                  privacy: nextPrivacy,
+                  ...(canEditAppearance
+                    ? appearanceFields
+                    : keepExistingAppearance
+                      ? {
+                          ...(p.accentColor ? { accentColor: p.accentColor } : {}),
+                          ...(p.iconId ? { iconId: p.iconId } : {}),
+                        }
+                      : {}),
+                };
+              });
             });
 
             if (id && t.length > 0) {
@@ -3310,10 +3424,17 @@ export function PortfolioWorkspaceProvider({
       {createPortfolioOpen ? (
         <CreatePortfolioModal
           onClose={() => setCreatePortfolioOpen(false)}
-          onAdd={(name) => {
+          privacyDisabledValues={
+            plan && !plan.canPublishPublicPortfolio ? (["public"] as const) : undefined
+          }
+          onAdd={(name, appearance, privacy) => {
             const t = name.trim();
             if (t.length === 0) return;
             const id = newPortfolioId();
+            const nextPrivacy: PortfolioPrivacy =
+              privacy === "public" && plan && !plan.canPublishPublicPortfolio
+                ? "private"
+                : privacy;
             const freeActiveId = plan?.freeActivePortfolioId ?? null;
             const freeSlotMissing =
               plan?.isFree === true &&
@@ -3325,7 +3446,16 @@ export function PortfolioWorkspaceProvider({
                     !portfolioIsCombined(p) &&
                     !p.snaptrade,
                 ));
-            setPortfolios((prev) => [...prev, { id, name: t, privacy: "private" }]);
+            setPortfolios((prev) => [
+              ...prev,
+              {
+                id,
+                name: t,
+                privacy: nextPrivacy,
+                // Free: classic Finsepa tile only — color/icon are Pro.
+                ...(plan?.isFree ? {} : appearancePersistFields(appearance)),
+              },
+            ]);
             // Bypass Free lock gate — this book becomes the Free active slot when needed.
             setSelectedPortfolioState(id);
             saveLastSelectedPortfolioId(userId, id);
@@ -3343,6 +3473,16 @@ export function PortfolioWorkspaceProvider({
                 created.
               </span>,
             );
+            if (nextPrivacy === "public") {
+              void putPublicPortfolioListingRequest({
+                portfolioId: id,
+                publish: true,
+                displayName: t,
+                metrics: metricsForPublicListing([], []),
+              }).then((r) => {
+                if (r.ok) dispatchPublicListingsChanged();
+              });
+            }
             if (freeSlotMissing && plan) {
               void plan.selectFreePortfolio(id).then((ok) => {
                 if (!ok) {

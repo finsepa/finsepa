@@ -87,4 +87,21 @@ describe("portfolioWorkspacePersistFingerprint", () => {
     assert.notEqual(portfolioWorkspacePersistFingerprint(a), portfolioWorkspacePersistFingerprint(renamed));
     assert.notEqual(portfolioWorkspacePersistFingerprint(a), portfolioWorkspacePersistFingerprint(withExtra));
   });
+
+  it("changes when accent color or icon changes", () => {
+    const a = baseState({
+      portfolios: [{ id: "p1", name: "Test", privacy: "private" }],
+    });
+    const withColor = baseState({
+      portfolios: [{ id: "p1", name: "Test", privacy: "private", accentColor: "#2563EB" }],
+    });
+    const withIcon = baseState({
+      portfolios: [{ id: "p1", name: "Test", privacy: "private", accentColor: "#2563EB", iconId: "star" }],
+    });
+    assert.notEqual(portfolioWorkspacePersistFingerprint(a), portfolioWorkspacePersistFingerprint(withColor));
+    assert.notEqual(
+      portfolioWorkspacePersistFingerprint(withColor),
+      portfolioWorkspacePersistFingerprint(withIcon),
+    );
+  });
 });

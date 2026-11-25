@@ -7,6 +7,7 @@ import { LineChart } from "@/lib/icons";
 
 import { PortfolioHoldingsPerformanceChart } from "@/components/portfolio/portfolio-holdings-performance-chart";
 import { PortfolioReturnsDynamicsChart } from "@/components/portfolio/portfolio-returns-dynamics-chart";
+import { PortfolioWinrateSection } from "@/components/portfolio/portfolio-winrate-section";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import {
   OVERVIEW_PAGE_SECTIONS_STACK_CLASS,
@@ -555,6 +556,9 @@ function PortfolioPerformancePanelInner({
         </h2>
         <PortfolioHoldingsPerformanceChart holdings={holdings} transactions={transactions} />
       </section>
+
+      {/* iOS Insights Winrate — same closed-position / realized-P/L definition. */}
+      <PortfolioWinrateSection holdings={holdings} transactions={transactions} />
     </div>
   );
 }

@@ -4,8 +4,6 @@ import type { ReactNode } from "react";
 import { Landmark, Layers2, Pencil, Upload, Wallet } from "@/lib/icons";
 
 import { whiteSurfaceButtonChromeClass } from "@/components/design-system/secondary-button-styles";
-import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
-import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import { portfolioIsDemo } from "@/components/portfolio/portfolio-types";
 import { usePortfolioWorkspace } from "@/components/portfolio/portfolio-workspace-context";
 import { Empty, EmptyContent, EmptyTitle } from "@/components/ui/empty";
@@ -17,7 +15,6 @@ type SetupTile = {
   description: string;
   icon: ReactNode;
   disabled?: boolean;
-  showProBadge?: boolean;
   onClick?: () => void;
 };
 
@@ -41,12 +38,7 @@ function SetupTileContent({ tile }: { tile: SetupTile }) {
         {tile.icon}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="inline-flex flex-wrap items-center gap-1.5 text-[15px] font-semibold leading-6 text-fg sm:text-base">
-          {tile.title}
-          {tile.showProBadge ? (
-            <ProFeatureBadge label="Brokerage sync is available on Pro only" />
-          ) : null}
-        </span>
+        <span className="text-[15px] font-semibold leading-6 text-fg sm:text-base">{tile.title}</span>
         <span className="text-[13px] font-normal leading-5 text-fg-muted sm:text-sm">
           {tile.description}
         </span>
@@ -69,19 +61,15 @@ export function PortfolioEmptySetupTiles({ className }: { className?: string }) 
     openTryDemoPortfolio,
     selectedPortfolioReadOnly,
   } = usePortfolioWorkspace();
-  const plan = usePlanAccessOptional();
-  const canBrokerage = plan?.canConnectBrokerage !== false;
   const hasExistingDemoPortfolio = portfolios.some((p) => portfolioIsDemo(p));
 
   const tiles: SetupTile[] = [
     {
       id: "brokerage",
       title: "Connect brokerage",
-      description: canBrokerage
-        ? "Link your broker — we'll keep it synced."
-        : "Connect your broker and stay synced.",
+      description: "Link your broker — we'll keep it synced.",
       icon: <Landmark className="size-5" strokeWidth={1.75} aria-hidden />,
-      showProBadge: !canBrokerage,
+      // Free → paywall inside openConnectBrokerageToSelected (no Pro badge).
       onClick: () => openConnectBrokerageToSelected(),
     },
     {

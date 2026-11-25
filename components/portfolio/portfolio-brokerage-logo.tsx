@@ -3,11 +3,19 @@
 import { useEffect, useState } from "react";
 
 import { FinsepaLogo } from "@/components/brand/finsepa-logo";
+import { PortfolioIconMark } from "@/components/portfolio/portfolio-icon-mark";
 import {
   portfolioIsCombined,
+  portfolioIsDemo,
   type PortfolioEntry,
   type PortfolioSnaptradeLink,
 } from "@/components/portfolio/portfolio-types";
+import {
+  DEFAULT_PORTFOLIO_ACCENT_COLOR,
+  DEFAULT_PORTFOLIO_ICON_ID,
+  portfolioAccentIconClassName,
+  portfolioHasCustomAppearance,
+} from "@/lib/portfolio/portfolio-appearance";
 import {
   resolveBrokerageLogoStyleFromImage,
   resolveBrokerageLogoStyleFromMeta,
@@ -61,9 +69,25 @@ export function PortfolioListLogo({
   const shellClass = portfolioLogoShellClass(size, className);
   const brandMarkSize = size === "topbar" ? 20 : 18;
 
-  // Combined / manual / demo share the Finsepa brand tile (iOS parity).
+  // Live / offline brokerage keeps the provider logo.
   if (!portfolioIsCombined(portfolio) && portfolio.snaptrade) {
     return <PortfolioBrokerageLogo snaptrade={portfolio.snaptrade} size={size} className={className} />;
+  }
+
+  // Manual create appearance — colored tile + icon (default Finsepa mark).
+  if (!portfolioIsCombined(portfolio) && !portfolioIsDemo(portfolio) && portfolioHasCustomAppearance(portfolio)) {
+    const accent = portfolio.accentColor?.trim() || DEFAULT_PORTFOLIO_ACCENT_COLOR;
+    const iconId = portfolio.iconId?.trim() || DEFAULT_PORTFOLIO_ICON_ID;
+    const iconClass = portfolioAccentIconClassName(accent);
+    return (
+      <div
+        className={cn(shellClass, "border-transparent", iconClass)}
+        style={{ backgroundColor: accent }}
+        aria-hidden
+      >
+        <PortfolioIconMark iconId={iconId} size={brandMarkSize} className={iconClass} />
+      </div>
+    );
   }
 
   return (

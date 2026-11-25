@@ -100,7 +100,6 @@ export function TopbarAddMenu() {
   const isLocked = (p: PortfolioEntry) => Boolean(plan?.isFree && !isFreePortfolioAccessible(p.id));
   const target = targetId ? (books.find((p) => p.id === targetId) ?? null) : null;
 
-  const canConnectBrokerage = plan?.canConnectBrokerage !== false;
   const offersDemo = !portfolios.some(portfolioIsDemo);
   const createPortfolioProLocked = Boolean(plan?.isFree && !plan.canCreatePortfolio);
   const createCombinedProLocked = Boolean(plan && !plan.canCreateCombinedPortfolio);
@@ -253,7 +252,7 @@ export function TopbarAddMenu() {
                       ? {
                           disabled: portfolioIsLiveBrokerage(target),
                           disabledTitle: "This portfolio is already connected to a brokerage",
-                          proBadge: canConnectBrokerage ? undefined : "Brokerage sync is available on Pro only",
+                          // Free → paywall on tap (no Pro badge).
                         }
                       : {}),
                   }),

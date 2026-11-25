@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles } from "@/lib/icons";
+import { SparklesSolid } from "@/lib/icons";
 
 import { TopbarDelayedTooltip } from "@/components/layout/topbar-delayed-tooltip";
 import type { BillingSummary } from "@/lib/account/billing";
@@ -87,7 +87,7 @@ export function TopbarUpgradeButton({
             "shadow-[0px_1px_2px_0px_rgba(37,99,235,0.2)] transition-colors hover:bg-accent-hover",
           )}
         >
-          <Sparkles className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
+          <SparklesSolid className="h-4 w-4 shrink-0" aria-hidden />
           Get Pro
         </button>
       </TopbarDelayedTooltip>

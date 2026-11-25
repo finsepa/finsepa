@@ -77,7 +77,15 @@ function isRecord(x: unknown): x is Record<string, unknown> {
   return x !== null && typeof x === "object" && !Array.isArray(x);
 }
 
-function isRawPortfolioEntry(x: unknown): x is { id: string; name: string; privacy?: unknown; kind?: unknown; combinedFrom?: unknown } {
+function isRawPortfolioEntry(x: unknown): x is {
+  id: string;
+  name: string;
+  privacy?: unknown;
+  kind?: unknown;
+  combinedFrom?: unknown;
+  accentColor?: unknown;
+  iconId?: unknown;
+} {
   if (!isRecord(x)) return false;
   if (typeof x.id !== "string" || typeof x.name !== "string") return false;
   const pr = x.privacy;
@@ -89,6 +97,8 @@ function isRawPortfolioEntry(x: unknown): x is { id: string; name: string; priva
   if (cf !== undefined && (!Array.isArray(cf) || !cf.every((t): t is string => typeof t === "string"))) {
     return false;
   }
+  if (x.accentColor !== undefined && typeof x.accentColor !== "string") return false;
+  if (x.iconId !== undefined && typeof x.iconId !== "string") return false;
   return true;
 }
 

@@ -29,7 +29,6 @@ import {
   type PortfolioEntry,
 } from "@/components/portfolio/portfolio-types";
 import { usePlanAccessOptional } from "@/components/account/plan-access-provider";
-import { ProFeatureBadge } from "@/components/account/pro-feature-badge";
 import {
   addCashMenuIconAnimation,
   connectBrokerageMenuIconAnimation,
@@ -127,7 +126,6 @@ export function PortfolioQuickAddMenu({
     label: string;
     disabled: boolean;
     title?: string;
-    showProBadge?: boolean;
   }> = [
     {
       id: "trade",
@@ -142,8 +140,8 @@ export function PortfolioQuickAddMenu({
     {
       id: "connectBrokerage",
       label: "Connect Brokerage",
-      disabled: connectBrokerageDisabled,
-      showProBadge: !canConnectBrokerage,
+      // Free stays clickable — openConnectBrokerageToSelected launches the paywall.
+      disabled: connectBrokerageDisabled && canConnectBrokerage,
       title:
         portfolioIsLiveBrokerage(selectedPortfolio) ?
           "This portfolio is already connected to a brokerage"
@@ -151,8 +149,6 @@ export function PortfolioQuickAddMenu({
           "Connect brokerage on a standard portfolio"
         : selectedPortfolioReadOnly ?
           "This portfolio is read-only"
-        : !canConnectBrokerage ?
-          "Brokerage connection is available on Pro only"
         : undefined,
     },
     {
@@ -257,34 +253,31 @@ export function PortfolioQuickAddMenu({
   }
 
   function renderItem(item: (typeof activityItems)[number]) {
-    const { id, label, disabled, title, showProBadge } = item;
-    /** Pro-gated rows stay interactive so Free users can open View Plans. */
-    const hardDisabled = disabled && !showProBadge;
+    const { id, label, disabled, title } = item;
     return (
       <button
         key={id}
         type="button"
         role="menuitem"
-        aria-disabled={hardDisabled}
+        aria-disabled={disabled}
         title={title}
         onMouseEnter={() => setPlayingId(id)}
         onMouseLeave={() => setPlayingId(null)}
         onFocus={() => setPlayingId(id)}
         onBlur={() => setPlayingId(null)}
         onClick={() => {
-          if (hardDisabled) return;
+          if (disabled) return;
           setOpen(false);
           runItem(id);
         }}
         className={cn(
           dropdownMenuPlainItemClassName(),
           "font-medium whitespace-nowrap",
-          hardDisabled ? "cursor-not-allowed opacity-40 hover:bg-surface" : null,
+          disabled ? "cursor-not-allowed opacity-40 hover:bg-surface" : null,
         )}
       >
         {itemIcon(id)}
         <span className="min-w-0 flex-1 truncate text-left">{label}</span>
-        {showProBadge ? <ProFeatureBadge label="Brokerage sync is available on Pro only" /> : null}
       </button>
     );
   }
