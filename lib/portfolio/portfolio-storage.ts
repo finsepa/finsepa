@@ -9,7 +9,14 @@ import {
   isPortfolioGoal,
   persistedGoalUpdatedAt,
   normalizePortfolioEntry,
+  portfolioIsCombined,
+  portfolioIsDemo,
 } from "@/components/portfolio/portfolio-types";
+import {
+  appearancePersistFields,
+  appearanceValueFromPortfolio,
+  portfolioHasCustomAppearance,
+} from "@/lib/portfolio/portfolio-appearance";
 
 /** Legacy key (pre–per-user storage). Migrated once into {@link portfolioStorageKeyForUser}. */
 export const PORTFOLIO_STORAGE_KEY = "finsepa.portfolio.v1" as const;
@@ -285,6 +292,59 @@ export function withMergedPortfolioGoals(
   return {
     ...incoming,
     ...(goalByPortfolioId != null ? { goalByPortfolioId } : {}),
+  };
+}
+
+/**
+ * Copy custom accent/icon onto `target` rows that lack them from `donor` (same portfolio id).
+ * Manual books only — brokerage / combined / demo never keep appearance (web + iOS parity).
+ * Used so a stale full-blob PUT/hydrate cannot wipe a color/icon saved elsewhere.
+ */
+export function mergePortfolioEntriesPreservingAppearance(
+  target: readonly PortfolioEntry[],
+  donor: readonly PortfolioEntry[] | null | undefined,
+): PortfolioEntry[] {
+  if (donor == null || donor.length === 0) return [...target];
+  const byId = new Map(donor.map((p) => [p.id, p]));
+  return target.map((p) => {
+    if (portfolioIsDemo(p) || portfolioIsCombined(p) || p.snaptrade) return p;
+    if (portfolioHasCustomAppearance(p)) return p;
+    const from = byId.get(p.id);
+    if (!from || !portfolioHasCustomAppearance(from)) return p;
+    if (portfolioIsDemo(from) || portfolioIsCombined(from) || from.snaptrade) return p;
+    const fields = appearancePersistFields(appearanceValueFromPortfolio(from));
+    if (!fields.accentColor && !fields.iconId) return p;
+    return { ...p, ...fields };
+  });
+}
+
+/**
+ * Hydrate: keep local custom appearance when the cloud row omitted it (stale GET / race).
+ * Ledger/name/privacy still come from `remote`.
+ */
+export function mergePersistedPortfolioAppearances(
+  local: PersistedPortfolioState | null | undefined,
+  remote: PersistedPortfolioState,
+): PersistedPortfolioState {
+  return {
+    ...remote,
+    portfolios: mergePortfolioEntriesPreservingAppearance(remote.portfolios, local?.portfolios),
+  };
+}
+
+/**
+ * Server PUT from clients that omit `baseUpdatedAt` (legacy iOS): preserve existing
+ * appearance when the incoming blob stripped it. Clients that send a matching
+ * `baseUpdatedAt` skip this so an intentional reset to classic Finsepa still works.
+ */
+export function withMergedPortfolioAppearances(
+  incoming: PersistedPortfolioState,
+  existing: PersistedPortfolioState | null | undefined,
+): PersistedPortfolioState {
+  if (existing == null) return incoming;
+  return {
+    ...incoming,
+    portfolios: mergePortfolioEntriesPreservingAppearance(incoming.portfolios, existing.portfolios),
   };
 }
 

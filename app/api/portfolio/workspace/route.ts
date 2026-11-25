@@ -10,6 +10,7 @@ import { requireAuthUserFromRequest, AuthRequiredError } from "@/lib/watchlist/a
 import {
   type PersistedPortfolioState,
   parsePersistedPortfolioUnknown,
+  withMergedPortfolioAppearances,
   withMergedPortfolioGoals,
 } from "@/lib/portfolio/portfolio-storage";
 import { getSupabaseClientForRequest } from "@/lib/supabase/request-client";
@@ -123,9 +124,13 @@ export async function PUT(request: Request) {
       );
     }
 
-    const { state, report: migrateReport } = prepareWorkspaceLedgerForPersist(
-      withMergedPortfolioGoals(parsed, previous),
-    );
+    // Goals always merge by updatedAt. Appearance: only backfill from the previous
+    // row when the client omitted optimistic concurrency (legacy iOS). Web always
+    // sends baseUpdatedAt, so an intentional classic-Finsepa reset still clears.
+    const withGoals = withMergedPortfolioGoals(parsed, previous);
+    const toPersist =
+      baseUpdatedAt == null ? withMergedPortfolioAppearances(withGoals, previous) : withGoals;
+    const { state, report: migrateReport } = prepareWorkspaceLedgerForPersist(toPersist);
     const strict = isPortfolioLedgerStrictPersistEnabled();
     const validation = validateWorkspaceState(state, {
       allowLegacyAnomalies: true,

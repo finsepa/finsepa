@@ -15,6 +15,7 @@ export type ConnectBrokerageCompletePayload = {
 export type PortfolioKind = "standard" | "combined" | "demo";
 
 import {
+  DEFAULT_PORTFOLIO_ICON_ID,
   normalizePortfolioAccentColor,
   normalizePortfolioIconId,
 } from "@/lib/portfolio/portfolio-appearance";
@@ -153,28 +154,37 @@ export function normalizePortfolioEntry(p: {
       : rawName || "Portfolio";
   const accentColor = normalizePortfolioAccentColor(p.accentColor);
   const iconId = normalizePortfolioIconId(p.iconId);
+  const snaptrade = normalizePortfolioSnaptradeLink(p.snaptrade);
+  const kind = p.kind === "combined" ? "combined" : "standard";
+  const combinedFrom =
+    kind === "combined" && Array.isArray(p.combinedFrom)
+      ? p.combinedFrom.filter((x): x is string => typeof x === "string")
+      : undefined;
+  const isCombined = kind === "combined" && combinedFrom != null && combinedFrom.length >= 2;
+  // iOS `PortfolioMapping.session` — appearance only on non-demo manuals (no brokerage / combined).
+  const keepAppearance = !isDemo && !isCombined && !snaptrade;
+  const appearanceFields =
+    keepAppearance ?
+      {
+        ...(accentColor ? { accentColor } : {}),
+        ...(iconId && iconId !== DEFAULT_PORTFOLIO_ICON_ID ? { iconId } : {}),
+      }
+    : {};
+
   const base: PortfolioEntry = {
     id: p.id,
     name,
     privacy: isDemo ? "private" : privacy,
     ...(isDemo ? { isDemo: true, kind: "demo" as const } : {}),
     ...(typeof p.sortOrder === "number" && Number.isFinite(p.sortOrder) ? { sortOrder: p.sortOrder } : {}),
-    ...(!isDemo && accentColor ? { accentColor } : {}),
-    ...(!isDemo && iconId ? { iconId } : {}),
+    ...appearanceFields,
   };
 
-  const snaptrade = normalizePortfolioSnaptradeLink(p.snaptrade);
   const withSnaptrade = snaptrade && !isDemo ? { ...base, snaptrade } : base;
 
   if (isDemo) return withSnaptrade;
 
-  const kind = p.kind === "combined" ? "combined" : "standard";
-  const combinedFrom =
-    kind === "combined" && Array.isArray(p.combinedFrom)
-      ? p.combinedFrom.filter((x): x is string => typeof x === "string")
-      : undefined;
-
-  if (kind === "combined" && combinedFrom && combinedFrom.length >= 2) {
+  if (isCombined) {
     return { ...withSnaptrade, kind: "combined", combinedFrom };
   }
   return withSnaptrade;

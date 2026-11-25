@@ -115,6 +115,7 @@ import {
   loadPersistedPortfolioStateForUser,
   loadPortfolioWorkspaceSyncMeta,
   mergeGoalMaps,
+  mergePersistedPortfolioAppearances,
   mergePersistedPortfolioGoals,
   parsePersistedPortfolioUnknown,
   persistedGoalsNeedCloudSync,
@@ -1212,12 +1213,40 @@ export function PortfolioWorkspaceProvider({
     }
   }, [userId, applyWorkspaceState]);
 
+  const applyWorkspaceStateRef = useRef(applyWorkspaceState);
+  applyWorkspaceStateRef.current = applyWorkspaceState;
+  const markWorkspaceSyncedRef = useRef(markWorkspaceSynced);
+  markWorkspaceSyncedRef.current = markWorkspaceSynced;
+
+  /**
+   * Prefer cloud ledger/goals, but keep accent/icon from the freshest local + in-memory
+   * portfolios so a slow GET (or re-hydrate) cannot wipe an edit that already painted.
+   */
+  const mergeRemotePreservingLocalAppearance = useCallback(
+    (
+      remote: PersistedPortfolioState,
+      localSnapshot: PersistedPortfolioState | null | undefined,
+    ): PersistedPortfolioState => {
+      const freshLocal = loadPersistedPortfolioStateForUser(userId) ?? localSnapshot ?? null;
+      const memoryDonor: PersistedPortfolioState = {
+        ...remote,
+        portfolios: portfoliosRef.current,
+      };
+      const withGoals = mergePersistedPortfolioGoals(freshLocal, remote);
+      const withDisk = mergePersistedPortfolioAppearances(freshLocal, withGoals);
+      return mergePersistedPortfolioAppearances(memoryDonor, withDisk);
+    },
+    [userId],
+  );
+
   /** Load per-user local snapshot, merge with Supabase row, then allow debounced saves. */
   useEffect(() => {
     let cancelled = false;
 
     startTransition(() => {
       void (async () => {
+        const apply = applyWorkspaceStateRef.current;
+        const markSynced = markWorkspaceSyncedRef.current;
         const local = loadPersistedPortfolioStateForUser(userId);
         const syncMeta = loadPortfolioWorkspaceSyncMeta(userId);
         if (syncMeta) {
@@ -1251,10 +1280,12 @@ export function PortfolioWorkspaceProvider({
               remoteUpdatedAt && !Number.isNaN(Date.parse(remoteUpdatedAt)) ?
                 Date.parse(remoteUpdatedAt)
               : 0;
-            const localTime = local?.savedAt ?? 0;
+            // Re-read after the network wait — edits during GET must count as unsynced.
+            const latestLocal = loadPersistedPortfolioStateForUser(userId) ?? local;
+            const localTime = latestLocal?.savedAt ?? 0;
             const localPersist =
-              local && local.portfolios.length > 0 ?
-                portfolioWorkspacePersistFingerprint(local)
+              latestLocal && latestLocal.portfolios.length > 0 ?
+                portfolioWorkspacePersistFingerprint(latestLocal)
               : null;
             const remotePersist =
               remote && remote.portfolios.length > 0 ?
@@ -1270,13 +1301,13 @@ export function PortfolioWorkspaceProvider({
 
             if (remote && remote.portfolios.length > 0) {
               const remoteHasLedger = portfolioStateHasLedgerData(remote);
-              const localHasLedger = local ? portfolioStateHasLedgerData(local) : false;
+              const localHasLedger = latestLocal ? portfolioStateHasLedgerData(latestLocal) : false;
 
               // Prefer cloud whenever local only looks "newer" because quotes bumped savedAt.
               // Promote local only when its persist fingerprint differs from last sync (real edits).
               if (unsyncedLocalEdits && localTime > remoteTime && remoteHasLedger && !localHasLedger) {
-                const merged = mergePersistedPortfolioGoals(local!, remote);
-                applyWorkspaceState(merged);
+                const merged = mergeRemotePreservingLocalAppearance(remote, latestLocal);
+                apply(merged);
                 savePersistedPortfolioStateForUser(userId, {
                   ...merged,
                   savedAt: remoteTime > 0 ? remoteTime : Date.now(),
@@ -1287,16 +1318,16 @@ export function PortfolioWorkspaceProvider({
                     remoteUpdatedAt,
                   );
                   if (synced.ok) {
-                    markWorkspaceSynced(
+                    markSynced(
                       portfolioWorkspacePersistFingerprint(merged),
                       synced.updatedAt ?? remoteUpdatedAt,
                     );
                   } else if (synced.conflict) {
-                    markWorkspaceSynced(
+                    markSynced(
                       portfolioWorkspacePersistFingerprint(synced.state),
                       synced.updatedAt,
                     );
-                    applyWorkspaceState(synced.state);
+                    apply(mergeRemotePreservingLocalAppearance(synced.state, latestLocal));
                     savePersistedPortfolioStateForUser(userId, {
                       ...synced.state,
                       savedAt: Date.now(),
@@ -1307,25 +1338,32 @@ export function PortfolioWorkspaceProvider({
                     });
                   }
                 } else if (remotePersist) {
-                  markWorkspaceSynced(remotePersist, remoteUpdatedAt);
+                  markSynced(
+                    portfolioWorkspacePersistFingerprint(merged),
+                    remoteUpdatedAt,
+                  );
                 }
               } else if (unsyncedLocalEdits && localTime > remoteTime) {
-                applyWorkspaceState(local!);
+                apply(latestLocal!);
                 const putResult = await persistWorkspaceStateToCloud(
-                  local!,
+                  latestLocal!,
                   remoteUpdatedAt,
                 );
                 if (putResult.ok) {
-                  markWorkspaceSynced(localPersist!, putResult.updatedAt ?? remoteUpdatedAt);
-                  savePersistedPortfolioStateForUser(userId, local!);
+                  markSynced(localPersist!, putResult.updatedAt ?? remoteUpdatedAt);
+                  savePersistedPortfolioStateForUser(userId, latestLocal!);
                 } else if (putResult.conflict) {
-                  markWorkspaceSynced(
-                    portfolioWorkspacePersistFingerprint(putResult.state),
+                  const conflictMerged = mergeRemotePreservingLocalAppearance(
+                    putResult.state,
+                    latestLocal,
+                  );
+                  markSynced(
+                    portfolioWorkspacePersistFingerprint(conflictMerged),
                     putResult.updatedAt,
                   );
-                  applyWorkspaceState(putResult.state);
+                  apply(conflictMerged);
                   savePersistedPortfolioStateForUser(userId, {
-                    ...putResult.state,
+                    ...conflictMerged,
                     savedAt: Date.now(),
                   });
                 } else {
@@ -1334,9 +1372,9 @@ export function PortfolioWorkspaceProvider({
                   });
                 }
               } else {
-                const merged = mergePersistedPortfolioGoals(local, remote);
-                applyWorkspaceState(merged);
-                markWorkspaceSynced(
+                const merged = mergeRemotePreservingLocalAppearance(remote, latestLocal);
+                apply(merged);
+                markSynced(
                   portfolioWorkspacePersistFingerprint(merged),
                   remoteUpdatedAt,
                 );
@@ -1350,18 +1388,22 @@ export function PortfolioWorkspaceProvider({
                     remoteUpdatedAt,
                   );
                   if (synced.ok) {
-                    markWorkspaceSynced(
+                    markSynced(
                       portfolioWorkspacePersistFingerprint(merged),
                       synced.updatedAt ?? remoteUpdatedAt,
                     );
                   } else if (synced.conflict) {
-                    markWorkspaceSynced(
-                      portfolioWorkspacePersistFingerprint(synced.state),
+                    const conflictMerged = mergeRemotePreservingLocalAppearance(
+                      synced.state,
+                      latestLocal,
+                    );
+                    markSynced(
+                      portfolioWorkspacePersistFingerprint(conflictMerged),
                       synced.updatedAt,
                     );
-                    applyWorkspaceState(synced.state);
+                    apply(conflictMerged);
                     savePersistedPortfolioStateForUser(userId, {
-                      ...synced.state,
+                      ...conflictMerged,
                       savedAt: Date.now(),
                     });
                   } else {
@@ -1371,25 +1413,29 @@ export function PortfolioWorkspaceProvider({
                   }
                 }
               }
-            } else if (local && local.portfolios.length > 0) {
+            } else if (latestLocal && latestLocal.portfolios.length > 0) {
               // Always promote local workspace when cloud has none — including empty
               // portfolios (no trades yet). Previously we only PUT when ledger data existed,
               // so multi-portfolio setups without trades never left the device.
-              applyWorkspaceState(local);
-              const putResult = await persistWorkspaceStateToCloud(local, null);
+              apply(latestLocal);
+              const putResult = await persistWorkspaceStateToCloud(latestLocal, null);
               if (putResult.ok) {
-                markWorkspaceSynced(
-                  portfolioWorkspacePersistFingerprint(local),
+                markSynced(
+                  portfolioWorkspacePersistFingerprint(latestLocal),
                   putResult.updatedAt,
                 );
               } else if (putResult.conflict) {
-                markWorkspaceSynced(
-                  portfolioWorkspacePersistFingerprint(putResult.state),
+                const conflictMerged = mergeRemotePreservingLocalAppearance(
+                  putResult.state,
+                  latestLocal,
+                );
+                markSynced(
+                  portfolioWorkspacePersistFingerprint(conflictMerged),
                   putResult.updatedAt,
                 );
-                applyWorkspaceState(putResult.state);
+                apply(conflictMerged);
                 savePersistedPortfolioStateForUser(userId, {
-                  ...putResult.state,
+                  ...conflictMerged,
                   savedAt: Date.now(),
                 });
               } else {
@@ -1399,10 +1445,10 @@ export function PortfolioWorkspaceProvider({
               }
             }
           } else if (local) {
-            applyWorkspaceState(local);
+            apply(local);
           }
         } catch {
-          if (local) applyWorkspaceState(local);
+          if (local) applyWorkspaceStateRef.current(local);
         } finally {
           if (fetchTimeoutId !== undefined) window.clearTimeout(fetchTimeoutId);
           if (!cancelled) setWorkspaceHydrated(true);
@@ -1413,7 +1459,9 @@ export function PortfolioWorkspaceProvider({
     return () => {
       cancelled = true;
     };
-  }, [userId, applyWorkspaceState, markWorkspaceSynced]);
+    // Intentionally userId-only: apply/markSynced via refs so callback identity churn
+    // cannot re-fetch and clobber an in-progress appearance edit.
+  }, [userId, mergeRemotePreservingLocalAppearance]);
 
   const setPortfolioGoal = useCallback((portfolioId: string, goal: PortfolioGoal | null) => {
     setGoalByPortfolioIdState((prev) => ({
