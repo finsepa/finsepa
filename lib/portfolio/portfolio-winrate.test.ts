@@ -8,7 +8,7 @@ import type { PortfolioHolding, PortfolioTransaction } from "@/components/portfo
 import {
   buildPortfolioWinrateStats,
   formatWinratePercentLabel,
-} from "@/lib/portfolio/portfolio-winrate.ts";
+} from "@/lib/portfolio/portfolio-winrate";
 
 function tx(
   partial: Partial<PortfolioTransaction> & Pick<PortfolioTransaction, "id" | "operation" | "symbol">,

@@ -136,7 +136,7 @@ function WinrateSplitBar({ stats }: { stats: PortfolioWinrateStats }) {
 
 /** iOS `PortfolioWinrateColumnsChart` — count bars with realized $ under each. */
 function WinrateColumnsChart({ stats }: { stats: PortfolioWinrateStats }) {
-  const maxCount = Math.max(stats.winners.count, stats.losers.count, 1);
+  const maxCount = Math.max(stats.winners.length, stats.losers.length, 1);
 
   const column = (title: string, count: number, usd: number, color: string) => {
     const fraction = count / maxCount;
@@ -304,7 +304,7 @@ export function PortfolioWinrateSection({
             <SegmentedControl
               fullWidth
               value={side}
-              onValueChange={(v) => setSide(v as "winners" | "losers")}
+              onChange={setSide}
               options={[
                 { value: "winners", label: "Winners" },
                 { value: "losers", label: "Losers" },
