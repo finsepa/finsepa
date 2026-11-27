@@ -3,7 +3,6 @@ import {
   OVERVIEW_PAGE_SECTIONS_STACK_CLASS,
 } from "@/components/design-system/card-surface-styles";
 import { SkeletonBox } from "@/components/markets/skeleton";
-import { KeyIndicatorsSkeleton } from "@/components/stock/key-indicators-skeleton";
 import { cn } from "@/lib/utils";
 
 function KeyStatsCardsSkeleton() {
@@ -38,13 +37,12 @@ function LatestNewsSkeleton() {
   );
 }
 
-/** Suspense fallback while overview below-fold (KI / key stats / news) streams. */
+/** Suspense fallback while overview below-fold (key stats / news) streams. */
 export function StockOverviewBelowFoldSkeleton({ isEtf = false }: { isEtf?: boolean }) {
   if (isEtf) return null;
   return (
     <div className={OVERVIEW_PAGE_SECTIONS_STACK_CLASS}>
       <div>
-        <KeyIndicatorsSkeleton />
         <KeyStatsCardsSkeleton />
       </div>
       <LatestNewsSkeleton />

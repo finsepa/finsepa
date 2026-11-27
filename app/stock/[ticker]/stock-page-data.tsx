@@ -49,7 +49,6 @@ export async function StockPageData({
             <StockOverviewBelowFold
               ticker={ticker}
               isEtf={initialPageData.isEtf}
-              keyIndicators={initialPageData.keyIndicators}
               keyStatsBundle={initialPageData.keyStatsBundle}
               news={initialPageData.news}
             />

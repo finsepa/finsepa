@@ -10,7 +10,7 @@ import {
   Briefcase01,
   Building07,
   Coins01,
-  Cryptocurrency01,
+  CurrencyBitcoinCircle,
   FaceSmile,
   GraduationHat01,
   Globe01,
@@ -96,13 +96,14 @@ export function PortfolioIconMark({ iconId, size = 18, className }: MarkProps) {
     case "building":
       return <Building07 {...common} />;
     case "crypto":
-      return <Cryptocurrency01 {...common} />;
+      // Match iOS `bitcoinFill` (circle + rays) used for `crypto`.
+      return <CurrencyBitcoinCircle {...common} />;
     default:
       return <FinsepaLogo size={size} className={cn(className)} title="" />;
   }
 }
 
-/** Human labels for a11y on icon picker buttons. */
+/** Human labels for a11y — keep in lockstep with iOS `PortfolioIconId.accessibilityLabel`. */
 export const PORTFOLIO_ICON_LABELS: Record<PortfolioIconId, string> = {
   finsepa: "Finsepa",
   briefcase: "Portfolio",
@@ -118,14 +119,14 @@ export const PORTFOLIO_ICON_LABELS: Record<PortfolioIconId, string> = {
   rocket: "Aggressive",
   zap: "High risk",
   target: "Goal",
-  trophy: "Performance",
+  trophy: "Milestone",
   hourglass: "Long term",
   home: "Home",
   family: "Family",
-  child: "Child",
+  child: "Kids",
   education: "Education",
-  heart: "Legacy",
-  globe: "International",
-  building: "Real estate",
+  heart: "Favorite",
+  globe: "Global",
+  building: "Business",
   crypto: "Crypto",
 };

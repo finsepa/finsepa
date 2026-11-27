@@ -74,18 +74,36 @@ export function PortfolioListLogo({
     return <PortfolioBrokerageLogo snaptrade={portfolio.snaptrade} size={size} className={className} />;
   }
 
-  // Manual create appearance — colored tile + icon (default Finsepa mark).
+  // Manual create appearance — accent plate + icon (iOS `customAppearanceMark` parity).
   if (!portfolioIsCombined(portfolio) && !portfolioIsDemo(portfolio) && portfolioHasCustomAppearance(portfolio)) {
     const accent = portfolio.accentColor?.trim() || DEFAULT_PORTFOLIO_ACCENT_COLOR;
     const iconId = portfolio.iconId?.trim() || DEFAULT_PORTFOLIO_ICON_ID;
     const iconClass = portfolioAccentIconClassName(accent);
     return (
       <div
-        className={cn(shellClass, "border-transparent", iconClass)}
+        className={cn(shellClass, "relative border-transparent", iconClass)}
         style={{ backgroundColor: accent }}
         aria-hidden
       >
-        <PortfolioIconMark iconId={iconId} size={brandMarkSize} className={iconClass} />
+        {/* iOS `PortfolioMarkPlateBackground` — vertical wash + top hairline rim. */}
+        <span
+          className="pointer-events-none absolute inset-0 rounded-full"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(255,255,255,0.16) 0%, transparent 55%, rgba(0,0,0,0.10) 100%)",
+          }}
+        />
+        <span
+          className="pointer-events-none absolute inset-0 rounded-full"
+          style={{
+            boxShadow: "inset 0 0.5px 0 0 rgba(255,255,255,0.45)",
+          }}
+        />
+        <PortfolioIconMark
+          iconId={iconId}
+          size={brandMarkSize}
+          className={cn("relative z-[1]", iconClass)}
+        />
       </div>
     );
   }

@@ -3,10 +3,8 @@
 import { createContext, useContext, type ReactNode } from "react";
 
 import { OVERVIEW_PAGE_SECTIONS_STACK_CLASS } from "@/components/design-system/card-surface-styles";
-import { KeyIndicators } from "@/components/stock/key-indicators";
 import { KeyStats } from "@/components/stock/key-stats";
 import { LatestNews } from "@/components/stock/latest-news";
-import type { StockKeyIndicatorsResponse } from "@/lib/market/stock-key-indicators-types";
 import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
 import type { StockNewsArticle } from "@/lib/market/stock-news-types";
 import type { ChartingMetricId } from "@/lib/market/stock-charting-metrics";
@@ -45,13 +43,11 @@ function useOverviewMetricActions(): OverviewMetricActions {
 export function StockOverviewBelowFold({
   ticker,
   isEtf,
-  keyIndicators,
   keyStatsBundle,
   news,
 }: {
   ticker: string;
   isEtf: boolean;
-  keyIndicators: StockKeyIndicatorsResponse | null;
   keyStatsBundle: StockKeyStatsBundle | null;
   news: StockNewsArticle[];
 }) {
@@ -61,7 +57,6 @@ export function StockOverviewBelowFold({
   return (
     <div className={OVERVIEW_PAGE_SECTIONS_STACK_CLASS}>
       <div>
-        <KeyIndicators ticker={ticker} initial={keyIndicators} />
         <KeyStats
           ticker={ticker}
           initialBundle={keyStatsBundle}

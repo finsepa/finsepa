@@ -16,8 +16,6 @@ import type { StockDetailHeaderMeta } from "@/lib/market/stock-header-meta";
 import { getStockDetailHeaderMetaForPage, getStockHeaderIdentityForTicker } from "@/lib/market/stock-header-meta-server";
 import { buildStockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle";
 import type { StockKeyStatsBundle } from "@/lib/market/stock-key-stats-bundle-types";
-import { stockKeyIndicatorsServerEnabled } from "@/lib/features/key-indicators";
-import { getStockKeyIndicators, type StockKeyIndicatorsLoadOpts } from "@/lib/market/stock-key-indicators-service";
 import type { StockKeyIndicatorsResponse } from "@/lib/market/stock-key-indicators-types";
 import { computeStockPerformanceFromSortedDailyBars } from "@/lib/market/stock-performance";
 import type { StockPerformance } from "@/lib/market/stock-performance-types";
@@ -181,19 +179,6 @@ function fallbackStockPageInitialData(ticker: string, now: Date): StockPageIniti
   };
 }
 
-async function loadKeyIndicatorsForPage(
-  ticker: string,
-  opts?: StockKeyIndicatorsLoadOpts,
-): Promise<StockKeyIndicatorsResponse | null> {
-  if (!stockKeyIndicatorsServerEnabled()) return null;
-  try {
-    return await getStockKeyIndicators(ticker, opts);
-  } catch (err) {
-    warnSettledFailure("keyIndicators", err);
-    return null;
-  }
-}
-
 function ymdUtc(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -302,7 +287,6 @@ function startStockPageRebuild(ticker: string, now: Date): StockPageRebuildHandl
   // SSR / cold rebuild: skip SEC press-release backfill (roadmap C). Client key-stats +
   // fundamentals-series APIs still run the full path when the user opens those panels.
   const keyStatsPromise = buildStockKeyStatsBundle(ticker, { secBackfill: false });
-  const keyIndicatorsPromise = loadKeyIndicatorsForPage(ticker, { stockPerformance: performancePromise });
   const newsPromise = getStockNews(ticker);
   const profilePromise = fetchEodhdStockProfile(ticker);
   const peersPromise = getPeersCompareRowsCached(ticker);
@@ -352,7 +336,6 @@ function startStockPageRebuild(ticker: string, now: Date): StockPageRebuildHandl
     const base = await aboveFold;
     const [
       keyStatsResult,
-      keyIndicatorsResult,
       newsResult,
       profileResult,
       annualResult,
@@ -360,7 +343,6 @@ function startStockPageRebuild(ticker: string, now: Date): StockPageRebuildHandl
       peersResult,
     ] = await Promise.allSettled([
       keyStatsPromise,
-      keyIndicatorsPromise,
       newsPromise,
       profilePromise,
       annualFromBars,
@@ -369,7 +351,6 @@ function startStockPageRebuild(ticker: string, now: Date): StockPageRebuildHandl
     ]);
 
     const keyStatsBundle = fromSettled(keyStatsResult, "keyStats") ?? { ...EMPTY_KEY_STATS };
-    const keyIndicators = fromSettled(keyIndicatorsResult, "keyIndicators");
     const news = fromSettled(newsResult, "news");
     const profile = fromSettled(profileResult, "profile");
     const annualSeries = fromSettled(annualResult, "fundamentalsAnnual");
@@ -379,7 +360,8 @@ function startStockPageRebuild(ticker: string, now: Date): StockPageRebuildHandl
     return {
       ...base,
       keyStatsBundle,
-      keyIndicators,
+      // Key Indicators UI removed from asset overview — keep field null for type/SSR seed compat.
+      keyIndicators: null,
       news: Array.isArray(news) ? news : [],
       profile: profile ?? null,
       fundamentalsSeriesAnnual: annualSeries?.points ?? [],

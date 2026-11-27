@@ -67,16 +67,27 @@ export function PortfolioAppearancePreview({
       {custom ? (
         <div
           className={cn(
-            "flex h-14 w-14 items-center justify-center rounded-full shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]",
+            "relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full shadow-[0px_1px_2px_0px_rgba(var(--fs-shadow-rgb),var(--fs-shadow-a-06))]",
             portfolioAccentIconClassName(tileColor),
           )}
           style={{ backgroundColor: tileColor }}
           aria-hidden
         >
+          <span
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(255,255,255,0.16) 0%, transparent 55%, rgba(0,0,0,0.10) 100%)",
+            }}
+          />
+          <span
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{ boxShadow: "inset 0 0.5px 0 0 rgba(255,255,255,0.45)" }}
+          />
           <PortfolioIconMark
             iconId={iconId}
             size={28}
-            className={portfolioAccentIconClassName(tileColor)}
+            className={cn("relative z-[1]", portfolioAccentIconClassName(tileColor))}
           />
         </div>
       ) : (

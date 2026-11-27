@@ -19,7 +19,6 @@ import { IndexBreadcrumbs } from "@/components/index/index-breadcrumbs";
 import { SkeletonBox } from "@/components/markets/skeleton";
 import { CompanyLogo } from "@/components/screener/company-logo";
 import { ChartControls } from "@/components/stock/chart-controls";
-import { KeyIndicatorsSkeleton } from "@/components/stock/key-indicators-skeleton";
 import { StockBreadcrumbs } from "@/components/stock/stock-breadcrumbs";
 import { StockDetailTabNav } from "@/components/stock/stock-detail-tab-nav";
 import { AssetChartSkeleton } from "@/components/ui/chart-skeleton";
@@ -281,8 +280,6 @@ export function StockPageSkeleton() {
             </div>
           </div>
 
-          <KeyIndicatorsSkeleton />
-
           <div className="grid w-full gap-4 md:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className={cn(MOBILE_INSET_CARD_CLASS, "space-y-3 p-4")}>
@@ -330,8 +327,6 @@ export function StockPageSkeleton() {
               </ChartControls>
             </div>
           </div>
-
-          {kind === "crypto" ? <KeyIndicatorsSkeleton /> : null}
         </div>
       </div>
     );
@@ -356,7 +351,6 @@ export function StockPageSkeleton() {
         <SkeletonBox className="h-9 w-20 rounded-[10px]" />
       </div>
       <SkeletonBox className="h-[min(420px,50vh)] w-full rounded-lg" />
-      <KeyIndicatorsSkeleton />
     </div>
   );
 }
